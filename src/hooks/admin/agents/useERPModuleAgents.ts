@@ -555,6 +555,17 @@ export function useERPModuleAgents() {
   ) => {
     setIsLoading(true);
 
+    const parseJsonFromRawContent = (raw: string): any | null => {
+      // Soporta respuestas tipo ```json { ... } ``` o texto con JSON embebido
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) return null;
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        return null;
+      }
+    };
+
     try {
       setSupervisorStatus(prev => prev ? { ...prev, status: 'coordinating' } : prev);
 
@@ -574,19 +585,31 @@ export function useERPModuleAgents() {
 
       if (error) throw error;
 
+      // Normalizar respuesta: a veces llega como rawContent (parseError) desde backend
+      let payload: any = data;
+      if (payload?.rawContent) {
+        const parsed = parseJsonFromRawContent(payload.rawContent);
+        if (parsed) payload = { ...payload, ...parsed };
+      }
+
+      const nextInsights = payload?.insights;
+
       // Actualizar insights del supervisor
-      if (data?.insights) {
-        setInsights(data.insights);
+      if (Array.isArray(nextInsights)) {
+        setInsights(nextInsights);
         setSupervisorStatus(prev => prev ? {
           ...prev,
           status: 'running',
-          predictiveInsights: data.insights,
+          predictiveInsights: nextInsights,
           lastOptimization: new Date().toISOString()
         } : prev);
+      } else {
+        // Si no hay insights, al menos dejamos el supervisor en running
+        setSupervisorStatus(prev => prev ? { ...prev, status: 'running' } : prev);
       }
 
       toast.success('Orquestación del supervisor completada');
-      return data;
+      return payload;
     } catch (error) {
       console.error('[useERPModuleAgents] supervisorOrchestrate error:', error);
       toast.error('Error en orquestación');
