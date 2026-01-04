@@ -13,18 +13,21 @@ import {
   HeadphonesIcon,
   Factory,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  Network
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AutonomousAgentsPanel } from '@/components/admin/ai-agents/AutonomousAgentsPanel';
 import { PredictiveCopilotPanel } from '@/components/admin/ai-agents/PredictiveCopilotPanel';
 import { VoiceInterfacePanel } from '@/components/admin/ai-agents/VoiceInterfacePanel';
 import { SpecificAgentsPanel } from '@/components/admin/agents/SpecificAgentsPanel';
+import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
 
 export default function AIAgentsPage() {
-  const [activeTab, setActiveTab] = useState('autonomous');
+  const [activeTab, setActiveTab] = useState('erp-modules');
 
   const agentCategories = [
+    { id: 'erp-modules', name: 'Agentes ERP', icon: Network, description: 'Agentes especializados por módulo' },
     { id: 'autonomous', name: 'Agentes Autónomos', icon: Bot, description: 'Agentes con ejecución automática' },
     { id: 'copilot', name: 'Copiloto Predictivo', icon: Brain, description: 'Asistencia inteligente en tiempo real' },
     { id: 'voice', name: 'Interfaz de Voz', icon: Mic, description: 'Comandos y control por voz' },
@@ -120,7 +123,7 @@ export default function AIAgentsPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
             {agentCategories.map((cat) => (
               <TabsTrigger 
                 key={cat.id} 
@@ -132,6 +135,10 @@ export default function AIAgentsPage() {
               </TabsTrigger>
             ))}
           </TabsList>
+
+          <TabsContent value="erp-modules" className="space-y-4">
+            <ERPModuleAgentsPanel />
+          </TabsContent>
 
           <TabsContent value="autonomous" className="space-y-4">
             <AutonomousAgentsPanel />
