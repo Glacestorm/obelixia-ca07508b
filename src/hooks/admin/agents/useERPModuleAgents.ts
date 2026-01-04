@@ -69,6 +69,8 @@ export interface SupervisorStatus {
   resourceUtilization: number;
   learningProgress: number;
   predictiveInsights: SupervisorInsight[];
+  autonomousMode: boolean;
+  autonomousIntervalMs: number;
 }
 
 export interface SupervisorInsight {
@@ -341,6 +343,7 @@ export function useERPModuleAgents() {
 
   // Refs
   const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+  const autonomousInterval = useRef<NodeJS.Timeout | null>(null);
 
   // === INICIALIZAR AGENTES ===
   const initializeAgents = useCallback(async () => {
@@ -398,7 +401,9 @@ export function useERPModuleAgents() {
         systemHealth: 98,
         resourceUtilization: 45,
         learningProgress: 72,
-        predictiveInsights: []
+        predictiveInsights: [],
+        autonomousMode: false,
+        autonomousIntervalMs: 60000
       });
 
       setLastRefresh(new Date());
@@ -694,9 +699,56 @@ export function useERPModuleAgents() {
     }
   }, []);
 
+  // === MODO AUTÓNOMO DEL SUPERVISOR ===
+  const autonomousActions = [
+    'distribute_tasks',
+    'realtime_monitoring', 
+    'predictive_analysis',
+    'optimize_workflows',
+    'resolve_conflicts',
+    'auto_optimize'
+  ];
+
+  const runAutonomousCycle = useCallback(async () => {
+    // Seleccionar acción aleatoria o basada en prioridad
+    const randomAction = autonomousActions[Math.floor(Math.random() * autonomousActions.length)];
+    console.log('[Supervisor Autónomo] Ejecutando ciclo:', randomAction);
+    await supervisorOrchestrate(randomAction, 'medium');
+  }, [supervisorOrchestrate]);
+
+  const toggleAutonomousMode = useCallback((enabled: boolean, intervalMs: number = 60000) => {
+    // Limpiar intervalo anterior si existe
+    if (autonomousInterval.current) {
+      clearInterval(autonomousInterval.current);
+      autonomousInterval.current = null;
+    }
+
+    setSupervisorStatus(prev => prev ? {
+      ...prev,
+      autonomousMode: enabled,
+      autonomousIntervalMs: intervalMs
+    } : prev);
+
+    if (enabled) {
+      // Ejecutar inmediatamente y luego en intervalo
+      runAutonomousCycle();
+      autonomousInterval.current = setInterval(() => {
+        runAutonomousCycle();
+      }, intervalMs);
+      toast.success(`Modo autónomo activado (cada ${Math.round(intervalMs / 1000)}s)`);
+    } else {
+      toast.info('Modo autónomo desactivado');
+    }
+  }, [runAutonomousCycle]);
+
   // === CLEANUP ===
   useEffect(() => {
-    return () => stopAutoRefresh();
+    return () => {
+      stopAutoRefresh();
+      if (autonomousInterval.current) {
+        clearInterval(autonomousInterval.current);
+      }
+    };
   }, [stopAutoRefresh]);
 
   // === RETURN ===
@@ -719,6 +771,7 @@ export function useERPModuleAgents() {
     fetchPredictiveInsights,
     configureAgent,
     toggleAgent,
+    toggleAutonomousMode,
     startAutoRefresh,
     stopAutoRefresh,
   };

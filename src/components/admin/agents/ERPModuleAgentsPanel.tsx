@@ -82,6 +82,7 @@ export function ERPModuleAgentsPanel() {
     supervisorOrchestrate,
     configureAgent,
     toggleAgent,
+    toggleAutonomousMode,
     startAutoRefresh,
     stopAutoRefresh
   } = useERPModuleAgents();
@@ -253,13 +254,38 @@ export function ERPModuleAgentsPanel() {
         <TabsContent value="supervisor" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                Agente Supervisor General
-              </CardTitle>
-              <CardDescription>
-                Coordina todos los dominios, resuelve conflictos y optimiza el rendimiento global
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="h-5 w-5" />
+                    Agente Supervisor General
+                  </CardTitle>
+                  <CardDescription>
+                    Coordina todos los dominios, resuelve conflictos y optimiza el rendimiento global
+                  </CardDescription>
+                </div>
+                {/* Selector de Modo Autónomo */}
+                <div className="flex flex-col items-end gap-2 p-3 rounded-lg border bg-card">
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-medium">Modo Autónomo</p>
+                      <p className="text-xs text-muted-foreground">
+                        {supervisorStatus?.autonomousMode ? 'Activo' : 'Manual'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={supervisorStatus?.autonomousMode || false}
+                      onCheckedChange={(checked) => toggleAutonomousMode(checked, 45000)}
+                    />
+                  </div>
+                  {supervisorStatus?.autonomousMode && (
+                    <div className="flex items-center gap-2 text-xs text-primary">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      <span>Ejecutando cada 45s</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Capacidades del Supervisor */}
