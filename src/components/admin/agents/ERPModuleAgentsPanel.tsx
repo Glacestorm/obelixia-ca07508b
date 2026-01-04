@@ -281,7 +281,11 @@ export function ERPModuleAgentsPanel() {
                       "p-3 h-auto rounded-lg flex items-center gap-2 justify-start",
                       cap.active ? "bg-primary/5 border-primary/20 hover:bg-primary/10" : "bg-muted/50"
                     )}
-                    onClick={() => supervisorOrchestrate(cap.action)}
+                    onClick={async () => {
+                      // Llevar al usuario a donde verá el resultado
+                      setActiveTab('insights');
+                      await supervisorOrchestrate(cap.action);
+                    }}
                     disabled={isLoading}
                   >
                     <cap.icon className={cn("h-4 w-4", cap.active ? "text-primary" : "text-muted-foreground")} />
@@ -574,7 +578,14 @@ export function ERPModuleAgentsPanel() {
                             <span className="text-xs text-muted-foreground">
                               Confianza: {insight.confidence}%
                             </span>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={isLoading}
+                              onClick={async () => {
+                                await supervisorOrchestrate(insight.suggestedAction!, insight.priority);
+                              }}
+                            >
                               {insight.suggestedAction}
                             </Button>
                           </div>
