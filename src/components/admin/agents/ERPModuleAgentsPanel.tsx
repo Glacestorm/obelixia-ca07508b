@@ -40,9 +40,11 @@ import {
   Target,
   TrendingUp,
   Eye,
-  Lightbulb
+  Lightbulb,
+  HelpCircle
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
+import { AgentHelpMenu } from './help';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -273,6 +275,13 @@ export function ERPModuleAgentsPanel() {
                     Coordina todos los dominios, resuelve conflictos y optimiza el rendimiento global
                   </CardDescription>
                 </div>
+                <AgentHelpMenu
+                  agentId="supervisor"
+                  agentType="supervisor"
+                  agentName="Supervisor General"
+                  agentDescription="Orquestador central que coordina todos los agentes ERP y CRM"
+                  agentIcon={<Brain className="h-4 w-4" />}
+                />
                 {/* Selector de Modo Autónomo */}
                 <div className="flex flex-col items-end gap-2 p-3 rounded-lg border bg-card">
                   <div className="flex items-center gap-3">

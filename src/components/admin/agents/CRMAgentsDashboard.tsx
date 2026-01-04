@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useCRMAgents, type CRMModuleAgent, type SupervisorGeneralConfig, CRM_MODULE_CONFIG } from '@/hooks/admin/agents/useCRMAgents';
 import type { CRMModuleType, AgentConversation } from '@/hooks/admin/agents/crmAgentTypes';
+import { AgentHelpMenu } from './help';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -530,6 +531,14 @@ export function CRMAgentsDashboard() {
                               <Sparkles className="h-4 w-4 mr-1" />
                               Aprender
                             </Button>
+                            <AgentHelpMenu
+                              agentId={agent.moduleType}
+                              agentType="crm"
+                              agentName={agent.name}
+                              agentDescription={agent.description}
+                              agentIcon={<Icon className="h-4 w-4" />}
+                              moduleType={agent.moduleType}
+                            />
                           </div>
                         </CardContent>
                       </CollapsibleContent>
@@ -569,6 +578,14 @@ export function CRMAgentsDashboard() {
                       <Switch
                         checked={supervisor.autonomousMode}
                         onCheckedChange={(checked) => toggleAutonomousMode(checked, 60000)}
+                      />
+                      <AgentHelpMenu
+                        agentId="supervisor-crm"
+                        agentType="supervisor"
+                        agentName="Supervisor CRM"
+                        agentDescription="Coordinador central de todos los agentes CRM"
+                        agentIcon={<Brain className="h-4 w-4" />}
+                        className="bg-white/20 border-white/30 text-white hover:bg-white/30"
                       />
                     </div>
                   </div>

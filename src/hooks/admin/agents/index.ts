@@ -37,3 +37,7 @@ export type {
 } from './crmAgentTypes';
 export { CRM_AUTONOMOUS_ACTIONS } from './crmAgentConfig';
 export type { CRMAutonomousAction } from './crmAgentConfig';
+
+// Agent Help System - Menú de ayuda y chatbot con voz
+export { useAgentHelp, KNOWLEDGE_CATEGORIES } from './useAgentHelp';
+export type { AgentKnowledge, HelpConversation, AgentHelpConfig } from './useAgentHelp';

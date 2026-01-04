@@ -1555,6 +1555,201 @@ export type Database = {
           },
         ]
       }
+      agent_help_conversations: {
+        Row: {
+          agent_id: string
+          agent_type: string
+          attachments: Json | null
+          audio_duration_ms: number | null
+          audio_url: string | null
+          content: string
+          context: Json | null
+          conversation_id: string
+          created_at: string
+          feedback_score: number | null
+          id: string
+          input_mode: string | null
+          output_mode: string | null
+          response_time_ms: number | null
+          role: string
+          tokens_used: number | null
+          user_id: string | null
+          was_helpful: boolean | null
+        }
+        Insert: {
+          agent_id: string
+          agent_type: string
+          attachments?: Json | null
+          audio_duration_ms?: number | null
+          audio_url?: string | null
+          content: string
+          context?: Json | null
+          conversation_id: string
+          created_at?: string
+          feedback_score?: number | null
+          id?: string
+          input_mode?: string | null
+          output_mode?: string | null
+          response_time_ms?: number | null
+          role: string
+          tokens_used?: number | null
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Update: {
+          agent_id?: string
+          agent_type?: string
+          attachments?: Json | null
+          audio_duration_ms?: number | null
+          audio_url?: string | null
+          content?: string
+          context?: Json | null
+          conversation_id?: string
+          created_at?: string
+          feedback_score?: number | null
+          id?: string
+          input_mode?: string | null
+          output_mode?: string | null
+          response_time_ms?: number | null
+          role?: string
+          tokens_used?: number | null
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
+      agent_help_feedback: {
+        Row: {
+          agent_id: string
+          conversation_id: string
+          created_at: string
+          created_knowledge_id: string | null
+          feedback_text: string | null
+          feedback_type: string | null
+          id: string
+          message_id: string | null
+          rating: number | null
+          user_id: string | null
+          was_helpful: boolean | null
+        }
+        Insert: {
+          agent_id: string
+          conversation_id: string
+          created_at?: string
+          created_knowledge_id?: string | null
+          feedback_text?: string | null
+          feedback_type?: string | null
+          id?: string
+          message_id?: string | null
+          rating?: number | null
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Update: {
+          agent_id?: string
+          conversation_id?: string
+          created_at?: string
+          created_knowledge_id?: string | null
+          feedback_text?: string | null
+          feedback_type?: string | null
+          id?: string
+          message_id?: string | null
+          rating?: number | null
+          user_id?: string | null
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
+      agent_knowledge_base: {
+        Row: {
+          agent_id: string
+          agent_type: string
+          category: string
+          confidence_score: number | null
+          content: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          example_context: Json | null
+          example_input: string | null
+          example_output: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          keywords: string[] | null
+          last_used_at: string | null
+          module_type: string | null
+          order_index: number | null
+          parent_knowledge_id: string | null
+          section_index: number | null
+          source: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          usage_count: number | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          agent_id: string
+          agent_type: string
+          category: string
+          confidence_score?: number | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          example_context?: Json | null
+          example_input?: string | null
+          example_output?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          keywords?: string[] | null
+          last_used_at?: string | null
+          module_type?: string | null
+          order_index?: number | null
+          parent_knowledge_id?: string | null
+          section_index?: number | null
+          source?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          usage_count?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          agent_id?: string
+          agent_type?: string
+          category?: string
+          confidence_score?: number | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          example_context?: Json | null
+          example_input?: string | null
+          example_output?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          keywords?: string[] | null
+          last_used_at?: string | null
+          module_type?: string | null
+          order_index?: number | null
+          parent_knowledge_id?: string | null
+          section_index?: number | null
+          source?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          usage_count?: number | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       ai_agent_actions: {
         Row: {
           action_name: string
