@@ -19,6 +19,7 @@ export interface ERPCompanyGroup {
 export interface ERPCompany {
   id: string;
   group_id?: string | null;
+  code?: string | null;
   name: string;
   legal_name?: string | null;
   tax_id?: string | null;
@@ -109,9 +110,11 @@ export interface ERPFiscalYear {
   id: string;
   company_id: string;
   name: string;
+  code?: string | null;
   start_date: string;
   end_date: string;
   is_closed: boolean;
+  is_current?: boolean;
   closed_at?: string;
   closed_by?: string;
   created_at: string;
@@ -124,11 +127,13 @@ export interface ERPPeriod {
   id: string;
   fiscal_year_id: string;
   company_id: string;
-  month: number;
+  period_number?: number;
+  month?: number;
   name: string;
   start_date: string;
   end_date: string;
   is_closed: boolean;
+  is_adjustment?: boolean;
   closed_at?: string;
   closed_by?: string;
   created_at: string;
