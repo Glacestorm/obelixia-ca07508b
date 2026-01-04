@@ -50,6 +50,7 @@ import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
 import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
+import { ERPCRMSwitcher } from '@/components/shared/ERPCRMSwitcher';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -168,15 +169,18 @@ function CRMModularDashboardContent() {
 
   return (
     <div className="space-y-6">
-      {/* Header - Workspace selector */}
-      <div className="flex items-center justify-end gap-3">
-        <CRMWorkspaceSelector />
-        {currentWorkspace && (
-          <Badge variant="outline" className="gap-1">
-            <CheckCircle2 className="h-3 w-3 text-green-500" />
-            {currentWorkspace.currency}
-          </Badge>
-        )}
+      {/* Header - Workspace selector + Navigation */}
+      <div className="flex items-center justify-between gap-3">
+        <ERPCRMSwitcher />
+        <div className="flex items-center gap-3">
+          <CRMWorkspaceSelector />
+          {currentWorkspace && (
+            <Badge variant="outline" className="gap-1">
+              <CheckCircle2 className="h-3 w-3 text-green-500" />
+              {currentWorkspace.currency}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Main Tabs */}
