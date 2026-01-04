@@ -1,6 +1,6 @@
 /**
  * AccountingSupervisorPanel - Panel del Agente Supervisor de Contabilidad
- * Ahora integrado con el Orquestador Multi-Agente para supervisión coordinada
+ * Muestra alertas escritas y controles de voz en tiempo real
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -41,12 +41,9 @@ import {
   Square,
   Eye,
   EyeOff,
-  Mic,
-  Users,
-  Zap
+  Mic
 } from 'lucide-react';
 import { useAccountingSupervisorAgent, SupervisorAlert, AccountingValidation, SupervisorContext } from '@/hooks/erp/useAccountingSupervisorAgent';
-import { useERPAgentOrchestrator, AgentAnalysisRequest } from '@/hooks/erp/useERPAgentOrchestrator';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -56,122 +53,43 @@ interface AccountingSupervisorPanelProps {
   onValidationChange?: (isValid: boolean) => void;
   className?: string;
   defaultExpanded?: boolean;
-  enableMultiAgent?: boolean; // Nuevo: activar supervisión multi-agente
 }
 
 export function AccountingSupervisorPanel({
   context,
   onValidationChange,
   className,
-  defaultExpanded = true,
-  enableMultiAgent = true
+  defaultExpanded = true
 }: AccountingSupervisorPanelProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [showAllAlerts, setShowAllAlerts] = useState(false);
-  const [useMultiAgent, setUseMultiAgent] = useState(enableMultiAgent);
 
-  // Hook original de supervisor contable
   const {
     isActive,
     isAnalyzing,
-    isSpeaking: isSpeakingLegacy,
-    alerts: legacyAlerts,
+    isSpeaking,
+    alerts,
     validations,
     lastAnalysis,
     audioEnabled,
     toggleActive,
     setAudioEnabled,
     supervise,
-    markAlertAsRead: markLegacyAlertAsRead,
-    clearAlerts: clearLegacyAlerts,
-    stopSpeaking: stopSpeakingLegacy,
-    repeatLastCriticalAlert: repeatLegacyCriticalAlert,
-    unreadCount: legacyUnreadCount,
-    criticalCount: legacyCriticalCount,
+    markAlertAsRead,
+    clearAlerts,
+    stopSpeaking,
+    repeatLastCriticalAlert,
+    unreadCount,
+    criticalCount,
     hasErrors
   } = useAccountingSupervisorAgent();
 
-  // Nuevo orquestador multi-agente
-  const {
-    agents,
-    alerts: orchestratorAlerts,
-    isOrchestrating,
-    isSpeaking: isSpeakingOrchestrator,
-    audioEnabled: orchestratorAudioEnabled,
-    stats,
-    toggleAgent,
-    setAudioEnabled: setOrchestratorAudioEnabled,
-    stopSpeaking: stopOrchestratorSpeaking,
-    repeatLastCriticalAlert: repeatOrchestratorCriticalAlert,
-    markAlertAsRead: markOrchestratorAlertAsRead,
-    clearAlerts: clearOrchestratorAlerts,
-    requestAnalysis,
-    supervisorAnalysis,
-    getAgentByType
-  } = useERPAgentOrchestrator();
-
-  // Seleccionar alertas según modo
-  const alerts = useMultiAgent 
-    ? orchestratorAlerts.filter(a => ['accounting', 'trade_finance', 'compliance', 'supervisor'].includes(a.agentType))
-    : legacyAlerts;
-  
-  const isSpeaking = useMultiAgent ? isSpeakingOrchestrator : isSpeakingLegacy;
-  const unreadCount = useMultiAgent ? stats.unreadAlerts : legacyUnreadCount;
-  const criticalCount = useMultiAgent ? stats.criticalAlerts : legacyCriticalCount;
-
-  // Supervisar con multi-agente cuando cambia el contexto
+  // Supervisar cuando cambia el contexto
   useEffect(() => {
-    if (!context || !isActive) return;
-
-    if (useMultiAgent) {
-      // Análisis coordinado con múltiples agentes
-      const requests: AgentAnalysisRequest[] = [
-        {
-          agentType: 'accounting',
-          module: 'trade_finance',
-          action: 'validate_entries',
-          data: {
-            operationType: context.operationType,
-            entries: context.entries,
-            operationData: context.operationData
-          },
-          priority: 'high'
-        },
-        {
-          agentType: 'trade_finance',
-          module: 'operations',
-          action: 'validate_operation',
-          data: {
-            operationType: context.operationType,
-            operationData: context.operationData
-          },
-          priority: 'normal'
-        },
-        {
-          agentType: 'compliance',
-          module: 'accounting',
-          action: 'check_compliance',
-          data: {
-            framework: 'PGC',
-            entries: context.entries
-          },
-          priority: 'normal'
-        }
-      ];
-
-      // Solo ejecutar si hay agentes activos
-      const activeRequests = requests.filter(r => 
-        getAgentByType(r.agentType)?.isActive
-      );
-
-      if (activeRequests.length > 0) {
-        supervisorAnalysis(activeRequests);
-      }
-    } else {
-      // Supervisión legacy
+    if (context && isActive) {
       supervise(context);
     }
-  }, [context, isActive, useMultiAgent]);
+  }, [context, isActive, supervise]);
 
   // Notificar cambios de validación
   useEffect(() => {
@@ -179,38 +97,6 @@ export function AccountingSupervisorPanel({
       onValidationChange(!hasErrors);
     }
   }, [hasErrors, onValidationChange]);
-
-  // Handlers unificados
-  const handleStopSpeaking = useCallback(() => {
-    if (useMultiAgent) {
-      stopOrchestratorSpeaking();
-    } else {
-      stopSpeakingLegacy();
-    }
-  }, [useMultiAgent, stopOrchestratorSpeaking, stopSpeakingLegacy]);
-
-  const handleRepeatAlert = useCallback(() => {
-    if (useMultiAgent) {
-      repeatOrchestratorCriticalAlert();
-    } else {
-      repeatLegacyCriticalAlert();
-    }
-  }, [useMultiAgent, repeatOrchestratorCriticalAlert, repeatLegacyCriticalAlert]);
-
-  const handleClearAlerts = useCallback(() => {
-    if (useMultiAgent) {
-      clearOrchestratorAlerts();
-    } else {
-      clearLegacyAlerts();
-    }
-  }, [useMultiAgent, clearOrchestratorAlerts, clearLegacyAlerts]);
-
-  const handleAudioToggle = useCallback((enabled: boolean) => {
-    if (useMultiAgent) {
-      setOrchestratorAudioEnabled(enabled);
-    }
-    setAudioEnabled(enabled);
-  }, [useMultiAgent, setOrchestratorAudioEnabled, setAudioEnabled]);
 
   // Obtener icono según severidad
   const getSeverityIcon = (severity: string) => {
@@ -232,22 +118,17 @@ export function AccountingSupervisorPanel({
   const getSeverityStyle = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-800 dark:text-red-200';
+        return 'bg-red-50 border-red-200 text-red-800';
       case 'high':
       case 'error':
-        return 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/30 dark:border-orange-800 dark:text-orange-200';
+        return 'bg-orange-50 border-orange-200 text-orange-800';
       case 'medium':
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950/30 dark:border-yellow-800 dark:text-yellow-200';
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
       default:
-        return 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950/30 dark:border-green-800 dark:text-green-200';
+        return 'bg-green-50 border-green-200 text-green-800';
     }
   };
-
-  // Agentes relevantes para contabilidad
-  const relevantAgents = agents.filter(a => 
-    ['accounting', 'trade_finance', 'compliance', 'supervisor'].includes(a.type)
-  );
 
   // Alertas a mostrar
   const displayedAlerts = showAllAlerts ? alerts : alerts.slice(0, 5);
@@ -256,7 +137,7 @@ export function AccountingSupervisorPanel({
     <Card className={cn(
       'border-2 transition-all duration-300',
       isActive ? 'border-primary/50' : 'border-dashed border-muted-foreground/30',
-      criticalCount > 0 && 'border-red-300 shadow-red-100 dark:border-red-700',
+      criticalCount > 0 && 'border-red-300 shadow-red-100',
       className
     )}>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -273,37 +154,29 @@ export function AccountingSupervisorPanel({
                   "p-1.5 rounded-lg",
                   isActive ? "bg-gradient-to-br from-primary to-blue-600" : "bg-muted"
                 )}>
-                  {useMultiAgent ? (
-                    <Users className={cn("h-4 w-4", isActive ? "text-white" : "text-muted-foreground")} />
-                  ) : (
-                    <Shield className={cn("h-4 w-4", isActive ? "text-white" : "text-muted-foreground")} />
-                  )}
+                  <Shield className={cn("h-4 w-4", isActive ? "text-white" : "text-muted-foreground")} />
                 </div>
                 <div>
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    {useMultiAgent ? 'Supervisión Multi-Agente' : 'Supervisor Contable AI'}
+                    Supervisor Contable AI
                     {isActive && (
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-700">
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                         <Sparkles className="h-3 w-3 mr-1" />
                         Activo
                       </Badge>
                     )}
-                    {(isAnalyzing || isOrchestrating) && (
+                    {isAnalyzing && (
                       <Badge variant="outline" className="text-xs">
                         <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
                         Analizando
                       </Badge>
                     )}
                   </CardTitle>
-                  {useMultiAgent ? (
-                    <p className="text-xs text-muted-foreground">
-                      {stats.activeAgents} agentes activos • {unreadCount} alertas pendientes
-                    </p>
-                  ) : lastAnalysis ? (
+                  {lastAnalysis && (
                     <p className="text-xs text-muted-foreground">
                       Último análisis: {formatDistanceToNow(lastAnalysis, { addSuffix: true, locale: es })}
                     </p>
-                  ) : null}
+                  )}
                 </div>
               </div>
 
@@ -314,7 +187,7 @@ export function AccountingSupervisorPanel({
                   </Badge>
                 )}
                 {isSpeaking && (
-                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300">
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                     <Volume2 className="h-3 w-3 mr-1 animate-pulse" />
                     Hablando
                   </Badge>
@@ -328,7 +201,7 @@ export function AccountingSupervisorPanel({
           <CardContent className="pt-0 space-y-4">
             {/* Controles principales */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Switch
                     id="supervisor-active"
@@ -340,40 +213,13 @@ export function AccountingSupervisorPanel({
                   </Label>
                 </div>
 
-                <Separator orientation="vertical" className="h-6 hidden sm:block" />
-
-                {/* Toggle Multi-Agente */}
-                {enableMultiAgent && (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="multi-agent"
-                      checked={useMultiAgent}
-                      onCheckedChange={setUseMultiAgent}
-                      disabled={!isActive}
-                    />
-                    <Label htmlFor="multi-agent" className="text-sm cursor-pointer flex items-center gap-1">
-                      {useMultiAgent ? (
-                        <>
-                          <Zap className="h-4 w-4 text-primary" />
-                          <span>Multi-Agente</span>
-                        </>
-                      ) : (
-                        <>
-                          <Bot className="h-4 w-4 text-muted-foreground" />
-                          <span>Agente único</span>
-                        </>
-                      )}
-                    </Label>
-                  </div>
-                )}
-
-                <Separator orientation="vertical" className="h-6 hidden sm:block" />
+                <Separator orientation="vertical" className="h-6" />
 
                 <div className="flex items-center gap-2">
                   <Switch
                     id="audio-enabled"
                     checked={audioEnabled}
-                    onCheckedChange={handleAudioToggle}
+                    onCheckedChange={setAudioEnabled}
                     disabled={!isActive}
                   />
                   <Label htmlFor="audio-enabled" className="text-sm cursor-pointer flex items-center gap-1">
@@ -397,7 +243,7 @@ export function AccountingSupervisorPanel({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm" onClick={handleStopSpeaking}>
+                        <Button variant="outline" size="sm" onClick={stopSpeaking}>
                           <Square className="h-4 w-4 mr-1" />
                           Detener
                         </Button>
@@ -412,7 +258,7 @@ export function AccountingSupervisorPanel({
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={handleRepeatAlert}
+                          onClick={repeatLastCriticalAlert}
                           disabled={alerts.length === 0 || !audioEnabled}
                         >
                           <Play className="h-4 w-4 mr-1" />
@@ -430,7 +276,7 @@ export function AccountingSupervisorPanel({
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={handleClearAlerts}
+                        onClick={clearAlerts}
                         disabled={alerts.length === 0}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -442,34 +288,8 @@ export function AccountingSupervisorPanel({
               </div>
             </div>
 
-            {/* Agentes activos (modo multi-agente) */}
-            {useMultiAgent && isActive && (
-              <div className="flex flex-wrap gap-2">
-                {relevantAgents.map(agent => (
-                  <Badge
-                    key={agent.id}
-                    variant={agent.isActive ? "default" : "outline"}
-                    className={cn(
-                      "cursor-pointer transition-all",
-                      agent.isActive && "bg-primary/80",
-                      agent.status === 'analyzing' && "animate-pulse"
-                    )}
-                    onClick={() => toggleAgent(agent.type)}
-                  >
-                    <span className="mr-1">{agent.icon}</span>
-                    {agent.name.replace('Agente ', '')}
-                    {agent.alertCount > 0 && (
-                      <span className="ml-1 px-1 bg-destructive text-destructive-foreground rounded-full text-[10px]">
-                        {agent.alertCount}
-                      </span>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
             {/* Resumen de validaciones */}
-            {validations.length > 0 && !useMultiAgent && (
+            {validations.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
                   <CheckCircle className="h-4 w-4" />
@@ -533,32 +353,21 @@ export function AccountingSupervisorPanel({
 
                 <ScrollArea className="max-h-[250px]">
                   <div className="space-y-2">
-                    {displayedAlerts.map((alert: any) => (
+                    {displayedAlerts.map((alert) => (
                       <div
                         key={alert.id}
                         className={cn(
-                          "p-3 rounded-lg border transition-all cursor-pointer",
+                          "p-3 rounded-lg border transition-all",
                           getSeverityStyle(alert.severity),
                           !alert.isRead && "ring-2 ring-primary/20"
                         )}
-                        onClick={() => {
-                          if (useMultiAgent) {
-                            markOrchestratorAlertAsRead(alert.id);
-                          } else {
-                            markLegacyAlertAsRead(alert.id);
-                          }
-                        }}
+                        onClick={() => markAlertAsRead(alert.id)}
                       >
                         <div className="flex items-start gap-2">
                           {getSeverityIcon(alert.severity)}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
                               <span className="font-medium text-sm">{alert.title}</span>
-                              {useMultiAgent && alert.agentName && (
-                                <Badge variant="outline" className="text-[10px]">
-                                  {alert.agentName}
-                                </Badge>
-                              )}
                               {alert.isSpoken && (
                                 <Mic className="h-3 w-3 text-muted-foreground" />
                               )}
@@ -568,12 +377,12 @@ export function AccountingSupervisorPanel({
                             </div>
                             <p className="text-sm mt-1">{alert.message}</p>
                             {alert.recommendation && (
-                              <p className="text-xs mt-2 p-2 bg-background/50 rounded border">
+                              <p className="text-xs mt-2 p-2 bg-white/50 rounded border">
                                 💡 <strong>Recomendación:</strong> {alert.recommendation}
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground mt-2">
-                              {formatDistanceToNow(new Date(alert.timestamp), { addSuffix: true, locale: es })}
+                              {formatDistanceToNow(alert.timestamp, { addSuffix: true, locale: es })}
                             </p>
                           </div>
                         </div>
@@ -587,19 +396,9 @@ export function AccountingSupervisorPanel({
             {/* Estado sin alertas */}
             {alerts.length === 0 && validations.length === 0 && isActive && (
               <div className="text-center py-6 text-muted-foreground">
-                {useMultiAgent ? (
-                  <>
-                    <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Los agentes están vigilando las operaciones</p>
-                    <p className="text-xs">Las alertas de todos los agentes aparecerán aquí</p>
-                  </>
-                ) : (
-                  <>
-                    <Bot className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">El supervisor está vigilando las partidas</p>
-                    <p className="text-xs">Las alertas aparecerán aquí cuando se detecten incidencias</p>
-                  </>
-                )}
+                <Bot className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">El supervisor está vigilando las partidas</p>
+                <p className="text-xs">Las alertas aparecerán aquí cuando se detecten incidencias</p>
               </div>
             )}
 

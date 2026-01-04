@@ -56,17 +56,6 @@ export { useERPAutoAccounting } from './useERPAutoAccounting';
 export { useERPImportExport } from './useERPImportExport';
 export type { ERPModule, ExportFormat, ImportExportOptions, OCRResult, ImportResult, ExportResult } from './useERPImportExport';
 
-// Maestros AI Import
-export { useMaestrosAIImport } from './useMaestrosAIImport';
-export type { MaestrosEntityType, ImportAnalysis, ImportRecord, ImportSummary, ImportResult as MaestrosImportResult, ImportOptions } from './useMaestrosAIImport';
-
 // Banking Hub
 export { useERPBankingHub } from './useERPBankingHub';
 export type { BankingProvider, BankAccount, BankConnection, BankTransaction, BankPosition, SyncLog } from './useERPBankingHub';
-
-// AI Agent Orchestrator - Multi-agent supervision system
-export { useERPAgentOrchestrator } from './useERPAgentOrchestrator';
-export type { ERPAgentType, ERPAgent, AgentAlert, AgentAction, AgentAnalysisRequest, AgentAnalysisResult } from './useERPAgentOrchestrator';
-
-// Accounting Supervisor Agent (legacy, now part of orchestrator)
-export { useAccountingSupervisorAgent } from './useAccountingSupervisorAgent';
