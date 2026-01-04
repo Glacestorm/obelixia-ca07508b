@@ -29,7 +29,9 @@ import {
   RefreshCw,
   FileJson,
   FileSpreadsheet,
-  Eye
+  Eye,
+  Bot,
+  Zap
 } from 'lucide-react';
 import { useMaestrosImport, EntityType, DetectedEntity, ImportExecution } from '@/hooks/erp/useMaestrosImport';
 import { cn } from '@/lib/utils';
@@ -76,12 +78,15 @@ export function MaestrosImportPanel({ onImportComplete, className }: MaestrosImp
   const {
     isAnalyzing,
     isImporting,
+    isCoordinating,
     analysisResult,
     importResults,
     currentFile,
+    supervisorInsight,
     analyzeFile,
     importEntity,
     importAll,
+    coordinateWithSupervisor,
     reset
   } = useMaestrosImport();
 
@@ -354,9 +359,30 @@ export function MaestrosImportPanel({ onImportComplete, className }: MaestrosImp
           {/* Tab: Results */}
           <TabsContent value="results" className="p-6 m-0">
             <div className="space-y-4">
-              <h4 className="font-medium">Resultados de importación</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Resultados de importación</h4>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={coordinateWithSupervisor}
+                  disabled={isCoordinating || importResults.length === 0}
+                  className="gap-2"
+                >
+                  {isCoordinating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Coordinando...
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="h-4 w-4" />
+                      Coordinar con Supervisor
+                    </>
+                  )}
+                </Button>
+              </div>
               
-              <ScrollArea className="h-[350px]">
+              <ScrollArea className="h-[280px]">
                 <div className="space-y-3 pr-4">
                   {importResults.map((result, idx) => (
                     <ResultCard key={result.id} result={result} index={idx} />
@@ -364,8 +390,13 @@ export function MaestrosImportPanel({ onImportComplete, className }: MaestrosImp
                 </div>
               </ScrollArea>
 
+              {/* Insight del Supervisor */}
+              {supervisorInsight && (
+                <SupervisorInsightCard insight={supervisorInsight} />
+              )}
+
               {/* Resumen final */}
-              {importResults.length > 0 && (
+              {importResults.length > 0 && !supervisorInsight && (
                 <div className="pt-4 border-t">
                   <ImportSummary results={importResults} />
                 </div>
@@ -545,7 +576,6 @@ function ImportSummary({ results }: { results: ImportExecution[] }) {
   const totalRecords = results.reduce((sum, r) => sum + r.total_records, 0);
   const totalInserted = results.reduce((sum, r) => sum + r.inserted_count, 0);
   const totalErrors = results.reduce((sum, r) => sum + r.error_count, 0);
-  const successCount = results.filter(r => r.status === 'success').length;
 
   return (
     <div className="grid grid-cols-4 gap-4 text-center">
@@ -568,6 +598,109 @@ function ImportSummary({ results }: { results: ImportExecution[] }) {
         <div className="text-xs text-muted-foreground">Éxito</div>
       </div>
     </div>
+  );
+}
+
+// Componente para mostrar insight del Supervisor
+function SupervisorInsightCard({ insight }: { insight: Record<string, unknown> }) {
+  const validation = insight.validation as { is_consistent?: boolean; issues?: Array<{ entity: string; issue: string; severity: string }> } | undefined;
+  const impactAnalysis = insight.impact_analysis as { affected_modules?: string[]; data_quality_score?: number; recommendations?: string[] } | undefined;
+  const autoCorrections = insight.auto_corrections as Array<{ entity: string; field: string; reason: string }> | undefined;
+  const nextSteps = insight.next_steps as string[] | undefined;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-4 p-4 rounded-lg border bg-gradient-to-r from-primary/5 via-accent/5 to-secondary/5"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary to-accent">
+          <Bot className="h-4 w-4 text-white" />
+        </div>
+        <span className="font-medium">Análisis del Supervisor General</span>
+        {validation?.is_consistent && (
+          <Badge className="ml-auto bg-green-500/10 text-green-600">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Consistente
+          </Badge>
+        )}
+      </div>
+
+      <div className="space-y-3 text-sm">
+        {/* Calidad de datos */}
+        {impactAnalysis?.data_quality_score !== undefined && (
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Calidad de datos:</span>
+            <div className="flex items-center gap-2">
+              <Progress value={impactAnalysis.data_quality_score} className="w-24 h-2" />
+              <span className="font-medium">{impactAnalysis.data_quality_score}%</span>
+            </div>
+          </div>
+        )}
+
+        {/* Módulos afectados */}
+        {impactAnalysis?.affected_modules && impactAnalysis.affected_modules.length > 0 && (
+          <div>
+            <span className="text-muted-foreground text-xs">Módulos afectados:</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {impactAnalysis.affected_modules.map((mod, i) => (
+                <Badge key={i} variant="secondary" className="text-xs">
+                  {mod}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Issues detectados */}
+        {validation?.issues && validation.issues.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs">Incidencias:</span>
+            {validation.issues.slice(0, 3).map((issue, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <AlertTriangle className={cn(
+                  "h-3 w-3",
+                  issue.severity === 'high' ? 'text-destructive' : 
+                  issue.severity === 'medium' ? 'text-amber-500' : 'text-muted-foreground'
+                )} />
+                <span>[{issue.entity}] {issue.issue}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Auto-correcciones */}
+        {autoCorrections && autoCorrections.length > 0 && (
+          <div className="space-y-1">
+            <span className="text-muted-foreground text-xs flex items-center gap-1">
+              <Zap className="h-3 w-3" />
+              Correcciones automáticas sugeridas:
+            </span>
+            {autoCorrections.slice(0, 2).map((corr, i) => (
+              <div key={i} className="text-xs pl-4 text-muted-foreground">
+                • {corr.entity}.{corr.field}: {corr.reason}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Próximos pasos */}
+        {nextSteps && nextSteps.length > 0 && (
+          <div className="pt-2 border-t">
+            <span className="text-xs font-medium">Próximos pasos recomendados:</span>
+            <ul className="mt-1 space-y-0.5">
+              {nextSteps.slice(0, 3).map((step, i) => (
+                <li key={i} className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3 text-primary" />
+                  {step}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </motion.div>
   );
 }
 
