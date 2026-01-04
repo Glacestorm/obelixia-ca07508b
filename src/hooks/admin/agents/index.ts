@@ -22,3 +22,18 @@ export type {
 } from './erpAgentTypes';
 export { AUTONOMOUS_ACTIONS } from './erpAgentConfig';
 export type { AutonomousAction } from './erpAgentConfig';
+
+// CRM Module Agents - Ultra-especializados 2025-2027
+export { useCRMAgents, CRM_MODULE_CONFIG } from './useCRMAgents';
+export type {
+  CRMModuleType,
+  CRMModuleAgent,
+  SupervisorGeneralConfig,
+  AgentDashboardStats,
+  CRMAgentMetrics,
+  AgentConversation,
+  AgentAction,
+  SupervisorPrediction,
+} from './crmAgentTypes';
+export { CRM_AUTONOMOUS_ACTIONS } from './crmAgentConfig';
+export type { CRMAutonomousAction } from './crmAgentConfig';
