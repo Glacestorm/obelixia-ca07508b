@@ -59,3 +59,7 @@ export type { ERPModule, ExportFormat, ImportExportOptions, OCRResult, ImportRes
 // Banking Hub
 export { useERPBankingHub } from './useERPBankingHub';
 export type { BankingProvider, BankAccount, BankConnection, BankTransaction, BankPosition, SyncLog } from './useERPBankingHub';
+
+// Maestros AI Agents
+export { useMaestrosAgents, MAESTROS_AGENT_CONFIG } from './useMaestrosAgents';
+export type { MaestrosModuleType, MaestrosAgent, MaestrosSupervisor, ImportJob, ImportResult as MaestrosImportResult } from './useMaestrosAgents';

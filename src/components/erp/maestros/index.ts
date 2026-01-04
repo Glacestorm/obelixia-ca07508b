@@ -15,6 +15,7 @@ export { SEPAMandatesPanel } from './SEPAMandatesPanel';
 export { PriceSimulator } from './PriceSimulator';
 export { CustomerAuditFeed } from './CustomerAuditFeed';
 export { CustomerShippingTab } from './CustomerShippingTab';
+export { AISmartImportPanel } from './AISmartImportPanel';
 
 // Shared components
 export * from './shared';
