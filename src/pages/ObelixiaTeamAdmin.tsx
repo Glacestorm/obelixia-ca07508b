@@ -56,6 +56,7 @@ const AdvancedMLDashboard = lazy(() => import('@/components/admin/AdvancedMLDash
 const SystemHealthMonitor = lazy(() => import('@/components/admin/SystemHealthMonitor').then(m => ({ default: m.SystemHealthMonitor })));
 const MetricsExplorer = lazy(() => import('@/components/admin/MetricsExplorer').then(m => ({ default: m.MetricsExplorer })));
 const SystemHelpPanel = lazy(() => import('@/components/obelixia-admin/SystemHelpPanel').then(m => ({ default: m.SystemHelpPanel })));
+const CRMAgentsDashboard = lazy(() => import('@/components/admin/agents/CRMAgentsDashboard').then(m => ({ default: m.CRMAgentsDashboard })));
 
 // Premium components
 import { ObelixiaAdminSidebar } from '@/components/obelixia-admin/ObelixiaAdminSidebar';
@@ -173,6 +174,7 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'esg': 'ESG & Sostenibilidad',
       'market-intelligence': 'Market Intelligence',
       'ai-agents-specific': 'Agentes IA',
+      'crm-agents': 'CRM Agents',
       'enterprise-dashboard': 'Enterprise Dashboard',
       'cs-metrics': 'CS Metrics Hub',
       'remote-support': 'Soporte Remoto',
@@ -499,6 +501,12 @@ const ObelixiaTeamAdmin: React.FC = () => {
                     Ir al módulo completo →
                   </a>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="crm-agents" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <CRMAgentsDashboard />
+                </Suspense>
               </TabsContent>
 
               <TabsContent value="enterprise-dashboard" className="m-0">

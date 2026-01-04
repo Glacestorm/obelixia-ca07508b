@@ -135,6 +135,7 @@ const categories: NavCategory[] = [
       { id: 'esg', label: 'ESG & Sostenibilidad', icon: Leaf },
       { id: 'market-intelligence', label: 'Market Intelligence', icon: Globe },
       { id: 'ai-agents-specific', label: 'Agentes IA', icon: Bot },
+      { id: 'crm-agents', label: 'CRM Agents', icon: Users },
       { id: 'enterprise-dashboard', label: 'Enterprise', icon: Building2 },
       { id: 'cs-metrics', label: 'CS Metrics', icon: HeartPulse },
       { id: 'remote-support', label: 'Soporte Remoto', icon: Headphones },
