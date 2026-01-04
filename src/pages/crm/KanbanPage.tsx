@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DashboardLayout } from '@/layouts';
 import { EnhancedKanbanBoard, KanbanColumn, KanbanItem } from '@/components/crm';
 import { UserCheck, Clock, PhoneCall, FileCheck, Trophy } from 'lucide-react';
+import { ModuleAgentWidget } from '@/components/admin/agents/ModuleAgentWidget';
 
 const initialColumns: KanbanColumn[] = [
   {
@@ -88,12 +89,29 @@ const KanbanPage = () => {
   return (
     <DashboardLayout title="CRM Kanban">
       <div className="p-6">
-        <EnhancedKanbanBoard 
-          columns={columns}
-          onMoveItem={handleMoveItem}
-          onItemClick={handleItemClick}
-          title="Pipeline de Ventas"
-        />
+        <div className="flex gap-6">
+          {/* Kanban Board - Main Area */}
+          <div className="flex-1 min-w-0">
+            <EnhancedKanbanBoard 
+              columns={columns}
+              onMoveItem={handleMoveItem}
+              onItemClick={handleItemClick}
+              title="Pipeline de Ventas"
+            />
+          </div>
+          
+          {/* Agent Widget - Sidebar */}
+          <div className="w-80 shrink-0 hidden xl:block">
+            <ModuleAgentWidget 
+              domain="crm"
+              moduleName="Pipeline de Ventas"
+              context={{ 
+                totalDeals: columns.reduce((acc, col) => acc + col.items.length, 0),
+                stages: columns.map(c => ({ id: c.id, count: c.items.length }))
+              }}
+            />
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );
