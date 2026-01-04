@@ -144,6 +144,19 @@ const ObelixiaTeamAdmin: React.FC = () => {
       navigate('/obelixia-admin/crm');
       return;
     }
+    // CRM Omnicanal routes
+    if (tab === 'crm-pipeline' || tab === 'crm-workspace' || tab === 'crm-automation' || 
+        tab === 'crm-omnichannel' || tab === 'crm-sla' || tab === 'crm-distribution') {
+      navigate(`/obelixia-admin/crm?tab=${tab.replace('crm-', '')}`);
+      return;
+    }
+    // CRM Modular routes
+    if (tab === 'crm-customer360' || tab === 'crm-retention' || tab === 'crm-csmetrics' || 
+        tab === 'crm-journey' || tab === 'crm-winback' || tab === 'crm-renewals' || 
+        tab === 'crm-healthscore' || tab === 'crm-ai-agents') {
+      navigate(`/obelixia-admin/crm?tab=${tab.replace('crm-', '')}`);
+      return;
+    }
     setActiveTab(tab);
     setSearchParams({ tab });
   };

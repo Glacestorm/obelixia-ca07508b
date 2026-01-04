@@ -95,9 +95,13 @@ const initialColumns: KanbanColumn[] = [
   ]},
 ];
 
-function CRMModularDashboardContent() {
+interface CRMModularDashboardContentProps {
+  initialTab?: string;
+}
+
+function CRMModularDashboardContent({ initialTab = 'overview' }: CRMModularDashboardContentProps) {
   const { currentWorkspace, workspaces, userPermissions, isLoading, error, hasPermission, refreshWorkspaces } = useCRMContext();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
@@ -105,6 +109,13 @@ function CRMModularDashboardContent() {
 
   // Módulos instalados (tienen tab funcional) - Definición única
   // (Se usa más adelante en la vista de módulos)
+
+  // Sync tab when initialTab prop changes
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Verificar si necesita configuración inicial
   useEffect(() => {
@@ -1397,10 +1408,14 @@ function HealthScoreTabContent() {
 }
 
 // Main export with Provider
-export function CRMModularDashboard() {
+interface CRMModularDashboardProps {
+  initialTab?: string;
+}
+
+export function CRMModularDashboard({ initialTab }: CRMModularDashboardProps) {
   return (
     <CRMProvider>
-      <CRMModularDashboardContent />
+      <CRMModularDashboardContent initialTab={initialTab} />
     </CRMProvider>
   );
 }
