@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,10 +91,16 @@ export function ModuleMonitoringPanel({ className, moduleKey }: ModuleMonitoring
     configureSelfHealing
   } = useModuleMonitoring();
 
+  // CRÍTICO: Evitar bucle infinito usando ref de inicialización
+  const hasInitializedRef = useRef(false);
+  
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
     startAutoRefresh(10000);
     return () => stopAutoRefresh();
-  }, [startAutoRefresh, stopAutoRefresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getLogLevelColor = (level: ModuleLog['level']) => {
     switch (level) {

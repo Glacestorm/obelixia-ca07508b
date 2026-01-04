@@ -3,7 +3,7 @@
  * Fase 1.2 - Enterprise SaaS 2025-2026
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,10 +71,16 @@ export function WhatsAppBusinessPanel() {
     stopAutoRefresh
   } = useWhatsAppBusiness();
 
+  // CRÍTICO: Evitar bucle infinito usando ref de inicialización
+  const hasInitializedRef = useRef(false);
+  
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
     startAutoRefresh(30000);
     return () => stopAutoRefresh();
-  }, [startAutoRefresh, stopAutoRefresh]);
+    // eslint-disable-next-line react-hooks-exhaustive-deps
+  }, []);
 
   const handleSendMessage = useCallback(async () => {
     if (!selectedConversation || !newMessage.trim()) return;

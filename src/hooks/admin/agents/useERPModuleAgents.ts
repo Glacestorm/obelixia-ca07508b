@@ -417,7 +417,10 @@ export function useERPModuleAgents() {
     toast.success(active ? 'Agente activado' : 'Agente pausado');
   }, []);
 
-  // === AUTO-REFRESH ===
+  // === AUTO-REFRESH (ESTABILIZADO) ===
+  // CRÍTICO: Estas funciones NO deben tener dependencias que cambien
+  // para evitar bucles infinitos en useEffect de componentes consumidores
+  
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
       clearInterval(autoRefreshInterval.current);
@@ -425,15 +428,26 @@ export function useERPModuleAgents() {
     }
   }, []);
 
+  // Guardar refs de las funciones para evitar dependencias inestables
+  const initializeAgentsRef = useRef(initializeAgents);
+  const fetchPredictiveInsightsRef = useRef(fetchPredictiveInsights);
+  
+  useEffect(() => {
+    initializeAgentsRef.current = initializeAgents;
+    fetchPredictiveInsightsRef.current = fetchPredictiveInsights;
+  }, [initializeAgents, fetchPredictiveInsights]);
+
+  // startAutoRefresh ahora es ESTABLE - no depende de estado cambiante
   const startAutoRefresh = useCallback((intervalMs = 60000) => {
     stopAutoRefresh();
-    initializeAgents();
+    // Usar refs para obtener las funciones más recientes sin crear dependencias
+    initializeAgentsRef.current();
     autoRefreshInterval.current = setInterval(() => {
       if (isMountedRef.current) {
-        fetchPredictiveInsights();
+        fetchPredictiveInsightsRef.current();
       }
     }, intervalMs);
-  }, [initializeAgents, fetchPredictiveInsights, stopAutoRefresh]);
+  }, [stopAutoRefresh]); // Solo depende de stopAutoRefresh que es estable
 
   // === MODO AUTÓNOMO DEL SUPERVISOR ===
   const runAutonomousCycle = useCallback(async () => {
