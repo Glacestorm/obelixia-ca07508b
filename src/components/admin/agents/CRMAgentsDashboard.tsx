@@ -24,7 +24,8 @@ import {
   Sparkles, Target, TrendingUp, Eye, Lightbulb, MessageSquare, Send,
   Users, Building, Heart, Headphones, BarChart3, Megaphone, FileText,
   FileSignature, Workflow, UserPlus, Cpu, ArrowUpRight, ArrowDownRight,
-  Shield, DollarSign, Timer, Maximize2, Minimize2, Plus, X
+  Shield, DollarSign, Timer, Maximize2, Minimize2, Plus, X, Gauge, 
+  RefreshCcw, Calculator, Layers, Route, Undo2, ShieldCheck, MessageCircle
 } from 'lucide-react';
 import { useCRMAgents, type CRMModuleAgent, type SupervisorGeneralConfig, CRM_MODULE_CONFIG } from '@/hooks/admin/agents/useCRMAgents';
 import type { CRMModuleType, AgentConversation } from '@/hooks/admin/agents/crmAgentTypes';
@@ -34,6 +35,7 @@ import { es } from 'date-fns/locale';
 
 // === ICONOS POR MÓDULO ===
 const MODULE_ICONS: Record<CRMModuleType, React.ElementType> = {
+  // Core CRM Modules
   leads: UserPlus,
   opportunities: Target,
   accounts: Building,
@@ -46,6 +48,19 @@ const MODULE_ICONS: Record<CRMModuleType, React.ElementType> = {
   support: Headphones,
   analytics: BarChart3,
   automation: Zap,
+  // Extended Modules
+  customer_360: Eye,
+  retention: ShieldCheck,
+  cs_metrics: Activity,
+  customer_journey: Route,
+  omnichannel: MessageCircle,
+  sentiment: Heart,
+  sla: Timer,
+  winback: Undo2,
+  health_score: Gauge,
+  renewals: RefreshCcw,
+  rfm: Calculator,
+  segmentation: Layers,
 };
 
 // === ANIMACIONES ===

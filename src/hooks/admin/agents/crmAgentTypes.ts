@@ -4,20 +4,35 @@
  */
 
 // === TIPOS DE MÓDULOS CRM ===
+// Ampliado 2025-2027: Incluye todos los módulos CRM encontrados en el proyecto
 
 export type CRMModuleType = 
-  | 'leads'           // Gestión de leads
-  | 'opportunities'   // Oportunidades y deals
-  | 'accounts'        // Gestión de cuentas
-  | 'contacts'        // Gestión de contactos
-  | 'campaigns'       // Campañas de marketing
-  | 'pipeline'        // Pipeline de ventas
-  | 'quotes'          // Presupuestos y ofertas
-  | 'contracts'       // Contratos
-  | 'customer_success'// Customer Success
-  | 'support'         // Soporte al cliente
-  | 'analytics'       // Analytics CRM
-  | 'automation';     // Automatización
+  // Core CRM Modules
+  | 'leads'              // Gestión de leads
+  | 'opportunities'      // Oportunidades y deals
+  | 'accounts'           // Gestión de cuentas
+  | 'contacts'           // Gestión de contactos
+  | 'campaigns'          // Campañas de marketing
+  | 'pipeline'           // Pipeline de ventas
+  | 'quotes'             // Presupuestos y ofertas
+  | 'contracts'          // Contratos
+  | 'customer_success'   // Customer Success
+  | 'support'            // Soporte al cliente
+  | 'analytics'          // Analytics CRM
+  | 'automation'         // Automatización
+  // Extended Modules (Componentes existentes del proyecto)
+  | 'customer_360'       // Vista 360° del cliente
+  | 'retention'          // Retención y churn prevention
+  | 'cs_metrics'         // Métricas Customer Success
+  | 'customer_journey'   // Customer Journey y heatmaps
+  | 'omnichannel'        // Omnichannel Inbox
+  | 'sentiment'          // Análisis de sentimiento
+  | 'sla'                // SLA Management
+  | 'winback'            // Campañas Winback
+  | 'health_score'       // Health Score Management
+  | 'renewals'           // Gestión de renovaciones
+  | 'rfm'                // Análisis RFM
+  | 'segmentation';      // Segmentación de clientes
 
 // === INTERFACES DE AGENTES CRM ===
 
