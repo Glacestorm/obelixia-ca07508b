@@ -7,7 +7,7 @@ import {
   Activity, ClipboardList, Shield, Newspaper, HelpCircle, Sparkles,
   Leaf, Globe, Bot, Building2, HeartPulse, Headphones, Brain, Boxes, Cpu,
   Gauge, Bell, MonitorCheck, Zap, Users, TrendingUp, ShieldCheck, 
-  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package, UserCircle
+  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,6 @@ const categories: NavCategory[] = [
       { id: 'crm-migration', label: 'CRM Migration', icon: Users },
       { id: 'accounting', label: 'Contabilidad Interna', icon: Euro },
       { id: 'erp', label: 'ERP Modular', icon: Package },
-      { id: 'crm', label: 'CRM Modular', icon: UserCircle },
     ]
   },
   {

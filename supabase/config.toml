@@ -908,6 +908,3 @@ verify_jwt = false
 
 [functions.erp-module-agent]
 verify_jwt = true
-
-[functions.maestros-ai-import]
-verify_jwt = true

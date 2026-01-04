@@ -87,12 +87,10 @@ export function ERPModuleAgentsPanel() {
     stopAutoRefresh
   } = useERPModuleAgents();
 
-  // Solo ejecutar al montar el componente
   useEffect(() => {
     startAutoRefresh(90000);
     return () => stopAutoRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startAutoRefresh, stopAutoRefresh]);
 
   const toggleDomain = (domainId: string) => {
     setExpandedDomains(prev => {
