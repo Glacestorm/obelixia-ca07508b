@@ -265,25 +265,28 @@ export function ERPModuleAgentsPanel() {
               {/* Capacidades del Supervisor */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { icon: Target, label: 'Distribución de tareas', active: true },
-                  { icon: Activity, label: 'Monitoreo en tiempo real', active: true },
-                  { icon: TrendingUp, label: 'Análisis predictivo', active: true },
-                  { icon: Zap, label: 'Optimización de workflows', active: true },
-                  { icon: Brain, label: 'Aprendizaje entre módulos', active: true },
-                  { icon: Shield, label: 'Resolución de conflictos', active: true },
-                  { icon: Eye, label: 'Escalado inteligente', active: true },
-                  { icon: Sparkles, label: 'Auto-optimización', active: true }
+                  { icon: Target, label: 'Distribución de tareas', active: true, action: 'distribute_tasks' },
+                  { icon: Activity, label: 'Monitoreo en tiempo real', active: true, action: 'realtime_monitoring' },
+                  { icon: TrendingUp, label: 'Análisis predictivo', active: true, action: 'predictive_analysis' },
+                  { icon: Zap, label: 'Optimización de workflows', active: true, action: 'optimize_workflows' },
+                  { icon: Brain, label: 'Aprendizaje entre módulos', active: true, action: 'cross_learning' },
+                  { icon: Shield, label: 'Resolución de conflictos', active: true, action: 'resolve_conflicts' },
+                  { icon: Eye, label: 'Escalado inteligente', active: true, action: 'smart_scaling' },
+                  { icon: Sparkles, label: 'Auto-optimización', active: true, action: 'auto_optimize' }
                 ].map((cap, idx) => (
-                  <div 
+                  <Button 
                     key={idx}
+                    variant="outline"
                     className={cn(
-                      "p-3 rounded-lg border flex items-center gap-2",
-                      cap.active ? "bg-primary/5 border-primary/20" : "bg-muted/50"
+                      "p-3 h-auto rounded-lg flex items-center gap-2 justify-start",
+                      cap.active ? "bg-primary/5 border-primary/20 hover:bg-primary/10" : "bg-muted/50"
                     )}
+                    onClick={() => supervisorOrchestrate(cap.action)}
+                    disabled={isLoading}
                   >
                     <cap.icon className={cn("h-4 w-4", cap.active ? "text-primary" : "text-muted-foreground")} />
                     <span className="text-xs font-medium">{cap.label}</span>
-                  </div>
+                  </Button>
                 ))}
               </div>
 
