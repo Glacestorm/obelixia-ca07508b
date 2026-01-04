@@ -52,37 +52,8 @@ const categories: NavCategory[] = [
       { id: 'crm-migration', label: 'CRM Migration', icon: Users },
       { id: 'accounting', label: 'Contabilidad Interna', icon: Euro },
       { id: 'erp', label: 'ERP Modular', icon: Package },
-    ]
-  },
-  {
-    id: 'crm-omnicanal',
-    label: 'CRM Omnicanal',
-    icon: Headphones,
-    color: 'cyan',
-    items: [
-      { id: 'crm', label: 'Resumen', icon: LayoutGrid },
-      { id: 'crm-pipeline', label: 'Pipeline', icon: Workflow },
-      { id: 'crm-workspace', label: 'Workspaces', icon: Briefcase },
-      { id: 'crm-automation', label: 'Automatización', icon: Zap },
-      { id: 'crm-omnichannel', label: 'Centro Omnicanal', icon: Headphones },
-      { id: 'crm-sla', label: 'SLA Manager', icon: Shield },
-      { id: 'crm-distribution', label: 'Distribución Leads', icon: Users },
-    ]
-  },
-  {
-    id: 'crm-modular',
-    label: 'CRM Modular',
-    icon: Boxes,
-    color: 'purple',
-    items: [
-      { id: 'crm-customer360', label: 'Customer 360', icon: Users },
-      { id: 'crm-retention', label: 'Retención', icon: HeartPulse },
-      { id: 'crm-csmetrics', label: 'CS Metrics', icon: BarChart3 },
-      { id: 'crm-journey', label: 'Customer Journey', icon: TrendingUp },
-      { id: 'crm-winback', label: 'Winback', icon: Target },
-      { id: 'crm-renewals', label: 'Renovaciones', icon: Activity },
-      { id: 'crm-healthscore', label: 'Health Score', icon: HeartPulse },
-      { id: 'crm-ai-agents', label: 'Agentes IA', icon: Bot },
+      { id: 'crm-omnicanal', label: 'CRM Omnicanal', icon: Headphones },
+      { id: 'crm-modular', label: 'CRM Modular', icon: Boxes },
     ]
   },
   {

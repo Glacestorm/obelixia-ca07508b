@@ -96,6 +96,8 @@ const SubscriptionSuccess = lazy(() => import('@/pages/subscription/Success'));
 
 // CRM
 const CRMPage = lazy(() => import('@/pages/crm/CRMPage'));
+const CRMOmnicanalPage = lazy(() => import('@/pages/crm/CRMOmnicanalPage'));
+const CRMModularPage = lazy(() => import('@/pages/crm/CRMModularPage'));
 const KanbanPage = lazy(() => import('@/pages/crm/KanbanPage'));
 const OmnichannelPage = lazy(() => import('@/pages/crm/OmnichannelPage'));
 const SentimentPage = lazy(() => import('@/pages/crm/SentimentPage'));
@@ -305,6 +307,8 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/licenses', component: LicenseManagementPage, layout: 'none', priority: 'high', meta: { title: 'Sistema de Licencias Enterprise', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/accounting', component: ObelixiaAccountingPage, layout: 'none', priority: 'high', meta: { title: 'ObelixIA Accounting', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/erp', component: ERPPage, layout: 'none', priority: 'high', meta: { title: 'ERP Modular', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/crm-omnicanal', component: CRMOmnicanalPage, layout: 'none', priority: 'high', meta: { title: 'CRM Omnicanal', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/crm-modular', component: CRMModularPage, layout: 'none', priority: 'high', meta: { title: 'CRM Modular', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 

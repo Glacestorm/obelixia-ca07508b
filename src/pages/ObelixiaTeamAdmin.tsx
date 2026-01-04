@@ -140,21 +140,12 @@ const ObelixiaTeamAdmin: React.FC = () => {
       navigate('/obelixia-admin/erp');
       return;
     }
-    if (tab === 'crm') {
-      navigate('/obelixia-admin/crm');
+    if (tab === 'crm-omnicanal') {
+      navigate('/obelixia-admin/crm-omnicanal');
       return;
     }
-    // CRM Omnicanal routes
-    if (tab === 'crm-pipeline' || tab === 'crm-workspace' || tab === 'crm-automation' || 
-        tab === 'crm-omnichannel' || tab === 'crm-sla' || tab === 'crm-distribution') {
-      navigate(`/obelixia-admin/crm?tab=${tab.replace('crm-', '')}`);
-      return;
-    }
-    // CRM Modular routes
-    if (tab === 'crm-customer360' || tab === 'crm-retention' || tab === 'crm-csmetrics' || 
-        tab === 'crm-journey' || tab === 'crm-winback' || tab === 'crm-renewals' || 
-        tab === 'crm-healthscore' || tab === 'crm-ai-agents') {
-      navigate(`/obelixia-admin/crm?tab=${tab.replace('crm-', '')}`);
+    if (tab === 'crm-modular') {
+      navigate('/obelixia-admin/crm-modular');
       return;
     }
     setActiveTab(tab);
