@@ -7,7 +7,7 @@ import {
   Activity, ClipboardList, Shield, Newspaper, HelpCircle, Sparkles,
   Leaf, Globe, Bot, Building2, HeartPulse, Headphones, Brain, Boxes, Cpu,
   Gauge, Bell, MonitorCheck, Zap, Users, TrendingUp, ShieldCheck, 
-  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package
+  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package, Flag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -156,6 +156,7 @@ const categories: NavCategory[] = [
       { id: 'adaptive-auth', label: 'Adaptive Auth', icon: Key },
       { id: 'advanced-ml', label: 'Advanced ML', icon: Brain },
       { id: 'licenses', label: 'Licencias Enterprise', icon: Key },
+      { id: 'feature-flags', label: 'Feature Flags', icon: Flag },
     ]
   }
 ];

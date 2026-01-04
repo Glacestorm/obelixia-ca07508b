@@ -57,6 +57,7 @@ const SystemHealthMonitor = lazy(() => import('@/components/admin/SystemHealthMo
 const MetricsExplorer = lazy(() => import('@/components/admin/MetricsExplorer').then(m => ({ default: m.MetricsExplorer })));
 const SystemHelpPanel = lazy(() => import('@/components/obelixia-admin/SystemHelpPanel').then(m => ({ default: m.SystemHelpPanel })));
 const CRMAgentsDashboard = lazy(() => import('@/components/admin/agents/CRMAgentsDashboard').then(m => ({ default: m.CRMAgentsDashboard })));
+const EnterpriseFeatureFlagsPanel = lazy(() => import('@/components/admin/feature-flags/EnterpriseFeatureFlagsPanel').then(m => ({ default: m.EnterpriseFeatureFlagsPanel })));
 
 // Premium components
 import { ObelixiaAdminSidebar } from '@/components/obelixia-admin/ObelixiaAdminSidebar';
@@ -203,6 +204,7 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'metrics-explorer': 'Metrics Explorer',
       'automation-engine': 'Automation Engine',
       'licenses': 'Licencias Enterprise',
+      'feature-flags': 'Feature Flags',
     };
     return labels[tab] || tab;
   };
@@ -633,6 +635,12 @@ const ObelixiaTeamAdmin: React.FC = () => {
               <TabsContent value="system-help" className="m-0">
                 <Suspense fallback={<LoadingFallback />}>
                   <SystemHelpPanel />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="feature-flags" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <EnterpriseFeatureFlagsPanel />
                 </Suspense>
               </TabsContent>
             </Tabs>
