@@ -3,7 +3,7 @@
  * Similar a ERPModularDashboard con Provider, permisos y multi-workspace
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,15 @@ import {
   Shield,
   ChevronDown,
   ChevronRight,
-  Briefcase
+  Briefcase,
+  Eye,
+  ShieldCheck,
+  Route,
+  Undo2,
+  RefreshCcw,
+  Gauge,
+  Calculator,
+  Layers
 } from 'lucide-react';
 import { CRMProvider, useCRMContext } from '@/hooks/crm/useCRMContext';
 import { CRMWorkspaceSelector } from './config/CRMWorkspaceSelector';
@@ -53,6 +61,22 @@ import { CRMAgentsDashboard } from '@/components/admin/agents/CRMAgentsDashboard
 import { ERPCRMSwitcher } from '@/components/shared/ERPCRMSwitcher';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+
+// Lazy load extended modules
+const Customer360Dashboard = lazy(() => import('@/components/dashboard/Customer360Dashboard').then(m => ({ default: m.Customer360Dashboard })));
+const RetentionInsightsDashboard = lazy(() => import('@/components/retention/RetentionInsightsDashboard').then(m => ({ default: m.RetentionInsightsDashboard })));
+const CSMetricsDashboard = lazy(() => import('@/components/cs-metrics/CSMetricsDashboard').then(m => ({ default: m.CSMetricsDashboard })));
+const CustomerJourneyHeatmap = lazy(() => import('@/components/cs-metrics/CustomerJourneyHeatmap').then(m => ({ default: m.CustomerJourneyHeatmap })));
+const WinbackCampaignManager = lazy(() => import('@/components/retention/WinbackCampaignManager').then(m => ({ default: m.WinbackCampaignManager })));
+const RenewalsDashboard = lazy(() => import('@/components/retention/RenewalsDashboard').then(m => ({ default: m.RenewalsDashboard })));
+const CustomerHealthScoreCard = lazy(() => import('@/components/retention/CustomerHealthScoreCard').then(m => ({ default: m.CustomerHealthScoreCard })));
+
+// Loading fallback
+const ModuleLoader = () => (
+  <div className="flex items-center justify-center py-12">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 // Demo data
 const initialColumns: KanbanColumn[] = [
@@ -79,8 +103,8 @@ function CRMModularDashboardContent() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
 
-  // Módulos instalados (tienen tab funcional)
-  const installedModuleIds = ['kanban', 'contacts', 'omnichannel', 'sentiment', 'sla', 'automation', 'reports', 'agents'];
+  // Módulos instalados (tienen tab funcional) - Definición única
+  // (Se usa más adelante en la vista de módulos)
 
   // Verificar si necesita configuración inicial
   useEffect(() => {
@@ -155,6 +179,7 @@ function CRMModularDashboardContent() {
   const wonDeals = columns.find(c => c.id === 'cerrado')?.items.length || 0;
 
   const modules = [
+    // Core modules
     { id: 'kanban', name: 'Pipeline', icon: Kanban, permission: 'pipeline.read', color: 'bg-blue-500' },
     { id: 'contacts', name: 'Contactos', icon: UserCircle, permission: 'contacts.read', color: 'bg-indigo-500' },
     { id: 'omnichannel', name: 'Inbox', icon: MessageSquare, permission: 'inbox.read', color: 'bg-green-500' },
@@ -162,10 +187,23 @@ function CRMModularDashboardContent() {
     { id: 'sla', name: 'SLAs', icon: Timer, permission: 'sla.read', color: 'bg-amber-500' },
     { id: 'automation', name: 'Automatización', icon: Zap, permission: 'automation.read', color: 'bg-purple-500' },
     { id: 'reports', name: 'Reportes', icon: BarChart3, permission: 'reports.read', color: 'bg-orange-500' },
+    // Extended modules
+    { id: 'customer360', name: 'Customer 360', icon: Eye, permission: 'customer360.read', color: 'bg-sky-500' },
+    { id: 'retention', name: 'Retención', icon: ShieldCheck, permission: 'retention.read', color: 'bg-rose-500' },
+    { id: 'csmetrics', name: 'CS Metrics', icon: Activity, permission: 'csmetrics.read', color: 'bg-lime-500' },
+    { id: 'journey', name: 'Journey', icon: Route, permission: 'journey.read', color: 'bg-amber-500' },
+    { id: 'winback', name: 'Winback', icon: Undo2, permission: 'winback.read', color: 'bg-red-500' },
+    { id: 'renewals', name: 'Renovaciones', icon: RefreshCcw, permission: 'renewals.read', color: 'bg-blue-600' },
+    { id: 'healthscore', name: 'Health Score', icon: Gauge, permission: 'healthscore.read', color: 'bg-emerald-500' },
+    // AI Agents
     { id: 'agents', name: 'Agentes IA', icon: Bot, permission: 'agents.read', color: 'bg-cyan-500' },
   ];
 
   const availableModules = modules.filter(m => hasPermission(m.permission));
+
+  // Extended modules list for tab list
+  const installedModuleIds = ['kanban', 'contacts', 'omnichannel', 'sentiment', 'sla', 'automation', 'reports', 
+    'customer360', 'retention', 'csmetrics', 'journey', 'winback', 'renewals', 'healthscore', 'agents'];
 
   return (
     <div className="space-y-6">
@@ -232,8 +270,52 @@ function CRMModularDashboardContent() {
               Reportes
             </TabsTrigger>
           )}
+          {/* Extended Modules */}
+          {hasPermission('customer360.read') && (
+            <TabsTrigger value="customer360" className="gap-2">
+              <Eye className="h-4 w-4" />
+              Customer 360
+            </TabsTrigger>
+          )}
+          {hasPermission('retention.read') && (
+            <TabsTrigger value="retention" className="gap-2">
+              <ShieldCheck className="h-4 w-4" />
+              Retención
+            </TabsTrigger>
+          )}
+          {hasPermission('csmetrics.read') && (
+            <TabsTrigger value="csmetrics" className="gap-2">
+              <Activity className="h-4 w-4" />
+              CS Metrics
+            </TabsTrigger>
+          )}
+          {hasPermission('journey.read') && (
+            <TabsTrigger value="journey" className="gap-2">
+              <Route className="h-4 w-4" />
+              Journey
+            </TabsTrigger>
+          )}
+          {hasPermission('winback.read') && (
+            <TabsTrigger value="winback" className="gap-2">
+              <Undo2 className="h-4 w-4" />
+              Winback
+            </TabsTrigger>
+          )}
+          {hasPermission('renewals.read') && (
+            <TabsTrigger value="renewals" className="gap-2">
+              <RefreshCcw className="h-4 w-4" />
+              Renovaciones
+            </TabsTrigger>
+          )}
+          {hasPermission('healthscore.read') && (
+            <TabsTrigger value="healthscore" className="gap-2">
+              <Gauge className="h-4 w-4" />
+              Health Score
+            </TabsTrigger>
+          )}
+          {/* AI Agents Tab */}
           {hasPermission('agents.read') && (
-            <TabsTrigger value="agents" className="gap-2">
+            <TabsTrigger value="agents" className="gap-2 bg-gradient-to-r from-cyan-500/10 to-purple-500/10">
               <Bot className="h-4 w-4" />
               Agentes IA
             </TabsTrigger>
@@ -519,7 +601,56 @@ function CRMModularDashboardContent() {
           <ReportsTabContent />
         </TabsContent>
 
-        {/* Agents Tab */}
+        {/* Extended Modules - Customer 360 */}
+        <TabsContent value="customer360">
+          <Suspense fallback={<ModuleLoader />}>
+            <Customer360TabContent />
+          </Suspense>
+        </TabsContent>
+
+        {/* Retention Tab */}
+        <TabsContent value="retention">
+          <Suspense fallback={<ModuleLoader />}>
+            <RetentionTabContent />
+          </Suspense>
+        </TabsContent>
+
+        {/* CS Metrics Tab */}
+        <TabsContent value="csmetrics">
+          <Suspense fallback={<ModuleLoader />}>
+            <CSMetricsTabContent />
+          </Suspense>
+        </TabsContent>
+
+        {/* Customer Journey Tab */}
+        <TabsContent value="journey">
+          <Suspense fallback={<ModuleLoader />}>
+            <CustomerJourneyTabContent />
+          </Suspense>
+        </TabsContent>
+
+        {/* Winback Tab */}
+        <TabsContent value="winback">
+          <Suspense fallback={<ModuleLoader />}>
+            <WinbackTabContent />
+          </Suspense>
+        </TabsContent>
+
+        {/* Renewals Tab */}
+        <TabsContent value="renewals">
+          <Suspense fallback={<ModuleLoader />}>
+            <RenewalsTabContent />
+          </Suspense>
+        </TabsContent>
+
+        {/* Health Score Tab */}
+        <TabsContent value="healthscore">
+          <Suspense fallback={<ModuleLoader />}>
+            <HealthScoreTabContent />
+          </Suspense>
+        </TabsContent>
+
+        {/* Agents Tab - With full dashboard */}
         <TabsContent value="agents">
           <CRMAgentsDashboard />
         </TabsContent>
@@ -1030,6 +1161,254 @@ function TeamsTabContent() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+// === EXTENDED MODULE TAB CONTENTS ===
+
+function Customer360TabContent() {
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  
+  // Demo company data
+  const demoCompanies = [
+    { id: 'c1', name: 'Acme Corp', healthScore: 85 },
+    { id: 'c2', name: 'TechStart', healthScore: 72 },
+    { id: 'c3', name: 'Global Industries', healthScore: 91 },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Eye className="h-5 w-5 text-sky-500" />
+            Customer 360
+          </h3>
+          <p className="text-sm text-muted-foreground">Vista integral de cada cliente con todos sus touchpoints</p>
+        </div>
+      </div>
+      
+      {!selectedCompanyId ? (
+        <div className="grid md:grid-cols-3 gap-4">
+          {demoCompanies.map(company => (
+            <Card 
+              key={company.id} 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setSelectedCompanyId(company.id)}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{company.name}</p>
+                    <p className="text-sm text-muted-foreground">Health: {company.healthScore}%</p>
+                  </div>
+                  <div className={cn(
+                    "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold",
+                    company.healthScore > 80 ? "bg-green-500" : company.healthScore > 60 ? "bg-amber-500" : "bg-red-500"
+                  )}>
+                    {company.healthScore}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <Button variant="outline" onClick={() => setSelectedCompanyId(null)}>
+            ← Volver a lista
+          </Button>
+          <Customer360Dashboard 
+            companyId={selectedCompanyId} 
+            companyName={demoCompanies.find(c => c.id === selectedCompanyId)?.name || ''} 
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RetentionTabContent() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-rose-500" />
+            Retención de Clientes
+          </h3>
+          <p className="text-sm text-muted-foreground">Prevención de churn y estrategias de retención proactiva</p>
+        </div>
+      </div>
+      <RetentionInsightsDashboard />
+    </div>
+  );
+}
+
+function CSMetricsTabContent() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Activity className="h-5 w-5 text-lime-500" />
+            Customer Success Metrics
+          </h3>
+          <p className="text-sm text-muted-foreground">Métricas avanzadas: NRR, GRR, CSAT, NPS y más</p>
+        </div>
+      </div>
+      <CSMetricsDashboard />
+    </div>
+  );
+}
+
+function CustomerJourneyTabContent() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Route className="h-5 w-5 text-amber-500" />
+            Customer Journey
+          </h3>
+          <p className="text-sm text-muted-foreground">Mapeo y análisis del viaje del cliente</p>
+        </div>
+      </div>
+      <CustomerJourneyHeatmap />
+    </div>
+  );
+}
+
+function WinbackTabContent() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Undo2 className="h-5 w-5 text-red-500" />
+            Campañas Winback
+          </h3>
+          <p className="text-sm text-muted-foreground">Recuperación de clientes perdidos y reactivación</p>
+        </div>
+      </div>
+      <WinbackCampaignManager />
+    </div>
+  );
+}
+
+function RenewalsTabContent() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <RefreshCcw className="h-5 w-5 text-blue-600" />
+            Gestión de Renovaciones
+          </h3>
+          <p className="text-sm text-muted-foreground">Calendario y seguimiento de renovaciones</p>
+        </div>
+      </div>
+      <RenewalsDashboard />
+    </div>
+  );
+}
+
+function HealthScoreTabContent() {
+  // Demo health score data
+  const demoHealthScore = {
+    score: 78,
+    trend: 'up' as const,
+    factors: [
+      { name: 'Engagement', score: 85, weight: 0.3 },
+      { name: 'Adoption', score: 72, weight: 0.25 },
+      { name: 'Satisfaction', score: 80, weight: 0.25 },
+      { name: 'Growth', score: 68, weight: 0.2 },
+    ],
+    riskLevel: 'medium' as const,
+    recommendations: [
+      'Incrementar frecuencia de touchpoints',
+      'Ofrecer training adicional',
+      'Revisar adopción de nuevas features'
+    ]
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Gauge className="h-5 w-5 text-emerald-500" />
+            Health Score Management
+          </h3>
+          <p className="text-sm text-muted-foreground">Monitoreo y gestión de la salud de clientes</p>
+        </div>
+      </div>
+      
+      <div className="grid md:grid-cols-3 gap-6">
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-base">Health Score Global</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center">
+            <div className={cn(
+              "w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold text-white",
+              demoHealthScore.score > 80 ? "bg-green-500" : 
+              demoHealthScore.score > 60 ? "bg-amber-500" : "bg-red-500"
+            )}>
+              {demoHealthScore.score}
+            </div>
+            <Badge className="mt-4" variant={demoHealthScore.trend === 'up' ? 'default' : 'destructive'}>
+              {demoHealthScore.trend === 'up' ? <ArrowUpRight className="h-3 w-3 mr-1" /> : null}
+              {demoHealthScore.trend === 'up' ? 'Mejorando' : 'Declinando'}
+            </Badge>
+          </CardContent>
+        </Card>
+        
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Factores de Health Score</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {demoHealthScore.factors.map(factor => (
+                <div key={factor.name} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>{factor.name}</span>
+                    <span className="font-medium">{factor.score}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        factor.score > 80 ? "bg-green-500" : 
+                        factor.score > 60 ? "bg-amber-500" : "bg-red-500"
+                      )}
+                      style={{ width: `${factor.score}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Recomendaciones IA</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2">
+            {demoHealthScore.recommendations.map((rec, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                {rec}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }
