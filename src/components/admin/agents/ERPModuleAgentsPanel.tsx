@@ -350,16 +350,25 @@ export function ERPModuleAgentsPanel() {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => coordinateDomain(domain.id, 'Coordinar módulos')}
-                          disabled={isLoading}
+                          onClick={() => {
+                            coordinateDomain(domain.id, 'Coordinar módulos');
+                          }}
+                          disabled={isLoading || domain.status === 'coordinating'}
                         >
-                          <Play className="h-3 w-3 mr-1" />
-                          Coordinar
+                          {domain.status === 'coordinating' ? (
+                            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <Play className="h-3 w-3 mr-1" />
+                          )}
+                          {domain.status === 'coordinating' ? 'Coordinando...' : 'Coordinar'}
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => toggleDomain(domain.id)}
+                          onClick={() => {
+                            setExpandedDomains(prev => new Set([...prev, domain.id]));
+                            setActiveTab('domains');
+                          }}
                         >
                           <Eye className="h-3 w-3 mr-1" />
                           Ver
