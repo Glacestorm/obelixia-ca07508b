@@ -22,7 +22,8 @@ import {
   MapPin,
   FileCheck,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Upload
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { useMaestros } from '@/hooks/erp/useMaestros';
@@ -36,6 +37,7 @@ import { WarehouseLocationsPanel } from './WarehouseLocationsPanel';
 import { BankAccountsPanel } from './BankAccountsPanel';
 import { SEPAMandatesPanel } from './SEPAMandatesPanel';
 import { PriceSimulator } from './PriceSimulator';
+import { MaestrosImportPanel } from './MaestrosImportPanel';
 import { StatsCard } from './shared/StatsCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,7 @@ interface MaestrosLayoutProps {
 }
 
 const tabs = [
+  { key: 'import', label: 'Importar IA', icon: Upload, color: 'text-violet-600' },
   { key: 'customers', label: 'Clientes', icon: Users, color: 'text-blue-600' },
   { key: 'suppliers', label: 'Proveedores', icon: Truck, color: 'text-green-600' },
   { key: 'items', label: 'Artículos', icon: Package, color: 'text-purple-600' },
@@ -75,7 +78,7 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
     seedDefaultData 
   } = useMaestros();
 
-  const [activeTab, setActiveTab] = React.useState('customers');
+  const [activeTab, setActiveTab] = React.useState('import');
   const [isSeeding, setIsSeeding] = React.useState(false);
 
   const handleSeedData = useCallback(async () => {
@@ -232,7 +235,7 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
         transition={{ delay: 0.2 }}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-11 h-auto p-1">
             {tabs.map((tab) => (
               <TabsTrigger 
                 key={tab.key} 
@@ -253,6 +256,10 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.15 }}
             >
+              <TabsContent value="import" className="mt-0">
+                <MaestrosImportPanel />
+              </TabsContent>
+
               <TabsContent value="customers" className="mt-0">
                 <CustomersPanel />
               </TabsContent>
