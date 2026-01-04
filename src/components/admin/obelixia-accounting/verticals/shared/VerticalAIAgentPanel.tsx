@@ -15,9 +15,10 @@ import {
   Bot, Zap, Shield, TrendingUp, AlertTriangle, 
   CheckCircle, Clock, Play, Pause, Settings,
   Activity, FileText, Calculator, BarChart3,
-  RefreshCw, Eye, Target, Sparkles
+  RefreshCw, Eye, Target, Sparkles, HelpCircle
 } from 'lucide-react';
 import { type VerticalType, VERTICAL_CONFIGS } from '@/hooks/admin/obelixia-accounting/useVerticalCopilot';
+import { AgentHelpMenu } from '@/components/admin/agents/help';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
@@ -325,10 +326,14 @@ export function VerticalAIAgentPanel({ verticalType, className }: VerticalAIAgen
                       <Eye className="h-3 w-3 mr-1" />
                       Ver logs
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Settings className="h-3 w-3 mr-1" />
-                      Config
-                    </Button>
+                    <AgentHelpMenu
+                      agentId={agent.id}
+                      agentType="vertical"
+                      agentName={agent.name}
+                      agentDescription={agent.description}
+                      agentIcon={agent.icon}
+                      moduleType={verticalType}
+                    />
                   </div>
                 </CardContent>
               </Card>
