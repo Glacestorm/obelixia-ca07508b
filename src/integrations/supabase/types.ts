@@ -41273,6 +41273,13 @@ export type Database = {
           matching_cnaes: string[]
         }[]
       }
+      fn_recalculate_warehouse_stock: {
+        Args: { p_company_id: string; p_warehouse_id?: string }
+        Returns: {
+          errors: string[]
+          items_processed: number
+        }[]
+      }
       generate_invoice_number: {
         Args: { p_organization_id?: string }
         Returns: string
