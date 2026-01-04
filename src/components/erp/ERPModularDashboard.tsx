@@ -29,7 +29,8 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
-  Globe
+  Globe,
+  Bot
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
 import { ERPCompanySelector } from './config/ERPCompanySelector';
@@ -48,6 +49,7 @@ import { AccountingDashboard } from './accounting';
 import { TreasuryDashboard } from './treasury';
 import { TradeFinanceModule } from './trade';
 import { AdvisorAgentPanel } from './advisor';
+import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -219,6 +221,10 @@ function ERPModularDashboardContent() {
               Auditoría
             </TabsTrigger>
           )}
+          <TabsTrigger value="agents" className="gap-2">
+            <Bot className="h-4 w-4" />
+            Agentes IA
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -413,6 +419,11 @@ function ERPModularDashboardContent() {
         {/* Audit Tab */}
         <TabsContent value="audit">
           <ERPAuditViewer />
+        </TabsContent>
+
+        {/* Agents Tab */}
+        <TabsContent value="agents">
+          <ERPModuleAgentsPanel />
         </TabsContent>
       </Tabs>
     </div>
