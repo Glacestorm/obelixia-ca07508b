@@ -158,6 +158,33 @@ export function useMaestrosImport(companyId: string | undefined) {
     }
   }, [companyId, readFileContent]);
 
+  // Notify Supervisor General (erp-module-agent) about import completion
+  const notifySupervisor = useCallback(async (
+    targetEntity: ImportEntityType,
+    importResult: ImportResult
+  ) => {
+    try {
+      await supabase.functions.invoke('erp-module-agent', {
+        body: {
+          action: 'coordinate',
+          agentType: 'supervisor',
+          domain: 'maestros',
+          context: {
+            operation: 'import_completed',
+            entity: targetEntity,
+            totalRows: importResult.totalRows,
+            importedRows: importResult.importedRows,
+            failedRows: importResult.failedRows,
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+      console.log('[useMaestrosImport] Supervisor notified');
+    } catch (error) {
+      console.warn('[useMaestrosImport] Could not notify supervisor:', error);
+    }
+  }, []);
+
   const confirmImport = useCallback(async (
     targetEntity: ImportEntityType
   ): Promise<boolean> => {
@@ -213,11 +240,14 @@ export function useMaestrosImport(companyId: string | undefined) {
       if (errors.length === 0) {
         toast.success(`${insertedCount} ${ENTITY_LABELS[targetEntity]} importados correctamente`);
         setProgress({ stage: 'complete', percent: 100, message: 'Importación completada' });
-        setResult(prev => prev ? {
-          ...prev,
+        const finalResult: ImportResult = {
+          ...result!,
           success: true,
           importedRows: insertedCount
-        } : null);
+        };
+        setResult(finalResult);
+        // Notify Supervisor General
+        await notifySupervisor(targetEntity, finalResult);
         return true;
       } else {
         toast.warning(`Importados ${insertedCount} registros con ${errors.length} errores`);
