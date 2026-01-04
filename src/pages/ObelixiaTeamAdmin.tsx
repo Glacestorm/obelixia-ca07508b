@@ -140,6 +140,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
       navigate('/obelixia-admin/erp');
       return;
     }
+    if (tab === 'crm') {
+      navigate('/obelixia-admin/crm');
+      return;
+    }
     setActiveTab(tab);
     setSearchParams({ tab });
   };
@@ -152,6 +156,8 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'demo-requests': 'Solicitudes Demo',
       'service-quotes': 'Cotizaciones Servicio',
       'crm-migration': 'CRM Migration',
+      'erp': 'ERP Modular',
+      'crm': 'CRM Modular',
       content: 'Contenidos',
       cms: 'CMS',
       docs: 'Documentación',

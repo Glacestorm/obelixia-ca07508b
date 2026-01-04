@@ -52,6 +52,7 @@ const categories: NavCategory[] = [
       { id: 'crm-migration', label: 'CRM Migration', icon: Users },
       { id: 'accounting', label: 'Contabilidad Interna', icon: Euro },
       { id: 'erp', label: 'ERP Modular', icon: Package },
+      { id: 'crm', label: 'CRM Modular', icon: Users },
     ]
   },
   {

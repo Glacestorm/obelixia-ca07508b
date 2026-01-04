@@ -49,7 +49,7 @@ import { SentimentAnalysisDashboard } from '@/components/crm/sentiment';
 import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
-import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
+import { CRMAgentsDashboard } from '@/components/admin/agents/CRMAgentsDashboard';
 import { ERPCRMSwitcher } from '@/components/shared/ERPCRMSwitcher';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -521,7 +521,7 @@ function CRMModularDashboardContent() {
 
         {/* Agents Tab */}
         <TabsContent value="agents">
-          <ERPModuleAgentsPanel />
+          <CRMAgentsDashboard />
         </TabsContent>
 
         {/* Teams Tab */}
