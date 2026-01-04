@@ -270,56 +270,40 @@ function CRMModularDashboardContent() {
               Reportes
             </TabsTrigger>
           )}
-          {/* Extended Modules */}
-          {hasPermission('customer360.read') && (
-            <TabsTrigger value="customer360" className="gap-2">
-              <Eye className="h-4 w-4" />
-              Customer 360
-            </TabsTrigger>
-          )}
-          {hasPermission('retention.read') && (
-            <TabsTrigger value="retention" className="gap-2">
-              <ShieldCheck className="h-4 w-4" />
-              Retención
-            </TabsTrigger>
-          )}
-          {hasPermission('csmetrics.read') && (
-            <TabsTrigger value="csmetrics" className="gap-2">
-              <Activity className="h-4 w-4" />
-              CS Metrics
-            </TabsTrigger>
-          )}
-          {hasPermission('journey.read') && (
-            <TabsTrigger value="journey" className="gap-2">
-              <Route className="h-4 w-4" />
-              Journey
-            </TabsTrigger>
-          )}
-          {hasPermission('winback.read') && (
-            <TabsTrigger value="winback" className="gap-2">
-              <Undo2 className="h-4 w-4" />
-              Winback
-            </TabsTrigger>
-          )}
-          {hasPermission('renewals.read') && (
-            <TabsTrigger value="renewals" className="gap-2">
-              <RefreshCcw className="h-4 w-4" />
-              Renovaciones
-            </TabsTrigger>
-          )}
-          {hasPermission('healthscore.read') && (
-            <TabsTrigger value="healthscore" className="gap-2">
-              <Gauge className="h-4 w-4" />
-              Health Score
-            </TabsTrigger>
-          )}
+          {/* Extended Modules - Always visible */}
+          <TabsTrigger value="customer360" className="gap-2">
+            <Eye className="h-4 w-4" />
+            Customer 360
+          </TabsTrigger>
+          <TabsTrigger value="retention" className="gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            Retención
+          </TabsTrigger>
+          <TabsTrigger value="csmetrics" className="gap-2">
+            <Activity className="h-4 w-4" />
+            CS Metrics
+          </TabsTrigger>
+          <TabsTrigger value="journey" className="gap-2">
+            <Route className="h-4 w-4" />
+            Journey
+          </TabsTrigger>
+          <TabsTrigger value="winback" className="gap-2">
+            <Undo2 className="h-4 w-4" />
+            Winback
+          </TabsTrigger>
+          <TabsTrigger value="renewals" className="gap-2">
+            <RefreshCcw className="h-4 w-4" />
+            Renovaciones
+          </TabsTrigger>
+          <TabsTrigger value="healthscore" className="gap-2">
+            <Gauge className="h-4 w-4" />
+            Health Score
+          </TabsTrigger>
           {/* AI Agents Tab */}
-          {hasPermission('agents.read') && (
-            <TabsTrigger value="agents" className="gap-2 bg-gradient-to-r from-cyan-500/10 to-purple-500/10">
-              <Bot className="h-4 w-4" />
-              Agentes IA
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="agents" className="gap-2 bg-gradient-to-r from-cyan-500/10 to-purple-500/10">
+            <Bot className="h-4 w-4" />
+            Agentes IA
+          </TabsTrigger>
           {hasPermission('teams.read') && (
             <TabsTrigger value="teams" className="gap-2">
               <Users className="h-4 w-4" />
