@@ -41,6 +41,12 @@ export function useERPModuleAgents() {
   const autonomousInterval = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
 
+  // Mantener referencia estable al estado para evitar dependencias inestables en callbacks
+  const domainAgentsRef = useRef<DomainAgent[]>([]);
+  useEffect(() => {
+    domainAgentsRef.current = domainAgents;
+  }, [domainAgents]);
+
   // === UTILIDADES ===
   const parseJsonFromRawContent = (raw: string): Record<string, unknown> | null => {
     const match = raw.match(/\{[\s\S]*\}/);
@@ -349,12 +355,14 @@ export function useERPModuleAgents() {
   const fetchPredictiveInsights = useCallback(async () => {
     if (!isMountedRef.current) return [];
 
+    const currentDomains = domainAgentsRef.current;
+
     try {
       const { data, error } = await supabase.functions.invoke('erp-module-agent', {
         body: {
           action: 'get_predictive_insights',
           currentState: {
-            domains: domainAgents.map(d => ({
+            domains: currentDomains.map(d => ({
               domain: d.domain,
               metrics: d.metrics,
               agentStatuses: d.moduleAgents.map(a => a.status)
@@ -377,7 +385,7 @@ export function useERPModuleAgents() {
       console.error('[useERPModuleAgents] fetchPredictiveInsights error:', error);
       return [];
     }
-  }, [domainAgents]);
+  }, []);
 
   // === CONFIGURAR AGENTE ===
   const configureAgent = useCallback(async (
@@ -410,6 +418,13 @@ export function useERPModuleAgents() {
   }, []);
 
   // === AUTO-REFRESH ===
+  const stopAutoRefresh = useCallback(() => {
+    if (autoRefreshInterval.current) {
+      clearInterval(autoRefreshInterval.current);
+      autoRefreshInterval.current = null;
+    }
+  }, []);
+
   const startAutoRefresh = useCallback((intervalMs = 60000) => {
     stopAutoRefresh();
     initializeAgents();
@@ -418,14 +433,7 @@ export function useERPModuleAgents() {
         fetchPredictiveInsights();
       }
     }, intervalMs);
-  }, [initializeAgents, fetchPredictiveInsights]);
-
-  const stopAutoRefresh = useCallback(() => {
-    if (autoRefreshInterval.current) {
-      clearInterval(autoRefreshInterval.current);
-      autoRefreshInterval.current = null;
-    }
-  }, []);
+  }, [initializeAgents, fetchPredictiveInsights, stopAutoRefresh]);
 
   // === MODO AUTÓNOMO DEL SUPERVISOR ===
   const runAutonomousCycle = useCallback(async () => {
