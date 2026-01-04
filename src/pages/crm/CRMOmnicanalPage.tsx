@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/layouts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,11 +9,17 @@ import {
   Zap, 
   Headphones, 
   Shield, 
-  Users 
+  Users,
+  Eye,
+  RefreshCw,
+  BarChart3,
+  Route,
+  Undo2,
+  Calendar,
+  HeartPulse,
+  Bot
 } from 'lucide-react';
 
-// Lazy load components
-import { lazy, Suspense } from 'react';
 const CRMModularDashboard = lazy(() => import('@/components/crm/CRMModularDashboard').then(m => ({ default: m.CRMModularDashboard })));
 
 const LoadingFallback = () => (
@@ -30,6 +36,14 @@ const tabs = [
   { id: 'omnichannel', label: 'Centro Omnicanal', icon: Headphones },
   { id: 'sla', label: 'SLA Manager', icon: Shield },
   { id: 'leads', label: 'Distribución Leads', icon: Users },
+  { id: 'customer360', label: 'Customer 360', icon: Eye },
+  { id: 'retention', label: 'Retención', icon: RefreshCw },
+  { id: 'csmetrics', label: 'CS Metrics', icon: BarChart3 },
+  { id: 'journey', label: 'Journey', icon: Route },
+  { id: 'winback', label: 'Winback', icon: Undo2 },
+  { id: 'renewals', label: 'Renovaciones', icon: Calendar },
+  { id: 'healthscore', label: 'Health Score', icon: HeartPulse },
+  { id: 'ai-agents', label: 'Agentes IA', icon: Bot },
 ];
 
 const CRMOmnicanalPage = () => {
@@ -60,33 +74,11 @@ const CRMOmnicanalPage = () => {
         </TabsList>
 
         <Suspense fallback={<LoadingFallback />}>
-          <TabsContent value="overview" className="m-0">
-            <CRMModularDashboard initialTab="overview" />
-          </TabsContent>
-
-          <TabsContent value="pipeline" className="m-0">
-            <CRMModularDashboard initialTab="pipeline" />
-          </TabsContent>
-
-          <TabsContent value="workspaces" className="m-0">
-            <CRMModularDashboard initialTab="workspaces" />
-          </TabsContent>
-
-          <TabsContent value="automation" className="m-0">
-            <CRMModularDashboard initialTab="automation" />
-          </TabsContent>
-
-          <TabsContent value="omnichannel" className="m-0">
-            <CRMModularDashboard initialTab="omnichannel" />
-          </TabsContent>
-
-          <TabsContent value="sla" className="m-0">
-            <CRMModularDashboard initialTab="sla" />
-          </TabsContent>
-
-          <TabsContent value="leads" className="m-0">
-            <CRMModularDashboard initialTab="leads" />
-          </TabsContent>
+          {tabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id} className="m-0">
+              <CRMModularDashboard initialTab={tab.id} />
+            </TabsContent>
+          ))}
         </Suspense>
       </Tabs>
     </DashboardLayout>
