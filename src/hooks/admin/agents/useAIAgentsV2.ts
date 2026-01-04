@@ -382,13 +382,12 @@ export function useAIAgentsV2() {
     }
   }, []);
 
-  // === AUTO-REFRESH ===
-  const startAutoRefresh = useCallback((intervalMs = 60000) => {
-    stopAutoRefresh();
-    fetchAgentsStatus();
-    autoRefreshInterval.current = setInterval(() => {
-      fetchAgentsStatus();
-    }, intervalMs);
+  // === AUTO-REFRESH (ESTABILIZADO) ===
+  // Guardar ref de fetchAgentsStatus para evitar dependencias inestables
+  const fetchAgentsStatusRef = useRef(fetchAgentsStatus);
+  
+  useEffect(() => {
+    fetchAgentsStatusRef.current = fetchAgentsStatus;
   }, [fetchAgentsStatus]);
 
   const stopAutoRefresh = useCallback(() => {
@@ -397,6 +396,16 @@ export function useAIAgentsV2() {
       autoRefreshInterval.current = null;
     }
   }, []);
+
+  // startAutoRefresh ahora es ESTABLE - no depende de estado cambiante
+  const startAutoRefresh = useCallback((intervalMs = 60000) => {
+    stopAutoRefresh();
+    // Usar ref para obtener la función más reciente sin crear dependencias
+    fetchAgentsStatusRef.current();
+    autoRefreshInterval.current = setInterval(() => {
+      fetchAgentsStatusRef.current();
+    }, intervalMs);
+  }, [stopAutoRefresh]); // Solo depende de stopAutoRefresh que es estable
 
   useEffect(() => {
     return () => stopAutoRefresh();

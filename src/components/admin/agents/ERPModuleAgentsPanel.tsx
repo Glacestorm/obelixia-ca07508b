@@ -3,7 +3,7 @@
  * Arquitectura: Supervisor → Dominios → Módulos
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,10 +87,19 @@ export function ERPModuleAgentsPanel() {
     stopAutoRefresh
   } = useERPModuleAgents();
 
+  // CRÍTICO: Solo ejecutar initializeAgents UNA VEZ al montar
+  // startAutoRefresh ahora es estable (no depende de estado cambiante)
+  // Usar ref para evitar bucle infinito por dependencias inestables
+  const hasInitializedRef = useRef(false);
+  
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+    
     startAutoRefresh(90000);
     return () => stopAutoRefresh();
-  }, [startAutoRefresh, stopAutoRefresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Intencionalmente vacío - solo ejecutar al montar
 
   const toggleDomain = (domainId: string) => {
     setExpandedDomains(prev => {

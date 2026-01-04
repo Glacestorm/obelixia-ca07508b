@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -51,10 +51,16 @@ export function ModuleDashboardPanel({ className }: ModuleDashboardPanelProps) {
     stopAutoRefresh
   } = useModuleDashboard();
 
+  // CRÍTICO: Evitar bucle infinito usando ref de inicialización
+  const hasInitializedRef = useRef(false);
+  
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
     startAutoRefresh(30000);
     return () => stopAutoRefresh();
-  }, [startAutoRefresh, stopAutoRefresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getStatusColor = (status: ModuleStatus['status']) => {
     switch (status) {

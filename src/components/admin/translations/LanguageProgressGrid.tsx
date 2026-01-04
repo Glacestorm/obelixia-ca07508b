@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,11 +66,16 @@ export const LanguageProgressGrid: React.FC<LanguageProgressGridProps> = ({
     stopAutoRefresh
   } = useLanguageProgress();
 
-  // Auto-refresh on mount
+  // CRÍTICO: Evitar bucle infinito usando ref de inicialización
+  const hasInitializedRef = useRef(false);
+  
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
     startAutoRefresh(45000);
     return () => stopAutoRefresh();
-  }, [startAutoRefresh, stopAutoRefresh]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredLanguages = languages.filter(lang => 
     lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
