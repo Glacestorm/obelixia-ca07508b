@@ -95,6 +95,7 @@ const MarketplaceAdmin = lazy(() => import('@/pages/admin/MarketplaceAdmin'));
 const SubscriptionSuccess = lazy(() => import('@/pages/subscription/Success'));
 
 // CRM
+const CRMPage = lazy(() => import('@/pages/crm/CRMPage'));
 const KanbanPage = lazy(() => import('@/pages/crm/KanbanPage'));
 const OmnichannelPage = lazy(() => import('@/pages/crm/OmnichannelPage'));
 const SentimentPage = lazy(() => import('@/pages/crm/SentimentPage'));
@@ -261,6 +262,7 @@ export const dashboardRoutes: RouteConfig[] = [
   { path: '/profile', component: Profile, layout: 'none', priority: 'low', delay: 100, meta: { title: 'Perfil', requiresAuth: true } },
   { path: '/map-3d', component: Map3D, layout: 'dashboard', priority: 'medium', meta: { title: 'Mapa 3D', requiresAuth: true } },
   // CRM
+  { path: '/obelixia-admin/crm', component: CRMPage, layout: 'none', priority: 'high', meta: { title: 'CRM Omnicanal', requiresAuth: true } },
   { path: '/crm/kanban', component: KanbanPage, layout: 'none', priority: 'high', meta: { title: 'CRM Kanban', requiresAuth: true } },
   { path: '/crm/omnichannel', component: OmnichannelPage, layout: 'none', priority: 'high', meta: { title: 'Inbox Omnicanal', requiresAuth: true } },
   { path: '/crm/sentiment', component: SentimentPage, layout: 'none', priority: 'medium', meta: { title: 'Análisis de Sentimiento', requiresAuth: true } },
