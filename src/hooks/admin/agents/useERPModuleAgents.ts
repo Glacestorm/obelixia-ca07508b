@@ -684,13 +684,23 @@ export function useERPModuleAgents() {
   }, []);
 
   // === AUTO-REFRESH ===
-  const startAutoRefresh = useCallback((intervalMs = 60000) => {
-    stopAutoRefresh();
-    initializeAgents();
-    autoRefreshInterval.current = setInterval(() => {
-      fetchPredictiveInsights();
-    }, intervalMs);
-  }, [initializeAgents, fetchPredictiveInsights]);
+  // Refs para evitar recrear funciones y causar bucles infinitos
+  const initializeAgentsRef = useRef(initializeAgents);
+  const fetchPredictiveInsightsRef = useRef(fetchPredictiveInsights);
+  const supervisorOrchestrateRef = useRef(supervisorOrchestrate);
+
+  // Mantener refs actualizadas
+  useEffect(() => {
+    initializeAgentsRef.current = initializeAgents;
+  }, [initializeAgents]);
+
+  useEffect(() => {
+    fetchPredictiveInsightsRef.current = fetchPredictiveInsights;
+  }, [fetchPredictiveInsights]);
+
+  useEffect(() => {
+    supervisorOrchestrateRef.current = supervisorOrchestrate;
+  }, [supervisorOrchestrate]);
 
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
@@ -698,6 +708,14 @@ export function useERPModuleAgents() {
       autoRefreshInterval.current = null;
     }
   }, []);
+
+  const startAutoRefresh = useCallback((intervalMs = 60000) => {
+    stopAutoRefresh();
+    initializeAgentsRef.current();
+    autoRefreshInterval.current = setInterval(() => {
+      fetchPredictiveInsightsRef.current();
+    }, intervalMs);
+  }, [stopAutoRefresh]);
 
   // === MODO AUTÓNOMO DEL SUPERVISOR ===
   const autonomousActions = [
@@ -713,8 +731,8 @@ export function useERPModuleAgents() {
     // Seleccionar acción aleatoria o basada en prioridad
     const randomAction = autonomousActions[Math.floor(Math.random() * autonomousActions.length)];
     console.log('[Supervisor Autónomo] Ejecutando ciclo:', randomAction);
-    await supervisorOrchestrate(randomAction, 'medium');
-  }, [supervisorOrchestrate]);
+    await supervisorOrchestrateRef.current(randomAction, 'medium');
+  }, []);
 
   const toggleAutonomousMode = useCallback((enabled: boolean, intervalMs: number = 60000) => {
     // Limpiar intervalo anterior si existe
