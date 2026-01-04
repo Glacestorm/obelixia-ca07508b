@@ -24120,9 +24120,11 @@ export type Database = {
           description: string | null
           detected_from_trends: string[] | null
           id: string
+          impact_level: string | null
           insight_type: string
           news_article_id: string | null
           priority: string | null
+          product_connection: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -24136,9 +24138,11 @@ export type Database = {
           description?: string | null
           detected_from_trends?: string[] | null
           id?: string
+          impact_level?: string | null
           insight_type: string
           news_article_id?: string | null
           priority?: string | null
+          product_connection?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -24152,9 +24156,11 @@ export type Database = {
           description?: string | null
           detected_from_trends?: string[] | null
           id?: string
+          impact_level?: string | null
           insight_type?: string
           news_article_id?: string | null
           priority?: string | null
+          product_connection?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
