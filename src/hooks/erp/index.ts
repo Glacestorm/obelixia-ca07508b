@@ -8,6 +8,8 @@ export { useERPFiscalYears } from './useERPFiscalYears';
 export { useERPSeries } from './useERPSeries';
 export { useERPAudit } from './useERPAudit';
 export { useERPRoles } from './useERPRoles';
+export { useERPAuth } from './useERPAuth';
+export { useERPDocumentSeries, DOCUMENT_MODULES, DOCUMENT_TYPES } from './useERPDocumentSeries';
 export { useERPPurchases } from './useERPPurchases';
 export { useERPInventory } from './useERPInventory';
 export { useERPStockManager } from './useERPStockManager';

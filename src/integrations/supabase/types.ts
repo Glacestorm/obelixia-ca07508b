@@ -12534,6 +12534,7 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          code: string | null
           country: string | null
           created_at: string | null
           currency: string | null
@@ -12555,6 +12556,7 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          code?: string | null
           country?: string | null
           created_at?: string | null
           currency?: string | null
@@ -12576,6 +12578,7 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          code?: string | null
           country?: string | null
           created_at?: string | null
           currency?: string | null
@@ -12611,6 +12614,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          parent_group_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -12619,6 +12623,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          parent_group_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -12627,9 +12632,18 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          parent_group_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "erp_company_groups_parent_group_id_fkey"
+            columns: ["parent_group_id"]
+            isOneToOne: false
+            referencedRelation: "erp_company_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_credit_amendments: {
         Row: {
@@ -13197,6 +13211,142 @@ export type Database = {
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "erp_financial_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_document_numbers: {
+        Row: {
+          company_id: string
+          document_number: string
+          entity_id: string
+          entity_type: string
+          fiscal_year_id: string | null
+          id: string
+          issued_at: string | null
+          sequence_number: number
+          series_id: string
+        }
+        Insert: {
+          company_id: string
+          document_number: string
+          entity_id: string
+          entity_type: string
+          fiscal_year_id?: string | null
+          id?: string
+          issued_at?: string | null
+          sequence_number: number
+          series_id: string
+        }
+        Update: {
+          company_id?: string
+          document_number?: string
+          entity_id?: string
+          entity_type?: string
+          fiscal_year_id?: string | null
+          id?: string
+          issued_at?: string | null
+          sequence_number?: number
+          series_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_document_numbers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_document_numbers_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fiscal_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_document_numbers_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "erp_document_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_document_series: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string | null
+          document_type: string
+          fiscal_year_id: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          last_used_at: string | null
+          module: string
+          name: string
+          next_number: number | null
+          padding_length: number | null
+          prefix: string | null
+          reset_annually: boolean | null
+          reset_monthly: boolean | null
+          suffix: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          company_id: string
+          created_at?: string | null
+          document_type: string
+          fiscal_year_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          module: string
+          name: string
+          next_number?: number | null
+          padding_length?: number | null
+          prefix?: string | null
+          reset_annually?: boolean | null
+          reset_monthly?: boolean | null
+          suffix?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string | null
+          document_type?: string
+          fiscal_year_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          module?: string
+          name?: string
+          next_number?: number | null
+          padding_length?: number | null
+          prefix?: string | null
+          reset_annually?: boolean | null
+          reset_monthly?: boolean | null
+          suffix?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_document_series_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_document_series_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fiscal_years"
             referencedColumns: ["id"]
           },
         ]
@@ -14088,11 +14238,13 @@ export type Database = {
         Row: {
           closed_at: string | null
           closed_by: string | null
+          code: string | null
           company_id: string
           created_at: string | null
           end_date: string
           id: string
           is_closed: boolean | null
+          is_current: boolean | null
           name: string
           start_date: string
           updated_at: string | null
@@ -14100,11 +14252,13 @@ export type Database = {
         Insert: {
           closed_at?: string | null
           closed_by?: string | null
+          code?: string | null
           company_id: string
           created_at?: string | null
           end_date: string
           id?: string
           is_closed?: boolean | null
+          is_current?: boolean | null
           name: string
           start_date: string
           updated_at?: string | null
@@ -14112,11 +14266,13 @@ export type Database = {
         Update: {
           closed_at?: string | null
           closed_by?: string | null
+          code?: string | null
           company_id?: string
           created_at?: string | null
           end_date?: string
           id?: string
           is_closed?: boolean | null
+          is_current?: boolean | null
           name?: string
           start_date?: string
           updated_at?: string | null
@@ -15159,6 +15315,39 @@ export type Database = {
           },
         ]
       }
+      erp_mfa_devices: {
+        Row: {
+          created_at: string | null
+          device_name: string | null
+          device_type: string
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          secret_encrypted: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_name?: string | null
+          device_type?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          secret_encrypted?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_name?: string | null
+          device_type?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          secret_encrypted?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       erp_migration_connectors: {
         Row: {
           auth_fields: Json | null
@@ -15731,6 +15920,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          is_active: boolean | null
           key: string
           module: string
         }
@@ -15739,6 +15929,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_active?: boolean | null
           key: string
           module: string
         }
@@ -15747,6 +15938,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_active?: boolean | null
           key?: string
           module?: string
         }
@@ -16189,18 +16381,21 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          level: string | null
           permission_id: string
           role_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
+          level?: string | null
           permission_id: string
           role_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
+          level?: string | null
           permission_id?: string
           role_id?: string
         }
@@ -17030,6 +17225,50 @@ export type Database = {
           },
         ]
       }
+      erp_sessions: {
+        Row: {
+          company_id: string | null
+          expires_at: string | null
+          id: string
+          ip_address: unknown
+          revoke_reason: string | null
+          revoked_at: string | null
+          started_at: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          started_at?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          started_at?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_sessions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_sii_config: {
         Row: {
           auto_send: boolean | null
@@ -17794,6 +18033,47 @@ export type Database = {
           },
         ]
       }
+      erp_system_events: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          event_code: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          severity: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          event_code?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          severity?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          event_code?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_system_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_tax_model_filings: {
         Row: {
           attachments: Json | null
@@ -18530,6 +18810,48 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_role"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "erp_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_user_roles: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          granted_by: string | null
+          id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_user_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_user_roles_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "erp_roles"
@@ -41170,10 +41492,20 @@ export type Database = {
         Args: { p_remittance_id: string }
         Returns: string
       }
-      erp_get_next_document_number: {
-        Args: { p_company_id: string; p_series_id: string }
-        Returns: string
-      }
+      erp_get_next_document_number:
+        | {
+            Args: { p_company_id: string; p_series_id: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_company_id: string
+              p_entity_id: string
+              p_entity_type: string
+              p_series_id: string
+            }
+            Returns: string
+          }
       erp_get_next_entry_number: {
         Args: {
           p_company_id: string
@@ -41210,6 +41542,19 @@ export type Database = {
       erp_is_company_admin: {
         Args: { p_company_id: string; p_user_id: string }
         Returns: boolean
+      }
+      erp_log_audit: {
+        Args: {
+          p_action: string
+          p_after?: Json
+          p_before?: Json
+          p_company_id: string
+          p_entity_id: string
+          p_entity_type: string
+          p_metadata?: Json
+          p_user_id: string
+        }
+        Returns: string
       }
       erp_next_entry_number: {
         Args: {
@@ -41524,6 +41869,7 @@ export type Database = {
         | "biometric"
         | "security_question"
       auth_risk_level: "low" | "medium" | "high" | "critical"
+      erp_permission_level: "none" | "read" | "write" | "full"
       erp_role_type:
         | "superadmin"
         | "admin"
@@ -41713,6 +42059,7 @@ export const Constants = {
         "security_question",
       ],
       auth_risk_level: ["low", "medium", "high", "critical"],
+      erp_permission_level: ["none", "read", "write", "full"],
       erp_role_type: [
         "superadmin",
         "admin",
