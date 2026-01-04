@@ -10367,6 +10367,81 @@ export type Database = {
           },
         ]
       }
+      enterprise_feature_flags: {
+        Row: {
+          category: string | null
+          control_percentage: number | null
+          created_at: string
+          created_by: string | null
+          dependencies: string[] | null
+          description: string | null
+          end_date: string | null
+          experiment_variants: Json | null
+          flag_key: string
+          flag_name: string
+          id: string
+          is_enabled: boolean | null
+          is_experiment: boolean | null
+          metadata: Json | null
+          rollout_percentage: number | null
+          start_date: string | null
+          target_license_tiers: string[] | null
+          target_roles: string[] | null
+          target_tenants: string[] | null
+          target_user_ids: string[] | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          control_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          end_date?: string | null
+          experiment_variants?: Json | null
+          flag_key: string
+          flag_name: string
+          id?: string
+          is_enabled?: boolean | null
+          is_experiment?: boolean | null
+          metadata?: Json | null
+          rollout_percentage?: number | null
+          start_date?: string | null
+          target_license_tiers?: string[] | null
+          target_roles?: string[] | null
+          target_tenants?: string[] | null
+          target_user_ids?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          control_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          end_date?: string | null
+          experiment_variants?: Json | null
+          flag_key?: string
+          flag_name?: string
+          id?: string
+          is_enabled?: boolean | null
+          is_experiment?: boolean | null
+          metadata?: Json | null
+          rollout_percentage?: number | null
+          start_date?: string | null
+          target_license_tiers?: string[] | null
+          target_roles?: string[] | null
+          target_tenants?: string[] | null
+          target_user_ids?: string[] | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       equity_changes_statements: {
         Row: {
           adjusted_initial_grants: number | null
@@ -18849,6 +18924,182 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "faq_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_flag_audit_log: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          flag_id: string | null
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          flag_id?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          flag_id?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flag_audit_log_flag_id_fkey"
+            columns: ["flag_id"]
+            isOneToOne: false
+            referencedRelation: "enterprise_feature_flags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_flag_evaluations: {
+        Row: {
+          context_data: Json | null
+          evaluated_at: string
+          evaluated_value: boolean
+          evaluation_reason: string | null
+          flag_id: string | null
+          flag_key: string
+          id: string
+          license_id: string | null
+          tenant_id: string | null
+          user_id: string | null
+          variant_key: string | null
+        }
+        Insert: {
+          context_data?: Json | null
+          evaluated_at?: string
+          evaluated_value: boolean
+          evaluation_reason?: string | null
+          flag_id?: string | null
+          flag_key: string
+          id?: string
+          license_id?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+          variant_key?: string | null
+        }
+        Update: {
+          context_data?: Json | null
+          evaluated_at?: string
+          evaluated_value?: boolean
+          evaluation_reason?: string | null
+          flag_id?: string | null
+          flag_key?: string
+          id?: string
+          license_id?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+          variant_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flag_evaluations_flag_id_fkey"
+            columns: ["flag_id"]
+            isOneToOne: false
+            referencedRelation: "enterprise_feature_flags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_flag_license_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_value: Json | null
+          expires_at: string | null
+          flag_id: string
+          id: string
+          is_enabled: boolean
+          license_id: string | null
+          license_tier: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_value?: Json | null
+          expires_at?: string | null
+          flag_id: string
+          id?: string
+          is_enabled: boolean
+          license_id?: string | null
+          license_tier?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_value?: Json | null
+          expires_at?: string | null
+          flag_id?: string
+          id?: string
+          is_enabled?: boolean
+          license_id?: string | null
+          license_tier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flag_license_overrides_flag_id_fkey"
+            columns: ["flag_id"]
+            isOneToOne: false
+            referencedRelation: "enterprise_feature_flags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_flag_tenant_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_value: Json | null
+          expires_at: string | null
+          flag_id: string
+          id: string
+          is_enabled: boolean
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_value?: Json | null
+          expires_at?: string | null
+          flag_id: string
+          id?: string
+          is_enabled: boolean
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_value?: Json | null
+          expires_at?: string | null
+          flag_id?: string
+          id?: string
+          is_enabled?: boolean
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flag_tenant_overrides_flag_id_fkey"
+            columns: ["flag_id"]
+            isOneToOne: false
+            referencedRelation: "enterprise_feature_flags"
             referencedColumns: ["id"]
           },
         ]
