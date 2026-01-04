@@ -24,7 +24,15 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
-  ArrowUpRight
+  ArrowUpRight,
+  BarChart3,
+  UserCircle,
+  Building2,
+  Phone,
+  CalendarDays,
+  DollarSign,
+  PieChart,
+  Activity
 } from 'lucide-react';
 
 // CRM Module Components (inline para evitar ciclo de dependencias)
@@ -79,10 +87,12 @@ export function CRMModularDashboard() {
 
   const modules = [
     { id: 'kanban', name: 'Pipeline', icon: Kanban, color: 'bg-blue-500', installed: true },
+    { id: 'contacts', name: 'Contactos', icon: UserCircle, color: 'bg-indigo-500', installed: true },
     { id: 'omnichannel', name: 'Inbox', icon: MessageSquare, color: 'bg-green-500', installed: true },
     { id: 'sentiment', name: 'Sentimiento', icon: Heart, color: 'bg-pink-500', installed: true },
     { id: 'sla', name: 'SLAs', icon: Timer, color: 'bg-amber-500', installed: true },
     { id: 'automation', name: 'Automatización', icon: Zap, color: 'bg-purple-500', installed: true },
+    { id: 'reports', name: 'Reportes', icon: BarChart3, color: 'bg-orange-500', installed: true },
     { id: 'agents', name: 'Agentes IA', icon: Bot, color: 'bg-cyan-500', installed: true },
   ];
 
@@ -99,6 +109,10 @@ export function CRMModularDashboard() {
             <Kanban className="h-4 w-4" />
             Pipeline
           </TabsTrigger>
+          <TabsTrigger value="contacts" className="gap-2">
+            <UserCircle className="h-4 w-4" />
+            Contactos
+          </TabsTrigger>
           <TabsTrigger value="omnichannel" className="gap-2">
             <MessageSquare className="h-4 w-4" />
             Inbox
@@ -114,6 +128,10 @@ export function CRMModularDashboard() {
           <TabsTrigger value="automation" className="gap-2">
             <Zap className="h-4 w-4" />
             Automatización
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Reportes
           </TabsTrigger>
           <TabsTrigger value="agents" className="gap-2">
             <Bot className="h-4 w-4" />
@@ -273,6 +291,11 @@ export function CRMModularDashboard() {
           />
         </TabsContent>
 
+        {/* Contacts Tab */}
+        <TabsContent value="contacts">
+          <ContactsTabContent />
+        </TabsContent>
+
         {/* Omnichannel Tab */}
         <TabsContent value="omnichannel">
           <OmnichannelInboxWrapper />
@@ -291,6 +314,11 @@ export function CRMModularDashboard() {
         {/* Automation Tab */}
         <TabsContent value="automation">
           <AutomationTabContent />
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports">
+          <ReportsTabContent />
         </TabsContent>
 
         {/* Agents Tab */}
@@ -403,6 +431,353 @@ function LeadDistributionWrapper() {
       onUpdateAgentCapacity={() => {}}
       onDistributeNow={() => {}}
     />
+  );
+}
+
+// === Contacts Tab ===
+function ContactsTabContent() {
+  const contacts = [
+    { id: '1', name: 'María García', company: 'Acme Corp', email: 'maria@acme.com', phone: '+34 612 345 678', status: 'active', lastContact: '2024-01-15', deals: 2, value: 57000 },
+    { id: '2', name: 'Carlos López', company: 'TechStart', email: 'carlos@techstart.io', phone: '+34 623 456 789', status: 'lead', lastContact: '2024-01-18', deals: 1, value: 12000 },
+    { id: '3', name: 'Ana Martínez', company: 'Global Industries', email: 'ana@global.com', phone: '+34 634 567 890', status: 'active', lastContact: '2024-01-12', deals: 3, value: 125000 },
+    { id: '4', name: 'Pedro Sánchez', company: 'Retail Plus', email: 'pedro@retailplus.es', phone: '+34 645 678 901', status: 'inactive', lastContact: '2023-12-20', deals: 0, value: 0 },
+    { id: '5', name: 'Laura Fernández', company: 'LogiTech', email: 'laura@logitech.es', phone: '+34 656 789 012', status: 'active', lastContact: '2024-01-19', deals: 1, value: 48000 },
+  ];
+
+  const statusColors: Record<string, string> = {
+    active: 'bg-green-500',
+    lead: 'bg-blue-500',
+    inactive: 'bg-gray-400',
+  };
+
+  const statusLabels: Record<string, string> = {
+    active: 'Activo',
+    lead: 'Lead',
+    inactive: 'Inactivo',
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Gestión de Contactos</h3>
+          <p className="text-sm text-muted-foreground">Base de datos de clientes y prospectos</p>
+        </div>
+        <Button className="gap-2">
+          <UserCircle className="h-4 w-4" />
+          Nuevo Contacto
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/10">
+                <Users className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{contacts.length}</p>
+                <p className="text-xs text-muted-foreground">Total Contactos</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{contacts.filter(c => c.status === 'active').length}</p>
+                <p className="text-xs text-muted-foreground">Activos</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <Target className="h-5 w-5 text-purple-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{contacts.reduce((acc, c) => acc + c.deals, 0)}</p>
+                <p className="text-xs text-muted-foreground">Deals Totales</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <DollarSign className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">${(contacts.reduce((acc, c) => acc + c.value, 0) / 1000).toFixed(0)}K</p>
+                <p className="text-xs text-muted-foreground">Valor Total</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Contacts Table */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Contacto</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Empresa</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Contacto</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Estado</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Deals</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Valor</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Último Contacto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contacts.map((contact) => (
+                  <tr key={contact.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-medium">{contact.name.charAt(0)}</span>
+                        </div>
+                        <span className="font-medium">{contact.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        {contact.company}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {contact.email}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          {contact.phone}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge className={cn("text-white", statusColors[contact.status])}>
+                        {statusLabels[contact.status]}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge variant="outline">{contact.deals}</Badge>
+                    </td>
+                    <td className="py-3 px-4 font-medium">
+                      ${contact.value.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <CalendarDays className="h-3 w-3" />
+                        {contact.lastContact}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// === Reports Tab ===
+function ReportsTabContent() {
+  const pipelineData = [
+    { stage: 'Nuevos', count: 24, value: 180000, color: '#6366f1' },
+    { stage: 'Contactados', count: 18, value: 245000, color: '#f59e0b' },
+    { stage: 'Propuesta', count: 12, value: 320000, color: '#8b5cf6' },
+    { stage: 'Negociación', count: 8, value: 280000, color: '#06b6d4' },
+    { stage: 'Cerrados', count: 15, value: 425000, color: '#10b981' },
+  ];
+
+  const monthlyData = [
+    { month: 'Ene', leads: 45, won: 12, lost: 8, revenue: 156000 },
+    { month: 'Feb', leads: 52, won: 15, lost: 10, revenue: 189000 },
+    { month: 'Mar', leads: 48, won: 18, lost: 7, revenue: 234000 },
+    { month: 'Abr', leads: 61, won: 22, lost: 12, revenue: 287000 },
+  ];
+
+  const topPerformers = [
+    { name: 'Juan Pérez', deals: 28, revenue: 345000, conversion: 32 },
+    { name: 'Ana García', deals: 24, revenue: 298000, conversion: 29 },
+    { name: 'Carlos López', deals: 21, revenue: 267000, conversion: 27 },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold">Reportes y Analytics</h3>
+        <p className="text-sm text-muted-foreground">Análisis de rendimiento del CRM</p>
+      </div>
+
+      {/* Summary KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Leads este mes</p>
+                <p className="text-2xl font-bold">61</p>
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <ArrowUpRight className="h-3 w-3" /> +27%
+                </p>
+              </div>
+              <PieChart className="h-8 w-8 text-blue-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Tasa Conversión</p>
+                <p className="text-2xl font-bold">28.5%</p>
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <ArrowUpRight className="h-3 w-3" /> +3.2%
+                </p>
+              </div>
+              <Activity className="h-8 w-8 text-green-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Revenue Mensual</p>
+                <p className="text-2xl font-bold">$287K</p>
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <ArrowUpRight className="h-3 w-3" /> +18%
+                </p>
+              </div>
+              <DollarSign className="h-8 w-8 text-purple-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Ciclo Promedio</p>
+                <p className="text-2xl font-bold">18 días</p>
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <ArrowUpRight className="h-3 w-3" /> -2 días
+                </p>
+              </div>
+              <Clock className="h-8 w-8 text-amber-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Pipeline Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Análisis del Pipeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {pipelineData.map((stage) => (
+              <div key={stage.stage} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{stage.stage}</span>
+                  <span className="text-muted-foreground">{stage.count} deals · ${(stage.value / 1000).toFixed(0)}K</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full rounded-full transition-all"
+                    style={{ 
+                      width: `${(stage.value / 425000) * 100}%`,
+                      backgroundColor: stage.color
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Monthly Trend & Top Performers */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Tendencia Mensual
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {monthlyData.map((month) => (
+                <div key={month.month} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium w-8">{month.month}</span>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-blue-600">{month.leads} leads</span>
+                      <span className="text-green-600">{month.won} ganados</span>
+                      <span className="text-red-500">{month.lost} perdidos</span>
+                    </div>
+                  </div>
+                  <span className="font-semibold">${(month.revenue / 1000).toFixed(0)}K</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Top Performers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {topPerformers.map((performer, index) => (
+                <div key={performer.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm",
+                      index === 0 ? "bg-amber-500" : index === 1 ? "bg-gray-400" : "bg-amber-700"
+                    )}>
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium">{performer.name}</p>
+                      <p className="text-xs text-muted-foreground">{performer.deals} deals · {performer.conversion}% conv.</p>
+                    </div>
+                  </div>
+                  <span className="font-semibold text-green-600">${(performer.revenue / 1000).toFixed(0)}K</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 
