@@ -103,7 +103,7 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/obelixia-admin')}
               className={navButtonClass}
               title="Atrás"
             >
