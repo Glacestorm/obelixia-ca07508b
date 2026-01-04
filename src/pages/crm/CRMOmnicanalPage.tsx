@@ -9,15 +9,7 @@ import {
   Zap, 
   Headphones, 
   Shield, 
-  Users,
-  Eye,
-  RefreshCw,
-  BarChart3,
-  Route,
-  Undo2,
-  Calendar,
-  HeartPulse,
-  Bot
+  Users
 } from 'lucide-react';
 
 const CRMModularDashboard = lazy(() => import('@/components/crm/CRMModularDashboard').then(m => ({ default: m.CRMModularDashboard })));
@@ -36,14 +28,6 @@ const tabs = [
   { id: 'omnichannel', label: 'Centro Omnicanal', icon: Headphones },
   { id: 'sla', label: 'SLA Manager', icon: Shield },
   { id: 'leads', label: 'Distribución Leads', icon: Users },
-  { id: 'customer360', label: 'Customer 360', icon: Eye },
-  { id: 'retention', label: 'Retención', icon: RefreshCw },
-  { id: 'csmetrics', label: 'CS Metrics', icon: BarChart3 },
-  { id: 'journey', label: 'Journey', icon: Route },
-  { id: 'winback', label: 'Winback', icon: Undo2 },
-  { id: 'renewals', label: 'Renovaciones', icon: Calendar },
-  { id: 'healthscore', label: 'Health Score', icon: HeartPulse },
-  { id: 'ai-agents', label: 'Agentes IA', icon: Bot },
 ];
 
 const CRMOmnicanalPage = () => {
