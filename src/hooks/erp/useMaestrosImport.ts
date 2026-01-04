@@ -65,9 +65,11 @@ export function useMaestrosImport() {
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isCoordinating, setIsCoordinating] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [importResults, setImportResults] = useState<ImportExecution[]>([]);
   const [currentFile, setCurrentFile] = useState<{ name: string; content: string } | null>(null);
+  const [supervisorInsight, setSupervisorInsight] = useState<Record<string, unknown> | null>(null);
 
   // Leer archivo como texto
   const readFileContent = useCallback(async (file: File): Promise<string> => {
@@ -318,25 +320,91 @@ export function useMaestrosImport() {
     return results;
   }, [analysisResult, importEntity]);
 
+  // Coordinar con Supervisor General
+  const coordinateWithSupervisor = useCallback(async () => {
+    if (!analysisResult && importResults.length === 0) {
+      toast.error('No hay datos para coordinar');
+      return null;
+    }
+
+    setIsCoordinating(true);
+    setSupervisorInsight(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-module-agent', {
+        body: {
+          action: 'coordinate_import',
+          importContext: {
+            fileName: currentFile?.name,
+            detectedEntities: analysisResult?.detected_entities.map(e => ({
+              entity_type: e.entity_type,
+              records_count: e.records_count,
+              confidence: e.confidence
+            })),
+            importResults: importResults.map(r => ({
+              entity_type: r.entity_type,
+              status: r.status,
+              inserted_count: r.inserted_count,
+              error_count: r.error_count
+            }))
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setSupervisorInsight(data);
+        
+        // Notificar si el supervisor lo requiere
+        if (data.supervisor_notification?.should_notify) {
+          const priority = data.supervisor_notification.priority;
+          if (priority === 'critical' || priority === 'high') {
+            toast.warning(`Supervisor: ${data.supervisor_notification.summary}`);
+          } else {
+            toast.info(`Supervisor: ${data.supervisor_notification.summary}`);
+          }
+        } else {
+          toast.success('Coordinación con Supervisor completada');
+        }
+        
+        return data;
+      }
+
+      throw new Error(data?.error || 'Error en coordinación');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error coordinando con Supervisor';
+      toast.error(message);
+      console.error('[useMaestrosImport] coordinateWithSupervisor error:', err);
+      return null;
+    } finally {
+      setIsCoordinating(false);
+    }
+  }, [analysisResult, importResults, currentFile]);
+
   // Reset estado
   const reset = useCallback(() => {
     setAnalysisResult(null);
     setImportResults([]);
     setCurrentFile(null);
+    setSupervisorInsight(null);
   }, []);
 
   return {
     // Estado
     isAnalyzing,
     isImporting,
+    isCoordinating,
     analysisResult,
     importResults,
     currentFile,
+    supervisorInsight,
     
     // Acciones
     analyzeFile,
     importEntity,
     importAll,
+    coordinateWithSupervisor,
     reset,
   };
 }

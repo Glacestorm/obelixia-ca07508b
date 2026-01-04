@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface AgentRequest {
-  action: 'execute' | 'coordinate_domain' | 'supervisor_orchestrate' | 'get_predictive_insights';
+  action: 'execute' | 'coordinate_domain' | 'supervisor_orchestrate' | 'get_predictive_insights' | 'coordinate_import';
   agentType?: string;
   domain?: string;
   context?: Record<string, unknown>;
@@ -26,6 +26,21 @@ interface AgentRequest {
     activeModules: number;
   }>;
   currentState?: Record<string, unknown>;
+  // Para coordinación de importación
+  importContext?: {
+    fileName?: string;
+    detectedEntities?: Array<{
+      entity_type: string;
+      records_count: number;
+      confidence: number;
+    }>;
+    importResults?: Array<{
+      entity_type: string;
+      status: string;
+      inserted_count: number;
+      error_count: number;
+    }>;
+  };
 }
 
 serve(async (req) => {
@@ -39,7 +54,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { action, agentType, domain, context, capabilities, objective, priority, moduleAgents, domains, currentState } = await req.json() as AgentRequest;
+    const { action, agentType, domain, context, capabilities, objective, priority, moduleAgents, domains, currentState, importContext } = await req.json() as AgentRequest;
 
     console.log(`[erp-module-agent] Action: ${action}, AgentType: ${agentType}, Domain: ${domain}`);
 
@@ -195,6 +210,49 @@ FORMATO DE RESPUESTA (JSON estricto):
 }`;
 
         userPrompt = 'Analiza el estado actual y genera 3-5 insights predictivos relevantes.';
+        break;
+
+      case 'coordinate_import':
+        systemPrompt = `Eres el agente COORDINADOR DE IMPORTACIÓN del módulo Maestros de un ERP enterprise.
+
+CONTEXTO DE IMPORTACIÓN:
+- Archivo: ${importContext?.fileName || 'No especificado'}
+- Entidades detectadas: ${JSON.stringify(importContext?.detectedEntities || [])}
+- Resultados: ${JSON.stringify(importContext?.importResults || [])}
+
+RESPONSABILIDADES:
+1. Validar consistencia entre entidades importadas
+2. Detectar relaciones faltantes (ej: artículo sin proveedor)
+3. Proponer correcciones automáticas
+4. Coordinar con otros módulos afectados
+5. Generar reporte de impacto
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "validation": {
+    "is_consistent": true|false,
+    "issues": [{"entity": "string", "issue": "string", "severity": "low|medium|high", "auto_fixable": true|false}],
+    "relationships_missing": []
+  },
+  "impact_analysis": {
+    "affected_modules": ["ventas", "compras", "inventario"],
+    "data_quality_score": 0-100,
+    "recommendations": []
+  },
+  "auto_corrections": [
+    {"entity": "string", "field": "string", "original": "value", "corrected": "value", "reason": "string"}
+  ],
+  "next_steps": ["Revisar X", "Configurar Y"],
+  "supervisor_notification": {
+    "should_notify": true|false,
+    "priority": "low|medium|high|critical",
+    "summary": "Resumen para el supervisor"
+  }
+}`;
+
+        userPrompt = importContext?.importResults?.length 
+          ? `Analiza los resultados de importación y coordina las acciones necesarias.`
+          : `Prepara la estrategia de importación para las entidades detectadas.`;
         break;
 
       default:
