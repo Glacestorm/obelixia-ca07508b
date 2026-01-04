@@ -168,10 +168,7 @@ function CRMModularDashboardContent() {
     );
   }
 
-  // Mostrar wizard de configuración inicial
-  if (needsSetup) {
-    return <CRMInitialSetup onComplete={handleSetupComplete} />;
-  }
+  // No bloqueamos más con el wizard - las tabs siempre se muestran
 
   // Métricas de resumen
   const totalDeals = columns.reduce((acc, col) => acc + col.items.length, 0);
@@ -314,7 +311,9 @@ function CRMModularDashboardContent() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          {!currentWorkspace ? (
+          {needsSetup ? (
+            <CRMInitialSetup onComplete={handleSetupComplete} />
+          ) : !currentWorkspace ? (
             <Card>
               <CardContent className="py-8 text-center">
                 <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
