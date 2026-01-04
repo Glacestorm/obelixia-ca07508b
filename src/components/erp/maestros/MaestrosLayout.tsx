@@ -3,12 +3,11 @@
  * Con mejor UX, animaciones y estadísticas
  */
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { 
   Users, 
   Truck, 
@@ -23,8 +22,7 @@ import {
   MapPin,
   FileCheck,
   RefreshCw,
-  Sparkles,
-  Upload
+  Sparkles
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { useMaestros } from '@/hooks/erp/useMaestros';
@@ -38,7 +36,6 @@ import { WarehouseLocationsPanel } from './WarehouseLocationsPanel';
 import { BankAccountsPanel } from './BankAccountsPanel';
 import { SEPAMandatesPanel } from './SEPAMandatesPanel';
 import { PriceSimulator } from './PriceSimulator';
-import { MaestrosImportPanel } from './MaestrosImportPanel';
 import { StatsCard } from './shared/StatsCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -80,7 +77,6 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
 
   const [activeTab, setActiveTab] = React.useState('customers');
   const [isSeeding, setIsSeeding] = React.useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
 
   const handleSeedData = useCallback(async () => {
     setIsSeeding(true);
@@ -179,34 +175,20 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
             Gestión de clientes, proveedores, artículos y configuración
           </p>
         </div>
-        <div className="flex gap-2">
-          <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-            <DialogTrigger asChild>
-              <Button variant="default" size="sm" className="gap-2">
-                <Upload className="h-4 w-4" />
-                <Sparkles className="h-4 w-4" />
-                Importar con IA
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <MaestrosImportPanel onClose={() => setShowImportDialog(false)} />
-            </DialogContent>
-          </Dialog>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleSeedData}
-            disabled={isSeeding}
-            className="gap-2"
-          >
-            {isSeeding ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Settings className="h-4 w-4" />
-            )}
-            Cargar datos iniciales
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleSeedData}
+          disabled={isSeeding}
+          className="gap-2"
+        >
+          {isSeeding ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Settings className="h-4 w-4" />
+          )}
+          Cargar datos iniciales
+        </Button>
       </motion.div>
 
       {/* Stats Cards with animations */}
