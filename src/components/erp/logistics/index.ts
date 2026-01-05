@@ -3,3 +3,5 @@
  */
 
 export { LogisticsModuleDashboard } from './LogisticsModuleDashboard';
+export * from './shipments';
+export * from './carriers';

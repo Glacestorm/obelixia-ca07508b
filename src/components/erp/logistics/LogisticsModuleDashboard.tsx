@@ -43,11 +43,13 @@ import {
   Settings,
   FileText
 } from 'lucide-react';
-import { useERPLogistics, type Shipment, type ShipmentStatus } from '@/hooks/erp/useERPLogistics';
+import { useERPLogistics, type Shipment, type ShipmentStatus, type LogisticsCarrier } from '@/hooks/erp/useERPLogistics';
 import { useERPContext } from '@/hooks/erp';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ShipmentsManager } from './shipments/ShipmentsManager';
+import { CarriersManager } from './carriers/CarriersManager';
 
 // === STATUS CONFIGS ===
 const STATUS_CONFIG: Record<ShipmentStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -127,265 +129,16 @@ function StatsCard({
   );
 }
 
-// === SHIPMENTS TAB ===
+// === SHIPMENTS TAB - Using full component ===
 function ShipmentsTabContent() {
-  const { shipments, isLoading, fetchShipments, carriers, updateShipmentStatus } = useERPLogistics();
-  const [statusFilter, setStatusFilter] = useState<ShipmentStatus | 'all'>('all');
-
-  const filteredShipments = useMemo(() => {
-    if (statusFilter === 'all') return shipments;
-    return shipments.filter(s => s.status === statusFilter);
-  }, [shipments, statusFilter]);
-
-  const getCarrierName = (shipment: Shipment) => {
-    const account = shipment.carrier_account;
-    if (!account) return 'Sin operadora';
-    const carrier = (account as any)?.carrier;
-    return carrier?.carrier_name || 'Desconocida';
-  };
-
-  const getCarrierCode = (shipment: Shipment) => {
-    const account = shipment.carrier_account;
-    if (!account) return '';
-    const carrier = (account as any)?.carrier;
-    return carrier?.carrier_code || '';
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Filtros */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          variant={statusFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setStatusFilter('all')}
-        >
-          Todos
-        </Button>
-        {(['pending', 'in_transit', 'out_for_delivery', 'delivered', 'failed'] as ShipmentStatus[]).map(status => {
-          const config = STATUS_CONFIG[status];
-          return (
-            <Button
-              key={status}
-              variant={statusFilter === status ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusFilter(status)}
-              className="gap-1"
-            >
-              <config.icon className="h-3 w-3" />
-              {config.label}
-            </Button>
-          );
-        })}
-        <div className="flex-1" />
-        <Button size="sm" variant="outline" onClick={() => fetchShipments()}>
-          <RefreshCw className={cn("h-4 w-4 mr-1", isLoading && "animate-spin")} />
-          Actualizar
-        </Button>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Nuevo Envío
-        </Button>
-      </div>
-
-      {/* Tabla de envíos */}
-      <Card>
-        <ScrollArea className="h-[500px]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nº Envío</TableHead>
-                <TableHead>Operadora</TableHead>
-                <TableHead>Destino</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Bultos</TableHead>
-                <TableHead className="text-right">Coste</TableHead>
-                <TableHead>Contabilizado</TableHead>
-                <TableHead>Fecha</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredShipments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    No hay envíos que mostrar
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredShipments.map(shipment => {
-                  const statusConfig = STATUS_CONFIG[shipment.status];
-                  const carrierCode = getCarrierCode(shipment);
-                  
-                  return (
-                    <TableRow key={shipment.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-mono font-medium">
-                        {shipment.shipment_number}
-                        {shipment.tracking_number && (
-                          <p className="text-xs text-muted-foreground">{shipment.tracking_number}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "w-6 h-6 rounded flex items-center justify-center text-white text-[8px] font-bold",
-                            CARRIER_COLORS[carrierCode] || 'bg-gray-400'
-                          )}>
-                            {carrierCode.slice(0, 2)}
-                          </div>
-                          <span className="text-sm">{getCarrierName(shipment)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">
-                            {shipment.destination_city}
-                            <span className="text-muted-foreground ml-1">
-                              ({shipment.destination_postal_code})
-                            </span>
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cn("gap-1", statusConfig.color)}>
-                          <statusConfig.icon className="h-3 w-3" />
-                          {statusConfig.label}
-                        </Badge>
-                        {shipment.has_incident && (
-                          <Badge variant="destructive" className="ml-1 gap-1">
-                            <AlertTriangle className="h-3 w-3" />
-                            Incidencia
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">
-                          {shipment.total_packages} bulto{shipment.total_packages !== 1 ? 's' : ''}
-                        </span>
-                        <p className="text-xs text-muted-foreground">
-                          {shipment.total_weight.toFixed(1)} kg
-                        </p>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {shipment.total_cost.toFixed(2)} €
-                      </TableCell>
-                      <TableCell>
-                        {shipment.is_accounted ? (
-                          <Badge variant="outline" className="bg-green-500/10 text-green-600">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Sí
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            Pendiente
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDistanceToNow(new Date(shipment.created_at), { addSuffix: true, locale: es })}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </Card>
-    </div>
-  );
+  const { carriers } = useERPLogistics();
+  return <ShipmentsManager carriers={carriers as LogisticsCarrier[]} />;
 }
 
-// === CARRIERS TAB ===
+// === CARRIERS TAB - Using full component ===
 function CarriersTabContent() {
-  const { carriers, carrierAccounts, fetchCarriers, isLoading } = useERPLogistics();
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Operadoras Logísticas</h3>
-          <p className="text-sm text-muted-foreground">
-            Gestiona las conexiones con operadoras nacionales e internacionales
-          </p>
-        </div>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Conectar Operadora
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {carriers.map(carrier => {
-          const hasAccount = carrierAccounts.some(a => (a as any).carrier_id === carrier.id);
-          const services = carrier.services || [];
-          
-          return (
-            <Card key={carrier.id} className={cn(
-              "relative overflow-hidden transition-all",
-              hasAccount && "ring-2 ring-primary/50"
-            )}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold",
-                    CARRIER_COLORS[carrier.carrier_code] || 'bg-gray-400'
-                  )}>
-                    {carrier.carrier_code.slice(0, 2)}
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{carrier.carrier_name}</CardTitle>
-                    <CardDescription className="capitalize">
-                      {carrier.carrier_type === 'national' && 'Nacional'}
-                      {carrier.carrier_type === 'international' && 'Internacional'}
-                      {carrier.carrier_type === 'urgent' && 'Urgente'}
-                      {carrier.carrier_type === 'freight' && 'Carga'}
-                    </CardDescription>
-                  </div>
-                  {hasAccount && (
-                    <Badge className="bg-green-500/20 text-green-600">Conectado</Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex flex-wrap gap-1">
-                  {services.slice(0, 3).map((service: { code: string; name: string }) => (
-                    <Badge key={service.code} variant="outline" className="text-xs">
-                      {service.name}
-                    </Badge>
-                  ))}
-                  {services.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{services.length - 3}
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {carrier.supports_tracking && (
-                    <span className="flex items-center gap-1">
-                      <Activity className="h-3 w-3" /> Tracking
-                    </span>
-                  )}
-                  {carrier.supports_labels && (
-                    <span className="flex items-center gap-1">
-                      <FileText className="h-3 w-3" /> Etiquetas
-                    </span>
-                  )}
-                </div>
-                <Button 
-                  variant={hasAccount ? "outline" : "default"} 
-                  size="sm" 
-                  className="w-full"
-                >
-                  {hasAccount ? 'Gestionar' : 'Conectar'}
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    </div>
-  );
+  const { carriers, carrierAccounts } = useERPLogistics();
+  return <CarriersManager carriers={carriers as LogisticsCarrier[]} accounts={carrierAccounts} />;
 }
 
 // === FLEET TAB ===
