@@ -1,0 +1,1336 @@
+/**
+ * AdvancedAgentsDashboard - Dashboard Ultra-Avanzado de Agentes IA
+ * Tendencias 2025-2027: Multi-agent orchestration, Agent Memory, MCP, Dynamic Module Registration
+ */
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Bot, 
+  Brain, 
+  Calculator,
+  Users,
+  Shield,
+  Cog,
+  UserCheck,
+  BarChart3,
+  RefreshCw,
+  Play,
+  Pause,
+  Settings,
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Zap,
+  ChevronDown,
+  ChevronRight,
+  Network,
+  Sparkles,
+  Target,
+  TrendingUp,
+  TrendingDown,
+  Eye,
+  Lightbulb,
+  MessageSquare,
+  Send,
+  Plus,
+  Trash2,
+  Save,
+  Cpu,
+  Database,
+  Share2,
+  History,
+  Layers,
+  GitBranch,
+  Workflow,
+  Radio,
+  Signal,
+  Gauge,
+  Timer,
+  Loader2,
+  Star,
+  ArrowUpRight,
+  ArrowDownRight,
+  Circle,
+  HelpCircle,
+  ExternalLink
+} from 'lucide-react';
+import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG, MODULE_AGENT_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
+import type { ModuleAgentType, SupervisorInsight, InsightPriority, ExecutionMode } from '@/hooks/admin/agents/erpAgentTypes';
+import { cn } from '@/lib/utils';
+import { formatDistanceToNow, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
+
+// === TIPOS LOCALES ===
+interface AgentMessage {
+  id: string;
+  role: 'user' | 'agent' | 'system';
+  content: string;
+  timestamp: Date;
+  agentId?: string;
+}
+
+interface AgentMetricHistory {
+  timestamp: Date;
+  value: number;
+}
+
+interface DynamicModule {
+  id: string;
+  name: string;
+  type: string;
+  domain: AgentDomain;
+  description: string;
+  capabilities: string[];
+  createdAt: Date;
+  isActive: boolean;
+}
+
+// Iconos por dominio
+const DOMAIN_ICONS: Record<AgentDomain, React.ElementType> = {
+  financial: Calculator,
+  crm_cs: Users,
+  compliance: Shield,
+  operations: Cog,
+  hr: UserCheck,
+  analytics: BarChart3
+};
+
+// Estado de métricas simuladas con historial
+const generateMetricHistory = (baseValue: number, variance: number = 5): AgentMetricHistory[] => {
+  const history: AgentMetricHistory[] = [];
+  const now = new Date();
+  for (let i = 23; i >= 0; i--) {
+    history.push({
+      timestamp: new Date(now.getTime() - i * 3600000),
+      value: Math.max(0, Math.min(100, baseValue + (Math.random() - 0.5) * variance * 2))
+    });
+  }
+  return history;
+};
+
+// Componente de Gráfico simple inline
+function MiniChart({ data, color = 'text-primary' }: { data: number[]; color?: string }) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  
+  return (
+    <div className="flex items-end gap-0.5 h-8">
+      {data.slice(-12).map((val, i) => (
+        <div 
+          key={i}
+          className={cn("w-1 rounded-t bg-current opacity-60 hover:opacity-100 transition-opacity", color)}
+          style={{ height: `${((val - min) / range) * 100}%`, minHeight: '2px' }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Componente de Chat con Agente
+function AgentChat({ 
+  agent, 
+  onSendMessage, 
+  messages,
+  isLoading 
+}: { 
+  agent: ModuleAgent; 
+  onSendMessage: (message: string) => void;
+  messages: AgentMessage[];
+  isLoading: boolean;
+}) {
+  const [input, setInput] = useState('');
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+    onSendMessage(input);
+    setInput('');
+  };
+
+  return (
+    <div className="flex flex-col h-[400px] border rounded-lg">
+      <div className="p-3 border-b bg-muted/30 flex items-center gap-2">
+        <Bot className="h-4 w-4 text-primary" />
+        <span className="font-medium text-sm">{agent.name}</span>
+        <Badge variant="outline" className="ml-auto text-xs">
+          {agent.domain}
+        </Badge>
+      </div>
+      
+      <ScrollArea className="flex-1 p-3">
+        <div className="space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center text-muted-foreground text-sm py-8">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Envía instrucciones precisas a este agente</p>
+              <p className="text-xs mt-1">Especializado en: {agent.capabilities.slice(0, 3).join(', ')}</p>
+            </div>
+          )}
+          {messages.map((msg) => (
+            <div 
+              key={msg.id}
+              className={cn(
+                "flex gap-2",
+                msg.role === 'user' ? 'justify-end' : 'justify-start'
+              )}
+            >
+              {msg.role !== 'user' && (
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Bot className="h-4 w-4 text-primary" />
+                </div>
+              )}
+              <div className={cn(
+                "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                msg.role === 'user' 
+                  ? 'bg-primary text-primary-foreground' 
+                  : msg.role === 'system'
+                    ? 'bg-muted text-muted-foreground italic'
+                    : 'bg-muted'
+              )}>
+                {msg.content}
+                <p className="text-[10px] opacity-60 mt-1">
+                  {format(msg.timestamp, 'HH:mm', { locale: es })}
+                </p>
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex gap-2">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                <Loader2 className="h-4 w-4 text-primary animate-spin" />
+              </div>
+              <div className="bg-muted rounded-lg px-3 py-2">
+                <span className="text-sm text-muted-foreground">Procesando...</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+      
+      <div className="p-3 border-t flex gap-2">
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Escribe una instrucción..."
+          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+          disabled={isLoading}
+          className="flex-1"
+        />
+        <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()}>
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Componente de Métricas Detalladas por Agente
+function AgentDetailedMetrics({ agent }: { agent: ModuleAgent }) {
+  const metricsData = useMemo(() => ({
+    healthHistory: generateMetricHistory(agent.healthScore),
+    performanceHistory: generateMetricHistory(85),
+    responseTimeHistory: generateMetricHistory(200, 50),
+    successRateHistory: generateMetricHistory(92),
+  }), [agent.healthScore]);
+
+  return (
+    <div className="space-y-4">
+      {/* KPIs principales */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Health Score</span>
+            <Gauge className="h-4 w-4 text-emerald-500" />
+          </div>
+          <p className="text-2xl font-bold">{agent.healthScore}%</p>
+          <MiniChart data={metricsData.healthHistory.map(h => h.value)} color="text-emerald-500" />
+        </Card>
+        
+        <Card className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Performance</span>
+            <TrendingUp className="h-4 w-4 text-blue-500" />
+          </div>
+          <p className="text-2xl font-bold">85%</p>
+          <MiniChart data={metricsData.performanceHistory.map(h => h.value)} color="text-blue-500" />
+        </Card>
+        
+        <Card className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Tiempo Resp.</span>
+            <Timer className="h-4 w-4 text-amber-500" />
+          </div>
+          <p className="text-2xl font-bold">~200ms</p>
+          <MiniChart data={metricsData.responseTimeHistory.map(h => h.value)} color="text-amber-500" />
+        </Card>
+        
+        <Card className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground">Éxito</span>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </div>
+          <p className="text-2xl font-bold">92%</p>
+          <MiniChart data={metricsData.successRateHistory.map(h => h.value)} color="text-green-500" />
+        </Card>
+      </div>
+
+      {/* Métricas específicas del agente */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Métricas del Módulo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
+            {Object.entries(agent.metrics).map(([key, value]) => (
+              <div key={key} className="flex justify-between items-center p-2 rounded bg-muted/30">
+                <span className="text-xs text-muted-foreground capitalize">
+                  {key.replace(/_/g, ' ')}
+                </span>
+                <span className="text-sm font-medium">{value}</span>
+              </div>
+            ))}
+            {Object.keys(agent.metrics).length === 0 && (
+              <p className="text-sm text-muted-foreground col-span-2 text-center py-4">
+                Sin métricas registradas aún
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Capacidades */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Capacidades</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {agent.capabilities.map((cap, idx) => (
+              <Badge key={idx} variant="secondary" className="text-xs">
+                {cap.replace(/_/g, ' ')}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Componente de Configuración de Agente
+function AgentConfigPanel({ 
+  agent, 
+  onSave 
+}: { 
+  agent: ModuleAgent; 
+  onSave: (config: { confidenceThreshold: number; executionMode: ExecutionMode; priority: number }) => void;
+}) {
+  const [threshold, setThreshold] = useState(agent.confidenceThreshold);
+  const [mode, setMode] = useState<ExecutionMode>(agent.executionMode);
+  const [priority, setPriority] = useState(agent.priority);
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Umbral de Confianza: {threshold}%</Label>
+        <Slider
+          value={[threshold]}
+          onValueChange={([v]) => setThreshold(v)}
+          min={50}
+          max={100}
+          step={5}
+        />
+        <p className="text-xs text-muted-foreground">
+          El agente solo ejecutará acciones con confianza ≥ {threshold}%
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Modo de Ejecución</Label>
+        <div className="flex gap-2">
+          {(['autonomous', 'supervised', 'manual'] as ExecutionMode[]).map((m) => (
+            <Button
+              key={m}
+              variant={mode === m ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMode(m)}
+              className="flex-1"
+            >
+              {m === 'autonomous' ? 'Autónomo' : m === 'supervised' ? 'Supervisado' : 'Manual'}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Prioridad: {priority}</Label>
+        <Slider
+          value={[priority]}
+          onValueChange={([v]) => setPriority(v)}
+          min={1}
+          max={5}
+          step={1}
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Baja</span>
+          <span>Alta</span>
+        </div>
+      </div>
+
+      <Button 
+        onClick={() => onSave({ confidenceThreshold: threshold, executionMode: mode, priority })}
+        className="w-full"
+      >
+        <Save className="h-4 w-4 mr-2" />
+        Guardar Configuración
+      </Button>
+    </div>
+  );
+}
+
+// Componente para Registrar Nuevo Módulo Dinámico
+function RegisterModuleDialog({ 
+  onRegister,
+  existingDomains 
+}: { 
+  onRegister: (module: Omit<DynamicModule, 'id' | 'createdAt'>) => void;
+  existingDomains: AgentDomain[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [type, setType] = useState('');
+  const [domain, setDomain] = useState<AgentDomain>('crm_cs');
+  const [description, setDescription] = useState('');
+  const [capabilities, setCapabilities] = useState('');
+
+  const handleSubmit = () => {
+    if (!name || !type || !description) {
+      toast.error('Completa todos los campos requeridos');
+      return;
+    }
+
+    onRegister({
+      name,
+      type: type.toLowerCase().replace(/\s+/g, '_'),
+      domain,
+      description,
+      capabilities: capabilities.split(',').map(c => c.trim()).filter(Boolean),
+      isActive: true
+    });
+
+    setOpen(false);
+    setName('');
+    setType('');
+    setDescription('');
+    setCapabilities('');
+    toast.success('Módulo registrado y coordinado con el Supervisor');
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Registrar Módulo
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Registrar Nuevo Módulo ERP/CRM
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Nombre del Módulo *</Label>
+            <Input 
+              value={name} 
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ej: Agente Loyalty"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tipo (identificador) *</Label>
+            <Input 
+              value={type} 
+              onChange={(e) => setType(e.target.value)}
+              placeholder="Ej: loyalty_program"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Dominio</Label>
+            <Select value={domain} onValueChange={(v) => setDomain(v as AgentDomain)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {existingDomains.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {DOMAIN_CONFIG[d].name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Descripción *</Label>
+            <Textarea 
+              value={description} 
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Qué hace este agente..."
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Capacidades (separadas por coma)</Label>
+            <Input 
+              value={capabilities} 
+              onChange={(e) => setCapabilities(e.target.value)}
+              placeholder="reward_tracking, tier_management, point_calculation"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={handleSubmit}>
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Registrar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// === COMPONENTE PRINCIPAL ===
+export function AdvancedAgentsDashboard() {
+  const [activeTab, setActiveTab] = useState<'overview' | 'supervisor' | 'agents' | 'insights' | 'registry'>('overview');
+  const [selectedAgent, setSelectedAgent] = useState<ModuleAgent | null>(null);
+  const [agentMessages, setAgentMessages] = useState<Record<string, AgentMessage[]>>({});
+  const [dynamicModules, setDynamicModules] = useState<DynamicModule[]>([]);
+  const [isAgentChatLoading, setIsAgentChatLoading] = useState(false);
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+
+  const {
+    isLoading,
+    domainAgents,
+    supervisorStatus,
+    insights,
+    lastRefresh,
+    initializeAgents,
+    executeModuleAgent,
+    coordinateDomain,
+    supervisorOrchestrate,
+    configureAgent,
+    toggleAgent,
+    toggleAutonomousMode,
+    startAutoRefresh,
+    stopAutoRefresh
+  } = useERPModuleAgents();
+
+  useEffect(() => {
+    startAutoRefresh(60000);
+    return () => stopAutoRefresh();
+  }, [startAutoRefresh, stopAutoRefresh]);
+
+  // Estadísticas globales
+  const stats = useMemo(() => {
+    const totalAgents = domainAgents.reduce((sum, d) => sum + d.moduleAgents.length, 0);
+    const activeAgents = domainAgents.reduce((sum, d) => 
+      sum + d.moduleAgents.filter(a => a.status === 'active' || a.status === 'analyzing').length, 0
+    );
+    const totalDomains = domainAgents.length;
+    const activeDomains = domainAgents.filter(d => d.status === 'active' || d.status === 'coordinating').length;
+
+    return { totalAgents, activeAgents, totalDomains, activeDomains };
+  }, [domainAgents]);
+
+  // Enviar mensaje a agente
+  const handleSendAgentMessage = useCallback(async (message: string) => {
+    if (!selectedAgent) return;
+
+    const userMsg: AgentMessage = {
+      id: `msg_${Date.now()}_user`,
+      role: 'user',
+      content: message,
+      timestamp: new Date(),
+      agentId: selectedAgent.id
+    };
+
+    setAgentMessages(prev => ({
+      ...prev,
+      [selectedAgent.id]: [...(prev[selectedAgent.id] || []), userMsg]
+    }));
+
+    setIsAgentChatLoading(true);
+
+    try {
+      const result = await executeModuleAgent(selectedAgent.id, { 
+        instruction: message,
+        userRequest: true 
+      });
+
+      const agentResponse: AgentMessage = {
+        id: `msg_${Date.now()}_agent`,
+        role: 'agent',
+        content: result 
+          ? `✅ Instrucción procesada. ${JSON.stringify(result.recommendations || result.actions_taken || 'Completado').slice(0, 200)}...`
+          : 'He procesado tu instrucción. Revisa los insights para más detalles.',
+        timestamp: new Date(),
+        agentId: selectedAgent.id
+      };
+
+      setAgentMessages(prev => ({
+        ...prev,
+        [selectedAgent.id]: [...(prev[selectedAgent.id] || []), agentResponse]
+      }));
+    } catch {
+      const errorMsg: AgentMessage = {
+        id: `msg_${Date.now()}_error`,
+        role: 'system',
+        content: 'Error al procesar la instrucción. Intenta de nuevo.',
+        timestamp: new Date(),
+        agentId: selectedAgent.id
+      };
+      setAgentMessages(prev => ({
+        ...prev,
+        [selectedAgent.id]: [...(prev[selectedAgent.id] || []), errorMsg]
+      }));
+    } finally {
+      setIsAgentChatLoading(false);
+    }
+  }, [selectedAgent, executeModuleAgent]);
+
+  // Registrar módulo dinámico
+  const handleRegisterModule = useCallback((module: Omit<DynamicModule, 'id' | 'createdAt'>) => {
+    const newModule: DynamicModule = {
+      ...module,
+      id: `dynamic_${Date.now()}`,
+      createdAt: new Date()
+    };
+    setDynamicModules(prev => [...prev, newModule]);
+
+    // Notificar al supervisor
+    supervisorOrchestrate(`Integrar nuevo módulo: ${module.name} en dominio ${module.domain}`, 'medium');
+  }, [supervisorOrchestrate]);
+
+  const toggleDomainExpand = (domainId: string) => {
+    setExpandedDomains(prev => {
+      const next = new Set(prev);
+      if (next.has(domainId)) {
+        next.delete(domainId);
+      } else {
+        next.add(domainId);
+      }
+      return next;
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': case 'running': return 'bg-green-500';
+      case 'analyzing': case 'coordinating': return 'bg-blue-500 animate-pulse';
+      case 'idle': return 'bg-muted-foreground/50';
+      case 'paused': return 'bg-yellow-500';
+      case 'error': return 'bg-destructive';
+      default: return 'bg-muted-foreground/50';
+    }
+  };
+
+  const getPriorityColor = (priority: InsightPriority) => {
+    switch (priority) {
+      case 'critical': return 'bg-red-500 text-white';
+      case 'high': return 'bg-orange-500 text-white';
+      case 'medium': return 'bg-yellow-500 text-black';
+      case 'low': return 'bg-blue-500 text-white';
+      default: return 'bg-muted';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Brain className="h-6 w-6 text-primary" />
+            Centro de Control de Agentes IA
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Multi-Agent Orchestration • Dynamic Module Registry • 2025-2027 Architecture
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <RegisterModuleDialog 
+            onRegister={handleRegisterModule}
+            existingDomains={Object.keys(DOMAIN_CONFIG) as AgentDomain[]}
+          />
+          <Button variant="outline" size="sm" onClick={initializeAgents} disabled={isLoading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+            Sync
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={() => supervisorOrchestrate('Optimización global con insights predictivos', 'high')}
+            disabled={isLoading}
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            Orquestar
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "w-2 h-2 rounded-full",
+              supervisorStatus?.status === 'running' ? 'bg-green-500' : 'bg-muted'
+            )} />
+            <span className="text-xs text-muted-foreground">Supervisor</span>
+          </div>
+          <p className="text-lg font-bold capitalize mt-1">
+            {supervisorStatus?.status || 'Offline'}
+          </p>
+        </Card>
+
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <Network className="h-4 w-4 text-purple-500" />
+            <span className="text-xs text-muted-foreground">Dominios</span>
+          </div>
+          <p className="text-lg font-bold mt-1">
+            {stats.activeDomains}/{stats.totalDomains}
+          </p>
+        </Card>
+
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <Bot className="h-4 w-4 text-blue-500" />
+            <span className="text-xs text-muted-foreground">Agentes</span>
+          </div>
+          <p className="text-lg font-bold mt-1">
+            {stats.activeAgents}/{stats.totalAgents}
+          </p>
+        </Card>
+
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-emerald-500" />
+            <span className="text-xs text-muted-foreground">Health</span>
+          </div>
+          <p className="text-lg font-bold mt-1">
+            {supervisorStatus?.systemHealth || 0}%
+          </p>
+        </Card>
+
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            <span className="text-xs text-muted-foreground">Insights</span>
+          </div>
+          <p className="text-lg font-bold mt-1">{insights.length}</p>
+        </Card>
+
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-cyan-500" />
+            <span className="text-xs text-muted-foreground">Dinámicos</span>
+          </div>
+          <p className="text-lg font-bold mt-1">{dynamicModules.length}</p>
+        </Card>
+      </div>
+
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview" className="gap-1">
+            <Activity className="h-4 w-4" />
+            <span className="hidden sm:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="supervisor" className="gap-1">
+            <Brain className="h-4 w-4" />
+            <span className="hidden sm:inline">Supervisor</span>
+          </TabsTrigger>
+          <TabsTrigger value="agents" className="gap-1">
+            <Bot className="h-4 w-4" />
+            <span className="hidden sm:inline">Agentes</span>
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-1">
+            <Lightbulb className="h-4 w-4" />
+            <span className="hidden sm:inline">Insights</span>
+          </TabsTrigger>
+          <TabsTrigger value="registry" className="gap-1">
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">Registry</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Dominios con sus agentes */}
+            <div className="lg:col-span-2 space-y-3">
+              {domainAgents.map((domain) => {
+                const DomainIcon = DOMAIN_ICONS[domain.domain];
+                const config = DOMAIN_CONFIG[domain.domain];
+                const isExpanded = expandedDomains.has(domain.id);
+                const activeCount = domain.moduleAgents.filter(a => 
+                  a.status === 'active' || a.status === 'analyzing'
+                ).length;
+
+                return (
+                  <Collapsible 
+                    key={domain.id} 
+                    open={isExpanded}
+                    onOpenChange={() => toggleDomainExpand(domain.id)}
+                  >
+                    <Card>
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className={cn(
+                          "cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg",
+                          "bg-gradient-to-r",
+                          config.color.replace('from-', 'from-').replace(' to-', '/10 to-') + '/5'
+                        )}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={cn("p-2 rounded-lg bg-gradient-to-br text-white", config.color)}>
+                                <DomainIcon className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-base">{domain.name}</CardTitle>
+                                <CardDescription className="text-xs">
+                                  {activeCount}/{domain.moduleAgents.length} agentes activos
+                                </CardDescription>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className={cn("text-xs", getStatusColor(domain.status))}>
+                                {domain.status}
+                              </Badge>
+                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </div>
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+
+                      <CollapsibleContent>
+                        <CardContent className="pt-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {domain.moduleAgents.map((agent) => (
+                              <div 
+                                key={agent.id}
+                                className={cn(
+                                  "p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md",
+                                  selectedAgent?.id === agent.id && "ring-2 ring-primary"
+                                )}
+                                onClick={() => {
+                                  setSelectedAgent(agent);
+                                  setActiveTab('agents');
+                                }}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-sm">{agent.name}</span>
+                                  <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+                                  {agent.description}
+                                </p>
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">Health: {agent.healthScore}%</span>
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {agent.executionMode}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 mt-3">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => coordinateDomain(domain.id, 'Coordinación completa')}
+                              disabled={isLoading}
+                            >
+                              <Play className="h-3 w-3 mr-1" />
+                              Coordinar
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                );
+              })}
+            </div>
+
+            {/* Insights recientes */}
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Insights Recientes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px]">
+                  {insights.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Sin insights aún</p>
+                      <p className="text-xs">Ejecuta el orquestador para generar</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {insights.slice(0, 10).map((insight) => (
+                        <div key={insight.id} className="p-3 rounded-lg border">
+                          <div className="flex items-start gap-2">
+                            <Badge className={cn("text-[10px] shrink-0", getPriorityColor(insight.priority))}>
+                              {insight.priority}
+                            </Badge>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{insight.title}</p>
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {insight.description}
+                              </p>
+                              {insight.suggestedAction && (
+                                <p className="text-xs text-primary mt-1">
+                                  → {insight.suggestedAction}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Supervisor Tab */}
+        <TabsContent value="supervisor" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      Supervisor General
+                    </CardTitle>
+                    <CardDescription>
+                      Orquestación multi-agente con inteligencia predictiva
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={supervisorStatus?.autonomousMode || false}
+                      onCheckedChange={(checked) => toggleAutonomousMode(checked, 45000)}
+                    />
+                    <span className="text-xs">Auto</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Métricas del supervisor */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs text-muted-foreground">Conflictos Resueltos</p>
+                    <p className="text-2xl font-bold">{supervisorStatus?.conflictsResolved || 0}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs text-muted-foreground">Decisiones Pendientes</p>
+                    <p className="text-2xl font-bold">{supervisorStatus?.pendingDecisions || 0}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs text-muted-foreground">Utilización</p>
+                    <p className="text-2xl font-bold">{supervisorStatus?.resourceUtilization || 0}%</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <p className="text-xs text-muted-foreground">Aprendizaje</p>
+                    <p className="text-2xl font-bold">{supervisorStatus?.learningProgress || 0}%</p>
+                  </div>
+                </div>
+
+                {/* Progreso de aprendizaje */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Progreso de Aprendizaje</span>
+                    <span>{supervisorStatus?.learningProgress || 0}%</span>
+                  </div>
+                  <Progress value={supervisorStatus?.learningProgress || 0} />
+                </div>
+
+                {/* Acciones del supervisor */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'Distribuir Tareas', action: 'distribute_tasks', icon: Share2 },
+                    { label: 'Análisis Predictivo', action: 'predictive_analysis', icon: TrendingUp },
+                    { label: 'Resolver Conflictos', action: 'resolve_conflicts', icon: GitBranch },
+                    { label: 'Auto-Optimizar', action: 'auto_optimize', icon: Sparkles },
+                  ].map((item) => (
+                    <Button
+                      key={item.action}
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => supervisorOrchestrate(item.action, 'medium')}
+                      disabled={isLoading}
+                    >
+                      <item.icon className="h-4 w-4 mr-2" />
+                      {item.label}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Chat con Supervisor */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Instrucciones al Supervisor
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AgentChat
+                  agent={{
+                    id: 'supervisor',
+                    name: 'Supervisor General',
+                    domain: 'analytics' as AgentDomain,
+                    type: 'reporting' as ModuleAgentType,
+                    description: 'Coordina todos los agentes',
+                    status: supervisorStatus?.status === 'running' ? 'active' : 'idle',
+                    capabilities: ['orchestration', 'conflict_resolution', 'optimization'],
+                    metrics: {},
+                    lastActivity: new Date().toISOString(),
+                    healthScore: supervisorStatus?.systemHealth || 100,
+                    confidenceThreshold: 80,
+                    executionMode: 'autonomous',
+                    priority: 1
+                  }}
+                  messages={agentMessages['supervisor'] || []}
+                  onSendMessage={async (msg) => {
+                    const userMsg: AgentMessage = {
+                      id: `msg_${Date.now()}`,
+                      role: 'user',
+                      content: msg,
+                      timestamp: new Date()
+                    };
+                    setAgentMessages(prev => ({
+                      ...prev,
+                      supervisor: [...(prev['supervisor'] || []), userMsg]
+                    }));
+                    setIsAgentChatLoading(true);
+                    try {
+                      await supervisorOrchestrate(msg, 'medium');
+                      const resp: AgentMessage = {
+                        id: `msg_${Date.now()}_resp`,
+                        role: 'agent',
+                        content: '✅ Instrucción procesada. Revisa la pestaña Insights para ver los resultados.',
+                        timestamp: new Date()
+                      };
+                      setAgentMessages(prev => ({
+                        ...prev,
+                        supervisor: [...(prev['supervisor'] || []), resp]
+                      }));
+                    } finally {
+                      setIsAgentChatLoading(false);
+                    }
+                  }}
+                  isLoading={isAgentChatLoading}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Agents Tab */}
+        <TabsContent value="agents" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Lista de agentes */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="text-sm">Seleccionar Agente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[500px]">
+                  <div className="space-y-2">
+                    {domainAgents.flatMap(d => d.moduleAgents).map((agent) => (
+                      <div
+                        key={agent.id}
+                        className={cn(
+                          "p-3 rounded-lg border cursor-pointer transition-all hover:bg-muted/50",
+                          selectedAgent?.id === agent.id && "ring-2 ring-primary bg-muted/30"
+                        )}
+                        onClick={() => setSelectedAgent(agent)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{agent.name}</span>
+                          <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                        </div>
+                        <p className="text-xs text-muted-foreground">{agent.domain}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Detalle del agente seleccionado */}
+            <div className="lg:col-span-2">
+              {selectedAgent ? (
+                <Tabs defaultValue="metrics">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="metrics">Métricas</TabsTrigger>
+                    <TabsTrigger value="chat">Chat</TabsTrigger>
+                    <TabsTrigger value="config">Config</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="metrics">
+                    <AgentDetailedMetrics agent={selectedAgent} />
+                  </TabsContent>
+
+                  <TabsContent value="chat">
+                    <AgentChat
+                      agent={selectedAgent}
+                      messages={agentMessages[selectedAgent.id] || []}
+                      onSendMessage={handleSendAgentMessage}
+                      isLoading={isAgentChatLoading}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="config">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm">Configuración de {selectedAgent.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <AgentConfigPanel
+                          agent={selectedAgent}
+                          onSave={(cfg) => {
+                            configureAgent(selectedAgent.id, cfg);
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <Card className="h-[500px] flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Bot className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Selecciona un agente para ver sus detalles</p>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Insights Tab */}
+        <TabsContent value="insights" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Insights Predictivos</h3>
+            <Button 
+              size="sm" 
+              onClick={() => supervisorOrchestrate('Generar insights predictivos completos', 'high')}
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+              Generar Nuevos
+            </Button>
+          </div>
+
+          {insights.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Lightbulb className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+              <p className="text-muted-foreground">No hay insights generados</p>
+              <p className="text-sm text-muted-foreground">Ejecuta el orquestador para generar insights predictivos</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {insights.map((insight) => (
+                <Card key={insight.id} className="overflow-hidden">
+                  <CardHeader className={cn(
+                    "pb-2",
+                    insight.priority === 'critical' && "bg-red-500/10",
+                    insight.priority === 'high' && "bg-orange-500/10",
+                    insight.priority === 'medium' && "bg-yellow-500/10",
+                    insight.priority === 'low' && "bg-blue-500/10"
+                  )}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <Badge className={cn("mb-2", getPriorityColor(insight.priority))}>
+                          {insight.priority}
+                        </Badge>
+                        <CardTitle className="text-base">{insight.title}</CardTitle>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {insight.type}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-3">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {insight.description}
+                    </p>
+                    {insight.suggestedAction && (
+                      <div className="p-2 rounded bg-primary/5 border-l-2 border-primary">
+                        <p className="text-xs font-medium text-primary">Acción Sugerida:</p>
+                        <p className="text-sm">{insight.suggestedAction}</p>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+                      <span>Confianza: {insight.confidence}%</span>
+                      <span>Dominios: {insight.affectedDomains.join(', ')}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Registry Tab */}
+        <TabsContent value="registry" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Registro de Módulos Dinámicos</h3>
+              <p className="text-sm text-muted-foreground">
+                Añade nuevos módulos ERP/CRM que se coordinarán automáticamente con el Supervisor
+              </p>
+            </div>
+            <RegisterModuleDialog 
+              onRegister={handleRegisterModule}
+              existingDomains={Object.keys(DOMAIN_CONFIG) as AgentDomain[]}
+            />
+          </div>
+
+          {dynamicModules.length === 0 ? (
+            <Card className="p-12 text-center">
+              <Layers className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+              <p className="text-muted-foreground">No hay módulos dinámicos registrados</p>
+              <p className="text-sm text-muted-foreground">
+                Usa el botón "Registrar Módulo" para añadir nuevos agentes especializados
+              </p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dynamicModules.map((module) => (
+                <Card key={module.id}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{module.name}</CardTitle>
+                      <Switch 
+                        checked={module.isActive}
+                        onCheckedChange={(checked) => {
+                          setDynamicModules(prev => prev.map(m => 
+                            m.id === module.id ? { ...m, isActive: checked } : m
+                          ));
+                        }}
+                      />
+                    </div>
+                    <CardDescription>{module.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{module.domain}</Badge>
+                        <Badge variant="secondary">{module.type}</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {module.capabilities.slice(0, 3).map((cap, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            {cap}
+                          </Badge>
+                        ))}
+                        {module.capabilities.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{module.capabilities.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Creado: {format(module.createdAt, 'dd/MM/yyyy HH:mm', { locale: es })}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Información sobre tendencias */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Tendencias 2025-2027 Implementadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { title: 'Multi-Agent Orchestration', desc: 'Coordinación jerárquica Supervisor → Dominios → Módulos', icon: Network },
+                  { title: 'Dynamic Module Registry', desc: 'Registro y coordinación automática de nuevos módulos', icon: Layers },
+                  { title: 'Agent-to-Agent Communication', desc: 'Comunicación directa entre agentes para resolver tareas', icon: Share2 },
+                  { title: 'Predictive Insights', desc: 'Análisis predictivo con IA para optimización proactiva', icon: Sparkles },
+                  { title: 'Autonomous Mode', desc: 'Ejecución autónoma con supervisión configurable', icon: Cpu },
+                  { title: 'Interactive Chat', desc: 'Instrucciones precisas a cada agente vía chat', icon: MessageSquare },
+                ].map((trend, i) => (
+                  <div key={i} className="p-3 rounded-lg border flex gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10 h-fit">
+                      <trend.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{trend.title}</p>
+                      <p className="text-xs text-muted-foreground">{trend.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Footer info */}
+      <div className="text-center text-xs text-muted-foreground">
+        Última sincronización: {lastRefresh ? formatDistanceToNow(lastRefresh, { locale: es, addSuffix: true }) : 'Nunca'} • 
+        Arquitectura: Multi-Agent Hierarchical Orchestration v2.0
+      </div>
+    </div>
+  );
+}
+
+export default AdvancedAgentsDashboard;
