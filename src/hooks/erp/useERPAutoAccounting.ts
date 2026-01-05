@@ -241,6 +241,203 @@ export function useERPAutoAccounting() {
     );
   }, [config]);
 
+  // === CREATE AND LINK JOURNAL ENTRY ===
+  const createAndLinkJournalEntry = useCallback(async (
+    entry: GeneratedJournalEntry,
+    sourceType: string,
+    sourceId: string,
+    options?: {
+      autoPost?: boolean;
+      journalId?: string;
+      periodId?: string;
+      fiscalYearId?: string;
+    }
+  ) => {
+    if (!currentCompany?.id) {
+      toast.error('No hay empresa seleccionada');
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-auto-accounting', {
+        body: {
+          action: 'create_linked_entry',
+          company_id: currentCompany.id,
+          entry,
+          source_type: sourceType,
+          source_id: sourceId,
+          auto_post: options?.autoPost || false,
+          journal_id: options?.journalId,
+          period_id: options?.periodId,
+          fiscal_year_id: options?.fiscalYearId
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Error al crear asiento');
+
+      toast.success('Asiento creado y vinculado correctamente');
+      queryClient.invalidateQueries({ queryKey: ['erp-linked-entries'] });
+      return data.data as { entry_id: string; entry_number: string };
+    } catch (err) {
+      console.error('Error creating linked entry:', err);
+      toast.error('Error al crear asiento vinculado');
+      return null;
+    }
+  }, [currentCompany?.id, queryClient]);
+
+  // === GET LINKED ENTRIES ===
+  const getLinkedEntries = useCallback(async (
+    sourceType: string,
+    sourceId: string
+  ) => {
+    if (!currentCompany?.id) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('erp_journal_entries')
+        .select(`
+          id,
+          entry_number,
+          entry_date,
+          description,
+          reference,
+          total_debit,
+          total_credit,
+          is_posted,
+          is_reversed,
+          created_at,
+          erp_journals(name, journal_type)
+        `)
+        .eq('company_id', currentCompany.id)
+        .eq('source_type', sourceType)
+        .eq('source_id', sourceId)
+        .order('entry_date', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map((e: any) => ({
+        ...e,
+        journal_name: e.erp_journals?.name
+      }));
+    } catch (err) {
+      console.error('Error fetching linked entries:', err);
+      return [];
+    }
+  }, [currentCompany?.id]);
+
+  // === UPDATE LINKED ENTRY ===
+  const updateLinkedEntry = useCallback(async (
+    entryId: string,
+    updates: {
+      lines?: Array<{
+        account_id: string;
+        account_code: string;
+        account_name: string;
+        debit_amount: number;
+        credit_amount: number;
+        description?: string;
+      }>;
+      description?: string;
+      reference?: string;
+    }
+  ) => {
+    if (!currentCompany?.id) {
+      toast.error('No hay empresa seleccionada');
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-auto-accounting', {
+        body: {
+          action: 'update_linked_entry',
+          company_id: currentCompany.id,
+          entry_id: entryId,
+          updates
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Error al actualizar');
+
+      toast.success('Asiento actualizado');
+      queryClient.invalidateQueries({ queryKey: ['erp-linked-entries'] });
+      return true;
+    } catch (err) {
+      console.error('Error updating linked entry:', err);
+      toast.error('Error al actualizar asiento');
+      return false;
+    }
+  }, [currentCompany?.id, queryClient]);
+
+  // === DELETE LINKED ENTRY ===
+  const deleteLinkedEntry = useCallback(async (
+    entryId: string,
+    options?: { reason?: string; createReversal?: boolean }
+  ) => {
+    if (!currentCompany?.id) {
+      toast.error('No hay empresa seleccionada');
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-auto-accounting', {
+        body: {
+          action: 'delete_linked_entry',
+          company_id: currentCompany.id,
+          entry_id: entryId,
+          reason: options?.reason,
+          create_reversal: options?.createReversal || false
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Error al eliminar');
+
+      toast.success(options?.createReversal ? 'Asiento anulado' : 'Asiento eliminado');
+      queryClient.invalidateQueries({ queryKey: ['erp-linked-entries'] });
+      return true;
+    } catch (err) {
+      console.error('Error deleting linked entry:', err);
+      toast.error('Error al eliminar asiento');
+      return false;
+    }
+  }, [currentCompany?.id, queryClient]);
+
+  // === REGENERATE FROM OPERATION ===
+  const regenerateFromOperation = useCallback(async (
+    sourceType: string,
+    sourceId: string,
+    operationData: Record<string, unknown>
+  ) => {
+    if (!currentCompany?.id) {
+      toast.error('No hay empresa seleccionada');
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-auto-accounting', {
+        body: {
+          action: 'regenerate_entry',
+          company_id: currentCompany.id,
+          source_type: sourceType,
+          source_id: sourceId,
+          operation_data: operationData
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Error al regenerar');
+
+      toast.success('Asiento regenerado desde operación');
+      queryClient.invalidateQueries({ queryKey: ['erp-linked-entries'] });
+      return data.data;
+    } catch (err) {
+      console.error('Error regenerating entry:', err);
+      toast.error('Error al regenerar asiento');
+      return null;
+    }
+  }, [currentCompany?.id, queryClient]);
+
   return {
     config,
     templates,
@@ -251,7 +448,13 @@ export function useERPAutoAccounting() {
     generateEntry,
     saveConfig: saveConfigMutation.mutateAsync,
     hasConfig,
-    isSaving: saveConfigMutation.isPending
+    isSaving: saveConfigMutation.isPending,
+    // Nuevas funciones para vinculación
+    createAndLinkJournalEntry,
+    getLinkedEntries,
+    updateLinkedEntry,
+    deleteLinkedEntry,
+    regenerateFromOperation
   };
 }
 
