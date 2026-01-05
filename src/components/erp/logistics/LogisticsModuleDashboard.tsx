@@ -54,6 +54,7 @@ import { LogisticsAccountingPanel } from './accounting/LogisticsAccountingPanel'
 import { FleetManager } from './fleet/FleetManager';
 import { RoutePlanner } from './routes/RoutePlanner';
 import { LogisticsAnalyticsDashboard } from './analytics/LogisticsAnalyticsDashboard';
+import { LogisticsNotificationsPanel } from './notifications/LogisticsNotificationsPanel';
 
 // === STATUS CONFIGS ===
 const STATUS_CONFIG: Record<ShipmentStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -351,6 +352,9 @@ export function LogisticsModuleDashboard() {
           </Badge>
         </div>
       </div>
+
+      {/* Notifications Panel - Collapsible at top */}
+      <LogisticsNotificationsPanel />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
