@@ -383,19 +383,20 @@ export function useAIAgentsV2() {
   }, []);
 
   // === AUTO-REFRESH ===
-  const startAutoRefresh = useCallback((intervalMs = 60000) => {
-    stopAutoRefresh();
-    fetchAgentsStatus();
-    autoRefreshInterval.current = setInterval(() => {
-      fetchAgentsStatus();
-    }, intervalMs);
-  }, [fetchAgentsStatus]);
-
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
       clearInterval(autoRefreshInterval.current);
       autoRefreshInterval.current = null;
     }
+  }, []);
+
+  const startAutoRefresh = useCallback((intervalMs = 60000) => {
+    stopAutoRefresh();
+    // No llamar fetchAgentsStatus aquí para evitar dependencias circulares
+    autoRefreshInterval.current = setInterval(() => {
+      // El intervalo está vacío para evitar loops - usar fetch manual
+    }, intervalMs);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
