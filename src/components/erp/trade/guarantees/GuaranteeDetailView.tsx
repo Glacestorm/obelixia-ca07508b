@@ -20,8 +20,10 @@ import {
   Ban,
   Play,
   XCircle,
+  BookOpen,
 } from 'lucide-react';
 import { BankGuarantee, useERPBankGuarantees } from '@/hooks/erp/useERPBankGuarantees';
+import { OperationAccountingPanel } from '../OperationAccountingPanel';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -187,6 +189,10 @@ export function GuaranteeDetailView({ guarantee, onBack }: GuaranteeDetailViewPr
               <TabsTrigger value="parties">Partes</TabsTrigger>
               <TabsTrigger value="costs">Costes</TabsTrigger>
               <TabsTrigger value="claims">Reclamaciones ({claims.length})</TabsTrigger>
+              <TabsTrigger value="accounting" className="gap-1">
+                <BookOpen className="h-4 w-4" />
+                Contabilidad
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-4 mt-4">
@@ -310,6 +316,17 @@ export function GuaranteeDetailView({ guarantee, onBack }: GuaranteeDetailViewPr
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="accounting" className="mt-4">
+              <OperationAccountingPanel
+                sourceId={guarantee.id}
+                sourceType="guarantee"
+                operationData={{
+                  amount: guarantee.amount,
+                  currency: guarantee.currency,
+                }}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

@@ -19,9 +19,11 @@ import {
   ArrowUpRight,
   Edit,
   FileCheck,
-  AlertCircle
+  AlertCircle,
+  BookOpen
 } from 'lucide-react';
 import { DocumentaryCredit, useERPDocumentaryCredits } from '@/hooks/erp/useERPDocumentaryCredits';
+import { OperationAccountingPanel } from '../OperationAccountingPanel';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -136,6 +138,10 @@ export function CreditDetailView({ credit, onUpdate }: CreditDetailViewProps) {
           </TabsTrigger>
           <TabsTrigger value="presentations">
             Presentaciones ({presentations.length})
+          </TabsTrigger>
+          <TabsTrigger value="accounting" className="gap-1">
+            <BookOpen className="h-4 w-4" />
+            Contabilidad
           </TabsTrigger>
         </TabsList>
 
@@ -359,6 +365,17 @@ export function CreditDetailView({ credit, onUpdate }: CreditDetailViewProps) {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="accounting" className="mt-4">
+          <OperationAccountingPanel
+            sourceId={credit.id}
+            sourceType="letter_of_credit"
+            operationData={{
+              amount: credit.amount,
+              currency: credit.currency,
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
