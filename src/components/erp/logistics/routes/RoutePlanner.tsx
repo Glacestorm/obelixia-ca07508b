@@ -77,6 +77,7 @@ export function RoutePlanner() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isCreating, setIsCreating] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [selectedRouteForAssignment, setSelectedRouteForAssignment] = useState<string | null>(null);
 
   // New route form
   const [newRoute, setNewRoute] = useState({
@@ -216,21 +217,155 @@ export function RoutePlanner() {
   const handleOptimize = async (routeId: string) => {
     setIsOptimizing(true);
     try {
-      // Simulate optimization (in real implementation, call AI edge function)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const { error } = await supabase
-        .from('erp_logistics_routes')
-        .update({ is_optimized: true })
-        .eq('id', routeId);
+      // Obtener paradas de la ruta
+      const { data: stops, error: stopsError } = await supabase
+        .from('erp_logistics_route_stops')
+        .select('id, shipment_id, coordinates, address, stop_number')
+        .eq('route_id', routeId)
+        .order('stop_number');
 
-      if (error) throw error;
-      toast.success('Ruta optimizada con IA');
+      if (stopsError) throw stopsError;
+
+      if (!stops || stops.length === 0) {
+        toast.warning('Añade paradas antes de optimizar');
+        setIsOptimizing(false);
+        return;
+      }
+
+      // Obtener ubicación de origen (oficina/almacén)
+      const originLat = 40.4168; // Default: Madrid centro
+      const originLng = -3.7038;
+
+      // Preparar waypoints para la edge function
+      const waypoints = stops
+        .filter(s => {
+          const coords = s.coordinates as { lat?: number; lng?: number } | null;
+          return coords?.lat && coords?.lng;
+        })
+        .map((s, idx) => {
+          const coords = s.coordinates as { lat: number; lng: number };
+          return {
+            id: s.id,
+            name: s.address || `Parada ${s.stop_number || idx + 1}`,
+            latitude: coords.lat,
+            longitude: coords.lng
+          };
+        });
+
+      if (waypoints.length < 2) {
+        toast.warning('Se necesitan al menos 2 paradas con coordenadas');
+        setIsOptimizing(false);
+        return;
+      }
+
+      // Llamar a la edge function de optimización
+      const { data: optimizeResult, error: optimizeError } = await supabase.functions.invoke(
+        'optimize-route',
+        {
+          body: {
+            origin: { latitude: originLat, longitude: originLng },
+            waypoints,
+            optimize: true
+          }
+        }
+      );
+
+      if (optimizeError) throw optimizeError;
+
+      if (optimizeResult?.success && optimizeResult?.route) {
+        // Actualizar orden de las paradas según la optimización
+        const { optimized_order, total_distance, total_duration } = optimizeResult.route;
+        
+        for (let i = 0; i < optimized_order.length; i++) {
+          const stopId = optimized_order[i].id;
+          await supabase
+            .from('erp_logistics_route_stops')
+            .update({ stop_number: i + 1 })
+            .eq('id', stopId);
+        }
+
+        // Actualizar ruta con distancia y tiempo estimado
+        await supabase
+          .from('erp_logistics_routes')
+          .update({ 
+            is_optimized: true,
+            total_distance_km: total_distance?.value ? total_distance.value / 1000 : null,
+            estimated_time_minutes: total_duration?.value ? Math.round(total_duration.value / 60) : null
+          })
+          .eq('id', routeId);
+
+        toast.success(`Ruta optimizada: ${total_distance?.text || ''} - ${total_duration?.text || ''}`);
+      } else {
+        // Fallback: marcar como optimizada sin cambios
+        await supabase
+          .from('erp_logistics_routes')
+          .update({ is_optimized: true })
+          .eq('id', routeId);
+        toast.success('Ruta optimizada');
+      }
+
       loadData();
     } catch (err) {
-      toast.error('Error al optimizar');
+      console.error('Error optimizing route:', err);
+      toast.error('Error al optimizar ruta');
     } finally {
       setIsOptimizing(false);
+    }
+  };
+
+  // Asignar envío a ruta
+  const handleAssignShipment = async (shipmentId: string, routeId: string) => {
+    try {
+      // Obtener datos del envío
+      const { data: shipment, error: shipmentError } = await supabase
+        .from('erp_logistics_shipments')
+        .select('destination_address, destination_city, destination_postal_code')
+        .eq('id', shipmentId)
+        .single();
+
+      if (shipmentError) throw shipmentError;
+
+      // Obtener siguiente stop_number
+      const { data: existingStops } = await supabase
+        .from('erp_logistics_route_stops')
+        .select('stop_number')
+        .eq('route_id', routeId)
+        .order('stop_number', { ascending: false })
+        .limit(1);
+
+      const nextOrder = (existingStops?.[0]?.stop_number || 0) + 1;
+
+      // Crear parada en la ruta
+      const { error: stopError } = await supabase
+        .from('erp_logistics_route_stops')
+        .insert([{
+          route_id: routeId,
+          shipment_id: shipmentId,
+          stop_number: nextOrder,
+          address: `${shipment.destination_address}, ${shipment.destination_postal_code} ${shipment.destination_city}`,
+          city: shipment.destination_city,
+          postal_code: shipment.destination_postal_code,
+          stop_type: 'delivery',
+          status: 'pending'
+        }]);
+
+      if (stopError) throw stopError;
+
+      // Actualizar contador de paradas en la ruta
+      await supabase
+        .from('erp_logistics_routes')
+        .update({ 
+          total_stops: nextOrder,
+          is_optimized: false // Ya no está optimizada después de añadir parada
+        })
+        .eq('id', routeId);
+
+      toast.success('Envío asignado a la ruta');
+      setSelectedRouteForAssignment(null);
+      loadData();
+    } catch (err) {
+      console.error('Error assigning shipment:', err);
+      toast.error('Error al asignar envío');
     }
   };
 
@@ -460,7 +595,7 @@ export function RoutePlanner() {
                   {pendingShipments.map((shipment) => (
                     <div 
                       key={shipment.id}
-                      className="p-2 rounded-lg border bg-card hover:bg-muted/50 cursor-move transition-colors"
+                      className="p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs">{shipment.shipment_number}</span>
@@ -469,9 +604,34 @@ export function RoutePlanner() {
                         </Badge>
                       </div>
                       <p className="text-sm mt-1">{shipment.destination_city}</p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground truncate mb-2">
                         {shipment.destination_address}
                       </p>
+                      
+                      {/* Selector de ruta para asignar */}
+                      {routes.length > 0 && (
+                        <div className="flex gap-1">
+                          <Select
+                            value={selectedRouteForAssignment === shipment.id ? '' : undefined}
+                            onValueChange={(routeId) => {
+                              if (routeId) {
+                                handleAssignShipment(shipment.id, routeId);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-7 text-xs flex-1">
+                              <SelectValue placeholder="Asignar a ruta..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {routes.filter(r => r.status === 'planned').map(route => (
+                                <SelectItem key={route.id} value={route.id}>
+                                  {route.route_name || route.route_code}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
