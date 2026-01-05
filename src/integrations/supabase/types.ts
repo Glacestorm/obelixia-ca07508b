@@ -41707,6 +41707,10 @@ export type Database = {
       }
       increment_read_count: { Args: { article_id: string }; Returns: undefined }
       is_admin_or_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      is_chat_room_member: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_license_valid: { Args: { p_license_id: string }; Returns: boolean }
       is_mfa_required_for_role: {
         Args: { p_user_id: string }

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Mail, Plus, Save, Eye, Send, Trash2, Loader2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 interface EmailTemplate {
   id: string;
@@ -194,7 +195,7 @@ export function EmailTemplateEditor() {
               <Card>
                 <CardHeader><CardTitle>Preview</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="p-4 border rounded bg-white text-black" dangerouslySetInnerHTML={{ __html: renderPreview() }} />
+                  <div className="p-4 border rounded bg-white text-black" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderPreview()) }} />
                 </CardContent>
               </Card>
 

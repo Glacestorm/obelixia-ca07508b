@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -210,9 +211,9 @@ export function LicenseActivation({
 
         <p className="text-xs text-center text-muted-foreground">
           ¿No tienes licencia?{' '}
-          <a href="/store" className="text-primary hover:underline">
+          <Link to="/store" className="text-primary hover:underline">
             Adquiere una aquí
-          </a>
+          </Link>
         </p>
       </CardFooter>
     </Card>
