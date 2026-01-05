@@ -41669,6 +41669,7 @@ export type Database = {
           valid_until: string
         }[]
       }
+      get_partner_company_id: { Args: { _user_id: string }; Returns: string }
       get_process_mining_stats: {
         Args: {
           p_date_from?: string
