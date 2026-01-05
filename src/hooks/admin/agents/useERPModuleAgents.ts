@@ -421,11 +421,15 @@ export function useERPModuleAgents() {
 
   const startAutoRefresh = useCallback((intervalMs = 60000) => {
     stopAutoRefresh();
-    initializeAgents();
+    // Solo inicializar una vez, usar refs para evitar dependencias inestables
+    if (domainAgents.length === 0) {
+      initializeAgents();
+    }
     autoRefreshInterval.current = setInterval(() => {
-      fetchPredictiveInsights();
+      // No llamar funciones con estado en el intervalo para evitar loops
     }, intervalMs);
-  }, [stopAutoRefresh, initializeAgents, fetchPredictiveInsights]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopAutoRefresh]);
 
   // === MODO AUTÓNOMO DEL SUPERVISOR ===
   const runAutonomousCycle = useCallback(async (): Promise<void> => {
