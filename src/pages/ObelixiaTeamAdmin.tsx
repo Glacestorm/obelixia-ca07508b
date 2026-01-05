@@ -56,8 +56,6 @@ const AdvancedMLDashboard = lazy(() => import('@/components/admin/AdvancedMLDash
 const SystemHealthMonitor = lazy(() => import('@/components/admin/SystemHealthMonitor').then(m => ({ default: m.SystemHealthMonitor })));
 const MetricsExplorer = lazy(() => import('@/components/admin/MetricsExplorer').then(m => ({ default: m.MetricsExplorer })));
 const SystemHelpPanel = lazy(() => import('@/components/obelixia-admin/SystemHelpPanel').then(m => ({ default: m.SystemHelpPanel })));
-const CRMAgentsDashboard = lazy(() => import('@/components/admin/agents/CRMAgentsDashboard').then(m => ({ default: m.CRMAgentsDashboard })));
-const EnterpriseFeatureFlagsPanel = lazy(() => import('@/components/admin/feature-flags/EnterpriseFeatureFlagsPanel').then(m => ({ default: m.EnterpriseFeatureFlagsPanel })));
 
 // Premium components
 import { ObelixiaAdminSidebar } from '@/components/obelixia-admin/ObelixiaAdminSidebar';
@@ -141,14 +139,6 @@ const ObelixiaTeamAdmin: React.FC = () => {
       navigate('/obelixia-admin/erp');
       return;
     }
-    if (tab === 'crm-omnicanal') {
-      navigate('/obelixia-admin/crm-omnicanal');
-      return;
-    }
-    if (tab === 'crm-modular') {
-      navigate('/obelixia-admin/crm-modular');
-      return;
-    }
     setActiveTab(tab);
     setSearchParams({ tab });
   };
@@ -161,8 +151,6 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'demo-requests': 'Solicitudes Demo',
       'service-quotes': 'Cotizaciones Servicio',
       'crm-migration': 'CRM Migration',
-      'erp': 'ERP Modular',
-      'crm': 'CRM Modular',
       content: 'Contenidos',
       cms: 'CMS',
       docs: 'Documentación',
@@ -185,7 +173,6 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'esg': 'ESG & Sostenibilidad',
       'market-intelligence': 'Market Intelligence',
       'ai-agents-specific': 'Agentes IA',
-      'crm-agents': 'CRM Agents',
       'enterprise-dashboard': 'Enterprise Dashboard',
       'cs-metrics': 'CS Metrics Hub',
       'remote-support': 'Soporte Remoto',
@@ -204,7 +191,6 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'metrics-explorer': 'Metrics Explorer',
       'automation-engine': 'Automation Engine',
       'licenses': 'Licencias Enterprise',
-      'feature-flags': 'Feature Flags',
     };
     return labels[tab] || tab;
   };
@@ -515,12 +501,6 @@ const ObelixiaTeamAdmin: React.FC = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="crm-agents" className="m-0">
-                <Suspense fallback={<LoadingFallback />}>
-                  <CRMAgentsDashboard />
-                </Suspense>
-              </TabsContent>
-
               <TabsContent value="enterprise-dashboard" className="m-0">
                 <div className="text-center py-12">
                   <Building2 className="h-16 w-16 mx-auto mb-4 text-amber-400" />
@@ -635,12 +615,6 @@ const ObelixiaTeamAdmin: React.FC = () => {
               <TabsContent value="system-help" className="m-0">
                 <Suspense fallback={<LoadingFallback />}>
                   <SystemHelpPanel />
-                </Suspense>
-              </TabsContent>
-
-              <TabsContent value="feature-flags" className="m-0">
-                <Suspense fallback={<LoadingFallback />}>
-                  <EnterpriseFeatureFlagsPanel />
                 </Suspense>
               </TabsContent>
             </Tabs>

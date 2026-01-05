@@ -22,8 +22,7 @@ import {
   MapPin,
   FileCheck,
   RefreshCw,
-  Sparkles,
-  Brain
+  Sparkles
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { useMaestros } from '@/hooks/erp/useMaestros';
@@ -37,7 +36,6 @@ import { WarehouseLocationsPanel } from './WarehouseLocationsPanel';
 import { BankAccountsPanel } from './BankAccountsPanel';
 import { SEPAMandatesPanel } from './SEPAMandatesPanel';
 import { PriceSimulator } from './PriceSimulator';
-import { AISmartImportPanel } from './AISmartImportPanel';
 import { StatsCard } from './shared/StatsCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -47,7 +45,6 @@ interface MaestrosLayoutProps {
 }
 
 const tabs = [
-  { key: 'ai-import', label: 'IA Import', icon: Brain, color: 'text-primary' },
   { key: 'customers', label: 'Clientes', icon: Users, color: 'text-blue-600' },
   { key: 'suppliers', label: 'Proveedores', icon: Truck, color: 'text-green-600' },
   { key: 'items', label: 'Artículos', icon: Package, color: 'text-purple-600' },
@@ -235,15 +232,12 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
         transition={{ delay: 0.2 }}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-11 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10 h-auto p-1">
             {tabs.map((tab) => (
               <TabsTrigger 
                 key={tab.key} 
                 value={tab.key} 
-                className={cn(
-                  "gap-1.5 py-2 data-[state=active]:shadow-sm",
-                  tab.key === 'ai-import' && "bg-gradient-to-r from-primary/10 to-accent/10 data-[state=active]:from-primary/20 data-[state=active]:to-accent/20"
-                )}
+                className="gap-1.5 py-2 data-[state=active]:shadow-sm"
               >
                 <tab.icon className={cn("h-4 w-4", activeTab === tab.key && tab.color)} />
                 <span className="hidden sm:inline text-xs">{tab.label}</span>
@@ -259,10 +253,6 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.15 }}
             >
-              <TabsContent value="ai-import" className="mt-0">
-                <AISmartImportPanel />
-              </TabsContent>
-
               <TabsContent value="customers" className="mt-0">
                 <CustomersPanel />
               </TabsContent>

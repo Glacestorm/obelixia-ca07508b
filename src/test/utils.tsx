@@ -1,18 +1,5 @@
 import React from 'react';
-import { 
-  render as rtlRender, 
-  RenderOptions,
-  renderHook,
-  cleanup,
-  act
-} from '@testing-library/react';
-import { 
-  screen,
-  fireEvent,
-  waitFor,
-  within
-} from '@testing-library/dom';
-import userEvent from '@testing-library/user-event';
+import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -50,17 +37,8 @@ const AllProviders = ({ children }: AllProvidersProps) => {
 const customRender = (
   ui: React.ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>
-) => rtlRender(ui, { wrapper: AllProviders, ...options });
+) => render(ui, { wrapper: AllProviders, ...options });
 
-// Re-export specific items for type safety
-export { 
-  customRender as render,
-  screen,
-  fireEvent,
-  waitFor,
-  within,
-  act,
-  renderHook,
-  cleanup,
-  userEvent
-};
+// Re-export everything
+export * from '@testing-library/react';
+export { customRender as render };

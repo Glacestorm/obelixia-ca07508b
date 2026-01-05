@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,16 +40,11 @@ export const TranslationSettingsPanel: React.FC<TranslationSettingsPanelProps> =
     stopAutoRefresh
   } = useTranslationSettings();
 
-  // CRÍTICO: Evitar bucle infinito usando ref de inicialización
-  const hasInitializedRef = useRef(false);
-  
+  // Auto-refresh on mount
   useEffect(() => {
-    if (hasInitializedRef.current) return;
-    hasInitializedRef.current = true;
     startAutoRefresh(60000);
     return () => stopAutoRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startAutoRefresh, stopAutoRefresh]);
 
   const getTierConfig = (tier: number) => {
     const configs: Record<number, { label: string; color: string }> = {

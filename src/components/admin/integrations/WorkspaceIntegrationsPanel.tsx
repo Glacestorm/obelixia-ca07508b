@@ -3,7 +3,7 @@
  * Fase 4 - Microsoft 365 & Google Workspace Integrations
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -81,16 +81,10 @@ export function WorkspaceIntegrationsPanel({ className }: WorkspaceIntegrationsP
     disconnectIntegration
   } = useWorkspaceIntegrations();
 
-  // CRÍTICO: Evitar bucle infinito usando ref de inicialización
-  const hasInitializedRef = useRef(false);
-  
   useEffect(() => {
-    if (hasInitializedRef.current) return;
-    hasInitializedRef.current = true;
     startAutoRefresh(120000);
     return () => stopAutoRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startAutoRefresh, stopAutoRefresh]);
 
   useEffect(() => {
     if (activeTab) {

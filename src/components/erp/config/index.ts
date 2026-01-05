@@ -3,7 +3,3 @@ export { ERPCompaniesManager } from './ERPCompaniesManager';
 export { ERPFiscalYearsManager } from './ERPFiscalYearsManager';
 export { ERPSeriesManager } from './ERPSeriesManager';
 export { ERPRolesManager } from './ERPRolesManager';
-export { ERPCompaniesPanel } from './ERPCompaniesPanel';
-export { ERPRolesPanel } from './ERPRolesPanel';
-export { ERPFiscalYearsPanel } from './ERPFiscalYearsPanel';
-export { ERPDocumentSeriesPanel } from './ERPDocumentSeriesPanel';

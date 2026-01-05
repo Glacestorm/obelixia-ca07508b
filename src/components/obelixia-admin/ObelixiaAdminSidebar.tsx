@@ -7,7 +7,7 @@ import {
   Activity, ClipboardList, Shield, Newspaper, HelpCircle, Sparkles,
   Leaf, Globe, Bot, Building2, HeartPulse, Headphones, Brain, Boxes, Cpu,
   Gauge, Bell, MonitorCheck, Zap, Users, TrendingUp, ShieldCheck, 
-  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package, Flag
+  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -52,8 +52,6 @@ const categories: NavCategory[] = [
       { id: 'crm-migration', label: 'CRM Migration', icon: Users },
       { id: 'accounting', label: 'Contabilidad Interna', icon: Euro },
       { id: 'erp', label: 'ERP Modular', icon: Package },
-      { id: 'crm-omnicanal', label: 'CRM Omnicanal', icon: Headphones },
-      { id: 'crm-modular', label: 'CRM Modular', icon: Boxes },
     ]
   },
   {
@@ -137,7 +135,6 @@ const categories: NavCategory[] = [
       { id: 'esg', label: 'ESG & Sostenibilidad', icon: Leaf },
       { id: 'market-intelligence', label: 'Market Intelligence', icon: Globe },
       { id: 'ai-agents-specific', label: 'Agentes IA', icon: Bot },
-      { id: 'crm-agents', label: 'CRM Agents', icon: Users },
       { id: 'enterprise-dashboard', label: 'Enterprise', icon: Building2 },
       { id: 'cs-metrics', label: 'CS Metrics', icon: HeartPulse },
       { id: 'remote-support', label: 'Soporte Remoto', icon: Headphones },
@@ -156,7 +153,6 @@ const categories: NavCategory[] = [
       { id: 'adaptive-auth', label: 'Adaptive Auth', icon: Key },
       { id: 'advanced-ml', label: 'Advanced ML', icon: Brain },
       { id: 'licenses', label: 'Licencias Enterprise', icon: Key },
-      { id: 'feature-flags', label: 'Feature Flags', icon: Flag },
     ]
   }
 ];

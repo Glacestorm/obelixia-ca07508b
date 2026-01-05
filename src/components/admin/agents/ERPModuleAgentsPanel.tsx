@@ -3,7 +3,7 @@
  * Arquitectura: Supervisor → Dominios → Módulos
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,11 +40,9 @@ import {
   Target,
   TrendingUp,
   Eye,
-  Lightbulb,
-  HelpCircle
+  Lightbulb
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
-import { AgentHelpMenu } from './help';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -89,19 +87,10 @@ export function ERPModuleAgentsPanel() {
     stopAutoRefresh
   } = useERPModuleAgents();
 
-  // CRÍTICO: Solo ejecutar initializeAgents UNA VEZ al montar
-  // startAutoRefresh ahora es estable (no depende de estado cambiante)
-  // Usar ref para evitar bucle infinito por dependencias inestables
-  const hasInitializedRef = useRef(false);
-  
   useEffect(() => {
-    if (hasInitializedRef.current) return;
-    hasInitializedRef.current = true;
-    
     startAutoRefresh(90000);
     return () => stopAutoRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Intencionalmente vacío - solo ejecutar al montar
+  }, [startAutoRefresh, stopAutoRefresh]);
 
   const toggleDomain = (domainId: string) => {
     setExpandedDomains(prev => {
@@ -275,13 +264,6 @@ export function ERPModuleAgentsPanel() {
                     Coordina todos los dominios, resuelve conflictos y optimiza el rendimiento global
                   </CardDescription>
                 </div>
-                <AgentHelpMenu
-                  agentId="supervisor"
-                  agentType="supervisor"
-                  agentName="Supervisor General"
-                  agentDescription="Orquestador central que coordina todos los agentes ERP y CRM"
-                  agentIcon={<Brain className="h-4 w-4" />}
-                />
                 {/* Selector de Modo Autónomo */}
                 <div className="flex flex-col items-end gap-2 p-3 rounded-lg border bg-card">
                   <div className="flex items-center gap-3">

@@ -1,13 +1,12 @@
 /**
  * Dashboard Principal del CRM Modular
- * Similar a ERPModularDashboard con Provider, permisos y multi-workspace
+ * Similar a ERPModularDashboard pero para el módulo CRM
  */
 
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { 
   LayoutDashboard,
@@ -24,7 +23,7 @@ import {
   Mail,
   Clock,
   CheckCircle2,
-  AlertCircle,
+  AlertTriangle,
   ArrowUpRight,
   BarChart3,
   UserCircle,
@@ -33,52 +32,20 @@ import {
   CalendarDays,
   DollarSign,
   PieChart,
-  Activity,
-  Loader2,
-  Shield,
-  ChevronDown,
-  ChevronRight,
-  Briefcase,
-  Eye,
-  ShieldCheck,
-  Route,
-  Undo2,
-  RefreshCcw,
-  Gauge,
-  Calculator,
-  Layers
+  Activity
 } from 'lucide-react';
-import { CRMProvider, useCRMContext } from '@/hooks/crm/useCRMContext';
-import { CRMWorkspaceSelector } from './config/CRMWorkspaceSelector';
-import { CRMInitialSetup } from './config/CRMInitialSetup';
+
+// CRM Module Components (inline para evitar ciclo de dependencias)
 import { EnhancedKanbanBoard, KanbanColumn, KanbanItem } from '@/components/crm';
 import { OmnichannelInbox, Conversation, Message } from '@/components/crm/omnichannel';
 import { SentimentAnalysisDashboard } from '@/components/crm/sentiment';
 import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
-import { CRMAgentsDashboard } from '@/components/admin/agents/CRMAgentsDashboard';
-import { ERPCRMSwitcher } from '@/components/shared/ERPCRMSwitcher';
+import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 
-// Lazy load extended modules
-const Customer360Dashboard = lazy(() => import('@/components/dashboard/Customer360Dashboard').then(m => ({ default: m.Customer360Dashboard })));
-const RetentionInsightsDashboard = lazy(() => import('@/components/retention/RetentionInsightsDashboard').then(m => ({ default: m.RetentionInsightsDashboard })));
-const CSMetricsDashboard = lazy(() => import('@/components/cs-metrics/CSMetricsDashboard').then(m => ({ default: m.CSMetricsDashboard })));
-const CustomerJourneyHeatmap = lazy(() => import('@/components/cs-metrics/CustomerJourneyHeatmap').then(m => ({ default: m.CustomerJourneyHeatmap })));
-const WinbackCampaignManager = lazy(() => import('@/components/retention/WinbackCampaignManager').then(m => ({ default: m.WinbackCampaignManager })));
-const RenewalsDashboard = lazy(() => import('@/components/retention/RenewalsDashboard').then(m => ({ default: m.RenewalsDashboard })));
-const CustomerHealthScoreCard = lazy(() => import('@/components/retention/CustomerHealthScoreCard').then(m => ({ default: m.CustomerHealthScoreCard })));
-
-// Loading fallback
-const ModuleLoader = () => (
-  <div className="flex items-center justify-center py-12">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  </div>
-);
-
-// Demo data
+// Demo data (simplificado del original)
 const initialColumns: KanbanColumn[] = [
   { id: 'nuevo', title: 'Nuevo', icon: <Clock className="h-4 w-4" />, color: 'text-blue-600', bgColor: 'bg-blue-50/50 dark:bg-blue-950/20', items: [
     { id: '1', title: 'Acme Corp', subtitle: 'Interesados en módulo CRM', value: 45000, probability: 30, priority: 'high', dueDate: '2024-01-20' },
@@ -95,52 +62,9 @@ const initialColumns: KanbanColumn[] = [
   ]},
 ];
 
-interface CRMModularDashboardContentProps {
-  initialTab?: string;
-}
-
-function CRMModularDashboardContent({ initialTab = 'overview' }: CRMModularDashboardContentProps) {
-  const { currentWorkspace, workspaces, userPermissions, isLoading, error, hasPermission, refreshWorkspaces } = useCRMContext();
-  const [activeTab, setActiveTab] = useState(initialTab);
-  const [needsSetup, setNeedsSetup] = useState(false);
-  const [checkingSetup, setCheckingSetup] = useState(true);
-  const [permissionsOpen, setPermissionsOpen] = useState(false);
+export function CRMModularDashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
-
-  // Módulos instalados (tienen tab funcional) - Definición única
-  // (Se usa más adelante en la vista de módulos)
-
-  // Sync tab when initialTab prop changes
-  useEffect(() => {
-    if (initialTab && initialTab !== activeTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
-
-  // Verificar si necesita configuración inicial
-  useEffect(() => {
-    const checkSetup = async () => {
-      try {
-        const { count, error } = await supabase
-          .from('crm_workspaces')
-          .select('*', { count: 'exact', head: true });
-        
-        if (error) throw error;
-        setNeedsSetup(count === 0);
-      } catch (err) {
-        console.error('[CRMModularDashboard] Error checking setup:', err);
-      } finally {
-        setCheckingSetup(false);
-      }
-    };
-    
-    checkSetup();
-  }, []);
-
-  const handleSetupComplete = async () => {
-    setNeedsSetup(false);
-    await refreshWorkspaces();
-  };
 
   const handleMoveItem = (itemId: string, fromColumn: string, toColumn: string) => {
     setColumns(prev => {
@@ -156,79 +80,24 @@ function CRMModularDashboardContent({ initialTab = 'overview' }: CRMModularDashb
     });
   };
 
-  if (isLoading || checkingSetup) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Cargando CRM...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="border-destructive">
-        <CardContent className="py-8 text-center">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <p className="text-destructive font-medium">Error al cargar CRM</p>
-          <p className="text-sm text-muted-foreground mt-2">{error}</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // No bloqueamos más con el wizard - las tabs siempre se muestran
-
   // Métricas de resumen
   const totalDeals = columns.reduce((acc, col) => acc + col.items.length, 0);
   const totalValue = columns.reduce((acc, col) => acc + col.items.reduce((a, i) => a + (i.value || 0), 0), 0);
   const wonDeals = columns.find(c => c.id === 'cerrado')?.items.length || 0;
 
   const modules = [
-    // Core modules
-    { id: 'kanban', name: 'Pipeline', icon: Kanban, permission: 'pipeline.read', color: 'bg-blue-500' },
-    { id: 'contacts', name: 'Contactos', icon: UserCircle, permission: 'contacts.read', color: 'bg-indigo-500' },
-    { id: 'omnichannel', name: 'Inbox', icon: MessageSquare, permission: 'inbox.read', color: 'bg-green-500' },
-    { id: 'sentiment', name: 'Sentimiento', icon: Heart, permission: 'sentiment.read', color: 'bg-pink-500' },
-    { id: 'sla', name: 'SLAs', icon: Timer, permission: 'sla.read', color: 'bg-amber-500' },
-    { id: 'automation', name: 'Automatización', icon: Zap, permission: 'automation.read', color: 'bg-purple-500' },
-    { id: 'reports', name: 'Reportes', icon: BarChart3, permission: 'reports.read', color: 'bg-orange-500' },
-    // Extended modules
-    { id: 'customer360', name: 'Customer 360', icon: Eye, permission: 'customer360.read', color: 'bg-sky-500' },
-    { id: 'retention', name: 'Retención', icon: ShieldCheck, permission: 'retention.read', color: 'bg-rose-500' },
-    { id: 'csmetrics', name: 'CS Metrics', icon: Activity, permission: 'csmetrics.read', color: 'bg-lime-500' },
-    { id: 'journey', name: 'Journey', icon: Route, permission: 'journey.read', color: 'bg-amber-500' },
-    { id: 'winback', name: 'Winback', icon: Undo2, permission: 'winback.read', color: 'bg-red-500' },
-    { id: 'renewals', name: 'Renovaciones', icon: RefreshCcw, permission: 'renewals.read', color: 'bg-blue-600' },
-    { id: 'healthscore', name: 'Health Score', icon: Gauge, permission: 'healthscore.read', color: 'bg-emerald-500' },
-    // AI Agents
-    { id: 'agents', name: 'Agentes IA', icon: Bot, permission: 'agents.read', color: 'bg-cyan-500' },
+    { id: 'kanban', name: 'Pipeline', icon: Kanban, color: 'bg-blue-500', installed: true },
+    { id: 'contacts', name: 'Contactos', icon: UserCircle, color: 'bg-indigo-500', installed: true },
+    { id: 'omnichannel', name: 'Inbox', icon: MessageSquare, color: 'bg-green-500', installed: true },
+    { id: 'sentiment', name: 'Sentimiento', icon: Heart, color: 'bg-pink-500', installed: true },
+    { id: 'sla', name: 'SLAs', icon: Timer, color: 'bg-amber-500', installed: true },
+    { id: 'automation', name: 'Automatización', icon: Zap, color: 'bg-purple-500', installed: true },
+    { id: 'reports', name: 'Reportes', icon: BarChart3, color: 'bg-orange-500', installed: true },
+    { id: 'agents', name: 'Agentes IA', icon: Bot, color: 'bg-cyan-500', installed: true },
   ];
-
-  const availableModules = modules.filter(m => hasPermission(m.permission));
-
-  // Extended modules list for tab list
-  const installedModuleIds = ['kanban', 'contacts', 'omnichannel', 'sentiment', 'sla', 'automation', 'reports', 
-    'customer360', 'retention', 'csmetrics', 'journey', 'winback', 'renewals', 'healthscore', 'agents'];
 
   return (
     <div className="space-y-6">
-      {/* Header - Workspace selector + Navigation */}
-      <div className="flex items-center justify-between gap-3">
-        <ERPCRMSwitcher />
-        <div className="flex items-center gap-3">
-          <CRMWorkspaceSelector />
-          {currentWorkspace && (
-            <Badge variant="outline" className="gap-1">
-              <CheckCircle2 className="h-3 w-3 text-green-500" />
-              {currentWorkspace.currency}
-            </Badge>
-          )}
-        </div>
-      </div>
-
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
@@ -236,323 +105,180 @@ function CRMModularDashboardContent({ initialTab = 'overview' }: CRMModularDashb
             <LayoutDashboard className="h-4 w-4" />
             Resumen
           </TabsTrigger>
-          {hasPermission('pipeline.read') && (
-            <TabsTrigger value="kanban" className="gap-2">
-              <Kanban className="h-4 w-4" />
-              Pipeline
-            </TabsTrigger>
-          )}
-          {hasPermission('contacts.read') && (
-            <TabsTrigger value="contacts" className="gap-2">
-              <UserCircle className="h-4 w-4" />
-              Contactos
-            </TabsTrigger>
-          )}
-          {hasPermission('inbox.read') && (
-            <TabsTrigger value="omnichannel" className="gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Inbox
-            </TabsTrigger>
-          )}
-          {hasPermission('sentiment.read') && (
-            <TabsTrigger value="sentiment" className="gap-2">
-              <Heart className="h-4 w-4" />
-              Sentimiento
-            </TabsTrigger>
-          )}
-          {hasPermission('sla.read') && (
-            <TabsTrigger value="sla" className="gap-2">
-              <Timer className="h-4 w-4" />
-              SLAs
-            </TabsTrigger>
-          )}
-          {hasPermission('automation.read') && (
-            <TabsTrigger value="automation" className="gap-2">
-              <Zap className="h-4 w-4" />
-              Automatización
-            </TabsTrigger>
-          )}
-          {hasPermission('reports.read') && (
-            <TabsTrigger value="reports" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Reportes
-            </TabsTrigger>
-          )}
-          {/* Extended Modules - Always visible */}
-          <TabsTrigger value="customer360" className="gap-2">
-            <Eye className="h-4 w-4" />
-            Customer 360
+          <TabsTrigger value="kanban" className="gap-2">
+            <Kanban className="h-4 w-4" />
+            Pipeline
           </TabsTrigger>
-          <TabsTrigger value="retention" className="gap-2">
-            <ShieldCheck className="h-4 w-4" />
-            Retención
+          <TabsTrigger value="contacts" className="gap-2">
+            <UserCircle className="h-4 w-4" />
+            Contactos
           </TabsTrigger>
-          <TabsTrigger value="csmetrics" className="gap-2">
-            <Activity className="h-4 w-4" />
-            CS Metrics
+          <TabsTrigger value="omnichannel" className="gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Inbox
           </TabsTrigger>
-          <TabsTrigger value="journey" className="gap-2">
-            <Route className="h-4 w-4" />
-            Journey
+          <TabsTrigger value="sentiment" className="gap-2">
+            <Heart className="h-4 w-4" />
+            Sentimiento
           </TabsTrigger>
-          <TabsTrigger value="winback" className="gap-2">
-            <Undo2 className="h-4 w-4" />
-            Winback
+          <TabsTrigger value="sla" className="gap-2">
+            <Timer className="h-4 w-4" />
+            SLAs
           </TabsTrigger>
-          <TabsTrigger value="renewals" className="gap-2">
-            <RefreshCcw className="h-4 w-4" />
-            Renovaciones
+          <TabsTrigger value="automation" className="gap-2">
+            <Zap className="h-4 w-4" />
+            Automatización
           </TabsTrigger>
-          <TabsTrigger value="healthscore" className="gap-2">
-            <Gauge className="h-4 w-4" />
-            Health Score
+          <TabsTrigger value="reports" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Reportes
           </TabsTrigger>
-          {/* AI Agents Tab */}
-          <TabsTrigger value="agents" className="gap-2 bg-gradient-to-r from-cyan-500/10 to-purple-500/10">
+          <TabsTrigger value="agents" className="gap-2">
             <Bot className="h-4 w-4" />
             Agentes IA
           </TabsTrigger>
-          {hasPermission('teams.read') && (
-            <TabsTrigger value="teams" className="gap-2">
-              <Users className="h-4 w-4" />
-              Equipos
-            </TabsTrigger>
-          )}
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          {needsSetup ? (
-            <CRMInitialSetup onComplete={handleSetupComplete} />
-          ) : !currentWorkspace ? (
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
-              <CardContent className="py-8 text-center">
-                <Briefcase className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  No tienes workspaces asignados. Contacta al administrador.
-                </p>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Oportunidades</p>
+                    <p className="text-2xl font-bold">{totalDeals}</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <Target className="h-5 w-5 text-blue-500" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          ) : (
-            <>
-              {/* Workspace Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Briefcase className="h-5 w-5" />
-                    {currentWorkspace.name}
-                  </CardTitle>
-                  <CardDescription>
-                    {currentWorkspace.description || 'Workspace activo'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Industria</p>
-                      <p className="font-medium capitalize">{currentWorkspace.industry || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">País</p>
-                      <p className="font-medium">{currentWorkspace.country}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Moneda</p>
-                      <p className="font-medium">{currentWorkspace.currency}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Zona Horaria</p>
-                      <p className="font-medium">{currentWorkspace.timezone}</p>
-                    </div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Valor Pipeline</p>
+                    <p className="text-2xl font-bold">${(totalValue / 1000).toFixed(0)}K</p>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* KPIs */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Oportunidades</p>
-                        <p className="text-2xl font-bold">{totalDeals}</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-blue-500/10">
-                        <Target className="h-5 w-5 text-blue-500" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor Pipeline</p>
-                        <p className="text-2xl font-bold">${(totalValue / 1000).toFixed(0)}K</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-green-500/10">
-                        <TrendingUp className="h-5 w-5 text-green-500" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Cerrados</p>
-                        <p className="text-2xl font-bold">{wonDeals}</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-emerald-500/10">
-                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Conversión</p>
-                        <p className="text-2xl font-bold">{totalDeals > 0 ? ((wonDeals / totalDeals) * 100).toFixed(0) : 0}%</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-purple-500/10">
-                        <ArrowUpRight className="h-5 w-5 text-purple-500" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Modules Grid */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Módulos Disponibles</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-                  {availableModules.map((module) => {
-                    const Icon = module.icon;
-                    const isInstalled = installedModuleIds.includes(module.id);
-                    return (
-                      <Card 
-                        key={module.id}
-                        className={cn(
-                          "cursor-pointer hover:shadow-md transition-shadow",
-                          isInstalled && "ring-1 ring-green-500/30"
-                        )}
-                        onClick={() => isInstalled && setActiveTab(module.id)}
-                      >
-                        <CardContent className="p-4 text-center">
-                          <div className={cn("w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center", module.color)}>
-                            <Icon className="h-6 w-6 text-white" />
-                          </div>
-                          <p className="font-medium text-sm">{module.name}</p>
-                          <Badge variant="default" className="mt-2 text-xs bg-green-600 hover:bg-green-700">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Activo
-                          </Badge>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <TrendingUp className="h-5 w-5 text-green-500" />
+                  </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Cerrados</p>
+                    <p className="text-2xl font-bold">{wonDeals}</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-emerald-500/10">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Conversión</p>
+                    <p className="text-2xl font-bold">{totalDeals > 0 ? ((wonDeals / totalDeals) * 100).toFixed(0) : 0}%</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <ArrowUpRight className="h-5 w-5 text-purple-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-              {/* Permissions Summary - Collapsible */}
-              <Collapsible open={permissionsOpen} onOpenChange={setPermissionsOpen}>
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CollapsibleTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="w-full justify-between p-0 h-auto hover:bg-transparent"
-                      >
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Shield className="h-4 w-4" />
-                          {hasPermission('admin.all') ? 'Superadministrador' : 'Usuario CRM'}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Badge variant="secondary" className="text-xs">
-                            {userPermissions.length} permisos
-                          </Badge>
-                          {permissionsOpen ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </div>
-                      </Button>
-                    </CollapsibleTrigger>
-                  </CardHeader>
-                  <CollapsibleContent>
-                    <CardContent className="pt-0">
-                      <div className="flex flex-wrap gap-2">
-                        {userPermissions.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">Sin permisos asignados</p>
-                        ) : (
-                          userPermissions.map((perm) => (
-                            <Badge key={perm} variant="secondary" className="text-xs">
-                              {perm}
-                            </Badge>
-                          ))
-                        )}
+          {/* Modules Grid */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Módulos CRM</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {modules.map((module) => {
+                const Icon = module.icon;
+                return (
+                  <Card 
+                    key={module.id}
+                    className={cn(
+                      "cursor-pointer hover:shadow-md transition-shadow",
+                      module.installed && "ring-1 ring-green-500/30"
+                    )}
+                    onClick={() => setActiveTab(module.id)}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <div className={cn("w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center", module.color)}>
+                        <Icon className="h-6 w-6 text-white" />
                       </div>
+                      <p className="font-medium text-sm">{module.name}</p>
+                      <Badge variant="default" className="mt-2 text-xs bg-green-600 hover:bg-green-700">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Activo
+                      </Badge>
                     </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
 
-              {/* Quick Stats */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Inbox Omnicanal
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Conversaciones abiertas</span>
-                        <Badge variant="secondary">12</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Sin asignar</span>
-                        <Badge variant="destructive">3</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">SLA en riesgo</span>
-                        <Badge variant="outline" className="text-amber-600">2</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Heart className="h-4 w-4" />
-                      Sentimiento General
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Positivo</span>
-                        <Badge className="bg-green-500">72%</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Neutral</span>
-                        <Badge variant="secondary">18%</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Negativo</span>
-                        <Badge variant="destructive">10%</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </>
-          )}
+          {/* Quick Stats */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Inbox Omnicanal
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Conversaciones abiertas</span>
+                    <Badge variant="secondary">12</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Sin asignar</span>
+                    <Badge variant="destructive">3</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">SLA en riesgo</span>
+                    <Badge variant="outline" className="text-amber-600">2</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Heart className="h-4 w-4" />
+                  Sentimiento General
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Positivo</span>
+                    <Badge className="bg-green-500">72%</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Neutral</span>
+                    <Badge variant="secondary">18%</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Negativo</span>
+                    <Badge variant="destructive">10%</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Kanban Tab */}
@@ -595,70 +321,16 @@ function CRMModularDashboardContent({ initialTab = 'overview' }: CRMModularDashb
           <ReportsTabContent />
         </TabsContent>
 
-        {/* Extended Modules - Customer 360 */}
-        <TabsContent value="customer360">
-          <Suspense fallback={<ModuleLoader />}>
-            <Customer360TabContent />
-          </Suspense>
-        </TabsContent>
-
-        {/* Retention Tab */}
-        <TabsContent value="retention">
-          <Suspense fallback={<ModuleLoader />}>
-            <RetentionTabContent />
-          </Suspense>
-        </TabsContent>
-
-        {/* CS Metrics Tab */}
-        <TabsContent value="csmetrics">
-          <Suspense fallback={<ModuleLoader />}>
-            <CSMetricsTabContent />
-          </Suspense>
-        </TabsContent>
-
-        {/* Customer Journey Tab */}
-        <TabsContent value="journey">
-          <Suspense fallback={<ModuleLoader />}>
-            <CustomerJourneyTabContent />
-          </Suspense>
-        </TabsContent>
-
-        {/* Winback Tab */}
-        <TabsContent value="winback">
-          <Suspense fallback={<ModuleLoader />}>
-            <WinbackTabContent />
-          </Suspense>
-        </TabsContent>
-
-        {/* Renewals Tab */}
-        <TabsContent value="renewals">
-          <Suspense fallback={<ModuleLoader />}>
-            <RenewalsTabContent />
-          </Suspense>
-        </TabsContent>
-
-        {/* Health Score Tab */}
-        <TabsContent value="healthscore">
-          <Suspense fallback={<ModuleLoader />}>
-            <HealthScoreTabContent />
-          </Suspense>
-        </TabsContent>
-
-        {/* Agents Tab - With full dashboard */}
+        {/* Agents Tab */}
         <TabsContent value="agents">
-          <CRMAgentsDashboard />
-        </TabsContent>
-
-        {/* Teams Tab */}
-        <TabsContent value="teams">
-          <TeamsTabContent />
+          <ERPModuleAgentsPanel />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-// === Wrapper components ===
+// Wrapper components para datos demo
 function OmnichannelInboxWrapper() {
   const [currentConversation, setCurrentConversation] = useState<Conversation | undefined>();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -762,6 +434,7 @@ function LeadDistributionWrapper() {
   );
 }
 
+// === Contacts Tab ===
 function ContactsTabContent() {
   const contacts = [
     { id: '1', name: 'María García', company: 'Acme Corp', email: 'maria@acme.com', phone: '+34 612 345 678', status: 'active', lastContact: '2024-01-15', deals: 2, value: 57000 },
@@ -925,6 +598,7 @@ function ContactsTabContent() {
   );
 }
 
+// === Reports Tab ===
 function ReportsTabContent() {
   const pipelineData = [
     { stage: 'Nuevos', count: 24, value: 180000, color: '#6366f1' },
@@ -1104,319 +778,6 @@ function ReportsTabContent() {
         </Card>
       </div>
     </div>
-  );
-}
-
-function TeamsTabContent() {
-  const teams = [
-    { id: '1', name: 'Ventas España', members: 5, leads: 145, conversion: 28 },
-    { id: '2', name: 'Ventas LATAM', members: 3, leads: 87, conversion: 24 },
-    { id: '3', name: 'Enterprise', members: 4, leads: 32, conversion: 35 },
-  ];
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Gestión de Equipos</h3>
-          <p className="text-sm text-muted-foreground">Administra los equipos de ventas y sus miembros</p>
-        </div>
-        <Button className="gap-2">
-          <Users className="h-4 w-4" />
-          Nuevo Equipo
-        </Button>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-4">
-        {teams.map((team) => (
-          <Card key={team.id} className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                {team.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <p className="text-2xl font-bold">{team.members}</p>
-                  <p className="text-xs text-muted-foreground">Miembros</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{team.leads}</p>
-                  <p className="text-xs text-muted-foreground">Leads</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-green-600">{team.conversion}%</p>
-                  <p className="text-xs text-muted-foreground">Conversión</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// === EXTENDED MODULE TAB CONTENTS ===
-
-function Customer360TabContent() {
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
-  
-  // Demo company data
-  const demoCompanies = [
-    { id: 'c1', name: 'Acme Corp', healthScore: 85 },
-    { id: 'c2', name: 'TechStart', healthScore: 72 },
-    { id: 'c3', name: 'Global Industries', healthScore: 91 },
-  ];
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Eye className="h-5 w-5 text-sky-500" />
-            Customer 360
-          </h3>
-          <p className="text-sm text-muted-foreground">Vista integral de cada cliente con todos sus touchpoints</p>
-        </div>
-      </div>
-      
-      {!selectedCompanyId ? (
-        <div className="grid md:grid-cols-3 gap-4">
-          {demoCompanies.map(company => (
-            <Card 
-              key={company.id} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setSelectedCompanyId(company.id)}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{company.name}</p>
-                    <p className="text-sm text-muted-foreground">Health: {company.healthScore}%</p>
-                  </div>
-                  <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center text-white font-bold",
-                    company.healthScore > 80 ? "bg-green-500" : company.healthScore > 60 ? "bg-amber-500" : "bg-red-500"
-                  )}>
-                    {company.healthScore}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <Button variant="outline" onClick={() => setSelectedCompanyId(null)}>
-            ← Volver a lista
-          </Button>
-          <Customer360Dashboard 
-            companyId={selectedCompanyId} 
-            companyName={demoCompanies.find(c => c.id === selectedCompanyId)?.name || ''} 
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function RetentionTabContent() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-rose-500" />
-            Retención de Clientes
-          </h3>
-          <p className="text-sm text-muted-foreground">Prevención de churn y estrategias de retención proactiva</p>
-        </div>
-      </div>
-      <RetentionInsightsDashboard />
-    </div>
-  );
-}
-
-function CSMetricsTabContent() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="h-5 w-5 text-lime-500" />
-            Customer Success Metrics
-          </h3>
-          <p className="text-sm text-muted-foreground">Métricas avanzadas: NRR, GRR, CSAT, NPS y más</p>
-        </div>
-      </div>
-      <CSMetricsDashboard />
-    </div>
-  );
-}
-
-function CustomerJourneyTabContent() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Route className="h-5 w-5 text-amber-500" />
-            Customer Journey
-          </h3>
-          <p className="text-sm text-muted-foreground">Mapeo y análisis del viaje del cliente</p>
-        </div>
-      </div>
-      <CustomerJourneyHeatmap />
-    </div>
-  );
-}
-
-function WinbackTabContent() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Undo2 className="h-5 w-5 text-red-500" />
-            Campañas Winback
-          </h3>
-          <p className="text-sm text-muted-foreground">Recuperación de clientes perdidos y reactivación</p>
-        </div>
-      </div>
-      <WinbackCampaignManager />
-    </div>
-  );
-}
-
-function RenewalsTabContent() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <RefreshCcw className="h-5 w-5 text-blue-600" />
-            Gestión de Renovaciones
-          </h3>
-          <p className="text-sm text-muted-foreground">Calendario y seguimiento de renovaciones</p>
-        </div>
-      </div>
-      <RenewalsDashboard />
-    </div>
-  );
-}
-
-function HealthScoreTabContent() {
-  // Demo health score data
-  const demoHealthScore = {
-    score: 78,
-    trend: 'up' as const,
-    factors: [
-      { name: 'Engagement', score: 85, weight: 0.3 },
-      { name: 'Adoption', score: 72, weight: 0.25 },
-      { name: 'Satisfaction', score: 80, weight: 0.25 },
-      { name: 'Growth', score: 68, weight: 0.2 },
-    ],
-    riskLevel: 'medium' as const,
-    recommendations: [
-      'Incrementar frecuencia de touchpoints',
-      'Ofrecer training adicional',
-      'Revisar adopción de nuevas features'
-    ]
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Gauge className="h-5 w-5 text-emerald-500" />
-            Health Score Management
-          </h3>
-          <p className="text-sm text-muted-foreground">Monitoreo y gestión de la salud de clientes</p>
-        </div>
-      </div>
-      
-      <div className="grid md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base">Health Score Global</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <div className={cn(
-              "w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold text-white",
-              demoHealthScore.score > 80 ? "bg-green-500" : 
-              demoHealthScore.score > 60 ? "bg-amber-500" : "bg-red-500"
-            )}>
-              {demoHealthScore.score}
-            </div>
-            <Badge className="mt-4" variant={demoHealthScore.trend === 'up' ? 'default' : 'destructive'}>
-              {demoHealthScore.trend === 'up' ? <ArrowUpRight className="h-3 w-3 mr-1" /> : null}
-              {demoHealthScore.trend === 'up' ? 'Mejorando' : 'Declinando'}
-            </Badge>
-          </CardContent>
-        </Card>
-        
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Factores de Health Score</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {demoHealthScore.factors.map(factor => (
-                <div key={factor.name} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>{factor.name}</span>
-                    <span className="font-medium">{factor.score}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        factor.score > 80 ? "bg-green-500" : 
-                        factor.score > 60 ? "bg-amber-500" : "bg-red-500"
-                      )}
-                      style={{ width: `${factor.score}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Recomendaciones IA</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {demoHealthScore.recommendations.map((rec, i) => (
-              <li key={i} className="flex items-center gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                {rec}
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Main export with Provider
-interface CRMModularDashboardProps {
-  initialTab?: string;
-}
-
-export function CRMModularDashboard({ initialTab }: CRMModularDashboardProps) {
-  return (
-    <CRMProvider>
-      <CRMModularDashboardContent initialTab={initialTab} />
-    </CRMProvider>
   );
 }
 

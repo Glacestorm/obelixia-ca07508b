@@ -103,16 +103,10 @@ export function AgentOrchestratorDashboard() {
     stopAutoRefresh,
   } = useAIAgentsV2();
 
-  // CRÍTICO: Evitar bucle infinito usando ref de inicialización
-  const hasInitializedRef = useRef(false);
-  
   useEffect(() => {
-    if (hasInitializedRef.current) return;
-    hasInitializedRef.current = true;
     startAutoRefresh(90000);
     return () => stopAutoRefresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [startAutoRefresh, stopAutoRefresh]);
 
   // Track previous agent statuses for animations
   const prevStatusRef = useRef<Record<string, string>>({});

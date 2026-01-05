@@ -908,6 +908,3 @@ verify_jwt = false
 
 [functions.erp-module-agent]
 verify_jwt = true
-
-[functions.agent-help-chat]
-verify_jwt = true

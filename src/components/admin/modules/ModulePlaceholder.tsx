@@ -1,46 +1,21 @@
-/**
- * Universal Module Placeholder Component
- * Muestra información de módulos no implementados con botón para solicitar implementación
- */
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Package, Sparkles, Code, FileCode2, Loader2,
   CheckCircle2, Star, Tag, Clock, Building2,
-  ArrowRight, Zap, Shield, BarChart3, Puzzle,
-  Send, MessageSquare, AlertCircle, Calendar,
-  Users, Rocket, Brain, Settings
+  ArrowRight, Zap, Shield, BarChart3, Puzzle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { useAuth } from '@/hooks/useAuth';
 
 interface ModulePlaceholderProps {
   moduleKey: string;
-  moduleName?: string;
-  moduleDescription?: string;
-  moduleCategory?: string;
-  moduleIcon?: React.ReactNode;
-  estimatedDelivery?: string;
-  priorityLevel?: 'low' | 'medium' | 'high' | 'critical';
-  onRequestImplementation?: (moduleKey: string, comment: string) => void;
-  showDatabaseInfo?: boolean;
+  onRequestImplementation?: (moduleKey: string) => void;
 }
 
 interface ModuleData {
@@ -63,12 +38,9 @@ const getCategoryIcon = (category: string) => {
     'Core': <Puzzle className="h-5 w-5" />,
     'CRM': <Building2 className="h-5 w-5" />,
     'Analytics': <BarChart3 className="h-5 w-5" />,
-    'AI': <Brain className="h-5 w-5" />,
+    'AI': <Sparkles className="h-5 w-5" />,
     'Automation': <Zap className="h-5 w-5" />,
     'Security': <Shield className="h-5 w-5" />,
-    'Accounting': <Settings className="h-5 w-5" />,
-    'Documents': <FileCode2 className="h-5 w-5" />,
-    'Integration': <Rocket className="h-5 w-5" />,
   };
   return icons[category] || <Package className="h-5 w-5" />;
 };
@@ -88,41 +60,17 @@ const getCategoryColor = (category: string) => {
   return colors[category] || 'from-gray-500/20 to-gray-600/40';
 };
 
-const getPriorityColor = (priority: string) => {
-  const colors: Record<string, string> = {
-    'low': 'bg-gray-500/10 text-gray-500',
-    'medium': 'bg-blue-500/10 text-blue-500',
-    'high': 'bg-amber-500/10 text-amber-500',
-    'critical': 'bg-red-500/10 text-red-500',
-  };
-  return colors[priority] || colors.medium;
-};
-
 export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({
   moduleKey,
-  moduleName,
-  moduleDescription,
-  moduleCategory,
-  moduleIcon,
-  estimatedDelivery,
-  priorityLevel = 'medium',
-  onRequestImplementation,
-  showDatabaseInfo = true
+  onRequestImplementation
 }) => {
   const [module, setModule] = useState<ModuleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
-  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
-  const [requestComment, setRequestComment] = useState('');
-  const { user } = useAuth();
 
   useEffect(() => {
-    if (showDatabaseInfo) {
-      fetchModuleData();
-    } else {
-      setLoading(false);
-    }
-  }, [moduleKey, showDatabaseInfo]);
+    fetchModuleData();
+  }, [moduleKey]);
 
   const fetchModuleData = async () => {
     setLoading(true);
@@ -143,29 +91,19 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({
   };
 
   const handleRequestImplementation = async () => {
+    if (!module) return;
+    
     setRequesting(true);
     try {
-      // Log the request
-      await supabase.from('ai_task_queue').insert([{
-        task_type: 'module_implementation_request',
-        task_title: `Solicitud implementación: ${module?.module_name || moduleName || moduleKey}`,
-        task_description: requestComment || 'Sin comentarios adicionales',
-        priority: priorityLevel === 'critical' ? 1 : priorityLevel === 'high' ? 2 : priorityLevel === 'medium' ? 3 : 4,
-        status: 'pending',
-        target_entity_type: 'app_module',
-        target_entity_id: module?.id || null,
-        target_gestor_id: user?.id || null
-      }]);
+      // Simular solicitud de implementación
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success('Solicitud enviada', {
-        description: `Se ha solicitado la implementación del módulo "${module?.module_name || moduleName || moduleKey}"`
+        description: `Se ha solicitado la implementación del módulo "${module.module_name}"`
       });
       
-      onRequestImplementation?.(moduleKey, requestComment);
-      setRequestDialogOpen(false);
-      setRequestComment('');
+      onRequestImplementation?.(moduleKey);
     } catch (error) {
-      console.error('Error requesting implementation:', error);
       toast.error('Error al solicitar implementación');
     } finally {
       setRequesting(false);
@@ -187,31 +125,22 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({
     );
   }
 
-  // If no module found in DB but we have props, show a basic placeholder
-  const displayName = module?.module_name || moduleName || moduleKey;
-  const displayDescription = module?.description || moduleDescription || 'Módulo pendiente de implementación';
-  const displayCategory = module?.category || moduleCategory || 'General';
-
-  if (!module && !moduleName) {
+  if (!module) {
     return (
-      <Card className="border-dashed border-2">
+      <Card className="border-dashed">
         <CardContent className="py-12 text-center">
-          {moduleIcon || <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />}
+          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
           <h3 className="text-lg font-semibold mb-2">Módulo no encontrado</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground">
             El módulo "{moduleKey}" no existe en el catálogo
           </p>
-          <Button variant="outline" onClick={() => setRequestDialogOpen(true)}>
-            <Send className="h-4 w-4 mr-2" />
-            Solicitar creación
-          </Button>
         </CardContent>
       </Card>
     );
   }
 
-  const features = module ? parseFeatures(module.features) : [];
-  const categoryColor = getCategoryColor(displayCategory);
+  const features = parseFeatures(module.features);
+  const categoryColor = getCategoryColor(module.category);
 
   return (
     <div className="space-y-6">
@@ -418,7 +347,7 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({
                 Solicita su implementación y te notificaremos cuando esté listo
               </p>
               <Button 
-                onClick={() => setRequestDialogOpen(true)}
+                onClick={handleRequestImplementation}
                 disabled={requesting}
                 className="w-full"
               >
@@ -431,90 +360,8 @@ export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({
               </Button>
             </CardContent>
           </Card>
-
-          {/* Priority & Estimated Delivery */}
-          {(priorityLevel || estimatedDelivery) && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Información adicional
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {priorityLevel && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Prioridad</span>
-                    <Badge className={getPriorityColor(priorityLevel)}>
-                      {priorityLevel === 'critical' ? 'Crítica' : 
-                       priorityLevel === 'high' ? 'Alta' :
-                       priorityLevel === 'medium' ? 'Media' : 'Baja'}
-                    </Badge>
-                  </div>
-                )}
-                {estimatedDelivery && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Entrega estimada</span>
-                    <span className="text-sm font-medium">{estimatedDelivery}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
-
-      {/* Request Dialog */}
-      <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5" />
-              Solicitar Implementación
-            </DialogTitle>
-            <DialogDescription>
-              Solicita la implementación del módulo "{displayName}". Recibirás una notificación cuando esté disponible.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-3 mb-2">
-                {moduleIcon || getCategoryIcon(displayCategory)}
-                <div>
-                  <p className="font-medium">{displayName}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{moduleKey}</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">{displayDescription}</p>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Comentarios (opcional)
-              </label>
-              <Textarea
-                placeholder="Describe cómo planeas usar este módulo o funcionalidades específicas que necesitas..."
-                value={requestComment}
-                onChange={e => setRequestComment(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRequestDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleRequestImplementation} disabled={requesting}>
-              {requesting ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
-              Enviar Solicitud
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

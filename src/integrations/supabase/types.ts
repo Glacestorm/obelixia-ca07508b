@@ -1555,201 +1555,6 @@ export type Database = {
           },
         ]
       }
-      agent_help_conversations: {
-        Row: {
-          agent_id: string
-          agent_type: string
-          attachments: Json | null
-          audio_duration_ms: number | null
-          audio_url: string | null
-          content: string
-          context: Json | null
-          conversation_id: string
-          created_at: string
-          feedback_score: number | null
-          id: string
-          input_mode: string | null
-          output_mode: string | null
-          response_time_ms: number | null
-          role: string
-          tokens_used: number | null
-          user_id: string | null
-          was_helpful: boolean | null
-        }
-        Insert: {
-          agent_id: string
-          agent_type: string
-          attachments?: Json | null
-          audio_duration_ms?: number | null
-          audio_url?: string | null
-          content: string
-          context?: Json | null
-          conversation_id: string
-          created_at?: string
-          feedback_score?: number | null
-          id?: string
-          input_mode?: string | null
-          output_mode?: string | null
-          response_time_ms?: number | null
-          role: string
-          tokens_used?: number | null
-          user_id?: string | null
-          was_helpful?: boolean | null
-        }
-        Update: {
-          agent_id?: string
-          agent_type?: string
-          attachments?: Json | null
-          audio_duration_ms?: number | null
-          audio_url?: string | null
-          content?: string
-          context?: Json | null
-          conversation_id?: string
-          created_at?: string
-          feedback_score?: number | null
-          id?: string
-          input_mode?: string | null
-          output_mode?: string | null
-          response_time_ms?: number | null
-          role?: string
-          tokens_used?: number | null
-          user_id?: string | null
-          was_helpful?: boolean | null
-        }
-        Relationships: []
-      }
-      agent_help_feedback: {
-        Row: {
-          agent_id: string
-          conversation_id: string
-          created_at: string
-          created_knowledge_id: string | null
-          feedback_text: string | null
-          feedback_type: string | null
-          id: string
-          message_id: string | null
-          rating: number | null
-          user_id: string | null
-          was_helpful: boolean | null
-        }
-        Insert: {
-          agent_id: string
-          conversation_id: string
-          created_at?: string
-          created_knowledge_id?: string | null
-          feedback_text?: string | null
-          feedback_type?: string | null
-          id?: string
-          message_id?: string | null
-          rating?: number | null
-          user_id?: string | null
-          was_helpful?: boolean | null
-        }
-        Update: {
-          agent_id?: string
-          conversation_id?: string
-          created_at?: string
-          created_knowledge_id?: string | null
-          feedback_text?: string | null
-          feedback_type?: string | null
-          id?: string
-          message_id?: string | null
-          rating?: number | null
-          user_id?: string | null
-          was_helpful?: boolean | null
-        }
-        Relationships: []
-      }
-      agent_knowledge_base: {
-        Row: {
-          agent_id: string
-          agent_type: string
-          category: string
-          confidence_score: number | null
-          content: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          example_context: Json | null
-          example_input: string | null
-          example_output: string | null
-          id: string
-          is_active: boolean | null
-          is_verified: boolean | null
-          keywords: string[] | null
-          last_used_at: string | null
-          module_type: string | null
-          order_index: number | null
-          parent_knowledge_id: string | null
-          section_index: number | null
-          source: string | null
-          tags: string[] | null
-          title: string
-          updated_at: string
-          usage_count: number | null
-          verified_at: string | null
-          verified_by: string | null
-        }
-        Insert: {
-          agent_id: string
-          agent_type: string
-          category: string
-          confidence_score?: number | null
-          content: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          example_context?: Json | null
-          example_input?: string | null
-          example_output?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_verified?: boolean | null
-          keywords?: string[] | null
-          last_used_at?: string | null
-          module_type?: string | null
-          order_index?: number | null
-          parent_knowledge_id?: string | null
-          section_index?: number | null
-          source?: string | null
-          tags?: string[] | null
-          title: string
-          updated_at?: string
-          usage_count?: number | null
-          verified_at?: string | null
-          verified_by?: string | null
-        }
-        Update: {
-          agent_id?: string
-          agent_type?: string
-          category?: string
-          confidence_score?: number | null
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          example_context?: Json | null
-          example_input?: string | null
-          example_output?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_verified?: boolean | null
-          keywords?: string[] | null
-          last_used_at?: string | null
-          module_type?: string | null
-          order_index?: number | null
-          parent_knowledge_id?: string | null
-          section_index?: number | null
-          source?: string | null
-          tags?: string[] | null
-          title?: string
-          updated_at?: string
-          usage_count?: number | null
-          verified_at?: string | null
-          verified_by?: string | null
-        }
-        Relationships: []
-      }
       ai_agent_actions: {
         Row: {
           action_name: string
@@ -8304,215 +8109,6 @@ export type Database = {
         }
         Relationships: []
       }
-      crm_permissions: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          key: string
-          module: string
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          key: string
-          module: string
-          name: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          key?: string
-          module?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      crm_role_permissions: {
-        Row: {
-          created_at: string
-          id: string
-          permission_id: string
-          role_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          permission_id: string
-          role_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          permission_id?: string
-          role_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_role_permissions_permission_id_fkey"
-            columns: ["permission_id"]
-            isOneToOne: false
-            referencedRelation: "crm_permissions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_role_permissions_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "crm_roles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crm_roles: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          is_system: boolean | null
-          name: string
-          updated_at: string
-          workspace_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_system?: boolean | null
-          name: string
-          updated_at?: string
-          workspace_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_system?: boolean | null
-          name?: string
-          updated_at?: string
-          workspace_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_roles_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "crm_workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crm_user_workspaces: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean | null
-          is_default: boolean | null
-          role_id: string | null
-          updated_at: string
-          user_id: string
-          workspace_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          is_default?: boolean | null
-          role_id?: string | null
-          updated_at?: string
-          user_id: string
-          workspace_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_active?: boolean | null
-          is_default?: boolean | null
-          role_id?: string | null
-          updated_at?: string
-          user_id?: string
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_user_workspaces_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "crm_roles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_user_workspaces_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "crm_workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crm_workspaces: {
-        Row: {
-          address: string | null
-          city: string | null
-          country: string | null
-          created_at: string
-          currency: string | null
-          description: string | null
-          email: string | null
-          id: string
-          industry: string | null
-          is_active: boolean | null
-          logo_url: string | null
-          name: string
-          phone: string | null
-          settings: Json | null
-          timezone: string | null
-          updated_at: string
-          website: string | null
-        }
-        Insert: {
-          address?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          email?: string | null
-          id?: string
-          industry?: string | null
-          is_active?: boolean | null
-          logo_url?: string | null
-          name: string
-          phone?: string | null
-          settings?: Json | null
-          timezone?: string | null
-          updated_at?: string
-          website?: string | null
-        }
-        Update: {
-          address?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string
-          currency?: string | null
-          description?: string | null
-          email?: string | null
-          id?: string
-          industry?: string | null
-          is_active?: boolean | null
-          logo_url?: string | null
-          name?: string
-          phone?: string | null
-          settings?: Json | null
-          timezone?: string | null
-          updated_at?: string
-          website?: string | null
-        }
-        Relationships: []
-      }
       customer_360_profiles: {
         Row: {
           active_products: number | null
@@ -10562,81 +10158,6 @@ export type Database = {
           },
         ]
       }
-      enterprise_feature_flags: {
-        Row: {
-          category: string | null
-          control_percentage: number | null
-          created_at: string
-          created_by: string | null
-          dependencies: string[] | null
-          description: string | null
-          end_date: string | null
-          experiment_variants: Json | null
-          flag_key: string
-          flag_name: string
-          id: string
-          is_enabled: boolean | null
-          is_experiment: boolean | null
-          metadata: Json | null
-          rollout_percentage: number | null
-          start_date: string | null
-          target_license_tiers: string[] | null
-          target_roles: string[] | null
-          target_tenants: string[] | null
-          target_user_ids: string[] | null
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          category?: string | null
-          control_percentage?: number | null
-          created_at?: string
-          created_by?: string | null
-          dependencies?: string[] | null
-          description?: string | null
-          end_date?: string | null
-          experiment_variants?: Json | null
-          flag_key: string
-          flag_name: string
-          id?: string
-          is_enabled?: boolean | null
-          is_experiment?: boolean | null
-          metadata?: Json | null
-          rollout_percentage?: number | null
-          start_date?: string | null
-          target_license_tiers?: string[] | null
-          target_roles?: string[] | null
-          target_tenants?: string[] | null
-          target_user_ids?: string[] | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          category?: string | null
-          control_percentage?: number | null
-          created_at?: string
-          created_by?: string | null
-          dependencies?: string[] | null
-          description?: string | null
-          end_date?: string | null
-          experiment_variants?: Json | null
-          flag_key?: string
-          flag_name?: string
-          id?: string
-          is_enabled?: boolean | null
-          is_experiment?: boolean | null
-          metadata?: Json | null
-          rollout_percentage?: number | null
-          start_date?: string | null
-          target_license_tiers?: string[] | null
-          target_roles?: string[] | null
-          target_tenants?: string[] | null
-          target_user_ids?: string[] | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       equity_changes_statements: {
         Row: {
           adjusted_initial_grants: number | null
@@ -12534,7 +12055,6 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
-          code: string | null
           country: string | null
           created_at: string | null
           currency: string | null
@@ -12556,7 +12076,6 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
-          code?: string | null
           country?: string | null
           created_at?: string | null
           currency?: string | null
@@ -12578,7 +12097,6 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
-          code?: string | null
           country?: string | null
           created_at?: string | null
           currency?: string | null
@@ -12614,7 +12132,6 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
-          parent_group_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -12623,7 +12140,6 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
-          parent_group_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -12632,18 +12148,9 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
-          parent_group_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "erp_company_groups_parent_group_id_fkey"
-            columns: ["parent_group_id"]
-            isOneToOne: false
-            referencedRelation: "erp_company_groups"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       erp_credit_amendments: {
         Row: {
@@ -12853,202 +12360,6 @@ export type Database = {
           },
         ]
       }
-      erp_delivery_note_lines: {
-        Row: {
-          created_at: string | null
-          delivery_note_id: string
-          description: string | null
-          discount_percent: number | null
-          id: string
-          item_id: string | null
-          line_order: number | null
-          lot_id: string | null
-          quantity: number
-          sales_order_line_id: string | null
-          serial_id: string | null
-          subtotal: number | null
-          tax_amount: number | null
-          tax_id: string | null
-          total: number | null
-          unit_cost: number | null
-          unit_price: number
-        }
-        Insert: {
-          created_at?: string | null
-          delivery_note_id: string
-          description?: string | null
-          discount_percent?: number | null
-          id?: string
-          item_id?: string | null
-          line_order?: number | null
-          lot_id?: string | null
-          quantity?: number
-          sales_order_line_id?: string | null
-          serial_id?: string | null
-          subtotal?: number | null
-          tax_amount?: number | null
-          tax_id?: string | null
-          total?: number | null
-          unit_cost?: number | null
-          unit_price?: number
-        }
-        Update: {
-          created_at?: string | null
-          delivery_note_id?: string
-          description?: string | null
-          discount_percent?: number | null
-          id?: string
-          item_id?: string | null
-          line_order?: number | null
-          lot_id?: string | null
-          quantity?: number
-          sales_order_line_id?: string | null
-          serial_id?: string | null
-          subtotal?: number | null
-          tax_amount?: number | null
-          tax_id?: string | null
-          total?: number | null
-          unit_cost?: number | null
-          unit_price?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_delivery_note_lines_delivery_note_id_fkey"
-            columns: ["delivery_note_id"]
-            isOneToOne: false
-            referencedRelation: "erp_delivery_notes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_note_lines_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "erp_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_note_lines_lot_id_fkey"
-            columns: ["lot_id"]
-            isOneToOne: false
-            referencedRelation: "erp_lots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_note_lines_sales_order_line_id_fkey"
-            columns: ["sales_order_line_id"]
-            isOneToOne: false
-            referencedRelation: "erp_sales_order_lines"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_note_lines_serial_id_fkey"
-            columns: ["serial_id"]
-            isOneToOne: false
-            referencedRelation: "erp_serials"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_note_lines_tax_id_fkey"
-            columns: ["tax_id"]
-            isOneToOne: false
-            referencedRelation: "erp_taxes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_delivery_notes: {
-        Row: {
-          company_id: string
-          created_at: string | null
-          created_by: string | null
-          customer_id: string | null
-          delivery_date: string
-          id: string
-          notes: string | null
-          number: string | null
-          sales_order_id: string | null
-          series_id: string | null
-          status: string | null
-          subtotal: number | null
-          tax_amount: number | null
-          total: number | null
-          updated_at: string | null
-          warehouse_id: string | null
-        }
-        Insert: {
-          company_id: string
-          created_at?: string | null
-          created_by?: string | null
-          customer_id?: string | null
-          delivery_date?: string
-          id?: string
-          notes?: string | null
-          number?: string | null
-          sales_order_id?: string | null
-          series_id?: string | null
-          status?: string | null
-          subtotal?: number | null
-          tax_amount?: number | null
-          total?: number | null
-          updated_at?: string | null
-          warehouse_id?: string | null
-        }
-        Update: {
-          company_id?: string
-          created_at?: string | null
-          created_by?: string | null
-          customer_id?: string | null
-          delivery_date?: string
-          id?: string
-          notes?: string | null
-          number?: string | null
-          sales_order_id?: string | null
-          series_id?: string | null
-          status?: string | null
-          subtotal?: number | null
-          tax_amount?: number | null
-          total?: number | null
-          updated_at?: string | null
-          warehouse_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_delivery_notes_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "erp_companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_notes_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "erp_customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_notes_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
-            referencedRelation: "erp_sales_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_notes_series_id_fkey"
-            columns: ["series_id"]
-            isOneToOne: false
-            referencedRelation: "erp_series"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_delivery_notes_warehouse_id_fkey"
-            columns: ["warehouse_id"]
-            isOneToOne: false
-            referencedRelation: "erp_warehouses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       erp_discount_effects: {
         Row: {
           amount: number
@@ -13211,142 +12522,6 @@ export type Database = {
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "erp_financial_entities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_document_numbers: {
-        Row: {
-          company_id: string
-          document_number: string
-          entity_id: string
-          entity_type: string
-          fiscal_year_id: string | null
-          id: string
-          issued_at: string | null
-          sequence_number: number
-          series_id: string
-        }
-        Insert: {
-          company_id: string
-          document_number: string
-          entity_id: string
-          entity_type: string
-          fiscal_year_id?: string | null
-          id?: string
-          issued_at?: string | null
-          sequence_number: number
-          series_id: string
-        }
-        Update: {
-          company_id?: string
-          document_number?: string
-          entity_id?: string
-          entity_type?: string
-          fiscal_year_id?: string | null
-          id?: string
-          issued_at?: string | null
-          sequence_number?: number
-          series_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_document_numbers_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "erp_companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_document_numbers_fiscal_year_id_fkey"
-            columns: ["fiscal_year_id"]
-            isOneToOne: false
-            referencedRelation: "erp_fiscal_years"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_document_numbers_series_id_fkey"
-            columns: ["series_id"]
-            isOneToOne: false
-            referencedRelation: "erp_document_series"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_document_series: {
-        Row: {
-          code: string
-          company_id: string
-          created_at: string | null
-          document_type: string
-          fiscal_year_id: string | null
-          id: string
-          is_active: boolean | null
-          is_default: boolean | null
-          last_used_at: string | null
-          module: string
-          name: string
-          next_number: number | null
-          padding_length: number | null
-          prefix: string | null
-          reset_annually: boolean | null
-          reset_monthly: boolean | null
-          suffix: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          code: string
-          company_id: string
-          created_at?: string | null
-          document_type: string
-          fiscal_year_id?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_default?: boolean | null
-          last_used_at?: string | null
-          module: string
-          name: string
-          next_number?: number | null
-          padding_length?: number | null
-          prefix?: string | null
-          reset_annually?: boolean | null
-          reset_monthly?: boolean | null
-          suffix?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          code?: string
-          company_id?: string
-          created_at?: string | null
-          document_type?: string
-          fiscal_year_id?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_default?: boolean | null
-          last_used_at?: string | null
-          module?: string
-          name?: string
-          next_number?: number | null
-          padding_length?: number | null
-          prefix?: string | null
-          reset_annually?: boolean | null
-          reset_monthly?: boolean | null
-          suffix?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_document_series_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "erp_companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_document_series_fiscal_year_id_fkey"
-            columns: ["fiscal_year_id"]
-            isOneToOne: false
-            referencedRelation: "erp_fiscal_years"
             referencedColumns: ["id"]
           },
         ]
@@ -14238,13 +13413,11 @@ export type Database = {
         Row: {
           closed_at: string | null
           closed_by: string | null
-          code: string | null
           company_id: string
           created_at: string | null
           end_date: string
           id: string
           is_closed: boolean | null
-          is_current: boolean | null
           name: string
           start_date: string
           updated_at: string | null
@@ -14252,13 +13425,11 @@ export type Database = {
         Insert: {
           closed_at?: string | null
           closed_by?: string | null
-          code?: string | null
           company_id: string
           created_at?: string | null
           end_date: string
           id?: string
           is_closed?: boolean | null
-          is_current?: boolean | null
           name: string
           start_date: string
           updated_at?: string | null
@@ -14266,13 +13437,11 @@ export type Database = {
         Update: {
           closed_at?: string | null
           closed_by?: string | null
-          code?: string | null
           company_id?: string
           created_at?: string | null
           end_date?: string
           id?: string
           is_closed?: boolean | null
-          is_current?: boolean | null
           name?: string
           start_date?: string
           updated_at?: string | null
@@ -15315,39 +14484,6 @@ export type Database = {
           },
         ]
       }
-      erp_mfa_devices: {
-        Row: {
-          created_at: string | null
-          device_name: string | null
-          device_type: string
-          id: string
-          is_active: boolean | null
-          last_used_at: string | null
-          secret_encrypted: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          device_name?: string | null
-          device_type?: string
-          id?: string
-          is_active?: boolean | null
-          last_used_at?: string | null
-          secret_encrypted?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          device_name?: string | null
-          device_type?: string
-          id?: string
-          is_active?: boolean | null
-          last_used_at?: string | null
-          secret_encrypted?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       erp_migration_connectors: {
         Row: {
           auth_fields: Json | null
@@ -15621,81 +14757,6 @@ export type Database = {
           },
         ]
       }
-      erp_movement_lot_assignments: {
-        Row: {
-          created_at: string | null
-          id: string
-          lot_id: string
-          movement_id: string
-          qty: number
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          lot_id: string
-          movement_id: string
-          qty: number
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          lot_id?: string
-          movement_id?: string
-          qty?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_movement_lot_assignments_lot_id_fkey"
-            columns: ["lot_id"]
-            isOneToOne: false
-            referencedRelation: "erp_lots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_movement_lot_assignments_movement_id_fkey"
-            columns: ["movement_id"]
-            isOneToOne: false
-            referencedRelation: "erp_stock_movements"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_movement_serial_assignments: {
-        Row: {
-          created_at: string | null
-          id: string
-          movement_id: string
-          serial_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          movement_id: string
-          serial_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          movement_id?: string
-          serial_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_movement_serial_assignments_movement_id_fkey"
-            columns: ["movement_id"]
-            isOneToOne: false
-            referencedRelation: "erp_stock_movements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_movement_serial_assignments_serial_id_fkey"
-            columns: ["serial_id"]
-            isOneToOne: false
-            referencedRelation: "erp_serials"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       erp_payables: {
         Row: {
           amount: number
@@ -15920,7 +14981,6 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
-          is_active: boolean | null
           key: string
           module: string
         }
@@ -15929,7 +14989,6 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean | null
           key: string
           module: string
         }
@@ -15938,7 +14997,6 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
-          is_active?: boolean | null
           key?: string
           module?: string
         }
@@ -16381,21 +15439,18 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          level: string | null
           permission_id: string
           role_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
-          level?: string | null
           permission_id: string
           role_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
-          level?: string | null
           permission_id?: string
           role_id?: string
         }
@@ -16596,155 +15651,6 @@ export type Database = {
           },
           {
             foreignKeyName: "erp_sales_invoices_series_id_fkey"
-            columns: ["series_id"]
-            isOneToOne: false
-            referencedRelation: "erp_series"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_sales_order_lines: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          discount_percent: number | null
-          id: string
-          item_id: string | null
-          line_order: number | null
-          quantity: number
-          sales_order_id: string
-          subtotal: number | null
-          tax_amount: number | null
-          tax_id: string | null
-          total: number | null
-          unit_price: number
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          discount_percent?: number | null
-          id?: string
-          item_id?: string | null
-          line_order?: number | null
-          quantity?: number
-          sales_order_id: string
-          subtotal?: number | null
-          tax_amount?: number | null
-          tax_id?: string | null
-          total?: number | null
-          unit_price?: number
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          discount_percent?: number | null
-          id?: string
-          item_id?: string | null
-          line_order?: number | null
-          quantity?: number
-          sales_order_id?: string
-          subtotal?: number | null
-          tax_amount?: number | null
-          tax_id?: string | null
-          total?: number | null
-          unit_price?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_sales_order_lines_item_id_fkey"
-            columns: ["item_id"]
-            isOneToOne: false
-            referencedRelation: "erp_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_sales_order_lines_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
-            referencedRelation: "erp_sales_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_sales_order_lines_tax_id_fkey"
-            columns: ["tax_id"]
-            isOneToOne: false
-            referencedRelation: "erp_taxes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_sales_orders: {
-        Row: {
-          company_id: string
-          created_at: string | null
-          created_by: string | null
-          currency: string | null
-          customer_id: string | null
-          delivery_date: string | null
-          id: string
-          notes: string | null
-          number: string | null
-          order_date: string
-          series_id: string | null
-          status: string | null
-          subtotal: number | null
-          tax_amount: number | null
-          total: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          company_id: string
-          created_at?: string | null
-          created_by?: string | null
-          currency?: string | null
-          customer_id?: string | null
-          delivery_date?: string | null
-          id?: string
-          notes?: string | null
-          number?: string | null
-          order_date?: string
-          series_id?: string | null
-          status?: string | null
-          subtotal?: number | null
-          tax_amount?: number | null
-          total?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          company_id?: string
-          created_at?: string | null
-          created_by?: string | null
-          currency?: string | null
-          customer_id?: string | null
-          delivery_date?: string | null
-          id?: string
-          notes?: string | null
-          number?: string | null
-          order_date?: string
-          series_id?: string | null
-          status?: string | null
-          subtotal?: number | null
-          tax_amount?: number | null
-          total?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_sales_orders_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "erp_companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_sales_orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "erp_customers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_sales_orders_series_id_fkey"
             columns: ["series_id"]
             isOneToOne: false
             referencedRelation: "erp_series"
@@ -17218,50 +16124,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "erp_series_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "erp_companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_sessions: {
-        Row: {
-          company_id: string | null
-          expires_at: string | null
-          id: string
-          ip_address: unknown
-          revoke_reason: string | null
-          revoked_at: string | null
-          started_at: string | null
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          company_id?: string | null
-          expires_at?: string | null
-          id?: string
-          ip_address?: unknown
-          revoke_reason?: string | null
-          revoked_at?: string | null
-          started_at?: string | null
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          company_id?: string | null
-          expires_at?: string | null
-          id?: string
-          ip_address?: unknown
-          revoke_reason?: string | null
-          revoked_at?: string | null
-          started_at?: string | null
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_sessions_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
@@ -18033,47 +16895,6 @@ export type Database = {
           },
         ]
       }
-      erp_system_events: {
-        Row: {
-          company_id: string | null
-          created_at: string | null
-          event_code: string | null
-          event_type: string
-          id: string
-          payload: Json | null
-          processed_at: string | null
-          severity: string | null
-        }
-        Insert: {
-          company_id?: string | null
-          created_at?: string | null
-          event_code?: string | null
-          event_type: string
-          id?: string
-          payload?: Json | null
-          processed_at?: string | null
-          severity?: string | null
-        }
-        Update: {
-          company_id?: string | null
-          created_at?: string | null
-          event_code?: string | null
-          event_type?: string
-          id?: string
-          payload?: Json | null
-          processed_at?: string | null
-          severity?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_system_events_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "erp_companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       erp_tax_model_filings: {
         Row: {
           attachments: Json | null
@@ -18810,48 +17631,6 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_role"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "erp_roles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      erp_user_roles: {
-        Row: {
-          company_id: string
-          created_at: string | null
-          granted_by: string | null
-          id: string
-          role_id: string
-          user_id: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string | null
-          granted_by?: string | null
-          id?: string
-          role_id: string
-          user_id: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string | null
-          granted_by?: string | null
-          id?: string
-          role_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "erp_user_roles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "erp_companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "erp_user_roles_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "erp_roles"
@@ -19861,182 +18640,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "faq_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      feature_flag_audit_log: {
-        Row: {
-          action: string
-          changed_at: string
-          changed_by: string | null
-          flag_id: string | null
-          id: string
-          new_value: Json | null
-          old_value: Json | null
-          reason: string | null
-        }
-        Insert: {
-          action: string
-          changed_at?: string
-          changed_by?: string | null
-          flag_id?: string | null
-          id?: string
-          new_value?: Json | null
-          old_value?: Json | null
-          reason?: string | null
-        }
-        Update: {
-          action?: string
-          changed_at?: string
-          changed_by?: string | null
-          flag_id?: string | null
-          id?: string
-          new_value?: Json | null
-          old_value?: Json | null
-          reason?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "feature_flag_audit_log_flag_id_fkey"
-            columns: ["flag_id"]
-            isOneToOne: false
-            referencedRelation: "enterprise_feature_flags"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      feature_flag_evaluations: {
-        Row: {
-          context_data: Json | null
-          evaluated_at: string
-          evaluated_value: boolean
-          evaluation_reason: string | null
-          flag_id: string | null
-          flag_key: string
-          id: string
-          license_id: string | null
-          tenant_id: string | null
-          user_id: string | null
-          variant_key: string | null
-        }
-        Insert: {
-          context_data?: Json | null
-          evaluated_at?: string
-          evaluated_value: boolean
-          evaluation_reason?: string | null
-          flag_id?: string | null
-          flag_key: string
-          id?: string
-          license_id?: string | null
-          tenant_id?: string | null
-          user_id?: string | null
-          variant_key?: string | null
-        }
-        Update: {
-          context_data?: Json | null
-          evaluated_at?: string
-          evaluated_value?: boolean
-          evaluation_reason?: string | null
-          flag_id?: string | null
-          flag_key?: string
-          id?: string
-          license_id?: string | null
-          tenant_id?: string | null
-          user_id?: string | null
-          variant_key?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "feature_flag_evaluations_flag_id_fkey"
-            columns: ["flag_id"]
-            isOneToOne: false
-            referencedRelation: "enterprise_feature_flags"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      feature_flag_license_overrides: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_value: Json | null
-          expires_at: string | null
-          flag_id: string
-          id: string
-          is_enabled: boolean
-          license_id: string | null
-          license_tier: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_value?: Json | null
-          expires_at?: string | null
-          flag_id: string
-          id?: string
-          is_enabled: boolean
-          license_id?: string | null
-          license_tier?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_value?: Json | null
-          expires_at?: string | null
-          flag_id?: string
-          id?: string
-          is_enabled?: boolean
-          license_id?: string | null
-          license_tier?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "feature_flag_license_overrides_flag_id_fkey"
-            columns: ["flag_id"]
-            isOneToOne: false
-            referencedRelation: "enterprise_feature_flags"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      feature_flag_tenant_overrides: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_value: Json | null
-          expires_at: string | null
-          flag_id: string
-          id: string
-          is_enabled: boolean
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_value?: Json | null
-          expires_at?: string | null
-          flag_id: string
-          id?: string
-          is_enabled: boolean
-          tenant_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_value?: Json | null
-          expires_at?: string | null
-          flag_id?: string
-          id?: string
-          is_enabled?: boolean
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "feature_flag_tenant_overrides_flag_id_fkey"
-            columns: ["flag_id"]
-            isOneToOne: false
-            referencedRelation: "enterprise_feature_flags"
             referencedColumns: ["id"]
           },
         ]
@@ -41492,20 +40095,10 @@ export type Database = {
         Args: { p_remittance_id: string }
         Returns: string
       }
-      erp_get_next_document_number:
-        | {
-            Args: { p_company_id: string; p_series_id: string }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_company_id: string
-              p_entity_id: string
-              p_entity_type: string
-              p_series_id: string
-            }
-            Returns: string
-          }
+      erp_get_next_document_number: {
+        Args: { p_company_id: string; p_series_id: string }
+        Returns: string
+      }
       erp_get_next_entry_number: {
         Args: {
           p_company_id: string
@@ -41542,19 +40135,6 @@ export type Database = {
       erp_is_company_admin: {
         Args: { p_company_id: string; p_user_id: string }
         Returns: boolean
-      }
-      erp_log_audit: {
-        Args: {
-          p_action: string
-          p_after?: Json
-          p_before?: Json
-          p_company_id: string
-          p_entity_id: string
-          p_entity_type: string
-          p_metadata?: Json
-          p_user_id: string
-        }
-        Returns: string
       }
       erp_next_entry_number: {
         Args: {
@@ -41616,13 +40196,6 @@ export type Database = {
           discount_percentage: number
           match_count: number
           matching_cnaes: string[]
-        }[]
-      }
-      fn_recalculate_warehouse_stock: {
-        Args: { p_company_id: string; p_warehouse_id?: string }
-        Returns: {
-          errors: string[]
-          items_processed: number
         }[]
       }
       generate_invoice_number: {
@@ -41869,7 +40442,6 @@ export type Database = {
         | "biometric"
         | "security_question"
       auth_risk_level: "low" | "medium" | "high" | "critical"
-      erp_permission_level: "none" | "read" | "write" | "full"
       erp_role_type:
         | "superadmin"
         | "admin"
@@ -42059,7 +40631,6 @@ export const Constants = {
         "security_question",
       ],
       auth_risk_level: ["low", "medium", "high", "critical"],
-      erp_permission_level: ["none", "read", "write", "full"],
       erp_role_type: [
         "superadmin",
         "admin",

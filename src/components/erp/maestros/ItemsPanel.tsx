@@ -22,11 +22,9 @@ import {
   Wrench,
   Barcode,
   CheckCircle,
-  Edit,
-  History
+  Edit
 } from 'lucide-react';
 import { useMaestros, Item } from '@/hooks/erp/useMaestros';
-import { CustomerAuditFeed } from './CustomerAuditFeed';
 import { motion } from 'framer-motion';
 import { 
   DataTable, 
@@ -410,18 +408,6 @@ export const ItemsPanel: React.FC = () => {
               onCheckedChange={(checked) => setFormData({ ...formData, track_serials: checked })}
             />
           </div>
-        </div>
-      )
-    },
-    {
-      key: 'audit',
-      label: 'Auditoría',
-      content: selectedItem ? (
-        <CustomerAuditFeed entityId={selectedItem.id} entityType="item" />
-      ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Guarda el artículo para ver el historial</p>
         </div>
       )
     }

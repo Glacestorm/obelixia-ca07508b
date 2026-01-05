@@ -225,16 +225,14 @@ export const CustomersPanel: React.FC = () => {
     
     if (selectedCustomer) {
       await updateCustomer.mutateAsync({ id: selectedCustomer.id, ...formData });
-      setIsDialogOpen(false);
     } else {
       const result = await createCustomer.mutateAsync(formData);
       if (result) {
-        // Keep dialog open and switch to addresses tab to continue setup
         setSelectedCustomer(result as Customer);
-        toast.success('Cliente creado. Ahora puedes añadir direcciones, contactos y más.');
-        setActiveDetailTab('addresses');
       }
     }
+    
+    setIsDialogOpen(false);
   };
 
   const handleDelete = async (customer: CustomerListItem) => {
