@@ -3,6 +3,7 @@
  */
 
 export { CommercialDiscountPanel } from './CommercialDiscountPanel';
+export { DiscountDetailView } from './DiscountDetailView';
 export { DiscountEffectsTable } from './DiscountEffectsTable';
 export { DiscountCalculator } from './DiscountCalculator';
 export { NewDiscountForm } from './NewDiscountForm';
