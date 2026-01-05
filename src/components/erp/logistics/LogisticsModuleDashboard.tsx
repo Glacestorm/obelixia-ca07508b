@@ -50,6 +50,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ShipmentsManager } from './shipments/ShipmentsManager';
 import { CarriersManager } from './carriers/CarriersManager';
+import { LogisticsAccountingPanel } from './accounting/LogisticsAccountingPanel';
 
 // === STATUS CONFIGS ===
 const STATUS_CONFIG: Record<ShipmentStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -367,7 +368,7 @@ function AccountingTabContent() {
                 {accountingRules.map(rule => (
                   <TableRow key={rule.id}>
                     <TableCell className="font-medium">{rule.rule_name}</TableCell>
-                    <TableCell>{ruleTypeLabels[rule.rule_type] || rule.rule_type}</TableCell>
+                    <TableCell>{ruleTypeLabels[rule.operation_type || rule.rule_type] || rule.rule_type}</TableCell>
                     <TableCell className="font-mono text-sm">{rule.debit_account_code}</TableCell>
                     <TableCell className="font-mono text-sm">{rule.credit_account_code}</TableCell>
                     <TableCell>
@@ -531,7 +532,7 @@ export function LogisticsModuleDashboard() {
         </TabsContent>
 
         <TabsContent value="accounting" className="mt-6">
-          <AccountingTabContent />
+          <LogisticsAccountingPanel />
         </TabsContent>
       </Tabs>
     </div>
