@@ -14,7 +14,8 @@ import {
   Factory,
   ArrowLeft,
   Sparkles,
-  Network
+  Network,
+  Layers
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AutonomousAgentsPanel } from '@/components/admin/ai-agents/AutonomousAgentsPanel';
@@ -22,11 +23,13 @@ import { PredictiveCopilotPanel } from '@/components/admin/ai-agents/PredictiveC
 import { VoiceInterfacePanel } from '@/components/admin/ai-agents/VoiceInterfacePanel';
 import { SpecificAgentsPanel } from '@/components/admin/agents/SpecificAgentsPanel';
 import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
+import { AdvancedAgentsDashboard } from '@/components/admin/agents/AdvancedAgentsDashboard';
 
 export default function AIAgentsPage() {
-  const [activeTab, setActiveTab] = useState('erp-modules');
+  const [activeTab, setActiveTab] = useState('advanced');
 
   const agentCategories = [
+    { id: 'advanced', name: 'Centro Control', icon: Layers, description: 'Dashboard avanzado con tendencias 2025-2027' },
     { id: 'erp-modules', name: 'Agentes ERP', icon: Network, description: 'Agentes especializados por módulo' },
     { id: 'autonomous', name: 'Agentes Autónomos', icon: Bot, description: 'Agentes con ejecución automática' },
     { id: 'copilot', name: 'Copiloto Predictivo', icon: Brain, description: 'Asistencia inteligente en tiempo real' },
@@ -123,7 +126,7 @@ export default function AIAgentsPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
             {agentCategories.map((cat) => (
               <TabsTrigger 
                 key={cat.id} 
@@ -135,6 +138,10 @@ export default function AIAgentsPage() {
               </TabsTrigger>
             ))}
           </TabsList>
+
+          <TabsContent value="advanced" className="space-y-4">
+            <AdvancedAgentsDashboard />
+          </TabsContent>
 
           <TabsContent value="erp-modules" className="space-y-4">
             <ERPModuleAgentsPanel />
