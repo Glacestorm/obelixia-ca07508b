@@ -51,6 +51,8 @@ import { es } from 'date-fns/locale';
 import { ShipmentsManager } from './shipments/ShipmentsManager';
 import { CarriersManager } from './carriers/CarriersManager';
 import { LogisticsAccountingPanel } from './accounting/LogisticsAccountingPanel';
+import { FleetManager } from './fleet/FleetManager';
+import { RoutePlanner } from './routes/RoutePlanner';
 
 // === STATUS CONFIGS ===
 const STATUS_CONFIG: Record<ShipmentStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -142,106 +144,9 @@ function CarriersTabContent() {
   return <CarriersManager carriers={carriers as LogisticsCarrier[]} accounts={carrierAccounts} />;
 }
 
-// === FLEET TAB ===
+// === FLEET TAB - Using full component ===
 function FleetTabContent() {
-  const { vehicles, fetchVehicles, isLoading } = useERPLogistics();
-
-  const vehicleTypeLabels: Record<string, string> = {
-    van: 'Furgoneta',
-    truck: 'Camión',
-    motorcycle: 'Moto',
-    bicycle: 'Bici',
-    car: 'Coche'
-  };
-
-  const statusLabels: Record<string, { label: string; color: string }> = {
-    available: { label: 'Disponible', color: 'bg-green-500/20 text-green-600' },
-    in_route: { label: 'En ruta', color: 'bg-blue-500/20 text-blue-600' },
-    maintenance: { label: 'Mantenimiento', color: 'bg-amber-500/20 text-amber-600' },
-    inactive: { label: 'Inactivo', color: 'bg-gray-500/20 text-gray-600' }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Flota Propia</h3>
-          <p className="text-sm text-muted-foreground">
-            Gestiona los vehículos de tu flota de reparto
-          </p>
-        </div>
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Añadir Vehículo
-        </Button>
-      </div>
-
-      {vehicles.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Truck className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-            <h4 className="font-medium mb-2">Sin vehículos registrados</h4>
-            <p className="text-sm text-muted-foreground mb-4">
-              Añade vehículos a tu flota para gestionar rutas propias
-            </p>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Añadir Vehículo
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {vehicles.map(vehicle => {
-            const statusConfig = statusLabels[vehicle.status] || statusLabels.inactive;
-            const hasAlerts = (vehicle.itv_expiry && new Date(vehicle.itv_expiry) < new Date()) ||
-                             (vehicle.insurance_expiry && new Date(vehicle.insurance_expiry) < new Date());
-            
-            return (
-              <Card key={vehicle.id} className={cn(hasAlerts && "border-amber-500/50")}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Truck className="h-5 w-5 text-primary" />
-                      <div>
-                        <CardTitle className="text-base">{vehicle.license_plate}</CardTitle>
-                        <CardDescription>{vehicle.vehicle_code}</CardDescription>
-                      </div>
-                    </div>
-                    <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Tipo</span>
-                    <span>{vehicleTypeLabels[vehicle.vehicle_type] || vehicle.vehicle_type}</span>
-                  </div>
-                  {vehicle.brand && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Marca/Modelo</span>
-                      <span>{vehicle.brand} {vehicle.model}</span>
-                    </div>
-                  )}
-                  {vehicle.driver_name && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Conductor</span>
-                      <span>{vehicle.driver_name}</span>
-                    </div>
-                  )}
-                  {hasAlerts && (
-                    <div className="flex items-center gap-2 p-2 bg-amber-500/10 rounded-lg text-amber-600 text-sm">
-                      <AlertTriangle className="h-4 w-4" />
-                      Documentación pendiente
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+  return <FleetManager />;
 }
 
 // === ACCOUNTING TAB ===
@@ -519,16 +424,7 @@ export function LogisticsModuleDashboard() {
         </TabsContent>
 
         <TabsContent value="routes" className="mt-6">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Route className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <h4 className="font-medium mb-2">Planificador de Rutas</h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Disponible en Fase 4: Flota Propia y Rutas
-              </p>
-              <Badge variant="outline">Próximamente</Badge>
-            </CardContent>
-          </Card>
+          <RoutePlanner />
         </TabsContent>
 
         <TabsContent value="accounting" className="mt-6">

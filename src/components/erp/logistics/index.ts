@@ -6,3 +6,5 @@ export { LogisticsModuleDashboard } from './LogisticsModuleDashboard';
 export * from './shipments';
 export * from './carriers';
 export * from './accounting';
+export * from './fleet';
+export * from './routes';

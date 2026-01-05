@@ -233,7 +233,7 @@ export function LogisticsAccountingPanel() {
     setEditingRule(rule);
     setRuleForm({
       rule_name: rule.rule_name,
-      operation_type: rule.operation_type,
+      operation_type: rule.operation_type || rule.rule_type || 'shipment_cost',
       debit_account_code: rule.debit_account_code,
       credit_account_code: rule.credit_account_code,
       auto_post: rule.auto_post,
