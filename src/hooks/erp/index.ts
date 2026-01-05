@@ -59,3 +59,10 @@ export type { ERPModule, ExportFormat, ImportExportOptions, OCRResult, ImportRes
 // Banking Hub
 export { useERPBankingHub } from './useERPBankingHub';
 export type { BankingProvider, BankAccount, BankConnection, BankTransaction, BankPosition, SyncLog } from './useERPBankingHub';
+
+// Logistics Module
+export { useERPLogistics } from './useERPLogistics';
+export type { 
+  Carrier, CarrierAccount, Shipment, ShipmentStatus, 
+  TrackingEvent, Vehicle, Route, AccountingRule, LogisticsStats 
+} from './useERPLogistics';

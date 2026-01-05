@@ -15148,6 +15148,1104 @@ export type Database = {
           },
         ]
       }
+      erp_logistics_accounting_rules: {
+        Row: {
+          auto_post: boolean | null
+          carrier_id: string | null
+          company_id: string
+          created_at: string | null
+          credit_account_code: string
+          credit_account_name: string | null
+          debit_account_code: string
+          debit_account_name: string | null
+          description_template: string | null
+          id: string
+          is_active: boolean | null
+          max_amount: number | null
+          metadata: Json | null
+          min_amount: number | null
+          priority: number | null
+          requires_approval: boolean | null
+          rule_name: string
+          rule_type: string
+          service_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_post?: boolean | null
+          carrier_id?: string | null
+          company_id: string
+          created_at?: string | null
+          credit_account_code: string
+          credit_account_name?: string | null
+          debit_account_code: string
+          debit_account_name?: string | null
+          description_template?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_amount?: number | null
+          metadata?: Json | null
+          min_amount?: number | null
+          priority?: number | null
+          requires_approval?: boolean | null
+          rule_name: string
+          rule_type: string
+          service_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_post?: boolean | null
+          carrier_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          credit_account_code?: string
+          credit_account_name?: string | null
+          debit_account_code?: string
+          debit_account_name?: string | null
+          description_template?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_amount?: number | null
+          metadata?: Json | null
+          min_amount?: number | null
+          priority?: number | null
+          requires_approval?: boolean | null
+          rule_name?: string
+          rule_type?: string
+          service_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_accounting_rules_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_accounting_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_carrier_accounts: {
+        Row: {
+          account_number: string | null
+          api_key_encrypted: string | null
+          api_secret_encrypted: string | null
+          billing_account: string | null
+          carrier_id: string
+          company_id: string
+          contact_email: string | null
+          contact_phone: string | null
+          contract_number: string | null
+          created_at: string | null
+          discount_percentage: number | null
+          environment: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          metadata: Json | null
+          rate_type: string | null
+          updated_at: string | null
+          username: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          api_key_encrypted?: string | null
+          api_secret_encrypted?: string | null
+          billing_account?: string | null
+          carrier_id: string
+          company_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          contract_number?: string | null
+          created_at?: string | null
+          discount_percentage?: number | null
+          environment?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          metadata?: Json | null
+          rate_type?: string | null
+          updated_at?: string | null
+          username?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          api_key_encrypted?: string | null
+          api_secret_encrypted?: string | null
+          billing_account?: string | null
+          carrier_id?: string
+          company_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          contract_number?: string | null
+          created_at?: string | null
+          discount_percentage?: number | null
+          environment?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          metadata?: Json | null
+          rate_type?: string | null
+          updated_at?: string | null
+          username?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_carrier_accounts_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_carrier_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_carriers: {
+        Row: {
+          api_endpoint: string | null
+          api_type: string | null
+          carrier_code: string
+          carrier_name: string
+          carrier_type: string | null
+          company_id: string | null
+          country_codes: string[] | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          metadata: Json | null
+          services: Json | null
+          supports_labels: boolean | null
+          supports_pickup: boolean | null
+          supports_tracking: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          api_endpoint?: string | null
+          api_type?: string | null
+          carrier_code: string
+          carrier_name: string
+          carrier_type?: string | null
+          company_id?: string | null
+          country_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          metadata?: Json | null
+          services?: Json | null
+          supports_labels?: boolean | null
+          supports_pickup?: boolean | null
+          supports_tracking?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          api_endpoint?: string | null
+          api_type?: string | null
+          carrier_code?: string
+          carrier_name?: string
+          carrier_type?: string | null
+          company_id?: string | null
+          country_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          metadata?: Json | null
+          services?: Json | null
+          supports_labels?: boolean | null
+          supports_pickup?: boolean | null
+          supports_tracking?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_carriers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_rates: {
+        Row: {
+          base_price: number
+          carrier_account_id: string
+          created_at: string | null
+          currency: string | null
+          fuel_surcharge_percentage: number | null
+          id: string
+          insurance_percentage: number | null
+          is_active: boolean | null
+          metadata: Json | null
+          min_insurance_amount: number | null
+          price_per_kg: number | null
+          price_per_m3: number | null
+          service_code: string
+          service_name: string | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+          volume_max: number | null
+          volume_min: number | null
+          weight_max: number | null
+          weight_min: number | null
+          zone_destination_id: string | null
+          zone_origin_id: string | null
+        }
+        Insert: {
+          base_price: number
+          carrier_account_id: string
+          created_at?: string | null
+          currency?: string | null
+          fuel_surcharge_percentage?: number | null
+          id?: string
+          insurance_percentage?: number | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          min_insurance_amount?: number | null
+          price_per_kg?: number | null
+          price_per_m3?: number | null
+          service_code: string
+          service_name?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          volume_max?: number | null
+          volume_min?: number | null
+          weight_max?: number | null
+          weight_min?: number | null
+          zone_destination_id?: string | null
+          zone_origin_id?: string | null
+        }
+        Update: {
+          base_price?: number
+          carrier_account_id?: string
+          created_at?: string | null
+          currency?: string | null
+          fuel_surcharge_percentage?: number | null
+          id?: string
+          insurance_percentage?: number | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          min_insurance_amount?: number | null
+          price_per_kg?: number | null
+          price_per_m3?: number | null
+          service_code?: string
+          service_name?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+          volume_max?: number | null
+          volume_min?: number | null
+          weight_max?: number | null
+          weight_min?: number | null
+          zone_destination_id?: string | null
+          zone_origin_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_rates_carrier_account_id_fkey"
+            columns: ["carrier_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_carrier_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_rates_zone_destination_id_fkey"
+            columns: ["zone_destination_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_rates_zone_origin_id_fkey"
+            columns: ["zone_origin_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_route_stops: {
+        Row: {
+          actual_arrival: string | null
+          actual_departure: string | null
+          address: string | null
+          city: string | null
+          completed_at: string | null
+          coordinates: Json | null
+          created_at: string | null
+          failure_reason: string | null
+          id: string
+          location_name: string | null
+          metadata: Json | null
+          notes: string | null
+          photo_url: string | null
+          planned_arrival: string | null
+          planned_departure: string | null
+          postal_code: string | null
+          recipient_name: string | null
+          route_id: string
+          service_time_minutes: number | null
+          shipment_id: string | null
+          signature_url: string | null
+          status: string | null
+          stop_number: number
+          stop_type: string | null
+        }
+        Insert: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          address?: string | null
+          city?: string | null
+          completed_at?: string | null
+          coordinates?: Json | null
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          location_name?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          photo_url?: string | null
+          planned_arrival?: string | null
+          planned_departure?: string | null
+          postal_code?: string | null
+          recipient_name?: string | null
+          route_id: string
+          service_time_minutes?: number | null
+          shipment_id?: string | null
+          signature_url?: string | null
+          status?: string | null
+          stop_number: number
+          stop_type?: string | null
+        }
+        Update: {
+          actual_arrival?: string | null
+          actual_departure?: string | null
+          address?: string | null
+          city?: string | null
+          completed_at?: string | null
+          coordinates?: Json | null
+          created_at?: string | null
+          failure_reason?: string | null
+          id?: string
+          location_name?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          photo_url?: string | null
+          planned_arrival?: string | null
+          planned_departure?: string | null
+          postal_code?: string | null
+          recipient_name?: string | null
+          route_id?: string
+          service_time_minutes?: number | null
+          shipment_id?: string | null
+          signature_url?: string | null
+          status?: string | null
+          stop_number?: number
+          stop_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_route_stops_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_routes: {
+        Row: {
+          actual_end_time: string | null
+          actual_start_time: string | null
+          company_id: string
+          completed_stops: number | null
+          created_at: string | null
+          driver_id: string | null
+          driver_name: string | null
+          end_address: string | null
+          end_coordinates: Json | null
+          end_location_name: string | null
+          id: string
+          is_optimized: boolean | null
+          metadata: Json | null
+          notes: string | null
+          optimization_data: Json | null
+          optimization_score: number | null
+          planned_end_time: string | null
+          planned_start_time: string | null
+          route_code: string
+          route_date: string
+          route_name: string | null
+          start_address: string | null
+          start_coordinates: Json | null
+          start_location_name: string | null
+          status: string | null
+          total_distance_km: number | null
+          total_duration_minutes: number | null
+          total_stops: number | null
+          updated_at: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          company_id: string
+          completed_stops?: number | null
+          created_at?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          end_address?: string | null
+          end_coordinates?: Json | null
+          end_location_name?: string | null
+          id?: string
+          is_optimized?: boolean | null
+          metadata?: Json | null
+          notes?: string | null
+          optimization_data?: Json | null
+          optimization_score?: number | null
+          planned_end_time?: string | null
+          planned_start_time?: string | null
+          route_code: string
+          route_date: string
+          route_name?: string | null
+          start_address?: string | null
+          start_coordinates?: Json | null
+          start_location_name?: string | null
+          status?: string | null
+          total_distance_km?: number | null
+          total_duration_minutes?: number | null
+          total_stops?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          company_id?: string
+          completed_stops?: number | null
+          created_at?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          end_address?: string | null
+          end_coordinates?: Json | null
+          end_location_name?: string | null
+          id?: string
+          is_optimized?: boolean | null
+          metadata?: Json | null
+          notes?: string | null
+          optimization_data?: Json | null
+          optimization_score?: number | null
+          planned_end_time?: string | null
+          planned_start_time?: string | null
+          route_code?: string
+          route_date?: string
+          route_name?: string | null
+          start_address?: string | null
+          start_coordinates?: Json | null
+          start_location_name?: string | null
+          status?: string | null
+          total_distance_km?: number | null
+          total_duration_minutes?: number | null
+          total_stops?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_routes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_routes_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_shipment_lines: {
+        Row: {
+          barcode: string | null
+          created_at: string | null
+          declared_value: number | null
+          description: string | null
+          height: number | null
+          id: string
+          length: number | null
+          line_number: number
+          lot_number: string | null
+          metadata: Json | null
+          package_type: string | null
+          product_id: string | null
+          quantity: number | null
+          serial_number: string | null
+          shipment_id: string
+          status: string | null
+          volume: number | null
+          weight: number | null
+          width: number | null
+        }
+        Insert: {
+          barcode?: string | null
+          created_at?: string | null
+          declared_value?: number | null
+          description?: string | null
+          height?: number | null
+          id?: string
+          length?: number | null
+          line_number: number
+          lot_number?: string | null
+          metadata?: Json | null
+          package_type?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          serial_number?: string | null
+          shipment_id: string
+          status?: string | null
+          volume?: number | null
+          weight?: number | null
+          width?: number | null
+        }
+        Update: {
+          barcode?: string | null
+          created_at?: string | null
+          declared_value?: number | null
+          description?: string | null
+          height?: number | null
+          id?: string
+          length?: number | null
+          line_number?: number
+          lot_number?: string | null
+          metadata?: Json | null
+          package_type?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          serial_number?: string | null
+          shipment_id?: string
+          status?: string | null
+          volume?: number | null
+          weight?: number | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_shipment_lines_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_shipments: {
+        Row: {
+          accounted_at: string | null
+          accounting_mode: string | null
+          additional_costs: number | null
+          base_cost: number | null
+          carrier_account_id: string | null
+          carrier_reference: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          customer_reference: string | null
+          declared_value: number | null
+          delivered_at: string | null
+          delivered_to: string | null
+          delivery_photo_url: string | null
+          delivery_signature_url: string | null
+          delivery_type: string | null
+          destination_address: string
+          destination_city: string
+          destination_contact: string | null
+          destination_country: string | null
+          destination_email: string | null
+          destination_name: string
+          destination_phone: string | null
+          destination_postal_code: string
+          destination_province: string | null
+          fiscal_year_id: string | null
+          fuel_surcharge: number | null
+          has_incident: boolean | null
+          id: string
+          incident_description: string | null
+          incident_resolved_at: string | null
+          incident_type: string | null
+          insurance_cost: number | null
+          internal_notes: string | null
+          is_accounted: boolean | null
+          journal_entry_id: string | null
+          label_generated_at: string | null
+          label_url: string | null
+          last_tracking_update: string | null
+          metadata: Json | null
+          notes: string | null
+          origin_address: string | null
+          origin_city: string | null
+          origin_contact: string | null
+          origin_country: string | null
+          origin_email: string | null
+          origin_name: string | null
+          origin_phone: string | null
+          origin_postal_code: string | null
+          origin_province: string | null
+          pickup_cost: number | null
+          scheduled_delivery_date: string | null
+          scheduled_pickup_date: string | null
+          scheduled_pickup_time_from: string | null
+          scheduled_pickup_time_to: string | null
+          service_code: string | null
+          service_name: string | null
+          shipment_number: string
+          source_document_id: string | null
+          source_document_number: string | null
+          source_type: string | null
+          status: string | null
+          total_cost: number | null
+          total_packages: number | null
+          total_volume: number | null
+          total_weight: number | null
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accounted_at?: string | null
+          accounting_mode?: string | null
+          additional_costs?: number | null
+          base_cost?: number | null
+          carrier_account_id?: string | null
+          carrier_reference?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          customer_reference?: string | null
+          declared_value?: number | null
+          delivered_at?: string | null
+          delivered_to?: string | null
+          delivery_photo_url?: string | null
+          delivery_signature_url?: string | null
+          delivery_type?: string | null
+          destination_address: string
+          destination_city: string
+          destination_contact?: string | null
+          destination_country?: string | null
+          destination_email?: string | null
+          destination_name: string
+          destination_phone?: string | null
+          destination_postal_code: string
+          destination_province?: string | null
+          fiscal_year_id?: string | null
+          fuel_surcharge?: number | null
+          has_incident?: boolean | null
+          id?: string
+          incident_description?: string | null
+          incident_resolved_at?: string | null
+          incident_type?: string | null
+          insurance_cost?: number | null
+          internal_notes?: string | null
+          is_accounted?: boolean | null
+          journal_entry_id?: string | null
+          label_generated_at?: string | null
+          label_url?: string | null
+          last_tracking_update?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          origin_address?: string | null
+          origin_city?: string | null
+          origin_contact?: string | null
+          origin_country?: string | null
+          origin_email?: string | null
+          origin_name?: string | null
+          origin_phone?: string | null
+          origin_postal_code?: string | null
+          origin_province?: string | null
+          pickup_cost?: number | null
+          scheduled_delivery_date?: string | null
+          scheduled_pickup_date?: string | null
+          scheduled_pickup_time_from?: string | null
+          scheduled_pickup_time_to?: string | null
+          service_code?: string | null
+          service_name?: string | null
+          shipment_number: string
+          source_document_id?: string | null
+          source_document_number?: string | null
+          source_type?: string | null
+          status?: string | null
+          total_cost?: number | null
+          total_packages?: number | null
+          total_volume?: number | null
+          total_weight?: number | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accounted_at?: string | null
+          accounting_mode?: string | null
+          additional_costs?: number | null
+          base_cost?: number | null
+          carrier_account_id?: string | null
+          carrier_reference?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          customer_reference?: string | null
+          declared_value?: number | null
+          delivered_at?: string | null
+          delivered_to?: string | null
+          delivery_photo_url?: string | null
+          delivery_signature_url?: string | null
+          delivery_type?: string | null
+          destination_address?: string
+          destination_city?: string
+          destination_contact?: string | null
+          destination_country?: string | null
+          destination_email?: string | null
+          destination_name?: string
+          destination_phone?: string | null
+          destination_postal_code?: string
+          destination_province?: string | null
+          fiscal_year_id?: string | null
+          fuel_surcharge?: number | null
+          has_incident?: boolean | null
+          id?: string
+          incident_description?: string | null
+          incident_resolved_at?: string | null
+          incident_type?: string | null
+          insurance_cost?: number | null
+          internal_notes?: string | null
+          is_accounted?: boolean | null
+          journal_entry_id?: string | null
+          label_generated_at?: string | null
+          label_url?: string | null
+          last_tracking_update?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          origin_address?: string | null
+          origin_city?: string | null
+          origin_contact?: string | null
+          origin_country?: string | null
+          origin_email?: string | null
+          origin_name?: string | null
+          origin_phone?: string | null
+          origin_postal_code?: string | null
+          origin_province?: string | null
+          pickup_cost?: number | null
+          scheduled_delivery_date?: string | null
+          scheduled_pickup_date?: string | null
+          scheduled_pickup_time_from?: string | null
+          scheduled_pickup_time_to?: string | null
+          service_code?: string | null
+          service_name?: string | null
+          shipment_number?: string
+          source_document_id?: string | null
+          source_document_number?: string | null
+          source_type?: string | null
+          status?: string | null
+          total_cost?: number | null
+          total_packages?: number | null
+          total_volume?: number | null
+          total_weight?: number | null
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_shipments_carrier_account_id_fkey"
+            columns: ["carrier_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_carrier_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_shipments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_logistics_shipments_fiscal_year_id_fkey"
+            columns: ["fiscal_year_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fiscal_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_tracking_events: {
+        Row: {
+          carrier_raw_data: Json | null
+          created_at: string | null
+          event_code: string
+          event_description: string | null
+          event_status: string | null
+          event_timestamp: string
+          id: string
+          is_exception: boolean | null
+          location_city: string | null
+          location_coordinates: Json | null
+          location_country: string | null
+          location_name: string | null
+          requires_action: boolean | null
+          shipment_id: string
+        }
+        Insert: {
+          carrier_raw_data?: Json | null
+          created_at?: string | null
+          event_code: string
+          event_description?: string | null
+          event_status?: string | null
+          event_timestamp: string
+          id?: string
+          is_exception?: boolean | null
+          location_city?: string | null
+          location_coordinates?: Json | null
+          location_country?: string | null
+          location_name?: string | null
+          requires_action?: boolean | null
+          shipment_id: string
+        }
+        Update: {
+          carrier_raw_data?: Json | null
+          created_at?: string | null
+          event_code?: string
+          event_description?: string | null
+          event_status?: string | null
+          event_timestamp?: string
+          id?: string
+          is_exception?: boolean | null
+          location_city?: string | null
+          location_coordinates?: Json | null
+          location_country?: string | null
+          location_name?: string | null
+          requires_action?: boolean | null
+          shipment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_tracking_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_vehicles: {
+        Row: {
+          asset_account_id: string | null
+          brand: string | null
+          company_id: string
+          cost_per_km: number | null
+          created_at: string | null
+          current_location: Json | null
+          current_route_id: string | null
+          depreciation_account_id: string | null
+          driver_id: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          expense_account_id: string | null
+          id: string
+          insurance_expiry: string | null
+          is_active: boolean | null
+          itv_expiry: string | null
+          license_plate: string
+          max_pallets: number | null
+          max_volume: number | null
+          max_weight: number | null
+          metadata: Json | null
+          model: string | null
+          monthly_cost: number | null
+          notes: string | null
+          purchase_price: number | null
+          registration_date: string | null
+          status: string | null
+          tachograph_expiry: string | null
+          updated_at: string | null
+          vehicle_code: string
+          vehicle_type: string | null
+          year: number | null
+        }
+        Insert: {
+          asset_account_id?: string | null
+          brand?: string | null
+          company_id: string
+          cost_per_km?: number | null
+          created_at?: string | null
+          current_location?: Json | null
+          current_route_id?: string | null
+          depreciation_account_id?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          expense_account_id?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          is_active?: boolean | null
+          itv_expiry?: string | null
+          license_plate: string
+          max_pallets?: number | null
+          max_volume?: number | null
+          max_weight?: number | null
+          metadata?: Json | null
+          model?: string | null
+          monthly_cost?: number | null
+          notes?: string | null
+          purchase_price?: number | null
+          registration_date?: string | null
+          status?: string | null
+          tachograph_expiry?: string | null
+          updated_at?: string | null
+          vehicle_code: string
+          vehicle_type?: string | null
+          year?: number | null
+        }
+        Update: {
+          asset_account_id?: string | null
+          brand?: string | null
+          company_id?: string
+          cost_per_km?: number | null
+          created_at?: string | null
+          current_location?: Json | null
+          current_route_id?: string | null
+          depreciation_account_id?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          expense_account_id?: string | null
+          id?: string
+          insurance_expiry?: string | null
+          is_active?: boolean | null
+          itv_expiry?: string | null
+          license_plate?: string
+          max_pallets?: number | null
+          max_volume?: number | null
+          max_weight?: number | null
+          metadata?: Json | null
+          model?: string | null
+          monthly_cost?: number | null
+          notes?: string | null
+          purchase_price?: number | null
+          registration_date?: string | null
+          status?: string | null
+          tachograph_expiry?: string | null
+          updated_at?: string | null
+          vehicle_code?: string
+          vehicle_type?: string | null
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_vehicles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_logistics_zones: {
+        Row: {
+          carrier_id: string | null
+          country_code: string | null
+          created_at: string | null
+          delivery_days_max: number | null
+          delivery_days_min: number | null
+          id: string
+          is_ceuta_melilla: boolean | null
+          is_islands: boolean | null
+          is_peninsula: boolean | null
+          metadata: Json | null
+          postal_code_ranges: Json | null
+          provinces: string[] | null
+          surcharge_percentage: number | null
+          zone_code: string
+          zone_name: string
+          zone_type: string | null
+        }
+        Insert: {
+          carrier_id?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          delivery_days_max?: number | null
+          delivery_days_min?: number | null
+          id?: string
+          is_ceuta_melilla?: boolean | null
+          is_islands?: boolean | null
+          is_peninsula?: boolean | null
+          metadata?: Json | null
+          postal_code_ranges?: Json | null
+          provinces?: string[] | null
+          surcharge_percentage?: number | null
+          zone_code: string
+          zone_name: string
+          zone_type?: string | null
+        }
+        Update: {
+          carrier_id?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          delivery_days_max?: number | null
+          delivery_days_min?: number | null
+          id?: string
+          is_ceuta_melilla?: boolean | null
+          is_islands?: boolean | null
+          is_peninsula?: boolean | null
+          metadata?: Json | null
+          postal_code_ranges?: Json | null
+          provinces?: string[] | null
+          surcharge_percentage?: number | null
+          zone_code?: string
+          zone_name?: string
+          zone_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_logistics_zones_carrier_id_fkey"
+            columns: ["carrier_id"]
+            isOneToOne: false
+            referencedRelation: "erp_logistics_carriers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_lots: {
         Row: {
           company_id: string
