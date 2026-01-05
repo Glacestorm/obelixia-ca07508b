@@ -9,3 +9,4 @@ export * from './accounting';
 export * from './fleet';
 export * from './routes';
 export * from './analytics';
+export * from './notifications';
