@@ -18,9 +18,16 @@ export interface Carrier {
   is_active: boolean;
   supports_tracking: boolean;
   supports_labels: boolean;
+  supports_cod?: boolean;
+  services_offered?: string[];
   services: Array<{ code: string; name: string }>;
+  website_url?: string;
+  tracking_url_template?: string;
   metadata?: Record<string, unknown>;
 }
+
+// Alias for components using different naming
+export type LogisticsCarrier = Carrier;
 
 export interface CarrierAccount {
   id: string;
@@ -29,17 +36,25 @@ export interface CarrierAccount {
   carrier?: Carrier;
   account_number?: string;
   contract_number?: string;
+  api_key?: string;
+  api_secret?: string;
+  api_endpoint?: string;
   is_active: boolean;
   is_default: boolean;
+  is_production?: boolean;
   environment: 'production' | 'sandbox';
   discount_percentage: number;
 }
+
+// Alias for components using different naming
+export type LogisticsCarrierAccount = CarrierAccount;
 
 export interface Shipment {
   id: string;
   company_id: string;
   shipment_number: string;
   tracking_number?: string;
+  carrier_id: string;
   carrier_account_id?: string;
   carrier_account?: CarrierAccount;
   
@@ -49,6 +64,8 @@ export interface Shipment {
   origin_city?: string;
   origin_postal_code?: string;
   origin_country: string;
+  origin_phone?: string;
+  origin_email?: string;
   
   // Destino
   destination_name: string;
@@ -60,6 +77,7 @@ export interface Shipment {
   destination_email?: string;
   
   // Servicio
+  service_type?: string;
   service_code?: string;
   service_name?: string;
   delivery_type: 'standard' | 'express' | 'same_day' | 'scheduled';
@@ -71,11 +89,14 @@ export interface Shipment {
   
   // Costes
   total_cost: number;
+  cash_on_delivery?: number;
+  insurance_value?: number;
   currency: string;
   
   // Estado
   status: ShipmentStatus;
   has_incident: boolean;
+  notes?: string;
   
   // Contabilidad
   accounting_mode: 'auto' | 'manual' | 'none';
@@ -85,8 +106,13 @@ export interface Shipment {
   // Fechas
   created_at: string;
   updated_at: string;
+  picked_up_at?: string;
   delivered_at?: string;
+  estimated_delivery_at?: string;
 }
+
+// Alias for components using different naming
+export type LogisticsShipment = Shipment;
 
 export type ShipmentStatus = 
   | 'draft' 
@@ -655,6 +681,109 @@ export function useERPLogistics() {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
+  // === UPDATE SHIPMENT ===
+  const updateShipment = useCallback(async (
+    shipmentId: string,
+    updates: Partial<Shipment>
+  ) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('erp_logistics_shipments')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', shipmentId);
+
+      if (updateError) throw updateError;
+
+      toast.success('Envío actualizado');
+      await fetchShipments();
+      return true;
+    } catch (err) {
+      console.error('[useERPLogistics] updateShipment error:', err);
+      toast.error('Error al actualizar envío');
+      return false;
+    }
+  }, [fetchShipments]);
+
+  // === UPDATE CARRIER ===
+  const updateCarrier = useCallback(async (
+    carrierId: string,
+    updates: { is_active?: boolean }
+  ) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('erp_logistics_carriers')
+        .update(updates)
+        .eq('id', carrierId);
+
+      if (updateError) throw updateError;
+
+      await fetchCarriers();
+      return true;
+    } catch (err) {
+      console.error('[useERPLogistics] updateCarrier error:', err);
+      return false;
+    }
+  }, [fetchCarriers]);
+
+  // === CREATE CARRIER ACCOUNT ===
+  const createCarrierAccount = useCallback(async (
+    accountData: Partial<CarrierAccount>
+  ) => {
+    if (!selectedCompany?.id) {
+      toast.error('Selecciona una empresa');
+      return null;
+    }
+
+    try {
+      const { data, error: insertError } = await supabase
+        .from('erp_logistics_carrier_accounts')
+        .insert([{
+          company_id: selectedCompany.id,
+          carrier_id: accountData.carrier_id,
+          account_number: accountData.account_number,
+          api_key: accountData.api_key,
+          api_secret: accountData.api_secret,
+          api_endpoint: accountData.api_endpoint,
+          is_active: accountData.is_active ?? true,
+          is_production: accountData.is_production ?? false,
+        }])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      await fetchCarrierAccounts();
+      return data;
+    } catch (err) {
+      console.error('[useERPLogistics] createCarrierAccount error:', err);
+      return null;
+    }
+  }, [selectedCompany?.id, fetchCarrierAccounts]);
+
+  // === UPDATE CARRIER ACCOUNT ===
+  const updateCarrierAccount = useCallback(async (
+    accountId: string,
+    updates: Partial<CarrierAccount>
+  ) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('erp_logistics_carrier_accounts')
+        .update(updates)
+        .eq('id', accountId);
+
+      if (updateError) throw updateError;
+
+      await fetchCarrierAccounts();
+      return true;
+    } catch (err) {
+      console.error('[useERPLogistics] updateCarrierAccount error:', err);
+      return false;
+    }
+  }, [fetchCarrierAccounts]);
+
   // === RETURN ===
   return {
     // Estado
@@ -674,7 +803,11 @@ export function useERPLogistics() {
     fetchCarrierAccounts,
     fetchShipments,
     createShipment,
+    updateShipment,
     updateShipmentStatus,
+    updateCarrier,
+    createCarrierAccount,
+    updateCarrierAccount,
     fetchVehicles,
     fetchRoutes,
     fetchAccountingRules,
