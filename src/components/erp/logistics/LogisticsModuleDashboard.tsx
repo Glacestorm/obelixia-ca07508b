@@ -56,6 +56,7 @@ import { RoutePlanner } from './routes/RoutePlanner';
 import { LogisticsAnalyticsDashboard } from './analytics/LogisticsAnalyticsDashboard';
 import { LogisticsNotificationsPanel } from './notifications/LogisticsNotificationsPanel';
 import { LogisticsReportsPanel } from './reports/LogisticsReportsPanel';
+import { LogisticsSettingsPanel } from './settings/LogisticsSettingsPanel';
 
 // === STATUS CONFIGS ===
 const STATUS_CONFIG: Record<ShipmentStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -394,7 +395,7 @@ export function LogisticsModuleDashboard() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview" className="gap-2">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Envíos</span>
@@ -422,6 +423,10 @@ export function LogisticsModuleDashboard() {
           <TabsTrigger value="reports" className="gap-2">
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Informes</span>
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Config</span>
           </TabsTrigger>
         </TabsList>
 
@@ -451,6 +456,10 @@ export function LogisticsModuleDashboard() {
 
         <TabsContent value="reports" className="mt-6">
           <LogisticsReportsPanel />
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-6">
+          <LogisticsSettingsPanel />
         </TabsContent>
       </Tabs>
     </div>
