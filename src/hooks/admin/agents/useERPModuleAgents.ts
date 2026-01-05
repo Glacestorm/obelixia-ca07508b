@@ -419,25 +419,26 @@ export function useERPModuleAgents() {
     }
   }, []);
 
-  const startAutoRefresh = useCallback((intervalMs = 60000) => {
-    stopAutoRefresh();
-    // Solo inicializar una vez, usar refs para evitar dependencias inestables
-    if (domainAgents.length === 0) {
-      initializeAgents();
-    }
-    autoRefreshInterval.current = setInterval(() => {
-      // No llamar funciones con estado en el intervalo para evitar loops
-    }, intervalMs);
+  // startAutoRefresh NO debe tener dependencias que cambien para evitar loops
+  const startAutoRefresh = useCallback((_intervalMs = 60000) => {
+    // Esta función ahora es estable y no causa re-renders
+    // La inicialización se hace separadamente en el componente
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stopAutoRefresh]);
+  }, []);
 
   // === MODO AUTÓNOMO DEL SUPERVISOR ===
+  // Usar ref para evitar dependencias inestables en el intervalo
+  const supervisorOrchestrateRef = useRef(supervisorOrchestrate);
+  useEffect(() => {
+    supervisorOrchestrateRef.current = supervisorOrchestrate;
+  }, [supervisorOrchestrate]);
+
   const runAutonomousCycle = useCallback(async (): Promise<void> => {
     const randomIndex = Math.floor(Math.random() * AUTONOMOUS_ACTIONS.length);
     const randomAction = AUTONOMOUS_ACTIONS[randomIndex];
     console.log('[Supervisor Autónomo] Ejecutando ciclo:', randomAction);
-    await supervisorOrchestrate(randomAction, 'medium');
-  }, [supervisorOrchestrate]);
+    await supervisorOrchestrateRef.current(randomAction, 'medium');
+  }, []); // Sin dependencias - usa ref
 
   const toggleAutonomousMode = useCallback((enabled: boolean, intervalMs: number = 60000): void => {
     // Limpiar intervalo anterior si existe

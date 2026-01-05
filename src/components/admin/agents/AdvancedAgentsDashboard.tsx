@@ -552,10 +552,11 @@ export function AdvancedAgentsDashboard() {
     stopAutoRefresh
   } = useERPModuleAgents();
 
+  // Inicializar agentes solo una vez al montar - NO usar startAutoRefresh como dependencia
   useEffect(() => {
-    startAutoRefresh(60000);
-    return () => stopAutoRefresh();
-  }, [startAutoRefresh, stopAutoRefresh]);
+    initializeAgents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Estadísticas globales
   const stats = useMemo(() => {
