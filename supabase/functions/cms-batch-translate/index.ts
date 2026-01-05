@@ -193,6 +193,62 @@ Return format (JSON only, no markdown):
     const data = await response.json();
     let rawContent = data?.choices?.[0]?.message?.content ?? "";
 
+    // Handle empty response - retry once with simpler prompt
+    if (!rawContent || rawContent.trim().length === 0) {
+      console.warn("Empty AI response, retrying with simplified prompt...");
+      
+      // Simpler retry prompt
+      const retryPrompt = `Translate to ${targetLang}. Return JSON array only.
+${batchItems.map((item, idx) => `${idx}: "${item.text}"`).join("\n")}
+
+Format: [{"index":0,"translation":"..."},...]`;
+
+      const retryResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: "Translator. Return only valid JSON array." },
+            { role: "user", content: retryPrompt },
+          ],
+        }),
+      });
+
+      if (retryResponse.ok) {
+        const retryData = await retryResponse.json();
+        rawContent = retryData?.choices?.[0]?.message?.content ?? "";
+      }
+    }
+
+    // If still empty, return original texts as fallback
+    if (!rawContent || rawContent.trim().length === 0) {
+      console.error("AI returned empty response after retry");
+      const fallbackResults = batchItems.map((item) => ({
+        key: item.key,
+        namespace: item.namespace || "common",
+        original: item.text,
+        translation: item.text, // Return original as fallback
+      }));
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          sourceLocale,
+          targetLocale,
+          count: fallbackResults.length,
+          results: fallbackResults,
+          truncated: items.length > MAX_BATCH_SIZE,
+          remaining: Math.max(0, items.length - MAX_BATCH_SIZE),
+          warning: "Translation service returned empty response, original text preserved",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Clean markdown code blocks and extra whitespace if present
     rawContent = rawContent
       .replace(/```json\n?/gi, "")
@@ -202,7 +258,7 @@ Return format (JSON only, no markdown):
       .trim();
 
     // Try to extract JSON array if there's extra text around it
-    const jsonMatch = rawContent.match(/\[[\s\S]*?\]/);
+    const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       rawContent = jsonMatch[0];
     }
@@ -249,27 +305,44 @@ Return format (JSON only, no markdown):
       }
     }
 
-    // Final fallback: try to parse individual objects
+    // Final fallback: try to parse individual objects with more flexible regex
     if (translations.length === 0) {
       console.log("Attempting regex-based extraction...");
-      const objectMatches = rawContent.matchAll(/\{\s*"index"\s*:\s*(\d+)\s*,\s*"translation"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}/g);
+      // More flexible regex that handles escaped quotes and multiline
+      const objectMatches = rawContent.matchAll(/\{\s*"index"\s*:\s*(\d+)\s*,\s*"translation"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/gs);
       
       for (const match of objectMatches) {
         const idx = parseInt(match[1], 10);
-        const trans = match[2].replace(/\\"/g, '"').replace(/\\n/g, " ");
+        const trans = match[2]
+          .replace(/\\"/g, '"')
+          .replace(/\\n/g, " ")
+          .replace(/\\\\/g, "\\");
         translations.push({ index: idx, translation: trans });
       }
     }
 
-    // If still no translations, log detailed error and return failure
+    // If still no translations, return original texts as graceful fallback
     if (translations.length === 0) {
-      console.error("All parsing attempts failed. Raw content:", rawContent.substring(0, 1000));
+      console.error("All parsing attempts failed. Raw content:", rawContent.substring(0, 500));
+      const fallbackResults = batchItems.map((item) => ({
+        key: item.key,
+        namespace: item.namespace || "common",
+        original: item.text,
+        translation: item.text,
+      }));
+      
       return new Response(
-        JSON.stringify({ 
-          error: "Failed to parse translation response",
-          debug: rawContent.substring(0, 200)
+        JSON.stringify({
+          success: true,
+          sourceLocale,
+          targetLocale,
+          count: fallbackResults.length,
+          results: fallbackResults,
+          truncated: items.length > MAX_BATCH_SIZE,
+          remaining: Math.max(0, items.length - MAX_BATCH_SIZE),
+          warning: "Could not parse translation response, original text preserved",
         }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
