@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -391,14 +392,17 @@ export function RegulationsPanel({ className, compact = false }: RegulationsPane
                             <div 
                               className="text-sm"
                               dangerouslySetInnerHTML={{ 
-                                __html: regulation.content_markdown
-                                  .replace(/\n/g, '<br>')
-                                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                  .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                  .replace(/^### (.*?)$/gm, '<h4 class="font-semibold mt-3 mb-1">$1</h4>')
-                                  .replace(/^## (.*?)$/gm, '<h3 class="font-bold mt-4 mb-2">$1</h3>')
-                                  .replace(/^# (.*?)$/gm, '<h2 class="text-lg font-bold mt-4 mb-2">$1</h2>')
-                                  .replace(/^- (.*?)$/gm, '<li class="ml-4">$1</li>')
+                                __html: DOMPurify.sanitize(
+                                  regulation.content_markdown
+                                    .replace(/\n/g, '<br>')
+                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                                    .replace(/^### (.*?)$/gm, '<h4 class="font-semibold mt-3 mb-1">$1</h4>')
+                                    .replace(/^## (.*?)$/gm, '<h3 class="font-bold mt-4 mb-2">$1</h3>')
+                                    .replace(/^# (.*?)$/gm, '<h2 class="text-lg font-bold mt-4 mb-2">$1</h2>')
+                                    .replace(/^- (.*?)$/gm, '<li class="ml-4">$1</li>'),
+                                  { ALLOWED_TAGS: ['br', 'strong', 'em', 'h2', 'h3', 'h4', 'li', 'ul', 'ol', 'p'], ALLOWED_ATTR: ['class'] }
+                                )
                               }}
                             />
                           </div>

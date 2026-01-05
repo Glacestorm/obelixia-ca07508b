@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { User, Bot, ChevronDown, ChevronUp, ExternalLink, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import DOMPurify from 'dompurify';
 
 interface Source {
   id: string;
@@ -27,11 +28,12 @@ export const NewsChatMessage: React.FC<NewsChatMessageProps> = ({ message }) => 
   const [showSources, setShowSources] = useState(false);
   const isUser = message.role === 'user';
 
-  // Format message content - convert [N] references to styled citations
+  // Format message content - convert [N] references to styled citations (sanitized)
   const formatContent = (content: string) => {
-    return content.replace(/\[(\d+)\]/g, (match, num) => {
+    const formatted = content.replace(/\[(\d+)\]/g, (match, num) => {
       return `<span class="inline-flex items-center justify-center w-5 h-5 text-xs rounded-full bg-emerald-500/20 text-emerald-400 font-medium">${num}</span>`;
     });
+    return DOMPurify.sanitize(formatted, { ALLOWED_TAGS: ['span'], ALLOWED_ATTR: ['class'] });
   };
 
   return (
