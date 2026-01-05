@@ -174,13 +174,19 @@ export interface AccountingRule {
   id: string;
   company_id: string;
   rule_name: string;
-  rule_type: 'shipment_cost' | 'carrier_invoice' | 'fleet_expense' | 'fuel' | 'tolls' | 'maintenance';
+  rule_type: string;
+  operation_type: string; // Alias for rule_type for backwards compatibility
   carrier_id?: string;
   debit_account_code: string;
+  debit_account_name?: string;
   credit_account_code: string;
+  credit_account_name?: string;
   auto_post: boolean;
   is_active: boolean;
 }
+
+// Alias for components using different naming
+export type LogisticsAccountingRule = AccountingRule;
 
 export interface LogisticsStats {
   totalShipments: number;
@@ -483,8 +489,13 @@ export function useERPLogistics() {
         .order('priority', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setAccountingRules((data || []) as AccountingRule[]);
-      return data || [];
+      // Map database fields to interface
+      const mappedRules = (data || []).map((rule: any) => ({
+        ...rule,
+        operation_type: rule.operation_type || rule.rule_type || 'shipment_cost'
+      })) as AccountingRule[];
+      setAccountingRules(mappedRules);
+      return mappedRules;
     } catch (err) {
       console.error('[useERPLogistics] fetchAccountingRules error:', err);
       return [];
