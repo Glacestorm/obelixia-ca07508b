@@ -546,9 +546,10 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
   // === INITIAL LOAD (with guard) ===
   useEffect(() => {
     if (!guardRef.current.isInitialized && agentId && isMountedRef.current) {
-      loadHelpContent();
+      // Usar ref para evitar dependencia de loadHelpContent
+      loadHelpContentRef.current();
     }
-  }, [agentId]); // Only agentId, not loadHelpContent to prevent loops
+  }, [agentId]); // Solo agentId - usa ref para loadHelpContent
 
   return {
     // State
