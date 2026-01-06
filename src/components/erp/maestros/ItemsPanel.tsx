@@ -22,10 +22,12 @@ import {
   Wrench,
   Barcode,
   CheckCircle,
-  Edit
+  Edit,
+  History
 } from 'lucide-react';
 import { useMaestros, Item } from '@/hooks/erp/useMaestros';
 import { motion } from 'framer-motion';
+import { CustomerAuditFeed } from './CustomerAuditFeed';
 import { 
   DataTable, 
   Column, 
@@ -410,7 +412,15 @@ export const ItemsPanel: React.FC = () => {
           </div>
         </div>
       )
-    }
+    },
+    ...(selectedItem ? [{
+      key: 'audit',
+      label: 'Auditoría',
+      icon: <History className="h-4 w-4" />,
+      content: (
+        <CustomerAuditFeed entityId={selectedItem.id} entityType="item" />
+      )
+    }] : [])
   ];
 
   const openNewDialog = () => {
