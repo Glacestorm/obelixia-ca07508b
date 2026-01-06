@@ -23,7 +23,8 @@ import {
   CreditCard,
   History,
   CheckCircle,
-  XCircle
+  XCircle,
+  Calculator
 } from 'lucide-react';
 import { useMaestros, Supplier } from '@/hooks/erp/useMaestros';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +37,8 @@ import {
   SupplierGeneralForm,
   SupplierFormData,
   SupplierAddress,
-  SupplierContact
+  SupplierContact,
+  SupplierAccountingTab
 } from './suppliers';
 import { 
   DataTable, 
@@ -303,7 +305,7 @@ export const SuppliersPanel: React.FC = () => {
           </DialogHeader>
 
           <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="general" className="gap-1">
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">General</span>
@@ -319,6 +321,10 @@ export const SuppliersPanel: React.FC = () => {
               <TabsTrigger value="payment" className="gap-1" disabled={!selectedSupplier}>
                 <CreditCard className="h-4 w-4" />
                 <span className="hidden sm:inline">Pagos</span>
+              </TabsTrigger>
+              <TabsTrigger value="accounting" className="gap-1" disabled={!selectedSupplier}>
+                <Calculator className="h-4 w-4" />
+                <span className="hidden sm:inline">Contabilidad</span>
               </TabsTrigger>
               <TabsTrigger value="audit" className="gap-1" disabled={!selectedSupplier}>
                 <History className="h-4 w-4" />
@@ -360,6 +366,12 @@ export const SuppliersPanel: React.FC = () => {
             <TabsContent value="payment" className="mt-4">
               {selectedSupplier && (
                 <SupplierPaymentTab supplierId={selectedSupplier.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="accounting" className="mt-4">
+              {selectedSupplier && (
+                <SupplierAccountingTab supplierId={selectedSupplier.id} />
               )}
             </TabsContent>
 
