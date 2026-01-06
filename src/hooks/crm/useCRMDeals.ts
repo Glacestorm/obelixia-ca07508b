@@ -1,4 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+/**
+ * Hook para gestión de deals CRM
+ * Fase 2: Corregido para evitar loops de useEffect
+ */
+
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCRMContext } from './useCRMContext';
 import { toast } from 'sonner';
@@ -222,9 +227,33 @@ export function useCRMDeals() {
     return stats;
   }, [deals]);
 
+  // Ref para controlar mount inicial - evita loops infinitos
+  const isInitialMount = useRef(true);
+  const prevWorkspaceId = useRef<string | null>(null);
+  const prevFiltersJson = useRef<string>('{}');
+
   useEffect(() => {
-    fetchDeals();
-  }, [fetchDeals]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (currentWorkspace?.id) {
+        prevWorkspaceId.current = currentWorkspace.id;
+        prevFiltersJson.current = JSON.stringify(filters);
+        fetchDeals();
+      }
+      return;
+    }
+    
+    // Solo refetch si workspace o filters cambiaron
+    const currentFiltersJson = JSON.stringify(filters);
+    if (
+      currentWorkspace?.id !== prevWorkspaceId.current ||
+      currentFiltersJson !== prevFiltersJson.current
+    ) {
+      prevWorkspaceId.current = currentWorkspace?.id || null;
+      prevFiltersJson.current = currentFiltersJson;
+      fetchDeals();
+    }
+  }, [currentWorkspace?.id, filters, fetchDeals]);
 
   return {
     deals,

@@ -1,4 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+/**
+ * Hook para gestión de actividades CRM
+ * Fase 2: Corregido para evitar loops de useEffect
+ */
+
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCRMContext } from './useCRMContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -167,9 +172,33 @@ export function useCRMActivities(contactId?: string, dealId?: string) {
       .filter(a => a.status === 'pending' && a.scheduled_at && new Date(a.scheduled_at) < now);
   }, [activities]);
 
+  // Ref para controlar mount inicial - evita loops infinitos
+  const isInitialMount = useRef(true);
+  const prevDepsJson = useRef<string>('');
+
   useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+    const depsKey = JSON.stringify({
+      workspaceId: currentWorkspace?.id,
+      contactId,
+      dealId,
+      filters
+    });
+
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (currentWorkspace?.id) {
+        prevDepsJson.current = depsKey;
+        fetchActivities();
+      }
+      return;
+    }
+    
+    // Solo refetch si las dependencias realmente cambiaron
+    if (depsKey !== prevDepsJson.current) {
+      prevDepsJson.current = depsKey;
+      fetchActivities();
+    }
+  }, [currentWorkspace?.id, contactId, dealId, filters, fetchActivities]);
 
   return {
     activities,

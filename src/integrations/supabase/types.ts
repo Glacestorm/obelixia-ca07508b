@@ -42818,6 +42818,19 @@ export type Database = {
       cleanup_expired_training_data: { Args: never; Returns: number }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       cleanup_tpp_rate_limits: { Args: never; Returns: undefined }
+      crm_get_user_workspaces: { Args: { _user_id: string }; Returns: string[] }
+      crm_is_workspace_admin: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
+      crm_user_belongs_to_workspace: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
+      crm_user_in_team_workspace: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
       detect_process_bottlenecks: {
         Args: { p_date_from?: string; p_process_definition_id?: string }
         Returns: {
