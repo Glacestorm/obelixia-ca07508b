@@ -38,6 +38,9 @@ export { NIIFCompliancePanel } from './NIIFCompliancePanel';
 // Phase 2: Voice Intelligence Hub
 export { AccountingVoiceAgent } from './AccountingVoiceAgent';
 
+// Phase 3: Document-to-Accounting Integration
+export { LinkedEntriesCard } from './LinkedEntriesCard';
+
 // Subcomponentes modulares - Ratios Financieros
 export * from './financial-ratios';
 

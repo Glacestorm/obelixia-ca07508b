@@ -51,6 +51,8 @@ export { useERPInvestments } from './useERPInvestments';
 export { useERPMarketRates } from './useERPMarketRates';
 export { useERPStockQuotes } from './useERPStockQuotes';
 export { useERPAutoAccounting } from './useERPAutoAccounting';
+export { useERPDocumentAccounting } from './useERPDocumentAccounting';
+export type { DocumentType, DocumentAccountingData, LinkedEntry } from './useERPDocumentAccounting';
 
 // Import/Export Universal
 export { useERPImportExport } from './useERPImportExport';
