@@ -12,3 +12,4 @@ export * from './analytics';
 export * from './notifications';
 export * from './reports';
 export * from './settings';
+export * from './agent';
