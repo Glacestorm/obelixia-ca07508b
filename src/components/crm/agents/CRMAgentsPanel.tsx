@@ -170,9 +170,11 @@ export function CRMAgentsPanel() {
     toggleAutonomousMode
   } = useCRMModuleAgents();
 
+  // Inicializar solo una vez al montar
   useEffect(() => {
     initializeAgents();
-  }, [initializeAgents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleExecute = useCallback(async (agentId: string) => {
     await executeAgent(agentId, { trigger: 'manual' });
