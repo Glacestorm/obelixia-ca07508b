@@ -111,6 +111,7 @@ export interface AgentHelpState {
   chatHistory: ChatMessage[];
   isVoiceActive: boolean;
   isSpeaking: boolean;
+  isListening: boolean;
 }
 
 export interface ChatMessage {
@@ -120,6 +121,8 @@ export interface ChatMessage {
   timestamp: string;
   audioUrl?: string;
   isVoice?: boolean;
+  tokensUsed?: number;
+  responseTimeMs?: number;
 }
 
 export interface AgentHelpConfig {

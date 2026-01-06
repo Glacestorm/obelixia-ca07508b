@@ -1,5 +1,6 @@
 /**
  * Hook para Sistema de Ayuda de Agentes
+ * FASE 1: Chatbot de ayuda contextual con voz (ElevenLabs)
  * Con protecciones anti-recursión robustas
  */
 
@@ -32,6 +33,7 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     chatHistory: [],
     isVoiceActive: false,
     isSpeaking: false,
+    isListening: false,
   });
 
   // === ANTI-RECURSION REFS ===
@@ -41,6 +43,11 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatQueueRef = useRef<string[]>([]);
   const isProcessingChatRef = useRef(false);
+
+  // === VOICE REFS ===
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // === HELPER: Check Rate Limit ===
   const canFetch = useCallback((): boolean => {
@@ -103,14 +110,13 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
       const agentInfo = AGENT_HELP_REGISTRY[agentId];
       
       const { data, error: fnError } = await supabase.functions.invoke(
-        'agent-help-assistant',
+        'agent-help-chat',
         {
           body: {
-            action: 'get_help_content',
             agentId,
             agentType: agentInfo?.type || 'supervisor',
-            agentName: agentInfo?.name || agentId,
-            language: finalConfig.language,
+            message: 'Dame un resumen de tus capacidades y cómo puedes ayudarme.',
+            conversationId: `init_${agentId}_${Date.now()}`,
           },
         }
       );
@@ -118,8 +124,24 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
       if (!isMountedRef.current) return null;
       if (fnError) throw fnError;
 
-      if (data?.success && data?.helpContent) {
-        const helpContent = data.helpContent as AgentHelpContent;
+      if (data?.success && data?.response) {
+        const helpContent: AgentHelpContent = {
+          agentId,
+          agentType: agentInfo?.type || 'supervisor',
+          agentName: agentInfo?.name || agentId,
+          description: data.response,
+          version: '1.0.0',
+          lastUpdated: new Date().toISOString(),
+          tableOfContents: [],
+          overview: data.response,
+          capabilities: [],
+          useCases: [],
+          bestPractices: [],
+          examples: [],
+          learnedKnowledge: [],
+          tips: [],
+          warnings: [],
+        };
         
         setState(prev => ({
           ...prev,
@@ -155,7 +177,7 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     } finally {
       guardRef.current.isCurrentlyFetching = false;
     }
-  }, [agentId, state.helpContent, canFetch, finalConfig.language]);
+  }, [agentId, state.helpContent, canFetch]);
 
   // === SEND CHAT MESSAGE ===
   const sendChatMessage = useCallback(async (
@@ -192,19 +214,17 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
       const agentInfo = AGENT_HELP_REGISTRY[agentId];
       
       const { data, error: fnError } = await supabase.functions.invoke(
-        'agent-help-assistant',
+        'agent-help-chat',
         {
           body: {
-            action: 'chat',
             agentId,
             agentType: agentInfo?.type || 'supervisor',
             message,
-            conversationHistory: state.chatHistory.slice(-10).map(m => ({
+            conversationId: `chat_${agentId}_${Date.now()}`,
+            history: state.chatHistory.slice(-10).map(m => ({
               role: m.role,
               content: m.content,
             })),
-            helpContent: state.helpContent,
-            language: finalConfig.language,
           },
         }
       );
@@ -218,7 +238,8 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
           role: 'assistant',
           content: data.response,
           timestamp: new Date().toISOString(),
-          audioUrl: data.audioUrl,
+          tokensUsed: data.tokensUsed,
+          responseTimeMs: data.responseTimeMs,
         };
         
         setState(prev => ({
@@ -234,8 +255,8 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     } catch (err) {
       if (!isMountedRef.current) return null;
       
-      const message = err instanceof Error ? err.message : 'Error al enviar mensaje';
-      setState(prev => ({ ...prev, isLoading: false, error: message }));
+      const errorMsg = err instanceof Error ? err.message : 'Error al enviar mensaje';
+      setState(prev => ({ ...prev, isLoading: false, error: errorMsg }));
       toast.error('Error en el chat');
       return null;
     } finally {
@@ -250,7 +271,160 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
         }
       }
     }
-  }, [agentId, state.chatHistory, state.helpContent, finalConfig.language, finalConfig.maxChatHistory]);
+  }, [agentId, state.chatHistory, finalConfig.maxChatHistory]);
+
+  // === TEXT-TO-SPEECH (ElevenLabs) ===
+  const speakText = useCallback(async (text: string): Promise<void> => {
+    if (!finalConfig.enableVoice) return;
+
+    setState(prev => ({ ...prev, isSpeaking: true }));
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-help-tts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            text,
+            voiceId: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`TTS request failed: ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.onended = () => {
+        setState(prev => ({ ...prev, isSpeaking: false }));
+        URL.revokeObjectURL(audioUrl);
+      };
+      audioRef.current.onerror = () => {
+        setState(prev => ({ ...prev, isSpeaking: false }));
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audioRef.current.play();
+    } catch (err) {
+      console.error('[useAgentHelpSystem] TTS error:', err);
+      setState(prev => ({ ...prev, isSpeaking: false }));
+      toast.error('Error al reproducir audio');
+    }
+  }, [finalConfig.enableVoice]);
+
+  const stopSpeaking = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setState(prev => ({ ...prev, isSpeaking: false }));
+    }
+  }, []);
+
+  // === SPEECH-TO-TEXT ===
+  const startListening = useCallback(async (): Promise<void> => {
+    if (!finalConfig.enableVoice) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        } 
+      });
+
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+      });
+
+      audioChunksRef.current = [];
+
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await processVoiceInput(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start(100);
+      setState(prev => ({ ...prev, isListening: true }));
+    } catch (err) {
+      console.error('[useAgentHelpSystem] Microphone error:', err);
+      toast.error('No se pudo acceder al micrófono');
+    }
+  }, [finalConfig.enableVoice]);
+
+  const stopListening = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setState(prev => ({ ...prev, isListening: false }));
+    }
+  }, []);
+
+  const processVoiceInput = useCallback(async (audioBlob: Blob) => {
+    setState(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      // Convert to base64
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      let binary = '';
+      const chunkSize = 0x8000;
+      
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+        binary += String.fromCharCode.apply(null, Array.from(chunk));
+      }
+      
+      const base64Audio = btoa(binary);
+
+      // Call STT edge function
+      const { data, error } = await supabase.functions.invoke('voice-to-text', {
+        body: { audio: base64Audio },
+      });
+
+      if (error) throw error;
+
+      const transcribedText = data?.text?.trim();
+
+      if (transcribedText) {
+        // Send transcribed text as message
+        const response = await sendChatMessage(transcribedText, true);
+        
+        // Speak the response
+        if (response) {
+          await speakText(response.content);
+        }
+      } else {
+        toast.warning('No se detectó audio claro');
+      }
+    } catch (err) {
+      console.error('[useAgentHelpSystem] STT error:', err);
+      toast.error('Error al procesar audio');
+    } finally {
+      setState(prev => ({ ...prev, isLoading: false }));
+    }
+  }, [sendChatMessage, speakText]);
 
   // === ADD LEARNED KNOWLEDGE ===
   const addLearnedKnowledge = useCallback(async (
@@ -260,27 +434,25 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     if (!finalConfig.enableLearning) return false;
     
     try {
-      const { data, error: fnError } = await supabase.functions.invoke(
-        'agent-help-assistant',
-        {
-          body: {
-            action: 'add_knowledge',
-            agentId,
-            knowledge,
-          },
-        }
-      );
+      const agentInfo = AGENT_HELP_REGISTRY[agentId];
+      
+      const { error } = await supabase.from('agent_knowledge_base').insert({
+        agent_id: agentId,
+        agent_type: agentInfo?.type || 'supervisor',
+        title: knowledge.title,
+        content: knowledge.content,
+        category: knowledge.source,
+        source: knowledge.source,
+        confidence_score: knowledge.confidence,
+        is_verified: false,
+      });
 
-      if (fnError) throw fnError;
+      if (error) throw error;
 
-      if (data?.success) {
-        // Refresh help content to include new knowledge
-        await loadHelpContent(true);
-        toast.success('Conocimiento añadido');
-        return true;
-      }
-
-      return false;
+      // Refresh help content to include new knowledge
+      await loadHelpContent(true);
+      toast.success('Conocimiento añadido');
+      return true;
     } catch (err) {
       console.error('[useAgentHelpSystem] addLearnedKnowledge error:', err);
       toast.error('Error al añadir conocimiento');
@@ -309,6 +481,12 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
         abortControllerRef.current.abort();
       }
       chatQueueRef.current = [];
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
     };
   }, []);
 
@@ -327,13 +505,22 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     chatHistory: state.chatHistory,
     isVoiceActive: state.isVoiceActive,
     isSpeaking: state.isSpeaking,
+    isListening: state.isListening,
     
-    // Actions
+    // Chat Actions
     loadHelpContent,
     sendChatMessage,
-    addLearnedKnowledge,
-    toggleVoice,
     clearChat,
+    
+    // Voice Actions
+    speakText,
+    stopSpeaking,
+    startListening,
+    stopListening,
+    toggleVoice,
+    
+    // Learning Actions
+    addLearnedKnowledge,
     
     // Config
     config: finalConfig,
