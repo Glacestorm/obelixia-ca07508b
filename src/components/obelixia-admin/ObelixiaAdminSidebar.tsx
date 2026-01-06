@@ -244,9 +244,7 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
   onCollapsedChange,
   theme = 'dark'
 }) => {
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(
-    categories.map(c => c.id) // All expanded by default
-  );
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   const isDark = theme === 'dark';
 
@@ -352,7 +350,7 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
 
                   {/* Category items */}
                   <AnimatePresence initial={false}>
-                    {(isExpanded || isCollapsed) && (
+                    {isExpanded && !isCollapsed && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
