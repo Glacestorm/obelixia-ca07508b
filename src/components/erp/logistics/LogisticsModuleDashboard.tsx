@@ -57,6 +57,7 @@ import { LogisticsAnalyticsDashboard } from './analytics/LogisticsAnalyticsDashb
 import { LogisticsNotificationsPanel } from './notifications/LogisticsNotificationsPanel';
 import { LogisticsReportsPanel } from './reports/LogisticsReportsPanel';
 import { LogisticsSettingsPanel } from './settings/LogisticsSettingsPanel';
+import { LogisticsAIAgentPanel } from './agent/LogisticsAIAgentPanel';
 
 // === STATUS CONFIGS ===
 const STATUS_CONFIG: Record<ShipmentStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -355,8 +356,15 @@ export function LogisticsModuleDashboard() {
         </div>
       </div>
 
-      {/* Notifications Panel - Collapsible at top */}
-      <LogisticsNotificationsPanel />
+      {/* AI Agent + Notifications Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <LogisticsAIAgentPanel />
+        </div>
+        <div className="lg:col-span-1">
+          <LogisticsNotificationsPanel />
+        </div>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
