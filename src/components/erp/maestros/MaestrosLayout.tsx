@@ -22,7 +22,8 @@ import {
   MapPin,
   FileCheck,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Wand2
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { useMaestros } from '@/hooks/erp/useMaestros';
@@ -36,6 +37,7 @@ import { WarehouseLocationsPanel } from './WarehouseLocationsPanel';
 import { BankAccountsPanel } from './BankAccountsPanel';
 import { SEPAMandatesPanel } from './SEPAMandatesPanel';
 import { PriceSimulator } from './PriceSimulator';
+import { AIDataImporter } from './AIDataImporter';
 import { StatsCard } from './shared/StatsCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -175,20 +177,25 @@ export const MaestrosLayout: React.FC<MaestrosLayoutProps> = ({ companyId }) => 
             Gestión de clientes, proveedores, artículos y configuración
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleSeedData}
-          disabled={isSeeding}
-          className="gap-2"
-        >
-          {isSeeding ? (
-            <RefreshCw className="h-4 w-4 animate-spin" />
-          ) : (
-            <Settings className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          {currentCompany && (
+            <AIDataImporter companyId={currentCompany.id} />
           )}
-          Cargar datos iniciales
-        </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSeedData}
+            disabled={isSeeding}
+            className="gap-2"
+          >
+            {isSeeding ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Settings className="h-4 w-4" />
+            )}
+            Cargar datos iniciales
+          </Button>
+        </div>
       </motion.div>
 
       {/* Stats Cards with animations */}

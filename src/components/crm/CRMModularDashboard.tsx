@@ -43,14 +43,16 @@ import { SentimentAnalysisDashboard } from '@/components/crm/sentiment';
 import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
-import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
+import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { CRMWorkspaceSelector, CRMTeamsManager, CreateWorkspaceDialog } from '@/components/crm/config';
 import { ContactsManager } from '@/components/crm/contacts';
 import { DealsKanban } from '@/components/crm/deals';
 import { ActivitiesManager } from '@/components/crm/activities';
 import { CRMVoiceAssistant, PredictivePipelinePanel, RealtimeCollaborationPanel } from '@/components/crm/ai';
+import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { useCRMContext } from '@/hooks/crm/useCRMContext';
 import { cn } from '@/lib/utils';
+import { Sparkles } from 'lucide-react';
 
 // Demo data (simplificado del original)
 const initialColumns: KanbanColumn[] = [
@@ -116,8 +118,11 @@ export function CRMModularDashboard() {
         onSuccess={refreshWorkspaces}
       />
       
-      {/* Header with Workspace Selector */}
+      {/* Header with Workspace Selector + Navigation to ERP */}
       <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ModuleNavigationButton targetModule="erp" size="sm" />
+        </div>
         <CRMWorkspaceSelector 
           showCreateButton 
           onCreateClick={() => setShowCreateWorkspace(true)}
@@ -166,6 +171,10 @@ export function CRMModularDashboard() {
           <TabsTrigger value="config" className="gap-2">
             <Settings className="h-4 w-4" />
             Config
+          </TabsTrigger>
+          <TabsTrigger value="supervisor" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Supervisor
           </TabsTrigger>
         </TabsList>
 
@@ -403,6 +412,11 @@ export function CRMModularDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Supervisor Dashboard Tab */}
+        <TabsContent value="supervisor">
+          <SupervisorAgentsDashboard />
         </TabsContent>
       </Tabs>
     </div>

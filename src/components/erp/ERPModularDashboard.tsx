@@ -51,7 +51,8 @@ import { TreasuryDashboard } from './treasury';
 import { TradeFinanceModule } from './trade';
 import { AdvisorAgentPanel } from './advisor';
 import { LogisticsModuleDashboard } from './logistics';
-import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
+import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
+import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -134,15 +135,20 @@ function ERPModularDashboardContent() {
 
   return (
     <div className="space-y-6">
-      {/* Header - Company selector */}
-      <div className="flex items-center justify-end gap-3">
-        <ERPCompanySelector />
-        {currentCompany && (
-          <Badge variant="outline" className="gap-1">
-            <CheckCircle2 className="h-3 w-3 text-green-500" />
-            {currentCompany.currency}
-          </Badge>
-        )}
+      {/* Header - Company selector + Navigation to CRM */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ModuleNavigationButton targetModule="crm" size="sm" />
+        </div>
+        <div className="flex items-center gap-3">
+          <ERPCompanySelector />
+          {currentCompany && (
+            <Badge variant="outline" className="gap-1">
+              <CheckCircle2 className="h-3 w-3 text-green-500" />
+              {currentCompany.currency}
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Main Tabs */}
@@ -233,6 +239,10 @@ function ERPModularDashboardContent() {
           <TabsTrigger value="agents" className="gap-2">
             <Bot className="h-4 w-4" />
             Agentes IA
+          </TabsTrigger>
+          <TabsTrigger value="supervisor" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Supervisor
           </TabsTrigger>
         </TabsList>
 
@@ -438,6 +448,11 @@ function ERPModularDashboardContent() {
         {/* Agents Tab */}
         <TabsContent value="agents">
           <ERPModuleAgentsPanel />
+        </TabsContent>
+
+        {/* Supervisor Dashboard Tab */}
+        <TabsContent value="supervisor">
+          <SupervisorAgentsDashboard />
         </TabsContent>
       </Tabs>
     </div>
