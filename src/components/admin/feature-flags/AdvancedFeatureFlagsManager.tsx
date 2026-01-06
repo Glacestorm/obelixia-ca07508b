@@ -201,8 +201,10 @@ export function AdvancedFeatureFlagsManager() {
     }
   ];
 
+  // Cargar solo al montar
   useEffect(() => {
     loadFlags();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadFlags = async () => {
