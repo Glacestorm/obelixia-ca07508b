@@ -1,0 +1,1 @@
+export { ActivitiesManager } from './ActivitiesManager';
