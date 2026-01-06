@@ -1,8 +1,9 @@
 /**
  * Hook para gestión de equipos CRM
+ * Auditoría: Guards añadidos para evitar loops infinitos
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CRMTeam, CRMTeamMember, CreateTeamForm } from '@/types/crm';
 import { useCRMContext } from './useCRMContext';
@@ -201,10 +202,27 @@ export function useCRMTeams() {
     }
   }, [hasPermission, fetchTeams]);
 
-  // Cargar al cambiar workspace
+  // Guard para controlar mount inicial - evita loops infinitos
+  const isInitialMount = useRef(true);
+  const prevWorkspaceId = useRef<string | null>(null);
+
+  // Cargar al cambiar workspace - con guard
   useEffect(() => {
-    fetchTeams();
-  }, [fetchTeams]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (currentWorkspace?.id) {
+        prevWorkspaceId.current = currentWorkspace.id;
+        fetchTeams();
+      }
+      return;
+    }
+    
+    // Solo refetch si workspace realmente cambió
+    if (currentWorkspace?.id !== prevWorkspaceId.current) {
+      prevWorkspaceId.current = currentWorkspace?.id || null;
+      fetchTeams();
+    }
+  }, [currentWorkspace?.id, fetchTeams]);
 
   return {
     teams,

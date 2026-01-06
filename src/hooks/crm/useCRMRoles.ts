@@ -1,9 +1,10 @@
 /**
  * Hook para gestión de roles y permisos CRM
  * Equivalente a useERPRoles
+ * Auditoría: Guards añadidos para evitar loops infinitos
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CRMRole, CRMPermission, CreateRoleForm } from '@/types/crm';
 import { useCRMContext } from './useCRMContext';
@@ -14,6 +15,10 @@ export function useCRMRoles() {
   const [isLoading, setIsLoading] = useState(false);
   const [roles, setRoles] = useState<CRMRole[]>([]);
   const [permissions, setPermissions] = useState<CRMPermission[]>([]);
+  
+  // Guards para evitar loops
+  const isInitialMount = useRef(true);
+  const prevWorkspaceId = useRef<string | null>(null);
 
   // Cargar permisos disponibles
   const fetchPermissions = useCallback(async () => {
@@ -188,6 +193,27 @@ export function useCRMRoles() {
     });
     return grouped;
   }, [permissions]);
+
+  // useEffect con guard para carga inicial - evita loops
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchPermissions(); // Permisos se cargan una vez
+      if (currentWorkspace?.id) {
+        prevWorkspaceId.current = currentWorkspace.id;
+        fetchRoles();
+      }
+      return;
+    }
+    
+    // Solo refetch roles si workspace cambió
+    if (currentWorkspace?.id !== prevWorkspaceId.current) {
+      prevWorkspaceId.current = currentWorkspace?.id || null;
+      if (currentWorkspace?.id) {
+        fetchRoles();
+      }
+    }
+  }, [currentWorkspace?.id, fetchRoles, fetchPermissions]);
 
   return {
     roles,
