@@ -6,17 +6,9 @@ import { ModulePlaceholder } from './ModulePlaceholder';
 
 // Mapeo de module_key a componentes implementados
 const IMPLEMENTED_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
-  // Core CRM
+  // Core CRM - usando import con then para manejar exports nombrados
   'crm-companies': React.lazy(() => import('@/components/admin/CompaniesManager').then(m => ({ default: m.CompaniesManager }))),
-  'crm-contacts': React.lazy(() => import('@/components/crm/contacts/ContactsManager').then(m => ({ default: m.ContactsManager }))),
-  'crm-deals': React.lazy(() => import('@/components/crm/deals/DealsKanban').then(m => ({ default: m.DealsKanban }))),
-  'crm-activities': React.lazy(() => import('@/components/crm/activities/ActivitiesManager').then(m => ({ default: m.ActivitiesManager }))),
-  'crm-omnichannel': React.lazy(() => import('@/components/crm/omnichannel/OmnichannelInbox').then(m => ({ default: m.OmnichannelInbox }))),
-  'crm-sentiment': React.lazy(() => import('@/components/crm/sentiment/SentimentAnalysisDashboard').then(m => ({ default: m.SentimentAnalysisDashboard }))),
-  'crm-sla': React.lazy(() => import('@/components/crm/omnichannel/MultichannelSLADashboard').then(m => ({ default: m.MultichannelSLADashboard }))),
-  'crm-agents': React.lazy(() => import('@/components/crm/agents/CRMAgentsPanel').then(m => ({ default: m.CRMAgentsPanel }))),
-  // CRM Modular Dashboard
-  'crm-modular': React.lazy(() => import('@/components/crm/CRMModularDashboard').then(m => ({ default: m.CRMModularDashboard }))),
+  // Añadir más componentes implementados aquí según se vayan creando
 };
 
 interface DynamicModuleRouterProps {
