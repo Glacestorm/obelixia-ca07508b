@@ -14,3 +14,7 @@ export { CRMAgentConversationHistory } from './CRMAgentConversationHistory';
 export { ERPRealTimeMetrics } from './ERPRealTimeMetrics';
 export { ERPAutonomousDecisionHistory } from './ERPAutonomousDecisionHistory';
 export { ERPAgentConversationHistory } from './ERPAgentConversationHistory';
+// ERP Agents - Estratosféricos
+export { ERPCommandCenter } from './ERPCommandCenter';
+export { ERPAgentLeaderboard } from './ERPAgentLeaderboard';
+export { ERPAgentWorkflows } from './ERPAgentWorkflows';
