@@ -23,7 +23,9 @@ import {
   RefreshCw,
   Loader2,
   Scale,
-  ShoppingCart
+  ShoppingCart,
+  History,
+  BarChart3
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,6 +44,8 @@ interface RFQListTableProps {
   onEditRFQ?: (rfq: RFQ) => void;
   onCompareQuotes?: (rfq: RFQ) => void;
   onConvertToPO?: (rfq: RFQ) => void;
+  onViewHistory?: (rfq: RFQ) => void;
+  onOpenReports?: () => void;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -60,7 +64,7 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
   urgent: { label: 'Urgente', color: 'text-red-500' },
 };
 
-export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuotes, onConvertToPO }: RFQListTableProps) {
+export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuotes, onConvertToPO, onViewHistory, onOpenReports }: RFQListTableProps) {
   const { rfqs, isLoading, fetchRFQs, updateRFQStatus, deleteRFQ } = useERPRFQ();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -131,6 +135,12 @@ export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuote
           <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
+          {onOpenReports && (
+            <Button variant="outline" onClick={onOpenReports} className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Reportes</span>
+            </Button>
+          )}
           {onCreateNew && (
             <Button onClick={onCreateNew} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -265,6 +275,13 @@ export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuote
                               Crear orden de compra
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            onViewHistory?.(rfq);
+                          }}>
+                            <History className="h-4 w-4 mr-2" />
+                            Ver historial
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {rfq.status !== 'cancelled' && rfq.status !== 'awarded' && (
                             <DropdownMenuItem 
