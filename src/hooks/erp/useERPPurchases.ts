@@ -529,24 +529,156 @@ export function useERPPurchases() {
 
   // ===================== ACCIONES DE FLUJO =====================
 
-  const confirmGoodsReceipt = useCallback(async (receiptId: string): Promise<boolean> => {
+  /**
+   * Confirmar albarán de entrada Y generar movimientos de stock automáticamente
+   */
+  const confirmGoodsReceiptWithStock = useCallback(async (
+    receiptId: string
+  ): Promise<boolean> => {
+    if (!currentCompany || !user) return false;
+    
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      // 1. Obtener albarán con líneas
+      const { data: receipt, error: receiptError } = await supabase
+        .from('erp_goods_receipts')
+        .select('*, lines:erp_goods_receipt_lines(*)')
+        .eq('id', receiptId)
+        .single();
+
+      if (receiptError) throw receiptError;
+      if (!receipt.warehouse_id) throw new Error('El albarán no tiene almacén asignado');
+
+      const lines = (receipt.lines || []) as Array<{
+        id: string;
+        item_id?: string;
+        item_code?: string;
+        description?: string;
+        quantity: number;
+        location_id?: string;
+        lot_number?: string;
+      }>;
+
+      // 2. Generar movimientos de stock para cada línea
+      for (const line of lines) {
+        if (!line.item_id) continue;
+
+        // Insertar movimiento de entrada
+        await supabase
+          .from('erp_stock_movements')
+          .insert([{
+            company_id: currentCompany.id,
+            warehouse_id: receipt.warehouse_id,
+            location_id: line.location_id,
+            item_id: line.item_id,
+            movement_type: 'in',
+            quantity: line.quantity,
+            unit_cost: 0, // Se actualizaría con el coste del pedido
+            reference_type: 'goods_receipt',
+            reference_id: receiptId,
+            notes: `Entrada desde albarán ${receipt.document_number || receiptId}`,
+            movement_date: receipt.receipt_date || new Date().toISOString(),
+            created_by: user.id,
+          }]);
+
+        // Actualizar stock del almacén
+        let stockQuery = supabase
+          .from('erp_warehouse_stock')
+          .select('id, quantity')
+          .eq('warehouse_id', receipt.warehouse_id)
+          .eq('item_id', line.item_id);
+        
+        if (line.location_id) {
+          stockQuery = stockQuery.eq('location_id', line.location_id);
+        } else {
+          stockQuery = stockQuery.is('location_id', null);
+        }
+        
+        const { data: existingStock } = await stockQuery.maybeSingle();
+
+        if (existingStock) {
+          await supabase
+            .from('erp_warehouse_stock')
+            .update({
+              quantity: existingStock.quantity + line.quantity,
+              last_movement_at: new Date().toISOString(),
+            })
+            .eq('id', existingStock.id);
+        } else {
+          await supabase
+            .from('erp_warehouse_stock')
+            .insert([{
+              company_id: currentCompany.id,
+              warehouse_id: receipt.warehouse_id,
+              location_id: line.location_id,
+              item_id: line.item_id,
+              quantity: line.quantity,
+              reserved_qty: 0,
+              available_qty: line.quantity,
+              avg_cost: 0,
+              last_movement_at: new Date().toISOString(),
+            }]);
+        }
+      }
+
+      // 3. Actualizar estado del albarán a confirmado
+      const { error: updateError } = await supabase
         .from('erp_goods_receipts')
         .update({ status: 'confirmed' })
         .eq('id', receiptId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // 4. Actualizar cantidades recibidas en el pedido de compra vinculado
+      if (receipt.purchase_order_id) {
+        // Obtener líneas del pedido
+        const { data: orderLines } = await supabase
+          .from('erp_purchase_order_lines')
+          .select('id, item_id, received_qty')
+          .eq('order_id', receipt.purchase_order_id);
+
+        for (const line of lines) {
+          const orderLine = orderLines?.find(ol => ol.item_id === line.item_id);
+          if (orderLine) {
+            await supabase
+              .from('erp_purchase_order_lines')
+              .update({ received_qty: (orderLine.received_qty || 0) + line.quantity })
+              .eq('id', orderLine.id);
+          }
+        }
+
+        // Verificar si el pedido está completamente recibido
+        const { data: updatedOrderLines } = await supabase
+          .from('erp_purchase_order_lines')
+          .select('quantity, received_qty')
+          .eq('order_id', receipt.purchase_order_id);
+
+        const allReceived = updatedOrderLines?.every(l => l.received_qty >= l.quantity);
+        const someReceived = updatedOrderLines?.some(l => l.received_qty > 0);
+
+        await supabase
+          .from('erp_purchase_orders')
+          .update({ 
+            status: allReceived ? 'received' : someReceived ? 'partial' : 'confirmed' 
+          })
+          .eq('id', receipt.purchase_order_id);
+      }
+
+      toast.success('Albarán confirmado y stock actualizado');
       return true;
     } catch (err) {
-      console.error('[useERPPurchases] confirmGoodsReceipt error:', err);
+      console.error('[useERPPurchases] confirmGoodsReceiptWithStock error:', err);
       toast.error('Error al confirmar albarán');
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentCompany, user]);
+
+  const confirmGoodsReceipt = useCallback(async (receiptId: string): Promise<boolean> => {
+    // Usar la versión con stock por defecto
+    return confirmGoodsReceiptWithStock(receiptId);
+  }, [confirmGoodsReceiptWithStock]);
 
   const cancelGoodsReceipt = useCallback(async (receiptId: string): Promise<boolean> => {
     setIsLoading(true);
@@ -557,6 +689,7 @@ export function useERPPurchases() {
         .eq('id', receiptId);
 
       if (error) throw error;
+      toast.success('Albarán cancelado');
       return true;
     } catch (err) {
       console.error('[useERPPurchases] cancelGoodsReceipt error:', err);
@@ -576,6 +709,7 @@ export function useERPPurchases() {
         .eq('id', invoiceId);
 
       if (error) throw error;
+      toast.success('Factura contabilizada');
       return true;
     } catch (err) {
       console.error('[useERPPurchases] postSupplierInvoice error:', err);
@@ -595,6 +729,7 @@ export function useERPPurchases() {
         .eq('id', invoiceId);
 
       if (error) throw error;
+      toast.success('Factura cancelada');
       return true;
     } catch (err) {
       console.error('[useERPPurchases] cancelSupplierInvoice error:', err);
@@ -604,6 +739,68 @@ export function useERPPurchases() {
       setIsLoading(false);
     }
   }, []);
+
+  /**
+   * Obtener trazabilidad completa de una compra
+   */
+  const fetchPurchaseTraceability = useCallback(async (orderId: string) => {
+    try {
+      // Obtener pedido
+      const order = await fetchPurchaseOrderWithLines(orderId);
+      if (!order) return null;
+
+      // Obtener albaranes vinculados
+      const { data: receipts } = await supabase
+        .from('erp_goods_receipts')
+        .select('*, lines:erp_goods_receipt_lines(*)')
+        .eq('purchase_order_id', orderId)
+        .order('receipt_date', { ascending: false });
+
+      // Obtener facturas vinculadas (a través de albaranes)
+      const receiptIds = receipts?.map(r => r.id) || [];
+      let invoices: any[] = [];
+      
+      if (receiptIds.length > 0) {
+        const { data: invoiceLines } = await supabase
+          .from('erp_supplier_invoice_lines')
+          .select('invoice_id')
+          .in('goods_receipt_id', receiptIds);
+
+        const invoiceIds = [...new Set(invoiceLines?.map(l => l.invoice_id) || [])];
+        
+        if (invoiceIds.length > 0) {
+          const { data } = await supabase
+            .from('erp_supplier_invoices')
+            .select('*')
+            .in('id', invoiceIds);
+          invoices = data || [];
+        }
+      }
+
+      // Obtener movimientos de stock relacionados
+      const { data: movements } = await supabase
+        .from('erp_stock_movements')
+        .select('*, item:erp_items(code, name), warehouse:erp_warehouses(name)')
+        .eq('reference_type', 'goods_receipt')
+        .in('reference_id', receiptIds)
+        .order('movement_date', { ascending: false });
+
+      return {
+        order,
+        receipts: receipts || [],
+        invoices,
+        movements: (movements || []).map((m: any) => ({
+          ...m,
+          item_code: m.item?.code,
+          item_name: m.item?.name,
+          warehouse_name: m.warehouse?.name,
+        })),
+      };
+    } catch (err) {
+      console.error('[useERPPurchases] fetchPurchaseTraceability error:', err);
+      return null;
+    }
+  }, [fetchPurchaseOrderWithLines]);
 
   return {
     isLoading,
@@ -619,12 +816,15 @@ export function useERPPurchases() {
     fetchGoodsReceipts,
     createGoodsReceipt,
     confirmGoodsReceipt,
+    confirmGoodsReceiptWithStock,
     cancelGoodsReceipt,
     // Facturas proveedor
     fetchSupplierInvoices,
     createSupplierInvoice,
     postSupplierInvoice,
     cancelSupplierInvoice,
+    // Trazabilidad
+    fetchPurchaseTraceability,
   };
 }
 
