@@ -354,6 +354,9 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
   }, []);
 
   // === SPEECH-TO-TEXT ===
+  // Ref para processVoiceInput - definido después
+  const processVoiceInputRef = useRef<((blob: Blob) => Promise<void>) | null>(null);
+
   const startListening = useCallback(async (): Promise<void> => {
     if (!finalConfig.enableVoice) return;
 
@@ -381,7 +384,10 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
 
       mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await processVoiceInput(audioBlob);
+        // Usar ref para evitar dependencia circular
+        if (processVoiceInputRef.current) {
+          await processVoiceInputRef.current(audioBlob);
+        }
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -391,7 +397,7 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
       console.error('[useAgentHelpSystem] Microphone error:', err);
       toast.error('No se pudo acceder al micrófono');
     }
-  }, [finalConfig.enableVoice]);
+  }, [finalConfig.enableVoice]); // Sin processVoiceInput - usa ref
 
   const stopListening = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -400,7 +406,19 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     }
   }, []);
 
+  // Refs para funciones que se usan en processVoiceInput (evitar deps inestables)
+  const sendChatMessageRef = useRef(sendChatMessage);
+  const speakTextRef = useRef(speakText);
+  useEffect(() => {
+    sendChatMessageRef.current = sendChatMessage;
+  }, [sendChatMessage]);
+  useEffect(() => {
+    speakTextRef.current = speakText;
+  }, [speakText]);
+
   const processVoiceInput = useCallback(async (audioBlob: Blob) => {
+    if (!isMountedRef.current) return;
+    
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
@@ -422,28 +440,44 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
         body: { audio: base64Audio },
       });
 
+      if (!isMountedRef.current) return;
       if (error) throw error;
 
       const transcribedText = data?.text?.trim();
 
       if (transcribedText) {
-        // Send transcribed text as message
-        const response = await sendChatMessage(transcribedText, true);
+        // Send transcribed text as message - usar ref
+        const response = await sendChatMessageRef.current(transcribedText, true);
         
-        // Speak the response
-        if (response) {
-          await speakText(response.content);
+        // Speak the response - usar ref
+        if (response && isMountedRef.current) {
+          await speakTextRef.current(response.content);
         }
       } else {
         toast.warning('No se detectó audio claro');
       }
     } catch (err) {
       console.error('[useAgentHelpSystem] STT error:', err);
-      toast.error('Error al procesar audio');
+      if (isMountedRef.current) {
+        toast.error('Error al procesar audio');
+      }
     } finally {
-      setState(prev => ({ ...prev, isLoading: false }));
+      if (isMountedRef.current) {
+        setState(prev => ({ ...prev, isLoading: false }));
+      }
     }
-  }, [sendChatMessage, speakText]);
+  }, []); // Sin dependencias - usa refs
+
+  // Sincronizar ref de processVoiceInput
+  useEffect(() => {
+    processVoiceInputRef.current = processVoiceInput;
+  }, [processVoiceInput]);
+
+  // === Ref para loadHelpContent (evitar dependencia circular) ===
+  const loadHelpContentRef = useRef(loadHelpContent);
+  useEffect(() => {
+    loadHelpContentRef.current = loadHelpContent;
+  }, [loadHelpContent]);
 
   // === ADD LEARNED KNOWLEDGE ===
   const addLearnedKnowledge = useCallback(async (
@@ -468,8 +502,8 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
 
       if (error) throw error;
 
-      // Refresh help content to include new knowledge
-      await loadHelpContent(true);
+      // Refresh help content to include new knowledge - usar ref
+      await loadHelpContentRef.current(true);
       toast.success('Conocimiento añadido');
       return true;
     } catch (err) {
@@ -477,7 +511,7 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
       toast.error('Error al añadir conocimiento');
       return false;
     }
-  }, [agentId, finalConfig.enableLearning, loadHelpContent]);
+  }, [agentId, finalConfig.enableLearning]); // Removido loadHelpContent
 
   // === TOGGLE VOICE ===
   const toggleVoice = useCallback(() => {
