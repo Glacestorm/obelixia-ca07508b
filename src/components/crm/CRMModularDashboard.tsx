@@ -46,6 +46,8 @@ import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats
 import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
 import { CRMWorkspaceSelector, CRMTeamsManager } from '@/components/crm/config';
 import { ContactsManager } from '@/components/crm/contacts';
+import { DealsKanban } from '@/components/crm/deals';
+import { ActivitiesManager } from '@/components/crm/activities';
 import { cn } from '@/lib/utils';
 
 // Demo data (simplificado del original)
@@ -294,14 +296,9 @@ export function CRMModularDashboard() {
           </div>
         </TabsContent>
 
-        {/* Kanban Tab */}
+        {/* Kanban Tab - Deals Pipeline */}
         <TabsContent value="kanban">
-          <EnhancedKanbanBoard 
-            columns={columns}
-            onMoveItem={handleMoveItem}
-            onItemClick={(item) => console.log('Item clicked:', item)}
-            title="Pipeline de Ventas"
-          />
+          <DealsKanban />
         </TabsContent>
 
         {/* Contacts Tab */}
