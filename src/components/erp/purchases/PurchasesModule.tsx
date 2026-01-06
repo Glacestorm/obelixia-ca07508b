@@ -32,6 +32,7 @@ import { RFQReportsPanel } from './RFQReportsPanel';
 import { PurchaseOrdersTable } from './PurchaseOrdersTable';
 import { GoodsReceiptsTable } from './GoodsReceiptsTable';
 import { SupplierInvoicesTable } from './SupplierInvoicesTable';
+import { PurchasesDashboard } from './PurchasesDashboard';
 import { type RFQ } from '@/hooks/erp/useERPRFQ';
 import { toast } from 'sonner';
 
@@ -65,7 +66,7 @@ export function PurchasesModule() {
     fetchSupplierInvoices,
   } = useERPPurchases();
 
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
@@ -148,7 +149,11 @@ export function PurchasesModule() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5 mb-4">
+          <TabsList className="grid w-full grid-cols-6 mb-4">
+            <TabsTrigger value="dashboard" className="gap-1">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
             <TabsTrigger value="suppliers" className="gap-1">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Proveedores</span>
@@ -171,7 +176,7 @@ export function PurchasesModule() {
             </TabsTrigger>
           </TabsList>
 
-          {activeTab !== 'rfq' && (
+          {activeTab !== 'rfq' && activeTab !== 'dashboard' && (
             <div className="flex gap-2 mb-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -203,6 +208,17 @@ export function PurchasesModule() {
             </div>
           ) : (
             <>
+              <TabsContent value="dashboard">
+                <PurchasesDashboard
+                  rfqs={[]}
+                  purchaseOrders={orders}
+                  goodsReceipts={receipts}
+                  supplierInvoices={invoices}
+                  suppliers={suppliers}
+                  onNavigate={setActiveTab}
+                />
+              </TabsContent>
+
               <TabsContent value="suppliers">
                 <DocumentTable
                   data={suppliers}
