@@ -1,134 +1,40 @@
 /**
  * BalanceSheetPanel - Balance de Situación
- * Fusiona funcionalidad de admin/accounting/BalanceSheetForm.tsx
+ * Balance general con datos reales de asientos contables
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { 
   Scale, 
   Download, 
   FileSpreadsheet, 
-  TrendingUp, 
-  TrendingDown,
   Building2,
   Coins,
-  CreditCard,
-  RefreshCw,
-  Calendar
+  RefreshCw
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp/useERPContext';
-import { useERPAccounting } from '@/hooks/erp/useERPAccounting';
+import { useERPFinancialStatements } from '@/hooks/erp/useERPFinancialStatements';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-interface BalanceSection {
-  code: string;
-  name: string;
-  amount: number;
-  previousAmount?: number;
-  children?: BalanceSection[];
-}
-
 export function BalanceSheetPanel() {
   const { currentCompany } = useERPContext();
-  const { chartOfAccounts, isLoading, fetchChartOfAccounts } = useERPAccounting();
+  const { balanceSheet, isLoading, fetchBalanceSheet } = useERPFinancialStatements();
   
-  const [selectedPeriod, setSelectedPeriod] = useState('current');
-  const [showComparison, setShowComparison] = useState(true);
+  const [asOfDate, setAsOfDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
-  // Calcular balance de situación desde cuentas
-  const balanceData = useMemo(() => {
-    if (!chartOfAccounts?.length) return null;
-
-    const getAccountBalance = (groupStart: string, groupEnd: string) => {
-      return chartOfAccounts
-        .filter(acc => {
-          const code = acc.account_code;
-          return code >= groupStart && code < groupEnd;
-        })
-        .reduce((sum, acc) => sum + Math.random() * 10000, 0); // Mock - real impl would use journal entries
-    };
-
-    // ACTIVO
-    const activoNoCorreinte = {
-      code: 'A.I',
-      name: 'Activo No Corriente',
-      amount: getAccountBalance('20', '30'),
-      children: [
-        { code: '20', name: 'Inmovilizado intangible', amount: getAccountBalance('20', '21') },
-        { code: '21', name: 'Inmovilizado material', amount: getAccountBalance('21', '22') },
-        { code: '22-27', name: 'Inversiones inmobiliarias y financieras', amount: getAccountBalance('22', '28') },
-        { code: '28-29', name: 'Amortizaciones', amount: getAccountBalance('28', '30') },
-      ]
-    };
-
-    const activoCorriente = {
-      code: 'A.II',
-      name: 'Activo Corriente',
-      amount: getAccountBalance('30', '60'),
-      children: [
-        { code: '30-39', name: 'Existencias', amount: getAccountBalance('30', '40') },
-        { code: '43', name: 'Deudores comerciales', amount: getAccountBalance('43', '44') },
-        { code: '44-47', name: 'Otros deudores', amount: getAccountBalance('44', '48') },
-        { code: '57', name: 'Tesorería', amount: getAccountBalance('57', '58') },
-      ]
-    };
-
-    // PATRIMONIO NETO
-    const patrimonioNeto = {
-      code: 'P.N',
-      name: 'Patrimonio Neto',
-      amount: getAccountBalance('10', '20'),
-      children: [
-        { code: '10', name: 'Capital', amount: getAccountBalance('10', '11') },
-        { code: '11', name: 'Reservas', amount: getAccountBalance('11', '12') },
-        { code: '12', name: 'Resultados pendientes', amount: getAccountBalance('12', '13') },
-        { code: '129', name: 'Resultado del ejercicio', amount: getAccountBalance('129', '130') },
-      ]
-    };
-
-    // PASIVO
-    const pasivoNoCorreinte = {
-      code: 'P.I',
-      name: 'Pasivo No Corriente',
-      amount: getAccountBalance('14', '18'),
-      children: [
-        { code: '14', name: 'Provisiones a largo plazo', amount: getAccountBalance('14', '15') },
-        { code: '17', name: 'Deudas a largo plazo', amount: getAccountBalance('17', '18') },
-      ]
-    };
-
-    const pasivoCorriente = {
-      code: 'P.II',
-      name: 'Pasivo Corriente',
-      amount: getAccountBalance('40', '57'),
-      children: [
-        { code: '40', name: 'Proveedores', amount: getAccountBalance('40', '41') },
-        { code: '41', name: 'Acreedores varios', amount: getAccountBalance('41', '42') },
-        { code: '46', name: 'Personal', amount: getAccountBalance('46', '47') },
-        { code: '47', name: 'Administraciones públicas', amount: getAccountBalance('47', '48') },
-        { code: '52', name: 'Deudas a corto plazo', amount: getAccountBalance('52', '53') },
-      ]
-    };
-
-    const totalActivo = activoNoCorreinte.amount + activoCorriente.amount;
-    const totalPatrimonioYPasivo = patrimonioNeto.amount + pasivoNoCorreinte.amount + pasivoCorriente.amount;
-
-    return {
-      activo: [activoNoCorreinte, activoCorriente],
-      totalActivo,
-      patrimonioNeto,
-      pasivo: [pasivoNoCorreinte, pasivoCorriente],
-      totalPatrimonioYPasivo,
-      isBalanced: Math.abs(totalActivo - totalPatrimonioYPasivo) < 0.01
-    };
-  }, [chartOfAccounts]);
+  // Fetch on mount and when date changes
+  useEffect(() => {
+    if (currentCompany?.id) {
+      fetchBalanceSheet(asOfDate);
+    }
+  }, [currentCompany?.id, asOfDate, fetchBalanceSheet]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
@@ -138,36 +44,8 @@ export function BalanceSheetPanel() {
     }).format(amount);
   };
 
-  const renderSection = (section: BalanceSection, level: number = 0) => {
-    const isPositive = section.amount >= 0;
-    
-    return (
-      <div key={section.code} className={cn("space-y-1", level > 0 && "ml-4")}>
-        <div className={cn(
-          "flex items-center justify-between py-2 px-3 rounded-lg",
-          level === 0 ? "bg-muted/50 font-semibold" : "hover:bg-muted/30"
-        )}>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground w-12">{section.code}</span>
-            <span className={cn(level === 0 && "font-medium")}>{section.name}</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className={cn(
-              "font-mono",
-              isPositive ? "text-foreground" : "text-destructive"
-            )}>
-              {formatCurrency(section.amount)}
-            </span>
-            {showComparison && section.previousAmount !== undefined && (
-              <span className="text-xs text-muted-foreground font-mono w-24 text-right">
-                {formatCurrency(section.previousAmount)}
-              </span>
-            )}
-          </div>
-        </div>
-        {section.children?.map(child => renderSection(child, level + 1))}
-      </div>
-    );
+  const handleRefresh = () => {
+    fetchBalanceSheet(asOfDate);
   };
 
   if (!currentCompany) {
@@ -180,6 +58,8 @@ export function BalanceSheetPanel() {
     );
   }
 
+  const data = balanceSheet;
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -191,27 +71,21 @@ export function BalanceSheetPanel() {
           <div>
             <h3 className="font-semibold">Balance de Situación</h3>
             <p className="text-sm text-muted-foreground">
-              Ejercicio actual
+              Situación patrimonial
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current">Periodo actual</SelectItem>
-              <SelectItem value="q1">1er Trimestre</SelectItem>
-              <SelectItem value="q2">2do Trimestre</SelectItem>
-              <SelectItem value="q3">3er Trimestre</SelectItem>
-              <SelectItem value="q4">4to Trimestre</SelectItem>
-              <SelectItem value="annual">Anual</SelectItem>
-            </SelectContent>
-          </Select>
+          <span className="text-sm text-muted-foreground">A fecha:</span>
+          <Input
+            type="date"
+            value={asOfDate}
+            onChange={(e) => setAsOfDate(e.target.value)}
+            className="w-40"
+          />
           
-          <Button variant="outline" size="icon" onClick={() => fetchChartOfAccounts()}>
+          <Button variant="outline" size="icon" onClick={handleRefresh}>
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
           
@@ -228,37 +102,35 @@ export function BalanceSheetPanel() {
       </div>
 
       {/* Balance Status */}
-      {balanceData && (
-        <Card className={cn(
-          "border-l-4",
-          balanceData.isBalanced ? "border-l-green-500" : "border-l-destructive"
-        )}>
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {balanceData.isBalanced ? (
-                  <>
-                    <Badge variant="default" className="bg-green-500">Cuadrado</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      Activo = Patrimonio Neto + Pasivo
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Badge variant="destructive">Descuadre</Badge>
-                    <span className="text-sm text-destructive">
-                      Diferencia: {formatCurrency(Math.abs(balanceData.totalActivo - balanceData.totalPatrimonioYPasivo))}
-                    </span>
-                  </>
-                )}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {format(new Date(), "dd/MM/yyyy HH:mm", { locale: es })}
-              </div>
+      <Card className={cn(
+        "border-l-4",
+        data?.isBalanced ? "border-l-green-500" : "border-l-destructive"
+      )}>
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {data?.isBalanced ? (
+                <>
+                  <Badge variant="default" className="bg-green-500">Cuadrado</Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Activo = Patrimonio Neto + Pasivo
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Badge variant="destructive">Descuadre</Badge>
+                  <span className="text-sm text-destructive">
+                    Diferencia: {formatCurrency(Math.abs((data?.activo.totalActivo ?? 0) - (data?.totalPatrimonioYPasivo ?? 0)))}
+                  </span>
+                </>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div className="text-xs text-muted-foreground">
+              {format(new Date(asOfDate), "dd/MM/yyyy", { locale: es })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Balance Sheet */}
       <div className="grid grid-cols-2 gap-4">
@@ -271,15 +143,55 @@ export function BalanceSheetPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-2">
-                {balanceData?.activo.map(section => renderSection(section))}
+            {isLoading ? (
+              <div className="py-8 text-center">
+                <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
               </div>
-            </ScrollArea>
+            ) : (
+              <ScrollArea className="h-[350px]">
+                <div className="space-y-1">
+                  {/* Activo No Corriente */}
+                  <div className="bg-muted/50 font-semibold flex justify-between py-2 px-3 rounded-lg">
+                    <span>A.I) Activo No Corriente</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.activoNoCorriente ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Inmovilizado intangible (20)</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.inmovilizadoIntangible ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Inmovilizado material (21)</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.inmovilizadoMaterial ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Inversiones financieras (25)</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.inversionesFinancieras ?? 0)}</span>
+                  </div>
+
+                  {/* Activo Corriente */}
+                  <div className="bg-muted/50 font-semibold flex justify-between py-2 px-3 rounded-lg mt-4">
+                    <span>A.II) Activo Corriente</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.activoCorriente ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Existencias (3)</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.existencias ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Deudores comerciales (43)</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.deudoresComerciales ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Tesorería (57)</span>
+                    <span className="font-mono">{formatCurrency(data?.activo.tesoreria ?? 0)}</span>
+                  </div>
+                </div>
+              </ScrollArea>
+            )}
             <div className="mt-4 pt-4 border-t flex items-center justify-between font-bold">
               <span>TOTAL ACTIVO</span>
               <span className="font-mono text-lg">
-                {formatCurrency(balanceData?.totalActivo || 0)}
+                {formatCurrency(data?.activo.totalActivo ?? 0)}
               </span>
             </div>
           </CardContent>
@@ -294,19 +206,70 @@ export function BalanceSheetPanel() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-2">
-                {/* Patrimonio Neto */}
-                {balanceData && renderSection(balanceData.patrimonioNeto)}
-                
-                {/* Pasivo */}
-                {balanceData?.pasivo.map(section => renderSection(section))}
+            {isLoading ? (
+              <div className="py-8 text-center">
+                <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
               </div>
-            </ScrollArea>
+            ) : (
+              <ScrollArea className="h-[350px]">
+                <div className="space-y-1">
+                  {/* Patrimonio Neto */}
+                  <div className="bg-muted/50 font-semibold flex justify-between py-2 px-3 rounded-lg">
+                    <span>P.N) Patrimonio Neto</span>
+                    <span className="font-mono">{formatCurrency(data?.patrimonioNeto.totalPatrimonioNeto ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Capital (10)</span>
+                    <span className="font-mono">{formatCurrency(data?.patrimonioNeto.capital ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Reservas (11)</span>
+                    <span className="font-mono">{formatCurrency(data?.patrimonioNeto.reservas ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Resultados ejercicios anteriores (12)</span>
+                    <span className="font-mono">{formatCurrency(data?.patrimonioNeto.resultadosEjerciciosAnteriores ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Resultado del ejercicio (129)</span>
+                    <span className={cn(
+                      "font-mono",
+                      (data?.patrimonioNeto.resultadoEjercicio ?? 0) >= 0 ? "text-green-600" : "text-destructive"
+                    )}>
+                      {formatCurrency(data?.patrimonioNeto.resultadoEjercicio ?? 0)}
+                    </span>
+                  </div>
+
+                  {/* Pasivo No Corriente */}
+                  <div className="bg-muted/50 font-semibold flex justify-between py-2 px-3 rounded-lg mt-4">
+                    <span>P.I) Pasivo No Corriente</span>
+                    <span className="font-mono">{formatCurrency(data?.pasivo.pasivoNoCorriente ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Deudas a largo plazo (17)</span>
+                    <span className="font-mono">{formatCurrency(data?.pasivo.deudasLargoPlazo ?? 0)}</span>
+                  </div>
+
+                  {/* Pasivo Corriente */}
+                  <div className="bg-muted/50 font-semibold flex justify-between py-2 px-3 rounded-lg mt-4">
+                    <span>P.II) Pasivo Corriente</span>
+                    <span className="font-mono">{formatCurrency(data?.pasivo.pasivoCorriente ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Proveedores (40)</span>
+                    <span className="font-mono">{formatCurrency(data?.pasivo.proveedores ?? 0)}</span>
+                  </div>
+                  <div className="ml-4 flex justify-between py-1 px-3 hover:bg-muted/30 rounded text-sm">
+                    <span>Otras deudas (41, 46, 47)</span>
+                    <span className="font-mono">{formatCurrency(data?.pasivo.otrasDeudas ?? 0)}</span>
+                  </div>
+                </div>
+              </ScrollArea>
+            )}
             <div className="mt-4 pt-4 border-t flex items-center justify-between font-bold">
               <span>TOTAL P.N. + PASIVO</span>
               <span className="font-mono text-lg">
-                {formatCurrency(balanceData?.totalPatrimonioYPasivo || 0)}
+                {formatCurrency(data?.totalPatrimonioYPasivo ?? 0)}
               </span>
             </div>
           </CardContent>
@@ -323,25 +286,31 @@ export function BalanceSheetPanel() {
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-xs text-muted-foreground">Ratio de Liquidez</p>
               <p className="text-xl font-bold">
-                {balanceData ? ((balanceData.activo[1]?.amount || 0) / (balanceData.pasivo[1]?.amount || 1)).toFixed(2) : '-'}
+                {data && (data.pasivo.pasivoCorriente ?? 0) > 0 
+                  ? ((data.activo.activoCorriente ?? 0) / data.pasivo.pasivoCorriente).toFixed(2) 
+                  : '-'}
               </p>
             </div>
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-xs text-muted-foreground">Ratio de Endeudamiento</p>
               <p className="text-xl font-bold">
-                {balanceData ? (((balanceData.pasivo[0]?.amount || 0) + (balanceData.pasivo[1]?.amount || 0)) / (balanceData.patrimonioNeto?.amount || 1) * 100).toFixed(1) : '-'}%
+                {data && (data.patrimonioNeto.totalPatrimonioNeto ?? 0) > 0 
+                  ? ((data.pasivo.totalPasivo ?? 0) / data.patrimonioNeto.totalPatrimonioNeto * 100).toFixed(1) 
+                  : '-'}%
               </p>
             </div>
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-xs text-muted-foreground">Fondo de Maniobra</p>
               <p className="text-xl font-bold">
-                {balanceData ? formatCurrency((balanceData.activo[1]?.amount || 0) - (balanceData.pasivo[1]?.amount || 0)) : '-'}
+                {formatCurrency((data?.activo.activoCorriente ?? 0) - (data?.pasivo.pasivoCorriente ?? 0))}
               </p>
             </div>
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-xs text-muted-foreground">Autonomía Financiera</p>
               <p className="text-xl font-bold">
-                {balanceData ? ((balanceData.patrimonioNeto?.amount || 0) / (balanceData.totalActivo || 1) * 100).toFixed(1) : '-'}%
+                {data && (data.activo.totalActivo ?? 0) > 0 
+                  ? ((data.patrimonioNeto.totalPatrimonioNeto ?? 0) / data.activo.totalActivo * 100).toFixed(1) 
+                  : '-'}%
               </p>
             </div>
           </div>

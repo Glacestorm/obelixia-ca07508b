@@ -1,9 +1,9 @@
 /**
  * TrialBalancePanel - Balance de Sumas y Saldos
- * Visualización del balance de comprobación
+ * Visualización del balance de comprobación con datos reales
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,58 +25,37 @@ import {
   RefreshCw,
   Search,
   CheckCircle,
-  XCircle,
-  Filter
+  XCircle
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp/useERPContext';
-import { useERPAccounting, ChartOfAccount } from '@/hooks/erp/useERPAccounting';
+import { useERPFinancialStatements } from '@/hooks/erp/useERPFinancialStatements';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, startOfYear, endOfYear } from 'date-fns';
 import { es } from 'date-fns/locale';
-
-interface TrialBalanceRow {
-  accountCode: string;
-  accountName: string;
-  accountType: string;
-  debitSum: number;
-  creditSum: number;
-  debitBalance: number;
-  creditBalance: number;
-}
 
 export function TrialBalancePanel() {
   const { currentCompany } = useERPContext();
-  const { chartOfAccounts, isLoading, fetchChartOfAccounts } = useERPAccounting();
+  const { trialBalance, isLoading, fetchTrialBalance } = useERPFinancialStatements();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('all');
-  const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [dateRange, setDateRange] = useState({ 
+    from: format(startOfYear(new Date()), 'yyyy-MM-dd'), 
+    to: format(endOfYear(new Date()), 'yyyy-MM-dd') 
+  });
 
-  // Generate trial balance from chart of accounts
-  const trialBalanceData: TrialBalanceRow[] = useMemo(() => {
-    return chartOfAccounts
-      .filter(acc => acc.accepts_entries !== false)
-      .map(acc => {
-        // Mock sums - in real implementation this would come from journal entries
-        const debitSum = Math.random() * 50000;
-        const creditSum = Math.random() * 50000;
-        const balance = debitSum - creditSum;
-        
-        return {
-          accountCode: acc.account_code,
-          accountName: acc.account_name,
-          accountType: acc.account_type,
-          debitSum: debitSum,
-          creditSum: creditSum,
-          debitBalance: balance > 0 ? balance : 0,
-          creditBalance: balance < 0 ? Math.abs(balance) : 0,
-        };
-      });
-  }, [chartOfAccounts]);
+  // Fetch on mount and when dates change
+  useEffect(() => {
+    if (currentCompany?.id) {
+      fetchTrialBalance(dateRange.from, dateRange.to);
+    }
+  }, [currentCompany?.id, dateRange.from, dateRange.to, fetchTrialBalance]);
 
   // Filter data
   const filteredData = useMemo(() => {
-    let data = trialBalanceData;
+    if (!trialBalance?.accounts) return [];
+    
+    let data = trialBalance.accounts;
     
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -92,9 +71,9 @@ export function TrialBalancePanel() {
     }
     
     return data;
-  }, [trialBalanceData, searchTerm, selectedLevel]);
+  }, [trialBalance, searchTerm, selectedLevel]);
 
-  // Calculate totals
+  // Calculate totals from filtered data
   const totals = useMemo(() => {
     return filteredData.reduce(
       (acc, row) => ({
@@ -107,8 +86,7 @@ export function TrialBalancePanel() {
     );
   }, [filteredData]);
 
-  const isBalanced = Math.abs(totals.debitSum - totals.creditSum) < 0.01 &&
-                     Math.abs(totals.debitBalance - totals.creditBalance) < 0.01;
+  const isBalanced = Math.abs(totals.debitSum - totals.creditSum) < 0.01;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', {
@@ -116,6 +94,10 @@ export function TrialBalancePanel() {
       currency: currentCompany?.currency || 'EUR',
       minimumFractionDigits: 2
     }).format(amount);
+  };
+
+  const handleRefresh = () => {
+    fetchTrialBalance(dateRange.from, dateRange.to);
   };
 
   if (!currentCompany) {
@@ -145,7 +127,7 @@ export function TrialBalancePanel() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => fetchChartOfAccounts()}>
+          <Button variant="outline" size="icon" onClick={handleRefresh}>
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
           <Button variant="outline" size="sm">
@@ -180,13 +162,13 @@ export function TrialBalancePanel() {
                   <XCircle className="h-5 w-5 text-destructive" />
                   <Badge variant="destructive">Descuadre</Badge>
                   <span className="text-sm text-destructive">
-                    Diferencia detectada en el balance
+                    Diferencia: {formatCurrency(Math.abs(totals.debitSum - totals.creditSum))}
                   </span>
                 </>
               )}
             </div>
             <div className="text-xs text-muted-foreground">
-              {format(new Date(), "dd/MM/yyyy HH:mm", { locale: es })}
+              {filteredData.length} cuentas con movimientos
             </div>
           </div>
         </CardContent>
@@ -220,7 +202,7 @@ export function TrialBalancePanel() {
                   <SelectItem value="1">Grupo (1 dígito)</SelectItem>
                   <SelectItem value="2">Subgrupo (2 dígitos)</SelectItem>
                   <SelectItem value="3">Cuenta (3 dígitos)</SelectItem>
-                  <SelectItem value="4">Subcuenta (4 dígitos)</SelectItem>
+                  <SelectItem value="4">Subcuenta (4+ dígitos)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -274,15 +256,21 @@ export function TrialBalancePanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                ) : filteredData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      No hay cuentas con movimientos
+                      No hay cuentas con movimientos en el periodo
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredData.map((row) => (
-                    <TableRow key={row.accountCode} className="hover:bg-muted/50">
+                    <TableRow key={row.accountId} className="hover:bg-muted/50">
                       <TableCell className="font-mono text-sm font-medium">
                         {row.accountCode}
                       </TableCell>
