@@ -1,25 +1,52 @@
 /**
- * Panel de gestión de Proveedores - Refactorizado
- * Usa componentes compartidos para mejor mantenibilidad
+ * Panel de gestión de Proveedores - Con Pestañas Completas
+ * Similar a CustomersPanel con tabs de Direcciones, Contactos, Pagos y Auditoría
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Truck } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Plus,
+  Truck,
+  MapPin,
+  Phone,
+  Building2,
+  CreditCard,
+  History,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
 import { useMaestros, Supplier } from '@/hooks/erp/useMaestros';
-import { DataTable, Column } from './shared/DataTable';
-import { SearchFilters, FilterOption } from './shared/SearchFilters';
-import { EntityFormDialog } from './shared/EntityFormDialog';
-import { StatusBadge } from './shared/StatusBadge';
-import { ActionButtons } from './shared/ActionButtons';
+import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
+import { CustomerAuditFeed } from './CustomerAuditFeed';
+import { 
+  SupplierAddressesTab,
+  SupplierContactsTab,
+  SupplierPaymentTab,
+  SupplierGeneralForm,
+  SupplierFormData,
+  SupplierAddress,
+  SupplierContact
+} from './suppliers';
+import { 
+  DataTable, 
+  Column, 
+  SearchFilters,
+  StatusBadge,
+  StatsCard
+} from './shared';
 
-const INITIAL_FORM = {
+const emptyFormData: SupplierFormData = {
   code: '',
   legal_name: '',
   tax_id: '',
@@ -31,86 +58,73 @@ const INITIAL_FORM = {
 
 export const SuppliersPanel: React.FC = () => {
   const { suppliers, suppliersLoading, createSupplier, updateSupplier, deleteSupplier } = useMaestros();
-  
+
   const [search, setSearch] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [activeDetailTab, setActiveDetailTab] = useState('general');
 
-  // Memoized filtered suppliers
+  const [formData, setFormData] = useState<SupplierFormData>(emptyFormData);
+  const [addresses, setAddresses] = useState<SupplierAddress[]>([]);
+  const [contacts, setContacts] = useState<SupplierContact[]>([]);
+
+  // Stats
+  const stats = useMemo(() => ({
+    total: suppliers.length,
+    active: suppliers.filter(s => s.is_active).length,
+    inactive: suppliers.filter(s => !s.is_active).length
+  }), [suppliers]);
+
+  // Filter suppliers
   const filteredSuppliers = useMemo(() => {
     return suppliers.filter(s => {
-      const q = search.toLowerCase().trim();
-      const matchesSearch = !q || 
+      const q = search.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
         s.legal_name.toLowerCase().includes(q) ||
         s.code.toLowerCase().includes(q) ||
-        (s.tax_id?.toLowerCase().includes(q));
+        (s.tax_id?.toLowerCase().includes(q) ?? false);
       const matchesActive = showInactive || s.is_active;
       return matchesSearch && matchesActive;
     });
   }, [suppliers, search, showInactive]);
 
-  // Filter configuration
-  const filters: FilterOption[] = useMemo(() => [
-    { key: 'showInactive', label: 'Mostrar inactivos', type: 'switch', defaultValue: false }
-  ], []);
+  // Load supplier details
+  const loadSupplierDetails = useCallback(async (supplierId: string) => {
+    const [addressRes, contactRes] = await Promise.all([
+      supabase
+        .from('supplier_addresses')
+        .select('*')
+        .eq('supplier_id', supplierId)
+        .order('is_default', { ascending: false }),
+      supabase
+        .from('supplier_contacts')
+        .select('*')
+        .eq('supplier_id', supplierId)
+        .order('is_primary', { ascending: false })
+    ]);
 
-  const filterValues = useMemo(() => ({
-    showInactive
-  }), [showInactive]);
-
-  const handleFilterChange = useCallback((key: string, value: string | boolean) => {
-    if (key === 'showInactive') {
-      setShowInactive(value as boolean);
-    }
+    setAddresses((addressRes.data as SupplierAddress[]) || []);
+    setContacts((contactRes.data as SupplierContact[]) || []);
   }, []);
 
-  // Table columns
-  const columns: Column<Supplier>[] = useMemo(() => [
-    {
-      key: 'code',
-      header: 'Código',
-      accessor: (row) => <span className="font-mono text-sm">{row.code}</span>,
-      sortable: true
-    },
-    {
-      key: 'legal_name',
-      header: 'Nombre',
-      accessor: (row) => <span className="font-medium">{row.legal_name}</span>,
-      sortable: true
-    },
-    {
-      key: 'tax_id',
-      header: 'CIF/NIF',
-      accessor: (row) => <span className="font-mono text-sm">{row.tax_id || '-'}</span>,
-      sortable: true
-    },
-    {
-      key: 'email',
-      header: 'Email',
-      accessor: (row) => <span className="text-sm">{row.email || '-'}</span>
-    },
-    {
-      key: 'phone',
-      header: 'Teléfono',
-      accessor: (row) => <span className="text-sm">{row.phone || '-'}</span>
-    },
-    {
-      key: 'is_active',
-      header: 'Estado',
-      accessor: (row) => <StatusBadge status={row.is_active} />
+  useEffect(() => {
+    if (selectedSupplier) {
+      loadSupplierDetails(selectedSupplier.id);
     }
-  ], []);
+  }, [selectedSupplier?.id, loadSupplierDetails]);
 
-  // Dialog handlers
-  const openNewDialog = useCallback(() => {
+  const openNewDialog = () => {
     setSelectedSupplier(null);
-    setFormData(INITIAL_FORM);
+    setFormData(emptyFormData);
+    setAddresses([]);
+    setContacts([]);
+    setActiveDetailTab('general');
     setIsDialogOpen(true);
-  }, []);
+  };
 
-  const openEditDialog = useCallback((supplier: Supplier) => {
+  const openEditDialog = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
     setFormData({
       code: supplier.code,
@@ -121,36 +135,79 @@ export const SuppliersPanel: React.FC = () => {
       notes: supplier.notes || '',
       is_active: supplier.is_active
     });
+    setActiveDetailTab('general');
     setIsDialogOpen(true);
-  }, []);
+  };
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (selectedSupplier) {
       await updateSupplier.mutateAsync({ id: selectedSupplier.id, ...formData });
     } else {
-      await createSupplier.mutateAsync(formData);
+      const result = await createSupplier.mutateAsync(formData);
+      if (result) {
+        setSelectedSupplier(result as Supplier);
+      }
     }
+    
     setIsDialogOpen(false);
-  }, [selectedSupplier, formData, updateSupplier, createSupplier]);
+  };
 
-  const handleDelete = useCallback(async (supplier: Supplier) => {
-    if (!confirm(`¿Eliminar el proveedor "${supplier.legal_name}"?`)) return;
+  const handleDelete = async (supplier: Supplier) => {
+    const label = supplier.tax_id ? `${supplier.legal_name} (${supplier.tax_id})` : supplier.legal_name;
+    if (!confirm(`¿Estás seguro de eliminar este proveedor?\n\n${label}`)) return;
     await deleteSupplier.mutateAsync(supplier.id);
-  }, [deleteSupplier]);
+  };
 
-  // Row actions renderer
-  const renderRowActions = useCallback((row: Supplier) => (
-    <ActionButtons
-      onEdit={() => openEditDialog(row)}
-      onDelete={() => handleDelete(row)}
-      size="sm"
-    />
-  ), [openEditDialog, handleDelete]);
+  const handleRefreshDetails = useCallback(() => {
+    if (selectedSupplier) {
+      loadSupplierDetails(selectedSupplier.id);
+    }
+  }, [selectedSupplier, loadSupplierDetails]);
+
+  // Table columns
+  const columns: Column<Supplier>[] = [
+    { 
+      key: 'code', 
+      header: 'Código', 
+      sortable: true,
+      className: 'w-[100px]',
+      accessor: (s) => <span className="font-mono text-sm">{s.code || '-'}</span>
+    },
+    { 
+      key: 'legal_name', 
+      header: 'Nombre', 
+      sortable: true,
+      accessor: (s) => <p className="font-medium">{s.legal_name}</p>
+    },
+    { 
+      key: 'tax_id', 
+      header: 'CIF/NIF',
+      accessor: (s) => <span className="font-mono text-sm">{s.tax_id || '-'}</span>
+    },
+    { 
+      key: 'email', 
+      header: 'Email',
+      accessor: (s) => <span className="text-sm">{s.email || '-'}</span>
+    },
+    { 
+      key: 'phone', 
+      header: 'Teléfono',
+      accessor: (s) => <span className="text-sm">{s.phone || '-'}</span>
+    },
+    { 
+      key: 'is_active', 
+      header: 'Estado',
+      accessor: (s) => <StatusBadge status={s.is_active} />
+    }
+  ];
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
       <Card>
         <CardHeader className="pb-3">
@@ -164,14 +221,31 @@ export const SuppliersPanel: React.FC = () => {
               Nuevo Proveedor
             </Button>
           </div>
-          
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            <StatsCard label="Total" value={stats.total} icon={<Truck className="h-4 w-4" />} />
+            <StatsCard label="Activos" value={stats.active} icon={<CheckCircle className="h-4 w-4" />} iconBgColor="bg-green-100 dark:bg-green-900/30" iconColor="text-green-600" />
+            <StatsCard label="Inactivos" value={stats.inactive} icon={<XCircle className="h-4 w-4" />} iconBgColor="bg-red-100 dark:bg-red-900/30" iconColor="text-red-600" />
+          </div>
+
+          {/* Filters */}
           <SearchFilters
             search={search}
             onSearchChange={setSearch}
             placeholder="Buscar por nombre, código o CIF..."
-            filters={filters}
-            filterValues={filterValues}
-            onFilterChange={handleFilterChange}
+            filters={[
+              {
+                key: 'showInactive',
+                label: 'Mostrar inactivos',
+                type: 'switch',
+                defaultValue: false
+              }
+            ]}
+            filterValues={{ showInactive }}
+            onFilterChange={(key, value) => {
+              if (key === 'showInactive') setShowInactive(value as boolean);
+            }}
           />
         </CardHeader>
 
@@ -182,102 +256,121 @@ export const SuppliersPanel: React.FC = () => {
             loading={suppliersLoading}
             emptyIcon={<Truck className="h-12 w-12" />}
             emptyMessage="No hay proveedores"
-            emptyDescription={search ? 'que coincidan con la búsqueda' : undefined}
-            onRowDoubleClick={openEditDialog}
-            rowActions={renderRowActions}
-            exportFilename="proveedores"
+            emptyDescription={search ? 'que coincidan con la búsqueda' : 'Crea tu primer proveedor'}
+            onRowClick={openEditDialog}
+            rowActions={(s) => (
+              <div className="flex justify-end gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditDialog(s);
+                  }}
+                >
+                  <Building2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(s);
+                  }}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           />
         </CardContent>
       </Card>
 
-      <EntityFormDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        title={selectedSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
-        description={selectedSupplier 
-          ? 'Modifica los datos del proveedor'
-          : 'Introduce los datos del nuevo proveedor'
-        }
-        onSubmit={handleSubmit}
-        submitLabel={selectedSupplier ? 'Guardar Cambios' : 'Crear Proveedor'}
-        isSubmitting={createSupplier.isPending || updateSupplier.isPending}
-        size="md"
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="code">Código *</Label>
-            <Input
-              id="code"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-              placeholder="PROV001"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tax_id">CIF/NIF</Label>
-            <Input
-              id="tax_id"
-              value={formData.tax_id}
-              onChange={(e) => setFormData({ ...formData, tax_id: e.target.value.toUpperCase() })}
-              placeholder="B12345678"
-            />
-          </div>
-        </div>
+      {/* Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedSupplier ? `Editar Proveedor: ${selectedSupplier.code}` : 'Nuevo Proveedor'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedSupplier 
+                ? 'Modifica los datos del proveedor, direcciones, contactos y pagos'
+                : 'Introduce los datos del nuevo proveedor'
+              }
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-2">
-          <Label htmlFor="legal_name">Razón Social *</Label>
-          <Input
-            id="legal_name"
-            value={formData.legal_name}
-            onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })}
-            placeholder="Proveedor S.L."
-            required
-          />
-        </div>
+          <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="general" className="gap-1">
+                <Building2 className="h-4 w-4" />
+                <span className="hidden sm:inline">General</span>
+              </TabsTrigger>
+              <TabsTrigger value="addresses" className="gap-1" disabled={!selectedSupplier}>
+                <MapPin className="h-4 w-4" />
+                <span className="hidden sm:inline">Direcciones</span>
+              </TabsTrigger>
+              <TabsTrigger value="contacts" className="gap-1" disabled={!selectedSupplier}>
+                <Phone className="h-4 w-4" />
+                <span className="hidden sm:inline">Contactos</span>
+              </TabsTrigger>
+              <TabsTrigger value="payment" className="gap-1" disabled={!selectedSupplier}>
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden sm:inline">Pagos</span>
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="gap-1" disabled={!selectedSupplier}>
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">Auditoría</span>
+              </TabsTrigger>
+            </TabsList>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="contacto@proveedor.com"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+34 912 345 678"
-            />
-          </div>
-        </div>
+            <TabsContent value="general" className="mt-4">
+              <SupplierGeneralForm
+                formData={formData}
+                onChange={setFormData}
+                onSubmit={handleSubmit}
+                onCancel={() => setIsDialogOpen(false)}
+                isEditing={!!selectedSupplier}
+                isPending={createSupplier.isPending || updateSupplier.isPending}
+              />
+            </TabsContent>
 
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notas</Label>
-          <Textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="Observaciones..."
-            rows={3}
-          />
-        </div>
+            <TabsContent value="addresses" className="mt-4">
+              {selectedSupplier && (
+                <SupplierAddressesTab
+                  supplierId={selectedSupplier.id}
+                  addresses={addresses}
+                  onRefresh={handleRefreshDetails}
+                />
+              )}
+            </TabsContent>
 
-        <div className="flex items-center gap-2">
-          <Switch
-            id="is_active"
-            checked={formData.is_active}
-            onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-          />
-          <Label htmlFor="is_active">Proveedor activo</Label>
-        </div>
-      </EntityFormDialog>
+            <TabsContent value="contacts" className="mt-4">
+              {selectedSupplier && (
+                <SupplierContactsTab
+                  supplierId={selectedSupplier.id}
+                  contacts={contacts}
+                  onRefresh={handleRefreshDetails}
+                />
+              )}
+            </TabsContent>
+
+            <TabsContent value="payment" className="mt-4">
+              {selectedSupplier && (
+                <SupplierPaymentTab supplierId={selectedSupplier.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="audit" className="mt-4">
+              {selectedSupplier && (
+                <CustomerAuditFeed entityId={selectedSupplier.id} entityType="supplier" />
+              )}
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };

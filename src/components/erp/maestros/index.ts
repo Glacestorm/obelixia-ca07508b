@@ -17,5 +17,9 @@ export { CustomerAuditFeed } from './CustomerAuditFeed';
 export { CustomerShippingTab } from './CustomerShippingTab';
 export { AIDataImporter } from './AIDataImporter';
 
+// Sub-module exports
+export * from './customers';
+export * from './suppliers';
+
 // Shared components
 export * from './shared';
