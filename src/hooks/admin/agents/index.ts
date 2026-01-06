@@ -71,3 +71,15 @@ export type {
   ERPNotificationStats,
   ERPNotificationPreferences
 } from './useERPAgentNotifications';
+
+// Sistema de IA Real para Agentes ERP
+export { useERPAgentAI } from './useERPAgentAI';
+export type {
+  DomainAnalysis,
+  MetricPrediction,
+  OrchestrationPlan,
+  StrategicInsight,
+  AgentRanking,
+  LearningRecord,
+  ChatMessage as AIAgentChatMessage
+} from './useERPAgentAI';
