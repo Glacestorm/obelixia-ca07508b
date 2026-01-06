@@ -15,6 +15,7 @@ export { JournalEntryEditor } from './JournalEntryEditor';
 export { JournalsList } from './JournalsList';
 export { CreateAccountDialog } from './CreateAccountDialog';
 export { RecentEntriesCard } from './RecentEntriesCard';
+export { GeneralLedgerPanel } from './GeneralLedgerPanel';
 
 // Componentes de estados financieros
 export { AccountLedgerPanel } from './AccountLedgerPanel';
