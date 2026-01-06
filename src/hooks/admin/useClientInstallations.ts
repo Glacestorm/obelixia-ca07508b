@@ -82,6 +82,11 @@ export function useClientInstallations() {
   const [lastSuccess, setLastSuccess] = useState<Date | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  // === ANTI-RECURSION GUARDS ===
+  const isInitializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+
   // === KB 2.0 COMPUTED ===
   const isIdle = status === 'idle';
   const isLoading = status === 'loading';
@@ -100,10 +105,11 @@ export function useClientInstallations() {
     setRetryCount(0);
   }, []);
 
-  // Refs para auto-refresh
-  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
-
   const fetchInstallations = useCallback(async () => {
+    // Guard contra llamadas paralelas
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    
     setLoading(true);
     setError(null);
     setStatus('loading');
@@ -133,18 +139,11 @@ export function useClientInstallations() {
       toast.error(parsedErr.message);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, []);
+  }, []); // Sin dependencias - estable
 
   // === AUTO-REFRESH ===
-  const startAutoRefresh = useCallback((intervalMs = 60000) => {
-    stopAutoRefresh();
-    fetchInstallations();
-    autoRefreshInterval.current = setInterval(() => {
-      fetchInstallations();
-    }, intervalMs);
-  }, [fetchInstallations]);
-
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
       clearInterval(autoRefreshInterval.current);
@@ -152,12 +151,25 @@ export function useClientInstallations() {
     }
   }, []);
 
+  const startAutoRefresh = useCallback((intervalMs = 60000) => {
+    stopAutoRefresh();
+    fetchInstallations();
+    autoRefreshInterval.current = setInterval(() => {
+      fetchInstallations();
+    }, intervalMs);
+  }, [fetchInstallations, stopAutoRefresh]);
+
   // === CLEANUP ===
   useEffect(() => {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
-  useEffect(() => { fetchInstallations(); }, [fetchInstallations]);
+  // === INITIAL FETCH - CON GUARD ===
+  useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+    fetchInstallations();
+  }, [fetchInstallations]);
 
   const createInstallation = async (data: { installation_name: string; preferred_locale?: string }) => {
     try {
@@ -255,6 +267,12 @@ export function useRemoteAccessSessions(installationId?: string) {
   const [lastSuccess, setLastSuccess] = useState<Date | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  // === ANTI-RECURSION GUARDS ===
+  const isInitializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+  const prevInstallationIdRef = useRef(installationId);
+
   // === KB 2.0 COMPUTED ===
   const isIdle = status === 'idle';
   const isLoading = status === 'loading';
@@ -273,10 +291,11 @@ export function useRemoteAccessSessions(installationId?: string) {
     setRetryCount(0);
   }, []);
 
-  // Refs para auto-refresh
-  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
-
   const fetchSessions = useCallback(async () => {
+    // Guard contra llamadas paralelas
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    
     setLoading(true);
     setError(null);
     setStatus('loading');
@@ -304,18 +323,11 @@ export function useRemoteAccessSessions(installationId?: string) {
       toast.error(parsedErr.message);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, [installationId]);
 
   // === AUTO-REFRESH ===
-  const startAutoRefresh = useCallback((intervalMs = 30000) => {
-    stopAutoRefresh();
-    fetchSessions();
-    autoRefreshInterval.current = setInterval(() => {
-      fetchSessions();
-    }, intervalMs);
-  }, [fetchSessions]);
-
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
       clearInterval(autoRefreshInterval.current);
@@ -323,12 +335,28 @@ export function useRemoteAccessSessions(installationId?: string) {
     }
   }, []);
 
+  const startAutoRefresh = useCallback((intervalMs = 30000) => {
+    stopAutoRefresh();
+    fetchSessions();
+    autoRefreshInterval.current = setInterval(() => {
+      fetchSessions();
+    }, intervalMs);
+  }, [fetchSessions, stopAutoRefresh]);
+
   // === CLEANUP ===
   useEffect(() => {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
-  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+  // === INITIAL FETCH - CON GUARD ===
+  useEffect(() => {
+    // Solo refetch si cambió installationId o es primera vez
+    if (!isInitializedRef.current || prevInstallationIdRef.current !== installationId) {
+      isInitializedRef.current = true;
+      prevInstallationIdRef.current = installationId;
+      fetchSessions();
+    }
+  }, [fetchSessions, installationId]);
 
   const createSession = async (data: { installation_id: string; support_user_id: string; session_type: string; session_status: string; started_at: string; client_notified_at: string }) => {
     try {
@@ -393,6 +421,12 @@ export function useInstallationDownloads(installationId?: string) {
   const [lastSuccess, setLastSuccess] = useState<Date | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  // === ANTI-RECURSION GUARDS ===
+  const isInitializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+  const prevInstallationIdRef = useRef(installationId);
+
   // === KB 2.0 COMPUTED ===
   const isIdle = status === 'idle';
   const isLoading = status === 'loading';
@@ -411,10 +445,11 @@ export function useInstallationDownloads(installationId?: string) {
     setRetryCount(0);
   }, []);
 
-  // Refs para auto-refresh
-  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
-
   const fetchDownloads = useCallback(async () => {
+    // Guard contra llamadas paralelas
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    
     setLoading(true);
     setError(null);
     setStatus('loading');
@@ -459,18 +494,11 @@ export function useInstallationDownloads(installationId?: string) {
       toast.error(parsedErr.message);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, [installationId]);
 
   // === AUTO-REFRESH ===
-  const startAutoRefresh = useCallback((intervalMs = 60000) => {
-    stopAutoRefresh();
-    fetchDownloads();
-    autoRefreshInterval.current = setInterval(() => {
-      fetchDownloads();
-    }, intervalMs);
-  }, [fetchDownloads]);
-
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
       clearInterval(autoRefreshInterval.current);
@@ -478,12 +506,28 @@ export function useInstallationDownloads(installationId?: string) {
     }
   }, []);
 
+  const startAutoRefresh = useCallback((intervalMs = 60000) => {
+    stopAutoRefresh();
+    fetchDownloads();
+    autoRefreshInterval.current = setInterval(() => {
+      fetchDownloads();
+    }, intervalMs);
+  }, [fetchDownloads, stopAutoRefresh]);
+
   // === CLEANUP ===
   useEffect(() => {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
-  useEffect(() => { fetchDownloads(); }, [fetchDownloads]);
+  // === INITIAL FETCH - CON GUARD ===
+  useEffect(() => {
+    // Solo refetch si cambió installationId o es primera vez
+    if (!isInitializedRef.current || prevInstallationIdRef.current !== installationId) {
+      isInitializedRef.current = true;
+      prevInstallationIdRef.current = installationId;
+      fetchDownloads();
+    }
+  }, [fetchDownloads, installationId]);
 
   const recordDownload = async (data: { installation_id: string; module_id: string; module_version: string; locale_downloaded: string; download_type: string; download_status: string }) => {
     try {

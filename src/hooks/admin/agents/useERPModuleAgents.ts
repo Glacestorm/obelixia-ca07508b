@@ -137,6 +137,12 @@ export function useERPModuleAgents() {
     }
   }, []);
 
+  // === REF PARA EVITAR DEPENDENCIAS INESTABLES ===
+  const domainAgentsRef = useRef(domainAgents);
+  useEffect(() => {
+    domainAgentsRef.current = domainAgents;
+  }, [domainAgents]);
+
   // === EJECUTAR AGENTE DE MÓDULO ===
   const executeModuleAgent = useCallback(async (
     agentId: string,
@@ -145,11 +151,14 @@ export function useERPModuleAgents() {
     setIsLoading(true);
 
     try {
+      // Usar ref en lugar de dependencia directa
+      const currentDomainAgents = domainAgentsRef.current;
+      
       // Encontrar el agente
       let targetAgent: ModuleAgent | null = null;
       let targetDomain: DomainAgent | null = null;
 
-      for (const domain of domainAgents) {
+      for (const domain of currentDomainAgents) {
         const agent = domain.moduleAgents.find(a => a.id === agentId);
         if (agent) {
           targetAgent = agent;
@@ -224,7 +233,7 @@ export function useERPModuleAgents() {
         setIsLoading(false);
       }
     }
-  }, [domainAgents]);
+  }, []); // Sin dependencias - usa ref
 
   // === COORDINAR DOMINIO ===
   const coordinateDomain = useCallback(async (
@@ -234,7 +243,9 @@ export function useERPModuleAgents() {
     setIsLoading(true);
 
     try {
-      const domain = domainAgents.find(d => d.id === domainId);
+      // Usar ref para evitar dependencia inestable
+      const currentDomainAgents = domainAgentsRef.current;
+      const domain = currentDomainAgents.find(d => d.id === domainId);
       if (!domain) throw new Error('Dominio no encontrado');
 
       // Actualizar estado del dominio
@@ -281,7 +292,7 @@ export function useERPModuleAgents() {
         setIsLoading(false);
       }
     }
-  }, [domainAgents]);
+  }, []); // Sin dependencias - usa ref
 
   // === SUPERVISOR: ORQUESTAR TODOS ===
   const supervisorOrchestrate = useCallback(async (
@@ -293,12 +304,15 @@ export function useERPModuleAgents() {
     try {
       setSupervisorStatus(prev => prev ? { ...prev, status: 'coordinating' } : prev);
 
+      // Usar ref para evitar dependencia inestable
+      const currentDomainAgents = domainAgentsRef.current;
+
       const { data, error } = await supabase.functions.invoke('erp-module-agent', {
         body: {
           action: 'supervisor_orchestrate',
           objective,
           priority: priority || 'medium',
-          domains: domainAgents.map(d => ({
+          domains: currentDomainAgents.map(d => ({
             id: d.id,
             domain: d.domain,
             status: d.status,
@@ -344,16 +358,19 @@ export function useERPModuleAgents() {
         setIsLoading(false);
       }
     }
-  }, [domainAgents]);
+  }, []); // Sin dependencias - usa ref
 
   // === OBTENER INSIGHTS PREDICTIVOS ===
   const fetchPredictiveInsights = useCallback(async (): Promise<SupervisorInsight[]> => {
     try {
+      // Usar ref para evitar dependencia inestable
+      const currentDomainAgents = domainAgentsRef.current;
+
       const { data, error } = await supabase.functions.invoke('erp-module-agent', {
         body: {
           action: 'get_predictive_insights',
           currentState: {
-            domains: domainAgents.map(d => ({
+            domains: currentDomainAgents.map(d => ({
               domain: d.domain,
               metrics: d.metrics,
               agentStatuses: d.moduleAgents.map(a => a.status)
@@ -379,7 +396,7 @@ export function useERPModuleAgents() {
       console.error('[useERPModuleAgents] fetchPredictiveInsights error:', error);
       return [];
     }
-  }, [domainAgents]);
+  }, []); // Sin dependencias - usa ref
 
   // === CONFIGURAR AGENTE ===
   const configureAgent = useCallback(async (
