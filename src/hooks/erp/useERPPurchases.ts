@@ -527,6 +527,84 @@ export function useERPPurchases() {
     }
   }, [currentCompany, user]);
 
+  // ===================== ACCIONES DE FLUJO =====================
+
+  const confirmGoodsReceipt = useCallback(async (receiptId: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('erp_goods_receipts')
+        .update({ status: 'confirmed' })
+        .eq('id', receiptId);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('[useERPPurchases] confirmGoodsReceipt error:', err);
+      toast.error('Error al confirmar albarán');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const cancelGoodsReceipt = useCallback(async (receiptId: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('erp_goods_receipts')
+        .update({ status: 'cancelled' })
+        .eq('id', receiptId);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('[useERPPurchases] cancelGoodsReceipt error:', err);
+      toast.error('Error al cancelar albarán');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const postSupplierInvoice = useCallback(async (invoiceId: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('erp_supplier_invoices')
+        .update({ status: 'posted' })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('[useERPPurchases] postSupplierInvoice error:', err);
+      toast.error('Error al contabilizar factura');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const cancelSupplierInvoice = useCallback(async (invoiceId: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('erp_supplier_invoices')
+        .update({ status: 'cancelled' })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('[useERPPurchases] cancelSupplierInvoice error:', err);
+      toast.error('Error al cancelar factura');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
     isLoading,
     // Proveedores
@@ -540,9 +618,13 @@ export function useERPPurchases() {
     // Albaranes de entrada
     fetchGoodsReceipts,
     createGoodsReceipt,
+    confirmGoodsReceipt,
+    cancelGoodsReceipt,
     // Facturas proveedor
     fetchSupplierInvoices,
     createSupplierInvoice,
+    postSupplierInvoice,
+    cancelSupplierInvoice,
   };
 }
 
