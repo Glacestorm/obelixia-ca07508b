@@ -74,6 +74,12 @@ export function useSupportAnalytics(daysRange: number = 30) {
   const [lastSuccess, setLastSuccess] = useState<Date | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  // === ANTI-RECURSION GUARDS ===
+  const isInitializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+  const prevDaysRangeRef = useRef(daysRange);
+
   // === KB 2.0 COMPUTED ===
   const isIdle = status === 'idle';
   const loading = status === 'loading';
@@ -92,10 +98,11 @@ export function useSupportAnalytics(daysRange: number = 30) {
     setRetryCount(0);
   }, []);
 
-  // Refs para auto-refresh
-  const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
-
   const fetchAnalytics = useCallback(async () => {
+    // Guard contra llamadas paralelas
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    
     const startTime = Date.now();
     setStatus('loading');
     setError(null);
@@ -211,18 +218,12 @@ export function useSupportAnalytics(daysRange: number = 30) {
       setStatus('error');
       setRetryCount(prev => prev + 1);
       collectTelemetry('useSupportAnalytics', 'fetchAnalytics', 'error', Date.now() - startTime, kbError);
+    } finally {
+      isFetchingRef.current = false;
     }
   }, [daysRange]);
 
   // === AUTO-REFRESH ===
-  const startAutoRefresh = useCallback((intervalMs = 120000) => {
-    stopAutoRefresh();
-    fetchAnalytics();
-    autoRefreshInterval.current = setInterval(() => {
-      fetchAnalytics();
-    }, intervalMs);
-  }, [fetchAnalytics]);
-
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
       clearInterval(autoRefreshInterval.current);
@@ -230,15 +231,28 @@ export function useSupportAnalytics(daysRange: number = 30) {
     }
   }, []);
 
+  const startAutoRefresh = useCallback((intervalMs = 120000) => {
+    stopAutoRefresh();
+    fetchAnalytics();
+    autoRefreshInterval.current = setInterval(() => {
+      fetchAnalytics();
+    }, intervalMs);
+  }, [fetchAnalytics, stopAutoRefresh]);
+
   // === CLEANUP ===
   useEffect(() => {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
-  // === INITIAL FETCH ===
+  // === INITIAL FETCH - CON GUARD ===
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    // Solo refetch si cambió daysRange o es primera vez
+    if (!isInitializedRef.current || prevDaysRangeRef.current !== daysRange) {
+      isInitializedRef.current = true;
+      prevDaysRangeRef.current = daysRange;
+      fetchAnalytics();
+    }
+  }, [fetchAnalytics, daysRange]);
 
   return { 
     analytics, 
