@@ -358,32 +358,43 @@ export function useSupportMetricsDashboard(initialFilters?: Partial<DashboardFil
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
 
+  // === REF PARA FETCH ===
+  const fetchMetricsRef = useRef(fetchMetrics);
+  useEffect(() => {
+    fetchMetricsRef.current = fetchMetrics;
+  }, [fetchMetrics]);
+  
+  const subscribeToRealtimeRef = useRef(subscribeToRealtime);
+  useEffect(() => {
+    subscribeToRealtimeRef.current = subscribeToRealtime;
+  }, [subscribeToRealtime]);
+
   // === LIFECYCLE - CON GUARD ===
   useEffect(() => {
-    if (isInitializedRef.current) {
-      // Solo refetch si cambiaron los filtros
-      if (JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters)) {
-        prevFiltersRef.current = filters;
-        fetchMetrics();
-      }
-      return;
+    // Primera inicialización
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+      fetchMetricsRef.current();
+      subscribeToRealtimeRef.current();
+      startAutoRefresh();
     }
-    
-    isInitializedRef.current = true;
-    fetchMetrics();
-    subscribeToRealtime();
-    startAutoRefresh();
 
     return () => {
       stopAutoRefresh();
       unsubscribeFromRealtime();
     };
-  }, [filters]); // Solo reacciona a cambios de filtros
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo en mount - usa refs
 
-  // Refetch when filters change
+  // Refetch solo cuando cambian los filtros (después de init)
   useEffect(() => {
-    fetchMetrics();
-  }, [filters, fetchMetrics]);
+    if (!isInitializedRef.current) return; // Skip si no está inicializado
+    
+    if (JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters)) {
+      prevFiltersRef.current = filters;
+      fetchMetricsRef.current();
+    }
+  }, [filters]); // Solo filters - usa ref para fetch
 
   // === COMPUTED ===
   const healthScore = useMemo(() => {

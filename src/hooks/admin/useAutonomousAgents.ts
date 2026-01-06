@@ -198,25 +198,36 @@ export function useAutonomousAgents() {
     }
   }, [fetchAgents]);
 
-  const startAutoRefresh = useCallback((intervalMs = 30000) => {
-    stopAutoRefresh();
-    fetchAgents();
-    fetchExecutions();
-    fetchPendingActions();
-    
-    autoRefreshInterval.current = setInterval(() => {
-      fetchAgents();
-      fetchExecutions();
-      fetchPendingActions();
-    }, intervalMs);
-  }, [fetchAgents, fetchExecutions, fetchPendingActions]);
+  // Refs para evitar dependencias inestables
+  const fetchAgentsRef = useRef(fetchAgents);
+  const fetchExecutionsRef = useRef(fetchExecutions);
+  const fetchPendingActionsRef = useRef(fetchPendingActions);
+  
+  useEffect(() => { fetchAgentsRef.current = fetchAgents; }, [fetchAgents]);
+  useEffect(() => { fetchExecutionsRef.current = fetchExecutions; }, [fetchExecutions]);
+  useEffect(() => { fetchPendingActionsRef.current = fetchPendingActions; }, [fetchPendingActions]);
 
+  // stopAutoRefresh DEBE declararse ANTES de startAutoRefresh
   const stopAutoRefresh = useCallback(() => {
     if (autoRefreshInterval.current) {
       clearInterval(autoRefreshInterval.current);
       autoRefreshInterval.current = null;
     }
   }, []);
+
+  const startAutoRefresh = useCallback((intervalMs = 30000) => {
+    stopAutoRefresh();
+    // Usar refs en lugar de dependencias directas
+    fetchAgentsRef.current();
+    fetchExecutionsRef.current();
+    fetchPendingActionsRef.current();
+    
+    autoRefreshInterval.current = setInterval(() => {
+      fetchAgentsRef.current();
+      fetchExecutionsRef.current();
+      fetchPendingActionsRef.current();
+    }, intervalMs);
+  }, [stopAutoRefresh]); // Solo stopAutoRefresh como dependencia estable
 
   useEffect(() => {
     return () => stopAutoRefresh();
