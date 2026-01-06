@@ -40,9 +40,12 @@ import {
   Target,
   TrendingUp,
   Eye,
-  Lightbulb
+  Lightbulb,
+  HelpCircle
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
+import { AgentHelpButton, AgentHelpMenu } from './help';
+import { type AgentHelpContext } from '@/hooks/admin/agents/useAgentHelpSystem';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -69,6 +72,8 @@ export function ERPModuleAgentsPanel() {
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [selectedAgent, setSelectedAgent] = useState<ModuleAgent | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [helpAgentContext, setHelpAgentContext] = useState<AgentHelpContext | null>(null);
+  const [showAgentHelp, setShowAgentHelp] = useState(false);
 
   const {
     isLoading,
@@ -133,6 +138,37 @@ export function ERPModuleAgentsPanel() {
   const activeAgents = domainAgents.reduce((sum, d) => 
     sum + d.moduleAgents.filter(a => a.status === 'active' || a.status === 'analyzing').length, 0
   );
+
+  // Función para abrir ayuda de agente
+  const openAgentHelp = (agent: ModuleAgent) => {
+    setHelpAgentContext({
+      agentId: agent.id,
+      agentType: agent.type,
+      agentName: agent.name,
+      agentDescription: agent.description,
+      capabilities: agent.capabilities,
+      currentModule: agent.type
+    });
+    setShowAgentHelp(true);
+  };
+
+  // Contexto del supervisor para ayuda
+  const supervisorHelpContext: AgentHelpContext = {
+    agentId: 'supervisor-general',
+    agentType: 'supervisor',
+    agentName: 'Supervisor General',
+    agentDescription: 'Coordina todos los dominios, resuelve conflictos y optimiza el rendimiento global del sistema de agentes ERP',
+    capabilities: [
+      'Distribución de tareas',
+      'Monitoreo en tiempo real',
+      'Análisis predictivo',
+      'Optimización de workflows',
+      'Aprendizaje entre módulos',
+      'Resolución de conflictos',
+      'Escalado inteligente',
+      'Auto-optimización'
+    ]
+  };
 
   return (
     <div className="space-y-6">
@@ -256,14 +292,22 @@ export function ERPModuleAgentsPanel() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Brain className="h-5 w-5" />
-                    Agente Supervisor General
-                  </CardTitle>
-                  <CardDescription>
-                    Coordina todos los dominios, resuelve conflictos y optimiza el rendimiento global
-                  </CardDescription>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5" />
+                      Agente Supervisor General
+                    </CardTitle>
+                    <CardDescription>
+                      Coordina todos los dominios, resuelve conflictos y optimiza el rendimiento global
+                    </CardDescription>
+                  </div>
+                  {/* Botón de Ayuda del Supervisor */}
+                  <AgentHelpButton 
+                    agentContext={supervisorHelpContext}
+                    variant="icon"
+                    size="md"
+                  />
                 </div>
                 {/* Selector de Modo Autónomo */}
                 <div className="flex flex-col items-end gap-2 p-3 rounded-lg border bg-card">
@@ -516,6 +560,15 @@ export function ERPModuleAgentsPanel() {
                                       variant="ghost"
                                       size="sm"
                                       className="h-7 px-2"
+                                      onClick={() => openAgentHelp(agent)}
+                                      title="Ayuda"
+                                    >
+                                      <HelpCircle className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2"
                                       onClick={() => executeModuleAgent(agent.id, {})}
                                       disabled={isLoading || agent.status === 'paused'}
                                     >
@@ -699,10 +752,34 @@ export function ERPModuleAgentsPanel() {
                   ))}
                 </div>
               </div>
+
+              {/* Botón de ayuda en config dialog */}
+              <div className="pt-4 border-t flex justify-center">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => {
+                    openAgentHelp(selectedAgent);
+                    setShowConfigDialog(false);
+                  }}
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  Ver Ayuda Completa
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Agent Help Modal */}
+      {helpAgentContext && (
+        <AgentHelpMenu
+          isOpen={showAgentHelp}
+          onClose={() => setShowAgentHelp(false)}
+          agentContext={helpAgentContext}
+        />
+      )}
 
       {/* Last refresh */}
       {lastRefresh && (
