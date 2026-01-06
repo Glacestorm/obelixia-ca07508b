@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AgentConfigSheet } from './AgentConfigSheet';
 import { 
   Bot, 
   Brain, 
@@ -446,8 +447,12 @@ export function SupervisorAgentsDashboard() {
     setActiveTab('supervisor');
   };
 
+  const [configAgent, setConfigAgent] = useState<AgentModule | null>(null);
+  const [showConfigSheet, setShowConfigSheet] = useState(false);
+
   const handleConfigureAgent = (agent: AgentModule) => {
-    toast.info(`Configuración de ${agent.name} - Próximamente`);
+    setConfigAgent(agent);
+    setShowConfigSheet(true);
   };
 
   const toggleSection = (section: string) => {
@@ -814,6 +819,21 @@ export function SupervisorAgentsDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Agent Configuration Sheet */}
+      <AgentConfigSheet
+        open={showConfigSheet}
+        onOpenChange={setShowConfigSheet}
+        agent={configAgent ? {
+          id: configAgent.id,
+          name: configAgent.name,
+          type: configAgent.module,
+          description: `Agente especializado en ${configAgent.module}`,
+          capabilities: configAgent.capabilities,
+          domain: configAgent.domain
+        } : null}
+        agentType={configAgent?.domain || 'erp'}
+      />
     </div>
   );
 }

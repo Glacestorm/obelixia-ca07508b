@@ -22,3 +22,5 @@ export { ERPAgentConversationHistory } from './ERPAgentConversationHistory';
 export { ERPCommandCenter } from './ERPCommandCenter';
 export { ERPAgentLeaderboard } from './ERPAgentLeaderboard';
 export { ERPAgentWorkflows } from './ERPAgentWorkflows';
+// Configuración de Agentes
+export { AgentConfigSheet } from './AgentConfigSheet';

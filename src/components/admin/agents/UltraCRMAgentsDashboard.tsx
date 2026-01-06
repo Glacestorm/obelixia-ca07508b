@@ -25,6 +25,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTr
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { AgentConfigSheet } from './AgentConfigSheet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
@@ -854,8 +855,12 @@ export function UltraCRMAgentsDashboard() {
     setShowChat(true);
   }, []);
 
+  const [configAgent, setConfigAgent] = useState<CRMModuleAgent | null>(null);
+  const [showConfigSheet, setShowConfigSheet] = useState(false);
+
   const handleConfigureAgent = useCallback((agent: CRMModuleAgent) => {
-    toast.info(`Configuración de ${agent.name} - Próximamente disponible`);
+    setConfigAgent(agent);
+    setShowConfigSheet(true);
   }, []);
 
   const handleExecuteAgent = useCallback(async (agentId: string) => {
@@ -1401,6 +1406,21 @@ export function UltraCRMAgentsDashboard() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Agent Configuration Sheet */}
+      <AgentConfigSheet
+        open={showConfigSheet}
+        onOpenChange={setShowConfigSheet}
+        agent={configAgent ? {
+          id: configAgent.id,
+          name: configAgent.name,
+          type: configAgent.type,
+          description: CRM_AGENT_CONFIG[configAgent.type]?.description,
+          capabilities: CRM_AGENT_CONFIG[configAgent.type]?.capabilities,
+          domain: 'crm'
+        } : null}
+        agentType="crm"
+      />
     </div>
   );
 }
