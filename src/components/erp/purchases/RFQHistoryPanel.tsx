@@ -23,6 +23,7 @@ interface RFQHistoryPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rfq: any | null;
+  embedded?: boolean;
 }
 
 interface HistoryEvent {
@@ -56,7 +57,7 @@ const eventColors: Record<string, string> = {
   expired: 'bg-orange-500',
 };
 
-export function RFQHistoryPanel({ open, onOpenChange, rfq }: RFQHistoryPanelProps) {
+export function RFQHistoryPanel({ open, onOpenChange, rfq, embedded = false }: RFQHistoryPanelProps) {
   const [events, setEvents] = useState<HistoryEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -146,6 +147,87 @@ export function RFQHistoryPanel({ open, onOpenChange, rfq }: RFQHistoryPanelProp
     return format(new Date(date), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es });
   };
 
+  const content = (
+    <>
+      <div className="flex items-center gap-2 mb-4">
+        <Clock className="h-5 w-5" />
+        <h3 className="font-semibold">Historial de RFQ</h3>
+        {rfq && (
+          <span className="text-sm text-muted-foreground">
+            - {rfq.rfq_number}
+          </span>
+        )}
+      </div>
+
+      <ScrollArea className={embedded ? "h-[500px]" : "h-[calc(100vh-120px)]"}>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : !rfq ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Selecciona una RFQ desde la pestaña Cotizaciones para ver su historial
+          </div>
+        ) : (
+          <div className="relative">
+            {/* Timeline line */}
+            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+
+            <div className="space-y-6">
+              {events.map((event, index) => (
+                <div key={event.id} className="relative flex gap-4">
+                  {/* Timeline dot */}
+                  <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full ${eventColors[event.event_type] || 'bg-muted'} text-white`}>
+                    {eventIcons[event.event_type] || <Clock className="h-4 w-4" />}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 pb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium text-sm">{event.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatDate(event.created_at)}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {event.event_type.replace('_', ' ')}
+                      </Badge>
+                    </div>
+
+                    {event.created_by && (
+                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                        <User className="h-3 w-3" />
+                        <span>Por: Usuario</span>
+                      </div>
+                    )}
+
+                    {event.metadata && Object.keys(event.metadata).length > 0 && (
+                      <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                        {Object.entries(event.metadata).map(([key, value]) => (
+                          <div key={key} className="flex justify-between">
+                            <span className="text-muted-foreground capitalize">{key.replace('_', ' ')}:</span>
+                            <span>{String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {index < events.length - 1 && <Separator className="mt-4" />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </ScrollArea>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="p-4">{content}</div>;
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg">
@@ -160,65 +242,7 @@ export function RFQHistoryPanel({ open, onOpenChange, rfq }: RFQHistoryPanelProp
             </p>
           )}
         </SheetHeader>
-
-        <ScrollArea className="h-[calc(100vh-120px)] mt-6 pr-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          ) : (
-            <div className="relative">
-              {/* Timeline line */}
-              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
-
-              <div className="space-y-6">
-                {events.map((event, index) => (
-                  <div key={event.id} className="relative flex gap-4">
-                    {/* Timeline dot */}
-                    <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full ${eventColors[event.event_type] || 'bg-muted'} text-white`}>
-                      {eventIcons[event.event_type] || <Clock className="h-4 w-4" />}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 pb-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-medium text-sm">{event.description}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDate(event.created_at)}
-                          </p>
-                        </div>
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {event.event_type.replace('_', ' ')}
-                        </Badge>
-                      </div>
-
-                      {event.created_by && (
-                        <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span>Por: Usuario</span>
-                        </div>
-                      )}
-
-                      {event.metadata && Object.keys(event.metadata).length > 0 && (
-                        <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
-                          {Object.entries(event.metadata).map(([key, value]) => (
-                            <div key={key} className="flex justify-between">
-                              <span className="text-muted-foreground capitalize">{key.replace('_', ' ')}:</span>
-                              <span>{String(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {index < events.length - 1 && <Separator className="mt-4" />}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </ScrollArea>
+        <div className="mt-6">{content}</div>
       </SheetContent>
     </Sheet>
   );
