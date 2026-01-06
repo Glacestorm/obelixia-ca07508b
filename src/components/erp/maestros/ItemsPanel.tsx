@@ -28,7 +28,9 @@ import {
 import { useMaestros, Item } from '@/hooks/erp/useMaestros';
 import { motion } from 'framer-motion';
 import { CustomerAuditFeed } from './CustomerAuditFeed';
-import { 
+import { ItemAccountingTab } from './items';
+import { Calculator } from 'lucide-react';
+import {
   DataTable, 
   Column, 
   SearchFilters, 
@@ -413,14 +415,24 @@ export const ItemsPanel: React.FC = () => {
         </div>
       )
     },
-    ...(selectedItem ? [{
-      key: 'audit',
-      label: 'Auditoría',
-      icon: <History className="h-4 w-4" />,
-      content: (
-        <CustomerAuditFeed entityId={selectedItem.id} entityType="item" />
-      )
-    }] : [])
+    ...(selectedItem ? [
+      {
+        key: 'accounting',
+        label: 'Contabilidad',
+        icon: <Calculator className="h-4 w-4" />,
+        content: (
+          <ItemAccountingTab itemId={selectedItem.id} />
+        )
+      },
+      {
+        key: 'audit',
+        label: 'Auditoría',
+        icon: <History className="h-4 w-4" />,
+        content: (
+          <CustomerAuditFeed entityId={selectedItem.id} entityType="item" />
+        )
+      }
+    ] : [])
   ];
 
   const openNewDialog = () => {
