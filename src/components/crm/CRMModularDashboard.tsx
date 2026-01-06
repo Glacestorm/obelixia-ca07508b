@@ -43,7 +43,8 @@ import { SentimentAnalysisDashboard } from '@/components/crm/sentiment';
 import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
-import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
+import { SupervisorAgentsDashboard } from '@/components/admin/agents';
+import { CRMAgentsPanel } from '@/components/crm/agents';
 import { CRMWorkspaceSelector, CRMTeamsManager, CreateWorkspaceDialog } from '@/components/crm/config';
 import { ContactsManager } from '@/components/crm/contacts';
 import { DealsKanban } from '@/components/crm/deals';
@@ -368,9 +369,9 @@ export function CRMModularDashboard() {
           <ReportsTabContent />
         </TabsContent>
 
-        {/* Agents Tab */}
+        {/* Agents Tab - Using dedicated CRM Agents Panel */}
         <TabsContent value="agents">
-          <ERPModuleAgentsPanel />
+          <CRMAgentsPanel />
         </TabsContent>
 
         {/* Config Tab */}

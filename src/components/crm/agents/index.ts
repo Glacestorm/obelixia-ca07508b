@@ -1,0 +1,1 @@
+export { CRMAgentsPanel } from './CRMAgentsPanel';

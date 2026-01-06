@@ -10,3 +10,6 @@ export { useCRMDeals, DEAL_STAGES } from './useCRMDeals';
 export type { CRMDeal, DealStage } from './useCRMDeals';
 export { useCRMActivities, ACTIVITY_TYPES } from './useCRMActivities';
 export type { CRMActivity, ActivityType } from './useCRMActivities';
+
+// Agents
+export * from './agents';
