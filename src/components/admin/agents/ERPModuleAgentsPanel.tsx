@@ -48,9 +48,13 @@ import {
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
 import { useERPAgentNotifications } from '@/hooks/admin/agents/useERPAgentNotifications';
+import { useERPAgentAI } from '@/hooks/admin/agents/useERPAgentAI';
 import { ERPRealTimeMetrics } from './ERPRealTimeMetrics';
 import { ERPAutonomousDecisionHistory } from './ERPAutonomousDecisionHistory';
 import { ERPAgentConversationHistory } from './ERPAgentConversationHistory';
+import { ERPCommandCenter } from './ERPCommandCenter';
+import { ERPAgentLeaderboard } from './ERPAgentLeaderboard';
+import { ERPAgentWorkflows } from './ERPAgentWorkflows';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -73,7 +77,7 @@ const cardVariants = {
 };
 
 export function ERPModuleAgentsPanel() {
-  const [activeTab, setActiveTab] = useState<'supervisor' | 'domains' | 'insights' | 'metrics' | 'decisions' | 'conversations'>('supervisor');
+  const [activeTab, setActiveTab] = useState<'command' | 'supervisor' | 'domains' | 'workflows' | 'leaderboard' | 'metrics' | 'decisions' | 'conversations' | 'insights'>('command');
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [selectedAgent, setSelectedAgent] = useState<ModuleAgent | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
@@ -247,30 +251,42 @@ export function ERPModuleAgentsPanel() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="supervisor" className="flex items-center gap-1 text-xs">
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="command" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
+            <Target className="h-3 w-3" />
+            <span className="hidden md:inline">Command</span>
+          </TabsTrigger>
+          <TabsTrigger value="supervisor" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
             <Brain className="h-3 w-3" />
-            <span className="hidden sm:inline">Supervisor</span>
+            <span className="hidden md:inline">Supervisor</span>
           </TabsTrigger>
-          <TabsTrigger value="domains" className="flex items-center gap-1 text-xs">
+          <TabsTrigger value="domains" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
             <Network className="h-3 w-3" />
-            <span className="hidden sm:inline">Dominios</span>
+            <span className="hidden md:inline">Dominios</span>
           </TabsTrigger>
-          <TabsTrigger value="metrics" className="flex items-center gap-1 text-xs">
+          <TabsTrigger value="workflows" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
+            <Zap className="h-3 w-3" />
+            <span className="hidden md:inline">Workflows</span>
+          </TabsTrigger>
+          <TabsTrigger value="leaderboard" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
+            <TrendingUp className="h-3 w-3" />
+            <span className="hidden md:inline">Ranking</span>
+          </TabsTrigger>
+          <TabsTrigger value="metrics" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
             <Activity className="h-3 w-3" />
-            <span className="hidden sm:inline">Métricas</span>
+            <span className="hidden md:inline">Métricas</span>
           </TabsTrigger>
-          <TabsTrigger value="decisions" className="flex items-center gap-1 text-xs">
+          <TabsTrigger value="decisions" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
             <History className="h-3 w-3" />
-            <span className="hidden sm:inline">Decisiones</span>
+            <span className="hidden md:inline">Decisiones</span>
           </TabsTrigger>
-          <TabsTrigger value="conversations" className="flex items-center gap-1 text-xs">
+          <TabsTrigger value="conversations" className="flex items-center gap-1 text-xs flex-1 min-w-[80px]">
             <MessageSquare className="h-3 w-3" />
-            <span className="hidden sm:inline">Historial</span>
+            <span className="hidden md:inline">Chat</span>
           </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-1 text-xs relative">
+          <TabsTrigger value="insights" className="flex items-center gap-1 text-xs relative flex-1 min-w-[80px]">
             <Bell className="h-3 w-3" />
-            <span className="hidden sm:inline">Alertas</span>
+            <span className="hidden md:inline">Alertas</span>
             {notificationStats.critical > 0 && (
               <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
                 {notificationStats.critical}
@@ -278,6 +294,11 @@ export function ERPModuleAgentsPanel() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        {/* Command Center Tab */}
+        <TabsContent value="command" className="space-y-4">
+          <ERPCommandCenter />
+        </TabsContent>
 
         {/* Supervisor Tab */}
         <TabsContent value="supervisor" className="space-y-4">
@@ -670,6 +691,16 @@ export function ERPModuleAgentsPanel() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Workflows Tab */}
+        <TabsContent value="workflows" className="space-y-4">
+          <ERPAgentWorkflows />
+        </TabsContent>
+
+        {/* Leaderboard Tab */}
+        <TabsContent value="leaderboard" className="space-y-4">
+          <ERPAgentLeaderboard />
         </TabsContent>
       </Tabs>
 
