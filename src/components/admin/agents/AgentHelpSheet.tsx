@@ -74,20 +74,30 @@ export function AgentHelpSheet({
     toggleVoice,
   } = useAgentHelpSystem(agentId);
 
+  // Ref para evitar recursión en loadHelpContent
+  const loadHelpContentRef = useRef(loadHelpContent);
+  loadHelpContentRef.current = loadHelpContent;
+
+  // Refs para estado para evitar dependencias en useEffect
+  const helpContentRef = useRef(helpContent);
+  const isLoadingRef = useRef(isLoading);
+  helpContentRef.current = helpContent;
+  isLoadingRef.current = isLoading;
+
   const refreshHelp = useCallback(() => {
-    loadHelpContent(true);
-  }, [loadHelpContent]);
+    loadHelpContentRef.current(true);
+  }, []); // Sin dependencias - usa ref
 
   const stopSpeaking = useCallback(() => {
     // Placeholder - will be implemented with voice integration
   }, []);
 
-  // Cargar contenido cuando se abre
+  // Cargar contenido cuando se abre - SIN loadHelpContent en deps
   useEffect(() => {
-    if (isOpen && !helpContent && !isLoading) {
-      loadHelpContent();
+    if (isOpen && !helpContentRef.current && !isLoadingRef.current) {
+      loadHelpContentRef.current();
     }
-  }, [isOpen, helpContent, isLoading, loadHelpContent]);
+  }, [isOpen]); // SOLO isOpen como dependencia
 
   // Scroll al último mensaje
   useEffect(() => {
