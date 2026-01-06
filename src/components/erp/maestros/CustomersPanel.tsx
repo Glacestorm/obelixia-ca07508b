@@ -38,7 +38,8 @@ import {
   CustomerContactsTab, 
   CustomerCreditTab,
   CustomerGeneralForm,
-  CustomerFormData
+  CustomerFormData,
+  CustomerAccountingTab
 } from './customers';
 import { 
   DataTable, 
@@ -437,7 +438,7 @@ export const CustomersPanel: React.FC = () => {
           </DialogHeader>
 
           <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="general" className="gap-1">
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">General</span>
@@ -453,6 +454,10 @@ export const CustomersPanel: React.FC = () => {
               <TabsTrigger value="credit" className="gap-1" disabled={!selectedCustomer}>
                 <CreditCard className="h-4 w-4" />
                 <span className="hidden sm:inline">Crédito</span>
+              </TabsTrigger>
+              <TabsTrigger value="accounting" className="gap-1" disabled={!selectedCustomer}>
+                <Building2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Contabilidad</span>
               </TabsTrigger>
               <TabsTrigger value="shipping" className="gap-1" disabled={!selectedCustomer}>
                 <Truck className="h-4 w-4" />
@@ -498,6 +503,12 @@ export const CustomersPanel: React.FC = () => {
             <TabsContent value="credit" className="mt-4">
               {selectedCustomer && (
                 <CustomerCreditTab customerId={selectedCustomer.id} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="accounting" className="mt-4">
+              {selectedCustomer && (
+                <CustomerAccountingTab customerId={selectedCustomer.id} />
               )}
             </TabsContent>
 

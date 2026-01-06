@@ -9791,11 +9791,13 @@ export type Database = {
       }
       customers: {
         Row: {
+          account_id: string | null
           code: string
           company_id: string
           created_at: string | null
           email: string | null
           id: string
+          income_account_id: string | null
           is_active: boolean | null
           legal_name: string
           notes: string | null
@@ -9806,11 +9808,13 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          account_id?: string | null
           code: string
           company_id: string
           created_at?: string | null
           email?: string | null
           id?: string
+          income_account_id?: string | null
           is_active?: boolean | null
           legal_name: string
           notes?: string | null
@@ -9821,11 +9825,13 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          account_id?: string | null
           code?: string
           company_id?: string
           created_at?: string | null
           email?: string | null
           id?: string
+          income_account_id?: string | null
           is_active?: boolean | null
           legal_name?: string
           notes?: string | null
@@ -9837,10 +9843,38 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "customers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_account_balances_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customers_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_income_account_id_fkey"
+            columns: ["income_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_account_balances_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_income_account_id_fkey"
+            columns: ["income_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_chart_accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -23496,11 +23530,14 @@ export type Database = {
           description: string | null
           family_id: string | null
           id: string
+          inventory_account_id: string | null
           is_active: boolean | null
           is_stocked: boolean | null
           item_type: string | null
           name: string
+          purchase_account_id: string | null
           sale_price: number | null
+          sales_account_id: string | null
           sku: string
           standard_cost: number | null
           tax_id: string | null
@@ -23517,11 +23554,14 @@ export type Database = {
           description?: string | null
           family_id?: string | null
           id?: string
+          inventory_account_id?: string | null
           is_active?: boolean | null
           is_stocked?: boolean | null
           item_type?: string | null
           name: string
+          purchase_account_id?: string | null
           sale_price?: number | null
+          sales_account_id?: string | null
           sku: string
           standard_cost?: number | null
           tax_id?: string | null
@@ -23538,11 +23578,14 @@ export type Database = {
           description?: string | null
           family_id?: string | null
           id?: string
+          inventory_account_id?: string | null
           is_active?: boolean | null
           is_stocked?: boolean | null
           item_type?: string | null
           name?: string
+          purchase_account_id?: string | null
           sale_price?: number | null
+          sales_account_id?: string | null
           sku?: string
           standard_cost?: number | null
           tax_id?: string | null
@@ -23564,6 +23607,48 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "item_families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_inventory_account_id_fkey"
+            columns: ["inventory_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_account_balances_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_inventory_account_id_fkey"
+            columns: ["inventory_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_purchase_account_id_fkey"
+            columns: ["purchase_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_account_balances_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_purchase_account_id_fkey"
+            columns: ["purchase_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_sales_account_id_fkey"
+            columns: ["sales_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_account_balances_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_sales_account_id_fkey"
+            columns: ["sales_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_chart_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -38257,10 +38342,12 @@ export type Database = {
       }
       suppliers: {
         Row: {
+          account_id: string | null
           code: string
           company_id: string
           created_at: string | null
           email: string | null
+          expense_account_id: string | null
           id: string
           is_active: boolean | null
           legal_name: string
@@ -38270,10 +38357,12 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_id?: string | null
           code: string
           company_id: string
           created_at?: string | null
           email?: string | null
+          expense_account_id?: string | null
           id?: string
           is_active?: boolean | null
           legal_name: string
@@ -38283,10 +38372,12 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_id?: string | null
           code?: string
           company_id?: string
           created_at?: string | null
           email?: string | null
+          expense_account_id?: string | null
           id?: string
           is_active?: boolean | null
           legal_name?: string
@@ -38297,10 +38388,38 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "suppliers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_account_balances_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suppliers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "suppliers_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suppliers_expense_account_id_fkey"
+            columns: ["expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_account_balances_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suppliers_expense_account_id_fkey"
+            columns: ["expense_account_id"]
+            isOneToOne: false
+            referencedRelation: "erp_chart_accounts"
             referencedColumns: ["id"]
           },
         ]

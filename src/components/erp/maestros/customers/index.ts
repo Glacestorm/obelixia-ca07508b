@@ -6,3 +6,4 @@ export { CustomerAddressesTab } from './CustomerAddressesTab';
 export { CustomerContactsTab } from './CustomerContactsTab';
 export { CustomerCreditTab } from './CustomerCreditTab';
 export { CustomerGeneralForm, type CustomerFormData } from './CustomerGeneralForm';
+export { CustomerAccountingTab } from './CustomerAccountingTab';

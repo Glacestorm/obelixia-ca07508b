@@ -6,3 +6,4 @@ export { SupplierAddressesTab, type SupplierAddress } from './SupplierAddressesT
 export { SupplierContactsTab, type SupplierContact } from './SupplierContactsTab';
 export { SupplierPaymentTab, type SupplierPayment } from './SupplierPaymentTab';
 export { SupplierGeneralForm, type SupplierFormData } from './SupplierGeneralForm';
+export { SupplierAccountingTab } from './SupplierAccountingTab';
