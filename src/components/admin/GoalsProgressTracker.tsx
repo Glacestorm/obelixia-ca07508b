@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -76,6 +76,12 @@ const GoalsProgressTracker = () => {
   const [evolutionData, setEvolutionData] = useState<EvolutionDataPoint[]>([]);
   const [selectedGestorForEvolution, setSelectedGestorForEvolution] = useState<string>('all');
   const [loadingEvolution, setLoadingEvolution] = useState(false);
+  
+  // === ANTI-RECURSION GUARDS ===
+  const isInitializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const isSubscribedRef = useRef(false);
+  const prevUserOficinaRef = useRef(userOficina);
 
   const metricTypes = [
     'total_visits', 'successful_visits', 'assigned_companies', 'products_offered',
@@ -83,31 +89,71 @@ const GoalsProgressTracker = () => {
     'conversion_rate', 'client_facturacion', 'products_per_client', 'follow_ups'
   ];
 
-  useEffect(() => {
-    if (user) {
-      fetchUserOficina();
+  // Fetch user oficina - estable
+  const fetchUserOficinaCallback = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('oficina')
+      .eq('id', user.id)
+      .single();
+    if (data) {
+      setUserOficina(data.oficina);
     }
   }, [user]);
 
   useEffect(() => {
     if (user) {
-      fetchGoalsProgress();
-      
-      // Set up realtime subscription
-      const channel = supabase
-        .channel('goals-progress-tracker')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, () => {
-          fetchGoalsProgress();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, () => {
-          fetchGoalsProgress();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      fetchUserOficinaCallback();
     }
+  }, [user, fetchUserOficinaCallback]);
+
+  // Fetch goals progress - con guard
+  const fetchGoalsProgressCallback = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setLoading(true);
+    // ... resto de la lógica se mantiene en fetchGoalsProgress original
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Solo re-fetch si cambió userOficina después de inicialización
+    if (isInitializedRef.current) {
+      if (prevUserOficinaRef.current !== userOficina) {
+        prevUserOficinaRef.current = userOficina;
+        fetchGoalsProgress();
+      }
+      return;
+    }
+    
+    isInitializedRef.current = true;
+    fetchGoalsProgress();
+    
+    // Set up realtime subscription - con guard
+    if (isSubscribedRef.current) return;
+    isSubscribedRef.current = true;
+    
+    const channel = supabase
+      .channel('goals-progress-tracker')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, () => {
+        // Debounce: solo fetch si no hay uno en progreso
+        if (!isFetchingRef.current) {
+          fetchGoalsProgress();
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'visits' }, () => {
+        if (!isFetchingRef.current) {
+          fetchGoalsProgress();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      isSubscribedRef.current = false;
+    };
   }, [user, userOficina]);
 
   const fetchUserOficina = async () => {
@@ -123,6 +169,10 @@ const GoalsProgressTracker = () => {
   };
 
   const fetchGoalsProgress = async () => {
+    // Guard contra llamadas paralelas
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    
     setLoading(true);
     try {
       // Fetch all gestores (users with 'user' role)
@@ -227,6 +277,7 @@ const GoalsProgressTracker = () => {
       console.error('Error fetching goals progress:', error);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 

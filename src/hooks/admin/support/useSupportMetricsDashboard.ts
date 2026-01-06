@@ -87,9 +87,19 @@ export function useSupportMetricsDashboard(initialFilters?: Partial<DashboardFil
   // Refs
   const realtimeChannel = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
+  
+  // === ANTI-RECURSION GUARDS ===
+  const isInitializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const isSubscribedRef = useRef(false);
+  const prevFiltersRef = useRef(filters);
 
   // === FETCH METRICS ===
   const fetchMetrics = useCallback(async () => {
+    // Guard contra llamadas paralelas
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    
     setIsLoading(true);
     setError(null);
 
@@ -256,11 +266,16 @@ export function useSupportMetricsDashboard(initialFilters?: Partial<DashboardFil
       console.error('[useSupportMetricsDashboard] Error:', err);
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
   }, [filters]);
 
   // === REALTIME SUBSCRIPTION ===
   const subscribeToRealtime = useCallback(() => {
+    // Guard contra suscripciones duplicadas
+    if (isSubscribedRef.current) return;
+    isSubscribedRef.current = true;
+    
     if (realtimeChannel.current) {
       supabase.removeChannel(realtimeChannel.current);
     }
@@ -286,8 +301,8 @@ export function useSupportMetricsDashboard(initialFilters?: Partial<DashboardFil
             };
             setRealtimeEvents(prev => [event, ...prev].slice(0, 50));
             
-            // Trigger metrics refresh
-            fetchMetrics();
+            // Debounce metrics refresh para evitar loops
+            // NO llamar fetchMetrics directamente - usar intervalo de autorefresh
           }
         }
       )
@@ -310,12 +325,17 @@ export function useSupportMetricsDashboard(initialFilters?: Partial<DashboardFil
         }
       )
       .subscribe();
-  }, [fetchMetrics]);
+  }, []); // Sin dependencias - evita re-suscripciones
 
   // === AUTO REFRESH ===
   const startAutoRefresh = useCallback((intervalMs = 60000) => {
     stopAutoRefresh();
-    autoRefreshInterval.current = setInterval(fetchMetrics, intervalMs);
+    autoRefreshInterval.current = setInterval(() => {
+      // Usar guard dentro del intervalo
+      if (!isFetchingRef.current) {
+        fetchMetrics();
+      }
+    }, intervalMs);
   }, [fetchMetrics]);
 
   const stopAutoRefresh = useCallback(() => {
@@ -324,25 +344,41 @@ export function useSupportMetricsDashboard(initialFilters?: Partial<DashboardFil
       autoRefreshInterval.current = null;
     }
   }, []);
+  
+  const unsubscribeFromRealtime = useCallback(() => {
+    if (realtimeChannel.current) {
+      supabase.removeChannel(realtimeChannel.current);
+      realtimeChannel.current = null;
+      isSubscribedRef.current = false;
+    }
+  }, []);
 
   // === FILTER UPDATES ===
   const updateFilters = useCallback((newFilters: Partial<DashboardFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   }, []);
 
-  // === LIFECYCLE ===
+  // === LIFECYCLE - CON GUARD ===
   useEffect(() => {
+    if (isInitializedRef.current) {
+      // Solo refetch si cambiaron los filtros
+      if (JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters)) {
+        prevFiltersRef.current = filters;
+        fetchMetrics();
+      }
+      return;
+    }
+    
+    isInitializedRef.current = true;
     fetchMetrics();
     subscribeToRealtime();
     startAutoRefresh();
 
     return () => {
       stopAutoRefresh();
-      if (realtimeChannel.current) {
-        supabase.removeChannel(realtimeChannel.current);
-      }
+      unsubscribeFromRealtime();
     };
-  }, [fetchMetrics, subscribeToRealtime, startAutoRefresh, stopAutoRefresh]);
+  }, [filters]); // Solo reacciona a cambios de filtros
 
   // Refetch when filters change
   useEffect(() => {
