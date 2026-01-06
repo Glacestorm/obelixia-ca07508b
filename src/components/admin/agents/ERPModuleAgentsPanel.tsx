@@ -1,6 +1,7 @@
 /**
  * ERPModuleAgentsPanel - Panel de gestión de agentes especializados por módulo ERP
  * Arquitectura: Supervisor → Dominios → Módulos
+ * Incluye métricas en tiempo real, historial de decisiones y alertas inteligentes
  */
 
 import { useState, useEffect } from 'react';
@@ -40,9 +41,16 @@ import {
   Target,
   TrendingUp,
   Eye,
-  Lightbulb
+  Lightbulb,
+  Bell,
+  MessageSquare,
+  History
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
+import { useERPAgentNotifications } from '@/hooks/admin/agents/useERPAgentNotifications';
+import { ERPRealTimeMetrics } from './ERPRealTimeMetrics';
+import { ERPAutonomousDecisionHistory } from './ERPAutonomousDecisionHistory';
+import { ERPAgentConversationHistory } from './ERPAgentConversationHistory';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -65,10 +73,13 @@ const cardVariants = {
 };
 
 export function ERPModuleAgentsPanel() {
-  const [activeTab, setActiveTab] = useState<'supervisor' | 'domains' | 'insights'>('supervisor');
+  const [activeTab, setActiveTab] = useState<'supervisor' | 'domains' | 'insights' | 'metrics' | 'decisions' | 'conversations'>('supervisor');
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [selectedAgent, setSelectedAgent] = useState<ModuleAgent | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
+
+  // Hook de notificaciones
+  const { notifications, stats: notificationStats } = useERPAgentNotifications({ autoGenerate: true });
 
   const {
     isLoading,
@@ -236,18 +247,35 @@ export function ERPModuleAgentsPanel() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="supervisor" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Supervisor
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="supervisor" className="flex items-center gap-1 text-xs">
+            <Brain className="h-3 w-3" />
+            <span className="hidden sm:inline">Supervisor</span>
           </TabsTrigger>
-          <TabsTrigger value="domains" className="flex items-center gap-2">
-            <Network className="h-4 w-4" />
-            Dominios
+          <TabsTrigger value="domains" className="flex items-center gap-1 text-xs">
+            <Network className="h-3 w-3" />
+            <span className="hidden sm:inline">Dominios</span>
           </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Insights
+          <TabsTrigger value="metrics" className="flex items-center gap-1 text-xs">
+            <Activity className="h-3 w-3" />
+            <span className="hidden sm:inline">Métricas</span>
+          </TabsTrigger>
+          <TabsTrigger value="decisions" className="flex items-center gap-1 text-xs">
+            <History className="h-3 w-3" />
+            <span className="hidden sm:inline">Decisiones</span>
+          </TabsTrigger>
+          <TabsTrigger value="conversations" className="flex items-center gap-1 text-xs">
+            <MessageSquare className="h-3 w-3" />
+            <span className="hidden sm:inline">Historial</span>
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="flex items-center gap-1 text-xs relative">
+            <Bell className="h-3 w-3" />
+            <span className="hidden sm:inline">Alertas</span>
+            {notificationStats.critical > 0 && (
+              <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
+                {notificationStats.critical}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -545,6 +573,24 @@ export function ERPModuleAgentsPanel() {
               })}
             </div>
           </ScrollArea>
+        </TabsContent>
+
+        {/* Metrics Tab */}
+        <TabsContent value="metrics" className="space-y-4">
+          <ERPRealTimeMetrics 
+            domainAgents={domainAgents}
+            insights={insights}
+          />
+        </TabsContent>
+
+        {/* Decisions Tab */}
+        <TabsContent value="decisions" className="space-y-4">
+          <ERPAutonomousDecisionHistory />
+        </TabsContent>
+
+        {/* Conversations Tab */}
+        <TabsContent value="conversations" className="space-y-4">
+          <ERPAgentConversationHistory />
         </TabsContent>
 
         {/* Insights Tab */}
