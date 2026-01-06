@@ -22,7 +22,8 @@ import {
   MoreHorizontal,
   RefreshCw,
   Loader2,
-  Scale
+  Scale,
+  ShoppingCart
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -40,6 +41,7 @@ interface RFQListTableProps {
   onViewRFQ?: (rfq: RFQ) => void;
   onEditRFQ?: (rfq: RFQ) => void;
   onCompareQuotes?: (rfq: RFQ) => void;
+  onConvertToPO?: (rfq: RFQ) => void;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -58,7 +60,7 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
   urgent: { label: 'Urgente', color: 'text-red-500' },
 };
 
-export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuotes }: RFQListTableProps) {
+export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuotes, onConvertToPO }: RFQListTableProps) {
   const { rfqs, isLoading, fetchRFQs, updateRFQStatus, deleteRFQ } = useERPRFQ();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -252,6 +254,15 @@ export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuote
                             }}>
                               <Scale className="h-4 w-4 mr-2" />
                               Comparar cotizaciones
+                            </DropdownMenuItem>
+                          )}
+                          {rfq.status === 'awarded' && (
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onConvertToPO?.(rfq);
+                            }}>
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Crear orden de compra
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />

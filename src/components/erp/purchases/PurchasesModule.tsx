@@ -26,6 +26,7 @@ import { RFQListTable } from './RFQListTable';
 import { RFQDialog } from './RFQDialog';
 import { SupplierQuoteDialog } from './SupplierQuoteDialog';
 import { QuoteComparisonPanel } from './QuoteComparisonPanel';
+import { ConvertToPODialog } from './ConvertToPODialog';
 import { type RFQ } from '@/hooks/erp/useERPRFQ';
 
 const statusColors: Record<string, string> = {
@@ -73,6 +74,7 @@ export function PurchasesModule() {
   const [rfqDialogOpen, setRfqDialogOpen] = useState(false);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [comparisonPanelOpen, setComparisonPanelOpen] = useState(false);
+  const [convertToPODialogOpen, setConvertToPODialogOpen] = useState(false);
   const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null);
 
   useEffect(() => {
@@ -235,6 +237,10 @@ export function PurchasesModule() {
                     setSelectedRFQ(rfq);
                     setComparisonPanelOpen(true);
                   }}
+                  onConvertToPO={(rfq) => {
+                    setSelectedRFQ(rfq);
+                    setConvertToPODialogOpen(true);
+                  }}
                 />
               </TabsContent>
 
@@ -343,6 +349,12 @@ export function PurchasesModule() {
         <QuoteComparisonPanel 
           open={comparisonPanelOpen} 
           onOpenChange={setComparisonPanelOpen}
+          rfq={selectedRFQ}
+          onSuccess={loadData}
+        />
+        <ConvertToPODialog 
+          open={convertToPODialogOpen} 
+          onOpenChange={setConvertToPODialogOpen}
           rfq={selectedRFQ}
           onSuccess={loadData}
         />

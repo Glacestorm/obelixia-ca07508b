@@ -7,3 +7,4 @@ export { PurchaseOrderDialog } from './PurchaseOrderDialog';
 export { SupplierDialog } from './SupplierDialog';
 export { GoodsReceiptDialog } from './GoodsReceiptDialog';
 export { SupplierInvoiceDialog } from './SupplierInvoiceDialog';
+export { ConvertToPODialog } from './ConvertToPODialog';
