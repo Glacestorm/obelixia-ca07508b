@@ -6,3 +6,4 @@ export { ModuleAgentWidget } from './ModuleAgentWidget';
 export { SupervisorAgentsDashboard } from './SupervisorAgentsDashboard';
 export { AgentHelpSheet } from './AgentHelpSheet';
 export { UltraCRMAgentsDashboard } from './UltraCRMAgentsDashboard';
+export { DynamicModuleRegistryPanel } from './DynamicModuleRegistryPanel';

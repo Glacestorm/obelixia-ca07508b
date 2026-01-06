@@ -41,3 +41,15 @@ export type {
   RATE_LIMIT,
   AGENT_HELP_REGISTRY,
 } from './agentHelpTypes';
+
+// Sistema de Registro Dinámico de Módulos
+export { useDynamicModuleRegistry, AGENT_TEMPLATES } from './dynamicModuleRegistry';
+export type {
+  ModuleDomain,
+  AgentCapabilityLevel,
+  DynamicModuleDefinition,
+  DynamicAgentDefinition,
+  AgentMetrics,
+  SupervisorRegistration,
+  RegistryEvent
+} from './dynamicModuleRegistry';
