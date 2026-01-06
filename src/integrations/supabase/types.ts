@@ -43337,6 +43337,10 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      user_is_chat_participant: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_accounting_sync: {
         Args: { p_company_id: string }
         Returns: Json
