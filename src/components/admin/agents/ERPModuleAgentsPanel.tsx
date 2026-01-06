@@ -466,13 +466,14 @@ export function ERPModuleAgentsPanel() {
         </TabsContent>
 
         {/* Domains Tab - Detalle */}
-        <TabsContent value="domains" className="space-y-4">
-          <ScrollArea className="h-[600px]">
-            <div className="space-y-4 pr-4">
+        <TabsContent value="domains" className="space-y-2">
+          <ScrollArea className="h-[calc(100vh-320px)] min-h-[400px]">
+            <div className="space-y-2 pr-4">
               {domainAgents.map((domain) => {
                 const DomainIcon = DOMAIN_ICONS[domain.domain];
                 const config = DOMAIN_CONFIG[domain.domain];
                 const isExpanded = expandedDomains.has(domain.id);
+                const activeCount = domain.moduleAgents.filter(a => a.status === 'active' || a.status === 'analyzing').length;
 
                 return (
                   <Collapsible 
@@ -480,46 +481,50 @@ export function ERPModuleAgentsPanel() {
                     open={isExpanded} 
                     onOpenChange={() => toggleDomain(domain.id)}
                   >
-                    <Card>
+                    <Card className="overflow-hidden">
                       <CollapsibleTrigger asChild>
-                        <CardHeader className={cn(
-                          "cursor-pointer hover:bg-muted/50 transition-colors",
-                          "bg-gradient-to-r",
+                        <div className={cn(
+                          "cursor-pointer hover:opacity-90 transition-all",
+                          "bg-gradient-to-r px-4 py-3",
                           config.color,
-                          "text-white rounded-t-lg"
+                          "text-white"
                         )}>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="p-2 rounded-lg bg-white/20">
-                                <DomainIcon className="h-6 w-6" />
+                              <div className="p-1.5 rounded-lg bg-white/20">
+                                <DomainIcon className="h-5 w-5" />
                               </div>
                               <div>
-                                <CardTitle className="text-lg">{domain.name}</CardTitle>
-                                <CardDescription className="text-white/80">
+                                <h3 className="font-semibold text-sm">{domain.name}</h3>
+                                <p className="text-xs text-white/80">
                                   {domain.moduleAgents.length} agentes especializados
-                                </CardDescription>
+                                </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge className={cn("text-xs", getStatusColor(domain.status))}>
+                            <div className="flex items-center gap-3">
+                              <div className="hidden sm:flex items-center gap-2 text-xs text-white/80">
+                                <Activity className="h-3.5 w-3.5" />
+                                <span>{activeCount} activos</span>
+                              </div>
+                              <Badge variant="secondary" className="text-[10px] bg-white/20 text-white border-0">
                                 {getStatusLabel(domain.status)}
                               </Badge>
-                              {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                             </div>
                           </div>
-                        </CardHeader>
+                        </div>
                       </CollapsibleTrigger>
 
                       <CollapsibleContent>
-                        <CardContent className="pt-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <CardContent className="p-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                             {domain.moduleAgents.map((agent) => (
                               <motion.div
                                 key={agent.id}
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 className={cn(
-                                  "p-3 rounded-lg border transition-all",
+                                  "p-2.5 rounded-lg border transition-all text-xs",
                                   agent.status === 'active' ? "border-green-500/30 bg-green-500/5" :
                                   agent.status === 'analyzing' ? "border-blue-500/30 bg-blue-500/5" :
                                   agent.status === 'paused' ? "border-yellow-500/30 bg-yellow-500/5" :
@@ -527,44 +532,27 @@ export function ERPModuleAgentsPanel() {
                                   "border-border"
                                 )}
                               >
-                                <div className="flex items-start justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
-                                    <span className="font-medium text-sm">{agent.name}</span>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", getStatusColor(agent.status))} />
+                                    <span className="font-medium truncate">{agent.name}</span>
                                   </div>
                                   <Switch
                                     checked={agent.status !== 'paused'}
                                     onCheckedChange={(checked) => toggleAgent(agent.id, checked)}
-                                    className="scale-75"
+                                    className="scale-[0.6] -mr-1"
                                   />
                                 </div>
 
-                                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                                  {agent.description}
-                                </p>
-
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {agent.capabilities.slice(0, 2).map((cap, idx) => (
-                                    <Badge key={idx} variant="secondary" className="text-[10px]">
-                                      {cap.replace(/_/g, ' ')}
-                                    </Badge>
-                                  ))}
-                                  {agent.capabilities.length > 2 && (
-                                    <Badge variant="outline" className="text-[10px]">
-                                      +{agent.capabilities.length - 2}
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center justify-between pt-2 border-t">
-                                  <span className="text-xs text-muted-foreground">
+                                <div className="flex items-center justify-between pt-1.5 border-t border-border/50">
+                                  <span className="text-muted-foreground">
                                     P{agent.priority} • {agent.confidenceThreshold}%
                                   </span>
-                                  <div className="flex gap-1">
+                                  <div className="flex gap-0.5">
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 px-2"
+                                      className="h-6 w-6 p-0"
                                       onClick={() => executeModuleAgent(agent.id, {})}
                                       disabled={isLoading || agent.status === 'paused'}
                                     >
@@ -573,7 +561,7 @@ export function ERPModuleAgentsPanel() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 px-2"
+                                      className="h-6 w-6 p-0"
                                       onClick={() => {
                                         setSelectedAgent(agent);
                                         setShowConfigDialog(true);
