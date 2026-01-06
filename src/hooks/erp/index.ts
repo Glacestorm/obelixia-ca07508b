@@ -24,6 +24,10 @@ export { useERPFinancialRatios } from './useERPFinancialRatios';
 export { useERPCashFlow } from './useERPCashFlow';
 export { useERPBudget } from './useERPBudget';
 export { useERPAdvancedRatios } from './useERPAdvancedRatios';
+export { useERPFinancialStatements } from './useERPFinancialStatements';
+export type { 
+  AccountBalance, TrialBalanceData, IncomeStatementData, BalanceSheetData 
+} from './useERPFinancialStatements';
 
 // Treasury hooks
 export { useERPTreasury } from './useERPTreasury';

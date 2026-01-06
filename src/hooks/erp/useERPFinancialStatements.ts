@@ -8,6 +8,42 @@ import { supabase } from '@/integrations/supabase/client';
 import { useERPContext } from './useERPContext';
 import { toast } from 'sonner';
 
+// Helper to fetch entries with optional date filters
+async function fetchPostedEntries(
+  companyId: string,
+  dateFrom?: string,
+  dateTo?: string
+): Promise<{ ids: string[]; error: Error | null }> {
+  try {
+    // Cast to unknown first, then any to completely bypass deep type issues
+    const client = supabase as unknown as {
+      from: (table: string) => {
+        select: (cols: string) => {
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => {
+              gte: (col: string, val: string) => any;
+              lte: (col: string, val: string) => any;
+              then: (fn: any) => any;
+            };
+          };
+        };
+      };
+    };
+    
+    const baseQuery = client.from('erp_journal_entries').select('id').eq('company_id', companyId).eq('status', 'posted');
+    
+    let finalQuery: any = baseQuery;
+    if (dateFrom) finalQuery = finalQuery.gte('entry_date', dateFrom);
+    if (dateTo) finalQuery = finalQuery.lte('entry_date', dateTo);
+
+    const { data, error } = await finalQuery;
+    if (error) return { ids: [], error };
+    return { ids: (data as { id: string }[])?.map(e => e.id) || [], error: null };
+  } catch (err) {
+    return { ids: [], error: err as Error };
+  }
+}
+
 export interface AccountBalance {
   accountId: string;
   accountCode: string;
@@ -114,20 +150,14 @@ export function useERPFinancialStatements() {
 
       if (accountsError) throw accountsError;
 
-      // Build query for posted entries
-      let entriesQuery = supabase
-        .from('erp_journal_entries')
-        .select('id')
-        .eq('company_id', currentCompany.id)
-        .eq('status', 'posted');
+      // Get posted entries with date filters using helper
+      const { ids: entryIds, error: entriesError } = await fetchPostedEntries(
+        currentCompany.id,
+        dateFrom,
+        dateTo
+      );
 
-      if (dateFrom) entriesQuery = entriesQuery.gte('entry_date', dateFrom);
-      if (dateTo) entriesQuery = entriesQuery.lte('entry_date', dateTo);
-
-      const { data: entries, error: entriesError } = await entriesQuery;
       if (entriesError) throw entriesError;
-
-      const entryIds = entries?.map(e => e.id) || [];
       let balances: Record<string, { debit: number; credit: number }> = {};
 
       if (entryIds.length > 0) {
@@ -209,19 +239,14 @@ export function useERPFinancialStatements() {
 
       if (accountsError) throw accountsError;
 
-      let entriesQuery = supabase
-        .from('erp_journal_entries')
-        .select('id')
-        .eq('company_id', currentCompany.id)
-        .eq('status', 'posted');
-
-      if (dateFrom) entriesQuery = entriesQuery.gte('entry_date', dateFrom);
-      if (dateTo) entriesQuery = entriesQuery.lte('entry_date', dateTo);
-
-      const { data: entries, error: entriesError } = await entriesQuery;
+      // Use helper to avoid type depth issues
+      const { ids: entryIds, error: entriesError } = await fetchPostedEntries(
+        currentCompany.id,
+        dateFrom,
+        dateTo
+      );
       if (entriesError) throw entriesError;
 
-      const entryIds = entries?.map(e => e.id) || [];
       const accountIds = accounts?.map((a: any) => a.id) || [];
 
       let accountBalances: Record<string, number> = {};
@@ -332,18 +357,14 @@ export function useERPFinancialStatements() {
 
       if (accountsError) throw accountsError;
 
-      let entriesQuery = supabase
-        .from('erp_journal_entries')
-        .select('id')
-        .eq('company_id', currentCompany.id)
-        .eq('status', 'posted');
-
-      if (asOfDate) entriesQuery = entriesQuery.lte('entry_date', asOfDate);
-
-      const { data: entries, error: entriesError } = await entriesQuery;
+      // Use helper to avoid type depth issues
+      const { ids: entryIds, error: entriesError } = await fetchPostedEntries(
+        currentCompany.id,
+        undefined,
+        asOfDate
+      );
       if (entriesError) throw entriesError;
 
-      const entryIds = entries?.map(e => e.id) || [];
       const accountIds = accounts?.map((a: any) => a.id) || [];
 
       let accountBalances: Record<string, number> = {};
