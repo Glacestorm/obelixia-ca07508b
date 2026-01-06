@@ -32,13 +32,15 @@ import {
   Pause,
   Loader2,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useCRMModuleAgents, CRM_AGENT_CONFIG, CRMModuleAgent } from '@/hooks/crm/agents';
+import { AgentHelpSheet } from '@/components/admin/agents/help/AgentHelpSheet';
 
 // Mapeo de iconos
 const AGENT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -59,12 +61,14 @@ function AgentCard({
   config,
   onExecute, 
   onChat,
+  onHelp,
   isLoading 
 }: { 
   agent: CRMModuleAgent;
   config: typeof CRM_AGENT_CONFIG[keyof typeof CRM_AGENT_CONFIG];
   onExecute: () => void;
   onChat: () => void;
+  onHelp: () => void;
   isLoading: boolean;
 }) {
   const Icon = AGENT_ICONS[agent.type] || Bot;
@@ -143,6 +147,15 @@ function AgentCard({
             >
               <MessageSquare className="h-3 w-3" />
             </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 w-7 p-0"
+              onClick={onHelp}
+              title="Ayuda del agente"
+            >
+              <HelpCircle className="h-3 w-3" />
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -156,6 +169,7 @@ export function CRMAgentsPanel() {
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'agent'; content: string }>>([]);
   const [isChatting, setIsChatting] = useState(false);
+  const [helpAgentId, setHelpAgentId] = useState<string | null>(null);
 
   const {
     isLoading,
@@ -287,6 +301,7 @@ export function CRMAgentsPanel() {
                   config={CRM_AGENT_CONFIG[agent.type]}
                   onExecute={() => handleExecute(agent.id)}
                   onChat={() => handleChat(agent.id)}
+                  onHelp={() => setHelpAgentId(agent.type)}
                   isLoading={isLoading && agent.status === 'analyzing'}
                 />
               ))}
@@ -437,6 +452,14 @@ export function CRMAgentsPanel() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Agent Help Sheet */}
+      <AgentHelpSheet
+        open={!!helpAgentId}
+        onOpenChange={(open) => !open && setHelpAgentId(null)}
+        agentId={helpAgentId || ''}
+        agentType="crm"
+      />
     </div>
   );
 }
