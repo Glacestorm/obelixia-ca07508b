@@ -10,3 +10,6 @@ export { SupplierInvoiceDialog } from './SupplierInvoiceDialog';
 export { ConvertToPODialog } from './ConvertToPODialog';
 export { RFQHistoryPanel } from './RFQHistoryPanel';
 export { RFQReportsPanel } from './RFQReportsPanel';
+export { PurchaseOrdersTable } from './PurchaseOrdersTable';
+export { GoodsReceiptsTable } from './GoodsReceiptsTable';
+export { SupplierInvoicesTable } from './SupplierInvoicesTable';

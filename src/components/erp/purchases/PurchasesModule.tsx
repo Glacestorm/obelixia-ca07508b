@@ -14,7 +14,7 @@ import {
   Package, ShoppingCart, Truck, FileText, 
   Plus, Search, RefreshCw, Loader2, Users, FileSearch
 } from 'lucide-react';
-import { useERPPurchases } from '@/hooks/erp/useERPPurchases';
+import { useERPPurchases, PurchaseOrder, GoodsReceipt, SupplierInvoice } from '@/hooks/erp/useERPPurchases';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -29,7 +29,11 @@ import { QuoteComparisonPanel } from './QuoteComparisonPanel';
 import { ConvertToPODialog } from './ConvertToPODialog';
 import { RFQHistoryPanel } from './RFQHistoryPanel';
 import { RFQReportsPanel } from './RFQReportsPanel';
+import { PurchaseOrdersTable } from './PurchaseOrdersTable';
+import { GoodsReceiptsTable } from './GoodsReceiptsTable';
+import { SupplierInvoicesTable } from './SupplierInvoicesTable';
 import { type RFQ } from '@/hooks/erp/useERPRFQ';
+import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-500',
