@@ -1,4 +1,5 @@
 export { PurchasesModule } from './PurchasesModule';
+export { PurchasesDashboard } from './PurchasesDashboard';
 export { RFQListTable } from './RFQListTable';
 export { RFQDialog } from './RFQDialog';
 export { SupplierQuoteDialog } from './SupplierQuoteDialog';
