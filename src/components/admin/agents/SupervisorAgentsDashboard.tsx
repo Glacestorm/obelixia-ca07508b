@@ -51,12 +51,14 @@ import {
   Database,
   Radio,
   GitBranch,
-  Plus
+  Plus,
+  HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { AgentHelpSheet } from './help/AgentHelpSheet';
 
 // === TIPOS ===
 interface AgentModule {
@@ -814,6 +816,14 @@ export function SupervisorAgentsDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Supervisor Help Sheet */}
+      <AgentHelpSheet
+        open={false}
+        onOpenChange={() => {}}
+        agentId="supervisor"
+        agentType="supervisor"
+      />
     </div>
   );
 }
