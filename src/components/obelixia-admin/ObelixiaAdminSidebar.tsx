@@ -52,6 +52,7 @@ const categories: NavCategory[] = [
       { id: 'crm-migration', label: 'CRM Migration', icon: Users },
       { id: 'accounting', label: 'Contabilidad Interna', icon: Euro },
       { id: 'erp', label: 'ERP Modular', icon: Package },
+      { id: 'crm', label: 'CRM Modular', icon: Users },
     ]
   },
   {
@@ -153,6 +154,8 @@ const categories: NavCategory[] = [
       { id: 'adaptive-auth', label: 'Adaptive Auth', icon: Key },
       { id: 'advanced-ml', label: 'Advanced ML', icon: Brain },
       { id: 'licenses', label: 'Licencias Enterprise', icon: Key },
+      { id: 'feature-flags', label: 'Feature Flags', icon: Target },
+      { id: 'vertical-accounting', label: 'Contabilidad Vertical', icon: BarChart3 },
     ]
   }
 ];
