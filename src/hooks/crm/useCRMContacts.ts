@@ -2,7 +2,12 @@
  * Hook para gestión de contactos CRM
  */
 
-import { useState, useCallback, useEffect } from 'react';
+/**
+ * Hook para gestión de contactos CRM
+ * Fase 2: Corregido para evitar loops de useEffect
+ */
+
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCRMContext } from './useCRMContext';
 import { toast } from 'sonner';
@@ -216,10 +221,34 @@ export function useCRMContacts() {
     }
   }, []);
 
-  // Fetch on mount and when workspace changes
+  // Ref para controlar mount inicial - evita loops infinitos
+  const isInitialMount = useRef(true);
+  const prevWorkspaceId = useRef<string | null>(null);
+  const prevFiltersJson = useRef<string>('{}');
+
+  // Fetch on mount only
   useEffect(() => {
-    fetchContacts();
-  }, [fetchContacts]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (currentWorkspace?.id) {
+        prevWorkspaceId.current = currentWorkspace.id;
+        prevFiltersJson.current = JSON.stringify(filters);
+        fetchContacts();
+      }
+      return;
+    }
+    
+    // Solo refetch si workspace o filters cambiaron
+    const currentFiltersJson = JSON.stringify(filters);
+    if (
+      currentWorkspace?.id !== prevWorkspaceId.current ||
+      currentFiltersJson !== prevFiltersJson.current
+    ) {
+      prevWorkspaceId.current = currentWorkspace?.id || null;
+      prevFiltersJson.current = currentFiltersJson;
+      fetchContacts();
+    }
+  }, [currentWorkspace?.id, filters, fetchContacts]);
 
   // Stats
   const stats = {

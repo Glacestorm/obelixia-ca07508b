@@ -1,9 +1,10 @@
 /**
  * CRM Context - Gestión de contexto multi-workspace
  * Equivalente a useERPContext para el módulo CRM
+ * Fase 4: Reforzado con guards para evitar fetches duplicados
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { CRMWorkspace, CRMUserWorkspace, CRMPermission } from '@/types/crm';
@@ -37,17 +38,42 @@ export function CRMProvider({ children }: CRMProviderProps) {
   const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Guards para evitar fetches duplicados
+  const isFetchingRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cargar workspaces del usuario
   const refreshWorkspaces = useCallback(async () => {
+    // Guard: evitar llamadas duplicadas
+    if (isFetchingRef.current) {
+      console.log('[useCRMContext] Fetch already in progress, skipping');
+      return;
+    }
+
+    // Guard: si el userId no cambió y ya tenemos datos, no refetch
+    if (lastUserIdRef.current === user?.id && workspaces.length > 0) {
+      console.log('[useCRMContext] Same user, using cached data');
+      return;
+    }
+
     if (!user?.id) {
       setWorkspaces([]);
       setCurrentWorkspaceState(null);
       setUserPermissions([]);
       setIsLoading(false);
+      lastUserIdRef.current = null;
       return;
     }
 
+    // Cancelar request anterior si existe
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -75,6 +101,7 @@ export function CRMProvider({ children }: CRMProviderProps) {
         .filter((w: any) => w && w.is_active);
 
       setWorkspaces(workspaceList);
+      lastUserIdRef.current = user.id;
 
       // Establecer workspace por defecto
       const defaultUW = (userWorkspaces || []).find((uw: any) => uw.is_default);
@@ -92,13 +119,18 @@ export function CRMProvider({ children }: CRMProviderProps) {
         setUserPermissions(permissions);
       }
     } catch (err) {
+      // Ignorar errores de abort
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       const message = err instanceof Error ? err.message : 'Error cargando workspaces';
       setError(message);
       console.error('[useCRMContext] Error:', err);
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, workspaces.length]);
 
   // Cambiar workspace actual
   const setCurrentWorkspace = useCallback(async (workspace: CRMWorkspace | null) => {
@@ -150,9 +182,22 @@ export function CRMProvider({ children }: CRMProviderProps) {
   }, [userPermissions]);
 
   // Cargar al iniciar o cambiar usuario
+  const prevUserIdEffect = useRef<string | null>(null);
+  
   useEffect(() => {
-    refreshWorkspaces();
-  }, [refreshWorkspaces]);
+    // Solo ejecutar si el userId realmente cambió
+    if (prevUserIdEffect.current !== user?.id) {
+      prevUserIdEffect.current = user?.id || null;
+      refreshWorkspaces();
+    }
+    
+    // Cleanup: cancelar requests pendientes
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [user?.id, refreshWorkspaces]);
 
   return (
     <CRMContext.Provider value={{
