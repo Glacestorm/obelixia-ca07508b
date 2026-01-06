@@ -8405,6 +8405,85 @@ export type Database = {
           },
         ]
       }
+      crm_team_members: {
+        Row: {
+          created_at: string
+          id: string
+          joined_at: string | null
+          role: string | null
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "crm_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_teams: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          lead_id: string | null
+          name: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id?: string | null
+          name: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id?: string | null
+          name?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_teams_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_user_workspaces: {
         Row: {
           created_at: string
@@ -42792,6 +42871,14 @@ export type Database = {
       get_turnover_tier: { Args: { p_turnover: number }; Returns: string }
       get_volume_discount: { Args: { p_cnae_count: number }; Returns: number }
       get_zscore_coefficients: { Args: { p_sector_key: string }; Returns: Json }
+      has_crm_permission: {
+        Args: {
+          _permission_key: string
+          _user_id: string
+          _workspace_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

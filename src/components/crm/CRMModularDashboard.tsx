@@ -32,10 +32,11 @@ import {
   CalendarDays,
   DollarSign,
   PieChart,
-  Activity
+  Activity,
+  Settings
 } from 'lucide-react';
 
-// CRM Module Components (inline para evitar ciclo de dependencias)
+// CRM Module Components
 import { EnhancedKanbanBoard, KanbanColumn, KanbanItem } from '@/components/crm';
 import { OmnichannelInbox, Conversation, Message } from '@/components/crm/omnichannel';
 import { SentimentAnalysisDashboard } from '@/components/crm/sentiment';
@@ -43,6 +44,7 @@ import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
 import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
+import { CRMWorkspaceSelector, CRMTeamsManager } from '@/components/crm/config';
 import { cn } from '@/lib/utils';
 
 // Demo data (simplificado del original)
@@ -94,10 +96,16 @@ export function CRMModularDashboard() {
     { id: 'automation', name: 'Automatización', icon: Zap, color: 'bg-purple-500', installed: true },
     { id: 'reports', name: 'Reportes', icon: BarChart3, color: 'bg-orange-500', installed: true },
     { id: 'agents', name: 'Agentes IA', icon: Bot, color: 'bg-cyan-500', installed: true },
+    { id: 'config', name: 'Configuración', icon: Settings, color: 'bg-slate-500', installed: true },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Header with Workspace Selector */}
+      <div className="flex items-center justify-between">
+        <CRMWorkspaceSelector showCreateButton />
+      </div>
+      
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
@@ -136,6 +144,10 @@ export function CRMModularDashboard() {
           <TabsTrigger value="agents" className="gap-2">
             <Bot className="h-4 w-4" />
             Agentes IA
+          </TabsTrigger>
+          <TabsTrigger value="config" className="gap-2">
+            <Settings className="h-4 w-4" />
+            Config
           </TabsTrigger>
         </TabsList>
 
@@ -324,6 +336,47 @@ export function CRMModularDashboard() {
         {/* Agents Tab */}
         <TabsContent value="agents">
           <ERPModuleAgentsPanel />
+        </TabsContent>
+
+        {/* Config Tab */}
+        <TabsContent value="config" className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <CRMTeamsManager />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Configuración del Workspace
+                </CardTitle>
+                <CardDescription>
+                  Ajustes generales del CRM
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <p className="font-medium">Notificaciones</p>
+                    <p className="text-sm text-muted-foreground">Alertas de nuevos leads</p>
+                  </div>
+                  <Badge variant="secondary">Activado</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <p className="font-medium">Auto-asignación</p>
+                    <p className="text-sm text-muted-foreground">Distribuir leads automáticamente</p>
+                  </div>
+                  <Badge variant="secondary">Activado</Badge>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <p className="font-medium">SLA por defecto</p>
+                    <p className="text-sm text-muted-foreground">Tiempo de respuesta: 30min</p>
+                  </div>
+                  <Badge>30 min</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
