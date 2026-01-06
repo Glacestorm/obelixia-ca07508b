@@ -56,6 +56,8 @@ const AdvancedMLDashboard = lazy(() => import('@/components/admin/AdvancedMLDash
 const SystemHealthMonitor = lazy(() => import('@/components/admin/SystemHealthMonitor').then(m => ({ default: m.SystemHealthMonitor })));
 const MetricsExplorer = lazy(() => import('@/components/admin/MetricsExplorer').then(m => ({ default: m.MetricsExplorer })));
 const SystemHelpPanel = lazy(() => import('@/components/obelixia-admin/SystemHelpPanel').then(m => ({ default: m.SystemHelpPanel })));
+const AdvancedFeatureFlagsManager = lazy(() => import('@/components/admin/feature-flags/AdvancedFeatureFlagsManager').then(m => ({ default: m.AdvancedFeatureFlagsManager })));
+const VerticalAccountingDashboard = lazy(() => import('@/components/erp/accounting/vertical/VerticalAccountingDashboard').then(m => ({ default: m.VerticalAccountingDashboard })));
 
 // Premium components
 import { ObelixiaAdminSidebar } from '@/components/obelixia-admin/ObelixiaAdminSidebar';
@@ -137,6 +139,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
     }
     if (tab === 'erp') {
       navigate('/obelixia-admin/erp');
+      return;
+    }
+    if (tab === 'crm') {
+      navigate('/obelixia-admin/crm');
       return;
     }
     setActiveTab(tab);
@@ -615,6 +621,18 @@ const ObelixiaTeamAdmin: React.FC = () => {
               <TabsContent value="system-help" className="m-0">
                 <Suspense fallback={<LoadingFallback />}>
                   <SystemHelpPanel />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="feature-flags" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <AdvancedFeatureFlagsManager />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="vertical-accounting" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <VerticalAccountingDashboard />
                 </Suspense>
               </TabsContent>
             </Tabs>
