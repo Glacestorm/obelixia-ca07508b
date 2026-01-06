@@ -157,11 +157,7 @@ export function useClientInstallations() {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
-  // Fetch inicial - solo al montar
-  useEffect(() => { 
-    fetchInstallations(); 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchInstallations(); }, [fetchInstallations]);
 
   const createInstallation = async (data: { installation_name: string; preferred_locale?: string }) => {
     try {
@@ -332,11 +328,7 @@ export function useRemoteAccessSessions(installationId?: string) {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
-  // Fetch inicial - solo al montar
-  useEffect(() => { 
-    fetchSessions(); 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
   const createSession = async (data: { installation_id: string; support_user_id: string; session_type: string; session_status: string; started_at: string; client_notified_at: string }) => {
     try {
@@ -491,11 +483,7 @@ export function useInstallationDownloads(installationId?: string) {
     return () => stopAutoRefresh();
   }, [stopAutoRefresh]);
 
-  // Fetch inicial - solo al montar
-  useEffect(() => { 
-    fetchDownloads(); 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { fetchDownloads(); }, [fetchDownloads]);
 
   const recordDownload = async (data: { installation_id: string; module_id: string; module_version: string; locale_downloaded: string; download_type: string; download_status: string }) => {
     try {

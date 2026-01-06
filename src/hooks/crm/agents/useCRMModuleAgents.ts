@@ -56,20 +56,9 @@ export function useCRMModuleAgents() {
   const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
   const autonomousInterval = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
-  const agentsRef = useRef<CRMModuleAgent[]>([]);
-
-  // Sincronizar ref con estado
-  agentsRef.current = agents;
-
-  // Ref para evitar doble inicialización
-  const isInitializedRef = useRef(false);
 
   // === INICIALIZAR AGENTES ===
   const initializeAgents = useCallback(async (): Promise<CRMModuleAgent[] | null> => {
-    // Evitar reinicialización
-    if (isInitializedRef.current) return agents;
-    isInitializedRef.current = true;
-
     setIsLoading(true);
 
     try {
@@ -142,13 +131,8 @@ export function useCRMModuleAgents() {
     setIsLoading(true);
 
     try {
-      const targetAgent = agentsRef.current.find(a => a.id === agentId);
+      const targetAgent = agents.find(a => a.id === agentId);
       if (!targetAgent) throw new Error('Agente no encontrado');
-
-      // Actualizar estado a analyzing
-      setAgents(prev => prev.map(a =>
-        a.id === agentId ? { ...a, status: 'analyzing' as const } : a
-      ));
 
       // Actualizar estado a analyzing
       setAgents(prev => prev.map(a =>
@@ -198,7 +182,7 @@ export function useCRMModuleAgents() {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [agents]);
 
   // === SUPERVISOR: ORQUESTAR TODOS ===
   const supervisorOrchestrate = useCallback(async (
@@ -215,7 +199,7 @@ export function useCRMModuleAgents() {
           action: 'supervisor_orchestrate',
           objective,
           priority: priority || 'medium',
-          agents: agentsRef.current.map(a => ({
+          agents: agents.map(a => ({
             id: a.id,
             type: a.type,
             status: a.status,
@@ -262,7 +246,7 @@ export function useCRMModuleAgents() {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [agents]);
 
   // === ENVIAR MENSAJE A AGENTE ===
   const sendMessageToAgent = useCallback(async (
@@ -271,7 +255,7 @@ export function useCRMModuleAgents() {
     context?: Record<string, unknown>
   ): Promise<string | null> => {
     try {
-      const targetAgent = agentsRef.current.find(a => a.id === agentId);
+      const targetAgent = agents.find(a => a.id === agentId);
       if (!targetAgent) throw new Error('Agente no encontrado');
 
       const { data, error } = await supabase.functions.invoke('crm-module-agent', {
@@ -296,7 +280,7 @@ export function useCRMModuleAgents() {
       toast.error('Error al comunicar con el agente');
       return null;
     }
-  }, []);
+  }, [agents]);
 
   // === CONFIGURAR AGENTE ===
   const configureAgent = useCallback(async (
