@@ -33,6 +33,7 @@ import { PurchaseOrdersTable } from './PurchaseOrdersTable';
 import { GoodsReceiptsTable } from './GoodsReceiptsTable';
 import { SupplierInvoicesTable } from './SupplierInvoicesTable';
 import { PurchasesDashboard } from './PurchasesDashboard';
+import { PurchaseTraceabilityPanel } from './PurchaseTraceabilityPanel';
 import { type RFQ } from '@/hooks/erp/useERPRFQ';
 import { toast } from 'sonner';
 
@@ -84,7 +85,9 @@ export function PurchasesModule() {
   const [convertToPODialogOpen, setConvertToPODialogOpen] = useState(false);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const [reportsPanelOpen, setReportsPanelOpen] = useState(false);
+  const [traceabilityPanelOpen, setTraceabilityPanelOpen] = useState(false);
   const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
 
   useEffect(() => {
     if (currentCompany) {
@@ -274,24 +277,28 @@ export function PurchasesModule() {
               </TabsContent>
 
               <TabsContent value="orders">
-                <DocumentTable
-                  data={orders}
-                  columns={['Número', 'Proveedor', 'Fecha', 'Entrega prevista', 'Total', 'Estado']}
-                  renderRow={(o) => (
-                    <TableRow key={o.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-mono">{o.document_number || '-'}</TableCell>
-                      <TableCell>{o.supplier_name || '-'}</TableCell>
-                      <TableCell>{formatDate(o.order_date)}</TableCell>
-                      <TableCell>{formatDate(o.expected_date)}</TableCell>
-                      <TableCell className="font-medium">{formatCurrency(o.total)}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[o.status]}>{statusLabels[o.status]}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  search={search}
-                  searchField="supplier_name"
-                  emptyMessage="No hay pedidos de compra"
+                <PurchaseOrdersTable
+                  onCreateNew={() => setOrderDialogOpen(true)}
+                  onViewOrder={(order) => {
+                    setSelectedOrder(order);
+                    toast.info('Detalle de pedido próximamente');
+                  }}
+                  onEditOrder={(order) => {
+                    setSelectedOrder(order);
+                    setOrderDialogOpen(true);
+                  }}
+                  onCreateReceipt={(order) => {
+                    setSelectedOrder(order);
+                    setReceiptDialogOpen(true);
+                  }}
+                  onCreateInvoice={(order) => {
+                    setSelectedOrder(order);
+                    setInvoiceDialogOpen(true);
+                  }}
+                  onViewTraceability={(order) => {
+                    setSelectedOrder(order);
+                    setTraceabilityPanelOpen(true);
+                  }}
                 />
               </TabsContent>
 
@@ -395,6 +402,11 @@ export function PurchasesModule() {
         <RFQReportsPanel 
           open={reportsPanelOpen} 
           onOpenChange={setReportsPanelOpen}
+        />
+        <PurchaseTraceabilityPanel 
+          open={traceabilityPanelOpen} 
+          onOpenChange={setTraceabilityPanelOpen}
+          order={selectedOrder}
         />
       </CardContent>
     </Card>

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Search, Plus, RefreshCw, MoreHorizontal, Eye, Edit, 
-  Truck, FileText, CheckCircle, XCircle, Loader2, Printer
+  Truck, FileText, CheckCircle, XCircle, Loader2, Printer, TrendingUp
 } from 'lucide-react';
 import { useERPPurchases, PurchaseOrder } from '@/hooks/erp/useERPPurchases';
 import { format } from 'date-fns';
@@ -39,6 +39,7 @@ interface PurchaseOrdersTableProps {
   onEditOrder?: (order: PurchaseOrder) => void;
   onCreateReceipt?: (order: PurchaseOrder) => void;
   onCreateInvoice?: (order: PurchaseOrder) => void;
+  onViewTraceability?: (order: PurchaseOrder) => void;
 }
 
 export function PurchaseOrdersTable({ 
@@ -46,7 +47,8 @@ export function PurchaseOrdersTable({
   onViewOrder, 
   onEditOrder, 
   onCreateReceipt,
-  onCreateInvoice
+  onCreateInvoice,
+  onViewTraceability
 }: PurchaseOrdersTableProps) {
   const { fetchPurchaseOrders, updatePurchaseOrderStatus, isLoading } = useERPPurchases();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -158,6 +160,9 @@ export function PurchaseOrdersTable({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => onViewOrder?.(order)}>
                             <Eye className="h-4 w-4 mr-2" /> Ver detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onViewTraceability?.(order)}>
+                            <TrendingUp className="h-4 w-4 mr-2" /> Trazabilidad
                           </DropdownMenuItem>
                           
                           {order.status === 'draft' && (

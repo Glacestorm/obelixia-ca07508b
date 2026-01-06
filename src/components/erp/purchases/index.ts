@@ -14,3 +14,4 @@ export { RFQReportsPanel } from './RFQReportsPanel';
 export { PurchaseOrdersTable } from './PurchaseOrdersTable';
 export { GoodsReceiptsTable } from './GoodsReceiptsTable';
 export { SupplierInvoicesTable } from './SupplierInvoicesTable';
+export { PurchaseTraceabilityPanel } from './PurchaseTraceabilityPanel';
