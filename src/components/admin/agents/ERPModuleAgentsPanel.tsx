@@ -40,11 +40,9 @@ import {
   Target,
   TrendingUp,
   Eye,
-  Lightbulb,
-  HelpCircle
+  Lightbulb
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
-import { AgentHelpSheet } from './help/AgentHelpSheet';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -71,8 +69,6 @@ export function ERPModuleAgentsPanel() {
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [selectedAgent, setSelectedAgent] = useState<ModuleAgent | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
-  const [helpAgentId, setHelpAgentId] = useState<string | null>(null);
-  const [helpAgentType, setHelpAgentType] = useState<'erp' | 'supervisor'>('erp');
 
   const {
     isLoading,
@@ -152,17 +148,6 @@ export function ERPModuleAgentsPanel() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => {
-              setHelpAgentId('supervisor');
-              setHelpAgentType('supervisor');
-            }}
-            title="Ayuda del Supervisor"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </Button>
           <Button variant="outline" size="sm" onClick={initializeAgents} disabled={isLoading}>
             <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
             Actualizar
@@ -725,14 +710,6 @@ export function ERPModuleAgentsPanel() {
           Última actualización: {formatDistanceToNow(lastRefresh, { locale: es, addSuffix: true })}
         </p>
       )}
-
-      {/* Agent Help Sheet */}
-      <AgentHelpSheet
-        open={!!helpAgentId}
-        onOpenChange={(open) => !open && setHelpAgentId(null)}
-        agentId={helpAgentId || ''}
-        agentType={helpAgentType}
-      />
     </div>
   );
 }

@@ -911,6 +911,3 @@ verify_jwt = true
 
 [functions.logistics-accounting]
 verify_jwt = true
-
-[functions.agent-help-assistant]
-verify_jwt = false
