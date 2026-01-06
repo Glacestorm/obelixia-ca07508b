@@ -359,6 +359,94 @@ export function useERPRFQ() {
     }
   }, []);
 
+  // === FETCH QUOTE LINES ===
+  const fetchQuoteLines = useCallback(async (quoteId: string): Promise<SupplierQuoteLine[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('erp_supplier_quote_lines')
+        .select('*')
+        .eq('quote_id', quoteId);
+
+      if (error) throw error;
+      return (data || []) as SupplierQuoteLine[];
+    } catch (error) {
+      console.error('[useERPRFQ] fetchQuoteLines error:', error);
+      return [];
+    }
+  }, []);
+
+  // === EVALUATE QUOTE ===
+  const evaluateQuote = useCallback(async (
+    quoteId: string,
+    scores: { quality: number; delivery: number; service: number }
+  ): Promise<boolean> => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('erp_supplier_quotes')
+        .update({
+          score_quality: scores.quality,
+          score_delivery: scores.delivery,
+          score_service: scores.service,
+          status: 'evaluated',
+          evaluated_by: userData?.user?.id,
+          evaluated_at: new Date().toISOString()
+        })
+        .eq('id', quoteId);
+
+      if (error) throw error;
+
+      toast.success('Cotización evaluada');
+      return true;
+    } catch (error) {
+      console.error('[useERPRFQ] evaluateQuote error:', error);
+      toast.error('Error al evaluar cotización');
+      return false;
+    }
+  }, []);
+
+  // === AWARD RFQ ===
+  const awardRFQ = useCallback(async (rfqId: string, winnerQuoteId: string): Promise<boolean> => {
+    try {
+      // Marcar todas las cotizaciones como no ganadoras
+      await supabase
+        .from('erp_supplier_quotes')
+        .update({ is_winner: false, status: 'rejected' })
+        .eq('rfq_id', rfqId);
+
+      // Marcar la ganadora
+      const { data: winnerData, error: winnerError } = await supabase
+        .from('erp_supplier_quotes')
+        .update({ is_winner: true, status: 'accepted' })
+        .eq('id', winnerQuoteId)
+        .select('supplier_id')
+        .single();
+
+      if (winnerError) throw winnerError;
+
+      // Actualizar el RFQ
+      const { error: rfqError } = await supabase
+        .from('erp_rfq')
+        .update({
+          status: 'awarded',
+          awarded_to: winnerData?.supplier_id,
+          awarded_at: new Date().toISOString()
+        })
+        .eq('id', rfqId);
+
+      if (rfqError) throw rfqError;
+
+      toast.success('RFQ adjudicado exitosamente');
+      await fetchRFQs();
+      return true;
+    } catch (error) {
+      console.error('[useERPRFQ] awardRFQ error:', error);
+      toast.error('Error al adjudicar RFQ');
+      return false;
+    }
+  }, [fetchRFQs]);
+
   // === CREATE QUOTE ===
   const createQuote = useCallback(async (input: CreateQuoteInput): Promise<SupplierQuote | null> => {
     setIsLoading(true);
@@ -476,7 +564,10 @@ export function useERPRFQ() {
     deleteRFQ,
     // Quote Actions
     fetchQuotesByRFQ,
+    fetchQuoteLines,
     createQuote,
+    evaluateQuote,
+    awardRFQ,
     // Utils
     generateRFQNumber,
     setCurrentRFQ

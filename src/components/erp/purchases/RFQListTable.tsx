@@ -21,7 +21,8 @@ import {
   AlertTriangle,
   MoreHorizontal,
   RefreshCw,
-  Loader2
+  Loader2,
+  Scale
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,6 +39,7 @@ interface RFQListTableProps {
   onCreateNew?: () => void;
   onViewRFQ?: (rfq: RFQ) => void;
   onEditRFQ?: (rfq: RFQ) => void;
+  onCompareQuotes?: (rfq: RFQ) => void;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -56,7 +58,7 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
   urgent: { label: 'Urgente', color: 'text-red-500' },
 };
 
-export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ }: RFQListTableProps) {
+export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ, onCompareQuotes }: RFQListTableProps) {
   const { rfqs, isLoading, fetchRFQs, updateRFQStatus, deleteRFQ } = useERPRFQ();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -242,6 +244,15 @@ export function RFQListTable({ onCreateNew, onViewRFQ, onEditRFQ }: RFQListTable
                                 Enviar a proveedores
                               </DropdownMenuItem>
                             </>
+                          )}
+                          {(rfq.status === 'in_progress' || rfq.status === 'evaluated') && (
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              onCompareQuotes?.(rfq);
+                            }}>
+                              <Scale className="h-4 w-4 mr-2" />
+                              Comparar cotizaciones
+                            </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
                           {rfq.status !== 'cancelled' && rfq.status !== 'awarded' && (
