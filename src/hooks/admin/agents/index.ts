@@ -21,16 +21,6 @@ export type {
   AgentCommunication
 } from './erpAgentTypes';
 
-// Sistema de Ayuda para Agentes
-export { useAgentHelpSystem } from './useAgentHelpSystem';
-export type {
-  KnowledgeEntry,
-  AgentHelpIndex,
-  HelpMessage,
-  AgentHelpContext,
-  LearnedKnowledge
-} from './useAgentHelpSystem';
-
 // Tipos completos
 export * from './erpAgentTypes';
 

@@ -4,6 +4,3 @@ export { AdvancedAgentsDashboard } from './AdvancedAgentsDashboard';
 export { ERPModuleAgentsPanel } from './ERPModuleAgentsPanel';
 export { ModuleAgentWidget } from './ModuleAgentWidget';
 export { SupervisorAgentsDashboard } from './SupervisorAgentsDashboard';
-
-// Sistema de Ayuda
-export { AgentHelpMenu, AgentHelpButton } from './help';
