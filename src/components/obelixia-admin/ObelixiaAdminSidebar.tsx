@@ -174,67 +174,30 @@ const categories: NavCategory[] = [
   }
 ];
 
-const colorMap: Record<string, { bg: string; text: string; border: string; hover: string }> = {
-  blue: { 
-    bg: 'bg-blue-500/10', 
-    text: 'text-blue-400', 
-    border: 'border-blue-500/30',
-    hover: 'hover:bg-blue-500/20'
-  },
-  emerald: { 
-    bg: 'bg-emerald-500/10', 
-    text: 'text-emerald-400', 
-    border: 'border-emerald-500/30',
-    hover: 'hover:bg-emerald-500/20'
-  },
-  purple: { 
-    bg: 'bg-purple-500/10', 
-    text: 'text-purple-400', 
-    border: 'border-purple-500/30',
-    hover: 'hover:bg-purple-500/20'
-  },
-  amber: { 
-    bg: 'bg-amber-500/10', 
-    text: 'text-amber-400', 
-    border: 'border-amber-500/30',
-    hover: 'hover:bg-amber-500/20'
-  },
-  teal: { 
-    bg: 'bg-teal-500/10', 
-    text: 'text-teal-400', 
-    border: 'border-teal-500/30',
-    hover: 'hover:bg-teal-500/20'
-  },
-  slate: { 
-    bg: 'bg-slate-500/10', 
-    text: 'text-slate-400', 
-    border: 'border-slate-500/30',
-    hover: 'hover:bg-slate-500/20'
-  },
-  rose: { 
-    bg: 'bg-rose-500/10', 
-    text: 'text-rose-400', 
-    border: 'border-rose-500/30',
-    hover: 'hover:bg-rose-500/20'
-  },
-  cyan: { 
-    bg: 'bg-cyan-500/10', 
-    text: 'text-cyan-400', 
-    border: 'border-cyan-500/30',
-    hover: 'hover:bg-cyan-500/20'
-  },
-  indigo: { 
-    bg: 'bg-indigo-500/10', 
-    text: 'text-indigo-400', 
-    border: 'border-indigo-500/30',
-    hover: 'hover:bg-indigo-500/20'
-  },
-  violet: { 
-    bg: 'bg-violet-500/10', 
-    text: 'text-violet-400', 
-    border: 'border-violet-500/30',
-    hover: 'hover:bg-violet-500/20'
-  }
+const colorMapDark: Record<string, { bg: string; text: string; border: string; hover: string }> = {
+  blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30', hover: 'hover:bg-blue-500/20' },
+  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', hover: 'hover:bg-emerald-500/20' },
+  purple: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30', hover: 'hover:bg-purple-500/20' },
+  amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', hover: 'hover:bg-amber-500/20' },
+  teal: { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/30', hover: 'hover:bg-teal-500/20' },
+  slate: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30', hover: 'hover:bg-slate-500/20' },
+  rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30', hover: 'hover:bg-rose-500/20' },
+  cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30', hover: 'hover:bg-cyan-500/20' },
+  indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30', hover: 'hover:bg-indigo-500/20' },
+  violet: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30', hover: 'hover:bg-violet-500/20' }
+};
+
+const colorMapLight: Record<string, { bg: string; text: string; border: string; hover: string }> = {
+  blue: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300', hover: 'hover:bg-blue-200' },
+  emerald: { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-300', hover: 'hover:bg-emerald-200' },
+  purple: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', hover: 'hover:bg-purple-200' },
+  amber: { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300', hover: 'hover:bg-amber-200' },
+  teal: { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-300', hover: 'hover:bg-teal-200' },
+  slate: { bg: 'bg-slate-200', text: 'text-slate-700', border: 'border-slate-300', hover: 'hover:bg-slate-300' },
+  rose: { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-300', hover: 'hover:bg-rose-200' },
+  cyan: { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-300', hover: 'hover:bg-cyan-200' },
+  indigo: { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300', hover: 'hover:bg-indigo-200' },
+  violet: { bg: 'bg-violet-100', text: 'text-violet-700', border: 'border-violet-300', hover: 'hover:bg-violet-200' }
 };
 
 export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
@@ -276,15 +239,16 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
       >
         {/* Header - Solo botón de colapso */}
         <div className={cn(
-          'flex items-center justify-end px-3 py-3 border-b border-slate-700/50'
+          'flex items-center justify-end px-3 py-3 border-b',
+          isDark ? 'border-slate-700/50' : 'border-slate-200'
         )}>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onCollapsedChange?.(!isCollapsed)}
             className={cn(
-              "h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-700/50",
-              isDark ? "" : "hover:bg-slate-200"
+              "h-8 w-8",
+              isDark ? "text-slate-400 hover:text-white hover:bg-slate-700/50" : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
             )}
           >
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -296,6 +260,7 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
           <nav className="space-y-2">
             {categories.map((category) => {
               const isExpanded = expandedCategories.includes(category.id);
+              const colorMap = isDark ? colorMapDark : colorMapLight;
               const colors = colorMap[category.color];
               const isCategoryActive = category.items.some(item => item.id === activeTab);
               const CategoryIcon = category.icon;
@@ -317,7 +282,7 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
                       >
                         <div className={cn(
                           'flex items-center justify-center w-8 h-8 rounded-lg transition-colors',
-                          isCategoryActive ? colors.bg : 'bg-slate-800/50',
+                          isCategoryActive ? colors.bg : isDark ? 'bg-slate-800/50' : 'bg-slate-200',
                           'group-hover:scale-105'
                         )}>
                           <CategoryIcon className={cn('w-4 h-4', colors.text)} />
@@ -327,13 +292,14 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
                           <>
                             <span className={cn(
                               'flex-1 text-sm font-medium transition-colors',
-                              isCategoryActive ? colors.text : 'text-slate-300 group-hover:text-white'
+                              isCategoryActive ? colors.text : isDark ? 'text-slate-300 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'
                             )}>
                               {category.label}
                             </span>
                             <ChevronDown 
                               className={cn(
-                                'w-4 h-4 text-slate-500 transition-transform duration-200',
+                                'w-4 h-4 transition-transform duration-200',
+                                isDark ? 'text-slate-500' : 'text-slate-600',
                                 isExpanded && 'rotate-180'
                               )} 
                             />
@@ -358,7 +324,7 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className={cn('space-y-0.5', !isCollapsed && 'pl-4 ml-4 border-l border-slate-700/50')}>
+                        <div className={cn('space-y-0.5', !isCollapsed && cn('pl-4 ml-4 border-l', isDark ? 'border-slate-700/50' : 'border-slate-300'))}>
                           {category.items.map((item) => {
                             const isActive = activeTab === item.id;
                             const ItemIcon = item.icon;
@@ -373,13 +339,13 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
                                       'text-left group',
                                       isActive 
                                         ? `${colors.bg} ${colors.text} font-medium`
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-700/30',
+                                        : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-700/30' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200',
                                       isCollapsed && 'justify-center px-2'
                                     )}
                                   >
                                     <ItemIcon className={cn(
                                       'w-4 h-4 transition-colors flex-shrink-0',
-                                      isActive ? colors.text : 'text-slate-500 group-hover:text-slate-300'
+                                      isActive ? colors.text : isDark ? 'text-slate-500 group-hover:text-slate-300' : 'text-slate-500 group-hover:text-slate-700'
                                     )} />
                                     
                                     {!isCollapsed && (
@@ -415,16 +381,18 @@ export const ObelixiaAdminSidebar: React.FC<ObelixiaAdminSidebarProps> = ({
 
         {/* Footer */}
         <div className={cn(
-          'px-3 py-3 border-t border-slate-700/50',
+          'px-3 py-3 border-t',
+          isDark ? 'border-slate-700/50' : 'border-slate-200',
           isCollapsed && 'px-2'
         )}>
           <div className={cn(
-            'flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-800/50',
+            'flex items-center gap-2 px-2 py-1.5 rounded-lg',
+            isDark ? 'bg-slate-800/50' : 'bg-slate-100',
             isCollapsed && 'justify-center'
           )}>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             {!isCollapsed && (
-              <span className="text-xs text-slate-400">Sistema activo</span>
+              <span className={cn('text-xs', isDark ? 'text-slate-400' : 'text-slate-600')}>Sistema activo</span>
             )}
           </div>
         </div>
