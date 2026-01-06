@@ -27,6 +27,8 @@ import { RFQDialog } from './RFQDialog';
 import { SupplierQuoteDialog } from './SupplierQuoteDialog';
 import { QuoteComparisonPanel } from './QuoteComparisonPanel';
 import { ConvertToPODialog } from './ConvertToPODialog';
+import { RFQHistoryPanel } from './RFQHistoryPanel';
+import { RFQReportsPanel } from './RFQReportsPanel';
 import { type RFQ } from '@/hooks/erp/useERPRFQ';
 
 const statusColors: Record<string, string> = {
@@ -75,6 +77,8 @@ export function PurchasesModule() {
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [comparisonPanelOpen, setComparisonPanelOpen] = useState(false);
   const [convertToPODialogOpen, setConvertToPODialogOpen] = useState(false);
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const [reportsPanelOpen, setReportsPanelOpen] = useState(false);
   const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null);
 
   useEffect(() => {
@@ -241,6 +245,11 @@ export function PurchasesModule() {
                     setSelectedRFQ(rfq);
                     setConvertToPODialogOpen(true);
                   }}
+                  onViewHistory={(rfq) => {
+                    setSelectedRFQ(rfq);
+                    setHistoryPanelOpen(true);
+                  }}
+                  onOpenReports={() => setReportsPanelOpen(true)}
                 />
               </TabsContent>
 
@@ -357,6 +366,15 @@ export function PurchasesModule() {
           onOpenChange={setConvertToPODialogOpen}
           rfq={selectedRFQ}
           onSuccess={loadData}
+        />
+        <RFQHistoryPanel 
+          open={historyPanelOpen} 
+          onOpenChange={setHistoryPanelOpen}
+          rfq={selectedRFQ}
+        />
+        <RFQReportsPanel 
+          open={reportsPanelOpen} 
+          onOpenChange={setReportsPanelOpen}
         />
       </CardContent>
     </Card>
