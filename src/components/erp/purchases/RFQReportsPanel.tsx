@@ -22,6 +22,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 interface RFQReportsPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  embedded?: boolean;
 }
 
 interface RFQStats {
@@ -50,7 +51,7 @@ const statusColors: Record<string, string> = {
 
 const CHART_COLORS = ['#3b82f6', '#22c55e', '#eab308', '#ef4444', '#8b5cf6', '#f97316', '#6b7280'];
 
-export function RFQReportsPanel({ open, onOpenChange }: RFQReportsPanelProps) {
+export function RFQReportsPanel({ open, onOpenChange, embedded = false }: RFQReportsPanelProps) {
   const [stats, setStats] = useState<RFQStats | null>(null);
   const [rfqs, setRfqs] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -150,230 +151,244 @@ export function RFQReportsPanel({ open, onOpenChange }: RFQReportsPanelProps) {
 
   const completionRate = stats ? ((stats.awarded / Math.max(stats.total, 1)) * 100).toFixed(1) : '0';
 
+  const content = (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          <h3 className="font-semibold">Reportes de RFQ</h3>
+        </div>
+        <Select value={period} onValueChange={setPeriod}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7">7 días</SelectItem>
+            <SelectItem value="30">30 días</SelectItem>
+            <SelectItem value="90">90 días</SelectItem>
+            <SelectItem value="365">1 año</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <ScrollArea className={embedded ? "h-[500px]" : "h-[calc(100vh-100px)]"}>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : (
+          <Tabs defaultValue="overview" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="overview">Resumen</TabsTrigger>
+              <TabsTrigger value="suppliers">Proveedores</TabsTrigger>
+              <TabsTrigger value="trends">Tendencias</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-4">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Total RFQs</span>
+                    </div>
+                    <p className="text-2xl font-bold mt-1">{stats?.total || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Adjudicadas</span>
+                    </div>
+                    <p className="text-2xl font-bold mt-1">{stats?.awarded || 0}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Tasa éxito</span>
+                    </div>
+                    <p className="text-2xl font-bold mt-1">{completionRate}%</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Prom. cotizaciones</span>
+                    </div>
+                    <p className="text-2xl font-bold mt-1">{stats?.avgQuotesPerRFQ.toFixed(1) || 0}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Status Distribution */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Distribución por estado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {statusChartData.length > 0 ? (
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={statusChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={40}
+                            outerRadius={70}
+                            paddingAngle={2}
+                            dataKey="value"
+                            label={({ name, value }) => `${name}: ${value}`}
+                          >
+                            {statusChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No hay datos para mostrar
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="suppliers" className="space-y-4">
+              {/* Top Suppliers */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Top proveedores por cotizaciones</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {supplierPerformance.length > 0 ? (
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={supplierPerformance} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis dataKey="name" type="category" width={100} fontSize={12} />
+                          <Tooltip />
+                          <Bar dataKey="quotes" fill="hsl(var(--primary))" radius={4} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No hay datos de proveedores
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Supplier List */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Rendimiento de proveedores</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {suppliers.slice(0, 5).map((supplier) => (
+                    <div key={supplier.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">{supplier.company_name}</p>
+                        <p className="text-xs text-muted-foreground">{supplier.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="outline">{supplier.rating || 'N/A'} ⭐</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="trends" className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Métricas clave
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Tasa de adjudicación</span>
+                      <span>{completionRate}%</span>
+                    </div>
+                    <Progress value={parseFloat(completionRate)} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Participación de proveedores</span>
+                      <span>{Math.min((stats?.avgQuotesPerRFQ || 0) * 33, 100).toFixed(0)}%</span>
+                    </div>
+                    <Progress value={Math.min((stats?.avgQuotesPerRFQ || 0) * 33, 100)} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>RFQs en proceso</span>
+                      <span>{stats ? ((stats.in_progress + stats.evaluated) / Math.max(stats.total, 1) * 100).toFixed(0) : 0}%</span>
+                    </div>
+                    <Progress 
+                      value={stats ? ((stats.in_progress + stats.evaluated) / Math.max(stats.total, 1) * 100) : 0} 
+                      className="h-2" 
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Tiempos promedio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Tiempo de respuesta</span>
+                    <Badge variant="secondary">~3.5 días</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Tiempo hasta adjudicación</span>
+                    <Badge variant="secondary">~7 días</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Tiempo de evaluación</span>
+                    <Badge variant="secondary">~2 días</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
+      </ScrollArea>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="p-4">{content}</div>;
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl">
         <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Reportes de RFQ
-            </SheetTitle>
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 días</SelectItem>
-                <SelectItem value="30">30 días</SelectItem>
-                <SelectItem value="90">90 días</SelectItem>
-                <SelectItem value="365">1 año</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <SheetTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Reportes de RFQ
+          </SheetTitle>
         </SheetHeader>
-
-        <ScrollArea className="h-[calc(100vh-100px)] mt-4 pr-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          ) : (
-            <Tabs defaultValue="overview" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview">Resumen</TabsTrigger>
-                <TabsTrigger value="suppliers">Proveedores</TabsTrigger>
-                <TabsTrigger value="trends">Tendencias</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-4">
-                {/* KPI Cards */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Total RFQs</span>
-                      </div>
-                      <p className="text-2xl font-bold mt-1">{stats?.total || 0}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        <Award className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Adjudicadas</span>
-                      </div>
-                      <p className="text-2xl font-bold mt-1">{stats?.awarded || 0}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Tasa éxito</span>
-                      </div>
-                      <p className="text-2xl font-bold mt-1">{completionRate}%</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Prom. cotizaciones</span>
-                      </div>
-                      <p className="text-2xl font-bold mt-1">{stats?.avgQuotesPerRFQ.toFixed(1) || 0}</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Status Distribution */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Distribución por estado</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {statusChartData.length > 0 ? (
-                      <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={statusChartData}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={40}
-                              outerRadius={70}
-                              paddingAngle={2}
-                              dataKey="value"
-                              label={({ name, value }) => `${name}: ${value}`}
-                            >
-                              {statusChartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        No hay datos para mostrar
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="suppliers" className="space-y-4">
-                {/* Top Suppliers */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Top proveedores por cotizaciones</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {supplierPerformance.length > 0 ? (
-                      <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={supplierPerformance} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" />
-                            <YAxis dataKey="name" type="category" width={100} fontSize={12} />
-                            <Tooltip />
-                            <Bar dataKey="quotes" fill="hsl(var(--primary))" radius={4} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        No hay datos de proveedores
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Supplier List */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Rendimiento de proveedores</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {suppliers.slice(0, 5).map((supplier) => (
-                      <div key={supplier.id} className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-sm">{supplier.company_name}</p>
-                          <p className="text-xs text-muted-foreground">{supplier.category}</p>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant="outline">{supplier.rating || 'N/A'} ⭐</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="trends" className="space-y-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Métricas clave
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Tasa de adjudicación</span>
-                        <span>{completionRate}%</span>
-                      </div>
-                      <Progress value={parseFloat(completionRate)} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Participación de proveedores</span>
-                        <span>{Math.min((stats?.avgQuotesPerRFQ || 0) * 33, 100).toFixed(0)}%</span>
-                      </div>
-                      <Progress value={Math.min((stats?.avgQuotesPerRFQ || 0) * 33, 100)} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>RFQs en proceso</span>
-                        <span>{stats ? ((stats.in_progress + stats.evaluated) / Math.max(stats.total, 1) * 100).toFixed(0) : 0}%</span>
-                      </div>
-                      <Progress 
-                        value={stats ? ((stats.in_progress + stats.evaluated) / Math.max(stats.total, 1) * 100) : 0} 
-                        className="h-2" 
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Tiempos promedio
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Tiempo de respuesta</span>
-                      <Badge variant="secondary">~3.5 días</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Tiempo hasta adjudicación</span>
-                      <Badge variant="secondary">~7 días</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Tiempo de evaluación</span>
-                      <Badge variant="secondary">~2 días</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          )}
-        </ScrollArea>
+        <div className="mt-4">{content}</div>
       </SheetContent>
     </Sheet>
   );

@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { 
   Package, ShoppingCart, Truck, FileText, 
-  Plus, Search, RefreshCw, Loader2, Users, FileSearch
+  Plus, Search, RefreshCw, Loader2, Users, FileSearch,
+  History, BarChart3, TrendingUp
 } from 'lucide-react';
 import { useERPPurchases, PurchaseOrder, GoodsReceipt, SupplierInvoice } from '@/hooks/erp/useERPPurchases';
 import { useERPContext } from '@/hooks/erp/useERPContext';
@@ -152,7 +153,7 @@ export function PurchasesModule() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6 mb-4">
+          <TabsList className="grid w-full grid-cols-9 mb-4">
             <TabsTrigger value="dashboard" className="gap-1">
               <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -176,6 +177,18 @@ export function PurchasesModule() {
             <TabsTrigger value="invoices" className="gap-1">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Facturas</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-1">
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">Historial</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="gap-1">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Reportes</span>
+            </TabsTrigger>
+            <TabsTrigger value="traceability" className="gap-1">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Trazabilidad</span>
             </TabsTrigger>
           </TabsList>
 
@@ -343,6 +356,32 @@ export function PurchasesModule() {
                   search={search}
                   searchField="supplier_name"
                   emptyMessage="No hay facturas de proveedor"
+                />
+              </TabsContent>
+
+              <TabsContent value="history">
+                <RFQHistoryPanel 
+                  open={true} 
+                  onOpenChange={() => {}}
+                  rfq={selectedRFQ}
+                  embedded={true}
+                />
+              </TabsContent>
+
+              <TabsContent value="reports">
+                <RFQReportsPanel 
+                  open={true} 
+                  onOpenChange={() => {}}
+                  embedded={true}
+                />
+              </TabsContent>
+
+              <TabsContent value="traceability">
+                <PurchaseTraceabilityPanel 
+                  open={true} 
+                  onOpenChange={() => {}}
+                  order={selectedOrder}
+                  embedded={true}
                 />
               </TabsContent>
             </>
