@@ -17850,6 +17850,144 @@ export type Database = {
           },
         ]
       }
+      erp_rfq: {
+        Row: {
+          awarded_at: string | null
+          awarded_to: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          evaluation_criteria: Json | null
+          expected_delivery_date: string | null
+          id: string
+          invited_suppliers: string[] | null
+          notes: string | null
+          priority: string | null
+          request_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          awarded_at?: string | null
+          awarded_to?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          evaluation_criteria?: Json | null
+          expected_delivery_date?: string | null
+          id?: string
+          invited_suppliers?: string[] | null
+          notes?: string | null
+          priority?: string | null
+          request_date?: string | null
+          response_deadline?: string | null
+          rfq_number: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          awarded_at?: string | null
+          awarded_to?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          evaluation_criteria?: Json | null
+          expected_delivery_date?: string | null
+          id?: string
+          invited_suppliers?: string[] | null
+          notes?: string | null
+          priority?: string | null
+          request_date?: string | null
+          response_deadline?: string | null
+          rfq_number?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_rfq_awarded_to_fkey"
+            columns: ["awarded_to"]
+            isOneToOne: false
+            referencedRelation: "erp_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_rfq_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_rfq_lines: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          is_required: boolean | null
+          order_index: number | null
+          product_id: string | null
+          quantity: number
+          rfq_id: string
+          specifications: string | null
+          target_price: number | null
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          is_required?: boolean | null
+          order_index?: number | null
+          product_id?: string | null
+          quantity?: number
+          rfq_id: string
+          specifications?: string | null
+          target_price?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_required?: boolean | null
+          order_index?: number | null
+          product_id?: string | null
+          quantity?: number
+          rfq_id?: string
+          specifications?: string | null
+          target_price?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_rfq_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "erp_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_rfq_lines_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "erp_rfq"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_role_permissions: {
         Row: {
           created_at: string | null
@@ -19416,6 +19554,187 @@ export type Database = {
           },
           {
             foreignKeyName: "erp_supplier_invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "erp_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_supplier_quote_lines: {
+        Row: {
+          alternative_description: string | null
+          created_at: string | null
+          description: string
+          discount_percent: number | null
+          id: string
+          is_alternative: boolean | null
+          notes: string | null
+          product_id: string | null
+          quantity: number
+          quote_id: string
+          rfq_line_id: string | null
+          subtotal: number | null
+          tax_rate: number | null
+          unit: string | null
+          unit_price: number
+          updated_at: string | null
+        }
+        Insert: {
+          alternative_description?: string | null
+          created_at?: string | null
+          description: string
+          discount_percent?: number | null
+          id?: string
+          is_alternative?: boolean | null
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number
+          quote_id: string
+          rfq_line_id?: string | null
+          subtotal?: number | null
+          tax_rate?: number | null
+          unit?: string | null
+          unit_price?: number
+          updated_at?: string | null
+        }
+        Update: {
+          alternative_description?: string | null
+          created_at?: string | null
+          description?: string
+          discount_percent?: number | null
+          id?: string
+          is_alternative?: boolean | null
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number
+          quote_id?: string
+          rfq_line_id?: string | null
+          subtotal?: number | null
+          tax_rate?: number | null
+          unit?: string | null
+          unit_price?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_supplier_quote_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "erp_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_supplier_quote_lines_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "erp_supplier_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_supplier_quote_lines_rfq_line_id_fkey"
+            columns: ["rfq_line_id"]
+            isOneToOne: false
+            referencedRelation: "erp_rfq_lines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_supplier_quotes: {
+        Row: {
+          attachments: Json | null
+          created_at: string | null
+          currency: string | null
+          delivery_days: number | null
+          delivery_terms: string | null
+          evaluated_at: string | null
+          evaluated_by: string | null
+          id: string
+          is_winner: boolean | null
+          notes: string | null
+          payment_terms: string | null
+          quote_date: string | null
+          quote_number: string | null
+          rfq_id: string
+          score_delivery: number | null
+          score_price: number | null
+          score_quality: number | null
+          score_service: number | null
+          score_total: number | null
+          status: string | null
+          subtotal: number | null
+          supplier_id: string
+          tax_amount: number | null
+          total: number | null
+          updated_at: string | null
+          validity_date: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          delivery_days?: number | null
+          delivery_terms?: string | null
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          id?: string
+          is_winner?: boolean | null
+          notes?: string | null
+          payment_terms?: string | null
+          quote_date?: string | null
+          quote_number?: string | null
+          rfq_id: string
+          score_delivery?: number | null
+          score_price?: number | null
+          score_quality?: number | null
+          score_service?: number | null
+          score_total?: number | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id: string
+          tax_amount?: number | null
+          total?: number | null
+          updated_at?: string | null
+          validity_date?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          delivery_days?: number | null
+          delivery_terms?: string | null
+          evaluated_at?: string | null
+          evaluated_by?: string | null
+          id?: string
+          is_winner?: boolean | null
+          notes?: string | null
+          payment_terms?: string | null
+          quote_date?: string | null
+          quote_number?: string | null
+          rfq_id?: string
+          score_delivery?: number | null
+          score_price?: number | null
+          score_quality?: number | null
+          score_service?: number | null
+          score_total?: number | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id?: string
+          tax_amount?: number | null
+          total?: number | null
+          updated_at?: string | null
+          validity_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_supplier_quotes_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "erp_rfq"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_supplier_quotes_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "erp_suppliers"

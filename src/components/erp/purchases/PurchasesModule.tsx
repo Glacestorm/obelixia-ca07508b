@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { 
   Package, ShoppingCart, Truck, FileText, 
-  Plus, Search, RefreshCw, Loader2, Users
+  Plus, Search, RefreshCw, Loader2, Users, FileSearch
 } from 'lucide-react';
 import { useERPPurchases } from '@/hooks/erp/useERPPurchases';
 import { useERPContext } from '@/hooks/erp/useERPContext';
@@ -22,6 +22,7 @@ import { PurchaseOrderDialog } from './PurchaseOrderDialog';
 import { SupplierDialog } from './SupplierDialog';
 import { GoodsReceiptDialog } from './GoodsReceiptDialog';
 import { SupplierInvoiceDialog } from './SupplierInvoiceDialog';
+import { RFQListTable } from './RFQListTable';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-500',
@@ -129,10 +130,14 @@ export function PurchasesModule() {
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="suppliers" className="gap-1">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Proveedores</span>
+            </TabsTrigger>
+            <TabsTrigger value="rfq" className="gap-1">
+              <FileSearch className="h-4 w-4" />
+              <span className="hidden sm:inline">Cotizaciones</span>
             </TabsTrigger>
             <TabsTrigger value="orders" className="gap-1">
               <ShoppingCart className="h-4 w-4" />
@@ -148,29 +153,31 @@ export function PurchasesModule() {
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex gap-2 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
+          {activeTab !== 'rfq' && (
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button 
+                className="gap-2"
+                onClick={() => {
+                  if (activeTab === 'suppliers') setSupplierDialogOpen(true);
+                  else if (activeTab === 'orders') setOrderDialogOpen(true);
+                  else if (activeTab === 'receipts') setReceiptDialogOpen(true);
+                  else if (activeTab === 'invoices') setInvoiceDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Nuevo
+              </Button>
             </div>
-            <Button 
-              className="gap-2"
-              onClick={() => {
-                if (activeTab === 'suppliers') setSupplierDialogOpen(true);
-                else if (activeTab === 'orders') setOrderDialogOpen(true);
-                else if (activeTab === 'receipts') setReceiptDialogOpen(true);
-                else if (activeTab === 'invoices') setInvoiceDialogOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo
-            </Button>
-          </div>
+          )}
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -199,6 +206,23 @@ export function PurchasesModule() {
                   search={search}
                   searchField="name"
                   emptyMessage="No hay proveedores"
+                />
+              </TabsContent>
+
+              <TabsContent value="rfq">
+                <RFQListTable 
+                  onCreateNew={() => {
+                    // TODO: Fase 2 - Abrir diálogo de creación
+                    console.log('Crear nueva solicitud de cotización');
+                  }}
+                  onViewRFQ={(rfq) => {
+                    // TODO: Fase 2 - Ver detalle del RFQ
+                    console.log('Ver RFQ:', rfq);
+                  }}
+                  onEditRFQ={(rfq) => {
+                    // TODO: Fase 2 - Editar RFQ
+                    console.log('Editar RFQ:', rfq);
+                  }}
                 />
               </TabsContent>
 
