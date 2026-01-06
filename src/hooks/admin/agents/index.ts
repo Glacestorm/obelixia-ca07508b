@@ -83,3 +83,17 @@ export type {
   LearningRecord,
   ChatMessage as AIAgentChatMessage
 } from './useERPAgentAI';
+
+// Sistema de IA Real para Agentes CRM
+export { useCRMAgentAI } from './useCRMAgentAI';
+export type {
+  CRMDomainAnalysis,
+  LeadScoreResult,
+  ChurnPrediction,
+  UpsellOpportunity,
+  PipelineOptimization,
+  CRMStrategicInsight,
+  CRMAgentRanking,
+  CRMLearningRecord,
+  CRMChatMessage
+} from './useCRMAgentAI';
