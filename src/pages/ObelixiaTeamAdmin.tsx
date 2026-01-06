@@ -59,6 +59,13 @@ const SystemHelpPanel = lazy(() => import('@/components/obelixia-admin/SystemHel
 const AdvancedFeatureFlagsManager = lazy(() => import('@/components/admin/feature-flags/AdvancedFeatureFlagsManager').then(m => ({ default: m.AdvancedFeatureFlagsManager })));
 const VerticalAccountingDashboard = lazy(() => import('@/components/erp/accounting/vertical/VerticalAccountingDashboard').then(m => ({ default: m.VerticalAccountingDashboard })));
 
+// IA & Agentes - Lazy loaded
+const UltraCRMAgentsDashboard = lazy(() => import('@/components/admin/agents/UltraCRMAgentsDashboard').then(m => ({ default: m.UltraCRMAgentsDashboard })));
+const DynamicModuleRegistryPanel = lazy(() => import('@/components/admin/agents/DynamicModuleRegistryPanel').then(m => ({ default: m.DynamicModuleRegistryPanel })));
+const ERPModuleAgentsPanel = lazy(() => import('@/components/admin/agents/ERPModuleAgentsPanel').then(m => ({ default: m.ERPModuleAgentsPanel })));
+const AgentOrchestratorDashboard = lazy(() => import('@/components/admin/agents/AgentOrchestratorDashboard').then(m => ({ default: m.AgentOrchestratorDashboard })));
+const AgentHelpDashboard = lazy(() => import('@/components/admin/agents/AgentHelpDashboard').then(m => ({ default: m.AgentHelpDashboard })));
+
 // Premium components
 import { ObelixiaAdminSidebar } from '@/components/obelixia-admin/ObelixiaAdminSidebar';
 import { ObelixiaAdminHeader } from '@/components/obelixia-admin/ObelixiaAdminHeader';
@@ -197,6 +204,12 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'metrics-explorer': 'Metrics Explorer',
       'automation-engine': 'Automation Engine',
       'licenses': 'Licencias Enterprise',
+      // IA & Agentes
+      'crm-agents': 'Ultra CRM Agents',
+      'erp-agents': 'ERP Module Agents',
+      'agent-registry': 'Registro Dinámico',
+      'agent-orchestrator': 'Orquestador General',
+      'agent-help': 'Ayuda Agentes',
     };
     return labels[tab] || tab;
   };
@@ -633,6 +646,37 @@ const ObelixiaTeamAdmin: React.FC = () => {
               <TabsContent value="vertical-accounting" className="m-0">
                 <Suspense fallback={<LoadingFallback />}>
                   <VerticalAccountingDashboard />
+                </Suspense>
+              </TabsContent>
+
+              {/* IA & Agentes */}
+              <TabsContent value="crm-agents" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <UltraCRMAgentsDashboard />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="erp-agents" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <ERPModuleAgentsPanel />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="agent-registry" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <DynamicModuleRegistryPanel />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="agent-orchestrator" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <AgentOrchestratorDashboard />
+                </Suspense>
+              </TabsContent>
+
+              <TabsContent value="agent-help" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <AgentHelpDashboard />
                 </Suspense>
               </TabsContent>
             </Tabs>

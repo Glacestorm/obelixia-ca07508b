@@ -7,7 +7,8 @@ import {
   Activity, ClipboardList, Shield, Newspaper, HelpCircle, Sparkles,
   Leaf, Globe, Bot, Building2, HeartPulse, Headphones, Brain, Boxes, Cpu,
   Gauge, Bell, MonitorCheck, Zap, Users, TrendingUp, ShieldCheck, 
-  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package
+  AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package,
+  Network, Layers3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -157,6 +158,19 @@ const categories: NavCategory[] = [
       { id: 'feature-flags', label: 'Feature Flags', icon: Target },
       { id: 'vertical-accounting', label: 'Contabilidad Vertical', icon: BarChart3 },
     ]
+  },
+  {
+    id: 'ia-agents',
+    label: 'IA & Agentes',
+    icon: Bot,
+    color: 'violet',
+    items: [
+      { id: 'crm-agents', label: 'Ultra CRM Agents', icon: Users },
+      { id: 'erp-agents', label: 'ERP Module Agents', icon: Package },
+      { id: 'agent-registry', label: 'Registro Dinámico', icon: Layers3 },
+      { id: 'agent-orchestrator', label: 'Orquestador', icon: Network },
+      { id: 'agent-help', label: 'Ayuda Agentes', icon: HelpCircle },
+    ]
   }
 ];
 
@@ -214,6 +228,12 @@ const colorMap: Record<string, { bg: string; text: string; border: string; hover
     text: 'text-indigo-400', 
     border: 'border-indigo-500/30',
     hover: 'hover:bg-indigo-500/20'
+  },
+  violet: { 
+    bg: 'bg-violet-500/10', 
+    text: 'text-violet-400', 
+    border: 'border-violet-500/30',
+    hover: 'hover:bg-violet-500/20'
   }
 };
 

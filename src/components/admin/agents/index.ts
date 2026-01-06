@@ -5,5 +5,6 @@ export { ERPModuleAgentsPanel } from './ERPModuleAgentsPanel';
 export { ModuleAgentWidget } from './ModuleAgentWidget';
 export { SupervisorAgentsDashboard } from './SupervisorAgentsDashboard';
 export { AgentHelpSheet } from './AgentHelpSheet';
+export { AgentHelpDashboard } from './AgentHelpDashboard';
 export { UltraCRMAgentsDashboard } from './UltraCRMAgentsDashboard';
 export { DynamicModuleRegistryPanel } from './DynamicModuleRegistryPanel';
