@@ -93,6 +93,9 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useCRMModuleAgents, CRM_AGENT_CONFIG } from '@/hooks/crm/agents';
 import type { CRMModuleAgent, CRMAgentInsight, CRMModuleType } from '@/hooks/crm/agents/crmAgentTypes';
+import { useCRMAgentNotifications } from '@/hooks/admin/agents/useCRMAgentNotifications';
+import { CRMRealTimeMetrics } from './CRMRealTimeMetrics';
+import { CRMAgentConversationHistory } from './CRMAgentConversationHistory';
 
 // === TIPOS EXTENDIDOS ===
 interface AgentDetailedMetrics {
@@ -997,26 +1000,34 @@ export function UltraCRMAgentsDashboard() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview" className="gap-2">
-            <Eye className="h-4 w-4" />
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="overview" className="gap-1.5">
+            <Eye className="h-3.5 w-3.5" />
             General
           </TabsTrigger>
-          <TabsTrigger value="agents" className="gap-2">
-            <Users className="h-4 w-4" />
-            Agentes ({agents.length})
+          <TabsTrigger value="agents" className="gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            Agentes
           </TabsTrigger>
-          <TabsTrigger value="supervisor" className="gap-2">
-            <Crown className="h-4 w-4" />
+          <TabsTrigger value="realtime" className="gap-1.5">
+            <Activity className="h-3.5 w-3.5" />
+            Tiempo Real
+          </TabsTrigger>
+          <TabsTrigger value="supervisor" className="gap-1.5">
+            <Crown className="h-3.5 w-3.5" />
             Supervisor
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
-            <PieChart className="h-4 w-4" />
+          <TabsTrigger value="analytics" className="gap-1.5">
+            <PieChart className="h-3.5 w-3.5" />
             Analytics
           </TabsTrigger>
-          <TabsTrigger value="insights" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Insights ({insights.length})
+          <TabsTrigger value="history" className="gap-1.5">
+            <History className="h-3.5 w-3.5" />
+            Historial
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" />
+            Insights
           </TabsTrigger>
         </TabsList>
 
@@ -1332,6 +1343,16 @@ export function UltraCRMAgentsDashboard() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Tab Tiempo Real - NUEVO */}
+        <TabsContent value="realtime" className="mt-4">
+          <CRMRealTimeMetrics />
+        </TabsContent>
+
+        {/* Tab Historial de Conversaciones - NUEVO */}
+        <TabsContent value="history" className="mt-4">
+          <CRMAgentConversationHistory />
         </TabsContent>
       </Tabs>
 

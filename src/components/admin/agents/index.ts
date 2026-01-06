@@ -8,3 +8,5 @@ export { AgentHelpSheet } from './AgentHelpSheet';
 export { AgentHelpDashboard } from './AgentHelpDashboard';
 export { UltraCRMAgentsDashboard } from './UltraCRMAgentsDashboard';
 export { DynamicModuleRegistryPanel } from './DynamicModuleRegistryPanel';
+export { CRMRealTimeMetrics } from './CRMRealTimeMetrics';
+export { CRMAgentConversationHistory } from './CRMAgentConversationHistory';
