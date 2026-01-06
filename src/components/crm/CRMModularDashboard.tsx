@@ -3,7 +3,7 @@
  * Similar a ERPModularDashboard pero para el módulo CRM
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -44,10 +44,12 @@ import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
 import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
-import { CRMWorkspaceSelector, CRMTeamsManager } from '@/components/crm/config';
+import { CRMWorkspaceSelector, CRMTeamsManager, CreateWorkspaceDialog } from '@/components/crm/config';
 import { ContactsManager } from '@/components/crm/contacts';
 import { DealsKanban } from '@/components/crm/deals';
 import { ActivitiesManager } from '@/components/crm/activities';
+import { CRMVoiceAssistant, PredictivePipelinePanel, RealtimeCollaborationPanel } from '@/components/crm/ai';
+import { useCRMContext } from '@/hooks/crm/useCRMContext';
 import { cn } from '@/lib/utils';
 
 // Demo data (simplificado del original)
@@ -70,6 +72,9 @@ const initialColumns: KanbanColumn[] = [
 export function CRMModularDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+  
+  const { refreshWorkspaces } = useCRMContext();
 
   const handleMoveItem = (itemId: string, fromColumn: string, toColumn: string) => {
     setColumns(prev => {
@@ -104,9 +109,19 @@ export function CRMModularDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Create Workspace Dialog */}
+      <CreateWorkspaceDialog 
+        open={showCreateWorkspace} 
+        onOpenChange={setShowCreateWorkspace}
+        onSuccess={refreshWorkspaces}
+      />
+      
       {/* Header with Workspace Selector */}
       <div className="flex items-center justify-between">
-        <CRMWorkspaceSelector showCreateButton />
+        <CRMWorkspaceSelector 
+          showCreateButton 
+          onCreateClick={() => setShowCreateWorkspace(true)}
+        />
       </div>
       
       {/* Main Tabs */}
@@ -240,6 +255,19 @@ export function CRMModularDashboard() {
                   </Card>
                 );
               })}
+            </div>
+          </div>
+
+          {/* AI Panels - 2026 Features */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <CRMVoiceAssistant />
+            </div>
+            <div className="lg:col-span-1">
+              <PredictivePipelinePanel />
+            </div>
+            <div className="lg:col-span-1">
+              <RealtimeCollaborationPanel />
             </div>
           </div>
 
