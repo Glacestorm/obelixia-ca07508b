@@ -797,11 +797,11 @@ export function UltraCRMAgentsDashboard() {
     agents.forEach(agent => {
       metricsMap[agent.id] = {
         performance: {
-          successRate: 85 + Math.random() * 15,
-          avgResponseTime: 100 + Math.random() * 400,
+          successRate: Math.round(85 + Math.random() * 15),
+          avgResponseTime: Math.round(100 + Math.random() * 400),
           tasksCompleted: Math.floor(50 + Math.random() * 200),
           tasksInProgress: Math.floor(Math.random() * 10),
-          errorRate: Math.random() * 5
+          errorRate: Math.round((Math.random() * 5) * 10) / 10
         },
         activity: {
           last24h: Math.floor(20 + Math.random() * 80),
@@ -810,8 +810,8 @@ export function UltraCRMAgentsDashboard() {
           peakHour: Math.floor(9 + Math.random() * 8)
         },
         intelligence: {
-          confidenceAvg: 75 + Math.random() * 20,
-          learningProgress: 60 + Math.random() * 35,
+          confidenceAvg: Math.round(75 + Math.random() * 20),
+          learningProgress: Math.round(60 + Math.random() * 35),
           decisionsAutonomous: Math.floor(10 + Math.random() * 50),
           escalationsCount: Math.floor(Math.random() * 10)
         },
