@@ -94,8 +94,12 @@ import { toast } from 'sonner';
 import { useCRMModuleAgents, CRM_AGENT_CONFIG } from '@/hooks/crm/agents';
 import type { CRMModuleAgent, CRMAgentInsight, CRMModuleType } from '@/hooks/crm/agents/crmAgentTypes';
 import { useCRMAgentNotifications } from '@/hooks/admin/agents/useCRMAgentNotifications';
+import { useCRMAgentAI } from '@/hooks/admin/agents/useCRMAgentAI';
 import { CRMRealTimeMetrics } from './CRMRealTimeMetrics';
 import { CRMAgentConversationHistory } from './CRMAgentConversationHistory';
+import { CRMCommandCenter } from './CRMCommandCenter';
+import { CRMAgentLeaderboard } from './CRMAgentLeaderboard';
+import { CRMAgentWorkflows } from './CRMAgentWorkflows';
 
 // === TIPOS EXTENDIDOS ===
 interface AgentDetailedMetrics {
@@ -1000,7 +1004,11 @@ export function UltraCRMAgentsDashboard() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-10">
+          <TabsTrigger value="command" className="gap-1.5">
+            <Command className="h-3.5 w-3.5" />
+            Command
+          </TabsTrigger>
           <TabsTrigger value="overview" className="gap-1.5">
             <Eye className="h-3.5 w-3.5" />
             General
@@ -1009,12 +1017,20 @@ export function UltraCRMAgentsDashboard() {
             <Users className="h-3.5 w-3.5" />
             Agentes
           </TabsTrigger>
+          <TabsTrigger value="workflows" className="gap-1.5">
+            <Workflow className="h-3.5 w-3.5" />
+            Workflows
+          </TabsTrigger>
+          <TabsTrigger value="leaderboard" className="gap-1.5">
+            <Crown className="h-3.5 w-3.5" />
+            Ranking
+          </TabsTrigger>
           <TabsTrigger value="realtime" className="gap-1.5">
             <Activity className="h-3.5 w-3.5" />
             Tiempo Real
           </TabsTrigger>
           <TabsTrigger value="supervisor" className="gap-1.5">
-            <Crown className="h-3.5 w-3.5" />
+            <Brain className="h-3.5 w-3.5" />
             Supervisor
           </TabsTrigger>
           <TabsTrigger value="analytics" className="gap-1.5">
@@ -1030,6 +1046,21 @@ export function UltraCRMAgentsDashboard() {
             Insights
           </TabsTrigger>
         </TabsList>
+
+        {/* Tab Command Center - NUEVO */}
+        <TabsContent value="command" className="mt-4">
+          <CRMCommandCenter />
+        </TabsContent>
+
+        {/* Tab Workflows - NUEVO */}
+        <TabsContent value="workflows" className="mt-4">
+          <CRMAgentWorkflows />
+        </TabsContent>
+
+        {/* Tab Leaderboard - NUEVO */}
+        <TabsContent value="leaderboard" className="mt-4">
+          <CRMAgentLeaderboard />
+        </TabsContent>
 
         {/* Tab Overview */}
         <TabsContent value="overview" className="space-y-4 mt-4">
