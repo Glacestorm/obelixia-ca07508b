@@ -61,3 +61,13 @@ export type {
   NotificationType,
   NotificationStats
 } from './useCRMAgentNotifications';
+
+// Sistema de Notificaciones Push de Agentes ERP
+export { useERPAgentNotifications } from './useERPAgentNotifications';
+export type {
+  ERPAgentNotification,
+  ERPNotificationType,
+  ERPNotificationPriority,
+  ERPNotificationStats,
+  ERPNotificationPreferences
+} from './useERPAgentNotifications';

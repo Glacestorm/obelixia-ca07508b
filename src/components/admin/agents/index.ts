@@ -10,3 +10,7 @@ export { UltraCRMAgentsDashboard } from './UltraCRMAgentsDashboard';
 export { DynamicModuleRegistryPanel } from './DynamicModuleRegistryPanel';
 export { CRMRealTimeMetrics } from './CRMRealTimeMetrics';
 export { CRMAgentConversationHistory } from './CRMAgentConversationHistory';
+// ERP Agents - Métricas, Decisiones, Historial
+export { ERPRealTimeMetrics } from './ERPRealTimeMetrics';
+export { ERPAutonomousDecisionHistory } from './ERPAutonomousDecisionHistory';
+export { ERPAgentConversationHistory } from './ERPAgentConversationHistory';
