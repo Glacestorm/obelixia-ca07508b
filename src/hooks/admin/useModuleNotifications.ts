@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// === ANTI-RECURSION: Guards para evitar re-suscripciones ===
+
 export interface ModuleNotification {
   id: string;
   type: 'deploy' | 'error' | 'update' | 'security' | 'performance' | 'info';
@@ -36,8 +38,16 @@ export function useModuleNotifications() {
     moduleFilter: []
   });
   const realtimeChannel = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  
+  // === ANTI-RECURSION GUARDS ===
+  const isInitializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const isSubscribedRef = useRef(false);
 
   const fetchNotifications = useCallback(async (limit = 50) => {
+    // Guard contra llamadas paralelas
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setIsLoading(true);
     try {
       // Simular notificaciones recientes
@@ -94,8 +104,9 @@ export function useModuleNotifications() {
       console.error('[useModuleNotifications] Error:', error);
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
-  }, []);
+  }, []); // Sin dependencias - estable
 
   const markAsRead = useCallback(async (notificationId: string) => {
     setNotifications(prev => prev.map(n =>
@@ -132,6 +143,10 @@ export function useModuleNotifications() {
   }, []);
 
   const subscribeToRealtime = useCallback(() => {
+    // Guard contra suscripciones duplicadas
+    if (isSubscribedRef.current || realtimeChannel.current) return;
+    isSubscribedRef.current = true;
+    
     realtimeChannel.current = supabase
       .channel('module-notifications')
       .on('broadcast', { event: 'notification' }, (payload) => {
@@ -157,20 +172,26 @@ export function useModuleNotifications() {
         }
       })
       .subscribe();
-  }, [preferences]);
+  }, []); // Sin dependencias - usa refs internamente
 
   const unsubscribeFromRealtime = useCallback(() => {
     if (realtimeChannel.current) {
       supabase.removeChannel(realtimeChannel.current);
       realtimeChannel.current = null;
+      isSubscribedRef.current = false;
     }
   }, []);
 
+  // === INITIAL SETUP - CON GUARD ===
   useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+    
     fetchNotifications();
     subscribeToRealtime();
+    
     return () => unsubscribeFromRealtime();
-  }, [fetchNotifications, subscribeToRealtime, unsubscribeFromRealtime]);
+  }, []); // Sin dependencias - solo se ejecuta una vez
 
   return {
     notifications,
