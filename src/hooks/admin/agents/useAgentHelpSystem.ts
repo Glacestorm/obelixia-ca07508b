@@ -43,6 +43,20 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
   const abortControllerRef = useRef<AbortController | null>(null);
   const chatQueueRef = useRef<string[]>([]);
   const isProcessingChatRef = useRef(false);
+  const MAX_QUEUE_SIZE = 10; // Limit queue to prevent infinite growth
+  
+  // Refs para evitar dependencias inestables en useCallback
+  const helpContentRef = useRef(state.helpContent);
+  const chatHistoryRef = useRef(state.chatHistory);
+  
+  // Sincronizar refs con estado
+  useEffect(() => {
+    helpContentRef.current = state.helpContent;
+  }, [state.helpContent]);
+  
+  useEffect(() => {
+    chatHistoryRef.current = state.chatHistory;
+  }, [state.chatHistory]);
 
   // === VOICE REFS ===
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -86,12 +100,12 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     if (!isMountedRef.current) return null;
     if (!agentId) return null;
     
-    // Skip if already initialized and not forcing refresh
+    // Skip if already initialized and not forcing refresh - usar ref para evitar dependencia
     if (guardRef.current.isInitialized && !forceRefresh) {
-      return state.helpContent;
+      return helpContentRef.current;
     }
     
-    if (!canFetch()) return state.helpContent;
+    if (!canFetch()) return helpContentRef.current;
     
     // Mark as fetching
     guardRef.current.isCurrentlyFetching = true;
@@ -177,7 +191,7 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     } finally {
       guardRef.current.isCurrentlyFetching = false;
     }
-  }, [agentId, state.helpContent, canFetch]);
+  }, [agentId, canFetch]); // Removido state.helpContent - usamos ref
 
   // === SEND CHAT MESSAGE ===
   const sendChatMessage = useCallback(async (
@@ -187,8 +201,13 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
     if (!isMountedRef.current) return null;
     if (!message.trim()) return null;
     
-    // Queue the message if already processing
+    // Queue the message if already processing - con límite
     if (isProcessingChatRef.current) {
+      if (chatQueueRef.current.length >= MAX_QUEUE_SIZE) {
+        console.warn('[useAgentHelpSystem] Queue full, dropping message');
+        toast.warning('Demasiados mensajes en cola');
+        return null;
+      }
       chatQueueRef.current.push(message);
       console.log('[useAgentHelpSystem] Message queued');
       return null;
@@ -221,7 +240,7 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
             agentType: agentInfo?.type || 'supervisor',
             message,
             conversationId: `chat_${agentId}_${Date.now()}`,
-            history: state.chatHistory.slice(-10).map(m => ({
+            history: chatHistoryRef.current.slice(-10).map(m => ({
               role: m.role,
               content: m.content,
             })),
@@ -271,7 +290,7 @@ export function useAgentHelpSystem(agentId: string, config: Partial<AgentHelpCon
         }
       }
     }
-  }, [agentId, state.chatHistory, finalConfig.maxChatHistory]);
+  }, [agentId, finalConfig.maxChatHistory]); // Removido state.chatHistory - usamos ref
 
   // === TEXT-TO-SPEECH (ElevenLabs) ===
   const speakText = useCallback(async (text: string): Promise<void> => {
