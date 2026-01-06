@@ -290,40 +290,54 @@ export function ObelixiaLoadingSpinner({
     sm: { width: 60, height: 60, text: "text-sm" },
     md: { width: 100, height: 100, text: "text-base" },
     lg: { width: 180, height: 180, text: "text-lg" },
-    xl: { width: 280, height: 280, text: "text-xl" },
+    xl: { width: 380, height: 380, text: "text-xl" },
   };
 
   const current = sizeClasses[size];
 
-  // Neural nodes distributed on brain surface with more density
+  // Neural nodes distributed on brain surface with more density - INTERNAL SYNAPSES ENHANCED
   const nodes = [
     // Outer ring
-    { cx: 50, cy: 10, delay: 0 },
-    { cx: 22, cy: 22, delay: 0.15 },
-    { cx: 78, cy: 22, delay: 0.3 },
-    { cx: 10, cy: 50, delay: 0.45 },
-    { cx: 90, cy: 50, delay: 0.6 },
-    { cx: 22, cy: 78, delay: 0.75 },
-    { cx: 78, cy: 78, delay: 0.9 },
-    { cx: 50, cy: 90, delay: 1.05 },
+    { cx: 50, cy: 10, delay: 0, isInternal: false },
+    { cx: 22, cy: 22, delay: 0.15, isInternal: false },
+    { cx: 78, cy: 22, delay: 0.3, isInternal: false },
+    { cx: 10, cy: 50, delay: 0.45, isInternal: false },
+    { cx: 90, cy: 50, delay: 0.6, isInternal: false },
+    { cx: 22, cy: 78, delay: 0.75, isInternal: false },
+    { cx: 78, cy: 78, delay: 0.9, isInternal: false },
+    { cx: 50, cy: 90, delay: 1.05, isInternal: false },
     // Middle ring
-    { cx: 35, cy: 30, delay: 0.2 },
-    { cx: 65, cy: 30, delay: 0.35 },
-    { cx: 28, cy: 50, delay: 0.5 },
-    { cx: 72, cy: 50, delay: 0.65 },
-    { cx: 35, cy: 70, delay: 0.8 },
-    { cx: 65, cy: 70, delay: 0.95 },
-    // Inner core
-    { cx: 50, cy: 40, delay: 0.1 },
-    { cx: 42, cy: 50, delay: 0.25 },
-    { cx: 58, cy: 50, delay: 0.4 },
-    { cx: 50, cy: 60, delay: 0.55 },
-    { cx: 50, cy: 50, delay: 0 }, // Center
-    // Additional synaptic points
-    { cx: 38, cy: 38, delay: 0.7 },
-    { cx: 62, cy: 38, delay: 0.85 },
-    { cx: 38, cy: 62, delay: 1.0 },
-    { cx: 62, cy: 62, delay: 0.45 },
+    { cx: 35, cy: 30, delay: 0.2, isInternal: false },
+    { cx: 65, cy: 30, delay: 0.35, isInternal: false },
+    { cx: 28, cy: 50, delay: 0.5, isInternal: false },
+    { cx: 72, cy: 50, delay: 0.65, isInternal: false },
+    { cx: 35, cy: 70, delay: 0.8, isInternal: false },
+    { cx: 65, cy: 70, delay: 0.95, isInternal: false },
+    // Inner core - BRIGHT SYNAPSES
+    { cx: 50, cy: 40, delay: 0.1, isInternal: true },
+    { cx: 42, cy: 50, delay: 0.25, isInternal: true },
+    { cx: 58, cy: 50, delay: 0.4, isInternal: true },
+    { cx: 50, cy: 60, delay: 0.55, isInternal: true },
+    { cx: 50, cy: 50, delay: 0, isInternal: true }, // Center - BRIGHTEST
+    // Additional internal synaptic points - ENHANCED GLOW
+    { cx: 38, cy: 38, delay: 0.7, isInternal: true },
+    { cx: 62, cy: 38, delay: 0.85, isInternal: true },
+    { cx: 38, cy: 62, delay: 1.0, isInternal: true },
+    { cx: 62, cy: 62, delay: 0.45, isInternal: true },
+    // NEW: Extra internal synapses for more density
+    { cx: 45, cy: 35, delay: 0.12, isInternal: true },
+    { cx: 55, cy: 35, delay: 0.28, isInternal: true },
+    { cx: 45, cy: 65, delay: 0.42, isInternal: true },
+    { cx: 55, cy: 65, delay: 0.58, isInternal: true },
+    { cx: 35, cy: 45, delay: 0.72, isInternal: true },
+    { cx: 65, cy: 45, delay: 0.88, isInternal: true },
+    { cx: 35, cy: 55, delay: 0.18, isInternal: true },
+    { cx: 65, cy: 55, delay: 0.32, isInternal: true },
+    // Deep core extra synapses
+    { cx: 46, cy: 46, delay: 0.05, isInternal: true },
+    { cx: 54, cy: 46, delay: 0.15, isInternal: true },
+    { cx: 46, cy: 54, delay: 0.25, isInternal: true },
+    { cx: 54, cy: 54, delay: 0.35, isInternal: true },
   ];
 
   // More complex synaptic connections
@@ -407,6 +421,17 @@ export function ObelixiaLoadingSpinner({
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
+            {/* Enhanced glow filter for internal synapses */}
+            <filter id="spinner-internal-glow">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feColorMatrix in="blur" type="saturate" values="2" result="saturated"/>
+              <feMerge>
+                <feMergeNode in="saturated"/>
+                <feMergeNode in="saturated"/>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
           </defs>
           
           {/* Spherical outline */}
@@ -452,30 +477,74 @@ export function ObelixiaLoadingSpinner({
             />
           ))}
           
-          {/* Neural nodes */}
+          {/* Neural nodes - INTERNAL SYNAPSES GLOW BRIGHTER */}
           {nodes.map((node, i) => (
-            <g key={i} filter="url(#spinner-node-glow)">
+            <g key={i} filter={node.isInternal ? "url(#spinner-internal-glow)" : "url(#spinner-node-glow)"}>
+              {/* Extra glow layer for internal synapses */}
+              {node.isInternal && (
+                <circle
+                  cx={node.cx}
+                  cy={node.cy}
+                  r="4"
+                  fill="none"
+                  stroke="url(#spinner-brain-gradient)"
+                  strokeWidth="0.5"
+                  opacity="0.6"
+                >
+                  <animate
+                    attributeName="r"
+                    values="2;6;2"
+                    dur="1.2s"
+                    begin={`${node.delay}s`}
+                    repeatCount="indefinite"
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values="0.8;0.2;0.8"
+                    dur="1.2s"
+                    begin={`${node.delay}s`}
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              )}
               <circle
                 cx={node.cx}
                 cy={node.cy}
-                r="1.5"
-                fill="white"
+                r={node.isInternal ? 2.5 : 1.5}
+                fill={node.isInternal ? "url(#spinner-brain-gradient)" : "white"}
               >
                 <animate
                   attributeName="opacity"
-                  values="0.3;1;0.3"
-                  dur="1.5s"
+                  values={node.isInternal ? "0.6;1;0.6" : "0.3;1;0.3"}
+                  dur={node.isInternal ? "1.2s" : "1.5s"}
                   begin={`${node.delay}s`}
                   repeatCount="indefinite"
                 />
                 <animate
                   attributeName="r"
-                  values="1;2.5;1"
-                  dur="1.5s"
+                  values={node.isInternal ? "2;4;2" : "1;2.5;1"}
+                  dur={node.isInternal ? "1.2s" : "1.5s"}
                   begin={`${node.delay}s`}
                   repeatCount="indefinite"
                 />
               </circle>
+              {/* Bright center dot for internal synapses */}
+              {node.isInternal && (
+                <circle
+                  cx={node.cx}
+                  cy={node.cy}
+                  r="1"
+                  fill="white"
+                >
+                  <animate
+                    attributeName="opacity"
+                    values="0.5;1;0.5"
+                    dur="0.8s"
+                    begin={`${node.delay}s`}
+                    repeatCount="indefinite"
+                  />
+                </circle>
+              )}
             </g>
           ))}
         </svg>
