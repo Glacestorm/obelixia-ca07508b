@@ -23,6 +23,9 @@ import { SupplierDialog } from './SupplierDialog';
 import { GoodsReceiptDialog } from './GoodsReceiptDialog';
 import { SupplierInvoiceDialog } from './SupplierInvoiceDialog';
 import { RFQListTable } from './RFQListTable';
+import { RFQDialog } from './RFQDialog';
+import { SupplierQuoteDialog } from './SupplierQuoteDialog';
+import { type RFQ } from '@/hooks/erp/useERPRFQ';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-gray-500',
@@ -66,6 +69,9 @@ export function PurchasesModule() {
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [rfqDialogOpen, setRfqDialogOpen] = useState(false);
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+  const [selectedRFQ, setSelectedRFQ] = useState<RFQ | null>(null);
 
   useEffect(() => {
     if (currentCompany) {
@@ -212,16 +218,16 @@ export function PurchasesModule() {
               <TabsContent value="rfq">
                 <RFQListTable 
                   onCreateNew={() => {
-                    // TODO: Fase 2 - Abrir diálogo de creación
-                    console.log('Crear nueva solicitud de cotización');
+                    setSelectedRFQ(null);
+                    setRfqDialogOpen(true);
                   }}
                   onViewRFQ={(rfq) => {
-                    // TODO: Fase 2 - Ver detalle del RFQ
-                    console.log('Ver RFQ:', rfq);
+                    setSelectedRFQ(rfq);
+                    setQuoteDialogOpen(true);
                   }}
                   onEditRFQ={(rfq) => {
-                    // TODO: Fase 2 - Editar RFQ
-                    console.log('Editar RFQ:', rfq);
+                    setSelectedRFQ(rfq);
+                    setRfqDialogOpen(true);
                   }}
                 />
               </TabsContent>
@@ -314,6 +320,18 @@ export function PurchasesModule() {
         <SupplierInvoiceDialog 
           open={invoiceDialogOpen} 
           onOpenChange={setInvoiceDialogOpen}
+          onSuccess={loadData}
+        />
+        <RFQDialog 
+          open={rfqDialogOpen} 
+          onOpenChange={setRfqDialogOpen}
+          rfq={selectedRFQ}
+          onSuccess={loadData}
+        />
+        <SupplierQuoteDialog 
+          open={quoteDialogOpen} 
+          onOpenChange={setQuoteDialogOpen}
+          rfq={selectedRFQ}
           onSuccess={loadData}
         />
       </CardContent>
