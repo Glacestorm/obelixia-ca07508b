@@ -53,3 +53,11 @@ export type {
   SupervisorRegistration,
   RegistryEvent
 } from './dynamicModuleRegistry';
+
+// Sistema de Notificaciones Push de Agentes CRM
+export { useCRMAgentNotifications } from './useCRMAgentNotifications';
+export type {
+  CRMAgentNotification,
+  NotificationType,
+  NotificationStats
+} from './useCRMAgentNotifications';

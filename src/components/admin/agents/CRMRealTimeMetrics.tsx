@@ -100,10 +100,35 @@ interface SystemAlert {
 }
 
 interface CRMRealTimeMetricsProps {
-  agentPerformances: AgentPerformance[];
+  agentPerformances?: AgentPerformance[];
   onAlertAction?: (alertId: string, action: 'acknowledge' | 'dismiss' | 'investigate') => void;
   refreshInterval?: number;
   className?: string;
+}
+
+// === GENERADOR DE DATOS MOCK PARA AGENTES ===
+function generateMockAgentPerformances(): AgentPerformance[] {
+  const agentNames = [
+    { id: 'lead_scoring', name: 'Lead Scoring AI' },
+    { id: 'pipeline_optimizer', name: 'Pipeline Optimizer' },
+    { id: 'churn_predictor', name: 'Churn Predictor' },
+    { id: 'upsell_detector', name: 'Upsell Detector' },
+    { id: 'deal_accelerator', name: 'Deal Accelerator' },
+  ];
+  
+  return agentNames.map(agent => ({
+    agentId: agent.id,
+    agentName: agent.name,
+    successRate: 75 + Math.random() * 20,
+    successRateTrend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable',
+    avgResponseTime: 100 + Math.random() * 300,
+    responseTimeTrend: ['up', 'down', 'stable'][Math.floor(Math.random() * 3)] as 'up' | 'down' | 'stable',
+    tasksCompleted: Math.floor(50 + Math.random() * 200),
+    tasksInQueue: Math.floor(Math.random() * 20),
+    errorRate: Math.random() * 5,
+    lastActivity: new Date(Date.now() - Math.random() * 3600000),
+    healthScore: 70 + Math.random() * 25
+  }));
 }
 
 // === COLORES ===
@@ -155,11 +180,14 @@ function generateRealtimePoint(): AgentMetricPoint {
 
 // === COMPONENTE PRINCIPAL ===
 export function CRMRealTimeMetrics({
-  agentPerformances,
+  agentPerformances: externalPerformances,
   onAlertAction,
   refreshInterval = 5000,
   className
 }: CRMRealTimeMetricsProps) {
+  // Usar datos externos o generar mock
+  const [internalPerformances] = useState<AgentPerformance[]>(() => generateMockAgentPerformances());
+  const agentPerformances = externalPerformances ?? internalPerformances;
   const [timeSeriesData, setTimeSeriesData] = useState<AgentMetricPoint[]>(() => generateTimeSeriesData(24));
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [alertsEnabled, setAlertsEnabled] = useState(true);
