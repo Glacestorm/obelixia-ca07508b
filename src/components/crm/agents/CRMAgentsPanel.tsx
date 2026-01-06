@@ -3,7 +3,7 @@
  * Similar a ERPModuleAgentsPanel pero para el módulo CRM
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -170,9 +170,15 @@ export function CRMAgentsPanel() {
     toggleAutonomousMode
   } = useCRMModuleAgents();
 
+  // Fase 3: Guard de inicialización única para evitar recursión
+  const isInitializedRef = useRef(false);
+  
   useEffect(() => {
-    initializeAgents();
-  }, [initializeAgents]);
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+      initializeAgents();
+    }
+  }, []); // Solo en mount, sin dependencia de initializeAgents
 
   const handleExecute = useCallback(async (agentId: string) => {
     await executeAgent(agentId, { trigger: 'manual' });
