@@ -2,6 +2,7 @@ export { PurchasesModule } from './PurchasesModule';
 export { RFQListTable } from './RFQListTable';
 export { RFQDialog } from './RFQDialog';
 export { SupplierQuoteDialog } from './SupplierQuoteDialog';
+export { QuoteComparisonPanel } from './QuoteComparisonPanel';
 export { PurchaseOrderDialog } from './PurchaseOrderDialog';
 export { SupplierDialog } from './SupplierDialog';
 export { GoodsReceiptDialog } from './GoodsReceiptDialog';
