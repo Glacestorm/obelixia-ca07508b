@@ -501,6 +501,9 @@ verify_jwt = true
 [functions.erp-agent-ai]
 verify_jwt = true
 
+[functions.crm-agent-ai]
+verify_jwt = true
+
 [functions.erp-advanced-analysis]
 verify_jwt = true
 
