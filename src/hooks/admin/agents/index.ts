@@ -26,3 +26,18 @@ export * from './erpAgentTypes';
 
 // Configuración
 export { AUTONOMOUS_ACTIONS, getDomainAgentCount, getModuleAgentCount, getAgentsByDomain } from './erpAgentConfig';
+
+// Sistema de Ayuda de Agentes (FASE 1)
+export { useAgentHelpSystem } from './useAgentHelpSystem';
+export type {
+  AgentHelpContent,
+  AgentHelpSection,
+  AgentHelpExample,
+  LearnedKnowledge,
+  ChatMessage,
+  AgentHelpConfig,
+  AgentType as HelpAgentType,
+  RecursionGuard,
+  RATE_LIMIT,
+  AGENT_HELP_REGISTRY,
+} from './agentHelpTypes';
