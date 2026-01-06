@@ -45,6 +45,7 @@ import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
 import { ERPModuleAgentsPanel } from '@/components/admin/agents/ERPModuleAgentsPanel';
 import { CRMWorkspaceSelector, CRMTeamsManager } from '@/components/crm/config';
+import { ContactsManager } from '@/components/crm/contacts';
 import { cn } from '@/lib/utils';
 
 // Demo data (simplificado del original)
@@ -305,7 +306,7 @@ export function CRMModularDashboard() {
 
         {/* Contacts Tab */}
         <TabsContent value="contacts">
-          <ContactsTabContent />
+          <ContactsManager />
         </TabsContent>
 
         {/* Omnichannel Tab */}

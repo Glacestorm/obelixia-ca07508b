@@ -7967,6 +7967,96 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_activities: {
+        Row: {
+          activity_type: string
+          assigned_to: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          scheduled_at: string | null
+          status: string | null
+          subject: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          activity_type: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          scheduled_at?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          activity_type?: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          scheduled_at?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_activities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_connectors: {
         Row: {
           connector_key: string
@@ -8023,6 +8113,212 @@ export type Database = {
           vendor?: string
         }
         Relationships: []
+      }
+      crm_contacts: {
+        Row: {
+          assigned_to: string | null
+          company: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json | null
+          deals_count: number | null
+          email: string | null
+          first_name: string
+          id: string
+          last_contact_at: string | null
+          last_name: string | null
+          lifetime_value: number | null
+          notes: string | null
+          phone: string | null
+          position: string | null
+          source: string | null
+          status: string
+          tags: string[] | null
+          team_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json | null
+          deals_count?: number | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_contact_at?: string | null
+          last_name?: string | null
+          lifetime_value?: number | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          source?: string | null
+          status?: string
+          tags?: string[] | null
+          team_id?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json | null
+          deals_count?: number | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_contact_at?: string | null
+          last_name?: string | null
+          lifetime_value?: number | null
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          source?: string | null
+          status?: string
+          tags?: string[] | null
+          team_id?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "crm_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          closed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          custom_fields: Json | null
+          description: string | null
+          expected_close_date: string | null
+          id: string
+          lost_reason: string | null
+          owner_id: string | null
+          priority: string | null
+          probability: number | null
+          stage: string
+          tags: string[] | null
+          team_id: string | null
+          title: string
+          updated_at: string
+          value: number | null
+          workspace_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_reason?: string | null
+          owner_id?: string | null
+          priority?: string | null
+          probability?: number | null
+          stage?: string
+          tags?: string[] | null
+          team_id?: string | null
+          title: string
+          updated_at?: string
+          value?: number | null
+          workspace_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          expected_close_date?: string | null
+          id?: string
+          lost_reason?: string | null
+          owner_id?: string | null
+          priority?: string | null
+          probability?: number | null
+          stage?: string
+          tags?: string[] | null
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+          value?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "crm_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_field_mappings: {
         Row: {

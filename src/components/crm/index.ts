@@ -6,3 +6,4 @@ export { CRMModularDashboard } from './CRMModularDashboard';
 
 export * from './automation';
 export * from './config';
+export * from './contacts';
