@@ -43165,6 +43165,9 @@ export type Database = {
         }[]
       }
       get_turnover_tier: { Args: { p_turnover: number }; Returns: string }
+      get_user_oficina: { Args: { _user_id: string }; Returns: string }
+      get_user_organization_id: { Args: { _user_id: string }; Returns: string }
+      get_user_role: { Args: { _user_id: string }; Returns: string }
       get_volume_discount: { Args: { p_cnae_count: number }; Returns: number }
       get_zscore_coefficients: { Args: { p_sector_key: string }; Returns: Json }
       has_crm_permission: {
@@ -43202,6 +43205,7 @@ export type Database = {
         Args: { _module_key: string; _organization_id?: string }
         Returns: boolean
       }
+      is_org_admin: { Args: { _user_id: string }; Returns: boolean }
       is_partner_member: {
         Args: { _partner_company_id: string; _user_id: string }
         Returns: boolean
@@ -43328,6 +43332,10 @@ export type Database = {
       update_translation_progress_for_locale: {
         Args: { p_locale: string }
         Returns: undefined
+      }
+      user_belongs_to_org: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
       }
       validate_accounting_sync: {
         Args: { p_company_id: string }
