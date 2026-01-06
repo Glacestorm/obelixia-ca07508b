@@ -179,15 +179,30 @@ export function useERPAccounting() {
 
     try {
       const { data, error } = await supabase
-        .from('obelixia_chart_of_accounts')
-        .select('*')
+        .from('erp_chart_accounts')
+        .select('id, code, name, account_type, level, parent_id, is_header, is_active')
+        .eq('company_id', currentCompany.id)
         .eq('is_active', true)
-        .order('account_code');
+        .order('code');
 
       if (error) throw error;
 
-      setChartOfAccounts(data || []);
-      return data || [];
+      // Map to ChartOfAccount interface
+      const mapped: ChartOfAccount[] = (data || []).map(acc => ({
+        id: acc.id,
+        account_code: acc.code,
+        account_name: acc.name,
+        account_type: acc.account_type || 'other',
+        account_group: parseInt(acc.code?.charAt(0) || '0', 10),
+        parent_id: acc.parent_id || undefined,
+        is_active: acc.is_active ?? true,
+        accepts_entries: !acc.is_header,
+        is_detail: !acc.is_header,
+        normal_balance: ['asset', 'expense'].includes(acc.account_type || '') ? 'debit' : 'credit'
+      }));
+
+      setChartOfAccounts(mapped);
+      return mapped;
     } catch (err) {
       console.error('[useERPAccounting] fetchChartOfAccounts error:', err);
       return [];
