@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Download, Loader2, CheckCircle, Sparkles, Code, DollarSign, Users, AlertTriangle, TrendingUp, Globe, Target, Award, Shield, Database, Server, ClipboardCheck, FileDown, BookOpen, BarChart3, Building2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Download, Loader2, CheckCircle, Sparkles, Code, DollarSign, Users, AlertTriangle, TrendingUp, Globe, Target, Award, Shield, Database, Server, ClipboardCheck, FileDown, BookOpen, BarChart3, Building2, Calculator, Briefcase, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
+import { BRAND, PDF_COLORS, SAFE_FONTS, sanitizeForPDF, type AnalysisScope, PDF_PARTS, getComponentCounts, ERP_HOOKS, ERP_EDGE_FUNCTIONS, ERP_COMPONENTS } from './constants';
 
 interface GenerationStep {
   id: string;
@@ -433,18 +435,36 @@ const PAGES_LIST = [
 type PDFPart = 'part1' | 'part2' | 'part3' | 'part4' | 'part5' | 'part6' | 'part7';
 
 export const DynamicTechnicalDocGenerator = () => {
-  const [analyzing, setAnalyzing] = useState(false);
+  // Current analysis scope: CRM, ERP, or Combined
+  const [activeScope, setActiveScope] = useState<AnalysisScope>('crm');
+  
+  // Separate analysis states for each scope
+  const [crmAnalyzing, setCrmAnalyzing] = useState(false);
+  const [erpAnalyzing, setErpAnalyzing] = useState(false);
+  const [combinedAnalyzing, setCombinedAnalyzing] = useState(false);
+  
   const [generatingPart, setGeneratingPart] = useState<PDFPart | null>(null);
   const [progress, setProgress] = useState(0);
-  const [analysis, setAnalysis] = useState<CodebaseAnalysis | null>(null);
+  
+  // Separate analysis results
+  const [crmAnalysis, setCrmAnalysis] = useState<CodebaseAnalysis | null>(null);
+  const [erpAnalysis, setErpAnalysis] = useState<CodebaseAnalysis | null>(null);
+  const [combinedAnalysis, setCombinedAnalysis] = useState<CodebaseAnalysis | null>(null);
+  
+  // Legacy compatibility
+  const analyzing = activeScope === 'crm' ? crmAnalyzing : activeScope === 'erp' ? erpAnalyzing : combinedAnalyzing;
+  const analysis = activeScope === 'crm' ? crmAnalysis : activeScope === 'erp' ? erpAnalysis : combinedAnalysis;
+  const setAnalyzing = activeScope === 'crm' ? setCrmAnalyzing : activeScope === 'erp' ? setErpAnalyzing : setCombinedAnalyzing;
+  const setAnalysis = activeScope === 'crm' ? setCrmAnalysis : activeScope === 'erp' ? setErpAnalysis : setCombinedAnalysis;
+  
   const [analyzeSteps, setAnalyzeSteps] = useState<GenerationStep[]>([
     { id: 'connect', name: 'Conectando Gemini 2.5', completed: false },
-    { id: 'scan', name: 'Escaneando 220+ componentes', completed: false },
-    { id: 'functions', name: 'Analizando 72+ Edge Functions', completed: false },
-    { id: 'sectors', name: 'Evaluando 8 sectores + 26 CNAE', completed: false },
-    { id: 'market', name: 'Investigando mercado web', completed: false },
-    { id: 'security', name: 'Verificando 114 controles ISO', completed: false },
-    { id: 'valuation', name: 'Valoracion multi-sector', completed: false },
+    { id: 'scan', name: 'Escaneando componentes', completed: false },
+    { id: 'functions', name: 'Analizando Edge Functions', completed: false },
+    { id: 'sectors', name: 'Evaluando sectores', completed: false },
+    { id: 'market', name: 'Investigando mercado', completed: false },
+    { id: 'security', name: 'Verificando controles ISO', completed: false },
+    { id: 'valuation', name: 'Valoracion economica', completed: false },
   ]);
 
   const updateAnalyzeStep = (stepId: string) => {
@@ -546,63 +566,8 @@ security/
     }
   };
 
-  // Helper functions for PDF generation with text sanitization
-  const sanitizeText = (text: string): string => {
-    if (!text) return '';
-    return text
-      // Emojis to text equivalents
-      .replace(/💡/g, '[i]')
-      .replace(/📊/g, '[#]')
-      .replace(/🎯/g, '[>]')
-      .replace(/📈/g, '[^]')
-      .replace(/🔒/g, '[*]')
-      .replace(/✅/g, '[OK]')
-      .replace(/❌/g, '[X]')
-      .replace(/⚠️/g, '[!]')
-      .replace(/🚀/g, '[>>]')
-      .replace(/💰/g, '[EUR]')
-      .replace(/🏦/g, '[B]')
-      .replace(/🌐/g, '[W]')
-      .replace(/📋/g, '[=]')
-      .replace(/🔐/g, '[*]')
-      .replace(/⭐/g, '[*]')
-      .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Remove other emojis
-      // Smart quotes
-      .replace(/[\u2018\u2019]/g, "'")
-      .replace(/[\u201C\u201D]/g, '"')
-      // Dashes
-      .replace(/\u2013/g, '-')
-      .replace(/\u2014/g, '--')
-      .replace(/\u2026/g, '...')
-      .replace(/\u00A0/g, ' ')
-      // Accented vowels
-      .replace(/[\u00E0\u00E1\u00E2\u00E3\u00E4\u00E5]/g, 'a')
-      .replace(/[\u00C0\u00C1\u00C2\u00C3\u00C4\u00C5]/g, 'A')
-      .replace(/[\u00E8\u00E9\u00EA\u00EB]/g, 'e')
-      .replace(/[\u00C8\u00C9\u00CA\u00CB]/g, 'E')
-      .replace(/[\u00EC\u00ED\u00EE\u00EF]/g, 'i')
-      .replace(/[\u00CC\u00CD\u00CE\u00CF]/g, 'I')
-      .replace(/[\u00F2\u00F3\u00F4\u00F5\u00F6]/g, 'o')
-      .replace(/[\u00D2\u00D3\u00D4\u00D5\u00D6]/g, 'O')
-      .replace(/[\u00F9\u00FA\u00FB\u00FC]/g, 'u')
-      .replace(/[\u00D9\u00DA\u00DB\u00DC]/g, 'U')
-      .replace(/\u00F1/g, 'n')
-      .replace(/\u00D1/g, 'N')
-      .replace(/\u00E7/g, 'c')
-      .replace(/\u00C7/g, 'C')
-      // Symbols
-      .replace(/\u20AC/g, 'EUR')
-      .replace(/\u2022/g, '-')  // Bullet
-      .replace(/\u00B7/g, '-')  // Middle dot
-      .replace(/\u2192/g, '->')
-      .replace(/\u2713/g, '[OK]')
-      .replace(/\u2717/g, '[X]')
-      .replace(/\u00A9/g, '(c)')
-      .replace(/\u00AE/g, '(R)')
-      .replace(/\u2122/g, '(TM)')
-      // Remove any remaining non-ASCII
-      .replace(/[^\x00-\x7F]/g, '');
-  };
+  // Use imported sanitizeForPDF, alias as sanitizeText for compatibility
+  const sanitizeText = sanitizeForPDF;
 
   const createPDFHelpers = (doc: jsPDF, codebaseAnalysis: CodebaseAnalysis) => {
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -4548,16 +4513,18 @@ security/
   };
 
   const isAnalysisComplete = analysis !== null;
+  const currentParts = PDF_PARTS[activeScope];
+  const counts = getComponentCounts(activeScope);
 
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Generador de Documentación Comercial Exhaustiva con IA
+          Generador de Documentacion Comercial Exhaustiva con IA
         </CardTitle>
         <CardDescription>
-          Genera documentación técnico-comercial de 245+ páginas dividida en 7 PDFs independientes
+          Genera documentacion tecnico-comercial dividida en 7 PDFs independientes para CRM, ERP o Suite Completa
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -4569,7 +4536,7 @@ security/
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Database className="h-4 w-4 text-blue-500" />
-            <span>TCO 1/3/5 años</span>
+            <span>TCO 1/3/5 anos</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Server className="h-4 w-4 text-purple-500" />
@@ -4577,11 +4544,11 @@ security/
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Globe className="h-4 w-4 text-cyan-500" />
-            <span>Latam/Global</span>
+            <span>Global</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Target className="h-4 w-4 text-orange-500" />
-            <span>Marketing</span>
+            <Calculator className="h-4 w-4 text-orange-500" />
+            <span>PGC/NIIF</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Award className="h-4 w-4 text-amber-500" />
@@ -4591,12 +4558,13 @@ security/
 
         {/* Badges */}
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">7 PDFs Independientes</Badge>
-          <Badge variant="outline">~35 páginas cada uno</Badge>
-          <Badge variant="outline">245+ páginas total</Badge>
+          <Badge variant="outline">7 PDFs por Tipo</Badge>
+          <Badge variant="outline">~35 paginas cada uno</Badge>
+          <Badge variant="outline">{counts.components}+ componentes</Badge>
           <Badge variant="outline">Gemini 2.5 Pro</Badge>
-          <Badge variant="outline">Revenue Intelligence</Badge>
-          <Badge variant="secondary">Proposta Comercial</Badge>
+          <Badge variant={activeScope === 'combined' ? 'default' : 'secondary'}>
+            {activeScope === 'crm' ? 'CRM Universal' : activeScope === 'erp' ? 'ERP Enterprise' : 'Suite Integral'}
+          </Badge>
         </div>
 
         {/* Analyze Steps Progress */}
@@ -4630,48 +4598,82 @@ security/
           <div className="space-y-2">
             <Progress value={progress} className="w-full" />
             <p className="text-sm text-muted-foreground text-center">
-              Generando {
-                generatingPart === 'part1' ? 'Parte 1: Resumen' : 
-                generatingPart === 'part2' ? 'Parte 2: TCO/ISO' : 
-                generatingPart === 'part3' ? 'Parte 3: BCP/Gap' : 
-                generatingPart === 'part4' ? 'Parte 4: Mercados Globales' :
-                generatingPart === 'part5' ? 'Parte 5: Marketing' :
-                generatingPart === 'part6' ? 'Parte 6: Proposta Comercial' :
-                'Parte 7: Revenue Intelligence'
-              }... {progress}%
+              Generando {currentParts.find(p => p.id === generatingPart)?.title || generatingPart}... {progress}%
             </p>
           </div>
         )}
 
-        {/* Primary Button: Analyze Code */}
-        <Button
-          onClick={analyzeCodebase}
-          disabled={analyzing || generatingPart !== null}
-          className="w-full"
-          size="lg"
-        >
-          {analyzing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Analizando con IA Gemini 2.5...
-            </>
-          ) : (
-            <>
-              <Code className="mr-2 h-4 w-4" />
-              1. Analitzar Codi
-            </>
-          )}
-        </Button>
+        {/* THREE PRIMARY ANALYSIS BUTTONS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* CRM Analysis Button */}
+          <Button
+            onClick={() => { setActiveScope('crm'); analyzeCodebase(); }}
+            disabled={crmAnalyzing || erpAnalyzing || combinedAnalyzing || generatingPart !== null}
+            className="w-full h-auto py-4 flex flex-col items-center"
+            variant={crmAnalysis ? 'outline' : 'default'}
+            size="lg"
+          >
+            {crmAnalyzing ? (
+              <Loader2 className="h-6 w-6 animate-spin mb-2" />
+            ) : crmAnalysis ? (
+              <CheckCircle className="h-6 w-6 mb-2 text-green-500" />
+            ) : (
+              <Users className="h-6 w-6 mb-2" />
+            )}
+            <span className="font-bold">1. Analitzar Codi CRM</span>
+            <span className="text-xs opacity-70">{counts.components} componentes comerciales</span>
+          </Button>
+
+          {/* ERP Analysis Button */}
+          <Button
+            onClick={() => { setActiveScope('erp'); analyzeCodebase(); }}
+            disabled={crmAnalyzing || erpAnalyzing || combinedAnalyzing || generatingPart !== null}
+            className="w-full h-auto py-4 flex flex-col items-center border-2 border-emerald-500/50"
+            variant={erpAnalysis ? 'outline' : 'secondary'}
+            size="lg"
+          >
+            {erpAnalyzing ? (
+              <Loader2 className="h-6 w-6 animate-spin mb-2" />
+            ) : erpAnalysis ? (
+              <CheckCircle className="h-6 w-6 mb-2 text-green-500" />
+            ) : (
+              <Calculator className="h-6 w-6 mb-2 text-emerald-500" />
+            )}
+            <span className="font-bold">2. Analitzar Codi ERP</span>
+            <span className="text-xs opacity-70">Contabilidad PGC, Tesoreria, NIIF</span>
+          </Button>
+
+          {/* Combined CRM + ERP Analysis Button */}
+          <Button
+            onClick={() => { setActiveScope('combined'); analyzeCodebase(); }}
+            disabled={crmAnalyzing || erpAnalyzing || combinedAnalyzing || generatingPart !== null}
+            className="w-full h-auto py-4 flex flex-col items-center border-2 border-amber-500/50"
+            variant={combinedAnalysis ? 'outline' : 'secondary'}
+            size="lg"
+          >
+            {combinedAnalyzing ? (
+              <Loader2 className="h-6 w-6 animate-spin mb-2" />
+            ) : combinedAnalysis ? (
+              <CheckCircle className="h-6 w-6 mb-2 text-green-500" />
+            ) : (
+              <Layers className="h-6 w-6 mb-2 text-amber-500" />
+            )}
+            <span className="font-bold">3. Analitzar Codi CRM + ERP</span>
+            <span className="text-xs opacity-70">Suite Integral Completa</span>
+          </Button>
+        </div>
 
         {/* Analysis Complete Indicator */}
         {isAnalysisComplete && !analyzing && (
           <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <CheckCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">Análisis completado - Versión {analysis.version}</span>
+              <span className="text-sm font-medium">
+                Analisis {activeScope.toUpperCase()} completado - Version {analysis.version}
+              </span>
             </div>
             <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-              {analysis.modules.length} módulos | {analysis.codeStats.totalComponents} componentes | {analysis.codeStats.totalEdgeFunctions} Edge Functions | {analysis.marketValuation.totalCost.toLocaleString()}€
+              {analysis.modules.length} modulos | {analysis.codeStats.totalComponents} componentes | {analysis.codeStats.totalEdgeFunctions} Edge Functions | {analysis.marketValuation.totalCost.toLocaleString()} EUR
             </p>
           </div>
         )}
