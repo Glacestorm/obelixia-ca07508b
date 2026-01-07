@@ -1067,7 +1067,7 @@ function getDefaultAnalysis(componentsList: string[], hooksList: string[], edgeF
       }
     ],
     potentialClients: [
-      { sector: "Banca privada", clientType: "Bancos privados Andorra", region: "Andorra", estimatedValue: "80.000€ - 150.000€", implementationTime: "3-4 meses", customizations: ["Multiidioma catalán", "PGC Andorra"], potentialClients: 5, marketPenetration: "100%", salesPriority: 1, conversionProbability: "95%", decisionMakers: ["Director General", "CIO"], salesApproach: "Referencia Creand" },
+      { sector: "Banca privada", clientType: "Bancos privados Andorra", region: "Andorra", estimatedValue: "80.000€ - 150.000€", implementationTime: "3-4 meses", customizations: ["Multiidioma catalán", "PGC Andorra"], potentialClients: 5, marketPenetration: "100%", salesPriority: 1, conversionProbability: "95%", decisionMakers: ["Director General", "CIO"], salesApproach: "Referencia ObelixIA" },
       { sector: "Cajas rurales", clientType: "Cooperativas crédito", region: "España", estimatedValue: "60.000€ - 120.000€", implementationTime: "2-3 meses", customizations: ["Integración core"], potentialClients: 62, marketPenetration: "30%", salesPriority: 2, conversionProbability: "70%", decisionMakers: ["Director TI", "Consejo"], salesApproach: "Demo sectorial" },
       { sector: "Fintech", clientType: "Neobancos", region: "Europa", estimatedValue: "40.000€ - 80.000€", implementationTime: "1-2 meses", customizations: ["API integrations"], potentialClients: 150, marketPenetration: "5%", salesPriority: 3, conversionProbability: "50%", decisionMakers: ["CTO", "CEO"], salesApproach: "Partnership tecnológico" }
     ],
@@ -1100,7 +1100,7 @@ function getDefaultAnalysis(componentsList: string[], hooksList: string[], edgeF
         { benefit: "Cumplimiento normativo", description: "DORA, NIS2, PSD2/3, GDPR, eIDAS 2.0 nativos", impact: "Evita sanciones 2-4% ingresos" },
         { benefit: "Time-to-market", description: "Implementación completa en 3-6 meses", impact: "6-12 meses adelanto vs competencia" }
       ],
-      testimonialPotential: ["Creand Andorra - Implementación piloto exitosa"],
+      testimonialPotential: ["ObelixIA Enterprise - Implementación piloto exitosa"],
       industryTrends: ["Digitalización banca tradicional", "Open Banking PSD3", "Identidad digital europea", "IA generativa en banca"]
     },
     pricingStrategy: {
@@ -1287,7 +1287,7 @@ function getDefaultAnalysis(componentsList: string[], hooksList: string[], edgeF
         { phase: "Fase 3: Europa", duration: "18 meses", objectives: ["Entrada Portugal/Italia"], activities: ["Localización", "Partners locales"], kpis: ["10 clientes internacionales"] }
       ],
       prioritizedClients: [
-        { rank: 1, name: "Bancos privados Andorra", sector: "Banca privada", conversionProbability: "95%", estimatedValue: "150.000€", approach: "Referencia Creand", timeline: "Q1 2025" },
+        { rank: 1, name: "Bancos privados Andorra", sector: "Banca privada", conversionProbability: "95%", estimatedValue: "150.000€", approach: "Referencia ObelixIA", timeline: "Q1 2025" },
         { rank: 2, name: "Caja Rural de Aragón", sector: "Cooperativa", conversionProbability: "75%", estimatedValue: "90.000€", approach: "Demo sectorial", timeline: "Q2 2025" },
         { rank: 3, name: "Caja Rural de Navarra", sector: "Cooperativa", conversionProbability: "70%", estimatedValue: "85.000€", approach: "Demo sectorial", timeline: "Q2 2025" }
       ],

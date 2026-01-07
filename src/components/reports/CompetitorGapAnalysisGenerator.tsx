@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface FeatureComparison {
   category: string;
   feature: string;
-  creandStatus: 'implemented' | 'partial' | 'pending';
+  obelixiaStatus: 'implemented' | 'partial' | 'pending';
   competitorStatus: 'common' | 'advanced' | 'unique';
   priority: 'critical' | 'high' | 'medium' | 'low';
   effort: string;
@@ -134,48 +134,48 @@ const FEATURE_GAP_ANALYSIS: FeatureComparison[] = [
   {
     category: "Movil",
     feature: "App movil nativa iOS/Android con modo offline",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'common',
     priority: 'critical',
     effort: "3-4 meses",
     phase: 1,
-    description: "Todos los competidores ofrecen app movil. Salesforce, Dynamics y Backbase tienen apps nativas premium. Creand requiere desarrollo React Native o Flutter."
+    description: "Todos los competidores ofrecen app movil. Salesforce, Dynamics y Backbase tienen apps nativas premium. ObelixIA requiere desarrollo React Native o Flutter."
   },
   {
     category: "IA",
     feature: "Asistente IA conversacional (chatbot bancario)",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'advanced',
     priority: 'critical',
     effort: "2-3 meses",
     phase: 1,
-    description: "Salesforce Einstein GPT, Microsoft Copilot lideran. Creand puede integrar Lovable AI para crear asistente especializado banca."
+    description: "Salesforce Einstein GPT, Microsoft Copilot lideran. ObelixIA puede integrar Lovable AI para crear asistente especializado banca."
   },
   {
     category: "Integraciones",
     feature: "Conectores core bancarios (T24, Finacle, etc)",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'common',
     priority: 'critical',
     effort: "4-6 meses",
     phase: 1,
-    description: "Temenos T24, Finacle, Flexcube son los cores mas usados. Creand necesita APIs REST/SOAP para sincronizar datos clientes/cuentas."
+    description: "Temenos T24, Finacle, Flexcube son los cores mas usados. ObelixIA necesita APIs REST/SOAP para sincronizar datos clientes/cuentas."
   },
   {
     category: "Compliance",
     feature: "Certificacion ISO 27001",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'common',
     priority: 'critical',
     effort: "6-12 meses",
     phase: 1,
-    description: "Requisito obligatorio banca. Todos los competidores enterprise estan certificados. Creand debe iniciar proceso auditoria externa."
+    description: "Requisito obligatorio banca. Todos los competidores enterprise estan certificados. ObelixIA debe iniciar proceso auditoria externa."
   },
   // FASE 2 - Alta prioridad
   {
     category: "Notificaciones",
     feature: "Push notifications movil y desktop",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'common',
     priority: 'high',
     effort: "1-2 meses",
@@ -185,7 +185,7 @@ const FEATURE_GAP_ANALYSIS: FeatureComparison[] = [
   {
     category: "Calendario",
     feature: "Integracion Google Calendar y Outlook",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'common',
     priority: 'high',
     effort: "1 mes",
@@ -195,69 +195,69 @@ const FEATURE_GAP_ANALYSIS: FeatureComparison[] = [
   {
     category: "Analytics",
     feature: "Export a PowerBI/Tableau",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'advanced',
     priority: 'high',
     effort: "1-2 meses",
     phase: 2,
-    description: "Dynamics tiene Power BI nativo. Creand necesita conectores ODBC o API REST para datasets BI externos."
+    description: "Dynamics tiene Power BI nativo. ObelixIA necesita conectores ODBC o API REST para datasets BI externos."
   },
   {
     category: "Automatizacion",
     feature: "Workflow builder visual (low-code)",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'advanced',
     priority: 'high',
     effort: "3-4 meses",
     phase: 2,
-    description: "Salesforce Flow, Power Automate permiten crear automatizaciones sin codigo. Creand requiere builder drag-and-drop."
+    description: "Salesforce Flow, Power Automate permiten crear automatizaciones sin codigo. ObelixIA requiere builder drag-and-drop."
   },
   // FASE 3 - Media prioridad
   {
     category: "Open Banking",
     feature: "APIs PSD2/Open Banking",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'advanced',
     priority: 'medium',
     effort: "3-4 meses",
     phase: 3,
-    description: "Temenos, Backbase lideran en open banking. Creand puede agregar cuenta agregacion via Plaid, Tink o Salt Edge."
+    description: "Temenos, Backbase lideran en open banking. ObelixIA puede agregar cuenta agregacion via Plaid, Tink o Salt Edge."
   },
   {
     category: "Scoring",
     feature: "Credit scoring ML integrado",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'advanced',
     priority: 'medium',
     effort: "2-3 meses",
     phase: 3,
-    description: "nCino, Salesforce ofrecen scoring IA. Creand puede integrar modelos ML propios o APIs terceros (Experian, Equifax)."
+    description: "nCino, Salesforce ofrecen scoring IA. ObelixIA puede integrar modelos ML propios o APIs terceros (Experian, Equifax)."
   },
   {
     category: "Documentos",
     feature: "Firma electronica integrada",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'common',
     priority: 'medium',
     effort: "1 mes",
     phase: 3,
-    description: "DocuSign, Adobe Sign comunes en competidores. Creand puede integrar API DocuSign o alternativas europeas."
+    description: "DocuSign, Adobe Sign comunes en competidores. ObelixIA puede integrar API DocuSign o alternativas europeas."
   },
   {
     category: "Marketing",
     feature: "Email marketing y campanas automatizadas",
-    creandStatus: 'pending',
+    obelixiaStatus: 'pending',
     competitorStatus: 'advanced',
     priority: 'medium',
     effort: "2 meses",
     phase: 3,
-    description: "Salesforce Marketing Cloud, Dynamics Marketing lideran. Creand puede integrar Mailchimp, SendGrid, o Brevo."
+    description: "Salesforce Marketing Cloud, Dynamics Marketing lideran. ObelixIA puede integrar Mailchimp, SendGrid, o Brevo."
   },
-  // LO QUE CREAND YA TIENE (diferenciadores)
+  // LO QUE OBELIXIA YA TIENE (diferenciadores)
   {
     category: "Contabilidad",
     feature: "Contabilidad PGC Andorra/Espana integrada",
-    creandStatus: 'implemented',
+    obelixiaStatus: 'implemented',
     competitorStatus: 'unique',
     priority: 'critical',
     effort: "Completado",
@@ -267,7 +267,7 @@ const FEATURE_GAP_ANALYSIS: FeatureComparison[] = [
   {
     category: "GIS",
     feature: "Sistema GIS bancario 20.000+ empresas",
-    creandStatus: 'implemented',
+    obelixiaStatus: 'implemented',
     competitorStatus: 'unique',
     priority: 'critical',
     effort: "Completado",
@@ -277,7 +277,7 @@ const FEATURE_GAP_ANALYSIS: FeatureComparison[] = [
   {
     category: "Analisis Financiero",
     feature: "Ratios avanzados (DuPont, Z-Score, NOF)",
-    creandStatus: 'implemented',
+    obelixiaStatus: 'implemented',
     competitorStatus: 'unique',
     priority: 'high',
     effort: "Completado",
@@ -287,7 +287,7 @@ const FEATURE_GAP_ANALYSIS: FeatureComparison[] = [
   {
     category: "IA Documentos",
     feature: "Parsing PDF estados financieros con IA",
-    creandStatus: 'implemented',
+    obelixiaStatus: 'implemented',
     competitorStatus: 'advanced',
     priority: 'high',
     effort: "Completado",
@@ -297,7 +297,7 @@ const FEATURE_GAP_ANALYSIS: FeatureComparison[] = [
   {
     category: "Consolidacion",
     feature: "Consolidacion grupos empresariales",
-    creandStatus: 'implemented',
+    obelixiaStatus: 'implemented',
     competitorStatus: 'unique',
     priority: 'medium',
     effort: "Completado",
@@ -334,7 +334,7 @@ export const CompetitorGapAnalysisGenerator = () => {
         doc.setFontSize(8);
         doc.setTextColor(120, 120, 120);
         doc.text(`Pagina ${pageNumber}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
-        doc.text('Gap Analysis Competitivo - CRM Creand', margin, pageHeight - 8);
+        doc.text('Gap Analysis Competitivo - ObelixIA CRM', margin, pageHeight - 8);
         doc.setTextColor(0, 0, 0);
       };
 
@@ -482,7 +482,7 @@ export const CompetitorGapAnalysisGenerator = () => {
       doc.text('ANALISIS GAP COMPETITIVO', pageWidth / 2, 32, { align: 'center' });
       
       doc.setFontSize(14);
-      doc.text('CRM Bancario Creand vs Competidores', pageWidth / 2, 48, { align: 'center' });
+      doc.text('ObelixIA CRM vs Competidores', pageWidth / 2, 48, { align: 'center' });
       
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
@@ -567,18 +567,18 @@ export const CompetitorGapAnalysisGenerator = () => {
       addParagraph('Este analisis compara CRM Bancario Creand con los 5 principales competidores del sector: Salesforce Financial Services Cloud, Microsoft Dynamics 365 Banking, Temenos T24/Transact, Backbase y nCino.');
 
       addInfoBox('CONCLUSION PRINCIPAL',
-        'Creand tiene DIFERENCIADORES UNICOS en contabilidad PGC integrada, GIS bancario y analisis financiero avanzado que ningun competidor ofrece. Sin embargo, requiere mejoras en app movil, integraciones core bancario, certificacion ISO 27001 y automatizacion para competir en el segmento enterprise.',
+        'ObelixIA tiene DIFERENCIADORES UNICOS en contabilidad PGC integrada, GIS bancario y analisis financiero avanzado que ningun competidor ofrece. Sin embargo, requiere mejoras en app movil, integraciones core bancario, certificacion ISO 27001 y automatizacion para competir en el segmento enterprise.',
         'warning');
 
       addTitle('Resumen de Gaps Criticos', 2);
-      const criticalGaps = FEATURE_GAP_ANALYSIS.filter(f => f.priority === 'critical' && f.creandStatus === 'pending');
+      const criticalGaps = FEATURE_GAP_ANALYSIS.filter(f => f.priority === 'critical' && f.obelixiaStatus === 'pending');
       criticalGaps.forEach(gap => {
         addBullet(`${gap.feature} (${gap.effort})`, 0, '*');
       });
 
       currentY += 5;
-      addTitle('Diferenciadores Unicos de Creand', 2);
-      const differentiators = FEATURE_GAP_ANALYSIS.filter(f => f.creandStatus === 'implemented');
+      addTitle('Diferenciadores Unicos de ObelixIA', 2);
+      const differentiators = FEATURE_GAP_ANALYSIS.filter(f => f.obelixiaStatus === 'implemented');
       differentiators.forEach(diff => {
         addBullet(`${diff.feature} - ${diff.description.split('.')[0]}`, 0, '+');
       });
@@ -615,10 +615,10 @@ export const CompetitorGapAnalysisGenerator = () => {
       
       addMainTitle('3. MATRIZ DE FUNCIONALIDADES');
       
-      addParagraph('Comparativa de funcionalidades entre Creand y competidores:');
+      addParagraph('Comparativa de funcionalidades entre ObelixIA y competidores:');
       
       addTable(
-        ['Funcionalidad', 'Creand', 'Salesforce', 'Dynamics', 'Temenos', 'Backbase'],
+        ['Funcionalidad', 'ObelixIA', 'Salesforce', 'Dynamics', 'Temenos', 'Backbase'],
         [
           ['CRM 360 cliente', 'SI', 'SI', 'SI', 'SI', 'SI'],
           ['Contabilidad PGC', 'SI (Unico)', 'NO', 'NO', 'Parcial', 'NO'],
@@ -635,23 +635,23 @@ export const CompetitorGapAnalysisGenerator = () => {
       );
 
       addInfoBox('INTERPRETACION',
-        'Creand tiene ventaja competitiva en verticalizacion bancaria (contabilidad, GIS, ratios). Los gaps principales son: movilidad, automatizacion y certificaciones. Estos son subsanables en 18-24 meses.',
+        'ObelixIA tiene ventaja competitiva en verticalizacion bancaria (contabilidad, GIS, ratios). Los gaps principales son: movilidad, automatizacion y certificaciones. Estos son subsanables en 18-24 meses.',
         'info');
 
-      // ==================== 4. DIFERENCIADORES CREAND ====================
+      // ==================== 4. DIFERENCIADORES OBELIXIA ====================
       addNewPage();
       setProgress(55);
       
-      addMainTitle('4. DIFERENCIADORES CREAND (VENTAJAS COMPETITIVAS)');
+      addMainTitle('4. DIFERENCIADORES OBELIXIA (VENTAJAS COMPETITIVAS)');
       
-      addParagraph('Funcionalidades que Creand tiene y NINGUN competidor ofrece:');
+      addParagraph('Funcionalidades que ObelixIA tiene y NINGUN competidor ofrece:');
       
       differentiators.forEach((diff, index) => {
         checkPageBreak(30);
         addTitle(`4.${index + 1} ${diff.feature}`, 2);
         addParagraph(diff.description);
         addInfoBox('VALOR DE NEGOCIO', 
-          `Categoria: ${diff.category} | Prioridad: ${diff.priority.toUpperCase()} | Esta funcionalidad diferencia a Creand de todos los competidores CRM analizados.`,
+          `Categoria: ${diff.category} | Prioridad: ${diff.priority.toUpperCase()} | Esta funcionalidad diferencia a ObelixIA de todos los competidores CRM analizados.`,
           'success');
       });
 
@@ -661,7 +661,7 @@ export const CompetitorGapAnalysisGenerator = () => {
       
       addMainTitle('5. GAPS IDENTIFICADOS');
       
-      const gaps = FEATURE_GAP_ANALYSIS.filter(f => f.creandStatus !== 'implemented');
+      const gaps = FEATURE_GAP_ANALYSIS.filter(f => f.obelixiaStatus !== 'implemented');
       
       addTable(
         ['Funcionalidad', 'Categoria', 'Prioridad', 'Esfuerzo', 'Fase'],
