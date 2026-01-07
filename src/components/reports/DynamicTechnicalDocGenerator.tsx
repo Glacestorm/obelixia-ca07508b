@@ -872,7 +872,7 @@ security/
       
       h.addMainTitle('1. RESUMEN EJECUTIVO');
       
-      h.addParagraph(`El Sistema CRM Bancario Creand versión ${analysis.version} es una plataforma integral enterprise desarrollada específicamente para entidades bancarias, con especialización en el Principado de Andorra, España y la Unión Europea. Incluye ${analysis.modules.length} módulos principales y cumplimiento total de normativas bancarias internacionales.`);
+      h.addParagraph(`ObelixIA CRM Universal versión ${analysis.version} es una plataforma integral enterprise desarrollada específicamente para entidades bancarias y multi-sector, con especialización en el Principado de Andorra, España y la Unión Europea. Incluye ${analysis.modules.length} módulos principales y cumplimiento total de normativas bancarias internacionales.`);
 
       h.addHighlightBox('💡 PROPUESTA DE VALOR ÚNICA', 
         analysis.marketingHighlights?.valueProposition || 
@@ -1108,7 +1108,7 @@ security/
 
       setProgress(100);
       
-      const filename = `CRM_Creand_PARTE1_Resumen_Modulos_v${analysis.version}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `ObelixIA_CRM_PARTE1_Resumen_Modulos_v${analysis.version}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
       toast.success('Parte 1 generada', {
@@ -1143,7 +1143,7 @@ security/
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
       doc.setFont('helvetica', 'bold');
-      doc.text('CRM BANCARIO CREAND', h.pageWidth / 2, 35, { align: 'center' });
+      doc.text('OBELIXIA CRM UNIVERSAL', h.pageWidth / 2, 35, { align: 'center' });
       
       doc.setFontSize(14);
       doc.text('PARTE 2: TCO, Competidores e ISO 27001', h.pageWidth / 2, 50, { align: 'center' });
@@ -1245,7 +1245,7 @@ security/
         h.addTitle('6.3 Comparativa TCO vs Competidores', 2);
         if (tco.comparisonVsCompetitors) {
           h.addTable(
-            ['Competidor', 'TCO 5 Años', 'Diferencia vs Creand'],
+            ['Competidor', 'TCO 5 Años', 'Diferencia vs ObelixIA'],
             tco.comparisonVsCompetitors.map(c => [
               c.competitor,
               `${c.tco5Years?.toLocaleString() || 'N/A'}€`,
@@ -1497,7 +1497,7 @@ security/
 
       setProgress(100);
       
-      const filename = `CRM_Creand_PARTE2_TCO_ISO27001_v${analysis.version}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `ObelixIA_CRM_PARTE2_TCO_ISO27001_v${analysis.version}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
       toast.success('Parte 2 generada', {
@@ -1532,7 +1532,7 @@ security/
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
       doc.setFont('helvetica', 'bold');
-      doc.text('CRM BANCARIO CREAND', h.pageWidth / 2, 35, { align: 'center' });
+      doc.text('OBELIXIA CRM UNIVERSAL', h.pageWidth / 2, 35, { align: 'center' });
       
       doc.setFontSize(14);
       doc.text('PARTE 3: BCP, Gap Analysis y Roadmap', h.pageWidth / 2, 50, { align: 'center' });
@@ -1603,7 +1603,7 @@ security/
         h.addHighlightBox('Resumen BCP', bcp.overview || 'Plan diseñado para garantizar operaciones bancarias críticas con RTO máximo de 4 horas.', 'info');
         
         h.addTable(
-          ['Métrica', 'Valor Creand', 'Objetivo DORA', 'Estado'],
+          ['Métrica', 'Valor ObelixIA', 'Objetivo DORA', 'Estado'],
           [
             ['RTO (Recovery Time Objective)', bcp.rto || '4 horas', '< 4 horas', '✓ Cumple'],
             ['RPO (Recovery Point Objective)', bcp.rpo || '1 hora', '< 2 horas', '✓ Cumple'],
@@ -1732,7 +1732,7 @@ security/
       h.addMainTitle('13. CONCLUSIONES BCP Y GAP ANALYSIS');
 
       h.addHighlightBox('ESTADO DE MADUREZ',
-        `El CRM Bancario Creand alcanza un nivel de madurez operativa de ${analysis.gapAnalysis?.overallMaturity || 4.2}/5, con planes de continuidad de negocio que superan los requisitos DORA y capacidad de recuperación en menos de 4 horas.`,
+        `ObelixIA CRM Universal alcanza un nivel de madurez operativa de ${analysis.gapAnalysis?.overallMaturity || 4.2}/5, con planes de continuidad de negocio que superan los requisitos DORA y capacidad de recuperación en menos de 4 horas.`,
         'success');
 
       h.addTitle('13.1 Fortalezas de Continuidad', 2);
@@ -1816,7 +1816,7 @@ security/
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text('CRM BANCARIO CREAND', h.pageWidth / 2, 28, { align: 'center' });
+      doc.text('OBELIXIA CRM UNIVERSAL', h.pageWidth / 2, 28, { align: 'center' });
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
       doc.text(`Documentación Comercial Exhaustiva v${analysis.version}`, h.pageWidth / 2, 42, { align: 'center' });
@@ -1852,7 +1852,7 @@ security/
 
       setProgress(100);
       
-      const filename = `CRM_Creand_PARTE3_BCP_GapAnalysis_v${analysis.version}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `ObelixIA_CRM_PARTE3_BCP_GapAnalysis_v${analysis.version}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
       toast.success('Parte 3 generada', {
@@ -1887,7 +1887,7 @@ security/
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
       doc.setFont('helvetica', 'bold');
-      doc.text('CRM BANCARIO CREAND', h.pageWidth / 2, 35, { align: 'center' });
+      doc.text('OBELIXIA CRM UNIVERSAL', h.pageWidth / 2, 35, { align: 'center' });
       
       doc.setFontSize(14);
       doc.text('PARTE 5: Plan de Marketing y Ventas', h.pageWidth / 2, 50, { align: 'center' });
@@ -1899,7 +1899,7 @@ security/
       h.currentY = 105;
       
       h.addHighlightBox('DOCUMENTO COMERCIAL SEDUCTOR', 
-        'Este documento presenta las ventajas competitivas, el ahorro de costes cuantificado, la estrategia de go-to-market y el plan de ventas diseñado para convencer a cualquier comprador potencial de la superioridad del CRM Bancario Creand.',
+        'Este documento presenta las ventajas competitivas, el ahorro de costes cuantificado, la estrategia de go-to-market y el plan de ventas diseñado para convencer a cualquier comprador potencial de la superioridad de ObelixIA CRM Universal.',
         'success');
 
       h.addPageNumber();
@@ -1954,7 +1954,7 @@ security/
       h.addMainTitle('18. RESUMEN EJECUTIVO COMERCIAL');
 
       const marketing = analysis.marketingPlan;
-      h.addParagraph(marketing?.executiveSummary || 'CRM Bancario Creand representa una oportunidad única en el mercado de software bancario: una solución enterprise con TCO 60-80% inferior a competidores, implementación 4-6x más rápida, y cumplimiento normativo ISO 27001/DORA/PSD3 integrado de serie. Diseñado específicamente para entidades bancarias de tamaño pequeño y mediano que buscan competir con los grandes sin los costes asociados.');
+      h.addParagraph(marketing?.executiveSummary || 'ObelixIA CRM Universal representa una oportunidad única en el mercado de software bancario: una solución enterprise con TCO 60-80% inferior a competidores, implementación 4-6x más rápida, y cumplimiento normativo ISO 27001/DORA/PSD3 integrado de serie. Diseñado específicamente para entidades bancarias de tamaño pequeño y mediano que buscan competir con los grandes sin los costes asociados.');
 
       h.addHighlightBox('💰 PROPUESTA ECONÓMICA IRRESISTIBLE', 
         `AHORRO MEDIO: 450.000€ a 5 años vs Salesforce FSC | ROI: 420% | Break-even: 18 meses | Implementación: 3 meses vs 18 meses competencia`,
@@ -1978,7 +1978,7 @@ security/
       
       h.addMainTitle('19. ANÁLISIS DE AHORRO POR TIPO CLIENTE');
       
-      h.addParagraph('A continuación se presenta un análisis detallado del ahorro que cada tipo de cliente potencial obtendría al contratar CRM Bancario Creand versus su situación actual o alternativas del mercado.');
+      h.addParagraph('A continuación se presenta un análisis detallado del ahorro que cada tipo de cliente potencial obtendría al contratar ObelixIA CRM Universal versus su situación actual o alternativas del mercado.');
 
       const costSavings = analysis.clientCostSavings || getDefaultCostSavings();
       
@@ -2271,7 +2271,7 @@ security/
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(22);
       doc.setFont('helvetica', 'bold');
-      doc.text('¿POR QUÉ ELEGIR CRM CREAND?', h.pageWidth / 2, 25, { align: 'center' });
+      doc.text('¿POR QUÉ ELEGIR OBELIXIA?', h.pageWidth / 2, 25, { align: 'center' });
       
       doc.setFontSize(12);
       doc.text('La decisión inteligente para su entidad bancaria', h.pageWidth / 2, 40, { align: 'center' });
@@ -2294,7 +2294,7 @@ security/
       doc.setTextColor(0, 0, 0);
 
       h.addHighlightBox('🤝 PRÓXIMO PASO', 
-        'Solicite una demo personalizada sin compromiso. En 60 minutos le mostraremos cómo CRM Creand transformará la gestión comercial de su entidad.',
+        'Solicite una demo personalizada sin compromiso. En 60 minutos le mostraremos cómo ObelixIA transformará la gestión comercial de su entidad.',
         'success');
 
       h.addHighlightBox('📞 CONTACTO COMERCIAL', 
@@ -3254,7 +3254,7 @@ security/
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
       doc.setFont('helvetica', 'bold');
-      doc.text('CRM BANCARIO CREAND', h.pageWidth / 2, 35, { align: 'center' });
+      doc.text('OBELIXIA CRM UNIVERSAL', h.pageWidth / 2, 35, { align: 'center' });
       
       doc.setFontSize(14);
       doc.text('PARTE 4: Mercados Globales', h.pageWidth / 2, 50, { align: 'center' });
@@ -3422,20 +3422,20 @@ security/
         h.addTitle('15.4 Ahorro para Clientes Bancarios LATAM', 2);
         
         const latamSavings = [
-          { type: 'Banco Comercial Mediano (México)', current: 850000, creand: 320000, savings: 530000, roi: 165, breakeven: 14 },
-          { type: 'Cooperativa Crédito (Colombia)', current: 380000, creand: 145000, savings: 235000, roi: 162, breakeven: 12 },
-          { type: 'Banco Digital (Brasil)', current: 620000, creand: 240000, savings: 380000, roi: 158, breakeven: 15 },
-          { type: 'Caja Rural (Chile)', current: 290000, creand: 115000, savings: 175000, roi: 152, breakeven: 11 },
-          { type: 'Fintech B2B (Argentina)', current: 280000, creand: 120000, savings: 160000, roi: 133, breakeven: 13 },
-          { type: 'Banca Privada (Uruguay)', current: 420000, creand: 160000, savings: 260000, roi: 163, breakeven: 10 },
+          { type: 'Banco Comercial Mediano (México)', current: 850000, obelixia: 320000, savings: 530000, roi: 165, breakeven: 14 },
+          { type: 'Cooperativa Crédito (Colombia)', current: 380000, obelixia: 145000, savings: 235000, roi: 162, breakeven: 12 },
+          { type: 'Banco Digital (Brasil)', current: 620000, obelixia: 240000, savings: 380000, roi: 158, breakeven: 15 },
+          { type: 'Caja Rural (Chile)', current: 290000, obelixia: 115000, savings: 175000, roi: 152, breakeven: 11 },
+          { type: 'Fintech B2B (Argentina)', current: 280000, obelixia: 120000, savings: 160000, roi: 133, breakeven: 13 },
+          { type: 'Banca Privada (Uruguay)', current: 420000, obelixia: 160000, savings: 260000, roi: 163, breakeven: 10 },
         ];
 
         h.addTable(
-          ['Tipo Cliente LATAM', 'Coste Actual (5 años)', 'Coste Creand', 'Ahorro', 'ROI %', 'Breakeven'],
+          ['Tipo Cliente LATAM', 'Coste Actual (5 años)', 'Coste ObelixIA', 'Ahorro', 'ROI %', 'Breakeven'],
           latamSavings.map(s => [
             s.type,
             `$${s.current.toLocaleString()} USD`,
-            `$${s.creand.toLocaleString()} USD`,
+            `$${s.obelixia.toLocaleString()} USD`,
             `$${s.savings.toLocaleString()} USD`,
             `${s.roi}%`,
             `${s.breakeven} meses`
@@ -4405,9 +4405,9 @@ security/
           { scenario: "vs Dynamics 365", months: 24, savingsPerYear: 65000 },
         ],
         comparisonVsCompetitors: [
-          { competitor: "Salesforce FSC", tco5Years: 1250000, difference: "-60% Creand" },
-          { competitor: "Microsoft Dynamics", tco5Years: 980000, difference: "-50% Creand" },
-          { competitor: "SAP Banking", tco5Years: 1800000, difference: "-72% Creand" },
+          { competitor: "Salesforce FSC", tco5Years: 1250000, difference: "-60% ObelixIA" },
+          { competitor: "Microsoft Dynamics", tco5Years: 980000, difference: "-50% ObelixIA" },
+          { competitor: "SAP Banking", tco5Years: 1800000, difference: "-72% ObelixIA" },
         ]
       },
       bcpPlan: {
