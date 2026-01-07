@@ -482,8 +482,13 @@ export const DynamicTechnicalDocGenerator = () => {
     ));
   };
 
-  const analyzeCodebase = async (): Promise<CodebaseAnalysis> => {
-    setAnalyzing(true);
+  // Generic analyze function that takes explicit scope
+  const analyzeCodebaseForScope = async (scope: AnalysisScope): Promise<CodebaseAnalysis> => {
+    // Set the correct analyzing state based on scope
+    const setAnalyzingFn = scope === 'crm' ? setCrmAnalyzing : scope === 'erp' ? setErpAnalyzing : setCombinedAnalyzing;
+    const setAnalysisFn = scope === 'crm' ? setCrmAnalysis : scope === 'erp' ? setErpAnalysis : setCombinedAnalysis;
+    
+    setAnalyzingFn(true);
     setProgress(0);
     setAnalyzeSteps(prev => prev.map(s => ({ ...s, completed: false })));
     
@@ -559,19 +564,19 @@ security/
       setProgress(100);
       updateAnalyzeStep('valuation');
       
-      setAnalysis(data as CodebaseAnalysis);
-      toast.success('Análisis completado', { description: 'Ahora puedes generar los 5 PDFs comerciales' });
+      setAnalysisFn(data as CodebaseAnalysis);
+      toast.success(`Análisis ${scope.toUpperCase()} completado`, { description: 'Ahora puedes generar los PDFs comerciales' });
       return data as CodebaseAnalysis;
     } catch (error) {
       console.error('Error analyzing codebase:', error);
       toast.info('Usando análisis predeterminado', { description: 'Los PDFs contendrán datos de referencia' });
       const defaultAnalysis = getDefaultAnalysis();
-      setAnalysis(defaultAnalysis);
+      setAnalysisFn(defaultAnalysis);
       setProgress(100);
       analyzeSteps.forEach(step => updateAnalyzeStep(step.id));
       return defaultAnalysis;
     } finally {
-      setAnalyzing(false);
+      setAnalyzingFn(false);
     }
   };
 
@@ -4732,7 +4737,7 @@ security/
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* CRM Analysis Button */}
           <Button
-            onClick={() => { setActiveScope('crm'); analyzeCodebase(); }}
+            onClick={() => { setActiveScope('crm'); analyzeCodebaseForScope('crm'); }}
             disabled={crmAnalyzing || erpAnalyzing || combinedAnalyzing || generatingPart !== null}
             className="w-full h-auto py-4 flex flex-col items-center"
             variant={crmAnalysis ? 'outline' : 'default'}
@@ -4751,7 +4756,7 @@ security/
 
           {/* ERP Analysis Button */}
           <Button
-            onClick={() => { setActiveScope('erp'); analyzeCodebase(); }}
+            onClick={() => { setActiveScope('erp'); analyzeCodebaseForScope('erp'); }}
             disabled={crmAnalyzing || erpAnalyzing || combinedAnalyzing || generatingPart !== null}
             className="w-full h-auto py-4 flex flex-col items-center border-2 border-emerald-500/50"
             variant={erpAnalysis ? 'outline' : 'secondary'}
@@ -4770,7 +4775,7 @@ security/
 
           {/* Combined CRM + ERP Analysis Button */}
           <Button
-            onClick={() => { setActiveScope('combined'); analyzeCodebase(); }}
+            onClick={() => { setActiveScope('combined'); analyzeCodebaseForScope('combined'); }}
             disabled={crmAnalyzing || erpAnalyzing || combinedAnalyzing || generatingPart !== null}
             className="w-full h-auto py-4 flex flex-col items-center border-2 border-amber-500/50"
             variant={combinedAnalysis ? 'outline' : 'secondary'}
