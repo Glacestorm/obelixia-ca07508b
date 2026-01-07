@@ -457,7 +457,7 @@ const MODULES_STATUS: ModuleStatus[] = [
     completedFeatures: [
       "Tema Day (claro)",
       "Tema Night (oscuro)",
-      "Tema Creand (corporativo)",
+      "Tema ObelixIA (corporativo)",
       "Tema Aurora (vibrante)",
       "Selector persistente",
       "Transiciones suaves CSS"
@@ -521,7 +521,7 @@ export const AppDetailedStatusGenerator = () => {
         doc.setFontSize(8);
         doc.setTextColor(120, 120, 120);
         doc.text(`Pagina ${pageNumber}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
-        doc.text('Estado Detallado Aplicativo - CRM Creand', margin, pageHeight - 8);
+        doc.text('Estado Detallado Aplicativo - ObelixIA CRM', margin, pageHeight - 8);
         doc.setTextColor(0, 0, 0);
       };
 
@@ -681,7 +681,7 @@ export const AppDetailedStatusGenerator = () => {
       doc.text('ESTADO DETALLADO DEL APLICATIVO', pageWidth / 2, 32, { align: 'center' });
       
       doc.setFontSize(14);
-      doc.text('CRM Bancario Creand', pageWidth / 2, 48, { align: 'center' });
+      doc.text('ObelixIA CRM Universal', pageWidth / 2, 48, { align: 'center' });
       
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
@@ -719,7 +719,7 @@ export const AppDetailedStatusGenerator = () => {
 
       currentY += 10;
       addInfoBox('RESUMEN EJECUTIVO', 
-        `El aplicativo CRM Creand cuenta con ${totalModules} modulos principales, con una completitud media del ${avgCompletion}%. Se han implementado ${completedFeatures} funcionalidades y quedan ${pendingFeatures} pendientes. ${criticalModules} modulos son criticos para produccion.`,
+        `El aplicativo ObelixIA CRM cuenta con ${totalModules} modulos principales, con una completitud media del ${avgCompletion}%. Se han implementado ${completedFeatures} funcionalidades y quedan ${pendingFeatures} pendientes. ${criticalModules} modulos son criticos para produccion.`,
         'info');
 
       addFooter();
@@ -868,7 +868,7 @@ export const AppDetailedStatusGenerator = () => {
       doc.text('ESTADO DETALLADO DEL APLICATIVO', pageWidth / 2, 25, { align: 'center' });
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
-      doc.text('CRM Bancario Creand', pageWidth / 2, 38, { align: 'center' });
+      doc.text('ObelixIA CRM Universal', pageWidth / 2, 38, { align: 'center' });
       doc.text(new Date().toLocaleDateString('es-ES'), pageWidth / 2, 50, { align: 'center' });
 
       currentY = 75;
@@ -895,7 +895,7 @@ export const AppDetailedStatusGenerator = () => {
 
       setProgress(100);
       
-      const filename = `Estado_Detallado_Aplicativo_Creand_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `Estado_Detallado_Aplicativo_ObelixIA_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
       toast.success('Documento Estado Detallado generado', {

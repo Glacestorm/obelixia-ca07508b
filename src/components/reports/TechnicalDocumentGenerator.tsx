@@ -66,7 +66,7 @@ export const TechnicalDocumentGenerator = () => {
         doc.setFontSize(9);
         doc.setTextColor(128, 128, 128);
         doc.text(`Página ${pageNumber}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
-        doc.text('Documentación Técnico-Funcional - Creand CRM', margin, pageHeight - 10);
+        doc.text('Documentación Técnico-Funcional - ObelixIA CRM', margin, pageHeight - 10);
         doc.setTextColor(0, 0, 0);
       };
 
@@ -256,7 +256,7 @@ export const TechnicalDocumentGenerator = () => {
       
       doc.setFontSize(14);
       doc.setFont('helvetica', 'normal');
-      doc.text('Sistema CRM Bancario - Creand', pageWidth / 2, 65, { align: 'center' });
+      doc.text('ObelixIA CRM Universal', pageWidth / 2, 65, { align: 'center' });
       
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(12);
@@ -365,7 +365,7 @@ export const TechnicalDocumentGenerator = () => {
       
       addTitle('1. RESUMEN EJECUTIVO');
       
-      addParagraph('El Sistema CRM Bancario Creand es una plataforma integral de gestión comercial desarrollada específicamente para Creand, entidad bancaria del Principado de Andorra. Esta solución tecnológica abarca todos los aspectos de la gestión de relaciones con clientes empresariales, desde la captación hasta el seguimiento contable y el cumplimiento normativo.');
+      addParagraph('ObelixIA CRM Universal es una plataforma integral de gestión comercial desarrollada para entidades bancarias y multi-sector, con especialización en el Principado de Andorra, España y la Unión Europea. Esta solución tecnológica abarca todos los aspectos de la gestión de relaciones con clientes empresariales, desde la captación hasta el seguimiento contable y el cumplimiento normativo.');
       
       addSubtitle('Objetivos Principales del Sistema');
       addBullet('Centralizar la gestión de la cartera comercial de empresas con capacidad para más de 20,000 registros');
@@ -509,9 +509,9 @@ export const TechnicalDocumentGenerator = () => {
         ['Modo', 'Criterio de Color', 'Uso Principal', 'Escala'],
         [
           ['Estado', 'Status de empresa', 'Vista general cartera', 'Colores configurables'],
-          ['Vinculación', '% afiliación Creand', 'Penetración bancaria', 'Verde alto, rojo bajo'],
+          ['Vinculación', '% afiliación bancaria', 'Penetración bancaria', 'Verde alto, rojo bajo'],
           ['Facturación', 'Rango facturación anual', 'Segmentación tamaño', 'Azul escalado'],
-          ['P&L Banco', 'Rentabilidad Creand', 'Valor cliente', 'Verde/rojo'],
+          ['P&L Banco', 'Rentabilidad cliente', 'Valor cliente', 'Verde/rojo'],
           ['Visitas', 'Frecuencia visitas', 'Cobertura comercial', 'Intensidad color'],
         ],
         [35, 45, 50, 40]
@@ -640,7 +640,7 @@ export const TechnicalDocumentGenerator = () => {
       addNewPage();
       addTitle('7.2 Datos que Salen de la Entidad Bancaria', 2);
       
-      addWarning('Los siguientes datos viajan a servidores externos (Supabase Cloud, Resend, OpenStreetMap). Evaluar si es aceptable según políticas internas de Creand.');
+      addWarning('Los siguientes datos viajan a servidores externos (Supabase Cloud, Resend, OpenStreetMap). Evaluar si es aceptable según políticas internas de la entidad.');
 
       addTable(
         ['Servicio Externo', 'Datos Enviados', 'Ubicación Servidores', 'Riesgo'],
@@ -710,7 +710,7 @@ export const TechnicalDocumentGenerator = () => {
           ['Base legal documentada', 'NO', 'Revisar políticas de privacidad'],
           ['EIPD', 'NO REALIZADA', 'Contratar evaluación externa'],
           ['Notificación brechas', 'PARCIAL', 'Procedimiento formal + alertas'],
-          ['DPD designado', 'DEPENDE BANCO', 'Verificar designación Creand'],
+          ['DPD designado', 'DEPENDE ENTIDAD', 'Verificar designación entidad'],
         ],
         [50, 40, 80]
       );
@@ -807,8 +807,8 @@ sudo usermod -aG docker $USER
 sudo apt install docker-compose-plugin
 
 # Crear directorio del proyecto
-sudo mkdir -p /opt/creand-crm
-cd /opt/creand-crm
+sudo mkdir -p /opt/obelixia-crm
+cd /opt/obelixia-crm
       `.trim();
 
       doc.setFontSize(8);
@@ -834,8 +834,8 @@ cp .env.example .env
 # Editar configuración
 nano .env
 # Configurar: POSTGRES_PASSWORD, JWT_SECRET, ANON_KEY, SERVICE_ROLE_KEY
-# SITE_URL=https://crm.creand.internal
-# SMTP_HOST=smtp.creand.internal
+# SITE_URL=https://crm.obelixia.internal
+# SMTP_HOST=smtp.entidad.internal
 # SMTP_PORT=587
       `.trim();
 
@@ -859,11 +859,11 @@ nano .env
       addSubtitle('Paso 4: Desplegar Frontend');
       const step4 = `
 # Clonar código frontend
-git clone [repositorio-crm] /opt/creand-crm/frontend
-cd /opt/creand-crm/frontend
+git clone [repositorio-crm] /opt/obelixia-crm/frontend
+cd /opt/obelixia-crm/frontend
 
 # Configurar variables de entorno
-echo "VITE_SUPABASE_URL=https://api.crm.creand.internal" > .env
+echo "VITE_SUPABASE_URL=https://api.crm.obelixia.internal" > .env
 echo "VITE_SUPABASE_PUBLISHABLE_KEY=[anon-key]" >> .env
 
 # Build de producción
@@ -871,7 +871,7 @@ npm install
 npm run build
 
 # Servir con Nginx
-sudo cp -r dist/* /var/www/crm.creand.internal/
+sudo cp -r dist/* /var/www/crm.obelixia.internal/
       `.trim();
 
       doc.setFontSize(8);
@@ -1117,7 +1117,7 @@ sudo cp -r dist/* /var/www/crm.creand.internal/
       doc.text('DOCUMENTO GENERADO', pageWidth / 2, 25, { align: 'center' });
       doc.setFontSize(12);
       doc.setFont('helvetica', 'normal');
-      doc.text('Sistema CRM Bancario Creand - Documentación Técnico-Funcional v2.0', pageWidth / 2, 40, { align: 'center' });
+      doc.text('ObelixIA CRM Universal - Documentación Técnico-Funcional v2.0', pageWidth / 2, 40, { align: 'center' });
       doc.text(new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }), pageWidth / 2, 50, { align: 'center' });
 
       currentY = 80;
@@ -1153,7 +1153,7 @@ sudo cp -r dist/* /var/www/crm.creand.internal/
       currentY += 8;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      const disclaimer = 'DOCUMENTO CONFIDENCIAL - USO INTERNO BANCARIO. Este documento contiene información técnica sensible sobre la arquitectura de seguridad del sistema. Su distribución fuera de Creand Banc requiere autorización expresa. El análisis de riesgos incluido debe ser validado por el equipo de seguridad antes de tomar decisiones de despliegue.';
+      const disclaimer = 'DOCUMENTO CONFIDENCIAL - USO INTERNO BANCARIO. Este documento contiene información técnica sensible sobre la arquitectura de seguridad del sistema. Su distribución fuera de la entidad requiere autorización expresa. El análisis de riesgos incluido debe ser validado por el equipo de seguridad antes de tomar decisiones de despliegue.';
       const disclaimerLines = doc.splitTextToSize(disclaimer, contentWidth);
       disclaimerLines.forEach((line: string) => {
         doc.text(line, margin, currentY);
@@ -1163,7 +1163,7 @@ sudo cp -r dist/* /var/www/crm.creand.internal/
       setProgress(100);
       
       // Save PDF
-      const filename = `Documentacion_Tecnico_Funcional_Creand_v2_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `Documentacion_Tecnico_Funcional_ObelixIA_v2_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
       toast.success('Documento PDF generado correctamente', {

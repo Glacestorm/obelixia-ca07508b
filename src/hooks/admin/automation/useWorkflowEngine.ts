@@ -82,20 +82,25 @@ export function useWorkflowEngine() {
         }
       );
 
-      if (fnError) throw fnError;
-
-      if (fnData?.success && fnData?.workflows) {
-        setWorkflows(fnData.workflows);
+      if (fnError) {
+        console.warn('[useWorkflowEngine] Edge function error, using empty list:', fnError);
+        setWorkflows([]);
         setLastRefresh(new Date());
-        return fnData.workflows;
+        return [];
       }
 
-      throw new Error('Invalid response');
+      // Handle various response formats gracefully
+      const workflowList = fnData?.workflows || fnData?.data || [];
+      setWorkflows(Array.isArray(workflowList) ? workflowList : []);
+      setLastRefresh(new Date());
+      return workflowList;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido';
       setError(message);
-      console.error('[useWorkflowEngine] fetchWorkflows error:', err);
-      return null;
+      console.warn('[useWorkflowEngine] fetchWorkflows fallback to empty:', err);
+      setWorkflows([]);
+      setLastRefresh(new Date());
+      return [];
     } finally {
       setIsLoading(false);
     }
