@@ -510,7 +510,7 @@ const FUNCTIONALITY_MODULES: FunctionalityModule[] = [
     features: [
       {
         name: '4 Temes',
-        description: 'Day (clar), Night (fosc), Creand (corporatiu), Aurora (vibrant)',
+        description: 'Day (clar), Night (fosc), Corporate (corporatiu), Aurora (vibrant)',
         status: 'completed',
         technicalDetails: ['ThemeContext.tsx', 'CSS variables', 'Transicions suaves']
       },
@@ -837,7 +837,7 @@ export const CodebaseIndexGenerator = () => {
         doc.setFontSize(8);
         doc.setTextColor(120, 120, 120);
         doc.text(`Pàgina ${pageNumber}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
-        doc.text('Índex Funcionalitats - CRM Bancari Creand', margin, pageHeight - 8);
+        doc.text('Índex Funcionalitats - ObelixIA CRM', margin, pageHeight - 8);
         doc.setTextColor(0, 0, 0);
       };
 
@@ -860,7 +860,7 @@ export const CodebaseIndexGenerator = () => {
       doc.text('ÍNDEX DE FUNCIONALITATS', pageWidth / 2, 32, { align: 'center' });
       
       doc.setFontSize(14);
-      doc.text('CRM Bancari Creand - Documentació Tècnica', pageWidth / 2, 48, { align: 'center' });
+      doc.text('ObelixIA CRM - Documentació Tècnica', pageWidth / 2, 48, { align: 'center' });
       
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
