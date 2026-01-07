@@ -89,7 +89,8 @@ const createERPPDFHelpers = (doc: jsPDF, analysis: ERPAnalysis) => {
     };
     doc.setFontSize(sizes[level as keyof typeof sizes] || 11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...(colors[level as keyof typeof colors] || PDF_COLORS.primary));
+    const color = colors[level as keyof typeof colors] || PDF_COLORS.primary;
+    doc.setTextColor(color[0], color[1], color[2]);
     doc.text(sanitizeText(text), margin, currentY);
     doc.setTextColor(0, 0, 0);
     currentY += 8;
@@ -195,11 +196,12 @@ const createERPPDFHelpers = (doc: jsPDF, analysis: ERPAnalysis) => {
     const barHeight = 4;
     const fillWidth = (value / max) * barWidth;
     
-    doc.setFillColor(...PDF_COLORS.gray[200]);
+    const grayColor = PDF_COLORS.gray[200];
+    doc.setFillColor(grayColor[0], grayColor[1], grayColor[2]);
     doc.roundedRect(barX, currentY - 3, barWidth, barHeight, 1, 1, 'F');
     
     const barColor = value >= 80 ? PDF_COLORS.success : value >= 50 ? PDF_COLORS.warning : PDF_COLORS.error;
-    doc.setFillColor(...barColor);
+    doc.setFillColor(barColor[0], barColor[1], barColor[2]);
     doc.roundedRect(barX, currentY - 3, fillWidth, barHeight, 1, 1, 'F');
     
     doc.text(`${value}%`, barX + barWidth + 5, currentY);
