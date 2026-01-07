@@ -9,6 +9,15 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { BRAND, PDF_COLORS, SAFE_FONTS, sanitizeForPDF, type AnalysisScope, PDF_PARTS, getComponentCounts, ERP_HOOKS, ERP_EDGE_FUNCTIONS, ERP_COMPONENTS } from './constants';
+import { 
+  generateERPPart1, 
+  generateERPPart2, 
+  generateERPPart3, 
+  generateERPPart4, 
+  generateERPPart5, 
+  generateERPPart6, 
+  generateERPPart7 
+} from './generators/ERPPartGenerators';
 
 interface GenerationStep {
   id: string;
@@ -432,7 +441,7 @@ const PAGES_LIST = [
   'MapView.tsx', 'NotFound.tsx', 'Profile.tsx', 'VisitSheets.tsx',
 ];
 
-type PDFPart = 'part1' | 'part2' | 'part3' | 'part4' | 'part5' | 'part6' | 'part7';
+type PDFPart = 'part1' | 'part2' | 'part3' | 'part4' | 'part5' | 'part6' | 'part7' | 'erp1' | 'erp2' | 'erp3' | 'erp4' | 'erp5' | 'erp6' | 'erp7';
 
 export const DynamicTechnicalDocGenerator = () => {
   // Current analysis scope: CRM, ERP, or Combined
@@ -3961,6 +3970,122 @@ security/
     }
   };
 
+  // ============================================
+  // ERP PDF GENERATORS (7 Partes)
+  // ============================================
+  
+  const handleGenerateERPPart1 = async () => {
+    if (!analysis) return;
+    setGeneratingPart('erp1');
+    try {
+      const result = await generateERPPart1(analysis, setProgress);
+      toast.success('ERP Parte 1 generada', {
+        description: `${result.pages} páginas - Resumen Ejecutivo, Contabilidad PGC`,
+      });
+    } catch (error) {
+      console.error('Error generating ERP Part 1:', error);
+      toast.error('Error al generar ERP Parte 1');
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
+  const handleGenerateERPPart2 = async () => {
+    if (!analysis) return;
+    setGeneratingPart('erp2');
+    try {
+      const result = await generateERPPart2(analysis, setProgress);
+      toast.success('ERP Parte 2 generada', {
+        description: `${result.pages} páginas - Módulos Contables, NIIF`,
+      });
+    } catch (error) {
+      console.error('Error generating ERP Part 2:', error);
+      toast.error('Error al generar ERP Parte 2');
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
+  const handleGenerateERPPart3 = async () => {
+    if (!analysis) return;
+    setGeneratingPart('erp3');
+    try {
+      const result = await generateERPPart3(analysis, setProgress);
+      toast.success('ERP Parte 3 generada', {
+        description: `${result.pages} páginas - Facturación, SII`,
+      });
+    } catch (error) {
+      console.error('Error generating ERP Part 3:', error);
+      toast.error('Error al generar ERP Parte 3');
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
+  const handleGenerateERPPart4 = async () => {
+    if (!analysis) return;
+    setGeneratingPart('erp4');
+    try {
+      const result = await generateERPPart4(analysis, setProgress);
+      toast.success('ERP Parte 4 generada', {
+        description: `${result.pages} páginas - Tesorería Enterprise`,
+      });
+    } catch (error) {
+      console.error('Error generating ERP Part 4:', error);
+      toast.error('Error al generar ERP Parte 4');
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
+  const handleGenerateERPPart5 = async () => {
+    if (!analysis) return;
+    setGeneratingPart('erp5');
+    try {
+      const result = await generateERPPart5(analysis, setProgress);
+      toast.success('ERP Parte 5 generada', {
+        description: `${result.pages} páginas - Inventario, Stock`,
+      });
+    } catch (error) {
+      console.error('Error generating ERP Part 5:', error);
+      toast.error('Error al generar ERP Parte 5');
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
+  const handleGenerateERPPart6 = async () => {
+    if (!analysis) return;
+    setGeneratingPart('erp6');
+    try {
+      const result = await generateERPPart6(analysis, setProgress);
+      toast.success('ERP Parte 6 generada', {
+        description: `${result.pages} páginas - Compliance, Auditoría`,
+      });
+    } catch (error) {
+      console.error('Error generating ERP Part 6:', error);
+      toast.error('Error al generar ERP Parte 6');
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
+  const handleGenerateERPPart7 = async () => {
+    if (!analysis) return;
+    setGeneratingPart('erp7');
+    try {
+      const result = await generateERPPart7(analysis, setProgress);
+      toast.success('ERP Parte 7 generada', {
+        description: `${result.pages} páginas - Banking Hub, Open Banking`,
+      });
+    } catch (error) {
+      console.error('Error generating ERP Part 7:', error);
+      toast.error('Error al generar ERP Parte 7');
+    } finally {
+      setGeneratingPart(null);
+    }
+  };
+
   const getDefaultCostSavings = (): ClientCostSavings[] => [
     {
       clientType: 'Banco Retail Mediano (200 empleados)',
@@ -4786,10 +4911,128 @@ security/
           </Button>
         </div>
 
+        {/* ERP PDF Buttons Section */}
+        {(activeScope === 'erp' || activeScope === 'combined') && isAnalysisComplete && (
+          <>
+            <div className="flex items-center gap-2 pt-4 border-t border-border/50">
+              <Calculator className="h-5 w-5 text-emerald-500" />
+              <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                Documentación ERP Contable-Financiero (7 Partes)
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+              <Button
+                onClick={handleGenerateERPPart1}
+                disabled={!isAnalysisComplete || analyzing || generatingPart !== null}
+                variant="secondary"
+                className="flex flex-col h-auto py-4 border-2 border-emerald-500/30"
+              >
+                {generatingPart === 'erp1' ? (
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                ) : (
+                  <BookOpen className="h-5 w-5 mb-1 text-emerald-600" />
+                )}
+                <span className="font-medium">ERP 1</span>
+                <span className="text-xs opacity-80">Ejecutivo, PGC</span>
+              </Button>
+
+              <Button
+                onClick={handleGenerateERPPart2}
+                disabled={!isAnalysisComplete || analyzing || generatingPart !== null}
+                variant="secondary"
+                className="flex flex-col h-auto py-4 border-2 border-emerald-500/30"
+              >
+                {generatingPart === 'erp2' ? (
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                ) : (
+                  <Calculator className="h-5 w-5 mb-1 text-emerald-600" />
+                )}
+                <span className="font-medium">ERP 2</span>
+                <span className="text-xs opacity-80">NIIF, Fiscal</span>
+              </Button>
+
+              <Button
+                onClick={handleGenerateERPPart3}
+                disabled={!isAnalysisComplete || analyzing || generatingPart !== null}
+                variant="secondary"
+                className="flex flex-col h-auto py-4 border-2 border-emerald-500/30"
+              >
+                {generatingPart === 'erp3' ? (
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                ) : (
+                  <FileText className="h-5 w-5 mb-1 text-emerald-600" />
+                )}
+                <span className="font-medium">ERP 3</span>
+                <span className="text-xs opacity-80">Facturación, SII</span>
+              </Button>
+
+              <Button
+                onClick={handleGenerateERPPart4}
+                disabled={!isAnalysisComplete || analyzing || generatingPart !== null}
+                variant="secondary"
+                className="flex flex-col h-auto py-4 border-2 border-emerald-500/30"
+              >
+                {generatingPart === 'erp4' ? (
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                ) : (
+                  <DollarSign className="h-5 w-5 mb-1 text-emerald-600" />
+                )}
+                <span className="font-medium">ERP 4</span>
+                <span className="text-xs opacity-80">Tesorería</span>
+              </Button>
+
+              <Button
+                onClick={handleGenerateERPPart5}
+                disabled={!isAnalysisComplete || analyzing || generatingPart !== null}
+                variant="secondary"
+                className="flex flex-col h-auto py-4 border-2 border-emerald-500/30"
+              >
+                {generatingPart === 'erp5' ? (
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                ) : (
+                  <Database className="h-5 w-5 mb-1 text-emerald-600" />
+                )}
+                <span className="font-medium">ERP 5</span>
+                <span className="text-xs opacity-80">Inventario</span>
+              </Button>
+
+              <Button
+                onClick={handleGenerateERPPart6}
+                disabled={!isAnalysisComplete || analyzing || generatingPart !== null}
+                variant="secondary"
+                className="flex flex-col h-auto py-4 border-2 border-emerald-500/30"
+              >
+                {generatingPart === 'erp6' ? (
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                ) : (
+                  <Shield className="h-5 w-5 mb-1 text-emerald-600" />
+                )}
+                <span className="font-medium">ERP 6</span>
+                <span className="text-xs opacity-80">Compliance</span>
+              </Button>
+
+              <Button
+                onClick={handleGenerateERPPart7}
+                disabled={!isAnalysisComplete || analyzing || generatingPart !== null}
+                variant="secondary"
+                className="flex flex-col h-auto py-4 border-2 border-emerald-500/30"
+              >
+                {generatingPart === 'erp7' ? (
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                ) : (
+                  <Building2 className="h-5 w-5 mb-1 text-emerald-600" />
+                )}
+                <span className="font-medium">ERP 7</span>
+                <span className="text-xs opacity-80">Banking Hub</span>
+              </Button>
+            </div>
+          </>
+        )}
+
         {/* Hint when not analyzed */}
         {!isAnalysisComplete && !analyzing && (
           <p className="text-xs text-muted-foreground text-center">
-            Haz clic en "Analitzar Codi" para habilitar la generación de los 7 PDFs comerciales
+            Haz clic en "Analitzar Codi" para habilitar la generación de los PDFs comerciales
           </p>
         )}
       </CardContent>
