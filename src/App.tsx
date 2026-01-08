@@ -56,16 +56,13 @@ const DeferredComponents = () => {
 
   useEffect(() => {
     // Load non-critical components after a short delay
-    // Use 'in' operator to safely check for requestIdleCallback (Safari doesn't support it)
-    const hasIdleCallback = 'requestIdleCallback' in window;
-    
-    const timer = hasIdleCallback
-      ? (window as any).requestIdleCallback(() => setShowDeferred(true), { timeout: 2000 })
+    const timer = requestIdleCallback 
+      ? requestIdleCallback(() => setShowDeferred(true), { timeout: 2000 })
       : setTimeout(() => setShowDeferred(true), 1000);
     
     return () => {
-      if (hasIdleCallback) {
-        (window as any).cancelIdleCallback(timer);
+      if (requestIdleCallback && typeof timer === 'number') {
+        cancelIdleCallback(timer);
       } else {
         clearTimeout(timer as number);
       }
