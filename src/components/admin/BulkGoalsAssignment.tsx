@@ -21,23 +21,17 @@ interface Profile {
   oficina: string | null;
 }
 
+// Values must match DB constraint: visits, success_rate, engagement, vinculacion, products
 const metricTypes = [
-  { value: 'total_visits', label: 'Total Visites' },
-  { value: 'successful_visits', label: 'Visites Reeixides' },
-  { value: 'assigned_companies', label: 'Empreses Assignades' },
-  { value: 'products_offered', label: 'Productes Oferts' },
-  { value: 'average_vinculacion', label: 'Vinculació Mitjana' },
-  { value: 'new_clients', label: 'Nous Clients' },
-  { value: 'visit_sheets', label: 'Fitxes de Visita' },
-  { value: 'tpv_volume', label: 'Volum TPV' },
-  { value: 'conversion_rate', label: 'Taxa de Conversió' },
-  { value: 'client_facturacion', label: 'Facturació Clients' },
-  { value: 'products_per_client', label: 'Productes per Client' },
-  { value: 'follow_ups', label: 'Seguiments' },
+  { value: 'visits', label: 'Total Visites' },
+  { value: 'success_rate', label: 'Taxa d\'Èxit' },
+  { value: 'engagement', label: 'Engagement' },
+  { value: 'vinculacion', label: 'Vinculació' },
+  { value: 'products', label: 'Productes' },
 ];
 
+// Values must match DB constraint: monthly, quarterly, yearly
 const periodTypes = [
-  { value: 'weekly', label: 'Setmanal' },
   { value: 'monthly', label: 'Mensual' },
   { value: 'quarterly', label: 'Trimestral' },
   { value: 'yearly', label: 'Anual' },
@@ -55,7 +49,7 @@ export function BulkGoalsAssignment() {
   const [oficinas, setOficinas] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
-    metric_type: 'total_visits',
+    metric_type: 'visits',
     target_value: 10,
     period_type: 'monthly',
     period_start: format(new Date(), 'yyyy-MM-dd'),
@@ -162,7 +156,7 @@ export function BulkGoalsAssignment() {
       toast.success(`${selectedGestores.length} objectius assignats correctament`);
       setSelectedGestores([]);
       setFormData({
-        metric_type: 'total_visits',
+        metric_type: 'visits',
         target_value: 10,
         period_type: 'monthly',
         period_start: format(new Date(), 'yyyy-MM-dd'),
@@ -218,7 +212,7 @@ export function BulkGoalsAssignment() {
                 type="number"
                 value={formData.target_value}
                 onChange={(e) => setFormData(prev => ({ ...prev, target_value: parseFloat(e.target.value) || 0 }))}
-                step={['average_vinculacion', 'conversion_rate', 'products_per_client'].includes(formData.metric_type) ? '0.1' : '1'}
+                step={['success_rate', 'engagement', 'vinculacion'].includes(formData.metric_type) ? '0.1' : '1'}
               />
             </div>
 
