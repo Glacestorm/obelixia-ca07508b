@@ -13,10 +13,12 @@ import {
   Users,
   RefreshCw,
   AlertTriangle,
-  FileText
+  FileText,
+  Bot
 } from 'lucide-react';
 import { useServicesPro, ContractAnalysis, AdaptiveLearningPath, RevenuePricing, CustomerDNA } from '@/hooks/admin/verticals/useServicesPro';
 import { cn } from '@/lib/utils';
+import { VerticalAgentPanel } from './agents';
 
 export function ServicesProPanel() {
   const [activeTab, setActiveTab] = useState('legal');
@@ -78,7 +80,7 @@ export function ServicesProPanel() {
       </CardHeader>
       <CardContent className="pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="legal" className="text-xs">
               <Scale className="h-3 w-3 mr-1" />
               Legal
@@ -94,6 +96,10 @@ export function ServicesProPanel() {
             <TabsTrigger value="retail" className="text-xs">
               <Users className="h-3 w-3 mr-1" />
               Retail
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="text-xs">
+              <Bot className="h-3 w-3 mr-1" />
+              Agent
             </TabsTrigger>
           </TabsList>
 
@@ -293,6 +299,17 @@ export function ServicesProPanel() {
                 )}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="agent" className="mt-0">
+            <VerticalAgentPanel 
+              verticalType="services"
+              context={{
+                contractAnalysis: contractAnalysis ? { riskScore: contractAnalysis.overall_risk } : null,
+                customerDNA: customerDNA ? { ltv: customerDNA.lifetime_value, churnRisk: customerDNA.churn_risk } : null,
+              }}
+              className="border-0 shadow-none"
+            />
           </TabsContent>
         </Tabs>
       </CardContent>

@@ -12,9 +12,11 @@ import {
   Satellite,
   RefreshCw,
   ThermometerSun,
-  Gauge
+  Gauge,
+  Bot
 } from 'lucide-react';
 import { useAgriculturePro, PrecisionFarmingData, WeatherPrediction, IrrigationPlan } from '@/hooks/admin/verticals/useAgriculturePro';
+import { VerticalAgentPanel } from './agents';
 
 export function AgricultureProPanel() {
   const [activeTab, setActiveTab] = useState('precision');
@@ -64,18 +66,22 @@ export function AgricultureProPanel() {
       </CardHeader>
       <CardContent className="pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="precision" className="text-xs">
               <Satellite className="h-3 w-3 mr-1" />
               Precisión
             </TabsTrigger>
             <TabsTrigger value="weather" className="text-xs">
               <CloudRain className="h-3 w-3 mr-1" />
-              Clima AI
+              Clima
             </TabsTrigger>
             <TabsTrigger value="irrigation" className="text-xs">
               <Droplets className="h-3 w-3 mr-1" />
               Riego
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="text-xs">
+              <Bot className="h-3 w-3 mr-1" />
+              Agent
             </TabsTrigger>
           </TabsList>
 
@@ -204,6 +210,18 @@ export function AgricultureProPanel() {
                 )}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="agent" className="mt-0">
+            <VerticalAgentPanel 
+              verticalType="agriculture"
+              context={{
+                fieldId: 'field-demo-1',
+                precisionData: precisionData ? { ndvi: precisionData.ndvi_index, health: precisionData.crop_health_score } : null,
+                hasIrrigationPlan: !!irrigationPlan,
+              }}
+              className="border-0 shadow-none"
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
