@@ -41594,6 +41594,128 @@ export type Database = {
         }
         Relationships: []
       }
+      vertical_agent_sessions: {
+        Row: {
+          agent_mode: string
+          confidence_threshold: number | null
+          context: Json | null
+          conversation_history: Json | null
+          created_at: string | null
+          decisions_log: Json | null
+          ended_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          tasks_executed: number | null
+          tasks_pending: number | null
+          updated_at: string | null
+          user_id: string | null
+          vertical_type: string
+        }
+        Insert: {
+          agent_mode?: string
+          confidence_threshold?: number | null
+          context?: Json | null
+          conversation_history?: Json | null
+          created_at?: string | null
+          decisions_log?: Json | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          tasks_executed?: number | null
+          tasks_pending?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vertical_type: string
+        }
+        Update: {
+          agent_mode?: string
+          confidence_threshold?: number | null
+          context?: Json | null
+          conversation_history?: Json | null
+          created_at?: string | null
+          decisions_log?: Json | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          tasks_executed?: number | null
+          tasks_pending?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          vertical_type?: string
+        }
+        Relationships: []
+      }
+      vertical_agent_tasks: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          completed_at: string | null
+          confidence_score: number | null
+          created_at: string | null
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          input_params: Json | null
+          output_result: Json | null
+          priority: number | null
+          requires_human_approval: boolean | null
+          session_id: string | null
+          status: string
+          task_description: string | null
+          task_type: string
+          vertical_type: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_params?: Json | null
+          output_result?: Json | null
+          priority?: number | null
+          requires_human_approval?: boolean | null
+          session_id?: string | null
+          status?: string
+          task_description?: string | null
+          task_type: string
+          vertical_type: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_params?: Json | null
+          output_result?: Json | null
+          priority?: number | null
+          requires_human_approval?: boolean | null
+          session_id?: string | null
+          status?: string
+          task_description?: string | null
+          task_type?: string
+          vertical_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vertical_agent_tasks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "vertical_agent_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vertical_bpmn_templates: {
         Row: {
           created_at: string | null

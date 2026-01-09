@@ -4,6 +4,9 @@ export { useAgriculturePro } from './useAgriculturePro';
 export { useIndustrialPro } from './useIndustrialPro';
 export { useServicesPro } from './useServicesPro';
 
+// Vertical AI Agents (Phase 1)
+export * from './agents';
+
 // Re-export types
 export type {
   TelemedicineSession,
