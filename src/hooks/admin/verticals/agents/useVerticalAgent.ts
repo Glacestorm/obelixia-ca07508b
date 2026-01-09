@@ -92,7 +92,7 @@ export interface VerticalAgentConfig {
   context?: Record<string, unknown>;
 }
 
-type JsonCompatible = Record<string, unknown> | unknown[];
+type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export function useVerticalAgent() {
   const { user } = useAuth();
@@ -134,16 +134,16 @@ export function useVerticalAgent() {
       // Create session in database
       const { data: sessionData, error: dbError } = await supabase
         .from('vertical_agent_sessions')
-        .insert({
+        .insert([{
           vertical_type: config.verticalType,
           agent_mode: config.mode || 'supervised',
           status: 'active',
-          context: (config.context || {}) as JsonCompatible,
-          conversation_history: [] as JsonCompatible,
-          decisions_log: [] as JsonCompatible,
+          context: (config.context || {}) as Json,
+          conversation_history: [] as Json,
+          decisions_log: [] as Json,
           confidence_threshold: config.confidenceThreshold || 0.75,
           user_id: user.id,
-        })
+        }])
         .select()
         .single();
 
@@ -267,7 +267,7 @@ export function useVerticalAgent() {
       await supabase
         .from('vertical_agent_sessions')
         .update({
-          conversation_history: updatedHistory as unknown as JsonCompatible,
+          conversation_history: updatedHistory as unknown as Json,
           updated_at: new Date().toISOString(),
         })
         .eq('id', session.id);
@@ -297,14 +297,14 @@ export function useVerticalAgent() {
       // Create task in database
       const { data: taskData, error: taskError } = await supabase
         .from('vertical_agent_tasks')
-        .insert({
+        .insert([{
           session_id: session.id,
           vertical_type: session.verticalType,
           task_type: taskType,
-          input_params: params as JsonCompatible,
+          input_params: params as Json,
           status: session.agentMode === 'supervised' ? 'requires_approval' : 'running',
           requires_human_approval: session.agentMode === 'supervised',
-        })
+        }])
         .select()
         .single();
 
