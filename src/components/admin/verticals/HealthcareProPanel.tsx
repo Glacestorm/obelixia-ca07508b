@@ -11,10 +11,12 @@ import {
   Heart,
   RefreshCw,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Bot
 } from 'lucide-react';
 import { useHealthcarePro, TelemedicineSession, DiagnosisAssistResult, DrugInteraction } from '@/hooks/admin/verticals/useHealthcarePro';
 import { cn } from '@/lib/utils';
+import { VerticalAgentPanel } from './agents';
 
 export function HealthcareProPanel() {
   const [activeTab, setActiveTab] = useState('telemedicine');
@@ -64,18 +66,22 @@ export function HealthcareProPanel() {
       </CardHeader>
       <CardContent className="pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="telemedicine" className="text-xs">
               <Video className="h-3 w-3 mr-1" />
               Telemedicina
             </TabsTrigger>
             <TabsTrigger value="diagnosis" className="text-xs">
               <Stethoscope className="h-3 w-3 mr-1" />
-              AI Diagnóstico
+              Diagnóstico
             </TabsTrigger>
             <TabsTrigger value="drugs" className="text-xs">
               <Pill className="h-3 w-3 mr-1" />
-              Interacciones
+              Fármacos
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="text-xs">
+              <Bot className="h-3 w-3 mr-1" />
+              Agent
             </TabsTrigger>
           </TabsList>
 
@@ -203,6 +209,17 @@ export function HealthcareProPanel() {
                 )}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="agent" className="mt-0">
+            <VerticalAgentPanel 
+              verticalType="healthcare"
+              context={{
+                telemedicineSession: telemedicineSession?.id,
+                diagnosisResult: diagnosisResult ? { conditions: diagnosisResult.possible_conditions?.length || 0 } : null,
+              }}
+              className="border-0 shadow-none"
+            />
           </TabsContent>
         </Tabs>
       </CardContent>

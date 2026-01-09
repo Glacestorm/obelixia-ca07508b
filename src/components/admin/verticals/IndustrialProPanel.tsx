@@ -11,9 +11,11 @@ import {
   Gauge,
   Truck,
   RefreshCw,
-  Wrench
+  Wrench,
+  Bot
 } from 'lucide-react';
 import { useIndustrialPro, DigitalTwin, PredictiveMaintenance, OEEMetrics, FleetVehicle } from '@/hooks/admin/verticals/useIndustrialPro';
+import { VerticalAgentPanel } from './agents';
 
 export function IndustrialProPanel() {
   const [activeTab, setActiveTab] = useState('twin');
@@ -70,7 +72,7 @@ export function IndustrialProPanel() {
       </CardHeader>
       <CardContent className="pt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="twin" className="text-xs">
               <Boxes className="h-3 w-3 mr-1" />
               Twin
@@ -86,6 +88,10 @@ export function IndustrialProPanel() {
             <TabsTrigger value="fleet" className="text-xs">
               <Truck className="h-3 w-3 mr-1" />
               Flota
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="text-xs">
+              <Bot className="h-3 w-3 mr-1" />
+              Agent
             </TabsTrigger>
           </TabsList>
 
@@ -262,6 +268,19 @@ export function IndustrialProPanel() {
                 )}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="agent" className="mt-0">
+            <VerticalAgentPanel 
+              verticalType="industrial"
+              context={{
+                assetId: 'asset-demo-1',
+                hasDigitalTwin: !!digitalTwin,
+                oee: oeeMetrics?.oee,
+                fleetCount: fleetStatus?.length || 0,
+              }}
+              className="border-0 shadow-none"
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
