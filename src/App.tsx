@@ -56,15 +56,22 @@ const DeferredComponents = () => {
 
   useEffect(() => {
     // Load non-critical components after a short delay
-    const timer = requestIdleCallback 
-      ? requestIdleCallback(() => setShowDeferred(true), { timeout: 2000 })
-      : setTimeout(() => setShowDeferred(true), 1000);
+    const hasIdleCallback = 'requestIdleCallback' in window;
+    let idleHandle: number | undefined;
+    let timeoutHandle: number | undefined;
+    
+    if (hasIdleCallback) {
+      idleHandle = window.requestIdleCallback(() => setShowDeferred(true), { timeout: 2000 });
+    } else {
+      timeoutHandle = window.setTimeout(() => setShowDeferred(true), 1000) as unknown as number;
+    }
     
     return () => {
-      if (requestIdleCallback && typeof timer === 'number') {
-        cancelIdleCallback(timer);
-      } else {
-        clearTimeout(timer as number);
+      if (idleHandle !== undefined) {
+        window.cancelIdleCallback(idleHandle);
+      }
+      if (timeoutHandle !== undefined) {
+        window.clearTimeout(timeoutHandle);
       }
     };
   }, []);
