@@ -65,6 +65,7 @@ const DynamicModuleRegistryPanel = lazy(() => import('@/components/admin/agents/
 const ERPModuleAgentsPanel = lazy(() => import('@/components/admin/agents/ERPModuleAgentsPanel').then(m => ({ default: m.ERPModuleAgentsPanel })));
 const AgentOrchestratorDashboard = lazy(() => import('@/components/admin/agents/AgentOrchestratorDashboard').then(m => ({ default: m.AgentOrchestratorDashboard })));
 const AgentHelpDashboard = lazy(() => import('@/components/admin/agents/AgentHelpDashboard').then(m => ({ default: m.AgentHelpDashboard })));
+const VerticalAgentsRegistryPanel = lazy(() => import('@/components/admin/verticals/agents/VerticalAgentsRegistryPanel').then(m => ({ default: m.VerticalAgentsRegistryPanel })));
 
 // Premium components
 import { ObelixiaAdminSidebar } from '@/components/obelixia-admin/ObelixiaAdminSidebar';
@@ -664,7 +665,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
 
               <TabsContent value="agent-registry" className="m-0">
                 <Suspense fallback={<LoadingFallback />}>
-                  <DynamicModuleRegistryPanel />
+                  <div className="space-y-6">
+                    <VerticalAgentsRegistryPanel />
+                    <DynamicModuleRegistryPanel />
+                  </div>
                 </Suspense>
               </TabsContent>
 
