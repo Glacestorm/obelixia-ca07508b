@@ -13,7 +13,9 @@ export interface Opportunity {
   title: string;
   description: string | null;
   stage: OpportunityStage;
+  stage_id: string | null;
   probability: number;
+  probability_override: number | null;
   estimated_value: number | null;
   estimated_close_date: string | null;
   actual_close_date: string | null;
@@ -220,25 +222,30 @@ export function useOpportunities(filters: OpportunityFilters = {}) {
   });
 
   const moveStage = useMutation({
-    mutationFn: async ({ id, stage, lostReason }: { id: string; stage: OpportunityStage; lostReason?: string }) => {
-      const updateData: Partial<Opportunity> = { stage };
+    mutationFn: async ({ id, stageId, lostReason }: { id: string; stageId: string; lostReason?: string }) => {
+      // Fetch stage info to get probability
+      const { data: stageData } = await supabase
+        .from('pipeline_stages')
+        .select('probability, terminal_type, slug')
+        .eq('id', stageId)
+        .single();
+
+      const updateData: Partial<Opportunity> = { 
+        stage_id: stageId,
+        stage: stageData?.slug as OpportunityStage || 'discovery'
+      };
       
-      if (stage === 'won' || stage === 'lost') {
+      if (stageData?.terminal_type === 'won' || stageData?.terminal_type === 'lost') {
         updateData.actual_close_date = new Date().toISOString().split('T')[0];
       }
-      if (stage === 'lost' && lostReason) {
+      if (stageData?.terminal_type === 'lost' && lostReason) {
         updateData.lost_reason = lostReason;
       }
       
-      // Update probability based on stage
-      const stageProbabilities: Record<OpportunityStage, number> = {
-        discovery: 25,
-        proposal: 50,
-        negotiation: 75,
-        won: 100,
-        lost: 0,
-      };
-      updateData.probability = stageProbabilities[stage];
+      // Use stage probability if available
+      if (stageData?.probability !== null) {
+        updateData.probability = stageData.probability;
+      }
 
       const { data: result, error } = await supabase
         .from('opportunities')
@@ -249,16 +256,9 @@ export function useOpportunities(filters: OpportunityFilters = {}) {
       if (error) throw error;
       return result;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['opportunities'] });
-      const stageNames: Record<OpportunityStage, string> = {
-        discovery: 'Descubrimiento',
-        proposal: 'Propuesta',
-        negotiation: 'Negociación',
-        won: '¡Ganada!',
-        lost: 'Perdida',
-      };
-      toast.success(`Oportunidad movida a: ${stageNames[variables.stage]}`);
+      toast.success('Oportunidad movida');
     },
     onError: (error: Error) => {
       toast.error('Error al mover: ' + error.message);
