@@ -398,6 +398,7 @@ export function PipelineBoard() {
                 onView={() => {}}
                 onMoveStage={() => {}}
                 isDragging
+                stages={stages}
               />
             </div>
           )}
