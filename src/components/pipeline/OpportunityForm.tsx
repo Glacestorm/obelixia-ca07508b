@@ -13,10 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Building2, CreditCard, FileText, Search, X, Loader2, Phone, Mail, Clock } from 'lucide-react';
+import { CalendarIcon, Building2, CreditCard, FileText, Search, X, Loader2, Phone, Mail, Clock, User, UserPlus, Save, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const opportunitySchema = z.object({
   title: z.string().min(1, 'El título es obligatorio'),
@@ -40,6 +41,12 @@ interface OpportunityFormProps {
   defaultCompanyId?: string;
 }
 
+interface CompanyGestor {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
 interface Company {
   id: string;
   name: string;
@@ -48,6 +55,7 @@ interface Company {
   is_vip: boolean;
   phone: string | null;
   email: string | null;
+  gestor_id: string | null;
 }
 
 interface Contact {
@@ -56,12 +64,6 @@ interface Contact {
   position: string | null;
   phone: string | null;
   email: string | null;
-}
-
-interface Contact {
-  id: string;
-  contact_name: string;
-  position: string | null;
 }
 
 const stages: { value: OpportunityStage; label: string }[] = [
@@ -88,6 +90,20 @@ export function OpportunityForm({
   const [showResults, setShowResults] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [companyGestor, setCompanyGestor] = useState<CompanyGestor | null>(null);
+  
+  // State for editing company phone
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [editablePhone, setEditablePhone] = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
+  
+  // State for adding new contact
+  const [isAddingContact, setIsAddingContact] = useState(false);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPosition, setNewContactPosition] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
 
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(opportunitySchema),
@@ -134,6 +150,15 @@ export function OpportunityForm({
     }
   }, [selectedCompanyId]);
 
+  // Fetch gestor when company changes
+  useEffect(() => {
+    if (selectedCompany?.gestor_id) {
+      fetchCompanyGestor(selectedCompany.gestor_id);
+    } else {
+      setCompanyGestor(null);
+    }
+  }, [selectedCompany?.gestor_id]);
+
   useEffect(() => {
     if (opportunity) {
       form.reset({
@@ -168,6 +193,7 @@ export function OpportunityForm({
         fetchSelectedCompany(defaultCompanyId);
       } else {
         setSelectedCompany(null);
+        setCompanyGestor(null);
       }
     }
   }, [opportunity, defaultCompanyId, form]);
@@ -175,10 +201,22 @@ export function OpportunityForm({
   const fetchSelectedCompany = async (companyId: string) => {
     const { data } = await supabase
       .from('companies')
-      .select('id, name, bp, tax_id, is_vip, phone, email')
+      .select('id, name, bp, tax_id, is_vip, phone, email, gestor_id')
       .eq('id', companyId)
       .single();
-    if (data) setSelectedCompany(data);
+    if (data) {
+      setSelectedCompany(data);
+      setEditablePhone(data.phone || '');
+    }
+  };
+
+  const fetchCompanyGestor = async (gestorId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('id', gestorId)
+      .single();
+    if (data) setCompanyGestor(data);
   };
 
   const searchCompanies = async (term: string) => {
@@ -186,7 +224,7 @@ export function OpportunityForm({
     try {
       const { data } = await supabase
         .from('companies')
-        .select('id, name, bp, tax_id, is_vip, phone, email')
+        .select('id, name, bp, tax_id, is_vip, phone, email, gestor_id')
         .or(`name.ilike.%${term}%,bp.ilike.%${term}%,tax_id.ilike.%${term}%`)
         .order('name')
         .limit(10);
@@ -204,6 +242,67 @@ export function OpportunityForm({
       .eq('company_id', companyId)
       .order('contact_name');
     if (data) setContacts(data);
+  };
+
+  const handleSavePhone = async () => {
+    if (!selectedCompany) return;
+    setSavingPhone(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ phone: editablePhone || null })
+        .eq('id', selectedCompany.id);
+      
+      if (error) throw error;
+      
+      setSelectedCompany({ ...selectedCompany, phone: editablePhone || null });
+      setIsEditingPhone(false);
+      toast.success('Teléfono actualizado');
+    } catch (error) {
+      toast.error('Error al guardar teléfono');
+    } finally {
+      setSavingPhone(false);
+    }
+  };
+
+  const handleAddContact = async () => {
+    if (!selectedCompany || !newContactName.trim()) {
+      toast.error('El nombre del contacto es obligatorio');
+      return;
+    }
+    setSavingContact(true);
+    try {
+      const { data, error } = await supabase
+        .from('company_contacts')
+        .insert({
+          company_id: selectedCompany.id,
+          contact_name: newContactName.trim(),
+          position: newContactPosition.trim() || null,
+          phone: newContactPhone.trim() || null,
+          email: newContactEmail.trim() || null,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setContacts([...contacts, data]);
+        form.setValue('contact_id', data.id);
+        toast.success('Contacto añadido');
+      }
+      
+      // Reset form
+      setNewContactName('');
+      setNewContactPosition('');
+      setNewContactPhone('');
+      setNewContactEmail('');
+      setIsAddingContact(false);
+    } catch (error) {
+      toast.error('Error al añadir contacto');
+    } finally {
+      setSavingContact(false);
+    }
   };
 
   const handleSubmit = async (data: OpportunityFormData) => {
@@ -231,18 +330,23 @@ export function OpportunityForm({
 
   const handleSelectCompany = (company: Company) => {
     setSelectedCompany(company);
+    setEditablePhone(company.phone || '');
     form.setValue('company_id', company.id);
     form.setValue('contact_id', '');
     setSearchTerm('');
     setShowResults(false);
+    setIsAddingContact(false);
   };
 
   const handleClearCompany = () => {
     setSelectedCompany(null);
+    setCompanyGestor(null);
     form.setValue('company_id', '');
     form.setValue('contact_id', '');
     setSearchTerm('');
     setSearchResults([]);
+    setIsEditingPhone(false);
+    setIsAddingContact(false);
   };
 
   return (
@@ -335,7 +439,7 @@ export function OpportunityForm({
                         )}
                       </>
                     ) : (
-                      <div className="p-3 border rounded-md bg-primary/5 border-primary/30 space-y-2">
+                      <div className="p-3 border rounded-md bg-primary/5 border-primary/30 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <Building2 className="w-5 h-5 text-primary" />
@@ -365,27 +469,93 @@ export function OpportunityForm({
                           </Button>
                         </div>
                         
-                        {/* Company Contact Info */}
-                        {(selectedCompany.phone || selectedCompany.email) && (
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground border-t pt-2">
-                            {selectedCompany.phone && (
+                        {/* Gestor de la empresa */}
+                        {companyGestor && (
+                          <div className="flex items-center gap-2 text-xs border-t pt-2">
+                            <User className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">Gestor:</span>
+                            <span className="font-medium">{companyGestor.full_name || 'Sin nombre'}</span>
+                            {companyGestor.email && (
                               <a 
-                                href={`tel:${selectedCompany.phone}`}
-                                className="flex items-center gap-1 text-primary hover:underline"
+                                href={`mailto:${companyGestor.email}`}
+                                className="text-primary hover:underline"
                               >
-                                <Phone className="w-3 h-3" />
-                                {selectedCompany.phone}
+                                ({companyGestor.email})
                               </a>
                             )}
-                            {selectedCompany.email && (
-                              <a 
-                                href={`mailto:${selectedCompany.email}`}
-                                className="flex items-center gap-1 text-primary hover:underline"
+                          </div>
+                        )}
+                        
+                        {/* Company Phone - Editable */}
+                        <div className="flex items-center gap-2 text-xs border-t pt-2">
+                          <Phone className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Teléfono:</span>
+                          {isEditingPhone ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <Input
+                                value={editablePhone}
+                                onChange={(e) => setEditablePhone(e.target.value)}
+                                placeholder="Ej: +34 600 123 456"
+                                className="h-7 text-xs"
+                              />
+                              <Button 
+                                type="button" 
+                                size="sm" 
+                                className="h-7 px-2"
+                                onClick={handleSavePhone}
+                                disabled={savingPhone}
                               >
-                                <Mail className="w-3 h-3" />
-                                {selectedCompany.email}
-                              </a>
-                            )}
+                                {savingPhone ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 px-2"
+                                onClick={() => {
+                                  setIsEditingPhone(false);
+                                  setEditablePhone(selectedCompany.phone || '');
+                                }}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {selectedCompany.phone ? (
+                                <a 
+                                  href={`tel:${selectedCompany.phone}`}
+                                  className="text-primary hover:underline"
+                                >
+                                  {selectedCompany.phone}
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground italic">Sin teléfono</span>
+                              )}
+                              <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 px-1"
+                                onClick={() => setIsEditingPhone(true)}
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Company Email */}
+                        {selectedCompany.email && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <Mail className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">Email:</span>
+                            <a 
+                              href={`mailto:${selectedCompany.email}`}
+                              className="text-primary hover:underline"
+                            >
+                              {selectedCompany.email}
+                            </a>
                           </div>
                         )}
                       </div>
@@ -396,69 +566,149 @@ export function OpportunityForm({
               )}
             />
 
-            {/* Contact Selector with Phone/Email display */}
-            {contacts.length > 0 && (
-              <FormField
-                control={form.control}
-                name="contact_id"
-                render={({ field }) => {
-                  const selectedContact = contacts.find(c => c.id === field.value);
-                  return (
-                    <FormItem>
-                      <FormLabel>Contacto</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar contacto..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {contacts.map((contact) => (
-                            <SelectItem key={contact.id} value={contact.id}>
-                              <div className="flex flex-col">
-                                <span>
-                                  {contact.contact_name}
-                                  {contact.position && ` - ${contact.position}`}
-                                </span>
-                                {contact.phone && (
-                                  <span className="text-xs text-muted-foreground">
-                                    📞 {contact.phone}
-                                  </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Show selected contact details */}
-                      {selectedContact && (selectedContact.phone || selectedContact.email) && (
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 p-2 bg-muted/50 rounded">
-                          {selectedContact.phone && (
-                            <a 
-                              href={`tel:${selectedContact.phone}`}
-                              className="flex items-center gap-1 text-primary hover:underline"
-                            >
-                              <Phone className="w-3 h-3" />
-                              {selectedContact.phone}
-                            </a>
+            {/* Contact Selector with option to add new */}
+            {selectedCompany && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <FormLabel>Representante / Contacto</FormLabel>
+                  {!isAddingContact && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setIsAddingContact(true)}
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Añadir nuevo
+                    </Button>
+                  )}
+                </div>
+                
+                {isAddingContact ? (
+                  <div className="p-3 border rounded-md bg-accent/10 space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground">Nuevo contacto para {selectedCompany.name}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={newContactName}
+                        onChange={(e) => setNewContactName(e.target.value)}
+                        placeholder="Nombre *"
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        value={newContactPosition}
+                        onChange={(e) => setNewContactPosition(e.target.value)}
+                        placeholder="Cargo"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={newContactPhone}
+                        onChange={(e) => setNewContactPhone(e.target.value)}
+                        placeholder="Teléfono"
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        value={newContactEmail}
+                        onChange={(e) => setNewContactEmail(e.target.value)}
+                        placeholder="Email"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsAddingContact(false);
+                          setNewContactName('');
+                          setNewContactPosition('');
+                          setNewContactPhone('');
+                          setNewContactEmail('');
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleAddContact}
+                        disabled={savingContact || !newContactName.trim()}
+                      >
+                        {savingContact ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Save className="w-3 h-3 mr-1" />}
+                        Guardar contacto
+                      </Button>
+                    </div>
+                  </div>
+                ) : contacts.length > 0 ? (
+                  <FormField
+                    control={form.control}
+                    name="contact_id"
+                    render={({ field }) => {
+                      const selectedContact = contacts.find(c => c.id === field.value);
+                      return (
+                        <FormItem>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar contacto..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {contacts.map((contact) => (
+                                <SelectItem key={contact.id} value={contact.id}>
+                                  <div className="flex flex-col">
+                                    <span>
+                                      {contact.contact_name}
+                                      {contact.position && ` - ${contact.position}`}
+                                    </span>
+                                    {contact.phone && (
+                                      <span className="text-xs text-muted-foreground">
+                                        📞 {contact.phone}
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          {/* Show selected contact details */}
+                          {selectedContact && (selectedContact.phone || selectedContact.email) && (
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 p-2 bg-muted/50 rounded">
+                              {selectedContact.phone && (
+                                <a 
+                                  href={`tel:${selectedContact.phone}`}
+                                  className="flex items-center gap-1 text-primary hover:underline"
+                                >
+                                  <Phone className="w-3 h-3" />
+                                  {selectedContact.phone}
+                                </a>
+                              )}
+                              {selectedContact.email && (
+                                <a 
+                                  href={`mailto:${selectedContact.email}`}
+                                  className="flex items-center gap-1 text-primary hover:underline"
+                                >
+                                  <Mail className="w-3 h-3" />
+                                  {selectedContact.email}
+                                </a>
+                              )}
+                            </div>
                           )}
-                          {selectedContact.email && (
-                            <a 
-                              href={`mailto:${selectedContact.email}`}
-                              className="flex items-center gap-1 text-primary hover:underline"
-                            >
-                              <Mail className="w-3 h-3" />
-                              {selectedContact.email}
-                            </a>
-                          )}
-                        </div>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                ) : (
+                  <p className="text-xs text-muted-foreground italic p-2 bg-muted/30 rounded">
+                    Esta empresa no tiene contactos registrados. Haz clic en "Añadir nuevo" para crear uno.
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Creation Date - Automatic (read-only) */}
