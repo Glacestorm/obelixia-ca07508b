@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Opportunity, OpportunityStage } from '@/hooks/useOpportunities';
+import { Opportunity } from '@/hooks/useOpportunities';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { CalendarIcon, Building2, CreditCard, FileText, Search, X, Loader2, Phone, Mail, Clock, User, UserPlus, Save, Edit2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -23,8 +26,10 @@ const opportunitySchema = z.object({
   title: z.string().min(1, 'El título es obligatorio'),
   company_id: z.string().min(1, 'Selecciona una empresa'),
   description: z.string().optional(),
-  stage: z.enum(['discovery', 'proposal', 'negotiation', 'won', 'lost']),
+  stage_id: z.string().min(1, 'Selecciona una etapa'),
   probability: z.number().min(0).max(100),
+  probability_override: z.number().min(0).max(100).nullable().optional(),
+  use_manual_probability: z.boolean().optional(),
   estimated_value: z.number().optional(),
   estimated_close_date: z.date().optional(),
   contact_id: z.string().optional(),
@@ -66,14 +71,6 @@ interface Contact {
   email: string | null;
 }
 
-const stages: { value: OpportunityStage; label: string }[] = [
-  { value: 'discovery', label: 'Descubrimiento' },
-  { value: 'proposal', label: 'Propuesta' },
-  { value: 'negotiation', label: 'Negociación' },
-  { value: 'won', label: 'Ganada' },
-  { value: 'lost', label: 'Perdida' },
-];
-
 export function OpportunityForm({ 
   open, 
   onOpenChange, 
@@ -82,6 +79,7 @@ export function OpportunityForm({
   defaultCompanyId 
 }: OpportunityFormProps) {
   const { user } = useAuth();
+  const { stages, isLoading: stagesLoading } = usePipelineStages();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
@@ -91,6 +89,7 @@ export function OpportunityForm({
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [companyGestor, setCompanyGestor] = useState<CompanyGestor | null>(null);
+  const [useManualProbability, setUseManualProbability] = useState(false);
   
   // State for editing company phone
   const [isEditingPhone, setIsEditingPhone] = useState(false);
@@ -105,14 +104,19 @@ export function OpportunityForm({
   const [newContactEmail, setNewContactEmail] = useState('');
   const [savingContact, setSavingContact] = useState(false);
 
+  // Get default stage (first non-terminal stage or first stage)
+  const defaultStage = stages.find(s => s.is_default) || stages.find(s => !s.is_terminal) || stages[0];
+
   const form = useForm<OpportunityFormData>({
     resolver: zodResolver(opportunitySchema),
     defaultValues: {
       title: '',
       company_id: defaultCompanyId || '',
       description: '',
-      stage: 'discovery',
-      probability: 25,
+      stage_id: defaultStage?.id || '',
+      probability: defaultStage?.probability || 25,
+      probability_override: null,
+      use_manual_probability: false,
       estimated_value: undefined,
       estimated_close_date: undefined,
       contact_id: '',
@@ -161,12 +165,17 @@ export function OpportunityForm({
 
   useEffect(() => {
     if (opportunity) {
+      const hasManualProbability = opportunity.probability_override !== null && opportunity.probability_override !== undefined;
+      setUseManualProbability(hasManualProbability);
+      
       form.reset({
         title: opportunity.title,
         company_id: opportunity.company_id,
         description: opportunity.description || '',
-        stage: opportunity.stage,
+        stage_id: opportunity.stage_id || '',
         probability: opportunity.probability,
+        probability_override: opportunity.probability_override ?? null,
+        use_manual_probability: hasManualProbability,
         estimated_value: opportunity.estimated_value || undefined,
         estimated_close_date: opportunity.estimated_close_date 
           ? new Date(opportunity.estimated_close_date) 
@@ -178,12 +187,15 @@ export function OpportunityForm({
         fetchSelectedCompany(opportunity.company_id);
       }
     } else {
+      setUseManualProbability(false);
       form.reset({
         title: '',
         company_id: defaultCompanyId || '',
         description: '',
-        stage: 'discovery',
-        probability: 25,
+        stage_id: defaultStage?.id || '',
+        probability: defaultStage?.probability || 25,
+        probability_override: null,
+        use_manual_probability: false,
         estimated_value: undefined,
         estimated_close_date: undefined,
         contact_id: '',
@@ -196,7 +208,7 @@ export function OpportunityForm({
         setCompanyGestor(null);
       }
     }
-  }, [opportunity, defaultCompanyId, form]);
+  }, [opportunity, defaultCompanyId, form, defaultStage]);
 
   const fetchSelectedCompany = async (companyId: string) => {
     const { data } = await supabase
@@ -309,12 +321,19 @@ export function OpportunityForm({
     setLoading(true);
     try {
       const submitData: Partial<Opportunity> = {
-        ...data,
+        title: data.title,
+        company_id: data.company_id,
+        description: data.description,
+        stage_id: data.stage_id,
+        probability: data.probability,
+        probability_override: useManualProbability ? data.probability : null,
+        estimated_value: data.estimated_value,
         estimated_close_date: data.estimated_close_date 
           ? format(data.estimated_close_date, 'yyyy-MM-dd')
           : null,
         owner_id: opportunity?.owner_id || user?.id,
         contact_id: data.contact_id || null,
+        notes: data.notes,
       };
       
       if (opportunity?.id) {
@@ -726,65 +745,114 @@ export function OpportunityForm({
             </div>
 
             {/* Stage & Probability */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="stage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Etapa</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        // Auto-update probability
-                        const probs: Record<OpportunityStage, number> = {
-                          discovery: 25,
-                          proposal: 50,
-                          negotiation: 75,
-                          won: 100,
-                          lost: 0,
-                        };
-                        form.setValue('probability', probs[value as OpportunityStage]);
-                      }} 
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {stages.map((stage) => (
-                          <SelectItem key={stage.value} value={stage.value}>
-                            {stage.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="stage_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Etapa</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Auto-update probability if not using manual mode
+                          if (!useManualProbability) {
+                            const selectedStage = stages.find(s => s.id === value);
+                            if (selectedStage?.probability !== null && selectedStage?.probability !== undefined) {
+                              form.setValue('probability', selectedStage.probability);
+                            }
+                          }
+                        }} 
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar etapa..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {stages.map((stage) => (
+                            <SelectItem key={stage.id} value={stage.id}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-2 h-2 rounded-full" 
+                                  style={{ backgroundColor: stage.color }}
+                                />
+                                {stage.name}
+                                {stage.probability !== null && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ({stage.probability}%)
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="probability"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Probabilidad (%)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min={0} 
-                        max={100}
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="probability"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center justify-between">
+                        <span>Probabilidad (%)</span>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="manual-prob" className="text-xs text-muted-foreground font-normal">
+                            Manual
+                          </Label>
+                          <Switch
+                            id="manual-prob"
+                            checked={useManualProbability}
+                            onCheckedChange={(checked) => {
+                              setUseManualProbability(checked);
+                              if (!checked) {
+                                // Revert to stage probability
+                                const currentStageId = form.getValues('stage_id');
+                                const currentStage = stages.find(s => s.id === currentStageId);
+                                if (currentStage?.probability !== null && currentStage?.probability !== undefined) {
+                                  form.setValue('probability', currentStage.probability);
+                                  form.setValue('probability_override', null);
+                                }
+                              } else {
+                                form.setValue('probability_override', field.value);
+                              }
+                            }}
+                          />
+                        </div>
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min={0} 
+                          max={100}
+                          disabled={!useManualProbability}
+                          className={cn(!useManualProbability && "bg-muted")}
+                          {...field}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            field.onChange(value);
+                            if (useManualProbability) {
+                              form.setValue('probability_override', value);
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      {!useManualProbability && (
+                        <p className="text-xs text-muted-foreground">
+                          Automático según etapa
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Value & Date */}
