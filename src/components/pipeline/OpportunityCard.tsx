@@ -1,4 +1,5 @@
-import { Opportunity, OpportunityStage } from '@/hooks/useOpportunities';
+import { Opportunity } from '@/hooks/useOpportunities';
+import { PipelineStage } from '@/hooks/usePipelineStages';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,17 +15,10 @@ interface OpportunityCardProps {
   onEdit: (opportunity: Opportunity) => void;
   onDelete: (id: string) => void;
   onView: (opportunity: Opportunity) => void;
-  onMoveStage: (id: string, stage: OpportunityStage) => void;
+  onMoveStage: (id: string, stageId: string) => void;
   isDragging?: boolean;
+  stages: PipelineStage[];
 }
-
-const stageConfig: Record<OpportunityStage, { label: string; color: string; nextStage?: OpportunityStage }> = {
-  discovery: { label: 'Descubrimiento', color: 'bg-blue-500', nextStage: 'proposal' },
-  proposal: { label: 'Propuesta', color: 'bg-amber-500', nextStage: 'negotiation' },
-  negotiation: { label: 'Negociación', color: 'bg-purple-500', nextStage: 'won' },
-  won: { label: 'Ganada', color: 'bg-green-500' },
-  lost: { label: 'Perdida', color: 'bg-red-500' },
-};
 
 export function OpportunityCard({ 
   opportunity, 
@@ -32,10 +26,24 @@ export function OpportunityCard({
   onDelete, 
   onView,
   onMoveStage,
-  isDragging 
+  isDragging,
+  stages 
 }: OpportunityCardProps) {
-  const config = stageConfig[opportunity.stage];
-  const nextStage = config.nextStage;
+  // Find current stage and next stage dynamically
+  const currentStage = stages.find(s => s.id === opportunity.stage_id);
+  const sortedStages = [...stages].sort((a, b) => a.order_position - b.order_position);
+  const currentIndex = sortedStages.findIndex(s => s.id === opportunity.stage_id);
+  const nextStage = currentIndex >= 0 && currentIndex < sortedStages.length - 1 
+    ? sortedStages[currentIndex + 1] 
+    : null;
+  
+  // Skip terminal stages for next stage suggestion
+  const nonTerminalNextStage = nextStage && !nextStage.is_terminal ? nextStage : null;
+  
+  // Find terminal stages
+  const wonStage = stages.find(s => s.terminal_type === 'won');
+  const lostStage = stages.find(s => s.terminal_type === 'lost');
+  const isTerminalStage = currentStage?.is_terminal;
   
   // Calculate days since creation or last activity
   const referenceDate = opportunity.last_activity_date || opportunity.updated_at || opportunity.created_at;
@@ -106,28 +114,28 @@ export function OpportunityCard({
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </DropdownMenuItem>
-              {nextStage && (
-                <DropdownMenuItem onClick={() => onMoveStage(opportunity.id, nextStage)}>
+              {nonTerminalNextStage && (
+                <DropdownMenuItem onClick={() => onMoveStage(opportunity.id, nonTerminalNextStage.id)}>
                   <ArrowRight className="h-4 w-4 mr-2" />
-                  Mover a {stageConfig[nextStage].label}
+                  Mover a {nonTerminalNextStage.name}
                 </DropdownMenuItem>
               )}
-              {opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
+              {!isTerminalStage && wonStage && lostStage && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={() => onMoveStage(opportunity.id, 'won')}
+                    onClick={() => onMoveStage(opportunity.id, wonStage.id)}
                     className="text-green-600"
                   >
                     <Star className="h-4 w-4 mr-2" />
-                    Marcar como Ganada
+                    Marcar como {wonStage.name}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => onMoveStage(opportunity.id, 'lost')}
+                    onClick={() => onMoveStage(opportunity.id, lostStage.id)}
                     className="text-red-600"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Marcar como Perdida
+                    Marcar como {lostStage.name}
                   </DropdownMenuItem>
                 </>
               )}
@@ -265,7 +273,7 @@ export function OpportunityCard({
         )}
 
         {/* Stale Warning */}
-        {isStale && opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
+        {isStale && !isTerminalStage && (
           <div className="flex items-center gap-1.5 text-xs text-warning bg-warning/10 rounded px-2 py-1">
             <AlertTriangle className="h-3 w-3" />
             <span>{daysSinceActivity} días sin actividad</span>
