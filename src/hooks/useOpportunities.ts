@@ -88,7 +88,6 @@ export function useOpportunities(filters: OpportunityFilters = {}) {
           .select(`
             *,
             company:companies(id, name, is_vip),
-            owner:profiles!opportunities_owner_id_fkey(id, full_name, email),
             contact:company_contacts(id, contact_name, position, phone, email)
           `)
           .order('updated_at', { ascending: false });
@@ -106,12 +105,35 @@ export function useOpportunities(filters: OpportunityFilters = {}) {
         const { data, error: fetchError } = await query;
         if (fetchError) throw fetchError;
         
+        // Enrich with owner data
+        const ownerIds = [...new Set((data || []).map(o => o.owner_id).filter(Boolean))];
+        let ownersMap: Record<string, { id: string; full_name: string; email: string }> = {};
+        
+        if (ownerIds.length > 0) {
+          const { data: owners } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', ownerIds);
+          
+          if (owners) {
+            ownersMap = owners.reduce((acc, owner) => {
+              acc[owner.id] = owner;
+              return acc;
+            }, {} as Record<string, { id: string; full_name: string; email: string }>);
+          }
+        }
+        
+        const enrichedData = (data || []).map(opp => ({
+          ...opp,
+          owner: opp.owner_id ? ownersMap[opp.owner_id] : undefined
+        }));
+        
         setStatus('success');
         setLastSuccess(new Date());
         setLastRefresh(new Date());
         setRetryCount(0);
         
-        return (data || []) as unknown as Opportunity[];
+        return enrichedData as unknown as Opportunity[];
       } catch (err) {
         const kbErr = createKBError('FETCH_ERROR', err instanceof Error ? err.message : 'Error desconocido');
         setKbError(kbErr);
