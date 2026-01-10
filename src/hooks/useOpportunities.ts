@@ -24,6 +24,8 @@ export interface Opportunity {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  budget_id?: string | null;
+  last_activity_date?: string | null;
   company?: {
     id: string;
     name: string;
@@ -38,6 +40,8 @@ export interface Opportunity {
     id: string;
     contact_name: string;
     position: string | null;
+    phone: string | null;
+    email: string | null;
   };
 }
 
@@ -84,7 +88,8 @@ export function useOpportunities(filters: OpportunityFilters = {}) {
           .select(`
             *,
             company:companies(id, name, is_vip),
-            contact:company_contacts(id, contact_name, position)
+            owner:profiles!opportunities_owner_id_fkey(id, full_name, email),
+            contact:company_contacts(id, contact_name, position, phone, email)
           `)
           .order('updated_at', { ascending: false });
 
