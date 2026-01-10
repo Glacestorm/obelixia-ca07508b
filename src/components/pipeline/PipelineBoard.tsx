@@ -12,6 +12,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Search, Filter, TrendingUp, DollarSign, Target, Trophy, XCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+} from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface StageColumn {
   id: OpportunityStage;
@@ -29,6 +41,75 @@ const stageColumns: StageColumn[] = [
   { id: 'lost', label: 'Perdidas', icon: <XCircle className="h-4 w-4" />, color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950' },
 ];
 
+// Droppable column for each stage
+function DroppableColumn({
+  stage,
+  children,
+}: {
+  stage: StageColumn;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      className={cn(
+        "h-full transition-all duration-200 rounded-lg",
+        isOver && "ring-2 ring-primary ring-offset-2"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Draggable wrapper for opportunity cards
+function DraggableOpportunityCard({
+  opportunity,
+  onEdit,
+  onDelete,
+  onView,
+  onMoveStage,
+}: {
+  opportunity: Opportunity;
+  onEdit: (o: Opportunity) => void;
+  onDelete: (id: string) => void;
+  onView: (o: Opportunity) => void;
+  onMoveStage: (id: string, stage: OpportunityStage) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: opportunity.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    cursor: 'grab',
+    touchAction: 'none',
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <OpportunityCard
+        opportunity={opportunity}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onView={onView}
+        onMoveStage={onMoveStage}
+        isDragging={isDragging}
+      />
+    </div>
+  );
+}
+
 export function PipelineBoard() {
   const { opportunities, isLoading, createOpportunity, updateOpportunity, deleteOpportunity, moveStage } = useOpportunities();
   const stats = usePipelineStats();
@@ -41,6 +122,18 @@ export function PipelineBoard() {
   const [lostDialogOpen, setLostDialogOpen] = useState(false);
   const [pendingLostId, setPendingLostId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState('');
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Configure drag sensors with activation constraint
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  const activeOpportunity = activeId ? opportunities.find(o => o.id === activeId) : null;
 
   const filteredOpportunities = opportunities.filter(o => 
     o.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,6 +175,32 @@ export function PipelineBoard() {
     setLostDialogOpen(false);
     setPendingLostId(null);
     setLostReason('');
+  };
+
+  // Drag-and-drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const opportunityId = active.id as string;
+    const targetStage = over.id as OpportunityStage;
+
+    // Check if the target is a valid stage
+    const validStages: OpportunityStage[] = ['discovery', 'proposal', 'negotiation', 'won', 'lost'];
+    if (!validStages.includes(targetStage)) return;
+
+    // Find the opportunity being dragged
+    const opportunity = opportunities.find(o => o.id === opportunityId);
+    if (!opportunity || opportunity.stage === targetStage) return;
+
+    // Handle the move
+    handleMoveStage(opportunityId, targetStage);
   };
 
   if (isLoading) {
@@ -165,55 +284,79 @@ export function PipelineBoard() {
         </Button>
       </div>
 
-      {/* Pipeline Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {stageColumns.map((stage) => {
-          const stageOpps = getOpportunitiesByStage(stage.id);
-          const stageValue = getStageValue(stage.id);
-          
-          return (
-            <Card key={stage.id} className={cn("min-h-[400px]", stage.bgColor)}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center justify-between">
-                  <span className={cn("flex items-center gap-2", stage.color)}>
-                    {stage.icon}
-                    {stage.label}
-                  </span>
-                  <Badge variant="secondary" className="ml-2">
-                    {stageOpps.length}
-                  </Badge>
-                </CardTitle>
-                {stageValue > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', notation: 'compact' }).format(stageValue)}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent className="p-2">
-                <ScrollArea className="h-[350px] pr-2">
-                  <div className="space-y-2">
-                    {stageOpps.map((opportunity) => (
-                      <OpportunityCard
-                        key={opportunity.id}
-                        opportunity={opportunity}
-                        onEdit={handleEdit}
-                        onDelete={(id) => setDeleteId(id)}
-                        onView={setViewOpportunity}
-                        onMoveStage={handleMoveStage}
-                      />
-                    ))}
-                    {stageOpps.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground text-sm">
-                        Sin oportunidades
-                      </div>
+      {/* Pipeline Columns with Drag-and-Drop */}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {stageColumns.map((stage) => {
+            const stageOpps = getOpportunitiesByStage(stage.id);
+            const stageValue = getStageValue(stage.id);
+            
+            return (
+              <DroppableColumn key={stage.id} stage={stage}>
+                <Card className={cn("min-h-[400px]", stage.bgColor)}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center justify-between">
+                      <span className={cn("flex items-center gap-2", stage.color)}>
+                        {stage.icon}
+                        {stage.label}
+                      </span>
+                      <Badge variant="secondary" className="ml-2">
+                        {stageOpps.length}
+                      </Badge>
+                    </CardTitle>
+                    {stageValue > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', notation: 'compact' }).format(stageValue)}
+                      </p>
                     )}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  </CardHeader>
+                  <CardContent className="p-2">
+                    <ScrollArea className="h-[350px] pr-2">
+                      <div className="space-y-2">
+                        {stageOpps.map((opportunity) => (
+                          <DraggableOpportunityCard
+                            key={opportunity.id}
+                            opportunity={opportunity}
+                            onEdit={handleEdit}
+                            onDelete={(id) => setDeleteId(id)}
+                            onView={setViewOpportunity}
+                            onMoveStage={handleMoveStage}
+                          />
+                        ))}
+                        {stageOpps.length === 0 && (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            Sin oportunidades
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </DroppableColumn>
+            );
+          })}
+        </div>
+
+        {/* Drag Overlay */}
+        <DragOverlay>
+          {activeOpportunity && (
+            <div className="rotate-2 scale-105">
+              <OpportunityCard
+                opportunity={activeOpportunity}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                onView={() => {}}
+                onMoveStage={() => {}}
+                isDragging
+              />
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
 
       {/* Form Dialog */}
       <OpportunityForm

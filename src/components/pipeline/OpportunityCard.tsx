@@ -39,8 +39,8 @@ export function OpportunityCard({
   return (
     <Card 
       className={cn(
-        "cursor-pointer hover:shadow-md transition-all duration-200 group",
-        isDragging && "opacity-50 rotate-2 scale-105",
+        "hover:shadow-md transition-all duration-200 group",
+        isDragging && "opacity-50 rotate-2 scale-105 shadow-lg",
         opportunity.company?.is_vip && "ring-2 ring-amber-400/50"
       )}
     >
