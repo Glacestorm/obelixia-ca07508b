@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Building2, CreditCard, FileText, Search, X, Loader2 } from 'lucide-react';
+import { CalendarIcon, Building2, CreditCard, FileText, Search, X, Loader2, Phone, Mail, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -46,6 +46,16 @@ interface Company {
   bp: string | null;
   tax_id: string | null;
   is_vip: boolean;
+  phone: string | null;
+  email: string | null;
+}
+
+interface Contact {
+  id: string;
+  contact_name: string;
+  position: string | null;
+  phone: string | null;
+  email: string | null;
 }
 
 interface Contact {
@@ -165,7 +175,7 @@ export function OpportunityForm({
   const fetchSelectedCompany = async (companyId: string) => {
     const { data } = await supabase
       .from('companies')
-      .select('id, name, bp, tax_id, is_vip')
+      .select('id, name, bp, tax_id, is_vip, phone, email')
       .eq('id', companyId)
       .single();
     if (data) setSelectedCompany(data);
@@ -176,7 +186,7 @@ export function OpportunityForm({
     try {
       const { data } = await supabase
         .from('companies')
-        .select('id, name, bp, tax_id, is_vip')
+        .select('id, name, bp, tax_id, is_vip, phone, email')
         .or(`name.ilike.%${term}%,bp.ilike.%${term}%,tax_id.ilike.%${term}%`)
         .order('name')
         .limit(10);
@@ -190,7 +200,7 @@ export function OpportunityForm({
   const fetchContacts = async (companyId: string) => {
     const { data } = await supabase
       .from('company_contacts')
-      .select('id, contact_name, position')
+      .select('id, contact_name, position, phone, email')
       .eq('company_id', companyId)
       .order('contact_name');
     if (data) setContacts(data);
@@ -325,33 +335,59 @@ export function OpportunityForm({
                         )}
                       </>
                     ) : (
-                      <div className="flex items-center justify-between p-3 border rounded-md bg-primary/5 border-primary/30">
-                        <div className="flex items-center gap-3">
-                          <Building2 className="w-5 h-5 text-primary" />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">{selectedCompany.name}</span>
-                              {selectedCompany.is_vip && <span className="text-amber-500">⭐ VIP</span>}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              {selectedCompany.bp && (
-                                <span className="flex items-center gap-1">
-                                  <CreditCard className="w-3 h-3" />
-                                  BP: {selectedCompany.bp}
-                                </span>
-                              )}
-                              {selectedCompany.tax_id && (
-                                <span className="flex items-center gap-1">
-                                  <FileText className="w-3 h-3" />
-                                  NRT: {selectedCompany.tax_id}
-                                </span>
-                              )}
+                      <div className="p-3 border rounded-md bg-primary/5 border-primary/30 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Building2 className="w-5 h-5 text-primary" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{selectedCompany.name}</span>
+                                {selectedCompany.is_vip && <span className="text-amber-500">⭐ VIP</span>}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                {selectedCompany.bp && (
+                                  <span className="flex items-center gap-1">
+                                    <CreditCard className="w-3 h-3" />
+                                    BP: {selectedCompany.bp}
+                                  </span>
+                                )}
+                                {selectedCompany.tax_id && (
+                                  <span className="flex items-center gap-1">
+                                    <FileText className="w-3 h-3" />
+                                    NRT: {selectedCompany.tax_id}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
+                          <Button type="button" variant="ghost" size="icon" onClick={handleClearCompany}>
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={handleClearCompany}>
-                          <X className="w-4 h-4" />
-                        </Button>
+                        
+                        {/* Company Contact Info */}
+                        {(selectedCompany.phone || selectedCompany.email) && (
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground border-t pt-2">
+                            {selectedCompany.phone && (
+                              <a 
+                                href={`tel:${selectedCompany.phone}`}
+                                className="flex items-center gap-1 text-primary hover:underline"
+                              >
+                                <Phone className="w-3 h-3" />
+                                {selectedCompany.phone}
+                              </a>
+                            )}
+                            {selectedCompany.email && (
+                              <a 
+                                href={`mailto:${selectedCompany.email}`}
+                                className="flex items-center gap-1 text-primary hover:underline"
+                              >
+                                <Mail className="w-3 h-3" />
+                                {selectedCompany.email}
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -360,34 +396,84 @@ export function OpportunityForm({
               )}
             />
 
-            {/* Contact Selector */}
+            {/* Contact Selector with Phone/Email display */}
             {contacts.length > 0 && (
               <FormField
                 control={form.control}
                 name="contact_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contacto</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar contacto..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {contacts.map((contact) => (
-                          <SelectItem key={contact.id} value={contact.id}>
-                            {contact.contact_name}
-                            {contact.position && ` - ${contact.position}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const selectedContact = contacts.find(c => c.id === field.value);
+                  return (
+                    <FormItem>
+                      <FormLabel>Contacto</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar contacto..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {contacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id}>
+                              <div className="flex flex-col">
+                                <span>
+                                  {contact.contact_name}
+                                  {contact.position && ` - ${contact.position}`}
+                                </span>
+                                {contact.phone && (
+                                  <span className="text-xs text-muted-foreground">
+                                    📞 {contact.phone}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {/* Show selected contact details */}
+                      {selectedContact && (selectedContact.phone || selectedContact.email) && (
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 p-2 bg-muted/50 rounded">
+                          {selectedContact.phone && (
+                            <a 
+                              href={`tel:${selectedContact.phone}`}
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <Phone className="w-3 h-3" />
+                              {selectedContact.phone}
+                            </a>
+                          )}
+                          {selectedContact.email && (
+                            <a 
+                              href={`mailto:${selectedContact.email}`}
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <Mail className="w-3 h-3" />
+                              {selectedContact.email}
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             )}
+
+            {/* Creation Date - Automatic (read-only) */}
+            <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-md border">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div className="text-sm">
+                <span className="text-muted-foreground">Fecha de creación:</span>{' '}
+                <span className="font-medium">
+                  {opportunity?.created_at 
+                    ? format(new Date(opportunity.created_at), "dd 'de' MMMM 'de' yyyy", { locale: es })
+                    : format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: es })
+                  }
+                </span>
+              </div>
+            </div>
 
             {/* Stage & Probability */}
             <div className="grid grid-cols-2 gap-4">
