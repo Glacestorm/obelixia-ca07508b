@@ -30765,8 +30765,10 @@ export type Database = {
           notes: string | null
           owner_id: string | null
           probability: number | null
+          probability_override: number | null
           products: Json | null
           stage: string
+          stage_id: string | null
           title: string
           updated_at: string | null
         }
@@ -30783,8 +30785,10 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           probability?: number | null
+          probability_override?: number | null
           products?: Json | null
           stage?: string
+          stage_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -30801,8 +30805,10 @@ export type Database = {
           notes?: string | null
           owner_id?: string | null
           probability?: number | null
+          probability_override?: number | null
           products?: Json | null
           stage?: string
+          stage_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -30819,6 +30825,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "company_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -31658,6 +31671,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pipeline_stages: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          is_terminal: boolean
+          name: string
+          order_position: number
+          probability: number | null
+          probability_mode: string
+          slug: string
+          terminal_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          is_terminal?: boolean
+          name: string
+          order_position?: number
+          probability?: number | null
+          probability_mode?: string
+          slug: string
+          terminal_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          is_terminal?: boolean
+          name?: string
+          order_position?: number
+          probability?: number | null
+          probability_mode?: string
+          slug?: string
+          terminal_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       playbook_executions: {
         Row: {

@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { useOpportunities, Opportunity, OpportunityStage, usePipelineStats } from '@/hooks/useOpportunities';
+import { useOpportunities, Opportunity, usePipelineStats } from '@/hooks/useOpportunities';
+import { usePipelineStages, PipelineStage } from '@/hooks/usePipelineStages';
 import { OpportunityCard } from './OpportunityCard';
 import { OpportunityForm } from './OpportunityForm';
+import { PipelineStagesManager } from './PipelineStagesManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Search, Filter, TrendingUp, DollarSign, Target, Trophy, XCircle, Loader2 } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Plus, Search, TrendingUp, DollarSign, Target, Trophy, XCircle, Loader2, Settings2, Circle, FileText, MessageSquare, CheckCircle, AlertCircle, Zap, Users, Phone, Mail, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DndContext,
@@ -25,31 +28,26 @@ import {
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-interface StageColumn {
-  id: OpportunityStage;
-  label: string;
-  icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-}
+// Icon mapping for dynamic stages
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Search, Target, TrendingUp, Trophy, XCircle, Circle, FileText, MessageSquare, 
+  CheckCircle, AlertCircle, Zap, DollarSign, Users, Phone, Mail, Calendar
+};
 
-const stageColumns: StageColumn[] = [
-  { id: 'discovery', label: 'Descubrimiento', icon: <Search className="h-4 w-4" />, color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950' },
-  { id: 'proposal', label: 'Propuesta', icon: <Target className="h-4 w-4" />, color: 'text-amber-600', bgColor: 'bg-amber-50 dark:bg-amber-950' },
-  { id: 'negotiation', label: 'Negociación', icon: <TrendingUp className="h-4 w-4" />, color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-950' },
-  { id: 'won', label: 'Ganadas', icon: <Trophy className="h-4 w-4" />, color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950' },
-  { id: 'lost', label: 'Perdidas', icon: <XCircle className="h-4 w-4" />, color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-950' },
-];
+const getStageIcon = (iconName: string | null) => {
+  if (!iconName) return Circle;
+  return ICON_MAP[iconName] || Circle;
+};
 
 // Droppable column for each stage
 function DroppableColumn({
-  stage,
+  stageId,
   children,
 }: {
-  stage: StageColumn;
+  stageId: string;
   children: React.ReactNode;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: stage.id });
+  const { setNodeRef, isOver } = useDroppable({ id: stageId });
 
   return (
     <div 
@@ -71,12 +69,14 @@ function DraggableOpportunityCard({
   onDelete,
   onView,
   onMoveStage,
+  stages,
 }: {
   opportunity: Opportunity;
   onEdit: (o: Opportunity) => void;
   onDelete: (id: string) => void;
   onView: (o: Opportunity) => void;
-  onMoveStage: (id: string, stage: OpportunityStage) => void;
+  onMoveStage: (id: string, stageId: string) => void;
+  stages: PipelineStage[];
 }) {
   const {
     attributes,
@@ -105,13 +105,15 @@ function DraggableOpportunityCard({
         onView={onView}
         onMoveStage={onMoveStage}
         isDragging={isDragging}
+        stages={stages}
       />
     </div>
   );
 }
 
 export function PipelineBoard() {
-  const { opportunities, isLoading, createOpportunity, updateOpportunity, deleteOpportunity, moveStage } = useOpportunities();
+  const { opportunities, isLoading: oppsLoading, createOpportunity, updateOpportunity, deleteOpportunity, moveStage } = useOpportunities();
+  const { stages, isLoading: stagesLoading } = usePipelineStages();
   const stats = usePipelineStats();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,6 +125,8 @@ export function PipelineBoard() {
   const [pendingLostId, setPendingLostId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  const isLoading = oppsLoading || stagesLoading;
 
   // Configure drag sensors with activation constraint
   const sensors = useSensors(
@@ -140,11 +144,15 @@ export function PipelineBoard() {
     o.company?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getOpportunitiesByStage = (stage: OpportunityStage) => 
-    filteredOpportunities.filter(o => o.stage === stage);
+  // Get opportunities by stage_id (new) or stage slug (legacy compatibility)
+  const getOpportunitiesByStage = (stage: PipelineStage) => 
+    filteredOpportunities.filter(o => o.stage_id === stage.id || o.stage === stage.slug);
 
-  const getStageValue = (stage: OpportunityStage) => 
+  const getStageValue = (stage: PipelineStage) => 
     getOpportunitiesByStage(stage).reduce((sum, o) => sum + (o.estimated_value || 0), 0);
+  
+  // Find lost stage for dialog
+  const lostStage = stages.find(s => s.terminal_type === 'lost');
 
   const handleEdit = (opportunity: Opportunity) => {
     setSelectedOpportunity(opportunity);
@@ -159,18 +167,19 @@ export function PipelineBoard() {
     }
   };
 
-  const handleMoveStage = (id: string, stage: OpportunityStage) => {
-    if (stage === 'lost') {
+  const handleMoveStage = (id: string, stageId: string) => {
+    const targetStage = stages.find(s => s.id === stageId);
+    if (targetStage?.terminal_type === 'lost') {
       setPendingLostId(id);
       setLostDialogOpen(true);
     } else {
-      moveStage.mutate({ id, stage });
+      moveStage.mutate({ id, stageId });
     }
   };
 
   const confirmLost = () => {
-    if (pendingLostId) {
-      moveStage.mutate({ id: pendingLostId, stage: 'lost', lostReason });
+    if (pendingLostId && lostStage) {
+      moveStage.mutate({ id: pendingLostId, stageId: lostStage.id, lostReason });
     }
     setLostDialogOpen(false);
     setPendingLostId(null);
@@ -189,18 +198,18 @@ export function PipelineBoard() {
     if (!over) return;
 
     const opportunityId = active.id as string;
-    const targetStage = over.id as OpportunityStage;
+    const targetStageId = over.id as string;
 
     // Check if the target is a valid stage
-    const validStages: OpportunityStage[] = ['discovery', 'proposal', 'negotiation', 'won', 'lost'];
-    if (!validStages.includes(targetStage)) return;
+    const targetStage = stages.find(s => s.id === targetStageId);
+    if (!targetStage) return;
 
     // Find the opportunity being dragged
     const opportunity = opportunities.find(o => o.id === opportunityId);
-    if (!opportunity || opportunity.stage === targetStage) return;
+    if (!opportunity || opportunity.stage_id === targetStageId) return;
 
     // Handle the move
-    handleMoveStage(opportunityId, targetStage);
+    handleMoveStage(opportunityId, targetStageId);
   };
 
   if (isLoading) {
@@ -278,10 +287,28 @@ export function PipelineBoard() {
             className="pl-9"
           />
         </div>
-        <Button onClick={() => { setSelectedOpportunity(null); setFormOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Oportunidad
-        </Button>
+        <div className="flex gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline">
+                <Settings2 className="h-4 w-4 mr-2" />
+                Configurar Etapas
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Configurar Pipeline</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6">
+                <PipelineStagesManager />
+              </div>
+            </SheetContent>
+          </Sheet>
+          <Button onClick={() => { setSelectedOpportunity(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Oportunidad
+          </Button>
+        </div>
       </div>
 
       {/* Pipeline Columns with Drag-and-Drop */}
@@ -290,29 +317,47 @@ export function PipelineBoard() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {stageColumns.map((stage) => {
-            const stageOpps = getOpportunitiesByStage(stage.id);
-            const stageValue = getStageValue(stage.id);
+        <div className={cn(
+          "grid gap-4",
+          stages.length <= 3 ? "grid-cols-1 md:grid-cols-3" :
+          stages.length <= 5 ? "grid-cols-1 md:grid-cols-3 lg:grid-cols-5" :
+          "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
+        )}>
+          {stages.map((stage) => {
+            const stageOpps = getOpportunitiesByStage(stage);
+            const stageValue = getStageValue(stage);
+            const IconComponent = getStageIcon(stage.icon);
             
             return (
-              <DroppableColumn key={stage.id} stage={stage}>
-                <Card className={cn("min-h-[400px]", stage.bgColor)}>
+              <DroppableColumn key={stage.id} stageId={stage.id}>
+                <Card 
+                  className="min-h-[400px]"
+                  style={{ 
+                    backgroundColor: `${stage.color}10`,
+                  }}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium flex items-center justify-between">
-                      <span className={cn("flex items-center gap-2", stage.color)}>
-                        {stage.icon}
-                        {stage.label}
+                      <span className="flex items-center gap-2" style={{ color: stage.color }}>
+                        <IconComponent className="h-4 w-4" />
+                        {stage.name}
                       </span>
                       <Badge variant="secondary" className="ml-2">
                         {stageOpps.length}
                       </Badge>
                     </CardTitle>
-                    {stageValue > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', notation: 'compact' }).format(stageValue)}
-                      </p>
-                    )}
+                    <div className="flex items-center justify-between">
+                      {stageValue > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', notation: 'compact' }).format(stageValue)}
+                        </p>
+                      )}
+                      {stage.probability !== null && (
+                        <Badge variant="outline" className="text-xs">
+                          {stage.probability}%
+                        </Badge>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="p-2">
                     <ScrollArea className="h-[350px] pr-2">
@@ -325,6 +370,7 @@ export function PipelineBoard() {
                             onDelete={(id) => setDeleteId(id)}
                             onView={setViewOpportunity}
                             onMoveStage={handleMoveStage}
+                            stages={stages}
                           />
                         ))}
                         {stageOpps.length === 0 && (
