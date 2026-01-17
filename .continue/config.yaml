@@ -1,0 +1,109 @@
+# ==============================================
+# Configuració HÍBRIDA per a ObelixIA
+# - Local: per a codi sensible (facturació, ERP, seguretat)
+# - Extern: per a codi no sensible (UI, components, arquitectura)
+# Privacitat + Innovació = Màxim rendiment
+# ==============================================
+
+name: ObelixIA Hybrid AI
+version: 1.0.0
+schema: v1
+
+# ──────────────────────────────────────────────
+# MODELS: LOCAL + EXTERN
+# ──────────────────────────────────────────────
+
+models:
+  # 🔒 LOCAL: Codi sensible (privat, zero risc)
+  - name: DeepSeek Coder (Local)
+    provider: ollama
+    model: deepseek-coder:6.7b
+    roles:
+      - autocomplete
+      - edit
+      - apply
+      - chat
+
+  # 🔒 LOCAL: Agents i raonament
+  - name: Hermes3 (Local)
+    provider: ollama
+    model: hermes3
+    roles:
+      - chat
+      - edit
+
+  # 🌐 EXTERN: Innovació recent (React 19, Vite, Tailwind, etc.)
+  - name: Claude 3.5 Sonnet (Extern)
+    provider: openrouter
+    model: anthropic/claude-3.5-sonnet
+    api_key: "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"  # ← Canvia-ho!
+    roles:
+      - chat
+      - edit
+      - apply
+
+  # 🌐 ALTERNATIVA: GPT-4o (si prefereixes OpenAI)
+  # - name: GPT-4o (Extern)
+  #   provider: openai
+  #   model: gpt-4o
+  #   api_key: "sk-..."
+  #   roles:
+  #     - chat
+  #     - edit
+
+  # 🖼️ VISIÓ: Anàlisi d’imatges (local)
+  - name: Moondream (Visió)
+    provider: ollama
+    model: moondream
+    roles:
+      - chat
+      - edit
+
+  # 📚 EMBEDDINGS: Context del projecte
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text:latest
+    roles:
+      - embed
+
+# ──────────────────────────────────────────────
+# CONTEXT: Només fitxers rellevants
+# ──────────────────────────────────────────────
+
+context:
+  - type: file
+    pattern: "**/*.ts"
+  - type: file
+    pattern: "**/*.tsx"
+  - type: file
+    pattern: "**/*.js"
+  - type: file
+    pattern: "**/package.json"
+  - type: file
+    pattern: "**/vite.config.ts"
+  - type: exclude
+    pattern: "node_modules/**"
+  - type: exclude
+    pattern: "dist/**"
+  - type: exclude
+    pattern: ".git/**"
+
+# ──────────────────────────────────────────────
+# COMPORTAMENT: Estil ObelixIA
+# ──────────────────────────────────────────────
+
+system_message: |
+  Ets un desenvolupador senior especialitzat en CRM-ERP, React, TypeScript i sistemes integrats amb Home Assistant.
+  Treballes en ObelixIA, un projecte amb dades sensibles.
+  - Si el codi conté lògica fiscal, autenticació, API keys o dades de clients → usa només models locals.
+  - Si és codi d’interfície, components genèrics o arquitectura → pots usar models externs.
+  Respon sempre en català o castellà.
+  No generis codi amb secrets ni dades reals.
+
+# ──────────────────────────────────────────────
+# AUTOCOMPLETAT
+# ──────────────────────────────────────────────
+
+autocomplete:
+  enabled: true
+  trigger_mode: automatic
