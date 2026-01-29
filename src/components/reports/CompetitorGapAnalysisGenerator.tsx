@@ -512,7 +512,7 @@ export const CompetitorGapAnalysisGenerator = () => {
 
       currentY += 10;
       addInfoBox('OBJETIVO DEL DOCUMENTO', 
-        'Este documento analiza las funcionalidades de los principales competidores en CRM bancario (Salesforce, Dynamics, Temenos, Backbase, nCino) e identifica las brechas respecto a Creand, organizando las mejoras necesarias en fases priorizadas por impacto y esfuerzo.',
+        'Este documento analiza las funcionalidades de los principales competidores en CRM bancario (Salesforce, Dynamics, Temenos, Backbase, nCino) e identifica las brechas respecto a ObelixIA, organizando las mejoras necesarias en fases priorizadas por impacto y esfuerzo.',
         'info');
 
       addFooter();
@@ -532,7 +532,7 @@ export const CompetitorGapAnalysisGenerator = () => {
         { num: '1', title: 'RESUMEN EJECUTIVO', page: 3 },
         { num: '2', title: 'COMPETIDORES ANALIZADOS', page: 4 },
         { num: '3', title: 'MATRIZ DE FUNCIONALIDADES', page: 8 },
-        { num: '4', title: 'DIFERENCIADORES CREAND (VENTAJAS)', page: 12 },
+        { num: '4', title: 'DIFERENCIADORES OBELIXIA (VENTAJAS)', page: 12 },
         { num: '5', title: 'GAPS IDENTIFICADOS', page: 14 },
         { num: '6', title: 'PLAN DE MEJORA FASE 1 (CRITICO)', page: 16 },
         { num: '7', title: 'PLAN DE MEJORA FASE 2 (ALTA)', page: 20 },
@@ -564,7 +564,7 @@ export const CompetitorGapAnalysisGenerator = () => {
       
       addMainTitle('1. RESUMEN EJECUTIVO');
       
-      addParagraph('Este analisis compara CRM Bancario Creand con los 5 principales competidores del sector: Salesforce Financial Services Cloud, Microsoft Dynamics 365 Banking, Temenos T24/Transact, Backbase y nCino.');
+      addParagraph('Este analisis compara ObelixIA CRM con los 5 principales competidores del sector: Salesforce Financial Services Cloud, Microsoft Dynamics 365 Banking, Temenos T24/Transact, Backbase y nCino.');
 
       addInfoBox('CONCLUSION PRINCIPAL',
         'ObelixIA tiene DIFERENCIADORES UNICOS en contabilidad PGC integrada, GIS bancario y analisis financiero avanzado que ningun competidor ofrece. Sin embargo, requiere mejoras en app movil, integraciones core bancario, certificacion ISO 27001 y automatizacion para competir en el segmento enterprise.',
@@ -759,7 +759,7 @@ export const CompetitorGapAnalysisGenerator = () => {
       addMainTitle('10. CONCLUSIONES Y ROADMAP');
       
       addInfoBox('POSICIONAMIENTO ESTRATEGICO',
-        'Creand debe posicionarse como "CRM bancario especializado con contabilidad nativa" - un nicho donde Salesforce/Dynamics no compiten directamente. La estrategia es fortalecer diferenciadores existentes mientras se cierran gaps criticos de movilidad y certificacion.',
+        'ObelixIA debe posicionarse como "CRM multi-sector especializado con contabilidad nativa" - un nicho donde Salesforce/Dynamics no compiten directamente. La estrategia es fortalecer diferenciadores existentes mientras se cierran gaps criticos de movilidad y certificacion.',
         'success');
       
       addTitle('Roadmap Recomendado', 2);
@@ -787,7 +787,7 @@ export const CompetitorGapAnalysisGenerator = () => {
       doc.text('ANALISIS GAP COMPETITIVO', pageWidth / 2, 25, { align: 'center' });
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
-      doc.text('CRM Bancario Creand', pageWidth / 2, 38, { align: 'center' });
+      doc.text('ObelixIA CRM Universal', pageWidth / 2, 38, { align: 'center' });
       doc.text(new Date().toLocaleDateString('es-ES'), pageWidth / 2, 50, { align: 'center' });
 
       currentY = 75;
@@ -797,7 +797,7 @@ export const CompetitorGapAnalysisGenerator = () => {
       const summaryData = [
         ['Competidores analizados:', String(COMPETITOR_FEATURES.length)],
         ['Funcionalidades comparadas:', String(FEATURE_GAP_ANALYSIS.length)],
-        ['Diferenciadores Creand:', String(differentiators.length)],
+        ['Diferenciadores ObelixIA:', String(differentiators.length)],
         ['Gaps identificados:', String(gaps.length)],
         ['Fases de mejora:', '3'],
         ['Inversion total estimada:', '195.000 - 305.000 EUR'],
@@ -815,7 +815,7 @@ export const CompetitorGapAnalysisGenerator = () => {
 
       setProgress(100);
       
-      const filename = `Gap_Analysis_Competitivo_Creand_${new Date().toISOString().split('T')[0]}.pdf`;
+      const filename = `Gap_Analysis_Competitivo_ObelixIA_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
       toast.success('Documento Gap Analysis generado', {
@@ -840,7 +840,7 @@ export const CompetitorGapAnalysisGenerator = () => {
           <div>
             <CardTitle className="text-lg">Gap Analysis Competitivo</CardTitle>
             <CardDescription>
-              Que hacen los competidores vs Creand + Plan de mejora por fases
+              Que hacen los competidores vs ObelixIA + Plan de mejora por fases
             </CardDescription>
           </div>
         </div>
