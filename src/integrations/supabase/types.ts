@@ -43447,6 +43447,10 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      crm_user_belongs_to_team: {
+        Args: { _team_id: string; _user_id: string }
+        Returns: boolean
+      }
       crm_user_belongs_to_workspace: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
