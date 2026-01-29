@@ -1,57 +1,256 @@
-# Plan de Fases: CRM Modular Dashboard - COMPLETADO
 
-## Estado: ✅ TODAS LAS FASES COMPLETADAS
+# Plan: Pipeline Personalizable + Agente IA Inteligente
 
-### Resumen de Implementación
+## Estado Actual (Buenas Noticias)
 
-| Fase | Descripción | Estado |
-|------|-------------|--------|
-| **Fase 1** | Corregir RLS con SECURITY DEFINER | ✅ Completado |
-| **Fase 2** | Corregir useEffect loops | ✅ Ya implementado |
-| **Fase 3** | Optimizar agentes CRM | ✅ Ya implementado |
-| **Fase 4** | Reforzar CRMContext | ✅ Ya implementado |
-| **Fase 5** | Verificar Edge Functions | ✅ Verificado OK |
+La infraestructura base ya existe:
+- Tabla `pipeline_stages` con campos: nombre, orden, probabilidad (auto/manual), color, icono, terminal (won/lost)
+- `PipelineStagesManager` con drag-and-drop para reordenar etapas
+- Hook `usePipelineStages` con CRUD completo y sincronizacion realtime
+- `PipelineBoard` que renderiza columnas dinamicas desde la base de datos
+
+Lo que falta para completar tu vision:
+1. Exponer mejor el gestor de etapas (actualmente oculto en un Sheet)
+2. Agregar un agente IA especializado en Pipeline
+3. Implementar funcionalidades avanzadas 2025-2026
 
 ---
 
-## Detalles de Implementación
+## Fase 1: Mejoras UX del Gestor de Etapas (1-2 dias)
 
-### Fase 1: Funciones SECURITY DEFINER (Migración SQL)
+**Objetivo**: Hacer mas accesible y potente la configuracion de etapas
 
-Se crearon 4 funciones para evitar recursión en políticas RLS:
+| Cambio | Descripcion |
+|--------|-------------|
+| Acceso directo | Boton prominente "Personalizar Pipeline" visible siempre |
+| Preview en vivo | Al editar una etapa, ver como quedara en el Kanban |
+| Duplicar etapa | Clonar una etapa existente para crear variaciones rapidas |
+| Templates predefinidos | Pipelines pre-configurados (Ventas B2B, Inmobiliaria, SaaS, Servicios) |
+| Colores personalizados | Selector de color libre (no solo los 12 predefinidos) |
+| Descripcion de etapa | Campo para explicar el proposito de cada fase |
 
-```sql
--- Funciones creadas:
-1. crm_user_belongs_to_workspace(_user_id UUID, _workspace_id UUID) → BOOLEAN
-2. crm_get_user_workspaces(_user_id UUID) → SETOF UUID  
-3. crm_is_workspace_admin(_user_id UUID, _workspace_id UUID) → BOOLEAN
-4. crm_user_belongs_to_team(_user_id UUID, _team_id UUID) → BOOLEAN
+**Archivos a modificar**:
+- `src/components/pipeline/PipelineBoard.tsx` - Mejorar visibilidad del boton configurar
+- `src/components/pipeline/PipelineStagesManager.tsx` - Agregar nuevas funcionalidades
+- `src/hooks/usePipelineStages.ts` - Agregar duplicateStage mutation
+
+---
+
+## Fase 2: Agente IA para Pipeline (3-4 dias)
+
+**Recomendacion**: SI, absolutamente recomendado crear un agente IA especializado
+
+### Por que es estrategicamente valioso:
+
+```text
++------------------+     +-------------------+     +------------------+
+|   Datos Pipeline |     |   Agente IA       |     |   Valor Usuario  |
+|   - Oportunidades|---->|   Pipeline        |---->|   - Decisiones   |
+|   - Historico    |     |   - Analiza       |     |   - Predicciones |
+|   - Actividades  |     |   - Predice       |     |   - Automatizac. |
+|   - Contactos    |     |   - Sugiere       |     |   - Coaching     |
++------------------+     +-------------------+     +------------------+
 ```
 
-Se actualizaron 11 políticas RLS en:
-- `crm_teams` (SELECT, INSERT, UPDATE, DELETE)
-- `crm_team_members` (SELECT, ALL)
-- `crm_roles` (SELECT, ALL)
-- `crm_role_permissions` (SELECT)
-- `crm_workspaces` (SELECT, UPDATE, DELETE)
+### Capacidades del Agente:
 
-### Fase 2-4: Hooks React
+| Funcion | Descripcion |
+|---------|-------------|
+| **Prediccion de Cierre** | Probabilidad real basada en historico, no solo etapa |
+| **Next Best Action** | "Llama a Juan hoy, lleva 5 dias sin contacto" |
+| **Deteccion de Riesgos** | "3 oportunidades en riesgo de perderse esta semana" |
+| **Analisis de Patrones** | "Tus deals se pierden 70% en Negociacion - revisa pricing" |
+| **Forecast Inteligente** | Proyeccion de ingresos con intervalos de confianza |
+| **Coaching Comercial** | Tips personalizados para cada oportunidad |
+| **Auto-clasificacion** | Sugerir mover deals basado en actividad detectada |
 
-Los hooks ya tenían implementaciones anti-loop:
-- `useCRMContacts.ts`: `isInitialMount` ref + comparación JSON de deps
-- `useCRMDeals.ts`: Mismo patrón
-- `useCRMActivities.ts`: `depsKey` JSON comparison
-- `useCRMContext.tsx`: `isFetchingRef` + `abortControllerRef` + `prevUserIdEffect`
-- `CRMAgentsPanel.tsx`: `isInitializedRef` con `[]` deps
-
-### Fase 5: Edge Functions
-
-`crm-module-agent/index.ts` verificado: función simple sin llamadas recursivas.
+**Archivos a crear**:
+- `supabase/functions/pipeline-ai-agent/index.ts` - Edge function con IA
+- `src/hooks/usePipelineAgent.ts` - Hook para el agente
+- `src/components/pipeline/PipelineAgentPanel.tsx` - Panel de recomendaciones IA
 
 ---
 
-## Próximos Pasos Recomendados
+## Fase 3: Funcionalidades Avanzadas (4-5 dias)
 
-1. **Monitoreo**: Verificar logs de errores de recursión en Supabase
-2. **Performance**: Evaluar tiempos de respuesta con nuevas funciones RLS
-3. **Testing**: Probar CRUD en CRM para confirmar acceso correcto
+### 3.1 Probabilidad Inteligente Hibrida
+
+```text
+Modo Actual:        Modo Nuevo (Smart Probability):
++------------+      +--------------------------------+
+| Etapa: 60% |      | Base Etapa:        60%        |
++------------+      | + Actividad reciente: +5%     |
+                    | + Engagement email:   +3%     |
+                    | - Tiempo sin contacto: -8%    |
+                    | = Probabilidad Real:  60%     |
+                    +--------------------------------+
+```
+
+### 3.2 Reglas de Automatizacion por Etapa
+
+| Trigger | Accion |
+|---------|--------|
+| Deal entra en etapa | Crear tarea automatica |
+| Deal lleva X dias en etapa | Notificacion al gestor |
+| Deal pasa a "Ganada" | Email automatico al cliente |
+| Deal pasa a "Perdida" | Encuesta de motivo + seguimiento |
+
+### 3.3 Metricas Avanzadas por Etapa
+
+- Tiempo promedio en cada etapa
+- Tasa de conversion entre etapas
+- Valor promedio por etapa
+- "Embudo de perdida" (donde se caen los deals)
+
+**Archivos a crear/modificar**:
+- `src/components/pipeline/SmartProbabilityIndicator.tsx`
+- `src/components/pipeline/StageAutomationRules.tsx`
+- `src/components/pipeline/PipelineAnalytics.tsx`
+
+---
+
+## Fase 4: Tendencias Disruptivas 2025-2026+
+
+### 4.1 Voz y Conversacional (Implementar)
+
+| Feature | Descripcion |
+|---------|-------------|
+| Voice Commands | "Mueve Acme Corp a Negociacion" |
+| Dictado de notas | Agregar contexto por voz |
+| Resumen hablado | "Dame el estado del pipeline de hoy" |
+
+### 4.2 Pipeline Colaborativo en Tiempo Real
+
+| Feature | Descripcion |
+|---------|-------------|
+| Cursores compartidos | Ver quien esta viendo cada deal |
+| Comentarios en vivo | Chat contextual por oportunidad |
+| Notificaciones push | Alertas de cambios en deals asignados |
+| "War room" mode | Vista compartida para reuniones de forecast |
+
+### 4.3 Integracion Multicanal Automatica
+
+| Fuente | Accion |
+|--------|--------|
+| Email recibido | Auto-actualizar "ultima actividad" |
+| Llamada telefonica | Registrar automaticamente |
+| WhatsApp | Detectar interes y sugerir etapa |
+| LinkedIn | Importar engagement social |
+
+### 4.4 Gemelos Digitales de Clientes
+
+Crear un "perfil predictivo" por cada oportunidad:
+- Patron de compra similar a clientes historicos
+- Sensibilidad al precio estimada
+- Mejor momento para cerrar
+- Objeciones probables
+
+### 4.5 Gamificacion del Pipeline
+
+| Elemento | Descripcion |
+|----------|-------------|
+| Leaderboard | Ranking de vendedores por conversion |
+| Badges | "Cerrador rapido", "Rey del follow-up" |
+| Challenges | "Cierra 3 deals esta semana" con recompensas |
+| Streaks | Dias consecutivos moviendo pipeline |
+
+---
+
+## Arquitectura Tecnica Propuesta
+
+```text
++------------------------+
+|     Frontend React     |
+|  +------------------+  |
+|  | PipelineBoard    |  |
+|  | (Kanban DnD)     |  |
+|  +--------+---------+  |
+|           |            |
+|  +--------v---------+  |
+|  | PipelineAgent    |  |
+|  | Panel (IA)       |  |
+|  +--------+---------+  |
++-----------|------------+
+            |
++-----------|------------+
+|     Supabase Backend   |
+|  +------------------+  |
+|  | pipeline_stages  |  |<-- Etapas personalizables
+|  +------------------+  |
+|  +------------------+  |
+|  | opportunities    |  |<-- Deals
+|  +------------------+  |
+|  +------------------+  |
+|  | pipeline-ai-agent|  |<-- Edge Function IA
+|  +------------------+  |
++------------------------+
+```
+
+---
+
+## Resumen de Entregables por Fase
+
+| Fase | Tiempo | Entregables Clave |
+|------|--------|-------------------|
+| **1** | 1-2 dias | UX mejorada para gestor de etapas |
+| **2** | 3-4 dias | Agente IA con predicciones y NBA |
+| **3** | 4-5 dias | Probabilidad inteligente + automatizaciones |
+| **4** | Continuo | Features disruptivos (voz, collab, gamification) |
+
+---
+
+## Seccion Tecnica
+
+### Migracion SQL (Fase 3)
+
+```sql
+-- Agregar campo descripcion a etapas
+ALTER TABLE pipeline_stages 
+ADD COLUMN description TEXT,
+ADD COLUMN automation_rules JSONB DEFAULT '[]';
+
+-- Tabla para reglas de automatizacion
+CREATE TABLE pipeline_stage_automations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  stage_id UUID REFERENCES pipeline_stages(id) ON DELETE CASCADE,
+  trigger_type TEXT NOT NULL, -- 'on_enter', 'on_exit', 'days_in_stage'
+  trigger_config JSONB DEFAULT '{}',
+  action_type TEXT NOT NULL, -- 'create_task', 'send_email', 'notify', 'webhook'
+  action_config JSONB DEFAULT '{}',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Edge Function pipeline-ai-agent
+
+```typescript
+// Acciones soportadas:
+- analyze_pipeline: Analisis completo del estado actual
+- predict_close: Probabilidad de cierre por deal
+- suggest_actions: Next Best Actions personalizadas
+- forecast: Proyeccion de ingresos
+- detect_risks: Oportunidades en peligro
+- coach: Tips de venta por oportunidad
+```
+
+### Nuevos Hooks
+
+```typescript
+// usePipelineAgent.ts
+- analyzeOpportunity(dealId) -> insights
+- getPredictions(dealIds) -> probabilidades
+- getNextBestActions() -> acciones recomendadas
+- getForecast(period) -> proyeccion
+
+// usePipelineAnalytics.ts  
+- getConversionRates() -> tasas por etapa
+- getAverageTimeInStage() -> tiempos
+- getBottlenecks() -> cuellos de botella
+```
+
+---
+
+## Proximos Pasos
+
+Aprobar este plan para comenzar con **Fase 1** (mejoras UX del gestor) seguido inmediatamente de **Fase 2** (Agente IA), que es donde esta el mayor valor diferencial.
