@@ -375,7 +375,7 @@ export function PipelineBoard() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-2">
-                    <ScrollArea className="h-[480px] pr-2">
+                    <ScrollArea className="h-[450px] pr-2">
                       <div className="space-y-2">
                         {stageOpps.map((opportunity) => (
                           <DraggableOpportunityCard
