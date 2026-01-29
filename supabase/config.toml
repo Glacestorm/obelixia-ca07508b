@@ -917,3 +917,6 @@ verify_jwt = true
 
 [functions.logistics-accounting]
 verify_jwt = true
+
+[functions.pipeline-ai-agent]
+verify_jwt = true
