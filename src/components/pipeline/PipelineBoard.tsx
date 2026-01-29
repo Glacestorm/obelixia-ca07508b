@@ -4,6 +4,8 @@ import { usePipelineStages, PipelineStage } from '@/hooks/usePipelineStages';
 import { OpportunityCard } from './OpportunityCard';
 import { OpportunityForm } from './OpportunityForm';
 import { PipelineStagesManager } from './PipelineStagesManager';
+import { PipelineAgentPanel } from './PipelineAgentPanel';
+import { PipelineTemplates } from './PipelineTemplates';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -288,6 +290,7 @@ export function PipelineBoard() {
           />
         </div>
         <div className="flex gap-2">
+          <PipelineTemplates />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline">
