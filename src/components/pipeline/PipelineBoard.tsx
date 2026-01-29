@@ -15,7 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Search, TrendingUp, DollarSign, Target, Trophy, XCircle, Loader2, Settings2, Circle, FileText, MessageSquare, CheckCircle, AlertCircle, Zap, Users, Phone, Mail, Calendar } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Search, TrendingUp, DollarSign, Target, Trophy, XCircle, Loader2, Settings2, Circle, FileText, MessageSquare, CheckCircle, AlertCircle, Zap, Users, Phone, Mail, Calendar, Sparkles, X, Brain, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   DndContext,
@@ -127,6 +129,7 @@ export function PipelineBoard() {
   const [pendingLostId, setPendingLostId] = useState<string | null>(null);
   const [lostReason, setLostReason] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   const isLoading = oppsLoading || stagesLoading;
 
@@ -519,6 +522,90 @@ export function PipelineBoard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* AI Agent Floating Button */}
+      <AnimatePresence>
+        {!aiPanelOpen && (
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => setAiPanelOpen(true)}
+                  size="lg"
+                  className="h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 hover:from-violet-500 hover:via-purple-500 hover:to-indigo-600 border-0 group relative overflow-hidden"
+                >
+                  {/* Animated glow ring */}
+                  <span className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-400 to-purple-400 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500" />
+                  {/* Pulse animation */}
+                  <span className="absolute inset-0 rounded-full animate-ping bg-violet-400/30" style={{ animationDuration: '2s' }} />
+                  <Sparkles className="h-6 w-6 text-white relative z-10" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="bg-gradient-to-r from-violet-600 to-purple-600 text-white border-0">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  <span>Análisis IA del Pipeline</span>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* AI Agent Sidebar Panel */}
+      <AnimatePresence>
+        {aiPanelOpen && (
+          <motion.div
+            initial={{ x: '100%', opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-background/95 backdrop-blur-xl border-l shadow-2xl z-50 flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-indigo-500/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 shadow-lg">
+                  <Brain className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-base">Agente IA Pipeline</h2>
+                  <p className="text-xs text-muted-foreground">Análisis predictivo en tiempo real</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAiPanelOpen(false)}
+                className="h-8 w-8 hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Panel Content */}
+            <div className="flex-1 overflow-hidden">
+              <PipelineAgentPanel autoStart={aiPanelOpen} />
+            </div>
+
+            {/* Collapse indicator */}
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setAiPanelOpen(false)}
+                className="rounded-l-lg rounded-r-none h-16 w-6 shadow-lg border-r-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
