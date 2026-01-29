@@ -249,7 +249,7 @@ export function PipelineAgentPanel({
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="flex-1 mt-0 space-y-3">
-            <ScrollArea className={isExpanded ? "h-[calc(100vh-280px)]" : "h-[280px]"}>
+            <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
               {lastAnalysis && (
                 <div className="space-y-4 pr-2">
                   {/* Executive Summary */}
@@ -341,12 +341,12 @@ export function PipelineAgentPanel({
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* Actions Tab */}
           <TabsContent value="actions" className="flex-1 mt-0">
-            <ScrollArea className={isExpanded ? "h-[calc(100vh-280px)]" : "h-[280px]"}>
+            <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
               <div className="space-y-2 pr-2">
                 {nbas.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm">
@@ -399,12 +399,12 @@ export function PipelineAgentPanel({
                   })
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* Risks Tab */}
           <TabsContent value="risks" className="flex-1 mt-0">
-            <ScrollArea className={isExpanded ? "h-[calc(100vh-280px)]" : "h-[280px]"}>
+            <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
               <div className="space-y-3 pr-2">
                 {/* Risk Summary */}
                 {risks && risks.at_risk_count > 0 && (
@@ -477,12 +477,12 @@ export function PipelineAgentPanel({
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* Forecast Tab */}
           <TabsContent value="forecast" className="flex-1 mt-0">
-            <ScrollArea className={isExpanded ? "h-[calc(100vh-280px)]" : "h-[280px]"}>
+            <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
               <div className="space-y-4 pr-2">
                 {lastAnalysis?.forecast_summary && (
                   <>
@@ -561,7 +561,7 @@ export function PipelineAgentPanel({
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
