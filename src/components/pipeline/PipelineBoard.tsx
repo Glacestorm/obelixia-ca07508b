@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Search, TrendingUp, DollarSign, Target, Trophy, XCircle, Loader2, Settings2, Circle, FileText, MessageSquare, CheckCircle, AlertCircle, Zap, Users, Phone, Mail, Calendar, Sparkles, X, Brain, ChevronRight } from 'lucide-react';
+import { Plus, Search, TrendingUp, DollarSign, Target, Trophy, XCircle, Loader2, Settings2, Circle, FileText, MessageSquare, CheckCircle, AlertCircle, Zap, Users, Phone, Mail, Calendar, Sparkles, X, Brain, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -293,6 +293,15 @@ export function PipelineBoard() {
           />
         </div>
         <div className="flex gap-2">
+          {/* AI Agent Button - Left side */}
+          <Button
+            onClick={() => setAiPanelOpen(true)}
+            variant="outline"
+            className="gap-2 border-violet-200 dark:border-violet-800 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/50 dark:to-purple-950/50 hover:from-violet-100 hover:to-purple-100 dark:hover:from-violet-900/50 dark:hover:to-purple-900/50"
+          >
+            <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            <span className="hidden sm:inline">Agente IA</span>
+          </Button>
           <PipelineTemplates />
           <Sheet>
             <SheetTrigger asChild>
@@ -522,49 +531,15 @@ export function PipelineBoard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* AI Agent Floating Button */}
-      <AnimatePresence>
-        {!aiPanelOpen && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="fixed bottom-6 right-6 z-50"
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => setAiPanelOpen(true)}
-                  size="lg"
-                  className="h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 hover:from-violet-500 hover:via-purple-500 hover:to-indigo-600 border-0 group relative overflow-hidden"
-                >
-                  {/* Animated glow ring */}
-                  <span className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-400 to-purple-400 opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500" />
-                  {/* Pulse animation */}
-                  <span className="absolute inset-0 rounded-full animate-ping bg-violet-400/30" style={{ animationDuration: '2s' }} />
-                  <Sparkles className="h-6 w-6 text-white relative z-10" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="left" className="bg-gradient-to-r from-violet-600 to-purple-600 text-white border-0">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-4 w-4" />
-                  <span>Análisis IA del Pipeline</span>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* AI Agent Sidebar Panel */}
+      {/* AI Agent Sidebar Panel - LEFT SIDE */}
       <AnimatePresence>
         {aiPanelOpen && (
           <motion.div
-            initial={{ x: '100%', opacity: 0 }}
+            initial={{ x: '-100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
+            exit={{ x: '-100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[420px] bg-background/95 backdrop-blur-xl border-l shadow-2xl z-50 flex flex-col"
+            className="fixed top-0 left-0 h-full w-full sm:w-[480px] bg-background/95 backdrop-blur-xl border-r shadow-2xl z-50 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-indigo-500/10">
@@ -587,20 +562,24 @@ export function PipelineBoard() {
               </Button>
             </div>
 
-            {/* Panel Content */}
-            <div className="flex-1 overflow-hidden">
-              <PipelineAgentPanel autoStart={aiPanelOpen} />
+            {/* Panel Content - Increased height */}
+            <div className="flex-1 overflow-hidden min-h-0">
+              <ScrollArea className="h-full">
+                <div className="p-4">
+                  <PipelineAgentPanel autoStart={aiPanelOpen} />
+                </div>
+              </ScrollArea>
             </div>
 
-            {/* Collapse indicator */}
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full">
+            {/* Collapse indicator - RIGHT side for left panel */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => setAiPanelOpen(false)}
-                className="rounded-l-lg rounded-r-none h-16 w-6 shadow-lg border-r-0"
+                className="rounded-r-lg rounded-l-none h-16 w-6 shadow-lg border-l-0"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
             </div>
           </motion.div>
