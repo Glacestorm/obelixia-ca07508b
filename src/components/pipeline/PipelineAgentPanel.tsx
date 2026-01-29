@@ -36,12 +36,18 @@ import {
   Maximize2,
   Minimize2,
   Trophy,
-  Shield
+  Shield,
+  Activity,
+  Mic,
+  Workflow
 } from 'lucide-react';
 import { usePipelineAgent, NextBestAction, RiskDetection, FullAnalysis } from '@/hooks/usePipelineAgent';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { AgentMetricsPanel } from './agent/AgentMetricsPanel';
+import { AgentVoicePanel } from './agent/AgentVoicePanel';
+import { AgentWorkflowsPanel } from './agent/AgentWorkflowsPanel';
 
 const ACTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   call: Phone,
@@ -218,14 +224,14 @@ export function PipelineAgentPanel({
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-4 mb-3">
+          <TabsList className="grid w-full grid-cols-7 mb-3">
             <TabsTrigger value="overview" className="text-xs gap-1">
               <BarChart3 className="h-3 w-3" />
-              Resumen
+              <span className="hidden sm:inline">Resumen</span>
             </TabsTrigger>
             <TabsTrigger value="actions" className="text-xs gap-1">
               <Zap className="h-3 w-3" />
-              Acciones
+              <span className="hidden sm:inline">Acciones</span>
               {nbas.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-[10px]">
                   {nbas.length}
@@ -234,7 +240,7 @@ export function PipelineAgentPanel({
             </TabsTrigger>
             <TabsTrigger value="risks" className="text-xs gap-1">
               <Shield className="h-3 w-3" />
-              Riesgos
+              <span className="hidden sm:inline">Riesgos</span>
               {risks && risks.at_risk_count > 0 && (
                 <Badge variant="destructive" className="ml-1 h-4 w-4 p-0 text-[10px]">
                   {risks.at_risk_count}
@@ -243,7 +249,19 @@ export function PipelineAgentPanel({
             </TabsTrigger>
             <TabsTrigger value="forecast" className="text-xs gap-1">
               <TrendingUp className="h-3 w-3" />
-              Forecast
+              <span className="hidden sm:inline">Forecast</span>
+            </TabsTrigger>
+            <TabsTrigger value="metrics" className="text-xs gap-1">
+              <Activity className="h-3 w-3" />
+              <span className="hidden sm:inline">Métricas</span>
+            </TabsTrigger>
+            <TabsTrigger value="voice" className="text-xs gap-1">
+              <Mic className="h-3 w-3" />
+              <span className="hidden sm:inline">Voz</span>
+            </TabsTrigger>
+            <TabsTrigger value="workflows" className="text-xs gap-1">
+              <Workflow className="h-3 w-3" />
+              <span className="hidden sm:inline">Flujos</span>
             </TabsTrigger>
           </TabsList>
 
@@ -561,6 +579,33 @@ export function PipelineAgentPanel({
                   </div>
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Metrics Tab */}
+          <TabsContent value="metrics" className="flex-1 mt-0">
+            <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
+              <AgentMetricsPanel />
+            </div>
+          </TabsContent>
+
+          {/* Voice Tab */}
+          <TabsContent value="voice" className="flex-1 mt-0">
+            <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
+              <AgentVoicePanel 
+                agentContext={{
+                  pipelineHealth: lastAnalysis?.health_score,
+                  opportunitiesCount: lastAnalysis?.top_opportunities?.length || 0,
+                  atRiskCount: risks?.at_risk_count || 0,
+                }}
+              />
+            </div>
+          </TabsContent>
+
+          {/* Workflows Tab */}
+          <TabsContent value="workflows" className="flex-1 mt-0">
+            <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
+              <AgentWorkflowsPanel />
             </div>
           </TabsContent>
         </Tabs>
