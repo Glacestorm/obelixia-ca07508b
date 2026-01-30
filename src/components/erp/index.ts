@@ -18,4 +18,5 @@ export * from './trade';
 export * from './shared';
 export * from './banking';
 export * from './logistics';
+export * from './fiscal';
 export type { Transaction, Invoice, Employee, ERPMetrics } from './ERPDashboard';
