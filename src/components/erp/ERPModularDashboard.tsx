@@ -51,6 +51,7 @@ import { TreasuryDashboard } from './treasury';
 import { TradeFinanceModule } from './trade';
 import { AdvisorAgentPanel } from './advisor';
 import { LogisticsModuleDashboard } from './logistics';
+import { FiscalModule } from './fiscal';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
@@ -64,7 +65,7 @@ function ERPModularDashboardContent() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // Módulos instalados (tienen tab funcional)
-  const installedModuleIds = ['masters', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics'];
+  const installedModuleIds = ['masters', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax'];
 
   // Verificar si necesita configuración inicial
   useEffect(() => {
@@ -204,6 +205,12 @@ function ERPModularDashboardContent() {
             <TabsTrigger value="logistics" className="gap-2">
               <Truck className="h-4 w-4" />
               Logística
+            </TabsTrigger>
+          )}
+          {hasPermission('tax.read') && (
+            <TabsTrigger value="tax" className="gap-2">
+              <Receipt className="h-4 w-4" />
+              Fiscal
             </TabsTrigger>
           )}
           {hasPermission('admin.all') && (
@@ -415,6 +422,11 @@ function ERPModularDashboardContent() {
         {/* Logistics Tab */}
         <TabsContent value="logistics">
           <LogisticsModuleDashboard />
+        </TabsContent>
+
+        {/* Tax/Fiscal Tab */}
+        <TabsContent value="tax">
+          <FiscalModule />
         </TabsContent>
 
         {/* Companies Tab */}

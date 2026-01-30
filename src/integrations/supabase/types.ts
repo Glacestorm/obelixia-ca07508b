@@ -13054,6 +13054,66 @@ export type Database = {
           },
         ]
       }
+      erp_company_jurisdictions: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          filing_calendar: Json | null
+          id: string
+          jurisdiction_id: string
+          last_filing_date: string | null
+          metadata: Json | null
+          next_filing_date: string | null
+          registration_date: string | null
+          status: string | null
+          tax_registration_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          filing_calendar?: Json | null
+          id?: string
+          jurisdiction_id: string
+          last_filing_date?: string | null
+          metadata?: Json | null
+          next_filing_date?: string | null
+          registration_date?: string | null
+          status?: string | null
+          tax_registration_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          filing_calendar?: Json | null
+          id?: string
+          jurisdiction_id?: string
+          last_filing_date?: string | null
+          metadata?: Json | null
+          next_filing_date?: string | null
+          registration_date?: string | null
+          status?: string | null
+          tax_registration_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_company_jurisdictions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_company_jurisdictions_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_credit_amendments: {
         Row: {
           amendment_date: string
@@ -19095,6 +19155,74 @@ export type Database = {
           },
         ]
       }
+      erp_sii_tasks: {
+        Row: {
+          assigned_to_user_id: string | null
+          company_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          error_code: string | null
+          id: string
+          notes: string | null
+          priority: number | null
+          record_id: string | null
+          shipment_id: string | null
+          status: string | null
+          task_type: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          company_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          error_code?: string | null
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          record_id?: string | null
+          shipment_id?: string | null
+          status?: string | null
+          task_type?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          company_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          error_code?: string | null
+          id?: string
+          notes?: string | null
+          priority?: number | null
+          record_id?: string | null
+          shipment_id?: string | null
+          status?: string | null
+          task_type?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_sii_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_statement_imports: {
         Row: {
           accounting_plan_id: string | null
@@ -19899,6 +20027,138 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_tax_calendar_events: {
+        Row: {
+          amount: number | null
+          company_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string
+          event_type: string
+          id: string
+          jurisdiction_id: string | null
+          metadata: Json | null
+          reference: string | null
+          reminder_date: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          company_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          event_type: string
+          id?: string
+          jurisdiction_id?: string | null
+          metadata?: Json | null
+          reference?: string | null
+          reminder_date?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          company_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          event_type?: string
+          id?: string
+          jurisdiction_id?: string | null
+          metadata?: Json | null
+          reference?: string | null
+          reminder_date?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_tax_calendar_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_tax_calendar_events_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_tax_jurisdictions: {
+        Row: {
+          calendar_rules: Json | null
+          code: string
+          country_code: string
+          created_at: string | null
+          display_order: number | null
+          filing_frequency: string | null
+          id: string
+          is_active: boolean | null
+          jurisdiction_type: string
+          name: string
+          reduced_tax_rates: Json | null
+          reporting_requirements: Json | null
+          special_rules: Json | null
+          standard_tax_rate: number | null
+          tax_id_format: string | null
+          tax_id_label: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          calendar_rules?: Json | null
+          code: string
+          country_code: string
+          created_at?: string | null
+          display_order?: number | null
+          filing_frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction_type?: string
+          name: string
+          reduced_tax_rates?: Json | null
+          reporting_requirements?: Json | null
+          special_rules?: Json | null
+          standard_tax_rate?: number | null
+          tax_id_format?: string | null
+          tax_id_label?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          calendar_rules?: Json | null
+          code?: string
+          country_code?: string
+          created_at?: string | null
+          display_order?: number | null
+          filing_frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction_type?: string
+          name?: string
+          reduced_tax_rates?: Json | null
+          reporting_requirements?: Json | null
+          special_rules?: Json | null
+          standard_tax_rate?: number | null
+          tax_id_format?: string | null
+          tax_id_label?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       erp_tax_model_filings: {
         Row: {
@@ -43715,6 +43975,10 @@ export type Database = {
           total_debit_balance: number
           total_debit_sum: number
         }[]
+      }
+      erp_user_has_company_access: {
+        Args: { p_company_id: string }
+        Returns: boolean
       }
       erp_validate_period_open: {
         Args: { p_entry_date?: string; p_period_id: string }
