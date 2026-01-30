@@ -42,6 +42,9 @@ export { AccountingVoiceAgent } from './AccountingVoiceAgent';
 // Phase 3: Document-to-Accounting Integration
 export { LinkedEntriesCard } from './LinkedEntriesCard';
 
+// Phase 4: PGC Official Reports (NEW)
+export { PGCReportsPanel } from './PGCReportsPanel';
+
 // Subcomponentes modulares - Ratios Financieros
 export * from './financial-ratios';
 

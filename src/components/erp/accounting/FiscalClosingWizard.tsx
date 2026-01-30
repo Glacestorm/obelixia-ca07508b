@@ -1,16 +1,16 @@
 /**
  * FiscalClosingWizard - Asistente de Cierre/Apertura de Ejercicio
- * Fusiona funcionalidad de admin/accounting/ClosingAutomationPanel.tsx
+ * Conectado a edge function erp-fiscal-closing-wizard via useERPFiscalClosing
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Calendar, 
   CheckCircle2, 
@@ -18,33 +18,24 @@ import {
   AlertTriangle,
   ArrowRight,
   Lock,
-  Unlock,
-  FileText,
-  Calculator,
-  BookOpen,
+  Play,
   RefreshCw,
   Loader2,
   ChevronRight,
-  Play,
-  RotateCcw
+  RotateCcw,
+  FileText,
+  Calculator,
+  Info
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp/useERPContext';
+import { useERPFiscalClosing, type StepState } from '@/hooks/erp/useERPFiscalClosing';
+import { useERPFiscalYears } from '@/hooks/erp/useERPFiscalYears';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-type StepStatus = 'pending' | 'in_progress' | 'completed' | 'error' | 'skipped';
-
-interface ClosingStep {
-  id: string;
-  name: string;
-  description: string;
-  status: StepStatus;
-  required: boolean;
-  validations?: string[];
-  errors?: string[];
-}
-
-const initialSteps: ClosingStep[] = [
+const initialSteps: StepState[] = [
   { 
     id: 'validate_entries',
     name: '1. Validar Asientos', 
@@ -121,44 +112,73 @@ const initialSteps: ClosingStep[] = [
 
 export function FiscalClosingWizard() {
   const { currentCompany } = useERPContext();
-  const [steps, setSteps] = useState<ClosingStep[]>(initialSteps);
+  const { fiscalYears, isLoading: loadingYears } = useERPFiscalYears();
+  
+  const [selectedYearId, setSelectedYearId] = useState<string>('');
+  const [steps, setSteps] = useState<StepState[]>(initialSteps);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [wizardStarted, setWizardStarted] = useState(false);
+  const [newFiscalYearId, setNewFiscalYearId] = useState<string>('');
+
+  const {
+    isLoading,
+    currentClosing,
+    events,
+    validationResult,
+    executeStep,
+    executeFullWizard,
+    validatePrerequisites,
+    createRegularization,
+    createClosingEntry,
+    createOpeningEntry,
+    canClose
+  } = useERPFiscalClosing(selectedYearId);
+
+  // Set default year
+  useEffect(() => {
+    if (fiscalYears.length > 0 && !selectedYearId) {
+      const activeYear = fiscalYears.find(y => !y.is_closed);
+      if (activeYear) {
+        setSelectedYearId(activeYear.id);
+      }
+    }
+  }, [fiscalYears, selectedYearId]);
+
+  // Sync closing status with steps
+  useEffect(() => {
+    if (currentClosing) {
+      if (currentClosing.status === 'closed') {
+        setSteps(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
+      }
+    }
+  }, [currentClosing]);
 
   const progress = (steps.filter(s => s.status === 'completed').length / steps.length) * 100;
   const currentStep = steps[currentStepIndex];
+  const selectedYear = fiscalYears.find(y => y.id === selectedYearId);
 
-  const updateStepStatus = (stepId: string, status: StepStatus, errors?: string[]) => {
+  const updateStepStatus = (stepId: string, status: StepState['status'], errors?: string[]) => {
     setSteps(prev => prev.map(s => 
       s.id === stepId ? { ...s, status, errors } : s
     ));
   };
 
-  const executeStep = async (step: ClosingStep) => {
-    setIsProcessing(true);
+  const handleExecuteStep = async (step: StepState) => {
     updateStepStatus(step.id, 'in_progress');
 
-    // Simular ejecución
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const result = await executeStep(step.id);
 
-    // Simular resultado (90% éxito)
-    const success = Math.random() > 0.1;
-
-    if (success) {
+    if (result.success) {
       updateStepStatus(step.id, 'completed');
       toast.success(`${step.name} completado`);
       
-      // Avanzar al siguiente paso
       if (currentStepIndex < steps.length - 1) {
         setCurrentStepIndex(prev => prev + 1);
       }
     } else {
-      updateStepStatus(step.id, 'error', ['Error simulado para demostración']);
+      updateStepStatus(step.id, 'error', result.errors);
       toast.error(`Error en ${step.name}`);
     }
-
-    setIsProcessing(false);
   };
 
   const skipStep = (stepId: string) => {
@@ -180,7 +200,14 @@ export function FiscalClosingWizard() {
     setWizardStarted(false);
   };
 
-  const getStepIcon = (step: ClosingStep, index: number) => {
+  const handleFullWizard = async () => {
+    const result = await executeFullWizard(newFiscalYearId);
+    if (result.success) {
+      setSteps(prev => prev.map(s => ({ ...s, status: 'completed' as const })));
+    }
+  };
+
+  const getStepIcon = (step: StepState, index: number) => {
     switch (step.status) {
       case 'completed':
         return <CheckCircle2 className="h-5 w-5 text-green-500" />;
@@ -216,18 +243,57 @@ export function FiscalClosingWizard() {
           <div>
             <h3 className="font-semibold">Asistente de Cierre Fiscal</h3>
             <p className="text-sm text-muted-foreground">
-              Ejercicio actual
+              Conectado a backend • {currentClosing ? `Estado: ${currentClosing.status}` : 'Sin cierre iniciado'}
             </p>
           </div>
         </div>
         
-        {wizardStarted && (
-          <Button variant="outline" size="sm" onClick={resetWizard}>
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Reiniciar
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Selector de ejercicio */}
+          <Select value={selectedYearId} onValueChange={setSelectedYearId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Seleccionar ejercicio" />
+            </SelectTrigger>
+            <SelectContent>
+              {fiscalYears.map(year => (
+                <SelectItem key={year.id} value={year.id}>
+                  {year.name} {year.is_closed && '(Cerrado)'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {wizardStarted && (
+            <Button variant="outline" size="sm" onClick={resetWizard}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reiniciar
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Eventos recientes */}
+      {events.length > 0 && (
+        <Card className="p-3 bg-muted/30">
+          <div className="flex items-center gap-2 mb-2">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Últimos eventos</span>
+          </div>
+          <div className="space-y-1">
+            {events.slice(0, 3).map(event => (
+              <div key={event.id} className="text-xs flex items-center gap-2">
+                <Badge variant={event.severity === 'error' ? 'destructive' : event.severity === 'success' ? 'default' : 'outline'} className="text-[10px]">
+                  {event.event_type}
+                </Badge>
+                <span className="text-muted-foreground">{event.message}</span>
+                <span className="text-muted-foreground/60 ml-auto">
+                  {format(new Date(event.event_timestamp), 'HH:mm', { locale: es })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {!wizardStarted ? (
         /* Pantalla inicial */
@@ -238,12 +304,33 @@ export function FiscalClosingWizard() {
                 <Lock className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">Cierre del Ejercicio 2024</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  Cierre del Ejercicio {selectedYear?.name || ''}
+                </h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
                   Este asistente te guiará paso a paso en el proceso de cierre fiscal. 
                   Incluye validaciones, regularización y generación de asientos de cierre y apertura.
                 </p>
               </div>
+
+              {selectedYear && (
+                <div className="flex justify-center gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Inicio</p>
+                    <p className="font-medium">{format(new Date(selectedYear.start_date), 'dd/MM/yyyy')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Fin</p>
+                    <p className="font-medium">{format(new Date(selectedYear.end_date), 'dd/MM/yyyy')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Estado</p>
+                    <Badge variant={selectedYear.is_closed ? 'secondary' : 'default'}>
+                      {selectedYear.is_closed ? 'Cerrado' : 'Abierto'}
+                    </Badge>
+                  </div>
+                </div>
+              )}
               
               <Alert className="max-w-lg mx-auto">
                 <AlertTriangle className="h-4 w-4" />
@@ -253,10 +340,30 @@ export function FiscalClosingWizard() {
                 </AlertDescription>
               </Alert>
 
-              <Button size="lg" onClick={() => setWizardStarted(true)}>
-                <Play className="h-4 w-4 mr-2" />
-                Iniciar Proceso de Cierre
-              </Button>
+              <div className="flex justify-center gap-3">
+                <Button 
+                  size="lg" 
+                  onClick={() => setWizardStarted(true)}
+                  disabled={!selectedYearId || selectedYear?.is_closed}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Iniciar Proceso de Cierre
+                </Button>
+                
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={handleFullWizard}
+                  disabled={!selectedYearId || selectedYear?.is_closed || isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Calculator className="h-4 w-4 mr-2" />
+                  )}
+                  Cierre Automático Completo
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -348,6 +455,29 @@ export function FiscalClosingWizard() {
                   </div>
                 )}
 
+                {/* Resultado de validación del backend */}
+                {validationResult && currentStep.id === 'validate_entries' && (
+                  <Alert variant={validationResult.valid ? 'default' : 'destructive'}>
+                    {validationResult.valid ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <AlertTriangle className="h-4 w-4" />
+                    )}
+                    <AlertDescription>
+                      {validationResult.valid 
+                        ? 'Todas las validaciones pasaron correctamente'
+                        : (
+                          <ul className="list-disc list-inside mt-1">
+                            {validationResult.issues.map((issue, idx) => (
+                              <li key={idx} className="text-sm">{issue.message}</li>
+                            ))}
+                          </ul>
+                        )
+                      }
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {/* Errores */}
                 {currentStep.errors && currentStep.errors.length > 0 && (
                   <Alert variant="destructive">
@@ -362,6 +492,28 @@ export function FiscalClosingWizard() {
                   </Alert>
                 )}
 
+                {/* Selector de nuevo ejercicio para apertura */}
+                {currentStep.id === 'opening_entry' && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Ejercicio de destino para apertura</label>
+                    <Select value={newFiscalYearId} onValueChange={setNewFiscalYearId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar nuevo ejercicio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fiscalYears
+                          .filter(y => y.id !== selectedYearId && !y.is_closed)
+                          .map(year => (
+                            <SelectItem key={year.id} value={year.id}>
+                              {year.name}
+                            </SelectItem>
+                          ))
+                        }
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {/* Acciones */}
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="flex items-center gap-2">
@@ -369,7 +521,7 @@ export function FiscalClosingWizard() {
                       <Button 
                         variant="ghost" 
                         onClick={() => skipStep(currentStep.id)}
-                        disabled={isProcessing}
+                        disabled={isLoading}
                       >
                         Omitir paso
                       </Button>
@@ -379,8 +531,8 @@ export function FiscalClosingWizard() {
                     {currentStep.status === 'error' && (
                       <Button 
                         variant="outline"
-                        onClick={() => executeStep(currentStep)}
-                        disabled={isProcessing}
+                        onClick={() => handleExecuteStep(currentStep)}
+                        disabled={isLoading}
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Reintentar
@@ -388,10 +540,10 @@ export function FiscalClosingWizard() {
                     )}
                     {currentStep.status !== 'completed' && currentStep.status !== 'skipped' && (
                       <Button 
-                        onClick={() => executeStep(currentStep)}
-                        disabled={isProcessing}
+                        onClick={() => handleExecuteStep(currentStep)}
+                        disabled={isLoading || (currentStep.id === 'opening_entry' && !newFiscalYearId)}
                       >
-                        {isProcessing ? (
+                        {isLoading ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             Procesando...
@@ -409,6 +561,12 @@ export function FiscalClosingWizard() {
                         Siguiente
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
+                    )}
+                    {currentStep.status === 'completed' && currentStepIndex === steps.length - 1 && (
+                      <Badge variant="default" className="text-base py-2 px-4">
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Cierre Completado
+                      </Badge>
                     )}
                   </div>
                 </div>
