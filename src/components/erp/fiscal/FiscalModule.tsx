@@ -1,5 +1,6 @@
 /**
- * Fiscal Module - Módulo principal que integra SII, Intrastat y Jurisdicciones Globales
+ * Fiscal Module - Módulo principal que integra SII, Intrastat, Jurisdicciones Globales,
+ * Agente IA Fiscal y Ayuda Activa
  */
 
 import { useState } from 'react';
@@ -11,15 +12,22 @@ import {
   Globe,
   AlertCircle,
   TrendingUp,
+  Brain,
+  HelpCircle,
 } from 'lucide-react';
 import { SIIDashboard } from './SIIDashboard';
 import { IntrastatDashboard } from './IntrastatDashboard';
 import { GlobalTaxDashboard } from './GlobalTaxDashboard';
+import { FiscalAIAgentPanel } from './FiscalAIAgentPanel';
+import { ActiveHelpPanel } from './ActiveHelpPanel';
 import { useERPSII } from '@/hooks/erp/useERPSII';
 import { useERPIntrastat } from '@/hooks/erp/useERPIntrastat';
 
 export function FiscalModule() {
   const [activeModule, setActiveModule] = useState('sii');
+  
+  // Demo company ID for testing
+  const demoCompanyId = 'demo-company-001';
   
   const { stats: siiStats } = useERPSII();
   const { stats: intrastatStats } = useERPIntrastat();
@@ -95,7 +103,7 @@ export function FiscalModule() {
 
       {/* Tabs principales */}
       <Tabs value={activeModule} onValueChange={setActiveModule}>
-        <TabsList className="grid w-full max-w-2xl grid-cols-3">
+        <TabsList className="grid w-full max-w-4xl grid-cols-5">
           <TabsTrigger value="sii" className="gap-2">
             <FileText className="h-4 w-4" />
             SII
@@ -118,6 +126,14 @@ export function FiscalModule() {
             <Globe className="h-4 w-4" />
             Jurisdicciones
           </TabsTrigger>
+          <TabsTrigger value="agent" className="gap-2">
+            <Brain className="h-4 w-4" />
+            Agente IA
+          </TabsTrigger>
+          <TabsTrigger value="help" className="gap-2">
+            <HelpCircle className="h-4 w-4" />
+            Ayuda Activa
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sii" className="mt-6">
@@ -130,6 +146,26 @@ export function FiscalModule() {
 
         <TabsContent value="jurisdictions" className="mt-6">
           <GlobalTaxDashboard />
+        </TabsContent>
+
+        <TabsContent value="agent" className="mt-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            <FiscalAIAgentPanel 
+              companyId={demoCompanyId} 
+              className="min-h-[600px]"
+            />
+            <ActiveHelpPanel 
+              companyId={demoCompanyId}
+              className="min-h-[600px]"
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="help" className="mt-6">
+          <ActiveHelpPanel 
+            companyId={demoCompanyId}
+            className="max-w-3xl mx-auto min-h-[600px]"
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,6 +1,6 @@
 /**
  * Módulo Fiscal - Barrel exports
- * SII + Intrastat + Jurisdicciones Globales
+ * SII + Intrastat + Jurisdicciones Globales + Agente IA + Ayuda Activa
  */
 
 export { SIIDashboard } from './SIIDashboard';
@@ -16,3 +16,6 @@ export { JurisdictionSelector } from './JurisdictionSelector';
 export { TaxCalendarPanel } from './TaxCalendarPanel';
 export { TaxComplianceMatrix } from './TaxComplianceMatrix';
 export { FiscalAIAgentPanel } from './FiscalAIAgentPanel';
+export { FiscalVoiceButton } from './FiscalVoiceButton';
+export { ActiveHelpBubble } from './ActiveHelpBubble';
+export { ActiveHelpPanel } from './ActiveHelpPanel';

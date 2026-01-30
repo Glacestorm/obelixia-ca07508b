@@ -87,8 +87,10 @@ export type {
   PGCBalanceSheet, PGCIncomeStatement, GeneratedReport 
 } from './useERPPGCReports';
 
-// Fiscal Module - SII & Intrastat & Jurisdictions
+// Fiscal Module - SII & Intrastat & Jurisdictions & AI Agent
 export { useERPFiscalAgent } from './useERPFiscalAgent';
+export { useERPFiscalVoice } from './useERPFiscalVoice';
+export { useERPActiveHelp } from './useERPActiveHelp';
 export { useERPSII } from './useERPSII';
 export type {
   SIIBookType, SIIRecordStatus, SIITaskStatus,
