@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigationHistory } from '@/hooks/useNavigationHistory';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Activity, History, Shield, Rocket, Bot, BarChart3, Users, Palette, FileCode2, Eye, MessageSquare, Bell, MessagesSquare, Database, Trophy, Store, ClipboardCheck, Building2, Layers, Zap, ShoppingCart, Briefcase, Loader2, Headphones, FileText, Upload, Home, Globe } from 'lucide-react';
+import { ArrowLeft, Activity, History, Shield, Rocket, Bot, BarChart3, Users, Palette, FileCode2, Eye, MessageSquare, Bell, MessagesSquare, Database, Trophy, Store, ClipboardCheck, Building2, Layers, Zap, ShoppingCart, Briefcase, Loader2, Headphones, FileText, Upload, Home, Globe, Sparkles } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GlobalNavHeader } from '@/components/GlobalNavHeader';
@@ -66,6 +66,7 @@ import {
   AdaptiveAuthDashboard,
   ISO27001Dashboard,
   PipelineBoard,
+  PipelineTrendsDashboard,
   Customer360Panel,
   InternalAssistantChat,
   AIIntegrationConfig,
@@ -235,6 +236,7 @@ const Admin = () => {
       case 'codebase-index': return t('admin.sectionTitle.codebaseIndex');
       case 'cascade-goals': return t('admin.sectionTitle.cascadeGoals');
       case 'pipeline': return t('admin.sectionTitle.pipeline');
+      case 'pipeline-trends': return 'Tendencias 2025+';
       case 'ai-config': return t('admin.sectionTitle.aiConfig');
       case 'rfm-analysis': return t('admin.sectionTitle.rfmAnalysis');
       case 'customer-segmentation': return t('admin.sectionTitle.customerSegmentation');
@@ -273,6 +275,8 @@ const Admin = () => {
     switch (activeSection) {
       case 'pipeline':
         return <PipelineBoard />;
+      case 'pipeline-trends':
+        return <PipelineTrendsDashboard />;
       case 'director':
         if (!isCommercialDirector && !isSuperAdmin && !isCommercialManager) {
           return (
@@ -997,6 +1001,20 @@ const Admin = () => {
                     <div>
                       <h4 className="font-medium text-sm">{t('admin.card.pipeline')}</h4>
                       <p className="text-xs text-muted-foreground">{t('admin.card.pipeline.desc')}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-all border-2 border-purple-500/20 bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/10"
+                  onClick={() => handleSectionChange('pipeline-trends')}
+                >
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-purple-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-purple-700 dark:text-purple-400">Tendencias 2025+</h4>
+                      <p className="text-xs text-muted-foreground">Funcionalidades avanzadas de pipeline</p>
                     </div>
                   </CardContent>
                 </Card>

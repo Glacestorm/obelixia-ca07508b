@@ -8,3 +8,4 @@ export { DealRooms } from './DealRooms';
 export { LostRecoveryAgent } from './LostRecoveryAgent';
 export { CustomerJourney360 } from './CustomerJourney360';
 export { TrendsSelector } from './TrendsSelector';
+export { PipelineTrendsDashboard } from './PipelineTrendsDashboard';

@@ -92,6 +92,7 @@ export const ISO27001Dashboard = lazy(() => import('@/components/admin/ISO27001D
 
 // Pipeline & CRM
 export const PipelineBoard = lazy(() => import('@/components/pipeline/PipelineBoard').then(m => ({ default: m.PipelineBoard })));
+export const PipelineTrendsDashboard = lazy(() => import('@/components/pipeline/trends/PipelineTrendsDashboard').then(m => ({ default: m.PipelineTrendsDashboard })));
 export const Customer360Panel = lazy(() => import('@/components/admin/Customer360Panel').then(m => ({ default: m.Customer360Panel })));
 
 // AI & ML
