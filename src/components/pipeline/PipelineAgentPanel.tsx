@@ -224,14 +224,14 @@ export function PipelineAgentPanel({
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-7 mb-3">
+          <TabsList className="grid w-full grid-cols-4 mb-2">
             <TabsTrigger value="overview" className="text-xs gap-1">
               <BarChart3 className="h-3 w-3" />
               <span className="hidden sm:inline">Resumen</span>
             </TabsTrigger>
             <TabsTrigger value="actions" className="text-xs gap-1">
               <Zap className="h-3 w-3" />
-              <span className="hidden sm:inline">Acciones</span>
+              <span className="hidden sm:inline">NBA</span>
               {nbas.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-[10px]">
                   {nbas.length}
@@ -251,6 +251,8 @@ export function PipelineAgentPanel({
               <TrendingUp className="h-3 w-3" />
               <span className="hidden sm:inline">Forecast</span>
             </TabsTrigger>
+          </TabsList>
+          <TabsList className="grid w-full grid-cols-4 mb-3">
             <TabsTrigger value="metrics" className="text-xs gap-1">
               <Activity className="h-3 w-3" />
               <span className="hidden sm:inline">Métricas</span>
@@ -262,6 +264,10 @@ export function PipelineAgentPanel({
             <TabsTrigger value="workflows" className="text-xs gap-1">
               <Workflow className="h-3 w-3" />
               <span className="hidden sm:inline">Flujos</span>
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="text-xs gap-1">
+              <Sparkles className="h-3 w-3" />
+              <span className="hidden sm:inline">2025+</span>
             </TabsTrigger>
           </TabsList>
 
