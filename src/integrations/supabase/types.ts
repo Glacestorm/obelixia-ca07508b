@@ -14988,6 +14988,96 @@ export type Database = {
           },
         ]
       }
+      erp_fiscal_generated_documents: {
+        Row: {
+          calculated_data: Json | null
+          company_id: string
+          created_at: string | null
+          document_type: string
+          file_format: string | null
+          file_size_bytes: number | null
+          file_url: string | null
+          filed_at: string | null
+          filed_by: string | null
+          filing_reference: string | null
+          filing_response: Json | null
+          fiscal_year: number | null
+          form_fields: Json | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          jurisdiction_id: string | null
+          metadata: Json | null
+          notes: string | null
+          period: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          calculated_data?: Json | null
+          company_id: string
+          created_at?: string | null
+          document_type: string
+          file_format?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filed_at?: string | null
+          filed_by?: string | null
+          filing_reference?: string | null
+          filing_response?: Json | null
+          fiscal_year?: number | null
+          form_fields?: Json | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          jurisdiction_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          period: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          calculated_data?: Json | null
+          company_id?: string
+          created_at?: string | null
+          document_type?: string
+          file_format?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filed_at?: string | null
+          filed_by?: string | null
+          filing_reference?: string | null
+          filing_response?: Json | null
+          fiscal_year?: number | null
+          form_fields?: Json | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          jurisdiction_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          period?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fiscal_generated_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_fiscal_generated_documents_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_fiscal_knowledge_base: {
         Row: {
           content: string
@@ -44662,6 +44752,10 @@ export type Database = {
       }
       user_belongs_to_org: {
         Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_erp_company_access: {
+        Args: { p_company_id: string }
         Returns: boolean
       }
       user_is_chat_participant: {
