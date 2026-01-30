@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import {
   FileText,
   Globe,
+  AlertCircle,
+  TrendingUp,
 } from 'lucide-react';
 import { SIIDashboard } from './SIIDashboard';
 import { IntrastatDashboard } from './IntrastatDashboard';
