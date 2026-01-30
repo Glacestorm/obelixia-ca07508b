@@ -33,7 +33,7 @@ import SecurityOnboardingGuide from '@/components/obelixia-admin/SecurityOnboard
 import { NewsAdminDashboard } from '@/components/obelixia-admin/news';
 import { FAQAdminDashboard } from '@/components/obelixia-admin/faq';
 import { TranslationsDashboard } from '@/components/admin/translations/TranslationsDashboard';
-import { VerticalPacksManager } from '@/components/admin/verticals/VerticalPacksManager';
+import { VerticalPacksManager, EnterpriseTrends2026Dashboard } from '@/components/admin/verticals';
 import { SectorsManager } from '@/components/admin/SectorsManager';
 import { CoreWebVitalsDashboard } from '@/components/admin/CoreWebVitalsDashboard';
 import AcademiaAdminPage from '@/pages/admin/AcademiaAdminPage';
@@ -236,6 +236,7 @@ const ObelixiaTeamAdmin: React.FC = () => {
   const verticalCards = [
     { id: 'vertical-packs-manager', title: 'Packs Verticales', description: 'Gestión de soluciones por sector', icon: Package, color: 'emerald' as const },
     { id: 'sectors-manager', title: 'Gestión Sectores', description: 'Administrar sectores y CNAE', icon: Briefcase, color: 'teal' as const },
+    { id: 'enterprise-trends-2026', title: 'Tendencias 2026', description: '8 mejoras disruptivas enterprise', icon: Rocket, color: 'rose' as const },
   ];
 
   const reportCards = [
@@ -456,6 +457,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
 
               <TabsContent value="sectors-manager" className="m-0">
                 <SectorsManager />
+              </TabsContent>
+
+              <TabsContent value="enterprise-trends-2026" className="m-0">
+                <EnterpriseTrends2026Dashboard />
               </TabsContent>
 
               <TabsContent value="web-vitals" className="m-0">
