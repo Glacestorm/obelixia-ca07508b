@@ -1,6 +1,6 @@
 /**
  * Módulo Fiscal - Barrel exports
- * SII + Intrastat
+ * SII + Intrastat + Jurisdicciones Globales
  */
 
 export { SIIDashboard } from './SIIDashboard';
@@ -11,3 +11,7 @@ export { IntrastatDashboard } from './IntrastatDashboard';
 export { IntrastatDeclarationEditor } from './IntrastatDeclarationEditor';
 export { IntrastatLineEditor } from './IntrastatLineEditor';
 export { FiscalModule } from './FiscalModule';
+export { GlobalTaxDashboard } from './GlobalTaxDashboard';
+export { JurisdictionSelector } from './JurisdictionSelector';
+export { TaxCalendarPanel } from './TaxCalendarPanel';
+export { TaxComplianceMatrix } from './TaxComplianceMatrix';

@@ -87,7 +87,7 @@ export type {
   PGCBalanceSheet, PGCIncomeStatement, GeneratedReport 
 } from './useERPPGCReports';
 
-// Fiscal Module - SII & Intrastat
+// Fiscal Module - SII & Intrastat & Jurisdictions
 export { useERPSII } from './useERPSII';
 export type {
   SIIBookType, SIIRecordStatus, SIITaskStatus,
@@ -99,3 +99,9 @@ export type {
   IntrastatDirection, IntrastatDeclarationStatus,
   IntrastatConfig, IntrastatDeclaration, IntrastatLine, IntrastatStats
 } from './useERPIntrastat';
+
+export { useERPTaxJurisdictions } from './useERPTaxJurisdictions';
+export type {
+  JurisdictionType, FilingFrequency, TaxJurisdiction, CompanyJurisdiction, 
+  TaxCalendarEvent, JurisdictionStats
+} from './useERPTaxJurisdictions';

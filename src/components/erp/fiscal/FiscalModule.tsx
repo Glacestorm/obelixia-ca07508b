@@ -1,21 +1,18 @@
 /**
- * Fiscal Module - Módulo principal que integra SII e Intrastat
+ * Fiscal Module - Módulo principal que integra SII, Intrastat y Jurisdicciones Globales
  */
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   FileText,
   Globe,
-  Receipt,
-  Calculator,
-  TrendingUp,
-  AlertCircle,
 } from 'lucide-react';
 import { SIIDashboard } from './SIIDashboard';
 import { IntrastatDashboard } from './IntrastatDashboard';
+import { GlobalTaxDashboard } from './GlobalTaxDashboard';
 import { useERPSII } from '@/hooks/erp/useERPSII';
 import { useERPIntrastat } from '@/hooks/erp/useERPIntrastat';
 
@@ -96,7 +93,7 @@ export function FiscalModule() {
 
       {/* Tabs principales */}
       <Tabs value={activeModule} onValueChange={setActiveModule}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="sii" className="gap-2">
             <FileText className="h-4 w-4" />
             SII
@@ -115,6 +112,10 @@ export function FiscalModule() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="jurisdictions" className="gap-2">
+            <Globe className="h-4 w-4" />
+            Jurisdicciones
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sii" className="mt-6">
@@ -123,6 +124,10 @@ export function FiscalModule() {
 
         <TabsContent value="intrastat" className="mt-6">
           <IntrastatDashboard />
+        </TabsContent>
+
+        <TabsContent value="jurisdictions" className="mt-6">
+          <GlobalTaxDashboard />
         </TabsContent>
       </Tabs>
     </div>
