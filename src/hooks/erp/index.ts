@@ -88,6 +88,7 @@ export type {
 } from './useERPPGCReports';
 
 // Fiscal Module - SII & Intrastat & Jurisdictions
+export { useERPFiscalAgent } from './useERPFiscalAgent';
 export { useERPSII } from './useERPSII';
 export type {
   SIIBookType, SIIRecordStatus, SIITaskStatus,

@@ -15,3 +15,4 @@ export { GlobalTaxDashboard } from './GlobalTaxDashboard';
 export { JurisdictionSelector } from './JurisdictionSelector';
 export { TaxCalendarPanel } from './TaxCalendarPanel';
 export { TaxComplianceMatrix } from './TaxComplianceMatrix';
+export { FiscalAIAgentPanel } from './FiscalAIAgentPanel';

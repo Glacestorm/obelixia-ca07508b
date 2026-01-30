@@ -13016,6 +13016,51 @@ export type Database = {
           },
         ]
       }
+      erp_company_fiscal_agent_config: {
+        Row: {
+          agent_enabled: boolean | null
+          auto_generate_alerts: boolean | null
+          auto_generate_entries: boolean | null
+          company_id: string
+          created_at: string
+          custom_rules: Json | null
+          id: string
+          last_compliance_check: string | null
+          monitored_jurisdictions: string[] | null
+          notification_days_before_deadline: number | null
+          require_approval_threshold: number | null
+          updated_at: string
+        }
+        Insert: {
+          agent_enabled?: boolean | null
+          auto_generate_alerts?: boolean | null
+          auto_generate_entries?: boolean | null
+          company_id: string
+          created_at?: string
+          custom_rules?: Json | null
+          id?: string
+          last_compliance_check?: string | null
+          monitored_jurisdictions?: string[] | null
+          notification_days_before_deadline?: number | null
+          require_approval_threshold?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agent_enabled?: boolean | null
+          auto_generate_alerts?: boolean | null
+          auto_generate_entries?: boolean | null
+          company_id?: string
+          created_at?: string
+          custom_rules?: Json | null
+          id?: string
+          last_compliance_check?: string | null
+          monitored_jurisdictions?: string[] | null
+          notification_days_before_deadline?: number | null
+          require_approval_threshold?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_company_groups: {
         Row: {
           created_at: string | null
@@ -14609,6 +14654,113 @@ export type Database = {
           },
         ]
       }
+      erp_fiscal_agent_actions: {
+        Row: {
+          action_description: string
+          action_type: string
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          execution_time_ms: number | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          session_id: string | null
+          was_approved: boolean | null
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          execution_time_ms?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          session_id?: string | null
+          was_approved?: boolean | null
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          execution_time_ms?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          session_id?: string | null
+          was_approved?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fiscal_agent_actions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fiscal_agent_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fiscal_agent_sessions: {
+        Row: {
+          actions_taken: Json | null
+          company_id: string
+          compliance_issues: Json | null
+          context: Json | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          performed_by: string | null
+          recommendations: Json | null
+          session_type: string
+          started_at: string
+          status: string
+          tokens_used: number | null
+          updated_at: string
+        }
+        Insert: {
+          actions_taken?: Json | null
+          company_id: string
+          compliance_issues?: Json | null
+          context?: Json | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          performed_by?: string | null
+          recommendations?: Json | null
+          session_type?: string
+          started_at?: string
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actions_taken?: Json | null
+          company_id?: string
+          compliance_issues?: Json | null
+          context?: Json | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          performed_by?: string | null
+          recommendations?: Json | null
+          session_type?: string
+          started_at?: string
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_fiscal_closings: {
         Row: {
           closing_entry_id: string | null
@@ -14699,6 +14851,276 @@ export type Database = {
             columns: ["regularization_entry_id"]
             isOneToOne: false
             referencedRelation: "erp_journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fiscal_compliance_alerts: {
+        Row: {
+          affected_entity_id: string | null
+          affected_entity_type: string | null
+          alert_type: string
+          auto_generated: boolean | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_resolved: boolean | null
+          jurisdiction_id: string | null
+          metadata: Json | null
+          recommended_action: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          alert_type: string
+          auto_generated?: boolean | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          jurisdiction_id?: string | null
+          metadata?: Json | null
+          recommended_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          alert_type?: string
+          auto_generated?: boolean | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          jurisdiction_id?: string | null
+          metadata?: Json | null
+          recommended_action?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fiscal_compliance_alerts_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fiscal_form_templates: {
+        Row: {
+          calculation_rules: Json | null
+          created_at: string
+          due_day_rule: Json | null
+          filing_frequency: string | null
+          form_code: string
+          form_description: string | null
+          form_name: string
+          form_type: string
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          jurisdiction_id: string | null
+          source_url: string | null
+          template_fields: Json
+          updated_at: string
+        }
+        Insert: {
+          calculation_rules?: Json | null
+          created_at?: string
+          due_day_rule?: Json | null
+          filing_frequency?: string | null
+          form_code: string
+          form_description?: string | null
+          form_name: string
+          form_type: string
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          jurisdiction_id?: string | null
+          source_url?: string | null
+          template_fields?: Json
+          updated_at?: string
+        }
+        Update: {
+          calculation_rules?: Json | null
+          created_at?: string
+          due_day_rule?: Json | null
+          filing_frequency?: string | null
+          form_code?: string
+          form_description?: string | null
+          form_name?: string
+          form_type?: string
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          jurisdiction_id?: string | null
+          source_url?: string | null
+          template_fields?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fiscal_form_templates_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fiscal_knowledge_base: {
+        Row: {
+          content: string
+          created_at: string
+          effective_date: string | null
+          expiry_date: string | null
+          id: string
+          is_active: boolean | null
+          jurisdiction_id: string | null
+          knowledge_type: string
+          last_verified_at: string | null
+          metadata: Json | null
+          source_document: string | null
+          source_url: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          verified_by: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction_id?: string | null
+          knowledge_type: string
+          last_verified_at?: string | null
+          metadata?: Json | null
+          source_document?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction_id?: string | null
+          knowledge_type?: string
+          last_verified_at?: string | null
+          metadata?: Json | null
+          source_document?: string | null
+          source_url?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fiscal_knowledge_base_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fiscal_regulation_updates: {
+        Row: {
+          affected_forms: string[] | null
+          affected_taxes: string[] | null
+          created_at: string
+          effective_date: string | null
+          id: string
+          impact_level: string | null
+          is_processed: boolean | null
+          jurisdiction_id: string | null
+          knowledge_base_id: string | null
+          processed_at: string | null
+          published_date: string | null
+          source_name: string | null
+          source_url: string | null
+          summary: string | null
+          title: string
+          update_type: string
+        }
+        Insert: {
+          affected_forms?: string[] | null
+          affected_taxes?: string[] | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          impact_level?: string | null
+          is_processed?: boolean | null
+          jurisdiction_id?: string | null
+          knowledge_base_id?: string | null
+          processed_at?: string | null
+          published_date?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title: string
+          update_type: string
+        }
+        Update: {
+          affected_forms?: string[] | null
+          affected_taxes?: string[] | null
+          created_at?: string
+          effective_date?: string | null
+          id?: string
+          impact_level?: string | null
+          is_processed?: boolean | null
+          jurisdiction_id?: string | null
+          knowledge_base_id?: string | null
+          processed_at?: string | null
+          published_date?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          title?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fiscal_regulation_updates_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_fiscal_regulation_updates_knowledge_base_id_fkey"
+            columns: ["knowledge_base_id"]
+            isOneToOne: false
+            referencedRelation: "erp_fiscal_knowledge_base"
             referencedColumns: ["id"]
           },
         ]
