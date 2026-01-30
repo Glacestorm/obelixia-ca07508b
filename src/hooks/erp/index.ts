@@ -86,3 +86,16 @@ export type {
   PGCReportType, ExportFormat as PGCExportFormat, PGCReportLine, 
   PGCBalanceSheet, PGCIncomeStatement, GeneratedReport 
 } from './useERPPGCReports';
+
+// Fiscal Module - SII & Intrastat
+export { useERPSII } from './useERPSII';
+export type {
+  SIIBookType, SIIRecordStatus, SIITaskStatus,
+  SIIConfig, SIIRecord, SIIShipment, SIITask, SIIStats, SIIFilters
+} from './useERPSII';
+
+export { useERPIntrastat } from './useERPIntrastat';
+export type {
+  IntrastatDirection, IntrastatDeclarationStatus,
+  IntrastatConfig, IntrastatDeclaration, IntrastatLine, IntrastatStats
+} from './useERPIntrastat';
