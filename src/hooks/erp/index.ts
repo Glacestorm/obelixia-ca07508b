@@ -72,3 +72,17 @@ export type {
   Carrier, CarrierAccount, Shipment, ShipmentStatus, 
   TrackingEvent, Vehicle, Route, AccountingRule, LogisticsStats 
 } from './useERPLogistics';
+
+// Fiscal Closing
+export { useERPFiscalClosing } from './useERPFiscalClosing';
+export type { 
+  ClosingAction, ClosingStatus, FiscalClosing, ClosingEvent, 
+  ValidationIssue, ValidationResult, ClosingStepResult, StepState 
+} from './useERPFiscalClosing';
+
+// PGC Reports
+export { useERPPGCReports } from './useERPPGCReports';
+export type { 
+  PGCReportType, ExportFormat as PGCExportFormat, PGCReportLine, 
+  PGCBalanceSheet, PGCIncomeStatement, GeneratedReport 
+} from './useERPPGCReports';
