@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,14 +42,7 @@ import {
   Activity,
   Mic,
   Workflow,
-  Bot,
-  Radio,
-  GitBranch,
-  RotateCcw,
-  Users,
-  Gamepad2,
-  Handshake,
-  Route
+  ExternalLink
 } from 'lucide-react';
 import { usePipelineAgent, NextBestAction, RiskDetection, FullAnalysis } from '@/hooks/usePipelineAgent';
 import { cn } from '@/lib/utils';
@@ -57,17 +51,6 @@ import { es } from 'date-fns/locale';
 import { AgentMetricsPanel } from './agent/AgentMetricsPanel';
 import { AgentVoicePanel } from './agent/AgentVoicePanel';
 import { AgentWorkflowsPanel } from './agent/AgentWorkflowsPanel';
-import {
-  AutonomousSalesAgent,
-  MultiSignalScoring,
-  AdaptivePipeline,
-  InversePipeline,
-  GamificationLeaderboard,
-  DealRooms,
-  LostRecoveryAgent,
-  CustomerJourney360,
-  TrendsSelector
-} from './trends';
 
 const ACTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   call: Phone,
@@ -90,6 +73,40 @@ const RISK_COLORS: Record<string, string> = {
   high: 'text-orange-600 bg-orange-50 dark:bg-orange-950',
   medium: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950',
 };
+
+// Quick link component to access Trends Dashboard
+function TrendsQuickLink() {
+  const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
+  
+  const handleGoToTrends = useCallback(() => {
+    setSearchParams({ section: 'pipeline-trends' });
+  }, [setSearchParams]);
+  
+  return (
+    <div 
+      className="p-3 rounded-lg border-2 border-dashed border-purple-500/30 bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/5 hover:border-purple-500/50 transition-all cursor-pointer group"
+      onClick={handleGoToTrends}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20">
+            <Sparkles className="h-4 w-4 text-purple-500" />
+          </div>
+          <div>
+            <h4 className="font-medium text-sm text-purple-700 dark:text-purple-400">
+              Tendencias 2025+
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              8 módulos avanzados de pipeline
+            </p>
+          </div>
+        </div>
+        <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-purple-500 transition-colors" />
+      </div>
+    </div>
+  );
+}
 
 interface PipelineAgentPanelProps {
   className?: string;
@@ -284,10 +301,6 @@ export function PipelineAgentPanel({
             <TabsTrigger value="workflows" className="text-xs gap-1">
               <Workflow className="h-3 w-3" />
               <span className="hidden sm:inline">Flujos</span>
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="text-xs gap-1">
-              <Sparkles className="h-3 w-3" />
-              <span className="hidden sm:inline">2025+</span>
             </TabsTrigger>
           </TabsList>
 
@@ -632,12 +645,12 @@ export function PipelineAgentPanel({
           <TabsContent value="workflows" className="flex-1 mt-0">
             <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
               <AgentWorkflowsPanel />
+              
+              {/* Quick Link to Trends 2025+ Dashboard */}
+              <div className="mt-4 pt-4 border-t">
+                <TrendsQuickLink />
+              </div>
             </div>
-          </TabsContent>
-
-          {/* Trends 2025+ Tab */}
-          <TabsContent value="trends" className="flex-1 mt-0">
-            <TrendsSelector isExpanded={isExpanded} />
           </TabsContent>
         </Tabs>
       </CardContent>
