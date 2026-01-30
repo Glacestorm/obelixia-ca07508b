@@ -198,16 +198,16 @@ export function ActiveHelpPanel({ companyId, className }: ActiveHelpPanelProps) 
                     <p className="text-sm text-muted-foreground mb-4">
                       Pregúntame cualquier duda fiscal
                     </p>
-                    <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+                    <div className="flex flex-col gap-2 max-w-lg mx-auto w-full">
                       {quickQuestions.map((q, idx) => (
                         <Button
                           key={idx}
                           variant="outline"
                           size="sm"
-                          className="text-xs h-auto py-2 text-left"
+                          className="text-xs h-auto py-3 px-4 text-left justify-start whitespace-normal break-words"
                           onClick={() => {
                             setQuery(q);
-                            handleSendQuery();
+                            setTimeout(() => handleSendQuery(), 50);
                           }}
                         >
                           {q}
