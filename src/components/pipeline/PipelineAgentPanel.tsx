@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   RefreshCw, 
   Sparkles, 
@@ -39,7 +40,15 @@ import {
   Shield,
   Activity,
   Mic,
-  Workflow
+  Workflow,
+  Bot,
+  Radio,
+  GitBranch,
+  RotateCcw,
+  Users,
+  Gamepad2,
+  Handshake,
+  Route
 } from 'lucide-react';
 import { usePipelineAgent, NextBestAction, RiskDetection, FullAnalysis } from '@/hooks/usePipelineAgent';
 import { cn } from '@/lib/utils';
@@ -48,6 +57,17 @@ import { es } from 'date-fns/locale';
 import { AgentMetricsPanel } from './agent/AgentMetricsPanel';
 import { AgentVoicePanel } from './agent/AgentVoicePanel';
 import { AgentWorkflowsPanel } from './agent/AgentWorkflowsPanel';
+import {
+  AutonomousSalesAgent,
+  MultiSignalScoring,
+  AdaptivePipeline,
+  InversePipeline,
+  GamificationLeaderboard,
+  DealRooms,
+  LostRecoveryAgent,
+  CustomerJourney360,
+  TrendsSelector
+} from './trends';
 
 const ACTION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   call: Phone,
@@ -613,6 +633,11 @@ export function PipelineAgentPanel({
             <div className={isExpanded ? "h-[calc(100vh-280px)] overflow-auto" : ""}>
               <AgentWorkflowsPanel />
             </div>
+          </TabsContent>
+
+          {/* Trends 2025+ Tab */}
+          <TabsContent value="trends" className="flex-1 mt-0">
+            <TrendsSelector isExpanded={isExpanded} />
           </TabsContent>
         </Tabs>
       </CardContent>
