@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 interface AgentRequest {
-  action: 'chat' | 'check_compliance' | 'suggest_entry' | 'query_regulation' | 'monitor_updates';
+  action: 'chat' | 'check_compliance' | 'suggest_entry' | 'query_regulation' | 'monitor_updates' | 'help_query';
   company_id?: string;
   session_id?: string;
   message?: string;
@@ -329,6 +329,26 @@ FORMATO DE RESPUESTA (JSON):
         break;
       }
 
+      case 'help_query': {
+        const knowledgeBase = await fetchKnowledge(jurisdiction_id, 15);
+
+        systemPrompt = `Eres un asistente de ayuda contextual para el módulo fiscal de un ERP.
+
+BASE DE CONOCIMIENTO:
+${knowledgeBase.map(k => `### ${k.title}\n${k.content.substring(0, 300)}`).join('\n\n')}
+
+TU ROL:
+- Proporcionar ayuda contextual sobre funcionalidades del módulo fiscal
+- Explicar conceptos fiscales de forma clara y concisa
+- Guiar al usuario en procedimientos del sistema
+- Ofrecer ejemplos prácticos relevantes
+
+RESPONDE de forma clara, estructurada y útil para el usuario.`;
+
+        userPrompt = message || question || 'Ayuda general sobre el módulo fiscal';
+        break;
+      }
+
       default:
         throw new Error(`Acción no soportada: ${action}`);
     }
@@ -380,7 +400,7 @@ FORMATO DE RESPUESTA (JSON):
     if (!content) throw new Error('No content in AI response');
 
     // Parse response based on action
-    if (action === 'chat' || action === 'query_regulation') {
+    if (action === 'chat' || action === 'query_regulation' || action === 'help_query') {
       result = { response: content };
     } else {
       try {
