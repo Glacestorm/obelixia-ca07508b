@@ -22,3 +22,5 @@ export { ActiveHelpPanel } from './ActiveHelpPanel';
 export { FiscalActionsPanel } from './FiscalActionsPanel';
 export { FiscalDocumentExportDialog } from './FiscalDocumentExportDialog';
 export { FiscalTrends2026Panel } from './FiscalTrends2026Panel';
+export { FiscalNewsPanel } from './FiscalNewsPanel';
+export { FiscalKnowledgeUploader } from './FiscalKnowledgeUploader';

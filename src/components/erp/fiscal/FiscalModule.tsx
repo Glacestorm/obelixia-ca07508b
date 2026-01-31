@@ -1,6 +1,6 @@
 /**
  * Fiscal Module - Módulo principal que integra SII, Intrastat, Jurisdicciones Globales,
- * Agente IA Fiscal, Ayuda Activa, Acciones Fiscales y Tendencias 2026+
+ * Agente IA Fiscal, Ayuda Activa, Acciones Fiscales, Tendencias 2026+, Noticias y Conocimiento
  */
 
 import { useState } from 'react';
@@ -14,8 +14,10 @@ import {
   TrendingUp,
   Brain,
   HelpCircle,
-  Sparkles,
   Rocket,
+  Newspaper,
+  BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import { SIIDashboard } from './SIIDashboard';
 import { IntrastatDashboard } from './IntrastatDashboard';
@@ -24,6 +26,9 @@ import { FiscalAIAgentPanel } from './FiscalAIAgentPanel';
 import { ActiveHelpPanel } from './ActiveHelpPanel';
 import { FiscalActionsPanel } from './FiscalActionsPanel';
 import { FiscalTrends2026Panel } from './FiscalTrends2026Panel';
+import { FiscalNewsPanel } from './FiscalNewsPanel';
+import { FiscalKnowledgeUploader } from './FiscalKnowledgeUploader';
+import { FiscalVoiceButton } from './FiscalVoiceButton';
 import { useERPSII } from '@/hooks/erp/useERPSII';
 import { useERPIntrastat } from '@/hooks/erp/useERPIntrastat';
 
@@ -107,7 +112,7 @@ export function FiscalModule() {
 
       {/* Tabs principales */}
       <Tabs value={activeModule} onValueChange={setActiveModule}>
-        <TabsList className="grid w-full max-w-5xl grid-cols-7">
+        <TabsList className="grid w-full max-w-6xl grid-cols-9">
           <TabsTrigger value="sii" className="gap-2">
             <FileText className="h-4 w-4" />
             SII
@@ -128,7 +133,7 @@ export function FiscalModule() {
           </TabsTrigger>
           <TabsTrigger value="jurisdictions" className="gap-2">
             <Globe className="h-4 w-4" />
-            Jurisdicciones
+            Global
           </TabsTrigger>
           <TabsTrigger value="actions" className="gap-2">
             <FileText className="h-4 w-4" />
@@ -137,6 +142,14 @@ export function FiscalModule() {
           <TabsTrigger value="agent" className="gap-2">
             <Brain className="h-4 w-4" />
             Agente IA
+          </TabsTrigger>
+          <TabsTrigger value="news" className="gap-2">
+            <Newspaper className="h-4 w-4" />
+            Noticias
+          </TabsTrigger>
+          <TabsTrigger value="knowledge" className="gap-2">
+            <BookOpen className="h-4 w-4" />
+            Conocimiento
           </TabsTrigger>
           <TabsTrigger value="help" className="gap-2">
             <HelpCircle className="h-4 w-4" />
@@ -186,14 +199,89 @@ export function FiscalModule() {
 
         <TabsContent value="agent" className="mt-6">
           <div className="grid lg:grid-cols-2 gap-6">
-            <FiscalAIAgentPanel 
-              companyId={demoCompanyId} 
-              className="min-h-[600px]"
-            />
+            <div className="space-y-4">
+              <FiscalAIAgentPanel 
+                companyId={demoCompanyId} 
+                className="min-h-[600px]"
+              />
+              {/* Voice Controls */}
+              <Card className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-sm">Control por Voz</h4>
+                    <p className="text-xs text-muted-foreground">Habla con el agente fiscal</p>
+                  </div>
+                  <FiscalVoiceButton
+                    onTranscript={(text) => console.log('Voice transcript:', text)}
+                    autoSpeak={true}
+                  />
+                </div>
+              </Card>
+            </div>
             <ActiveHelpPanel 
               companyId={demoCompanyId}
               className="min-h-[600px]"
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="news" className="mt-6">
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <FiscalNewsPanel 
+                companyId={demoCompanyId}
+                companyCnae="6201"
+                className="min-h-[600px]"
+              />
+            </div>
+            <div className="space-y-4">
+              <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <Newspaper className="h-5 w-5 text-blue-500" />
+                  <h4 className="font-medium">Noticias Fiscales</h4>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Monitorización automática de cambios normativos que afectan a tu empresa según CNAE.
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Guarda noticias importantes</li>
+                  <li>• Añade a base de conocimiento</li>
+                  <li>• Implementa cambios automáticamente</li>
+                </ul>
+              </Card>
+              <FiscalKnowledgeUploader className="min-h-[300px]" />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="knowledge" className="mt-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            <FiscalKnowledgeUploader className="min-h-[500px]" />
+            <Card className="p-6 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 border-purple-500/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500">
+                  <BookOpen className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Base de Conocimiento Fiscal</h3>
+                  <p className="text-xs text-muted-foreground">Documentación y normativas</p>
+                </div>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <h4 className="font-medium mb-1">Regulaciones</h4>
+                  <p className="text-xs text-muted-foreground">Leyes fiscales, circulares y BOE</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <h4 className="font-medium mb-1">Plantillas</h4>
+                  <p className="text-xs text-muted-foreground">Modelos oficiales AEAT</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50">
+                  <h4 className="font-medium mb-1">Noticias Guardadas</h4>
+                  <p className="text-xs text-muted-foreground">Artículos relevantes para tu CNAE</p>
+                </div>
+              </div>
+            </Card>
           </div>
         </TabsContent>
 
