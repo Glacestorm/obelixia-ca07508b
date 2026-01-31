@@ -31,7 +31,8 @@ import {
   ChevronRight,
   Globe,
   Bot,
-  Truck
+  Truck,
+  UserCog
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
 import { ERPCompanySelector } from './config/ERPCompanySelector';
@@ -52,6 +53,7 @@ import { TradeFinanceModule } from './trade';
 import { AdvisorAgentPanel } from './advisor';
 import { LogisticsModuleDashboard } from './logistics';
 import { FiscalModule } from './fiscal';
+import { HRModule } from './hr';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
@@ -65,7 +67,7 @@ function ERPModularDashboardContent() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // Módulos instalados (tienen tab funcional)
-  const installedModuleIds = ['masters', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax'];
+  const installedModuleIds = ['masters', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr'];
 
   // Verificar si necesita configuración inicial
   useEffect(() => {
@@ -130,6 +132,7 @@ function ERPModularDashboardContent() {
     { id: 'trade', name: 'Comercio', icon: Globe, permission: 'trade.read', color: 'bg-teal-500' },
     { id: 'logistics', name: 'Logística', icon: Truck, permission: 'logistics.read', color: 'bg-indigo-500' },
     { id: 'tax', name: 'Fiscal', icon: Receipt, permission: 'tax.read', color: 'bg-red-500' },
+    { id: 'hr', name: 'RRHH', icon: UserCog, permission: 'hr.read', color: 'bg-pink-500' },
   ];
 
   const availableModules = modules.filter(m => hasPermission(m.permission));
@@ -211,6 +214,12 @@ function ERPModularDashboardContent() {
             <TabsTrigger value="tax" className="gap-2">
               <Receipt className="h-4 w-4" />
               Fiscal
+            </TabsTrigger>
+          )}
+          {hasPermission('hr.read') && (
+            <TabsTrigger value="hr" className="gap-2">
+              <UserCog className="h-4 w-4" />
+              RRHH
             </TabsTrigger>
           )}
           {hasPermission('admin.all') && (
@@ -427,6 +436,11 @@ function ERPModularDashboardContent() {
         {/* Tax/Fiscal Tab */}
         <TabsContent value="tax">
           <FiscalModule />
+        </TabsContent>
+
+        {/* HR Tab */}
+        <TabsContent value="hr">
+          <HRModule />
         </TabsContent>
 
         {/* Companies Tab */}
