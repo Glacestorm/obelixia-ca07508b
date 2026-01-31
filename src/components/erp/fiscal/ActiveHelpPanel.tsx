@@ -1,8 +1,8 @@
 /**
- * ActiveHelpPanel - Panel de Ayuda Activa con chat, voz y análisis en tiempo real
+ * ActiveHelpPanel - Panel de Ayuda Activa con chat, voz, calendario fiscal y análisis en tiempo real
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar } from '@/components/ui/calendar';
+import { Progress } from '@/components/ui/progress';
 import {
   HelpCircle,
   Send,
@@ -23,7 +25,11 @@ import {
   Settings,
   MessageSquare,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle,
+  Clock,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useERPActiveHelp } from '@/hooks/erp/useERPActiveHelp';
@@ -32,6 +38,8 @@ import { FiscalVoiceButton } from './FiscalVoiceButton';
 import { ActiveHelpBubble } from './ActiveHelpBubble';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { format, addDays, isSameDay, isAfter, isBefore, startOfToday } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface ActiveHelpPanelProps {
   companyId?: string;
@@ -44,11 +52,31 @@ interface ChatMessage {
   sources?: string[];
 }
 
+interface FiscalEvent {
+  id: string;
+  date: Date;
+  title: string;
+  type: 'tax_filing' | 'payment' | 'declaration' | 'reminder';
+  model?: string;
+  status: 'pending' | 'completed' | 'overdue';
+}
+
+// Demo fiscal events
+const DEMO_FISCAL_EVENTS: FiscalEvent[] = [
+  { id: '1', date: addDays(startOfToday(), 3), title: 'Modelo 303 - IVA Trimestral', type: 'tax_filing', model: '303', status: 'pending' },
+  { id: '2', date: addDays(startOfToday(), 5), title: 'Modelo 111 - Retenciones IRPF', type: 'tax_filing', model: '111', status: 'pending' },
+  { id: '3', date: addDays(startOfToday(), 10), title: 'Modelo 115 - Retenciones Alquileres', type: 'payment', model: '115', status: 'pending' },
+  { id: '4', date: addDays(startOfToday(), 15), title: 'Intrastat - Declaración Mensual', type: 'declaration', status: 'pending' },
+  { id: '5', date: addDays(startOfToday(), -2), title: 'Modelo 130 - Pago Fraccionado', type: 'tax_filing', model: '130', status: 'overdue' },
+  { id: '6', date: addDays(startOfToday(), -5), title: 'SII - Envío Facturas Emitidas', type: 'declaration', status: 'completed' },
+];
+
 export function ActiveHelpPanel({ companyId, className }: ActiveHelpPanelProps) {
   const [activeTab, setActiveTab] = useState('chat');
   const [query, setQuery] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -63,6 +91,36 @@ export function ActiveHelpPanel({ companyId, className }: ActiveHelpPanelProps) 
   } = useERPActiveHelp(companyId);
 
   const { speak } = useERPFiscalVoice();
+
+  // Calculate compliance stats
+  const complianceStats = useMemo(() => {
+    const total = DEMO_FISCAL_EVENTS.length;
+    const completed = DEMO_FISCAL_EVENTS.filter(e => e.status === 'completed').length;
+    const overdue = DEMO_FISCAL_EVENTS.filter(e => e.status === 'overdue').length;
+    const pending = DEMO_FISCAL_EVENTS.filter(e => e.status === 'pending').length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, overdue, pending, percentage };
+  }, []);
+
+  // Events for the next 7 days
+  const upcomingEvents = useMemo(() => {
+    const today = startOfToday();
+    const weekFromNow = addDays(today, 7);
+    return DEMO_FISCAL_EVENTS
+      .filter(e => e.status !== 'completed' && isAfter(e.date, today) && isBefore(e.date, weekFromNow))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, []);
+
+  // Get events for selected date
+  const eventsForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+    return DEMO_FISCAL_EVENTS.filter(e => isSameDay(e.date, selectedDate));
+  }, [selectedDate]);
+
+  // Dates that have events (for calendar highlighting)
+  const eventDates = useMemo(() => {
+    return DEMO_FISCAL_EVENTS.map(e => e.date);
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -127,6 +185,26 @@ export function ActiveHelpPanel({ companyId, className }: ActiveHelpPanelProps) 
     '¿Cuál es el tipo de IVA para servicios digitales?'
   ];
 
+  const getEventIcon = (type: FiscalEvent['type']) => {
+    switch (type) {
+      case 'tax_filing': return <FileText className="h-4 w-4" />;
+      case 'payment': return <Clock className="h-4 w-4" />;
+      case 'declaration': return <CalendarDays className="h-4 w-4" />;
+      default: return <AlertTriangle className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusBadge = (status: FiscalEvent['status']) => {
+    switch (status) {
+      case 'completed':
+        return <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/30">Completado</Badge>;
+      case 'overdue':
+        return <Badge variant="destructive" className="text-xs">Vencido</Badge>;
+      default:
+        return <Badge variant="secondary" className="text-xs">Pendiente</Badge>;
+    }
+  };
+
   return (
     <Card className={cn("h-full flex flex-col", className)}>
       <CardHeader className="pb-3 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10">
@@ -168,10 +246,14 @@ export function ActiveHelpPanel({ companyId, className }: ActiveHelpPanelProps) 
 
       <CardContent className="flex-1 p-0 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 rounded-none border-b">
+          <TabsList className="grid w-full grid-cols-4 rounded-none border-b">
             <TabsTrigger value="chat" className="gap-1 text-xs">
               <MessageSquare className="h-3.5 w-3.5" />
               Consultas
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-1 text-xs">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Calendario
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-1 text-xs">
               <Activity className="h-3.5 w-3.5" />
@@ -302,6 +384,114 @@ export function ActiveHelpPanel({ companyId, className }: ActiveHelpPanelProps) 
                     <Send className="h-4 w-4" />
                   )}
                 </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Calendar Tab */}
+          <TabsContent value="calendar" className="flex-1 m-0 p-0 overflow-auto">
+            <div className="p-4 space-y-4">
+              {/* Compliance indicator */}
+              <div className="p-4 rounded-lg border bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Cumplimiento Fiscal</span>
+                  <span className="text-lg font-bold text-emerald-600">{complianceStats.percentage}%</span>
+                </div>
+                <Progress value={complianceStats.percentage} className="h-2 mb-2" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-green-500" />
+                    {complianceStats.completed} completados
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-amber-500" />
+                    {complianceStats.pending} pendientes
+                  </span>
+                  {complianceStats.overdue > 0 && (
+                    <span className="flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3 text-red-500" />
+                      {complianceStats.overdue} vencidos
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Mini calendar */}
+              <div className="flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  locale={es}
+                  className="rounded-md border"
+                  modifiers={{
+                    hasEvent: eventDates,
+                  }}
+                  modifiersStyles={{
+                    hasEvent: {
+                      fontWeight: 'bold',
+                      textDecoration: 'underline',
+                      textDecorationColor: 'hsl(var(--primary))',
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Events for selected date */}
+              {eventsForSelectedDate.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">
+                    Eventos del {selectedDate && format(selectedDate, "d 'de' MMMM", { locale: es })}
+                  </h4>
+                  {eventsForSelectedDate.map((event) => (
+                    <div key={event.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          {getEventIcon(event.type)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{event.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(event.date, "HH:mm", { locale: es })}
+                          </p>
+                        </div>
+                      </div>
+                      {getStatusBadge(event.status)}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upcoming events (next 7 days) */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Próximos 7 días
+                </h4>
+                {upcomingEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Sin obligaciones próximas
+                  </p>
+                ) : (
+                  upcomingEvents.map((event) => (
+                    <div key={event.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-amber-500/10">
+                          {getEventIcon(event.type)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{event.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(event.date, "EEEE d 'de' MMMM", { locale: es })}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.ceil((event.date.getTime() - Date.now()) / (1000 * 60 * 60 * 24))} días
+                      </Badge>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </TabsContent>

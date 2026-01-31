@@ -1,6 +1,6 @@
 /**
  * Fiscal Module - Módulo principal que integra SII, Intrastat, Jurisdicciones Globales,
- * Agente IA Fiscal y Ayuda Activa
+ * Agente IA Fiscal, Ayuda Activa, Acciones Fiscales y Tendencias 2026+
  */
 
 import { useState } from 'react';
@@ -14,12 +14,16 @@ import {
   TrendingUp,
   Brain,
   HelpCircle,
+  Sparkles,
+  Rocket,
 } from 'lucide-react';
 import { SIIDashboard } from './SIIDashboard';
 import { IntrastatDashboard } from './IntrastatDashboard';
 import { GlobalTaxDashboard } from './GlobalTaxDashboard';
 import { FiscalAIAgentPanel } from './FiscalAIAgentPanel';
 import { ActiveHelpPanel } from './ActiveHelpPanel';
+import { FiscalActionsPanel } from './FiscalActionsPanel';
+import { FiscalTrends2026Panel } from './FiscalTrends2026Panel';
 import { useERPSII } from '@/hooks/erp/useERPSII';
 import { useERPIntrastat } from '@/hooks/erp/useERPIntrastat';
 
@@ -103,7 +107,7 @@ export function FiscalModule() {
 
       {/* Tabs principales */}
       <Tabs value={activeModule} onValueChange={setActiveModule}>
-        <TabsList className="grid w-full max-w-4xl grid-cols-5">
+        <TabsList className="grid w-full max-w-5xl grid-cols-7">
           <TabsTrigger value="sii" className="gap-2">
             <FileText className="h-4 w-4" />
             SII
@@ -126,13 +130,21 @@ export function FiscalModule() {
             <Globe className="h-4 w-4" />
             Jurisdicciones
           </TabsTrigger>
+          <TabsTrigger value="actions" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Documentos
+          </TabsTrigger>
           <TabsTrigger value="agent" className="gap-2">
             <Brain className="h-4 w-4" />
             Agente IA
           </TabsTrigger>
           <TabsTrigger value="help" className="gap-2">
             <HelpCircle className="h-4 w-4" />
-            Ayuda Activa
+            Ayuda
+          </TabsTrigger>
+          <TabsTrigger value="trends" className="gap-2">
+            <Rocket className="h-4 w-4" />
+            2026+
           </TabsTrigger>
         </TabsList>
 
@@ -146,6 +158,30 @@ export function FiscalModule() {
 
         <TabsContent value="jurisdictions" className="mt-6">
           <GlobalTaxDashboard />
+        </TabsContent>
+
+        <TabsContent value="actions" className="mt-6">
+          <div className="grid lg:grid-cols-2 gap-6">
+            <FiscalActionsPanel 
+              companyId={demoCompanyId}
+              className="min-h-[500px]"
+            />
+            <Card className="p-6 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border-indigo-500/20">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Documentación Generada</h3>
+                  <p className="text-xs text-muted-foreground">Historial y presentaciones</p>
+                </div>
+              </div>
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Los documentos generados aparecerán aquí</p>
+              </div>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="agent" className="mt-6">
@@ -166,6 +202,10 @@ export function FiscalModule() {
             companyId={demoCompanyId}
             className="max-w-3xl mx-auto min-h-[600px]"
           />
+        </TabsContent>
+
+        <TabsContent value="trends" className="mt-6">
+          <FiscalTrends2026Panel />
         </TabsContent>
       </Tabs>
     </div>
