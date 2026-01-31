@@ -12,8 +12,8 @@ export const DOMAIN_CONFIG: Record<AgentDomain, DomainConfig> = {
     name: 'Financiero',
     color: 'from-emerald-500 to-green-600',
     icon: 'Calculator',
-    description: 'Gestión contable, tesorería, facturación y cash flow',
-    moduleTypes: ['accounting', 'treasury', 'invoicing', 'collections', 'cashflow']
+    description: 'Gestión contable, tesorería, facturación, fiscalidad y cash flow',
+    moduleTypes: ['accounting', 'treasury', 'invoicing', 'collections', 'cashflow', 'fiscal']
   },
   crm_cs: {
     name: 'CRM & Customer Success',
@@ -40,8 +40,8 @@ export const DOMAIN_CONFIG: Record<AgentDomain, DomainConfig> = {
     name: 'Recursos Humanos',
     color: 'from-pink-500 to-rose-600',
     icon: 'UserCheck',
-    description: 'Nóminas, reclutamiento, formación y evaluación',
-    moduleTypes: ['payroll', 'recruitment', 'training', 'performance']
+    description: 'Nóminas, contratos, vacaciones, PRL, reclutamiento y formación',
+    moduleTypes: ['payroll', 'contracts', 'vacations', 'prl_safety', 'recruitment', 'training', 'performance']
   },
   analytics: {
     name: 'Analytics & BI',
@@ -84,6 +84,12 @@ export const MODULE_AGENT_CONFIG: Record<ModuleAgentType, ModuleAgentConfig> = {
     name: 'Agente Cash Flow',
     description: 'Predicción y optimización del flujo de caja',
     capabilities: ['prediccion_cashflow', 'escenarios_what_if', 'alertas_deficit', 'optimizacion_pagos'],
+    defaultPriority: 1
+  },
+  fiscal: {
+    name: 'Agente Fiscal',
+    description: 'Gestión fiscal, IVA, SII, Intrastat y cumplimiento tributario',
+    capabilities: ['sii_management', 'vat_calculation', 'intrastat_reporting', 'tax_compliance', 'fiscal_calendar', 'multi_jurisdiction'],
     defaultPriority: 1
   },
 
@@ -192,8 +198,26 @@ export const MODULE_AGENT_CONFIG: Record<ModuleAgentType, ModuleAgentConfig> = {
   // === RRHH ===
   payroll: {
     name: 'Agente Nóminas',
-    description: 'Automatización del proceso de nóminas',
-    capabilities: ['payroll_calculation', 'tax_compliance', 'benefits_administration', 'reporting'],
+    description: 'Automatización del proceso de nóminas y cotizaciones SS',
+    capabilities: ['payroll_calculation', 'tax_compliance', 'benefits_administration', 'ss_cotizaciones', 'irpf_calculation', 'reporting'],
+    defaultPriority: 1
+  },
+  contracts: {
+    name: 'Agente Contratos',
+    description: 'Gestión de contratos laborales, altas y bajas',
+    capabilities: ['contract_generation', 'contract_renewal', 'termination_calculation', 'severance_calculation', 'sepe_registration'],
+    defaultPriority: 1
+  },
+  vacations: {
+    name: 'Agente Vacaciones',
+    description: 'Planificación y control de vacaciones y ausencias',
+    capabilities: ['vacation_planning', 'absence_tracking', 'calendar_management', 'conflict_detection', 'balance_calculation'],
+    defaultPriority: 2
+  },
+  prl_safety: {
+    name: 'Agente PRL',
+    description: 'Prevención de Riesgos Laborales y seguridad',
+    capabilities: ['risk_assessment', 'safety_training', 'incident_tracking', 'epi_management', 'health_surveillance', 'audit_prl'],
     defaultPriority: 1
   },
   recruitment: {
@@ -205,7 +229,7 @@ export const MODULE_AGENT_CONFIG: Record<ModuleAgentType, ModuleAgentConfig> = {
   training: {
     name: 'Agente Formación',
     description: 'Gestión de capacitación y desarrollo',
-    capabilities: ['learning_paths', 'skill_gap_analysis', 'certification_tracking', 'content_recommendation'],
+    capabilities: ['learning_paths', 'skill_gap_analysis', 'certification_tracking', 'content_recommendation', 'mandatory_training'],
     defaultPriority: 3
   },
   performance: {

@@ -9,15 +9,15 @@ export type AgentDomain = 'financial' | 'crm_cs' | 'compliance' | 'operations' |
 
 export type ModuleAgentType = 
   // Financiero
-  | 'accounting' | 'treasury' | 'invoicing' | 'collections' | 'cashflow'
+  | 'accounting' | 'treasury' | 'invoicing' | 'collections' | 'cashflow' | 'fiscal'
   // CRM & CS
   | 'sales' | 'customer_success' | 'pipeline' | 'churn_prevention' | 'upsell'
   // Compliance
   | 'gdpr' | 'psd2' | 'esg' | 'audit' | 'kyc_aml' | 'risk'
   // Operaciones
   | 'inventory' | 'procurement' | 'logistics' | 'maintenance' | 'scheduling'
-  // RRHH
-  | 'payroll' | 'recruitment' | 'training' | 'performance'
+  // RRHH - Extendido
+  | 'payroll' | 'recruitment' | 'training' | 'performance' | 'contracts' | 'vacations' | 'prl_safety'
   // Analytics
   | 'reporting' | 'forecasting' | 'anomaly_detection';
 
