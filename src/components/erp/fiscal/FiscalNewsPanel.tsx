@@ -35,14 +35,15 @@ interface NewsArticle {
   id: string;
   title: string;
   excerpt: string;
-  source: string;
+  source_name: string;
+  source_url: string;
   category: string;
   published_at: string;
-  url: string;
   relevance_score: number;
-  importance_level: string;
+  importance_level?: string;
   ai_summary?: string;
   detected_trends?: string[];
+  tags?: string[];
 }
 
 interface FiscalNewsPanelProps {
@@ -144,14 +145,14 @@ export function FiscalNewsPanel({
           knowledge_type: 'news',
           title: article.title,
           content: article.ai_summary || article.excerpt,
-          source_url: article.url,
+          source_url: article.source_url,
           tags: article.detected_trends || [article.category],
           is_active: true,
           verified_by: user?.id || null,
           metadata: {
-            source: article.source,
+            source: article.source_name,
             published_at: article.published_at,
-            importance_level: article.importance_level,
+            importance_level: article.importance_level || 'medium',
             article_id: article.id
           }
         });
@@ -186,7 +187,7 @@ export function FiscalNewsPanel({
     fetchSavedIds();
   }, [fetchNews, fetchSavedIds]);
 
-  const getImportanceColor = (level: string) => {
+  const getImportanceColor = (level?: string) => {
     switch (level) {
       case 'critical': return 'bg-red-500 text-white';
       case 'high': return 'bg-amber-500 text-white';
@@ -195,10 +196,17 @@ export function FiscalNewsPanel({
     }
   };
 
+  const getImportanceLevel = (score: number): string => {
+    if (score >= 90) return 'critical';
+    if (score >= 75) return 'high';
+    if (score >= 50) return 'medium';
+    return 'low';
+  };
+
   const filteredArticles = activeTab === 'saved' 
     ? articles.filter(a => savedIds.has(a.id))
     : activeTab === 'important'
-    ? articles.filter(a => a.importance_level === 'high' || a.importance_level === 'critical')
+    ? articles.filter(a => (a.importance_level === 'high' || a.importance_level === 'critical') || a.relevance_score >= 75)
     : articles;
 
   return (
@@ -276,10 +284,10 @@ export function FiscalNewsPanel({
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge className={cn("text-[10px]", getImportanceColor(article.importance_level))}>
-                            {article.importance_level === 'critical' ? 'Crítica' :
-                             article.importance_level === 'high' ? 'Alta' :
-                             article.importance_level === 'medium' ? 'Media' : 'Normal'}
+                          <Badge className={cn("text-[10px]", getImportanceColor(article.importance_level || getImportanceLevel(article.relevance_score)))}>
+                            {(article.importance_level || getImportanceLevel(article.relevance_score)) === 'critical' ? 'Crítica' :
+                             (article.importance_level || getImportanceLevel(article.relevance_score)) === 'high' ? 'Alta' :
+                             (article.importance_level || getImportanceLevel(article.relevance_score)) === 'medium' ? 'Media' : 'Normal'}
                           </Badge>
                           <Badge variant="outline" className="text-[10px]">
                             {article.category}
@@ -287,7 +295,7 @@ export function FiscalNewsPanel({
                         </div>
                         
                         <a 
-                          href={article.url} 
+                          href={article.source_url} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="font-medium text-sm hover:text-primary hover:underline line-clamp-2"
@@ -311,7 +319,7 @@ export function FiscalNewsPanel({
                         )}
 
                         <div className="flex items-center gap-2 mt-2 text-[10px] text-muted-foreground">
-                          <span>{article.source}</span>
+                          <span>{article.source_name}</span>
                           <span>•</span>
                           <Clock className="h-3 w-3" />
                           {formatDistanceToNow(new Date(article.published_at), { addSuffix: true, locale: es })}
@@ -340,7 +348,7 @@ export function FiscalNewsPanel({
                         >
                           <Lightbulb className="h-4 w-4" />
                         </Button>
-                        <a href={article.url} target="_blank" rel="noopener noreferrer">
+                        <a href={article.source_url} target="_blank" rel="noopener noreferrer">
                           <Button variant="ghost" size="icon" className="h-7 w-7">
                             <ExternalLink className="h-4 w-4" />
                           </Button>
