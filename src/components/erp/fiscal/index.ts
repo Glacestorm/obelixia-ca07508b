@@ -1,6 +1,6 @@
 /**
  * Módulo Fiscal - Barrel exports
- * SII + Intrastat + Jurisdicciones Globales + Agente IA + Ayuda Activa
+ * SII + Intrastat + Jurisdicciones Globales + Agente IA + Ayuda Activa + Acciones + Tendencias
  */
 
 export { SIIDashboard } from './SIIDashboard';
@@ -19,3 +19,6 @@ export { FiscalAIAgentPanel } from './FiscalAIAgentPanel';
 export { FiscalVoiceButton } from './FiscalVoiceButton';
 export { ActiveHelpBubble } from './ActiveHelpBubble';
 export { ActiveHelpPanel } from './ActiveHelpPanel';
+export { FiscalActionsPanel } from './FiscalActionsPanel';
+export { FiscalDocumentExportDialog } from './FiscalDocumentExportDialog';
+export { FiscalTrends2026Panel } from './FiscalTrends2026Panel';
