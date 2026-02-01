@@ -10,3 +10,5 @@ export { HRENPSSurveyDialog } from './HRENPSSurveyDialog';
 export { HRFlightRiskActionDialog } from './HRFlightRiskActionDialog';
 export { HROnboardingStartDialog } from './HROnboardingStartDialog';
 export { HRBonusConfigDialog } from './HRBonusConfigDialog';
+export { HREmployeeProfileDialog } from './HREmployeeProfileDialog';
+export { HRTerminationAnalysisDialog } from './HRTerminationAnalysisDialog';

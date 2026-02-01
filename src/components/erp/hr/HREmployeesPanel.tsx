@@ -56,6 +56,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeFormDialog } from './HREmployeeFormDialog';
+import { HREmployeeProfileDialog } from './dialogs';
 import { cn } from '@/lib/utils';
 
 interface Employee {
@@ -90,6 +91,7 @@ export function HREmployeesPanel({ companyId }: HREmployeesPanelProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'on_leave'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [showFormDialog, setShowFormDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   // Fetch employees
@@ -265,8 +267,8 @@ export function HREmployeesPanel({ companyId }: HREmployeesPanelProps) {
   };
 
   const handleViewEmployee = (employee: Employee) => {
-    toast.info(`Ficha de ${employee.first_name} ${employee.last_name}`);
-    // TODO: Abrir ficha completa
+    setSelectedEmployee(employee);
+    setShowProfileDialog(true);
   };
 
   const handleManageAccess = (employee: Employee) => {
@@ -593,6 +595,21 @@ export function HREmployeesPanel({ companyId }: HREmployeesPanelProps) {
         onSave={() => {
           fetchEmployees();
           setShowFormDialog(false);
+        }}
+      />
+
+      {/* Dialog de perfil */}
+      <HREmployeeProfileDialog
+        open={showProfileDialog}
+        onOpenChange={setShowProfileDialog}
+        employee={selectedEmployee}
+        onEdit={() => {
+          setShowProfileDialog(false);
+          setShowFormDialog(true);
+        }}
+        onManageAccess={() => {
+          setShowProfileDialog(false);
+          setShowFormDialog(true);
         }}
       />
     </div>

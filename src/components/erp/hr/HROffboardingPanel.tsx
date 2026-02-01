@@ -56,6 +56,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { HRTerminationAnalysisDialog } from './dialogs';
 
 interface HROffboardingPanelProps {
   companyId: string;
@@ -661,98 +662,28 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Analysis Dialog */}
-      <Dialog open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              Análisis de Offboarding
-            </DialogTitle>
-            <DialogDescription>
-              {selectedTermination?.employee?.first_name} {selectedTermination?.employee?.last_name} - 
-              {getTypeConfig(selectedTermination?.termination_type || '').label}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Analysis Actions */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button 
-                variant="outline" 
-                className="h-auto py-3 flex-col gap-2"
-                onClick={() => runAnalysis('analyze_termination')}
-                disabled={isAnalyzing}
-              >
-                <Shield className="h-5 w-5 text-amber-500" />
-                <span className="text-xs">Análisis Riesgos</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-3 flex-col gap-2"
-                onClick={() => runAnalysis('suggest_optimal_dates')}
-                disabled={isAnalyzing}
-              >
-                <Calendar className="h-5 w-5 text-blue-500" />
-                <span className="text-xs">Fechas Óptimas</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-3 flex-col gap-2"
-                onClick={() => runAnalysis('calculate_costs')}
-                disabled={isAnalyzing}
-              >
-                <DollarSign className="h-5 w-5 text-green-500" />
-                <span className="text-xs">Calcular Costes</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-3 flex-col gap-2"
-                onClick={() => generateTasks(selectedTermination?.id || '')}
-                disabled={isAnalyzing}
-              >
-                <ClipboardList className="h-5 w-5 text-purple-500" />
-                <span className="text-xs">Generar Tareas</span>
-              </Button>
-            </div>
-
-            {/* Loading */}
-            {isAnalyzing && (
-              <Card className="border-primary/30 bg-primary/5">
-                <CardContent className="py-8 text-center">
-                  <Sparkles className="h-10 w-10 mx-auto mb-3 text-primary animate-pulse" />
-                  <p className="text-sm">Analizando con IA...</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Analysis Result */}
-            {analysisResult && !isAnalyzing && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Resultado del Análisis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[300px]">
-                    <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-4 rounded-lg">
-                      {JSON.stringify(analysisResult, null, 2)}
-                    </pre>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAnalysisDialog(false)}>
-              Cerrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Analysis Dialog - Structured View */}
+      <HRTerminationAnalysisDialog
+        open={showAnalysisDialog}
+        onOpenChange={setShowAnalysisDialog}
+        employeeName={selectedTermination?.employee ? `${selectedTermination.employee.first_name} ${selectedTermination.employee.last_name}` : ''}
+        terminationType={getTypeConfig(selectedTermination?.termination_type || '').label}
+        analysisResult={analysisResult as any}
+        isLoading={isAnalyzing}
+        onRunAnalysis={(type) => {
+          const actionMap: Record<string, string> = {
+            'risks': 'analyze_termination',
+            'dates': 'suggest_optimal_dates',
+            'costs': 'calculate_costs',
+            'tasks': 'generate_tasks'
+          };
+          if (type === 'tasks' && selectedTermination?.id) {
+            generateTasks(selectedTermination.id);
+          } else {
+            runAnalysis(actionMap[type] || type);
+          }
+        }}
+      />
     </div>
   );
 }
