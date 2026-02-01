@@ -66,8 +66,13 @@ function ERPModularDashboardContent() {
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
+  // IDs de módulos que se ocultan cuando estamos dentro de uno
+  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr'];
+  
+  // Detectar si estamos dentro de un módulo específico
+  const isInsideModule = moduleTabIds.includes(activeTab);
+
   // Módulos instalados (tienen tab funcional)
-  const installedModuleIds = ['masters', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr'];
 
   // Verificar si necesita configuración inicial
   useEffect(() => {
@@ -162,66 +167,90 @@ function ERPModularDashboardContent() {
             <LayoutDashboard className="h-4 w-4" />
             Resumen
           </TabsTrigger>
-          {hasPermission('masters.read') && (
-            <TabsTrigger value="maestros" className="gap-2">
-              <BookOpen className="h-4 w-4" />
-              Maestros
-            </TabsTrigger>
+          
+          {/* Módulos ERP - Solo visibles en overview */}
+          {!isInsideModule && (
+            <>
+              {hasPermission('masters.read') && (
+                <TabsTrigger value="maestros" className="gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Maestros
+                </TabsTrigger>
+              )}
+              {hasPermission('sales.read') && (
+                <TabsTrigger value="sales" className="gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  Ventas
+                </TabsTrigger>
+              )}
+              {hasPermission('purchases.read') && (
+                <TabsTrigger value="purchases" className="gap-2">
+                  <Package className="h-4 w-4" />
+                  Compras
+                </TabsTrigger>
+              )}
+              {hasPermission('inventory.read') && (
+                <TabsTrigger value="inventory" className="gap-2">
+                  <Package className="h-4 w-4" />
+                  Almacén
+                </TabsTrigger>
+              )}
+              {hasPermission('accounting.read') && (
+                <TabsTrigger value="accounting" className="gap-2">
+                  <Calculator className="h-4 w-4" />
+                  Contabilidad
+                </TabsTrigger>
+              )}
+              {hasPermission('treasury.read') && (
+                <TabsTrigger value="treasury" className="gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Tesorería
+                </TabsTrigger>
+              )}
+              {hasPermission('trade.read') && (
+                <TabsTrigger value="trade" className="gap-2">
+                  <Globe className="h-4 w-4" />
+                  Comercio
+                </TabsTrigger>
+              )}
+              {hasPermission('logistics.read') && (
+                <TabsTrigger value="logistics" className="gap-2">
+                  <Truck className="h-4 w-4" />
+                  Logística
+                </TabsTrigger>
+              )}
+              {hasPermission('tax.read') && (
+                <TabsTrigger value="tax" className="gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Fiscal
+                </TabsTrigger>
+              )}
+              {hasPermission('hr.read') && (
+                <TabsTrigger value="hr" className="gap-2">
+                  <UserCog className="h-4 w-4" />
+                  RRHH
+                </TabsTrigger>
+              )}
+            </>
           )}
-          {hasPermission('sales.read') && (
-            <TabsTrigger value="sales" className="gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Ventas
-            </TabsTrigger>
+          
+          {/* Indicador del módulo activo cuando estamos dentro de uno */}
+          {isInsideModule && (
+            <Badge variant="secondary" className="gap-2 px-3 py-1.5 text-sm font-medium">
+              {activeTab === 'maestros' && <><BookOpen className="h-4 w-4" /> Maestros</>}
+              {activeTab === 'sales' && <><ShoppingCart className="h-4 w-4" /> Ventas</>}
+              {activeTab === 'purchases' && <><Package className="h-4 w-4" /> Compras</>}
+              {activeTab === 'inventory' && <><Package className="h-4 w-4" /> Almacén</>}
+              {activeTab === 'accounting' && <><Calculator className="h-4 w-4" /> Contabilidad</>}
+              {activeTab === 'treasury' && <><Wallet className="h-4 w-4" /> Tesorería</>}
+              {activeTab === 'trade' && <><Globe className="h-4 w-4" /> Comercio</>}
+              {activeTab === 'logistics' && <><Truck className="h-4 w-4" /> Logística</>}
+              {activeTab === 'tax' && <><Receipt className="h-4 w-4" /> Fiscal</>}
+              {activeTab === 'hr' && <><UserCog className="h-4 w-4" /> RRHH</>}
+            </Badge>
           )}
-          {hasPermission('purchases.read') && (
-            <TabsTrigger value="purchases" className="gap-2">
-              <Package className="h-4 w-4" />
-              Compras
-            </TabsTrigger>
-          )}
-          {hasPermission('inventory.read') && (
-            <TabsTrigger value="inventory" className="gap-2">
-              <Package className="h-4 w-4" />
-              Almacén
-            </TabsTrigger>
-          )}
-          {hasPermission('accounting.read') && (
-            <TabsTrigger value="accounting" className="gap-2">
-              <Calculator className="h-4 w-4" />
-              Contabilidad
-            </TabsTrigger>
-          )}
-          {hasPermission('treasury.read') && (
-            <TabsTrigger value="treasury" className="gap-2">
-              <Wallet className="h-4 w-4" />
-              Tesorería
-            </TabsTrigger>
-          )}
-          {hasPermission('trade.read') && (
-            <TabsTrigger value="trade" className="gap-2">
-              <Globe className="h-4 w-4" />
-              Comercio
-            </TabsTrigger>
-          )}
-          {hasPermission('logistics.read') && (
-            <TabsTrigger value="logistics" className="gap-2">
-              <Truck className="h-4 w-4" />
-              Logística
-            </TabsTrigger>
-          )}
-          {hasPermission('tax.read') && (
-            <TabsTrigger value="tax" className="gap-2">
-              <Receipt className="h-4 w-4" />
-              Fiscal
-            </TabsTrigger>
-          )}
-          {hasPermission('hr.read') && (
-            <TabsTrigger value="hr" className="gap-2">
-              <UserCog className="h-4 w-4" />
-              RRHH
-            </TabsTrigger>
-          )}
+          
+          {/* Tabs de configuración - Siempre visibles */}
           {hasPermission('admin.all') && (
             <>
               <TabsTrigger value="companies" className="gap-2">
@@ -314,7 +343,7 @@ function ERPModularDashboardContent() {
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                   {availableModules.map((module) => {
                     const Icon = module.icon;
-                    const isInstalled = installedModuleIds.includes(module.id);
+                    const isInstalled = moduleTabIds.includes(module.id) || module.id === 'masters';
                     return (
                       <Card 
                         key={module.id}
