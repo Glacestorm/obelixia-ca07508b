@@ -66,10 +66,10 @@ interface Alert {
 }
 
 const categoryColors = {
-  workforce: 'from-blue-500 to-indigo-600',
-  financial: 'from-emerald-500 to-teal-600',
-  compliance: 'from-green-500 to-emerald-600',
-  operational: 'from-purple-500 to-pink-600'
+  workforce: 'from-primary to-primary/80',
+  financial: 'from-success to-success/80',
+  compliance: 'from-success to-success/80',
+  operational: 'from-accent to-accent/80'
 };
 
 const iconMap = {
@@ -180,12 +180,12 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
   ], []);
 
   const laborCostBreakdown: LaborCostBreakdown[] = useMemo(() => [
-    { category: 'Salarios Base', amount: 124500, percentage: 66.8, trend: 2.1, color: '#3b82f6' },
-    { category: 'Seguridad Social', amount: 37350, percentage: 20.0, trend: 1.8, color: '#10b981' },
-    { category: 'Complementos', amount: 12400, percentage: 6.6, trend: 3.2, color: '#f59e0b' },
-    { category: 'Horas Extra', amount: 6200, percentage: 3.3, trend: -1.5, color: '#8b5cf6' },
-    { category: 'Formación', amount: 4100, percentage: 2.2, trend: 8.5, color: '#ec4899' },
-    { category: 'Otros', amount: 1950, percentage: 1.1, trend: 0.5, color: '#6366f1' }
+    { category: 'Salarios Base', amount: 124500, percentage: 66.8, trend: 2.1, color: 'hsl(var(--primary))' },
+    { category: 'Seguridad Social', amount: 37350, percentage: 20.0, trend: 1.8, color: 'hsl(var(--success))' },
+    { category: 'Complementos', amount: 12400, percentage: 6.6, trend: 3.2, color: 'hsl(var(--warning))' },
+    { category: 'Horas Extra', amount: 6200, percentage: 3.3, trend: -1.5, color: 'hsl(var(--accent))' },
+    { category: 'Formación', amount: 4100, percentage: 2.2, trend: 8.5, color: 'hsl(var(--chart-5))' },
+    { category: 'Otros', amount: 1950, percentage: 1.1, trend: 0.5, color: 'hsl(var(--chart-4))' }
   ], []);
 
   const criticalAlerts: Alert[] = useMemo(() => [
@@ -237,12 +237,12 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
 
   // Distribución por departamento
   const departmentDistribution = useMemo(() => [
-    { name: 'Producción', empleados: 18, coste: 72000, color: '#3b82f6' },
-    { name: 'Administración', empleados: 8, coste: 36000, color: '#10b981' },
-    { name: 'Comercial', empleados: 10, coste: 45000, color: '#f59e0b' },
-    { name: 'IT', empleados: 6, coste: 33500, color: '#8b5cf6' },
-    { name: 'RRHH', empleados: 3, coste: 15000, color: '#ec4899' },
-    { name: 'Dirección', empleados: 2, coste: 25000, color: '#6366f1' }
+    { name: 'Producción', empleados: 18, coste: 72000, color: 'hsl(var(--chart-1))' },
+    { name: 'Administración', empleados: 8, coste: 36000, color: 'hsl(var(--chart-2))' },
+    { name: 'Comercial', empleados: 10, coste: 45000, color: 'hsl(var(--chart-3))' },
+    { name: 'IT', empleados: 6, coste: 33500, color: 'hsl(var(--chart-4))' },
+    { name: 'RRHH', empleados: 3, coste: 15000, color: 'hsl(var(--chart-5))' },
+    { name: 'Dirección', empleados: 2, coste: 25000, color: 'hsl(var(--primary))' }
   ], []);
 
   const handleRefresh = () => {
@@ -258,7 +258,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
         key={metric.id} 
         className={cn(
           "group hover:shadow-lg transition-all duration-300 overflow-hidden",
-          metric.status === 'warning' && "border-amber-500/30",
+          metric.status === 'warning' && "border-warning/30",
           metric.status === 'critical' && "border-destructive/30"
         )}
       >
@@ -269,12 +269,12 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
               "p-1.5 rounded-lg bg-gradient-to-br",
               gradientClass
             )}>
-              <Icon className="h-3.5 w-3.5 text-white" />
+              <Icon className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
             {metric.change !== undefined && (
               <div className={cn(
                 "flex items-center gap-0.5 text-xs font-medium",
-                metric.changeType === 'positive' ? 'text-green-600' :
+                metric.changeType === 'positive' ? 'text-success' :
                 metric.changeType === 'negative' ? 'text-destructive' :
                 'text-muted-foreground'
               )}>
@@ -307,12 +307,12 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                     <linearGradient id={`gradient-${metric.id}`} x1="0" y1="0" x2="0" y2="1">
                       <stop 
                         offset="0%" 
-                        stopColor={metric.changeType === 'negative' ? '#ef4444' : '#22c55e'} 
+                        stopColor={metric.changeType === 'negative' ? 'hsl(var(--destructive))' : 'hsl(var(--success))'} 
                         stopOpacity={0.3}
                       />
                       <stop 
                         offset="100%" 
-                        stopColor={metric.changeType === 'negative' ? '#ef4444' : '#22c55e'} 
+                        stopColor={metric.changeType === 'negative' ? 'hsl(var(--destructive))' : 'hsl(var(--success))'} 
                         stopOpacity={0}
                       />
                     </linearGradient>
@@ -320,7 +320,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke={metric.changeType === 'negative' ? '#ef4444' : '#22c55e'}
+                    stroke={metric.changeType === 'negative' ? 'hsl(var(--destructive))' : 'hsl(var(--success))'}
                     strokeWidth={1.5}
                     fill={`url(#gradient-${metric.id})`}
                   />
@@ -336,15 +336,15 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                 <span className="text-muted-foreground">Objetivo: {metric.target}</span>
                 <span className={cn(
                   "font-medium",
-                  metric.progress >= 100 ? 'text-green-600' :
-                  metric.progress >= 80 ? 'text-amber-600' : 'text-muted-foreground'
+                  metric.progress >= 100 ? 'text-success' :
+                  metric.progress >= 80 ? 'text-warning' : 'text-muted-foreground'
                 )}>{metric.progress}%</span>
               </div>
               <Progress 
                 value={Math.min(metric.progress, 100)} 
                 className={cn(
                   "h-1",
-                  metric.progress > 100 && "bg-amber-500/20"
+                  metric.progress > 100 && "bg-warning/20"
                 )} 
               />
             </div>
@@ -476,30 +476,30 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
 
           {/* Quick Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20">
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
               <CardContent className="p-4 text-center">
-                <UserPlus className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                <UserPlus className="h-6 w-6 mx-auto mb-2 text-primary" />
                 <p className="text-2xl font-bold">5</p>
                 <p className="text-xs text-muted-foreground">Altas este mes</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20">
+            <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
               <CardContent className="p-4 text-center">
-                <UserMinus className="h-6 w-6 mx-auto mb-2 text-amber-500" />
+                <UserMinus className="h-6 w-6 mx-auto mb-2 text-warning" />
                 <p className="text-2xl font-bold">2</p>
                 <p className="text-xs text-muted-foreground">Bajas este mes</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+            <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
               <CardContent className="p-4 text-center">
-                <Calendar className="h-6 w-6 mx-auto mb-2 text-green-500" />
+                <Calendar className="h-6 w-6 mx-auto mb-2 text-success" />
                 <p className="text-2xl font-bold">12</p>
                 <p className="text-xs text-muted-foreground">De vacaciones</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+            <Card className="bg-gradient-to-br from-accent/20 to-accent/10 border-accent/30">
               <CardContent className="p-4 text-center">
-                <Briefcase className="h-6 w-6 mx-auto mb-2 text-purple-500" />
+                <Briefcase className="h-6 w-6 mx-auto mb-2 text-accent-foreground" />
                 <p className="text-2xl font-bold">3.2</p>
                 <p className="text-xs text-muted-foreground">Años antigüedad media</p>
               </CardContent>
@@ -535,9 +535,9 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                           <span className="font-medium">
                             €{item.amount.toLocaleString()}
                           </span>
-                          <span className={cn(
+                        <span className={cn(
                             "text-xs flex items-center gap-0.5",
-                            item.trend > 0 ? 'text-amber-600' : 'text-green-600'
+                            item.trend > 0 ? 'text-warning' : 'text-success'
                           )}>
                             {item.trend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                             {Math.abs(item.trend)}%
@@ -557,43 +557,43 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
 
             {/* Summary Cards */}
             <div className="space-y-4">
-              <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border-emerald-500/20">
+              <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <Euro className="h-5 w-5 text-emerald-500" />
-                    <Badge variant="outline" className="text-emerald-600 border-emerald-500">Mensual</Badge>
+                    <Euro className="h-5 w-5 text-success" />
+                    <Badge variant="outline" className="text-success border-success">Mensual</Badge>
                   </div>
                   <p className="text-2xl font-bold">€186.5K</p>
                   <p className="text-xs text-muted-foreground">Coste laboral total</p>
-                  <div className="mt-2 text-xs text-emerald-600 flex items-center gap-1">
+                  <div className="mt-2 text-xs text-success flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" /> +2.1% vs mes anterior
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20">
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <Users className="h-5 w-5 text-blue-500" />
-                    <Badge variant="outline" className="text-blue-600 border-blue-500">Por empleado</Badge>
+                    <Users className="h-5 w-5 text-primary" />
+                    <Badge variant="outline" className="text-primary border-primary">Por empleado</Badge>
                   </div>
                   <p className="text-2xl font-bold">€3,968</p>
                   <p className="text-xs text-muted-foreground">Coste medio/empleado</p>
-                  <div className="mt-2 text-xs text-blue-600 flex items-center gap-1">
+                  <div className="mt-2 text-xs text-info flex items-center gap-1">
                     <TrendingDown className="h-3 w-3" /> -0.8% eficiencia
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+              <Card className="bg-gradient-to-br from-accent/20 to-accent/10 border-accent/30">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <Target className="h-5 w-5 text-purple-500" />
-                    <Badge variant="outline" className="text-purple-600 border-purple-500">Anual</Badge>
+                    <Target className="h-5 w-5 text-accent-foreground" />
+                    <Badge variant="outline" className="text-accent-foreground border-accent">Anual</Badge>
                   </div>
                   <p className="text-2xl font-bold">€2.24M</p>
                   <p className="text-xs text-muted-foreground">Proyección anual</p>
-                  <div className="mt-2 text-xs text-purple-600 flex items-center gap-1">
+                  <div className="mt-2 text-xs text-success flex items-center gap-1">
                     <CheckCircle className="h-3 w-3" /> En presupuesto
                   </div>
                 </CardContent>
@@ -672,7 +672,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                     <p className="text-lg font-bold">{item.value}</p>
                     <div className={cn(
                       "text-xs mt-1 flex items-center justify-center gap-1",
-                      item.status === 'better' ? 'text-green-600' : 'text-amber-600'
+                      item.status === 'better' ? 'text-success' : 'text-warning'
                     )}>
                       {item.status === 'better' ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
                       Sector: {item.benchmark}
@@ -729,7 +729,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                     ))}
                     {criticalAlerts.filter(a => a.type === 'critical').length === 0 && (
                       <div className="text-center py-8 text-muted-foreground">
-                        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                        <CheckCircle className="h-8 w-8 mx-auto mb-2 text-success" />
                         <p className="text-sm">Sin alertas críticas</p>
                       </div>
                     )}
@@ -742,7 +742,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <AlertCircle className="h-4 w-4 text-warning" />
                   Avisos y Recordatorios
                 </CardTitle>
               </CardHeader>
@@ -755,8 +755,8 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                         className={cn(
                           "p-3 rounded-lg border",
                           alert.type === 'warning' 
-                            ? 'border-amber-500/30 bg-amber-500/5'
-                            : 'border-blue-500/30 bg-blue-500/5'
+                            ? 'border-warning/30 bg-warning/5'
+                            : 'border-info/30 bg-info/5'
                         )}
                       >
                         <div className="flex items-start justify-between">
@@ -768,7 +768,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                             variant="outline" 
                             className={cn(
                               "text-xs",
-                              alert.type === 'warning' ? 'text-amber-600 border-amber-500' : 'text-blue-600 border-blue-500'
+                              alert.type === 'warning' ? 'text-warning border-warning' : 'text-info border-info'
                             )}
                           >
                             {alert.category}
