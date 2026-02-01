@@ -15727,6 +15727,150 @@ export type Database = {
           },
         ]
       }
+      erp_hr_bonus_allocations: {
+        Row: {
+          adjusted_amount: number | null
+          adjustment_reason: string | null
+          base_salary: number
+          calculated_amount: number
+          company_id: string
+          config_id: string
+          created_at: string | null
+          employee_id: string
+          id: string
+          payment_date: string | null
+          payment_reference: string | null
+          payment_status: string
+          performance_score: number | null
+          tenure_months: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          adjusted_amount?: number | null
+          adjustment_reason?: string | null
+          base_salary: number
+          calculated_amount?: number
+          company_id: string
+          config_id: string
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          payment_date?: string | null
+          payment_reference?: string | null
+          payment_status?: string
+          performance_score?: number | null
+          tenure_months?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          adjusted_amount?: number | null
+          adjustment_reason?: string | null
+          base_salary?: number
+          calculated_amount?: number
+          company_id?: string
+          config_id?: string
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          payment_date?: string | null
+          payment_reference?: string | null
+          payment_status?: string
+          performance_score?: number | null
+          tenure_months?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_bonus_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_bonus_allocations_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_bonus_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_bonus_allocations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_bonus_config: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string | null
+          department_weight: number | null
+          distribution_method: string
+          excluded_contract_types: string[] | null
+          fiscal_year: number
+          id: string
+          min_tenure_months: number | null
+          minimum_profit_threshold: number | null
+          notes: string | null
+          performance_weight: number | null
+          status: string
+          tenure_weight: number | null
+          total_bonus_pool_percentage: number
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string | null
+          department_weight?: number | null
+          distribution_method?: string
+          excluded_contract_types?: string[] | null
+          fiscal_year: number
+          id?: string
+          min_tenure_months?: number | null
+          minimum_profit_threshold?: number | null
+          notes?: string | null
+          performance_weight?: number | null
+          status?: string
+          tenure_weight?: number | null
+          total_bonus_pool_percentage: number
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string | null
+          department_weight?: number | null
+          distribution_method?: string
+          excluded_contract_types?: string[] | null
+          fiscal_year?: number
+          id?: string
+          min_tenure_months?: number | null
+          minimum_profit_threshold?: number | null
+          notes?: string | null
+          performance_weight?: number | null
+          status?: string
+          tenure_weight?: number | null
+          total_bonus_pool_percentage?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_bonus_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_candidate_communications: {
         Row: {
           auto_generated: boolean | null
@@ -16474,6 +16618,103 @@ export type Database = {
           },
         ]
       }
+      erp_hr_employee_objectives: {
+        Row: {
+          achievement_percentage: number | null
+          ai_suggested: boolean | null
+          ai_suggestion_context: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string | null
+          current_value: number | null
+          cycle_id: string
+          description: string | null
+          due_date: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          objective_type: string
+          proposed_by: string | null
+          status: string
+          target_unit: string | null
+          target_value: number | null
+          title: string
+          updated_at: string | null
+          weight_percentage: number | null
+        }
+        Insert: {
+          achievement_percentage?: number | null
+          ai_suggested?: boolean | null
+          ai_suggestion_context?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string | null
+          current_value?: number | null
+          cycle_id: string
+          description?: string | null
+          due_date?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          objective_type: string
+          proposed_by?: string | null
+          status?: string
+          target_unit?: string | null
+          target_value?: number | null
+          title: string
+          updated_at?: string | null
+          weight_percentage?: number | null
+        }
+        Update: {
+          achievement_percentage?: number | null
+          ai_suggested?: boolean | null
+          ai_suggestion_context?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string | null
+          current_value?: number | null
+          cycle_id?: string
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          objective_type?: string
+          proposed_by?: string | null
+          status?: string
+          target_unit?: string | null
+          target_value?: number | null
+          title?: string
+          updated_at?: string | null
+          weight_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_objectives_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_objectives_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_evaluation_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_objectives_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employee_onboarding: {
         Row: {
           assigned_buddy_id: string | null
@@ -16760,6 +17001,68 @@ export type Database = {
             columns: ["position_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_evaluation_cycles: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          cycle_type: string
+          end_date: string
+          evaluation_deadline: string | null
+          hr_approval_required: boolean | null
+          id: string
+          manager_evaluation_required: boolean | null
+          name: string
+          peer_evaluation_enabled: boolean | null
+          self_evaluation_enabled: boolean | null
+          start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          cycle_type: string
+          end_date: string
+          evaluation_deadline?: string | null
+          hr_approval_required?: boolean | null
+          id?: string
+          manager_evaluation_required?: boolean | null
+          name: string
+          peer_evaluation_enabled?: boolean | null
+          self_evaluation_enabled?: boolean | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          cycle_type?: string
+          end_date?: string
+          evaluation_deadline?: string | null
+          hr_approval_required?: boolean | null
+          id?: string
+          manager_evaluation_required?: boolean | null
+          name?: string
+          peer_evaluation_enabled?: boolean | null
+          self_evaluation_enabled?: boolean | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_evaluation_cycles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -18298,6 +18601,103 @@ export type Database = {
           },
         ]
       }
+      erp_hr_performance_evaluations: {
+        Row: {
+          ai_analysis: Json | null
+          ai_recommendations: Json | null
+          areas_for_improvement: string[] | null
+          company_id: string
+          competency_scores: Json | null
+          created_at: string | null
+          cycle_id: string
+          development_recommendations: string[] | null
+          employee_comments: string | null
+          employee_id: string
+          evaluation_type: string
+          evaluator_id: string | null
+          id: string
+          manager_comments: string | null
+          overall_score: number | null
+          rating: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          strengths: string[] | null
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_recommendations?: Json | null
+          areas_for_improvement?: string[] | null
+          company_id: string
+          competency_scores?: Json | null
+          created_at?: string | null
+          cycle_id: string
+          development_recommendations?: string[] | null
+          employee_comments?: string | null
+          employee_id: string
+          evaluation_type: string
+          evaluator_id?: string | null
+          id?: string
+          manager_comments?: string | null
+          overall_score?: number | null
+          rating?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          strengths?: string[] | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_recommendations?: Json | null
+          areas_for_improvement?: string[] | null
+          company_id?: string
+          competency_scores?: Json | null
+          created_at?: string | null
+          cycle_id?: string
+          development_recommendations?: string[] | null
+          employee_comments?: string | null
+          employee_id?: string
+          evaluation_type?: string
+          evaluator_id?: string | null
+          id?: string
+          manager_comments?: string | null
+          overall_score?: number | null
+          rating?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          strengths?: string[] | null
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_performance_evaluations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_performance_evaluations_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_evaluation_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_performance_evaluations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_positions: {
         Row: {
           code: string | null
@@ -18677,6 +19077,82 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_talent_grid: {
+        Row: {
+          ai_flight_risk_factors: Json | null
+          assessed_by: string | null
+          assessment_notes: string | null
+          company_id: string
+          created_at: string | null
+          cycle_id: string
+          development_plan: string | null
+          employee_id: string
+          flight_risk_score: number | null
+          grid_position: string | null
+          id: string
+          performance_axis: number
+          potential_axis: number
+          succession_candidate_for: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_flight_risk_factors?: Json | null
+          assessed_by?: string | null
+          assessment_notes?: string | null
+          company_id: string
+          created_at?: string | null
+          cycle_id: string
+          development_plan?: string | null
+          employee_id: string
+          flight_risk_score?: number | null
+          grid_position?: string | null
+          id?: string
+          performance_axis: number
+          potential_axis: number
+          succession_candidate_for?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_flight_risk_factors?: Json | null
+          assessed_by?: string | null
+          assessment_notes?: string | null
+          company_id?: string
+          created_at?: string | null
+          cycle_id?: string
+          development_plan?: string | null
+          employee_id?: string
+          flight_risk_score?: number | null
+          grid_position?: string | null
+          id?: string
+          performance_axis?: number
+          potential_axis?: number
+          succession_candidate_for?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_talent_grid_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_talent_grid_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_evaluation_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_talent_grid_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
             referencedColumns: ["id"]
           },
         ]
@@ -47628,6 +48104,10 @@ export type Database = {
       calculate_customer_360: {
         Args: { p_company_id: string }
         Returns: undefined
+      }
+      calculate_employee_performance_score: {
+        Args: { p_cycle_id: string; p_employee_id: string }
+        Returns: number
       }
       calculate_nps: {
         Args: { p_detractors: number; p_passives: number; p_promoters: number }

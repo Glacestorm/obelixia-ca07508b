@@ -941,3 +941,6 @@ verify_jwt = true
 
 [functions.erp-hr-offboarding-agent]
 verify_jwt = false
+
+[functions.erp-hr-performance-agent]
+verify_jwt = false
