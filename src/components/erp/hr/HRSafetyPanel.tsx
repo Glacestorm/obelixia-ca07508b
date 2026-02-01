@@ -23,6 +23,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRIncidentFormDialog } from './HRIncidentFormDialog';
+import { HRSafetyEvaluationDialog, HRSafetyTrainingDialog } from './dialogs';
 
 interface HRSafetyPanelProps {
   companyId: string;
@@ -48,6 +49,8 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
   const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
   const [loading, setLoading] = useState(false);
   const [showIncidentDialog, setShowIncidentDialog] = useState(false);
+  const [showEvaluationDialog, setShowEvaluationDialog] = useState(false);
+  const [showTrainingDialog, setShowTrainingDialog] = useState(false);
 
   // Fetch incidents from database
   const fetchIncidents = useCallback(async () => {
@@ -279,7 +282,7 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
                   <CardTitle className="text-base">Evaluación de Riesgos por Área</CardTitle>
                   <CardDescription>Estado de las evaluaciones y acciones pendientes</CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowEvaluationDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Nueva Evaluación
                 </Button>
@@ -335,7 +338,7 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
                   <CardTitle className="text-base">Formación en Prevención</CardTitle>
                   <CardDescription>Estado de las formaciones obligatorias y específicas</CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowTrainingDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Nueva Formación
                 </Button>
@@ -464,6 +467,21 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <HRSafetyEvaluationDialog
+        open={showEvaluationDialog}
+        onOpenChange={setShowEvaluationDialog}
+        companyId={companyId}
+        onSuccess={() => setShowEvaluationDialog(false)}
+      />
+
+      <HRSafetyTrainingDialog
+        open={showTrainingDialog}
+        onOpenChange={setShowTrainingDialog}
+        companyId={companyId}
+        onSuccess={() => setShowTrainingDialog(false)}
+      />
     </div>
   );
 }

@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { HRVacationRequestDialog } from './HRVacationRequestDialog';
+import { HRVacationRejectDialog } from './dialogs';
 
 interface VacationRequest {
   id: string;
@@ -746,6 +747,23 @@ export function HRVacationsPanel({ companyId }: HRVacationsPanelProps) {
           }, ...prev]);
           toast.success('Solicitud enviada - Pendiente aprobación de departamento');
         }}
+      />
+
+      {/* Reject Dialog */}
+      <HRVacationRejectDialog
+        open={!!showRejectDialog}
+        onOpenChange={(open) => !open && setShowRejectDialog(null)}
+        request={vacationRequests.find(r => r.id === showRejectDialog) || null}
+        onConfirm={(id, reason) => {
+          setRejectionReason(reason);
+          const request = vacationRequests.find(r => r.id === id);
+          if (request?.status === 'pending_dept') {
+            handleDeptApproval(id, false);
+          } else {
+            handleHRApproval(id, false);
+          }
+        }}
+        rejectLevel={vacationRequests.find(r => r.id === showRejectDialog)?.status === 'pending_dept' ? 'dept' : 'hr'}
       />
     </div>
   );
