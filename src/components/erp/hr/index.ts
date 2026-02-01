@@ -36,3 +36,7 @@ export { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDial
 // Fase 2+ - Nuevos dialogs operativos
 export { HRContractFormDialog } from './HRContractFormDialog';
 export { HRIncidentFormDialog } from './HRIncidentFormDialog';
+
+// Fase 1 - Prestaciones Sociales
+export { HRSocialBenefitsPanel } from './HRSocialBenefitsPanel';
+export { HRBenefitEnrollmentDialog } from './HRBenefitEnrollmentDialog';

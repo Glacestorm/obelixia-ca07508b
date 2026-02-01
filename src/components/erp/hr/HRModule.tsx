@@ -26,7 +26,8 @@ import {
   Landmark,
   UserCog,
   FolderOpen,
-  Bell
+  Bell,
+  Gift
 } from 'lucide-react';
 import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 import { HRVacationRequestDialog } from './HRVacationRequestDialog';
@@ -50,6 +51,7 @@ import { HREmployeesPanel } from './HREmployeesPanel';
 import { HRAlertsPanel } from './HRAlertsPanel';
 import { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
 import { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
+import { HRSocialBenefitsPanel } from './HRSocialBenefitsPanel';
 import { cn } from '@/lib/utils';
 
 export function HRModule() {
@@ -240,6 +242,10 @@ export function HRModule() {
               <Building2 className="h-3 w-3" />
               Organización
             </TabsTrigger>
+            <TabsTrigger value="benefits" className="gap-1 text-xs">
+              <Gift className="h-3 w-3" />
+              Beneficios
+            </TabsTrigger>
             <TabsTrigger value="safety" className="gap-1 text-xs">
               <Shield className="h-3 w-3" />
               PRL
@@ -312,6 +318,10 @@ export function HRModule() {
 
           <TabsContent value="departments" className="m-0">
             <HRDepartmentsPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="benefits" className="m-0">
+            <HRSocialBenefitsPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="safety" className="m-0">
