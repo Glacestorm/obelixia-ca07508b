@@ -114,6 +114,7 @@ const ERP_AGENTS: AgentModule[] = [
   { id: 'erp-tesoreria', name: 'Agente Tesorería', domain: 'erp', module: 'Tesorería', status: 'idle', healthScore: 92, lastActivity: new Date(Date.now() - 300000), tasksCompleted: 67, capabilities: ['cash_forecasting', 'payment_scheduling', 'bank_sync'], metrics: { payments: 89, forecasts: 5 } },
   { id: 'erp-comercio', name: 'Agente Comercio', domain: 'erp', module: 'Comercio', status: 'active', healthScore: 85, lastActivity: new Date(), tasksCompleted: 45, capabilities: ['trade_finance', 'currency_management', 'customs'], metrics: { operations: 23, currencies: 8 } },
   { id: 'erp-logistica', name: 'Agente Logística', domain: 'erp', module: 'Logística', status: 'active', healthScore: 90, lastActivity: new Date(), tasksCompleted: 134, capabilities: ['route_optimization', 'carrier_management', 'tracking'], metrics: { shipments: 178, routes: 45 } },
+  { id: 'erp-fiscal', name: 'Agente Fiscal', domain: 'erp', module: 'Fiscal', status: 'active', healthScore: 95, lastActivity: new Date(), tasksCompleted: 178, capabilities: ['sii_management', 'vat_calculation', 'intrastat_reporting', 'tax_compliance', 'fiscal_calendar', 'multi_jurisdiction'], metrics: { declarations: 45, sii_entries: 890, compliance_score: 98 } },
 ];
 
 const CRM_AGENTS: AgentModule[] = [
