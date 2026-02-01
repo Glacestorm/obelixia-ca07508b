@@ -11733,6 +11733,39 @@ export type Database = {
           },
         ]
       }
+      erp_available_modules: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          module_code: string
+          module_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          module_code: string
+          module_name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          module_code?: string
+          module_name?: string
+        }
+        Relationships: []
+      }
       erp_bank_accounts: {
         Row: {
           account_name: string
@@ -15488,6 +15521,217 @@ export type Database = {
           },
         ]
       }
+      erp_hr_alert_preferences: {
+        Row: {
+          advance_days: number | null
+          alert_type: Database["public"]["Enums"]["hr_alert_type"]
+          channels: Database["public"]["Enums"]["notification_channel"][] | null
+          company_id: string
+          created_at: string | null
+          email_address: string | null
+          id: string
+          is_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          updated_at: string | null
+          user_id: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          advance_days?: number | null
+          alert_type: Database["public"]["Enums"]["hr_alert_type"]
+          channels?:
+            | Database["public"]["Enums"]["notification_channel"][]
+            | null
+          company_id: string
+          created_at?: string | null
+          email_address?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string | null
+          user_id: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          advance_days?: number | null
+          alert_type?: Database["public"]["Enums"]["hr_alert_type"]
+          channels?:
+            | Database["public"]["Enums"]["notification_channel"][]
+            | null
+          company_id?: string
+          created_at?: string | null
+          email_address?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_alert_preferences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_alerts: {
+        Row: {
+          ai_notified: boolean | null
+          ai_notified_at: string | null
+          alert_type: Database["public"]["Enums"]["hr_alert_type"]
+          company_id: string
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          employee_id: string | null
+          id: string
+          is_read: boolean | null
+          is_resolved: boolean | null
+          metadata: Json | null
+          notified_via: Json | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          title: string
+          trigger_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_notified?: boolean | null
+          ai_notified_at?: string | null
+          alert_type: Database["public"]["Enums"]["hr_alert_type"]
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          notified_via?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          title: string
+          trigger_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_notified?: boolean | null
+          ai_notified_at?: string | null
+          alert_type?: Database["public"]["Enums"]["hr_alert_type"]
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          metadata?: Json | null
+          notified_via?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          title?: string
+          trigger_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_alerts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_department_managers: {
+        Row: {
+          can_approve_expenses: boolean | null
+          can_approve_vacations: boolean | null
+          company_id: string
+          created_at: string | null
+          department_id: string
+          effective_from: string | null
+          effective_until: string | null
+          employee_id: string
+          id: string
+          is_primary: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          can_approve_expenses?: boolean | null
+          can_approve_vacations?: boolean | null
+          company_id: string
+          created_at?: string | null
+          department_id: string
+          effective_from?: string | null
+          effective_until?: string | null
+          employee_id: string
+          id?: string
+          is_primary?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          can_approve_expenses?: boolean | null
+          can_approve_vacations?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          department_id?: string
+          effective_from?: string | null
+          effective_until?: string | null
+          employee_id?: string
+          id?: string
+          is_primary?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_department_managers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_department_managers_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_department_managers_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_departments: {
         Row: {
           budget: number | null
@@ -15636,6 +15880,63 @@ export type Database = {
           },
         ]
       }
+      erp_hr_employee_module_access: {
+        Row: {
+          access_level: Database["public"]["Enums"]["erp_module_access_level"]
+          company_id: string
+          created_at: string | null
+          employee_id: string
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          module_code: string
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["erp_module_access_level"]
+          company_id: string
+          created_at?: string | null
+          employee_id: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          module_code: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["erp_module_access_level"]
+          company_id?: string
+          created_at?: string | null
+          employee_id?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          module_code?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_module_access_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_module_access_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employees: {
         Row: {
           address: Json | null
@@ -15649,6 +15950,7 @@ export type Database = {
           department_id: string | null
           email: string | null
           employee_code: string | null
+          employee_number: string | null
           first_name: string
           gender: string | null
           hire_date: string
@@ -15660,6 +15962,8 @@ export type Database = {
           phone: string | null
           position_id: string | null
           reports_to: string | null
+          search_vector: unknown
+          social_security_number: string | null
           ss_number: string | null
           status: string | null
           termination_date: string | null
@@ -15680,6 +15984,7 @@ export type Database = {
           department_id?: string | null
           email?: string | null
           employee_code?: string | null
+          employee_number?: string | null
           first_name: string
           gender?: string | null
           hire_date: string
@@ -15691,6 +15996,8 @@ export type Database = {
           phone?: string | null
           position_id?: string | null
           reports_to?: string | null
+          search_vector?: unknown
+          social_security_number?: string | null
           ss_number?: string | null
           status?: string | null
           termination_date?: string | null
@@ -15711,6 +16018,7 @@ export type Database = {
           department_id?: string | null
           email?: string | null
           employee_code?: string | null
+          employee_number?: string | null
           first_name?: string
           gender?: string | null
           hire_date?: string
@@ -15722,6 +16030,8 @@ export type Database = {
           phone?: string | null
           position_id?: string | null
           reports_to?: string | null
+          search_vector?: unknown
+          social_security_number?: string | null
           ss_number?: string | null
           status?: string | null
           termination_date?: string | null
@@ -15757,6 +16067,75 @@ export type Database = {
             columns: ["position_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_family_relations: {
+        Row: {
+          affinity_degree: number | null
+          birth_date: string | null
+          blood_degree: number | null
+          company_id: string
+          created_at: string | null
+          death_date: string | null
+          disability_percentage: number | null
+          employee_id: string
+          first_name: string
+          id: string
+          is_dependent: boolean | null
+          last_name: string | null
+          notes: string | null
+          relation_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          affinity_degree?: number | null
+          birth_date?: string | null
+          blood_degree?: number | null
+          company_id: string
+          created_at?: string | null
+          death_date?: string | null
+          disability_percentage?: number | null
+          employee_id: string
+          first_name: string
+          id?: string
+          is_dependent?: boolean | null
+          last_name?: string | null
+          notes?: string | null
+          relation_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          affinity_degree?: number | null
+          birth_date?: string | null
+          blood_degree?: number | null
+          company_id?: string
+          created_at?: string | null
+          death_date?: string | null
+          disability_percentage?: number | null
+          employee_id?: string
+          first_name?: string
+          id?: string
+          is_dependent?: boolean | null
+          last_name?: string | null
+          notes?: string | null
+          relation_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_family_relations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_family_relations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
             referencedColumns: ["id"]
           },
         ]
@@ -15877,6 +16256,8 @@ export type Database = {
       }
       erp_hr_leave_requests: {
         Row: {
+          ai_notified: boolean | null
+          ai_notified_at: string | null
           approved_at: string | null
           approved_by: string | null
           company_id: string
@@ -15884,10 +16265,16 @@ export type Database = {
           conflict_percentage: number | null
           created_at: string | null
           days_requested: number
+          dept_approved_at: string | null
+          dept_approver_id: string | null
+          dept_comments: string | null
           documents_url: string[] | null
           employee_id: string
           end_date: string
           half_day_period: string | null
+          hr_approved_at: string | null
+          hr_approver_id: string | null
+          hr_comments: string | null
           id: string
           is_half_day: boolean | null
           jurisdiction: string | null
@@ -15900,8 +16287,13 @@ export type Database = {
           status: string | null
           updated_at: string | null
           validation_warnings: string[] | null
+          workflow_status:
+            | Database["public"]["Enums"]["leave_workflow_status"]
+            | null
         }
         Insert: {
+          ai_notified?: boolean | null
+          ai_notified_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
           company_id: string
@@ -15909,10 +16301,16 @@ export type Database = {
           conflict_percentage?: number | null
           created_at?: string | null
           days_requested: number
+          dept_approved_at?: string | null
+          dept_approver_id?: string | null
+          dept_comments?: string | null
           documents_url?: string[] | null
           employee_id: string
           end_date: string
           half_day_period?: string | null
+          hr_approved_at?: string | null
+          hr_approver_id?: string | null
+          hr_comments?: string | null
           id?: string
           is_half_day?: boolean | null
           jurisdiction?: string | null
@@ -15925,8 +16323,13 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           validation_warnings?: string[] | null
+          workflow_status?:
+            | Database["public"]["Enums"]["leave_workflow_status"]
+            | null
         }
         Update: {
+          ai_notified?: boolean | null
+          ai_notified_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
           company_id?: string
@@ -15934,10 +16337,16 @@ export type Database = {
           conflict_percentage?: number | null
           created_at?: string | null
           days_requested?: number
+          dept_approved_at?: string | null
+          dept_approver_id?: string | null
+          dept_comments?: string | null
           documents_url?: string[] | null
           employee_id?: string
           end_date?: string
           half_day_period?: string | null
+          hr_approved_at?: string | null
+          hr_approver_id?: string | null
+          hr_comments?: string | null
           id?: string
           is_half_day?: boolean | null
           jurisdiction?: string | null
@@ -15950,6 +16359,9 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           validation_warnings?: string[] | null
+          workflow_status?:
+            | Database["public"]["Enums"]["leave_workflow_status"]
+            | null
         }
         Relationships: [
           {
@@ -15960,8 +16372,22 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "erp_hr_leave_requests_dept_approver_id_fkey"
+            columns: ["dept_approver_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "erp_hr_leave_requests_employee_id_fkey"
             columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_leave_requests_hr_approver_id_fkey"
+            columns: ["hr_approver_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
             referencedColumns: ["id"]
@@ -45613,6 +46039,7 @@ export type Database = {
           items_processed: number
         }[]
       }
+      generate_hr_alerts: { Args: never; Returns: undefined }
       generate_invoice_number: {
         Args: { p_organization_id?: string }
         Returns: string
@@ -45886,6 +46313,7 @@ export type Database = {
         | "biometric"
         | "security_question"
       auth_risk_level: "low" | "medium" | "high" | "critical"
+      erp_module_access_level: "none" | "read" | "write" | "admin"
       erp_permission_level: "none" | "read" | "write" | "full"
       erp_role_type:
         | "superadmin"
@@ -45897,9 +46325,30 @@ export type Database = {
       financial_data_source: "manual" | "pdf_import"
       financial_statement_status: "draft" | "submitted" | "approved"
       financial_statement_type: "normal" | "abreujat" | "simplificat"
+      hr_alert_type:
+        | "contract_expiry"
+        | "accident"
+        | "death_employee"
+        | "death_family"
+        | "medical_leave"
+        | "vacation_request"
+        | "vacation_approved"
+        | "document_expiry"
+        | "probation_end"
+        | "anniversary"
+        | "birthday"
+        | "custom"
       impact_level: "critical" | "high" | "medium" | "low" | "informative"
+      leave_workflow_status:
+        | "draft"
+        | "pending_dept"
+        | "pending_hr"
+        | "approved"
+        | "rejected"
+        | "cancelled"
       license_type: "perpetual" | "subscription" | "trial" | "free"
       module_category: "core" | "horizontal" | "vertical" | "addon"
+      notification_channel: "email" | "whatsapp" | "push" | "sms" | "in_app"
       provisional_period_type: "quarterly" | "semiannual" | "annual"
       regulation_status:
         | "active"
@@ -46076,6 +46525,7 @@ export const Constants = {
         "security_question",
       ],
       auth_risk_level: ["low", "medium", "high", "critical"],
+      erp_module_access_level: ["none", "read", "write", "admin"],
       erp_permission_level: ["none", "read", "write", "full"],
       erp_role_type: [
         "superadmin",
@@ -46088,9 +46538,32 @@ export const Constants = {
       financial_data_source: ["manual", "pdf_import"],
       financial_statement_status: ["draft", "submitted", "approved"],
       financial_statement_type: ["normal", "abreujat", "simplificat"],
+      hr_alert_type: [
+        "contract_expiry",
+        "accident",
+        "death_employee",
+        "death_family",
+        "medical_leave",
+        "vacation_request",
+        "vacation_approved",
+        "document_expiry",
+        "probation_end",
+        "anniversary",
+        "birthday",
+        "custom",
+      ],
       impact_level: ["critical", "high", "medium", "low", "informative"],
+      leave_workflow_status: [
+        "draft",
+        "pending_dept",
+        "pending_hr",
+        "approved",
+        "rejected",
+        "cancelled",
+      ],
       license_type: ["perpetual", "subscription", "trial", "free"],
       module_category: ["core", "horizontal", "vertical", "addon"],
+      notification_channel: ["email", "whatsapp", "push", "sms", "in_app"],
       provisional_period_type: ["quarterly", "semiannual", "annual"],
       regulation_status: [
         "active",

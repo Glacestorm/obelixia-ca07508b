@@ -25,7 +25,8 @@ import {
   TrendingUp,
   Landmark,
   UserCog,
-  FolderOpen
+  FolderOpen,
+  Bell
 } from 'lucide-react';
 import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 import { HRVacationRequestDialog } from './HRVacationRequestDialog';
@@ -45,6 +46,8 @@ import { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
 import { HRUnionsPanel } from './HRUnionsPanel';
 import { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
 import { HRHelpIndex } from './HRHelpIndex';
+import { HREmployeesPanel } from './HREmployeesPanel';
+import { HRAlertsPanel } from './HRAlertsPanel';
 import { cn } from '@/lib/utils';
 
 export function HRModule() {
@@ -191,6 +194,10 @@ export function HRModule() {
               <TrendingUp className="h-3 w-3" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="employees" className="gap-1 text-xs">
+              <Users className="h-3 w-3" />
+              Empleados
+            </TabsTrigger>
             <TabsTrigger value="payroll" className="gap-1 text-xs">
               <DollarSign className="h-3 w-3" />
               Nóminas
@@ -265,6 +272,14 @@ export function HRModule() {
         <div className="mt-4">
           <TabsContent value="dashboard" className="m-0">
             <HRDashboardPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="employees" className="m-0">
+            <HREmployeesPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="alerts" className="m-0">
+            <HRAlertsPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="payroll" className="m-0">
