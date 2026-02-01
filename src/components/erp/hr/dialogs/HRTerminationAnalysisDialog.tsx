@@ -249,11 +249,23 @@ export function HRTerminationAnalysisDialog({
                       </div>
                     </CardHeader>
                     {analysisResult.legal_review_required && (
-                      <CardContent className="pt-0">
+                      <CardContent className="pt-0 space-y-2">
                         <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 text-amber-700 text-sm">
                           <AlertTriangle className="h-4 w-4" />
                           <span>Se recomienda revisión legal antes de proceder</span>
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full border-amber-500/50 text-amber-700 hover:bg-amber-500/10"
+                          onClick={() => {
+                            // TODO: Integrate with Legal AI Agent when available
+                            alert('Solicitud de revisión legal enviada al departamento jurídico');
+                          }}
+                        >
+                          <Scale className="h-4 w-4 mr-2" />
+                          Solicitar Revisión Legal
+                        </Button>
                       </CardContent>
                     )}
                   </Card>

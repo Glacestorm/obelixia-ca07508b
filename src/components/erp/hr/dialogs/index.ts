@@ -12,3 +12,5 @@ export { HROnboardingStartDialog } from './HROnboardingStartDialog';
 export { HRBonusConfigDialog } from './HRBonusConfigDialog';
 export { HREmployeeProfileDialog } from './HREmployeeProfileDialog';
 export { HRTerminationAnalysisDialog } from './HRTerminationAnalysisDialog';
+export { HRCompetencyFormDialog } from './HRCompetencyFormDialog';
+export { HRTrainingCatalogDialog } from './HRTrainingCatalogDialog';

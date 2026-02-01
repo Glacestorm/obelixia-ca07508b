@@ -56,7 +56,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { HRTrainingPlanDialog, HRTrainingEnrollDialog } from './dialogs';
+import { HRTrainingPlanDialog, HRTrainingEnrollDialog, HRCompetencyFormDialog, HRTrainingCatalogDialog } from './dialogs';
 
 interface HRTrainingPanelProps {
   companyId: string;
@@ -1038,97 +1038,24 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
       </Dialog>
 
       {/* Dialog: Nueva Competencia */}
-      <Dialog open={showCompetencyDialog} onOpenChange={setShowCompetencyDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nueva Competencia</DialogTitle>
-            <DialogDescription>
-              Define una nueva competencia para el mapa organizacional
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nombre de la competencia</Label>
-              <Input placeholder="Ej: Gestión de proyectos" />
-            </div>
-            <div className="space-y-2">
-              <Label>Descripción</Label>
-              <Textarea placeholder="Describe la competencia y sus niveles..." />
-            </div>
-            <div className="space-y-2">
-              <Label>Categoría</Label>
-              <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="technical">Técnica</option>
-                <option value="soft">Soft Skill</option>
-                <option value="leadership">Liderazgo</option>
-                <option value="compliance">Compliance</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompetencyDialog(false)}>
-              Cancelar
-            </Button>
-            <Button>Guardar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <HRCompetencyFormDialog
+        open={showCompetencyDialog}
+        onOpenChange={setShowCompetencyDialog}
+        companyId={companyId}
+        onSaved={() => {
+          loadData();
+        }}
+      />
 
       {/* Dialog: Nueva Formación */}
-      <Dialog open={showTrainingDialog} onOpenChange={setShowTrainingDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nueva Formación</DialogTitle>
-            <DialogDescription>
-              Añade una formación al catálogo
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Título</Label>
-              <Input placeholder="Ej: Excel Avanzado para Finanzas" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Modalidad</Label>
-                <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="presencial">Presencial</option>
-                  <option value="online">Online</option>
-                  <option value="blended">Blended</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Duración (horas)</Label>
-                <Input type="number" placeholder="40" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Coste por persona (€)</Label>
-                <Input type="number" placeholder="500" />
-              </div>
-              <div className="space-y-2">
-                <Label>Proveedor</Label>
-                <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="interno">Interno</option>
-                  <option value="externo">Externo</option>
-                  <option value="online">Plataforma Online</option>
-                </select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Descripción</Label>
-              <Textarea placeholder="Objetivos y contenido de la formación..." />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTrainingDialog(false)}>
-              Cancelar
-            </Button>
-            <Button>Guardar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <HRTrainingCatalogDialog
+        open={showTrainingDialog}
+        onOpenChange={setShowTrainingDialog}
+        companyId={companyId}
+        onSaved={() => {
+          loadData();
+        }}
+      />
 
       {/* Dialog: Nuevo Plan Formativo */}
       <HRTrainingPlanDialog
