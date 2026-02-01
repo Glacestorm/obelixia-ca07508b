@@ -15978,6 +15978,75 @@ export type Database = {
           },
         ]
       }
+      erp_hr_employee_benefits: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          beneficiaries: Json | null
+          benefit_id: string
+          company_contribution: number | null
+          coverage_level: string | null
+          created_at: string | null
+          employee_contribution: number | null
+          employee_id: string
+          end_date: string | null
+          enrollment_date: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          beneficiaries?: Json | null
+          benefit_id: string
+          company_contribution?: number | null
+          coverage_level?: string | null
+          created_at?: string | null
+          employee_contribution?: number | null
+          employee_id: string
+          end_date?: string | null
+          enrollment_date?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          beneficiaries?: Json | null
+          benefit_id?: string
+          company_contribution?: number | null
+          coverage_level?: string | null
+          created_at?: string | null
+          employee_contribution?: number | null
+          employee_id?: string
+          end_date?: string | null
+          enrollment_date?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_benefits_benefit_id_fkey"
+            columns: ["benefit_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_social_benefits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_benefits_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employee_documents: {
         Row: {
           company_id: string
@@ -16303,6 +16372,47 @@ export type Database = {
           },
           {
             foreignKeyName: "erp_hr_family_relations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_flex_benefit_budget: {
+        Row: {
+          created_at: string | null
+          employee_id: string
+          fiscal_year: number
+          id: string
+          monetary_value: number | null
+          total_points: number
+          updated_at: string | null
+          used_points: number
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id: string
+          fiscal_year: number
+          id?: string
+          monetary_value?: number | null
+          total_points?: number
+          updated_at?: string | null
+          used_points?: number
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string
+          fiscal_year?: number
+          id?: string
+          monetary_value?: number | null
+          total_points?: number
+          updated_at?: string | null
+          used_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_flex_benefit_budget_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
@@ -17216,6 +17326,86 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_social_benefits: {
+        Row: {
+          annual_limit: number | null
+          benefit_code: string
+          benefit_name: string
+          benefit_type: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          eligibility_criteria: Json | null
+          flex_points_cost: number | null
+          id: string
+          is_active: boolean | null
+          is_flex_benefit: boolean | null
+          is_taxable: boolean | null
+          max_beneficiaries: number | null
+          monthly_cost_company: number | null
+          monthly_cost_employee: number | null
+          provider_contact: string | null
+          provider_name: string | null
+          tax_percentage: number | null
+          terms_document_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_limit?: number | null
+          benefit_code: string
+          benefit_name: string
+          benefit_type: string
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          eligibility_criteria?: Json | null
+          flex_points_cost?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_flex_benefit?: boolean | null
+          is_taxable?: boolean | null
+          max_beneficiaries?: number | null
+          monthly_cost_company?: number | null
+          monthly_cost_employee?: number | null
+          provider_contact?: string | null
+          provider_name?: string | null
+          tax_percentage?: number | null
+          terms_document_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_limit?: number | null
+          benefit_code?: string
+          benefit_name?: string
+          benefit_type?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          eligibility_criteria?: Json | null
+          flex_points_cost?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_flex_benefit?: boolean | null
+          is_taxable?: boolean | null
+          max_beneficiaries?: number | null
+          monthly_cost_company?: number | null
+          monthly_cost_employee?: number | null
+          provider_contact?: string | null
+          provider_name?: string | null
+          tax_percentage?: number | null
+          terms_document_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_social_benefits_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
