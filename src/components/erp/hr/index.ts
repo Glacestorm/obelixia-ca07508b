@@ -72,4 +72,22 @@ export { HRTrainingPanel } from './HRTrainingPanel';
 export { HRAdvancedAnalyticsPanel } from './HRAdvancedAnalyticsPanel';
 
 // Fase D - Dialogs adicionales para completar funcionalidades
-export * from './dialogs';
+export { HREmailCandidateDialog } from './dialogs/HREmailCandidateDialog';
+export { HRInterviewScheduleDialog } from './dialogs/HRInterviewScheduleDialog';
+export { HRTrainingPlanDialog } from './dialogs/HRTrainingPlanDialog';
+export { HRTrainingEnrollDialog } from './dialogs/HRTrainingEnrollDialog';
+export { HRENPSSurveyDialog } from './dialogs/HRENPSSurveyDialog';
+export { HRFlightRiskActionDialog } from './dialogs/HRFlightRiskActionDialog';
+export { HROnboardingStartDialog } from './dialogs/HROnboardingStartDialog';
+export { HRBonusConfigDialog } from './dialogs/HRBonusConfigDialog';
+export { HREmployeeProfileDialog } from './dialogs/HREmployeeProfileDialog';
+export { HRTerminationAnalysisDialog } from './dialogs/HRTerminationAnalysisDialog';
+export { HRCompetencyFormDialog } from './dialogs/HRCompetencyFormDialog';
+export { HRTrainingCatalogDialog } from './dialogs/HRTrainingCatalogDialog';
+export { HRSafetyEvaluationDialog } from './dialogs/HRSafetyEvaluationDialog';
+export { HRSafetyTrainingDialog } from './dialogs/HRSafetyTrainingDialog';
+export { HRSettlementDialog } from './dialogs/HRSettlementDialog';
+export { HRVacationRejectDialog } from './dialogs/HRVacationRejectDialog';
+export { HRLegalReviewDialog } from './dialogs/HRLegalReviewDialog';
+export { HREmployeeDocumentsDialog } from './dialogs/HREmployeeDocumentsDialog';
+export { HREmployeeExportDialog } from './dialogs/HREmployeeExportDialog';

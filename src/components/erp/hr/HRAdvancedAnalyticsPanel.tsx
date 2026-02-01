@@ -89,12 +89,20 @@ interface ENPSData {
   };
 }
 
+interface NineBoxCell {
+  position: string;
+  label: string;
+  count: number;
+  color: string;
+}
+
 export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanelProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
   const [kpis, setKpis] = useState<KPIData[]>([]);
   const [flightRisks, setFlightRisks] = useState<FlightRiskEmployee[]>([]);
   const [enpsData, setEnpsData] = useState<ENPSData | null>(null);
+  const [nineBoxData, setNineBoxData] = useState<NineBoxCell[]>([]);
   
   // Dialog states
   const [showENPSDialog, setShowENPSDialog] = useState(false);
@@ -124,8 +132,8 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
     trend: { current: 35, previous: 28, change: '+7', direction: 'improving' }
   };
 
-  // 9-Box Grid data
-  const nineBoxData = [
+  // Demo 9-Box Grid data
+  const demoNineBoxData: NineBoxCell[] = [
     { position: 'high-low', label: 'Enigma', count: 3, color: 'bg-amber-500' },
     { position: 'high-medium', label: 'Potencial', count: 8, color: 'bg-blue-500' },
     { position: 'high-high', label: 'Estrella', count: 5, color: 'bg-green-500' },
@@ -140,6 +148,7 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
   const loadAnalytics = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Fetch KPIs and 9-Box data from edge function
       const { data, error } = await supabase.functions.invoke('erp-hr-analytics-agent', {
         body: {
           action: 'calculate_kpis',
@@ -154,12 +163,28 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
       } else {
         setKpis(demoKPIs);
       }
+
+      // Load 9-Box Grid data from performance evaluations
+      const nineBoxResponse = await supabase.functions.invoke('erp-hr-ai-agent', {
+        body: {
+          action: 'get_ninebox_distribution',
+          context: { companyId }
+        }
+      });
+
+      if (nineBoxResponse.data?.success && nineBoxResponse.data?.data?.nineBox) {
+        setNineBoxData(nineBoxResponse.data.data.nineBox);
+      } else {
+        setNineBoxData(demoNineBoxData);
+      }
+
       toast.success('Analytics actualizados');
     } catch (error) {
       console.error('Error loading analytics:', error);
       setKpis(demoKPIs);
       setFlightRisks(demoFlightRisks);
       setEnpsData(demoENPS);
+      setNineBoxData(demoNineBoxData);
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +211,13 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
   const displayKPIs = kpis.length > 0 ? kpis : demoKPIs;
   const displayFlightRisks = flightRisks.length > 0 ? flightRisks : demoFlightRisks;
   const displayENPS = enpsData || demoENPS;
+  const displayNineBox = nineBoxData.length > 0 ? nineBoxData : demoNineBoxData;
+
+  // Helper function to get count for a specific 9-Box position
+  const getBoxCount = (position: string): number => {
+    const cell = displayNineBox.find(item => item.position === position);
+    return cell?.count ?? 0;
+  };
 
   return (
     <div className="space-y-4">
@@ -548,8 +580,8 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
                   size="sm"
                   onClick={() => {
                     toast.success('Exportando 9-Box Grid a Excel...');
-                    // Generate simple CSV export
-                    const csvData = nineBoxData.map(item => 
+                    const displayData = displayNineBox;
+                    const csvData = displayData.map(item => 
                       `${item.label},${item.count},${item.position}`
                     ).join('\n');
                     const blob = new Blob([`Categoría,Empleados,Posición\n${csvData}`], { type: 'text/csv' });
@@ -571,51 +603,51 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
                 {/* High Potential Row */}
                 <div className="p-4 rounded-lg bg-amber-500/20 border border-amber-500/30 text-center">
                   <p className="text-xs font-medium text-amber-600">Enigma</p>
-                  <p className="text-2xl font-bold">3</p>
+                  <p className="text-2xl font-bold">{getBoxCount('high-low')}</p>
                   <p className="text-xs text-muted-foreground">Alto Pot. / Bajo Rend.</p>
                 </div>
                 <div className="p-4 rounded-lg bg-blue-500/20 border border-blue-500/30 text-center">
                   <p className="text-xs font-medium text-blue-600">Potencial</p>
-                  <p className="text-2xl font-bold">8</p>
+                  <p className="text-2xl font-bold">{getBoxCount('high-medium')}</p>
                   <p className="text-xs text-muted-foreground">Alto Pot. / Medio Rend.</p>
                 </div>
                 <div className="p-4 rounded-lg bg-green-500/20 border border-green-500/30 text-center">
                   <p className="text-xs font-medium text-green-600">Estrella ⭐</p>
-                  <p className="text-2xl font-bold">5</p>
+                  <p className="text-2xl font-bold">{getBoxCount('high-high')}</p>
                   <p className="text-xs text-muted-foreground">Alto Pot. / Alto Rend.</p>
                 </div>
 
                 {/* Medium Potential Row */}
                 <div className="p-4 rounded-lg bg-orange-500/20 border border-orange-500/30 text-center">
                   <p className="text-xs font-medium text-orange-600">Inconsistente</p>
-                  <p className="text-2xl font-bold">4</p>
+                  <p className="text-2xl font-bold">{getBoxCount('medium-low')}</p>
                   <p className="text-xs text-muted-foreground">Medio Pot. / Bajo Rend.</p>
                 </div>
                 <div className="p-4 rounded-lg bg-blue-400/20 border border-blue-400/30 text-center">
                   <p className="text-xs font-medium text-blue-500">Core Player</p>
-                  <p className="text-2xl font-bold">15</p>
+                  <p className="text-2xl font-bold">{getBoxCount('medium-medium')}</p>
                   <p className="text-xs text-muted-foreground">Medio Pot. / Medio Rend.</p>
                 </div>
                 <div className="p-4 rounded-lg bg-green-400/20 border border-green-400/30 text-center">
                   <p className="text-xs font-medium text-green-500">Alto Rendimiento</p>
-                  <p className="text-2xl font-bold">7</p>
+                  <p className="text-2xl font-bold">{getBoxCount('medium-high')}</p>
                   <p className="text-xs text-muted-foreground">Medio Pot. / Alto Rend.</p>
                 </div>
 
                 {/* Low Potential Row */}
                 <div className="p-4 rounded-lg bg-red-500/20 border border-red-500/30 text-center">
                   <p className="text-xs font-medium text-red-600">Riesgo</p>
-                  <p className="text-2xl font-bold">2</p>
+                  <p className="text-2xl font-bold">{getBoxCount('low-low')}</p>
                   <p className="text-xs text-muted-foreground">Bajo Pot. / Bajo Rend.</p>
                 </div>
                 <div className="p-4 rounded-lg bg-blue-300/20 border border-blue-300/30 text-center">
                   <p className="text-xs font-medium text-blue-400">Especialista</p>
-                  <p className="text-2xl font-bold">4</p>
+                  <p className="text-2xl font-bold">{getBoxCount('low-medium')}</p>
                   <p className="text-xs text-muted-foreground">Bajo Pot. / Medio Rend.</p>
                 </div>
                 <div className="p-4 rounded-lg bg-green-300/20 border border-green-300/30 text-center">
                   <p className="text-xs font-medium text-green-400">Profesional</p>
-                  <p className="text-2xl font-bold">6</p>
+                  <p className="text-2xl font-bold">{getBoxCount('low-high')}</p>
                   <p className="text-xs text-muted-foreground">Bajo Pot. / Alto Rend.</p>
                 </div>
               </div>

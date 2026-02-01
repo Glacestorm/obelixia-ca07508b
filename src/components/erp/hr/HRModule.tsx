@@ -4,6 +4,7 @@
  * Base de conocimiento laboral + Agente IA + Noticias RRHH
  * 
  * FASE A: Nueva navegación agrupada en 5 categorías
+ * FASE 9: Métricas dinámicas desde Supabase
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -19,6 +20,7 @@ import {
 import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 import { HRVacationRequestDialog } from './HRVacationRequestDialog';
 import { useERPContext } from '@/hooks/erp';
+import { supabase } from '@/integrations/supabase/client';
 import { HRExecutiveDashboard } from './HRExecutiveDashboard';
 import { HRPayrollPanel } from './HRPayrollPanel';
 import { HRVacationsPanel } from './HRVacationsPanel';
@@ -89,7 +91,7 @@ export function HRModule() {
     }
   }, []);
 
-  // Stats simuladas - en producción vendrían de hooks
+  // Stats dinámicas desde Supabase
   const [stats, setStats] = useState({
     totalEmployees: 0,
     activeContracts: 0,
@@ -100,15 +102,53 @@ export function HRModule() {
   });
 
   useEffect(() => {
-    // Simular carga de estadísticas
-    setStats({
-      totalEmployees: 47,
-      activeContracts: 45,
-      pendingVacations: 8,
-      pendingPayrolls: 3,
-      expiringContracts: 2,
-      safetyAlerts: 1
-    });
+    const fetchStats = async () => {
+      try {
+        // Use edge function for safe type-independent queries
+        const { data, error } = await supabase.functions.invoke('erp-hr-ai-agent', {
+          body: {
+            action: 'get_dashboard_stats',
+            context: { companyId: demoCompanyId }
+          }
+        });
+
+        if (error) throw error;
+
+        if (data?.success && data?.data) {
+          setStats({
+            totalEmployees: data.data.totalEmployees || 0,
+            activeContracts: data.data.activeContracts || 0,
+            pendingVacations: data.data.pendingVacations || 0,
+            pendingPayrolls: data.data.pendingPayrolls || 0,
+            expiringContracts: data.data.expiringContracts || 0,
+            safetyAlerts: data.data.safetyAlerts || 0
+          });
+        } else {
+          // Fallback to demo data
+          setStats({
+            totalEmployees: 47,
+            activeContracts: 45,
+            pendingVacations: 8,
+            pendingPayrolls: 3,
+            expiringContracts: 2,
+            safetyAlerts: 1
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching HR stats:', error);
+        // Fallback to demo data on error
+        setStats({
+          totalEmployees: 47,
+          activeContracts: 45,
+          pendingVacations: 8,
+          pendingPayrolls: 3,
+          expiringContracts: 2,
+          safetyAlerts: 1
+        });
+      }
+    };
+
+    fetchStats();
   }, [demoCompanyId]);
 
   return (
