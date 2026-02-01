@@ -16018,6 +16018,56 @@ export type Database = {
           },
         ]
       }
+      erp_hr_competencies: {
+        Row: {
+          applicable_positions: string[] | null
+          category: string | null
+          cnae_codes: string[] | null
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_mandatory: boolean | null
+          level_definitions: Json | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          applicable_positions?: string[] | null
+          category?: string | null
+          cnae_codes?: string[] | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          level_definitions?: Json | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          applicable_positions?: string[] | null
+          category?: string | null
+          cnae_codes?: string[] | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          level_definitions?: Json | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_competencies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_contracts: {
         Row: {
           annual_salary: number | null
@@ -16455,6 +16505,128 @@ export type Database = {
           },
           {
             foreignKeyName: "erp_hr_employee_benefits_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_employee_certifications: {
+        Row: {
+          certification_name: string
+          cnae_required: string[] | null
+          created_at: string | null
+          credential_id: string | null
+          document_url: string | null
+          employee_id: string | null
+          expiry_date: string | null
+          id: string
+          is_mandatory: boolean | null
+          issued_date: string | null
+          issuing_organization: string | null
+          notes: string | null
+          renewal_reminder_sent: boolean | null
+          status: string | null
+          updated_at: string | null
+          verification_url: string | null
+        }
+        Insert: {
+          certification_name: string
+          cnae_required?: string[] | null
+          created_at?: string | null
+          credential_id?: string | null
+          document_url?: string | null
+          employee_id?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          issued_date?: string | null
+          issuing_organization?: string | null
+          notes?: string | null
+          renewal_reminder_sent?: boolean | null
+          status?: string | null
+          updated_at?: string | null
+          verification_url?: string | null
+        }
+        Update: {
+          certification_name?: string
+          cnae_required?: string[] | null
+          created_at?: string | null
+          credential_id?: string | null
+          document_url?: string | null
+          employee_id?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          issued_date?: string | null
+          issuing_organization?: string | null
+          notes?: string | null
+          renewal_reminder_sent?: boolean | null
+          status?: string | null
+          updated_at?: string | null
+          verification_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_certifications_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_employee_competencies: {
+        Row: {
+          assessed_at: string | null
+          assessed_by: string | null
+          competency_id: string | null
+          created_at: string | null
+          current_level: number | null
+          employee_id: string | null
+          evidence_urls: string[] | null
+          id: string
+          notes: string | null
+          target_level: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          assessed_at?: string | null
+          assessed_by?: string | null
+          competency_id?: string | null
+          created_at?: string | null
+          current_level?: number | null
+          employee_id?: string | null
+          evidence_urls?: string[] | null
+          id?: string
+          notes?: string | null
+          target_level?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          assessed_at?: string | null
+          assessed_by?: string | null
+          competency_id?: string | null
+          created_at?: string | null
+          current_level?: number | null
+          employee_id?: string | null
+          evidence_urls?: string[] | null
+          id?: string
+          notes?: string | null
+          target_level?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_competencies_competency_id_fkey"
+            columns: ["competency_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_competencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_competencies_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
@@ -19272,6 +19444,370 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_training_catalog: {
+        Row: {
+          certification_name: string | null
+          certification_provided: boolean | null
+          certification_validity_months: number | null
+          cnae_codes: string[] | null
+          company_id: string | null
+          competencies_covered: string[] | null
+          cost_per_person: number | null
+          created_at: string | null
+          description: string | null
+          duration_hours: number | null
+          external_url: string | null
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          max_participants: number | null
+          modality: string | null
+          provider: string | null
+          provider_name: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          certification_name?: string | null
+          certification_provided?: boolean | null
+          certification_validity_months?: number | null
+          cnae_codes?: string[] | null
+          company_id?: string | null
+          competencies_covered?: string[] | null
+          cost_per_person?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          external_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          max_participants?: number | null
+          modality?: string | null
+          provider?: string | null
+          provider_name?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          certification_name?: string | null
+          certification_provided?: boolean | null
+          certification_validity_months?: number | null
+          cnae_codes?: string[] | null
+          company_id?: string | null
+          competencies_covered?: string[] | null
+          cost_per_person?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          external_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          max_participants?: number | null
+          modality?: string | null
+          provider?: string | null
+          provider_name?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_training_catalog_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_training_enrollments: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          approved_at: string | null
+          approved_by: string | null
+          certificate_expiry: string | null
+          certificate_url: string | null
+          completion_percentage: number | null
+          cost_charged: number | null
+          created_at: string | null
+          employee_id: string | null
+          feedback: string | null
+          final_score: number | null
+          id: string
+          notes: string | null
+          passed: boolean | null
+          plan_id: string | null
+          requested_at: string | null
+          satisfaction_rating: number | null
+          scheduled_end: string | null
+          scheduled_start: string | null
+          status: string | null
+          training_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          certificate_expiry?: string | null
+          certificate_url?: string | null
+          completion_percentage?: number | null
+          cost_charged?: number | null
+          created_at?: string | null
+          employee_id?: string | null
+          feedback?: string | null
+          final_score?: number | null
+          id?: string
+          notes?: string | null
+          passed?: boolean | null
+          plan_id?: string | null
+          requested_at?: string | null
+          satisfaction_rating?: number | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string | null
+          training_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          certificate_expiry?: string | null
+          certificate_url?: string | null
+          completion_percentage?: number | null
+          cost_charged?: number | null
+          created_at?: string | null
+          employee_id?: string | null
+          feedback?: string | null
+          final_score?: number | null
+          id?: string
+          notes?: string | null
+          passed?: boolean | null
+          plan_id?: string | null
+          requested_at?: string | null
+          satisfaction_rating?: number | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string | null
+          training_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_training_enrollments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_training_enrollments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_training_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_training_enrollments_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_training_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_training_gap_analysis: {
+        Row: {
+          action_plan: Json | null
+          ai_insights: string | null
+          analysis_type: string | null
+          analyzed_at: string | null
+          company_id: string | null
+          competency_gaps: Json | null
+          created_at: string | null
+          department_id: string | null
+          employee_id: string | null
+          estimated_cost: number | null
+          estimated_hours: number | null
+          id: string
+          priority_score: number | null
+          recommended_trainings: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          action_plan?: Json | null
+          ai_insights?: string | null
+          analysis_type?: string | null
+          analyzed_at?: string | null
+          company_id?: string | null
+          competency_gaps?: Json | null
+          created_at?: string | null
+          department_id?: string | null
+          employee_id?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          id?: string
+          priority_score?: number | null
+          recommended_trainings?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          action_plan?: Json | null
+          ai_insights?: string | null
+          analysis_type?: string | null
+          analyzed_at?: string | null
+          company_id?: string | null
+          competency_gaps?: Json | null
+          created_at?: string | null
+          department_id?: string | null
+          employee_id?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          id?: string
+          priority_score?: number | null
+          recommended_trainings?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_training_gap_analysis_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_training_gap_analysis_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_training_history: {
+        Row: {
+          certification_obtained: string | null
+          competencies_improved: string[] | null
+          completed_at: string | null
+          cost: number | null
+          created_at: string | null
+          employee_id: string | null
+          hours_completed: number | null
+          id: string
+          performance_impact: string | null
+          provider: string | null
+          training_title: string
+          training_type: string | null
+        }
+        Insert: {
+          certification_obtained?: string | null
+          competencies_improved?: string[] | null
+          completed_at?: string | null
+          cost?: number | null
+          created_at?: string | null
+          employee_id?: string | null
+          hours_completed?: number | null
+          id?: string
+          performance_impact?: string | null
+          provider?: string | null
+          training_title: string
+          training_type?: string | null
+        }
+        Update: {
+          certification_obtained?: string | null
+          competencies_improved?: string[] | null
+          completed_at?: string | null
+          cost?: number | null
+          created_at?: string | null
+          employee_id?: string | null
+          hours_completed?: number | null
+          id?: string
+          performance_impact?: string | null
+          provider?: string | null
+          training_title?: string
+          training_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_training_history_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_training_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          kpis: Json | null
+          name: string
+          objectives: Json | null
+          spent_budget: number | null
+          status: string | null
+          total_budget: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          kpis?: Json | null
+          name: string
+          objectives?: Json | null
+          spent_budget?: number | null
+          status?: string | null
+          total_budget?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          kpis?: Json | null
+          name?: string
+          objectives?: Json | null
+          spent_budget?: number | null
+          status?: string | null
+          total_budget?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_training_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -48107,6 +48643,10 @@ export type Database = {
       }
       calculate_employee_performance_score: {
         Args: { p_cycle_id: string; p_employee_id: string }
+        Returns: number
+      }
+      calculate_employee_training_hours: {
+        Args: { p_employee_id: string; p_year?: number }
         Returns: number
       }
       calculate_nps: {
