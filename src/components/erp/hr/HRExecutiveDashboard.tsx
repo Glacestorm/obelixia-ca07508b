@@ -245,24 +245,9 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
     { name: 'Dirección', empleados: 2, coste: 25000, color: '#6366f1' }
   ], []);
 
-  const handleRefresh = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Aquí se cargarían datos reales de la base de datos
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setLastRefresh(new Date());
-      toast.success('Datos actualizados');
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      toast.error('Error al actualizar datos');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    handleRefresh();
-  }, [companyId, selectedPeriod]);
+  const handleRefresh = () => {
+    refreshData();
+  };
 
   const renderMetricCard = (metric: ExecutiveMetric) => {
     const Icon = iconMap[metric.icon];
