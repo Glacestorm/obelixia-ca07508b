@@ -54,6 +54,7 @@ import { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
 import { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
 import { HRSocialBenefitsPanel } from './HRSocialBenefitsPanel';
 import { HRRecruitmentPanel } from './HRRecruitmentPanel';
+import { HROnboardingPanel } from './HROnboardingPanel';
 import { cn } from '@/lib/utils';
 import { UserPlus } from 'lucide-react';
 
@@ -91,6 +92,7 @@ export function HRModule() {
       'reclutamiento': 'recruitment',
       'reclutamiento.ofertas': 'recruitment',
       'reclutamiento.candidatos': 'recruitment',
+      'onboarding': 'onboarding',
     };
 
     const targetTab = tabMapping[section] || section;
@@ -214,6 +216,10 @@ export function HRModule() {
               <UserPlus className="h-3 w-3" />
               Reclutamiento
             </TabsTrigger>
+            <TabsTrigger value="onboarding" className="gap-1 text-xs">
+              <UserPlus className="h-3 w-3" />
+              Onboarding
+            </TabsTrigger>
             <TabsTrigger value="payroll" className="gap-1 text-xs">
               <DollarSign className="h-3 w-3" />
               Nóminas
@@ -300,6 +306,10 @@ export function HRModule() {
 
           <TabsContent value="recruitment" className="m-0">
             <HRRecruitmentPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="onboarding" className="m-0">
+            <HROnboardingPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="alerts" className="m-0">
