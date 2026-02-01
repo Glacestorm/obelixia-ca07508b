@@ -595,7 +595,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                   </div>
                   <p className="text-2xl font-bold">€3,968</p>
                   <p className="text-xs text-muted-foreground">Coste medio/empleado</p>
-                  <div className="mt-2 text-xs text-info flex items-center gap-1">
+                  <div className="mt-2 text-xs text-primary flex items-center gap-1">
                     <TrendingDown className="h-3 w-3" /> -0.8% eficiencia
                   </div>
                 </CardContent>
@@ -770,9 +770,9 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                         key={alert.id}
                         className={cn(
                           "p-3 rounded-lg border",
-                          alert.type === 'warning' 
-                            ? 'border-warning/30 bg-warning/5'
-                            : 'border-info/30 bg-info/5'
+                        alert.type === 'warning' 
+                          ? 'border-warning/30 bg-warning/5'
+                          : 'border-primary/30 bg-primary/5'
                         )}
                       >
                         <div className="flex items-start justify-between">
@@ -784,7 +784,7 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
                             variant="outline" 
                             className={cn(
                               "text-xs",
-                              alert.type === 'warning' ? 'text-warning border-warning' : 'text-info border-info'
+                              alert.type === 'warning' ? 'text-warning border-warning' : 'text-primary border-primary'
                             )}
                           >
                             {alert.category}
