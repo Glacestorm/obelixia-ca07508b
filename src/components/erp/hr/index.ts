@@ -60,3 +60,6 @@ export { HROnboardingPanel } from './HROnboardingPanel';
 
 // Fase 5 - Gestión de Salidas (Offboarding)
 export { HROffboardingPanel } from './HROffboardingPanel';
+
+// Fase 6 - Evaluación del Desempeño y Bonus
+export { HRPerformancePanel } from './HRPerformancePanel';
