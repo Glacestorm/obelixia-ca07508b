@@ -32,3 +32,7 @@ export { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 export { HRVacationRequestDialog } from './HRVacationRequestDialog';
 export { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
 export { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
+
+// Fase 2+ - Nuevos dialogs operativos
+export { HRContractFormDialog } from './HRContractFormDialog';
+export { HRIncidentFormDialog } from './HRIncidentFormDialog';

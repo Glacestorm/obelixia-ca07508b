@@ -1,8 +1,9 @@
 /**
  * HRSafetyPanel - Prevención de riesgos laborales y seguridad
+ * Integrado con tabla erp_hr_safety_incidents
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,22 +18,79 @@ import {
 import { 
   Shield, AlertTriangle, CheckCircle, Clock, FileText,
   Users, Calendar, Plus, Search, Download, Activity,
-  HardHat, Flame, Eye, Heart
+  HardHat, Flame, Eye, Heart, RefreshCw
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { HRIncidentFormDialog } from './HRIncidentFormDialog';
 
 interface HRSafetyPanelProps {
   companyId: string;
 }
 
+interface SafetyIncident {
+  id: string;
+  incident_date: string;
+  incident_type: string;
+  severity: string;
+  description: string;
+  area: string | null;
+  investigation_status: string;
+  days_lost: number;
+  employee?: {
+    first_name: string;
+    last_name: string;
+  } | null;
+}
+
 export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showIncidentDialog, setShowIncidentDialog] = useState(false);
 
-  // Demo data
+  // Fetch incidents from database
+  const fetchIncidents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_safety_incidents')
+        .select(`
+          id, incident_date, incident_type, severity, description, area,
+          investigation_status, days_lost,
+          erp_hr_employees!employee_id (first_name, last_name)
+        `)
+        .eq('company_id', companyId)
+        .order('incident_date', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      setIncidents((data || []).map((i: any) => ({
+        ...i,
+        employee: i.erp_hr_employees
+      })));
+    } catch (err) {
+      console.error('Error fetching incidents:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchIncidents();
+  }, [fetchIncidents]);
+
+  const handleIncidentSuccess = () => {
+    fetchIncidents();
+    setShowIncidentDialog(false);
+  };
+
+  // Demo data for static sections
   const safetyStats = {
     accidentFree: 156,
     pendingTrainings: 8,
     upcomingReviews: 3,
-    openIncidents: 1,
+    openIncidents: incidents.filter(i => i.investigation_status === 'pending').length,
     complianceScore: 94
   };
 
@@ -98,29 +156,6 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
       employees: 47,
       completed: 47,
       dueDate: '2025-12-31'
-    },
-  ];
-
-  const incidents = [
-    {
-      id: '1',
-      date: '2026-01-10',
-      type: 'Accidente leve',
-      description: 'Corte superficial en mano',
-      area: 'Taller Mecánico',
-      employee: 'Pedro Sánchez',
-      status: 'resolved',
-      daysLost: 0
-    },
-    {
-      id: '2',
-      date: '2025-11-22',
-      type: 'Incidente',
-      description: 'Caída de material',
-      area: 'Almacén',
-      employee: '-',
-      status: 'investigating',
-      daysLost: 0
     },
   ];
 
@@ -374,24 +409,37 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {incidents.map((incident) => (
-                      <TableRow key={incident.id}>
-                        <TableCell>{incident.date}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{incident.type}</Badge>
-                        </TableCell>
-                        <TableCell>{incident.description}</TableCell>
-                        <TableCell>{incident.area}</TableCell>
-                        <TableCell>{incident.employee}</TableCell>
-                        <TableCell>
-                          {incident.status === 'resolved' ? (
-                            <Badge className="bg-green-500/10 text-green-600">Resuelto</Badge>
-                          ) : (
-                            <Badge className="bg-amber-500/10 text-amber-600">Investigando</Badge>
-                          )}
+                    {incidents.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          {loading ? 'Cargando incidentes...' : 'No hay incidentes registrados'}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      incidents.map((incident) => {
+                        const employeeName = incident.employee 
+                          ? `${incident.employee.first_name} ${incident.employee.last_name}` 
+                          : '-';
+                        return (
+                          <TableRow key={incident.id}>
+                            <TableCell>{incident.incident_date}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{incident.incident_type}</Badge>
+                            </TableCell>
+                            <TableCell>{incident.description}</TableCell>
+                            <TableCell>{incident.area || '-'}</TableCell>
+                            <TableCell>{employeeName}</TableCell>
+                            <TableCell>
+                              {incident.investigation_status === 'resolved' ? (
+                                <Badge className="bg-emerald-500/10 text-emerald-600">Resuelto</Badge>
+                              ) : (
+                                <Badge className="bg-amber-500/10 text-amber-600">Investigando</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </ScrollArea>

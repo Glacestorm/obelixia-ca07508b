@@ -86,7 +86,7 @@ export function HRContractFormDialog({
       .select('id, first_name, last_name')
       .eq('company_id', companyId)
       .eq('is_active', true)
-      .order('first_name');
+      .order('first_name') as { data: Array<{ id: string; first_name: string; last_name: string }> | null };
 
     if (data) {
       setEmployees(data.map(e => ({
