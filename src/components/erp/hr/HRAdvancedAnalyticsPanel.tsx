@@ -533,13 +533,38 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
         <TabsContent value="9box" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
-                9-Box Grid - Mapa de Talento
-              </CardTitle>
-              <CardDescription>
-                Distribución de empleados por potencial (vertical) y rendimiento (horizontal)
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    9-Box Grid - Mapa de Talento
+                  </CardTitle>
+                  <CardDescription>
+                    Distribución de empleados por potencial (vertical) y rendimiento (horizontal)
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    toast.success('Exportando 9-Box Grid a Excel...');
+                    // Generate simple CSV export
+                    const csvData = nineBoxData.map(item => 
+                      `${item.label},${item.count},${item.position}`
+                    ).join('\n');
+                    const blob = new Blob([`Categoría,Empleados,Posición\n${csvData}`], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '9box-grid-export.csv';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-2 max-w-lg mx-auto">
