@@ -48,13 +48,15 @@ import {
   BarChart3,
   Sparkles,
   FileText,
-  ExternalLink
+  ExternalLink,
+  UserPlus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { HRTrainingPlanDialog, HRTrainingEnrollDialog } from './dialogs';
 
 interface HRTrainingPanelProps {
   companyId: string;
@@ -133,6 +135,9 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
   const [showCompetencyDialog, setShowCompetencyDialog] = useState(false);
   const [showTrainingDialog, setShowTrainingDialog] = useState(false);
   const [showGapAnalysisDialog, setShowGapAnalysisDialog] = useState(false);
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [showEnrollDialog, setShowEnrollDialog] = useState(false);
+  const [selectedTraining, setSelectedTraining] = useState<TrainingCatalogItem | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Stats
@@ -560,12 +565,13 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
                       <TableHead>Duración</TableHead>
                       <TableHead>Coste</TableHead>
                       <TableHead>Certificación</TableHead>
+                      <TableHead>Acción</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {trainingCatalog.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                           No hay formaciones en el catálogo
                         </TableCell>
                       </TableRow>
@@ -592,6 +598,19 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
                             ) : (
                               <span className="text-muted-foreground text-sm">-</span>
                             )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedTraining(training);
+                                setShowEnrollDialog(true);
+                              }}
+                            >
+                              <UserPlus className="h-3 w-3 mr-1" />
+                              Inscribir
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -765,7 +784,7 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
                   Planes anuales de formación y desarrollo
                 </CardDescription>
               </div>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setShowPlanDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nuevo Plan
               </Button>
@@ -1110,6 +1129,33 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Nuevo Plan Formativo */}
+      <HRTrainingPlanDialog
+        open={showPlanDialog}
+        onOpenChange={setShowPlanDialog}
+        companyId={companyId}
+        onCreated={() => {
+          loadData();
+        }}
+      />
+
+      {/* Dialog: Inscribir empleados */}
+      <HRTrainingEnrollDialog
+        open={showEnrollDialog}
+        onOpenChange={setShowEnrollDialog}
+        companyId={companyId}
+        training={selectedTraining ? {
+          id: selectedTraining.id,
+          title: selectedTraining.title,
+          duration_hours: selectedTraining.duration_hours,
+          cost_per_person: selectedTraining.cost_per_person,
+          modality: selectedTraining.modality
+        } : null}
+        onEnrolled={() => {
+          loadData();
+        }}
+      />
     </div>
   );
 }
