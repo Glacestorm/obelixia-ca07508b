@@ -923,3 +923,9 @@ verify_jwt = true
 
 [functions.erp-fiscal-ai-agent]
 verify_jwt = true
+
+[functions.erp-hr-ai-agent]
+verify_jwt = true
+
+[functions.send-hr-alert]
+verify_jwt = true
