@@ -1,254 +1,320 @@
 
-# Plan de Mejoras Avanzadas del Modulo RRHH
+# Plan de Expansion Avanzada del Modulo RRHH
 
 ## Objetivo General
-Implementar acciones operativas desde la ayuda, control de acceso basado en roles para el Agente IA, sistema de innovacion 2026+ con implementacion real, y verificacion de todos los botones operativos.
+Implementar prestaciones sociales, documentacion por empleado con IA, base de datos de modelos contractuales, conexion con Academia y planes de carrera con escalado salarial.
 
 ---
 
-## Fase 1: Ayuda Activa con Formularios Operativos
+## Fase 0: Correccion Error TS2589 (Inmediata)
 
 ### Descripcion
-Transformar el indice de ayuda en un centro de comandos donde cada clic en una opcion (como "Calculo de finiquitos") abra directamente un formulario especializado con opciones de calculo automatico supervisadas por el Agente IA.
+Corregir el error de tipo en HRIncidentFormDialog.tsx causado por inferencia profunda de Supabase.
 
-### Cambios Tecnicos
-
-**1.1 Nuevo Componente: HRSeveranceCalculatorDialog**
-- Formulario para calculo de finiquitos e indemnizaciones
-- Seleccion de empleado desde la base de datos
-- Tipo de extincion: voluntaria, objetivo, improcedente, fin de contrato
-- Fechas de contrato y salario base
-- Calculo automatico via Edge Function `erp-hr-ai-agent`
-- Supervision del Agente IA con explicaciones paso a paso
-
-**1.2 Nuevo Componente: HRIndemnizationCalculatorDialog**
-- Formulario especializado para indemnizaciones por despido
-- Aplicacion automatica de limites legales (20/33 dias por anno)
-- Visualizacion del calculo desglosado
-
-**1.3 Actualizacion de HRHelpIndex.tsx**
-- Nuevas acciones rapidas: `severance_form`, `indemnization_form`, `compliance_audit`, `prl_check`
-- Cada badge de accion rapida abre el formulario correspondiente
-- Integracion con `onAskAgent` para supervision IA
-
-**1.4 Actualizacion de HRModule.tsx**
-- Estados para nuevos dialogs: `showSeveranceDialog`, `showIndemnizationDialog`
-- Callbacks para abrir dialogs desde HRHelpIndex
-- Prop adicional en HRHelpIndex: `onOpenSeveranceDialog`, `onOpenIndemnizationDialog`
+### Cambio Tecnico
+Refactorizar la consulta de empleados extrayendo la logica a una funcion separada con tipos explicitos para evitar la inferencia recursiva del compilador TypeScript.
 
 ---
 
-## Fase 2: Control de Acceso del Agente IA por Roles
+## Fase 1: Prestaciones Sociales (Social Benefits)
 
 ### Descripcion
-El Agente IA de RRHH debe conocer todos los datos de empleados, pero solo usuarios con rol de RRHH (o superior jerarquico) pueden consultar esta informacion.
+Nueva seccion dedicada a gestionar beneficios sociales que ofrece la empresa: guarderia, seguros medicos, tickets restaurante, gimnasio, transporte, planes de pensiones, etc.
 
-### Cambios Tecnicos
+### Tablas de Base de Datos
 
-**2.1 Migracion de Base de Datos**
-```text
-- Tabla: erp_hr_agent_access_control
-  - user_id (FK auth.users)
-  - company_id
-  - can_view_all_employees: boolean
-  - can_view_salaries: boolean
-  - can_view_sensitive_data: boolean
-  - hierarchy_level: integer (1=CEO, 2=Director, 3=Manager, 4=Employee)
-  - created_at, updated_at
+**erp_hr_social_benefits**
+- id, company_id, benefit_code, benefit_name
+- benefit_type: 'health_insurance' | 'childcare' | 'meal_vouchers' | 'transport' | 'gym' | 'pension' | 'life_insurance' | 'education' | 'remote_work_allowance' | 'other'
+- provider_name, provider_contact
+- monthly_cost_company, monthly_cost_employee
+- is_taxable, tax_percentage
+- eligibility_criteria (JSONB): antiguedad minima, categorias, departamentos
+- is_active, description, terms_document_url
+
+**erp_hr_employee_benefits**
+- id, employee_id, benefit_id
+- enrollment_date, end_date
+- status: 'active' | 'pending' | 'cancelled' | 'suspended'
+- employee_contribution, company_contribution
+- beneficiaries (JSONB): familiares cubiertos
+- notes
+
+### Nuevo Componente: HRSocialBenefitsPanel.tsx
+- Dashboard de beneficios disponibles con estadisticas de cobertura
+- Tabla de beneficios con costo empresa/empleado
+- Gestion de altas/bajas por empleado
+- Calculos fiscales automaticos (retribuciones en especie)
+- Integracion con Agente IA para consultas de elegibilidad
+
+### Ideas Disruptivas Incluidas
+- Beneficios flexibles ("flex benefits"): presupuesto anual para elegir
+- Wellness digital: apps de meditacion, telemedicina
+- Sabbaticales pagados despues de X anos
+- Stock options / Phantom shares
+- Coworking allowance para remotos
+- Pet insurance
+
+---
+
+## Fase 2: Documentacion por Empleado con IA
+
+### Descripcion
+Sistema de subida de documentos en cualquier formato por empleado, con indexacion para que el Agente IA conozca y pueda consultar el contenido.
+
+### Actualizacion de Tabla Existente
+
+La tabla `erp_hr_employee_documents` ya existe. Anadiremos campos para IA:
+- ai_indexed: boolean
+- ai_summary: TEXT (resumen generado por IA)
+- ai_extracted_data: JSONB (datos estructurados extraidos)
+- searchable_content: TEXT (para busqueda full-text)
+
+### Nuevo Componente: HRDocumentUploader.tsx
+- Subida drag-and-drop multiformato (PDF, Word, Excel, imagenes)
+- Procesamiento automatico con IA para extraer texto y datos
+- Categorizacion automatica del documento
+- Busqueda semantica en documentos del empleado
+
+### Actualizacion Edge Function: erp-hr-ai-agent
+- Nueva accion: `search_employee_documents`
+- Nueva accion: `get_document_summary`
+- Contexto enriquecido con documentos del empleado en consultas
+
+### Storage Bucket
+Uso del bucket existente `hr-employee-documents` con estructura:
+```
+/{company_id}/{employee_id}/{document_type}/{filename}
 ```
 
-**2.2 Actualizacion Edge Function: erp-hr-ai-agent**
-- Nueva accion: `validate_access`
-- Verificar permisos del usuario antes de devolver datos sensibles
-- Consultar `erp_hr_employee_module_access` para validar rol RRHH
-- Verificar posicion jerarquica vs empleado consultado
-- Respuesta filtrada segun permisos
-
-**2.3 Nueva Funcion SQL: check_hr_agent_access**
-```text
-SECURITY DEFINER function que:
-- Recibe user_id y target_employee_id
-- Verifica si usuario tiene acceso RRHH (read/write/admin)
-- Verifica posicion jerarquica
-- Retorna nivel de acceso permitido
-```
-
-**2.4 Actualizacion HRAIAgentPanel.tsx**
-- Verificar permisos del usuario al iniciar chat
-- Mostrar mensaje de acceso denegado si no tiene permisos
-- Indicador visual del nivel de acceso del usuario
-
 ---
 
-## Fase 3: Sistema de Innovacion 2026+ Implementable
+## Fase 3: Base de Modelos Contractuales por Jurisdiccion
 
 ### Descripcion
-Cada idea futurista del panel 2026+ tendra un boton "Implementar" que activara esa funcionalidad progresivamente. Ademas, un sistema de busqueda periodica de nuevas ideas.
+Biblioteca de plantillas de contratos, finiquitos, anexos y otros documentos legales segun la legislacion de cada jurisdiccion (Espana, Andorra, Portugal, Francia, UK, UAE, USA).
 
-### Cambios Tecnicos
+### Tablas de Base de Datos
 
-**3.1 Migracion de Base de Datos**
-```text
-- Tabla: erp_hr_innovation_features
-  - id, feature_code, feature_name
-  - description, category
-  - is_implemented: boolean
-  - implemented_at: timestamp
-  - implementation_config: jsonb
-  - created_at
+**erp_hr_document_templates**
+- id, company_id (null para globales), template_code
+- document_type: 'contract' | 'annex' | 'severance' | 'termination' | 'warning' | 'certificate' | 'letter'
+- template_name, description
+- jurisdiction: 'ES' | 'AD' | 'PT' | 'FR' | 'UK' | 'AE' | 'US' | 'GLOBAL'
+- language_code
+- template_content: TEXT (con variables {{employee_name}}, {{start_date}}, etc.)
+- variables_schema: JSONB (definicion de variables requeridas)
+- applicable_contract_types: TEXT[] (indefinido, temporal, etc.)
+- legal_references: TEXT (articulos de ley aplicables)
+- version, is_active, last_updated_by, updated_at
 
-- Tabla: erp_hr_innovation_ideas
-  - id, title, description
-  - source: 'ai_discovery' | 'manual' | 'external'
-  - relevance_score: integer
-  - is_reviewed: boolean
-  - is_approved: boolean
-  - discovered_at: timestamp
-```
+**erp_hr_generated_documents**
+- id, company_id, employee_id, template_id
+- document_type, document_name
+- generated_content: TEXT
+- variables_used: JSONB
+- document_url (PDF generado)
+- status: 'draft' | 'pending_signature' | 'signed' | 'archived'
+- generated_by, generated_at, signed_at
 
-**3.2 Nueva Edge Function: erp-hr-innovation-discovery**
-- Acciones: `discover_trends`, `check_new_ideas`, `implement_feature`, `get_pending_ideas`
-- Busqueda de tendencias HR via IA (Lovable AI)
-- Evaluacion de relevancia y aplicabilidad
-- Ejecucion semanal automatica (cron job)
+### Nuevo Componente: HRDocumentTemplatesPanel.tsx
+- Biblioteca de plantillas por jurisdiccion
+- Editor de plantillas con variables
+- Generador de documentos rellenando variables
+- Previsualizacion PDF
+- Firma electronica (integracion futura)
 
-**3.3 Actualizacion HRTrends2026Panel.tsx**
-- Boton "Implementar" en cada TrendCard (si no esta implementado)
-- Indicador de estado: "Implementado" / "En progreso" / "Disponible"
-- Seccion nueva: "Ideas Descubiertas" con ideas pendientes de revision
-- Panel de configuracion post-implementacion
-- Llamada a Edge Function para activar feature
+### Actualizacion Edge Function: erp-hr-ai-agent
+- Nueva accion: `get_applicable_template`
+- Nueva accion: `fill_template`
+- Conocimiento de todos los modelos para sugerencias
 
-**3.4 Nuevo Componente: HRInnovationImplementDialog**
-- Wizard de implementacion por fases
-- Configuracion de parametros especificos
-- Confirmacion y activacion
+### Plantillas Seed por Jurisdiccion (Espana)
+- Contrato indefinido ordinario
+- Contrato temporal por circunstancias de la produccion
+- Contrato formativo en alternancia
+- Contrato en practicas
+- Anexo de modificacion de condiciones
+- Carta de despido objetivo (art. 52 ET)
+- Carta de despido disciplinario (art. 54 ET)
+- Finiquito y liquidacion
+- Certificado de empresa
+- Carta de amonestacion
 
 ---
 
-## Fase 4: Verificacion y Operatividad de Todos los Botones
+## Fase 4: Conexion con Modulo Academia
 
 ### Descripcion
-Auditoria completa de todos los botones del modulo RRHH para asegurar que cada uno tiene una funcion operativa real.
+Preparar la integracion bidireccional entre RRHH y el futuro modulo de Academia, incluyendo coordinacion de Agentes IA y sincronizacion de formacion obligatoria por puesto/CNAE.
 
-### Botones a Verificar y Completar
+### Tablas de Base de Datos
 
-**4.1 HRPayrollPanel.tsx**
-- "Nueva Nomina" → abre HRPayrollEntryDialog (verificar operativo)
-- "Calcular Todas" → ejecutar calculo masivo via Edge Function
-- "Exportar SEPA" → generar archivo XML SEPA real
-- "Ver Nomina" → abrir dialog de visualizacion de nomina
+**erp_hr_training_requirements**
+- id, company_id, position_id, department_id
+- cnae_code (formacion obligatoria por sector)
+- training_type: 'mandatory' | 'recommended' | 'optional'
+- training_code, training_name, description
+- required_hours, validity_months
+- legal_reference (ley que lo exige)
+- is_active
 
-**4.2 HRVacationsPanel.tsx**
-- "Solicitar Vacaciones" → HRVacationRequestDialog (verificar)
-- "Aprobar" → actualizar estado en DB + sincronizar con IA
-- "Rechazar" → dialog de motivo + actualizar DB
+**erp_hr_employee_training_history**
+- id, employee_id, training_code
+- training_name, provider
+- start_date, end_date, hours_completed
+- status: 'pending' | 'in_progress' | 'completed' | 'expired'
+- certificate_url, certificate_expiry
+- academy_course_id (FK al modulo academia)
+- verified_by, notes
 
-**4.3 HRContractsPanel.tsx**
-- "Nuevo Contrato" → crear HRContractFormDialog
-- "Ver Contrato" → visualizador PDF/dialog
-- "Finalizar" → crear HRContractTerminationDialog
+### Nuevo Componente: HRTrainingPanel.tsx
+- Dashboard de formacion por empleado
+- Matriz de cumplimiento formativo por departamento
+- Alertas de certificaciones por vencer
+- Conexion con Academia para inscribir empleados
+- Historico de toda la formacion recibida
 
-**4.4 HREmployeesPanel.tsx**
-- "Nuevo Empleado" → HREmployeeFormDialog (verificar completo)
-- "Editar" → mismo dialog en modo edicion
-- "Ver Ficha" → dialog de visualizacion readonly
-- Busqueda avanzada → verificar filtros operativos
+### Integracion de Agentes IA
+- El Agente HR consulta formacion completada/pendiente
+- El Agente Academia (futuro) recibe requisitos de HR
+- Sincronizacion bidireccional de datos de formacion
+- Recomendaciones cruzadas de cursos segun perfil
 
-**4.5 HRAlertsPanel.tsx**
-- "Marcar Leida" → actualizar DB
-- "Enviar por WhatsApp" → invocar send-hr-alert con canal WhatsApp
-- "Enviar por Email" → invocar send-hr-alert con canal Email
-- "Configurar Preferencias" → abrir dialog de preferencias
-
-**4.6 HRSafetyPanel.tsx**
-- "Registrar Incidente" → crear HRIncidentFormDialog
-- "Ver Evaluacion" → visualizador de evaluacion PRL
-- "Generar Informe" → Edge Function para PDF
-
-**4.7 Nuevos Dialogs Necesarios**
-- HRContractFormDialog
-- HRContractTerminationDialog
-- HRIncidentFormDialog
-- HRPayrollViewerDialog
-- HRAlertPreferencesDialog (verificar existencia)
+### API de Integracion
+Nueva Edge Function: `erp-hr-academy-sync`
+- Acciones: `get_training_requirements`, `sync_completed_training`, `enroll_employee`, `get_recommendations`
+- Protocolo de comunicacion entre agentes
 
 ---
 
-## Fase 5: Sincronizacion Completa con Agente IA
+## Fase 5: Planes de Carrera y Promocion
 
 ### Descripcion
-El Agente IA debe conocer en tiempo real: empleados, ausencias, alertas, y cualquier evento relevante.
+Sistema completo de gestion de planes de carrera con rutas de ascenso, criterios de promocion y escalado salarial transparente.
 
-### Cambios Tecnicos
+### Tablas de Base de Datos
 
-**5.1 Actualizacion Edge Function: erp-hr-ai-agent**
-- Nueva accion: `get_all_employees` (con filtro de permisos)
-- Nueva accion: `get_department_structure`
-- Nueva accion: `get_active_incidents`
-- Enriquecimiento del contexto del chat con todos los datos disponibles
+**erp_hr_career_paths**
+- id, company_id, path_code, path_name
+- description, applicable_departments
+- is_active
 
-**5.2 Trigger de Base de Datos**
-```text
-Trigger en erp_hr_employees, erp_hr_leave_requests, erp_hr_alerts:
-- Al INSERT/UPDATE marcar flag ai_sync_pending = true
-- Permitir al agente consultar cambios pendientes
-```
+**erp_hr_career_path_levels**
+- id, career_path_id, level_order
+- level_code, level_name, level_description
+- position_id (FK a posiciones)
+- salary_range_min, salary_range_max
+- typical_duration_months (tiempo esperado en nivel)
+- required_competencies: JSONB
+- required_certifications: TEXT[]
+- required_experience_months
 
-**5.3 Actualizacion HRAIAgentPanel.tsx**
-- Indicador de "ultima sincronizacion"
-- Boton "Actualizar Contexto"
-- Visualizacion de datos que el agente conoce actualmente
+**erp_hr_career_promotions**
+- id, employee_id, from_level_id, to_level_id
+- promotion_date, effective_date
+- new_salary, salary_increase_percentage
+- promotion_reason, promoted_by
+- evaluation_score, notes
+
+**erp_hr_employee_career**
+- id, employee_id, career_path_id
+- current_level_id, entered_level_at
+- target_level_id, expected_promotion_date
+- mentor_employee_id
+- development_plan: JSONB (objetivos y acciones)
+- status: 'on_track' | 'accelerated' | 'needs_improvement' | 'blocked'
+
+### Nuevo Componente: HRCareerPathsPanel.tsx
+- Editor visual de rutas de carrera (arbol/grafo)
+- Asignacion de empleados a rutas
+- Dashboard de progreso por empleado
+- Proyeccion salarial segun promociones
+- Alertas de empleados listos para promocion
+
+### Nuevo Componente: HRCareerEmployeeView.tsx
+- Vista individual del empleado con su ruta
+- Requisitos cumplidos vs pendientes
+- Plan de desarrollo personalizado
+- Historico de promociones
+- Comparativa salarial en el tiempo
+
+### Actualizacion Edge Function: erp-hr-ai-agent
+- Nueva accion: `analyze_promotion_readiness`
+- Nueva accion: `suggest_development_plan`
+- Nueva accion: `calculate_salary_projection`
+- Conocimiento de todas las rutas para asesoramiento
 
 ---
 
-## Fase 6: Tab de Alertas Integrada en Navegacion
+## Fase 6: Integracion Completa con Agente IA
 
 ### Descripcion
-Agregar tab de Alertas visible en la navegacion principal del modulo HR con contador de alertas no leidas.
+El Agente IA de HR conocera toda la nueva informacion y podra responder consultas sobre beneficios, documentos, plantillas, formacion y carrera.
 
-### Cambios Tecnicos
+### Actualizaciones del Agente
+- Contexto enriquecido con: beneficios del empleado, documentos indexados, formacion historica, nivel de carrera
+- Nuevas capacidades: generar documentos, recomendar formacion, evaluar promocion
+- Coordinacion con Agente Academia (cuando exista)
 
-**6.1 Actualizacion HRModule.tsx**
-- Agregar TabsTrigger para "alerts" con icono Bell
-- Badge con contador de alertas criticas
-- Estado `alertsCount` obtenido de hook o DB
+### Funciones del Agente Ampliadas
+- "¿Que beneficios tiene disponibles Maria Garcia?"
+- "Genera un contrato temporal para nuevo empleado"
+- "¿Que formacion le falta a Juan para promocionar?"
+- "Calcula la proyeccion salarial de Ana en 3 anos"
+- "¿Quien esta listo para promocion en Ventas?"
 
 ---
 
-## Resumen de Archivos a Crear/Modificar
+## Resumen de Archivos
 
-### Nuevos Archivos
-1. `src/components/erp/hr/HRSeveranceCalculatorDialog.tsx`
-2. `src/components/erp/hr/HRIndemnizationCalculatorDialog.tsx`
-3. `src/components/erp/hr/HRContractFormDialog.tsx`
-4. `src/components/erp/hr/HRContractTerminationDialog.tsx`
-5. `src/components/erp/hr/HRIncidentFormDialog.tsx`
-6. `src/components/erp/hr/HRPayrollViewerDialog.tsx`
-7. `src/components/erp/hr/HRInnovationImplementDialog.tsx`
-8. `supabase/functions/erp-hr-innovation-discovery/index.ts`
-9. `supabase/migrations/XXXXX_hr_innovation_and_access.sql`
+### Nuevos Archivos (por fase)
+**Fase 1:** HRSocialBenefitsPanel.tsx, HRBenefitEnrollmentDialog.tsx
+**Fase 2:** HRDocumentUploader.tsx (o actualizar HREmployeeDocumentsPanel)
+**Fase 3:** HRDocumentTemplatesPanel.tsx, HRDocumentGeneratorDialog.tsx
+**Fase 4:** HRTrainingPanel.tsx, erp-hr-academy-sync/index.ts
+**Fase 5:** HRCareerPathsPanel.tsx, HRCareerEmployeeView.tsx, HRPromotionDialog.tsx
 
 ### Archivos a Modificar
-1. `src/components/erp/hr/HRHelpIndex.tsx` - Acciones rapidas operativas
-2. `src/components/erp/hr/HRModule.tsx` - Nuevos dialogs y tab alertas
-3. `src/components/erp/hr/HRTrends2026Panel.tsx` - Botones implementar
-4. `src/components/erp/hr/HRPayrollPanel.tsx` - Botones operativos
-5. `src/components/erp/hr/HRContractsPanel.tsx` - Botones operativos
-6. `src/components/erp/hr/HRSafetyPanel.tsx` - Botones operativos
-7. `src/components/erp/hr/HRAlertsPanel.tsx` - Acciones multicanal
-8. `supabase/functions/erp-hr-ai-agent/index.ts` - Control acceso + empleados
-9. `supabase/config.toml` - Nueva funcion innovation-discovery
-10. `src/components/erp/hr/index.ts` - Exports nuevos componentes
+- HRModule.tsx: anadir tabs para nuevas secciones
+- HREmployeeDocumentsPanel.tsx: integracion IA
+- erp-hr-ai-agent/index.ts: nuevas acciones y contexto
+- index.ts: exports de nuevos componentes
+
+### Migraciones de Base de Datos
+- Fase 1: erp_hr_social_benefits, erp_hr_employee_benefits
+- Fase 2: campos adicionales en erp_hr_employee_documents
+- Fase 3: erp_hr_document_templates, erp_hr_generated_documents
+- Fase 4: erp_hr_training_requirements, erp_hr_employee_training_history
+- Fase 5: erp_hr_career_paths, career_path_levels, career_promotions, employee_career
 
 ---
 
 ## Orden de Ejecucion Recomendado
 
-1. **Fase 1** - Ayuda activa (alto impacto UX)
-2. **Fase 4** - Botones operativos (funcionalidad core)
-3. **Fase 2** - Control acceso IA (seguridad)
-4. **Fase 5** - Sincronizacion IA (inteligencia)
-5. **Fase 3** - Innovacion 2026+ (valor futuro)
-6. **Fase 6** - Tab alertas (visibilidad)
+1. **Fase 0** - Correccion error TS2589 (inmediato)
+2. **Fase 1** - Prestaciones sociales (alto valor para empleados)
+3. **Fase 2** - Documentacion con IA (fundacional para otras fases)
+4. **Fase 3** - Modelos contractuales (eficiencia operativa)
+5. **Fase 5** - Planes de carrera (retencion de talento)
+6. **Fase 4** - Conexion Academia (requiere modulo externo)
+7. **Fase 6** - Integracion IA completa (consolidacion)
 
+---
+
+## Notas Tecnicas
+
+### Seguridad
+- RLS en todas las tablas con user_has_erp_company_access
+- Documentos confidenciales con permisos adicionales
+- Control de acceso del Agente IA segun jerarquia (ya implementado)
+
+### Almacenamiento
+- Bucket existente hr-employee-documents para documentos
+- Nuevo bucket hr-document-templates para plantillas
+- Limite de tamano por documento: 20MB
+
+### Rendimiento
+- Indexacion full-text para busqueda en documentos
+- Cache de plantillas frecuentes
+- Paginacion en listados grandes
