@@ -53,7 +53,9 @@ import { HRAlertsPanel } from './HRAlertsPanel';
 import { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
 import { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
 import { HRSocialBenefitsPanel } from './HRSocialBenefitsPanel';
+import { HRRecruitmentPanel } from './HRRecruitmentPanel';
 import { cn } from '@/lib/utils';
+import { UserPlus } from 'lucide-react';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -86,6 +88,9 @@ export function HRModule() {
       'prl': 'safety',
       'agente_ia': 'agent',
       'normativa': 'knowledge',
+      'reclutamiento': 'recruitment',
+      'reclutamiento.ofertas': 'recruitment',
+      'reclutamiento.candidatos': 'recruitment',
     };
 
     const targetTab = tabMapping[section] || section;
@@ -205,6 +210,10 @@ export function HRModule() {
               <Users className="h-3 w-3" />
               Empleados
             </TabsTrigger>
+            <TabsTrigger value="recruitment" className="gap-1 text-xs">
+              <UserPlus className="h-3 w-3" />
+              Reclutamiento
+            </TabsTrigger>
             <TabsTrigger value="payroll" className="gap-1 text-xs">
               <DollarSign className="h-3 w-3" />
               Nóminas
@@ -287,6 +296,10 @@ export function HRModule() {
 
           <TabsContent value="employees" className="m-0">
             <HREmployeesPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="recruitment" className="m-0">
+            <HRRecruitmentPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="alerts" className="m-0">
