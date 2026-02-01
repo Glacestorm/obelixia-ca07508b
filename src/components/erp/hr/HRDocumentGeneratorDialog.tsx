@@ -15,17 +15,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
-  FileSignature, Loader2, Download, Eye, Save,
-  User, Building2, Calendar, Sparkles
+  FileSignature, Loader2, Eye, Save,
+  User, Sparkles
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
 
 interface HRDocumentGeneratorDialogProps {
   open: boolean;
@@ -49,15 +48,6 @@ interface HRDocumentGeneratorDialogProps {
   onSuccess: () => void;
 }
 
-interface Employee {
-  id: string;
-  first_name: string;
-  last_name: string;
-  dni: string;
-  position?: string;
-  department_id?: string;
-}
-
 export function HRDocumentGeneratorDialog({
   open,
   onOpenChange,
@@ -67,7 +57,6 @@ export function HRDocumentGeneratorDialog({
 }: HRDocumentGeneratorDialogProps) {
   const [loading, setLoading] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [variableValues, setVariableValues] = useState<Record<string, any>>({});
   const [previewContent, setPreviewContent] = useState('');
@@ -110,50 +99,27 @@ export function HRDocumentGeneratorDialog({
     }
   }, [template?.id]);
 
-  // Fetch employees
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&is_active=eq.true&select=id,first_name,last_name,dni,position,department_id`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch employees');
-      const data = await response.json();
-      setEmployees(data || []);
-    } catch (err) {
-      console.error('Error fetching employees:', err);
-    }
-  }, [companyId]);
-
   useEffect(() => {
     if (open && template) {
       fetchFullTemplate();
-      fetchEmployees();
       setActiveTab('variables');
       setPreviewContent('');
       setSelectedEmployeeId('');
     }
-  }, [open, template, fetchFullTemplate, fetchEmployees]);
+  }, [open, template, fetchFullTemplate]);
 
   // Auto-fill employee data when selected
-  useEffect(() => {
-    if (selectedEmployeeId) {
-      const employee = employees.find(e => e.id === selectedEmployeeId);
-      if (employee) {
-        setVariableValues(prev => ({
-          ...prev,
-          employee_name: `${employee.first_name} ${employee.last_name}`,
-          employee_dni: employee.dni || '',
-          job_position: employee.position || prev.job_position || ''
-        }));
-      }
+  const handleEmployeeSelect = (employeeId: string, employee?: EmployeeOption) => {
+    setSelectedEmployeeId(employeeId);
+    if (employee) {
+      setVariableValues(prev => ({
+        ...prev,
+        employee_name: `${employee.first_name} ${employee.last_name}`,
+        employee_dni: employee.dni || '',
+        job_position: employee.job_title || prev.job_position || ''
+      }));
     }
-  }, [selectedEmployeeId, employees]);
+  };
 
   // Generate preview
   const generatePreview = () => {
@@ -265,18 +231,12 @@ export function HRDocumentGeneratorDialog({
                       <User className="h-4 w-4" />
                       Empleado *
                     </Label>
-                    <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar empleado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.map((emp) => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            {emp.first_name} {emp.last_name} {emp.dni && `- ${emp.dni}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <HREmployeeSearchSelect
+                      value={selectedEmployeeId}
+                      onValueChange={handleEmployeeSelect}
+                      companyId={companyId}
+                      placeholder="Buscar empleado..."
+                    />
                   </div>
 
                   {/* Dynamic variables */}

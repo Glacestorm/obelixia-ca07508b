@@ -14,9 +14,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Gift, Save, Loader2, Users } from 'lucide-react';
+import { Gift, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
 
 interface Benefit {
   id: string;
@@ -43,7 +44,6 @@ export function HRBenefitEnrollmentDialog({
   onSuccess
 }: HRBenefitEnrollmentDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
   const [formData, setFormData] = useState({
     employee_id: '',
     enrollment_date: new Date().toISOString().split('T')[0],
@@ -53,32 +53,9 @@ export function HRBenefitEnrollmentDialog({
 
   useEffect(() => {
     if (open) {
-      fetchEmployees();
       resetForm();
     }
   }, [open]);
-
-  const fetchEmployees = async () => {
-    try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&is_active=eq.true&select=id,first_name,last_name&order=first_name`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        }
-      });
-      
-      if (response.ok) {
-        const data: Array<{ id: string; first_name: string; last_name: string }> = await response.json();
-        setEmployees(data.map(e => ({
-          id: e.id,
-          name: `${e.first_name} ${e.last_name}`
-        })));
-      }
-    } catch (err) {
-      console.error('Error fetching employees:', err);
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -161,21 +138,12 @@ export function HRBenefitEnrollmentDialog({
 
           <div className="space-y-2">
             <Label>Empleado *</Label>
-            <Select
+            <HREmployeeSearchSelect
               value={formData.employee_id}
-              onValueChange={(v) => setFormData(prev => ({ ...prev, employee_id: v }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar empleado" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map(emp => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={(id) => setFormData(prev => ({ ...prev, employee_id: id }))}
+              companyId={companyId}
+              placeholder="Buscar empleado..."
+            />
           </div>
 
           <div className="space-y-2">

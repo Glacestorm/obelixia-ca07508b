@@ -25,19 +25,11 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UserPlus, Users, FileText, Calendar, Sparkles, RefreshCw, Search } from 'lucide-react';
+import { UserPlus, FileText, Calendar, Sparkles, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
-
-interface Employee {
-  id: string;
-  first_name: string;
-  last_name: string;
-  job_title: string | null;
-  department_id: string | null;
-  hire_date: string | null;
-}
+import { HREmployeeSearchSelect, EmployeeOption } from '../shared/HREmployeeSearchSelect';
 
 interface OnboardingTemplate {
   id: string;
@@ -62,11 +54,10 @@ export function HROnboardingStartDialog({
   templates,
   onOnboardingCreated
 }: HROnboardingStartDialogProps) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [buddyCandidates, setBuddyCandidates] = useState<Employee[]>([]);
+  const [buddyCandidates, setBuddyCandidates] = useState<EmployeeOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [excludeIds, setExcludeIds] = useState<string[]>([]);
 
   // Form state
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
@@ -75,60 +66,37 @@ export function HROnboardingStartDialog({
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
 
-  // Fetch employees without active onboarding
+  // Fetch employees already in onboarding (to exclude)
   useEffect(() => {
     if (open) {
-      fetchEmployees();
+      fetchOnboardingEmployees();
     }
   }, [open, companyId]);
 
-  const fetchEmployees = async () => {
+  const fetchOnboardingEmployees = async () => {
     setLoading(true);
     try {
-      // Fetch all active employees
-      const { data: allEmployees, error: empError } = await supabase
-        .from('erp_hr_employees')
-        .select('id, first_name, last_name, job_title, department_id, hire_date')
-        .eq('company_id', companyId)
-        .eq('status', 'active')
-        .order('first_name');
-
-      if (empError) throw empError;
-
-      // Fetch employees already in onboarding
-      const { data: onboardingEmployees, error: onbError } = await supabase
+      const { data: onboardingEmployees, error } = await supabase
         .from('erp_hr_employee_onboarding')
         .select('employee_id')
         .eq('company_id', companyId)
         .in('status', ['not_started', 'in_progress']);
 
-      if (onbError) throw onbError;
+      if (error) throw error;
 
-      const onboardingIds = new Set((onboardingEmployees || []).map(o => o.employee_id));
-      
-      // Filter employees not in active onboarding (new hires)
-      const availableEmployees = (allEmployees || []).filter(
-        emp => !onboardingIds.has(emp.id)
-      ) as Employee[];
-
-      setEmployees(availableEmployees);
-
-      // Buddy candidates are employees with more seniority (has hire_date older than 6 months)
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      
-      const buddies = (allEmployees || []).filter(emp => {
-        if (!emp.hire_date) return true; // Assume senior if no hire date
-        return new Date(emp.hire_date) < sixMonthsAgo;
-      }) as Employee[];
-
-      setBuddyCandidates(buddies);
+      const excludeList = (onboardingEmployees || []).map(o => o.employee_id);
+      setExcludeIds(excludeList);
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Error al cargar empleados');
+      console.error('Error fetching onboarding employees:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle employee list for buddy selection
+  const handleEmployeesFetched = (employees: EmployeeOption[]) => {
+    // Buddy candidates are all employees (could filter by seniority)
+    setBuddyCandidates(employees);
   };
 
   const handleSubmit = async () => {
@@ -177,12 +145,6 @@ export function HROnboardingStartDialog({
     }
   };
 
-  const filteredEmployees = employees.filter(emp => {
-    const fullName = `${emp.first_name} ${emp.last_name}`.toLowerCase();
-    return fullName.includes(searchTerm.toLowerCase());
-  });
-
-  const selectedEmployee = employees.find(e => e.id === selectedEmployeeId);
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
 
   return (
@@ -203,53 +165,17 @@ export function HROnboardingStartDialog({
             {/* Employee Selection */}
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
+                <UserPlus className="h-4 w-4" />
                 Empleado *
               </Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar empleado..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 mb-2"
-                />
-              </div>
-              <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un empleado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {loading ? (
-                    <div className="p-2 text-center text-sm text-muted-foreground">
-                      <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-1" />
-                      Cargando...
-                    </div>
-                  ) : filteredEmployees.length === 0 ? (
-                    <div className="p-2 text-center text-sm text-muted-foreground">
-                      No hay empleados disponibles
-                    </div>
-                  ) : (
-                    filteredEmployees.map(emp => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{emp.first_name} {emp.last_name}</span>
-                          {emp.job_title && (
-                            <Badge variant="outline" className="text-xs">
-                              {emp.job_title}
-                            </Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {selectedEmployee && (
-                <p className="text-xs text-muted-foreground">
-                  Puesto: {selectedEmployee.job_title || 'Sin asignar'}
-                </p>
-              )}
+              <HREmployeeSearchSelect
+                value={selectedEmployeeId}
+                onValueChange={(id) => setSelectedEmployeeId(id)}
+                companyId={companyId}
+                placeholder="Buscar empleado..."
+                excludeIds={excludeIds}
+                onEmployeesFetched={handleEmployeesFetched}
+              />
             </div>
 
             {/* Template Selection */}

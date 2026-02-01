@@ -12,10 +12,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, Plus, Trash2, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, User } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
 
 interface PayrollConcept {
   id: string;
@@ -77,13 +78,14 @@ const DEFAULT_DEDUCTIONS: Omit<PayrollConcept, 'id'>[] = [
   { code: 'CUOTA_SIND', name: 'Cuota sindical', type: 'deduction', category: 'other', amount: 0, isPercentage: false, cotizaSS: false, tributaIRPF: false, isEditable: true },
 ];
 
-const DEMO_EMPLOYEES: EmployeeData[] = [
-  { id: '1', name: 'María García López', department: 'Administración', category: 'Grupo 5', baseSalary: 2800, seniorityYears: 5, irpfRate: 15.2 },
-  { id: '2', name: 'Juan Martínez Ruiz', department: 'Producción', category: 'Grupo 7', baseSalary: 2400, seniorityYears: 3, irpfRate: 12.5 },
-  { id: '3', name: 'Ana Fernández Castro', department: 'Comercial', category: 'Grupo 4', baseSalary: 3200, seniorityYears: 8, irpfRate: 18.0 },
-];
-
-export function HRPayrollEntryDialog({ open, onOpenChange, month = 'Febrero 2026', onSave }: HRPayrollEntryDialogProps) {
+export function HRPayrollEntryDialog({ 
+  open, 
+  onOpenChange, 
+  companyId = '', 
+  month = 'Febrero 2026', 
+  onSave 
+}: HRPayrollEntryDialogProps) {
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeData | null>(null);
   const [earnings, setEarnings] = useState<PayrollConcept[]>([]);
   const [deductions, setDeductions] = useState<PayrollConcept[]>([]);
@@ -140,12 +142,31 @@ export function HRPayrollEntryDialog({ open, onOpenChange, month = 'Febrero 2026
     }
   };
 
-  const handleEmployeeSelect = (employeeId: string) => {
-    const emp = DEMO_EMPLOYEES.find(e => e.id === employeeId);
-    if (emp) {
-      setSelectedEmployee(emp);
-      setEarnings(prev => prev.map(e => e.code === 'BASE' ? { ...e, amount: emp.baseSalary } : e));
-      setDeductions(prev => prev.map(d => d.code === 'IRPF' ? { ...d, amount: emp.irpfRate } : d));
+  const handleEmployeeSelect = async (employeeId: string, employee?: EmployeeOption) => {
+    setSelectedEmployeeId(employeeId);
+    
+    if (employee) {
+      // Fetch additional data
+      const { data } = await supabase
+        .from('erp_hr_employees')
+        .select('base_salary, department_id')
+        .eq('id', employeeId)
+        .single();
+
+      if (data) {
+        const empData: EmployeeData = {
+          id: employee.id,
+          name: `${employee.first_name} ${employee.last_name}`,
+          department: employee.department_name || 'Sin departamento',
+          category: employee.job_title || 'Sin categoría',
+          baseSalary: data.base_salary || 0,
+          seniorityYears: 0,
+          irpfRate: 15 // Default IRPF rate
+        };
+        setSelectedEmployee(empData);
+        setEarnings(prev => prev.map(e => e.code === 'BASE' ? { ...e, amount: empData.baseSalary } : e));
+        setDeductions(prev => prev.map(d => d.code === 'IRPF' ? { ...d, amount: empData.irpfRate } : d));
+      }
     }
   };
 
@@ -156,7 +177,14 @@ export function HRPayrollEntryDialog({ open, onOpenChange, month = 'Febrero 2026
     }
     setIsCalculating(true);
     try {
-      const payrollData = { employee_id: selectedEmployee.id, month, earnings: earnings.filter(e => e.amount > 0), deductions: deductions.filter(d => d.amount > 0), totals, status: 'calculated' };
+      const payrollData = { 
+        employee_id: selectedEmployee.id, 
+        month, 
+        earnings: earnings.filter(e => e.amount > 0), 
+        deductions: deductions.filter(d => d.amount > 0), 
+        totals, 
+        status: 'calculated' 
+      };
       onSave?.(payrollData);
       toast.success('Nómina guardada correctamente');
       onOpenChange(false);
@@ -181,28 +209,20 @@ export function HRPayrollEntryDialog({ open, onOpenChange, month = 'Febrero 2026
         <div className="flex-1 overflow-hidden">
           <div className="mb-4 p-4 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <Label className="text-xs">Empleado</Label>
-                <Select value={selectedEmployee?.id || ''} onValueChange={handleEmployeeSelect}>
-                  <SelectTrigger><SelectValue placeholder="Seleccionar..." /></SelectTrigger>
-                  <SelectContent>
-                    {DEMO_EMPLOYEES.map(emp => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        <div className="flex items-center gap-2"><User className="h-4 w-4" />{emp.name}</div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <HREmployeeSearchSelect
+                  value={selectedEmployeeId}
+                  onValueChange={handleEmployeeSelect}
+                  companyId={companyId}
+                  placeholder="Buscar empleado..."
+                />
               </div>
               {selectedEmployee && (
                 <>
                   <div>
-                    <Label className="text-xs">Departamento</Label>
-                    <div className="flex items-center gap-2 mt-1"><Building2 className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{selectedEmployee.department}</span></div>
-                  </div>
-                  <div>
                     <Label className="text-xs">Categoría</Label>
-                    <Badge variant="outline">{selectedEmployee.category}</Badge>
+                    <Badge variant="outline" className="mt-1">{selectedEmployee.category}</Badge>
                   </div>
                 </>
               )}
@@ -211,9 +231,20 @@ export function HRPayrollEntryDialog({ open, onOpenChange, month = 'Febrero 2026
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="earnings" className="gap-1"><TrendingUp className="h-3 w-3" />Devengos<Badge variant="secondary" className="ml-1 text-xs">€{totals.totalEarnings.toFixed(2)}</Badge></TabsTrigger>
-              <TabsTrigger value="deductions" className="gap-1"><TrendingDown className="h-3 w-3" />Deducciones<Badge variant="secondary" className="ml-1 text-xs">€{totals.totalDeductions.toFixed(2)}</Badge></TabsTrigger>
-              <TabsTrigger value="summary" className="gap-1"><Calculator className="h-3 w-3" />Resumen</TabsTrigger>
+              <TabsTrigger value="earnings" className="gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Devengos
+                <Badge variant="secondary" className="ml-1 text-xs">€{totals.totalEarnings.toFixed(2)}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="deductions" className="gap-1">
+                <TrendingDown className="h-3 w-3" />
+                Deducciones
+                <Badge variant="secondary" className="ml-1 text-xs">€{totals.totalDeductions.toFixed(2)}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="summary" className="gap-1">
+                <Calculator className="h-3 w-3" />
+                Resumen
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="earnings" className="mt-4">
