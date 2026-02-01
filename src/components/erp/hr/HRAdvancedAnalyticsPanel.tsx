@@ -37,11 +37,14 @@ import {
   Shield,
   Sparkles,
   Award,
-  Activity
+  Activity,
+  Send,
+  FileDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { HRENPSSurveyDialog, HRFlightRiskActionDialog } from './dialogs';
 
 interface HRAdvancedAnalyticsPanelProps {
   companyId: string;
@@ -92,6 +95,11 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
   const [kpis, setKpis] = useState<KPIData[]>([]);
   const [flightRisks, setFlightRisks] = useState<FlightRiskEmployee[]>([]);
   const [enpsData, setEnpsData] = useState<ENPSData | null>(null);
+  
+  // Dialog states
+  const [showENPSDialog, setShowENPSDialog] = useState(false);
+  const [showFlightRiskDialog, setShowFlightRiskDialog] = useState(false);
+  const [selectedFlightRiskEmployee, setSelectedFlightRiskEmployee] = useState<FlightRiskEmployee | null>(null);
 
   // Datos demo para visualización inicial
   const demoKPIs: KPIData[] = [
@@ -417,11 +425,17 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
                           </ul>
                         </TableCell>
                         <TableCell>
-                          <ul className="text-xs">
-                            {employee.recommendedActions.slice(0, 2).map((action, i) => (
-                              <li key={i} className="text-primary">→ {action}</li>
-                            ))}
-                          </ul>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedFlightRiskEmployee(employee);
+                              setShowFlightRiskDialog(true);
+                            }}
+                          >
+                            <Target className="h-3 w-3 mr-1" />
+                            Plan Acción
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -434,6 +448,12 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
 
         {/* eNPS Tab */}
         <TabsContent value="enps" className="mt-4">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => setShowENPSDialog(true)} className="gap-2">
+              <Send className="h-4 w-4" />
+              Lanzar Encuesta eNPS
+            </Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="md:col-span-1">
               <CardHeader className="pb-2">
@@ -650,6 +670,28 @@ export function HRAdvancedAnalyticsPanel({ companyId }: HRAdvancedAnalyticsPanel
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <HRENPSSurveyDialog
+        open={showENPSDialog}
+        onOpenChange={setShowENPSDialog}
+        companyId={companyId}
+        onLaunched={() => {
+          toast.success('Encuesta eNPS lanzada correctamente');
+          loadAnalytics();
+        }}
+      />
+
+      <HRFlightRiskActionDialog
+        open={showFlightRiskDialog}
+        onOpenChange={setShowFlightRiskDialog}
+        companyId={companyId}
+        employee={selectedFlightRiskEmployee}
+        onPlanCreated={() => {
+          toast.success('Plan de retención creado');
+          setShowFlightRiskDialog(false);
+        }}
+      />
     </div>
   );
 }
