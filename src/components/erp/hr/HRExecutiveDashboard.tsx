@@ -1,9 +1,9 @@
 /**
  * HRExecutiveDashboard - Panel de Control Ejecutivo HR
- * Fase 4 - Dashboard avanzado con KPIs, costes laborales y alertas
+ * Fase 5 - Dashboard con datos reales de Supabase
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,10 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   ComposedChart, Line
 } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useHRExecutiveData } from '@/hooks/admin/useHRExecutiveData';
 
 interface HRExecutiveDashboardProps {
   companyId: string;
@@ -83,23 +82,20 @@ const iconMap = {
 };
 
 export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashboardProps) {
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('30');
-  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Estado de métricas
-  const [metrics, setMetrics] = useState<ExecutiveMetric[]>([]);
-  const [laborCosts, setLaborCosts] = useState<LaborCostBreakdown[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [employeeStats, setEmployeeStats] = useState({
-    total: 0,
-    active: 0,
-    onLeave: 0,
-    newHires: 0,
-    departures: 0,
-    avgTenure: 0
-  });
+  // Hook con datos reales
+  const {
+    isLoading,
+    lastRefresh,
+    workforceStats,
+    laborCosts,
+    departments,
+    alerts: realAlerts,
+    metrics,
+    refreshData
+  } = useHRExecutiveData(companyId);
 
   // Datos de demostración (se reemplazarán con datos reales)
   const executiveMetrics: ExecutiveMetric[] = useMemo(() => [
