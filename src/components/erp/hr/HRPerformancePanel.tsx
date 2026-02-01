@@ -42,13 +42,15 @@ import {
   UserCheck,
   ArrowUp,
   ArrowDown,
-  Minus
+  Minus,
+  Settings
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { HRBonusConfigDialog } from './dialogs';
 
 interface HRPerformancePanelProps {
   companyId: string;
@@ -140,6 +142,7 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
   const [selectedCycle, setSelectedCycle] = useState<EvaluationCycle | null>(null);
   const [showCycleDialog, setShowCycleDialog] = useState(false);
   const [showObjectiveDialog, setShowObjectiveDialog] = useState(false);
+  const [showBonusConfigDialog, setShowBonusConfigDialog] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
 
   // Form states
@@ -768,8 +771,8 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
         <TabsContent value="bonus" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Configuración de Bonus</h3>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
+            <Button className="gap-2" onClick={() => setShowBonusConfigDialog(true)}>
+              <Settings className="h-4 w-4" />
               Nueva Configuración
             </Button>
           </div>
@@ -786,7 +789,7 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
                   <FileText className="h-4 w-4 mr-2" />
                   Importar Política
                 </Button>
-                <Button>
+                <Button onClick={() => setShowBonusConfigDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Crear Política
                 </Button>
@@ -836,6 +839,16 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Bonus Config Dialog */}
+      <HRBonusConfigDialog
+        open={showBonusConfigDialog}
+        onOpenChange={setShowBonusConfigDialog}
+        companyId={companyId}
+        onConfigCreated={() => {
+          toast.success('Política de bonus configurada');
+        }}
+      />
     </div>
   );
 }

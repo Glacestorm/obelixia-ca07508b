@@ -8,3 +8,5 @@ export { HRTrainingPlanDialog } from './HRTrainingPlanDialog';
 export { HRTrainingEnrollDialog } from './HRTrainingEnrollDialog';
 export { HRENPSSurveyDialog } from './HRENPSSurveyDialog';
 export { HRFlightRiskActionDialog } from './HRFlightRiskActionDialog';
+export { HROnboardingStartDialog } from './HROnboardingStartDialog';
+export { HRBonusConfigDialog } from './HRBonusConfigDialog';
