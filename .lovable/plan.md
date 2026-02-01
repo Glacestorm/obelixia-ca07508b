@@ -1,247 +1,115 @@
 
-# Plan de Mejora Integral del Módulo de Ayuda Fiscal Activa
+# Plan: Integrar Agente Fiscal en el Centro de Control de Agentes IA
 
-## Resumen Ejecutivo
+## Problema Identificado
 
-Este plan aborda la corrección visual del componente de sugerencias superpuestas, la adición de un calendario fiscal integrado, la generación y gestión de documentos fiscales oficiales, y la incorporación de tendencias 2026-2030 en fiscalidad digital.
+El **Agente Fiscal** no aparece en el Centro de Control de Agentes IA porque el componente `SupervisorAgentsDashboard.tsx` utiliza una lista estática de agentes ERP que no incluye al Agente Fiscal.
 
----
+Actualmente hay 8 agentes ERP listados:
+- Maestros, Ventas, Compras, Inventario, Contabilidad, Tesorería, Comercio, Logística
 
-## Fase 1: Corrección Visual de Sugerencias Superpuestas
-
-**Problema identificado:** En el componente `ActiveHelpPanel.tsx`, los botones de preguntas rápidas usan una cuadrícula 2x2 que causa superposición de textos largos.
-
-**Solución:**
-- Cambiar la cuadrícula de `grid-cols-2` a un diseño de columna única (`flex flex-col`)
-- Añadir `whitespace-normal` y `text-wrap` para permitir múltiples líneas
-- Ajustar el padding y altura de los botones con `h-auto py-3`
-- Aumentar `max-w-sm` a `max-w-lg` para dar más espacio
-
-**Archivos a modificar:**
-- `src/components/erp/fiscal/ActiveHelpPanel.tsx` (líneas 201-215)
+**Falta el Agente Fiscal** que sí está correctamente definido en la configuración central (`erpAgentConfig.ts`).
 
 ---
 
-## Fase 2: Calendario Fiscal Integrado en Ayuda Activa
+## Solución Propuesta
 
-**Objetivo:** Mostrar un calendario interactivo con las próximas citas fiscales y el grado de cumplimiento directamente en el panel de Ayuda Activa.
+### Paso 1: Añadir Agente Fiscal al Array ERP_AGENTS
 
-**Implementación:**
-1. Crear nueva pestaña "Calendario" en `ActiveHelpPanel`
-2. Reutilizar lógica de `useERPTaxJurisdictions` para obtener eventos del calendario
-3. Mostrar:
-   - Mini-calendario del mes actual con indicadores de eventos
-   - Lista de próximas obligaciones (7 días)
-   - Indicador de cumplimiento (% completado vs pendiente)
-   - Alertas de obligaciones vencidas
+**Archivo**: `src/components/admin/agents/SupervisorAgentsDashboard.tsx`
 
-**Componentes a modificar:**
-- `src/components/erp/fiscal/ActiveHelpPanel.tsx` - Añadir pestaña "Calendario"
-- `src/hooks/erp/useERPActiveHelp.ts` - Integrar acceso a eventos fiscales
+Añadir una nueva entrada al array `ERP_AGENTS` (después de línea 116):
 
----
-
-## Fase 3: Cierre Fiscal y Generación de Documentación Oficial
-
-**Objetivo:** Añadir botones de ejecución para cierre fiscal y elaboración de documentos oficiales.
-
-### 3.1 Panel de Acciones Fiscales
-Crear nuevo componente `FiscalActionsPanel.tsx` con:
-- **Botón "Cierre Fiscal"**: Lanza el `FiscalClosingWizard` existente
-- **Botón "Generar Modelo 303"**: Genera PDF del IVA trimestral
-- **Botón "Generar Modelo 390"**: Resumen anual IVA
-- **Botón "Generar Balance PGC"**: Estados financieros oficiales
-
-### 3.2 Edge Function para Documentos Fiscales
-Crear `supabase/functions/erp-fiscal-documents/index.ts`:
-- Acepta tipo de documento y periodo
-- Calcula datos desde tablas contables
-- Genera PDF con formato oficial AEAT
-- Devuelve PDF en base64 para descarga/guardado
-
-### 3.3 Integración por Voz
-Extender el agente IA para procesar comandos como:
-- "Genera el Modelo 303 del tercer trimestre"
-- "Ejecuta el cierre fiscal del ejercicio 2025"
-- "Prepara la documentación para Hacienda"
-
-**Archivos nuevos:**
-- `src/components/erp/fiscal/FiscalActionsPanel.tsx`
-- `src/components/erp/fiscal/FiscalDocumentGenerator.tsx`
-- `supabase/functions/erp-fiscal-documents/index.ts`
-
-**Archivos a modificar:**
-- `src/components/erp/fiscal/FiscalModule.tsx` - Integrar panel de acciones
-- `src/hooks/erp/useERPFiscalAgent.ts` - Añadir comandos de voz para documentos
-- `supabase/functions/erp-fiscal-ai-agent/index.ts` - Procesar intención "generate_document"
-
----
-
-## Fase 4: Impresión y Almacenamiento de Documentos
-
-### 4.1 Tabla de Documentos Fiscales Generados
-```text
-Tabla: erp_fiscal_generated_documents
-+------------------+----------------------------+
-| Campo            | Tipo                       |
-+------------------+----------------------------+
-| id               | UUID (PK)                  |
-| company_id       | UUID (FK)                  |
-| jurisdiction_id  | UUID (FK)                  |
-| document_type    | TEXT (modelo_303, etc.)    |
-| period           | TEXT (Q1-2026)             |
-| generated_at     | TIMESTAMP                  |
-| generated_by     | UUID                       |
-| file_data        | BYTEA o Storage URL        |
-| file_format      | TEXT (pdf, xlsx, xbrl)     |
-| status           | TEXT (draft, final, filed) |
-| filed_at         | TIMESTAMP                  |
-| metadata         | JSONB                      |
-+------------------+----------------------------+
+```typescript
+const ERP_AGENTS: AgentModule[] = [
+  // ... agentes existentes ...
+  { id: 'erp-logistica', name: 'Agente Logística', ... },
+  // NUEVO: Agente Fiscal
+  { 
+    id: 'erp-fiscal', 
+    name: 'Agente Fiscal', 
+    domain: 'erp', 
+    module: 'Fiscal', 
+    status: 'active', 
+    healthScore: 95, 
+    lastActivity: new Date(), 
+    tasksCompleted: 178, 
+    capabilities: ['sii_management', 'vat_calculation', 'intrastat_reporting', 'tax_compliance', 'fiscal_calendar', 'multi_jurisdiction'], 
+    metrics: { declarations: 45, sii_entries: 890, compliance_score: 98 } 
+  },
+];
 ```
 
-### 4.2 Funcionalidades de Exportación
-- **PDF**: Formato oficial con campos AEAT
-- **XLSX**: Para revisión en Excel
-- **XBRL**: Para envío electrónico a AEAT
+### Resultado Esperado
 
-### 4.3 Diálogo de Impresión/Guardado
-Crear `FiscalDocumentExportDialog.tsx`:
-- Selector de formato (PDF/XLSX/XBRL)
-- Opción "Guardar en base de datos"
-- Opción "Imprimir directamente"
-- Vista previa del documento
+Una vez añadido:
 
----
-
-## Fase 5: Tendencias Fiscales 2026-2030 (Disruptivas)
-
-### 5.1 Facturación Electrónica Obligatoria B2B (España 2026)
-- Sistema de factura electrónica estructurada
-- Integración con Facturae 3.x
-- Validación de formato y contenido antes de envío
-
-### 5.2 ViDA (VAT in the Digital Age) - UE 2028
-- Reporte en tiempo real de transacciones transfronterizas
-- Integración con sistema único de IVA europeo
-- Certificado digital de transacciones
-
-### 5.3 Tax API - Conexión Directa con Administraciones
-- API REST hacia AEAT para envío automático
-- Webhook para recibir notificaciones de Hacienda
-- Firma electrónica integrada
-
-### 5.4 IA Predictiva Fiscal
-- Predicción de obligaciones futuras
-- Alertas de cambios normativos automáticos
-- Optimización fiscal asistida por IA
-
-### 5.5 Blockchain para Auditoría Fiscal
-- Hash inmutable de documentos fiscales
-- Trazabilidad de modificaciones
-- Prueba de presentación en plazo
-
-**Componentes nuevos:**
-- `src/components/erp/fiscal/FiscalTrends2026Panel.tsx`
-- `src/components/erp/fiscal/EInvoiceManager.tsx`
-- `src/components/erp/fiscal/TaxAPIConnector.tsx`
+| Antes | Después |
+|-------|---------|
+| "8 agentes ERP" | "9 agentes ERP" |
+| Tab "ERP (8)" | Tab "ERP (9)" |
+| Sin Agente Fiscal en lista | Agente Fiscal visible |
+| Sin Fiscal en Supervisor | Fiscal en selector Supervisor |
 
 ---
 
-## Secuencia de Implementación
+## Ubicaciones que se Actualizarán Automáticamente
+
+Como el código usa `ERP_AGENTS.length`, estas ubicaciones se actualizarán automáticamente:
+
+1. **Header** (línea 480): `Supervisor General + 9 agentes ERP + 6 agentes CRM`
+2. **Tab ERP** (línea 532): `ERP (9)`
+3. **Grid de agentes** (línea 672-680): Mostrará 9 tarjetas
+4. **Selector Supervisor** (línea 734-750): Listará 9 agentes bajo "ERP"
+
+---
+
+## Detalles Técnicos
+
+### Capacidades del Agente Fiscal
+
+Basándome en la configuración existente en `erpAgentConfig.ts`:
 
 ```text
-FASE 1 (Inmediata)
-+---------------------------+
-| Fix visual sugerencias    |-----> 30 minutos
-| ActiveHelpPanel.tsx       |
-+---------------------------+
+┌─────────────────────────────────────────────────────┐
+│            AGENTE FISCAL - Capacidades              │
+├─────────────────────────────────────────────────────┤
+│  sii_management       │ Gestión SII (Libro registro)│
+│  vat_calculation      │ Cálculo de IVA              │
+│  intrastat_reporting  │ Declaraciones Intrastat     │
+│  tax_compliance       │ Cumplimiento tributario     │
+│  fiscal_calendar      │ Calendario fiscal           │
+│  multi_jurisdiction   │ Multi-jurisdicción          │
+└─────────────────────────────────────────────────────┘
+```
 
-FASE 2 (Corto plazo)
-+---------------------------+
-| Calendario integrado      |-----> 2 horas
-| + Indicadores cumplimiento|
-+---------------------------+
+### Métricas Específicas
 
-FASE 3 (Medio plazo)
-+---------------------------+
-| Panel acciones fiscales   |-----> 3 horas
-| Edge function documentos  |
-| Comandos de voz           |
-+---------------------------+
-
-FASE 4 (Medio plazo)
-+---------------------------+
-| Tabla documentos DB       |-----> 2 horas
-| Diálogo exportación       |
-| Formatos múltiples        |
-+---------------------------+
-
-FASE 5 (Largo plazo / Innovación)
-+---------------------------+
-| Factura electrónica B2B   |-----> Planificación
-| ViDA / Tax API            |       para futuras
-| IA Predictiva + Blockchain|       versiones
-+---------------------------+
+```typescript
+metrics: { 
+  declarations: 45,      // Declaraciones procesadas
+  sii_entries: 890,      // Registros SII enviados
+  compliance_score: 98   // Puntuación cumplimiento
+}
 ```
 
 ---
 
-## Resumen de Cambios por Archivo
+## Tiempo Estimado
 
-| Archivo | Acción | Descripción |
-|---------|--------|-------------|
-| `ActiveHelpPanel.tsx` | Modificar | Fix visual + nueva pestaña Calendario |
-| `FiscalActionsPanel.tsx` | Crear | Panel con botones de cierre y generación |
-| `FiscalDocumentGenerator.tsx` | Crear | Lógica de generación de documentos |
-| `FiscalDocumentExportDialog.tsx` | Crear | Diálogo para imprimir/guardar |
-| `erp-fiscal-documents/index.ts` | Crear | Edge function para documentos |
-| `erp-fiscal-ai-agent/index.ts` | Modificar | Nuevas intenciones de voz |
-| `useERPFiscalAgent.ts` | Modificar | Método `generateDocument()` |
-| Migración SQL | Crear | Tabla `erp_fiscal_generated_documents` |
-| `FiscalModule.tsx` | Modificar | Integrar nuevos componentes |
-| `index.ts` (barrel) | Modificar | Exportar nuevos componentes |
+- **Implementación**: ~2 minutos
+- **Verificación**: Inmediata tras despliegue
 
 ---
 
-## Sección Técnica Detallada
+## Verificación Post-Implementación
 
-### Fix CSS para Sugerencias (Fase 1)
-```tsx
-// Antes (problemático)
-<div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
-  <Button variant="outline" size="sm" className="text-xs h-auto py-2 text-left">
-    {q}
-  </Button>
-</div>
+Tras aplicar el cambio:
 
-// Después (corregido)
-<div className="flex flex-col gap-2 max-w-lg mx-auto w-full">
-  <Button
-    variant="outline"
-    size="sm"
-    className="text-xs h-auto py-3 px-4 text-left justify-start whitespace-normal"
-  >
-    {q}
-  </Button>
-</div>
-```
-
-### Edge Function `erp-fiscal-documents`
-- Endpoint único para todos los modelos fiscales
-- Parámetros: `{ document_type, period, company_id, format }`
-- Usa jsPDF para generación de PDFs
-- Calcula totales desde `erp_journal_entries` y `erp_account_balances`
-- Almacena en `erp_fiscal_generated_documents`
-
-### Comandos de Voz Fiscales
-Extensión del prompt del agente para reconocer:
-- `"genera/prepara/crea"` + `"modelo X"` / `"balance"` / `"cierre"`
-- Intent: `generate_fiscal_document`
-- Entidades: `document_type`, `period`, `format`
-
-### Storage de Documentos
-- Opción 1: Supabase Storage (archivos grandes)
-- Opción 2: Campo BYTEA en PostgreSQL (documentos pequeños)
-- Recomendación: Supabase Storage con URL firmada temporal
-
+1. Navegar a `/obelixia-admin/erp` o al Centro de Control de Agentes
+2. Verificar que la pestaña "ERP" muestre "(9)" en lugar de "(8)"
+3. Confirmar que el Agente Fiscal aparece en:
+   - Grid de agentes ERP
+   - Selector de agentes en pestaña "Supervisor"
+   - Preview de agentes (si está entre los primeros 4)
+4. Probar el botón "Interactuar" del Agente Fiscal
