@@ -4,7 +4,7 @@
  * Base de conocimiento laboral + Agente IA + Noticias RRHH
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,8 @@ import {
   UserCog,
   FolderOpen
 } from 'lucide-react';
+import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
+import { HRVacationRequestDialog } from './HRVacationRequestDialog';
 import { useERPContext } from '@/hooks/erp';
 import { HRDashboardPanel } from './HRDashboardPanel';
 import { HRPayrollPanel } from './HRPayrollPanel';
@@ -49,6 +51,38 @@ export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { currentCompany } = useERPContext();
   const demoCompanyId = currentCompany?.id || 'demo-company-id';
+  
+  // Estados para dialogs
+  const [showPayrollDialog, setShowPayrollDialog] = useState(false);
+  const [showVacationDialog, setShowVacationDialog] = useState(false);
+
+  // Navegación desde HelpIndex
+  const handleHelpNavigate = useCallback((section: string) => {
+    // Mapear códigos de sección a tabs
+    const tabMapping: Record<string, string> = {
+      'dashboard': 'dashboard',
+      'nominas': 'payroll',
+      'nominas.conceptos': 'payroll',
+      'nominas.calculo': 'payroll',
+      'seguridad_social': 'ss',
+      'seguridad_social.cotizaciones': 'ss',
+      'seguridad_social.red': 'ss',
+      'vacaciones': 'vacations',
+      'vacaciones.solicitud': 'vacations',
+      'contratos': 'contracts',
+      'sindicatos': 'unions',
+      'documentos': 'documents',
+      'organizacion': 'departments',
+      'prl': 'safety',
+      'agente_ia': 'agent',
+      'normativa': 'knowledge',
+    };
+
+    const targetTab = tabMapping[section] || section;
+    if (targetTab) {
+      setActiveModule(targetTab);
+    }
+  }, []);
 
   // Stats simuladas - en producción vendrían de hooks
   const [stats, setStats] = useState({
@@ -278,7 +312,16 @@ export function HRModule() {
           </TabsContent>
 
           <TabsContent value="help" className="m-0">
-            <HRHelpIndex companyId={demoCompanyId} />
+            <HRHelpIndex 
+              companyId={demoCompanyId} 
+              onNavigate={handleHelpNavigate}
+              onOpenPayrollDialog={() => setShowPayrollDialog(true)}
+              onOpenVacationDialog={() => setShowVacationDialog(true)}
+              onAskAgent={(question) => {
+                setActiveModule('agent');
+                // El agente IA recibiría la pregunta
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="trends" className="m-0">
@@ -286,6 +329,20 @@ export function HRModule() {
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* Dialogs globales accesibles desde cualquier lugar */}
+      <HRPayrollEntryDialog
+        open={showPayrollDialog}
+        onOpenChange={setShowPayrollDialog}
+        companyId={demoCompanyId}
+        month="2026-02"
+      />
+
+      <HRVacationRequestDialog
+        open={showVacationDialog}
+        onOpenChange={setShowVacationDialog}
+        companyId={demoCompanyId}
+      />
     </div>
   );
 }
