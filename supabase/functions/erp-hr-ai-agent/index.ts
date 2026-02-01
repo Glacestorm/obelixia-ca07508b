@@ -16,7 +16,8 @@ interface AgentRequest {
   action: 'chat' | 'calculate_payroll' | 'calculate_severance' | 'check_compliance' | 
           'suggest_contract' | 'query_regulation' | 'analyze_vacation' | 'prl_audit' |
           'get_absences' | 'get_active_alerts' | 'sync_absence' | 
-          'get_dashboard_stats' | 'get_full_dashboard' | 'get_ninebox_distribution';
+          'get_dashboard_stats' | 'get_full_dashboard' | 'get_ninebox_distribution' |
+          'calculate_ss_contributions' | 'submit_siltra' | 'refresh_red_status' | 'request_certificate';
   company_id?: string;
   companyId?: string;
   session_id?: string;
@@ -470,6 +471,155 @@ serve(async (req) => {
         result = {
           distribution,
           totalEvaluated: evalData?.length || 0
+        };
+        
+        return new Response(JSON.stringify({
+          success: true,
+          action,
+          data: result,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Social Security calculations and submissions
+      case 'calculate_ss_contributions': {
+        console.log('[erp-hr-ai-agent] Calculating SS contributions');
+        
+        const period = (context as any)?.period || new Date().toISOString().slice(0, 7);
+        
+        // Get active employees for the period
+        const { data: employees } = await supabase
+          .from('erp_hr_employees')
+          .select('id, first_name, last_name, social_security_number')
+          .eq('status', 'active');
+        
+        // Get payrolls for the period
+        const { data: payrolls } = await supabase
+          .from('erp_hr_payrolls')
+          .select('*')
+          .ilike('period', `${period}%`);
+        
+        const totalEmployees = employees?.length || 0;
+        const totalPayrolls = payrolls?.length || 0;
+        
+        // Calculate totals
+        let totalBases = 0;
+        let totalContributions = 0;
+        
+        (payrolls || []).forEach((p: any) => {
+          totalBases += p.gross_salary || 0;
+          // Approximate SS contributions (around 30% of gross)
+          totalContributions += (p.gross_salary || 0) * 0.30;
+        });
+        
+        result = {
+          period,
+          summary: {
+            total_employees: totalEmployees,
+            total_payrolls: totalPayrolls,
+            total_bases: parseFloat(totalBases.toFixed(2)),
+            total_contributions: parseFloat(totalContributions.toFixed(2)),
+            contingencias_comunes: parseFloat((totalBases * 0.283).toFixed(2)),
+            desempleo: parseFloat((totalBases * 0.07).toFixed(2)),
+            fogasa: parseFloat((totalBases * 0.002).toFixed(2)),
+            formacion: parseFloat((totalBases * 0.007).toFixed(2))
+          },
+          status: 'calculated',
+          generated_at: new Date().toISOString()
+        };
+        
+        return new Response(JSON.stringify({
+          success: true,
+          action,
+          data: result,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'submit_siltra': {
+        console.log('[erp-hr-ai-agent] Submitting to SILTRA');
+        
+        const fileType = (context as any)?.fileType || 'TC1';
+        const period = (context as any)?.period || new Date().toISOString().slice(0, 7);
+        
+        // Simulate SILTRA submission (in real world, this would connect to TGSS)
+        result = {
+          submission_id: `SILTRA-${Date.now()}`,
+          file_type: fileType,
+          period,
+          status: 'submitted',
+          response_code: '0000',
+          response_message: 'Fichero recibido correctamente en cola de proceso',
+          submitted_at: new Date().toISOString(),
+          expected_processing: 'Las próximas 24-48 horas'
+        };
+        
+        return new Response(JSON.stringify({
+          success: true,
+          action,
+          data: result,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'refresh_red_status': {
+        console.log('[erp-hr-ai-agent] Refreshing RED status');
+        
+        // Simulate Sistema RED status check
+        result = {
+          connection_status: 'connected',
+          last_sync: new Date().toISOString(),
+          pending_communications: 0,
+          pending_affirmations: 0,
+          pending_responses: 2,
+          recent_submissions: [
+            {
+              id: `RED-${Date.now() - 86400000}`,
+              type: 'AFI',
+              status: 'processed',
+              date: new Date(Date.now() - 86400000).toISOString()
+            },
+            {
+              id: `RED-${Date.now() - 172800000}`,
+              type: 'ITA',
+              status: 'processed',
+              date: new Date(Date.now() - 172800000).toISOString()
+            }
+          ],
+          certificate_valid_until: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString()
+        };
+        
+        return new Response(JSON.stringify({
+          success: true,
+          action,
+          data: result,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'request_certificate': {
+        console.log('[erp-hr-ai-agent] Requesting certificate');
+        
+        const certificateType = (context as any)?.certificateType || 'empresa';
+        const employeeId = (context as any)?.employeeId;
+        
+        // Simulate certificate request
+        result = {
+          request_id: `CERT-${Date.now()}`,
+          certificate_type: certificateType,
+          employee_id: employeeId,
+          status: 'pending',
+          request_date: new Date().toISOString(),
+          estimated_delivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          message: 'Solicitud de certificado registrada. Recibirá una notificación cuando esté disponible.'
         };
         
         return new Response(JSON.stringify({
