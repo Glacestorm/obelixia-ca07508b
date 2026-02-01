@@ -15978,6 +15978,59 @@ export type Database = {
           },
         ]
       }
+      erp_hr_document_ai_processing: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          document_id: string
+          error_message: string | null
+          id: string
+          processing_metadata: Json | null
+          processing_type: string
+          started_at: string | null
+          status: string
+          tokens_used: number | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          document_id: string
+          error_message?: string | null
+          id?: string
+          processing_metadata?: Json | null
+          processing_type: string
+          started_at?: string | null
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          document_id?: string
+          error_message?: string | null
+          id?: string
+          processing_metadata?: Json | null
+          processing_type?: string
+          started_at?: string | null
+          status?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_document_ai_processing_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employee_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employee_benefits: {
         Row: {
           approved_at: string | null
@@ -16049,6 +16102,13 @@ export type Database = {
       }
       erp_hr_employee_documents: {
         Row: {
+          ai_confidence: number | null
+          ai_document_type: string | null
+          ai_entities: Json | null
+          ai_extracted_data: Json | null
+          ai_indexed: boolean | null
+          ai_indexed_at: string | null
+          ai_summary: string | null
           company_id: string
           created_at: string | null
           document_name: string
@@ -16056,17 +16116,26 @@ export type Database = {
           document_url: string
           employee_id: string
           expiry_date: string | null
+          file_hash: string | null
           file_size: number | null
           id: string
           is_confidential: boolean | null
           metadata: Json | null
           mime_type: string | null
           notes: string | null
+          searchable_content: string | null
           updated_at: string | null
           uploaded_by: string | null
           version: number | null
         }
         Insert: {
+          ai_confidence?: number | null
+          ai_document_type?: string | null
+          ai_entities?: Json | null
+          ai_extracted_data?: Json | null
+          ai_indexed?: boolean | null
+          ai_indexed_at?: string | null
+          ai_summary?: string | null
           company_id: string
           created_at?: string | null
           document_name: string
@@ -16074,17 +16143,26 @@ export type Database = {
           document_url: string
           employee_id: string
           expiry_date?: string | null
+          file_hash?: string | null
           file_size?: number | null
           id?: string
           is_confidential?: boolean | null
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          searchable_content?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
           version?: number | null
         }
         Update: {
+          ai_confidence?: number | null
+          ai_document_type?: string | null
+          ai_entities?: Json | null
+          ai_extracted_data?: Json | null
+          ai_indexed?: boolean | null
+          ai_indexed_at?: string | null
+          ai_summary?: string | null
           company_id?: string
           created_at?: string | null
           document_name?: string
@@ -16092,12 +16170,14 @@ export type Database = {
           document_url?: string
           employee_id?: string
           expiry_date?: string | null
+          file_hash?: string | null
           file_size?: number | null
           id?: string
           is_confidential?: boolean | null
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          searchable_content?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
           version?: number | null
@@ -46892,6 +46972,26 @@ export type Database = {
           p_title: string
         }
         Returns: string[]
+      }
+      search_employee_documents: {
+        Args: {
+          p_company_id: string
+          p_document_type?: string
+          p_employee_id?: string
+          p_limit?: number
+          p_search_query: string
+        }
+        Returns: {
+          ai_confidence: number
+          ai_document_type: string
+          ai_summary: string
+          created_at: string
+          document_name: string
+          document_type: string
+          employee_id: string
+          id: string
+          relevance_score: number
+        }[]
       }
       search_financial_embeddings: {
         Args: {

@@ -20,6 +20,7 @@ export { HRTrends2026Panel } from './HRTrends2026Panel';
 export { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
 export { HRUnionsPanel } from './HRUnionsPanel';
 export { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
+export { HRDocumentUploadDialog } from './HRDocumentUploadDialog';
 export { HRHelpIndex } from './HRHelpIndex';
 
 // Fase 2 - Gestión avanzada
