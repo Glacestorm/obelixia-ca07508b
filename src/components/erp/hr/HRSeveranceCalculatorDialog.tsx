@@ -22,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Calculator, 
   User, 
-  Calendar, 
   DollarSign, 
   Brain, 
   Loader2,
@@ -34,6 +33,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { HREmployeeSearchSelect, EmployeeOption } from './shared/HREmployeeSearchSelect';
 
 interface HRSeveranceCalculatorDialogProps {
   open: boolean;
@@ -41,19 +41,6 @@ interface HRSeveranceCalculatorDialogProps {
   companyId: string;
   preselectedEmployeeId?: string;
 }
-
-interface Employee {
-  id: string;
-  first_name: string;
-  last_name: string;
-  employee_number: string;
-  hire_date: string;
-  base_salary: number;
-  department_id?: string;
-}
-
-// Helper to get full name
-const getFullName = (emp: Employee) => `${emp.first_name} ${emp.last_name}`.trim();
 
 interface SeveranceResult {
   severance_calculation: {
@@ -110,8 +97,8 @@ export function HRSeveranceCalculatorDialog({
   companyId,
   preselectedEmployeeId
 }: HRSeveranceCalculatorDialogProps) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeOption | null>(null);
+  const [employeeData, setEmployeeData] = useState<{ hire_date: string; base_salary: number } | null>(null);
   const [terminationType, setTerminationType] = useState<string>('');
   const [terminationDate, setTerminationDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [pendingVacationDays, setPendingVacationDays] = useState<number>(0);
@@ -119,32 +106,36 @@ export function HRSeveranceCalculatorDialog({
   const [result, setResult] = useState<SeveranceResult | null>(null);
   const [aiExplanation, setAiExplanation] = useState<string>('');
 
-  // Load employees
-  useEffect(() => {
-    if (!open) return;
-    
-    const fetchEmployees = async () => {
-      const { data, error } = await supabase
+  // Fetch employee details when selected
+  const handleEmployeeSelect = useCallback(async (employeeId: string, employee?: EmployeeOption) => {
+    if (employee) {
+      setSelectedEmployee(employee);
+      
+      // Fetch additional employee data (hire_date, base_salary)
+      const { data } = await supabase
         .from('erp_hr_employees')
-        .select('id, first_name, last_name, employee_number, hire_date, base_salary, department_id')
-        .eq('company_id', companyId)
-        .eq('status', 'active')
-        .order('first_name');
+        .select('hire_date, base_salary')
+        .eq('id', employeeId)
+        .single();
       
       if (data) {
-        setEmployees(data as unknown as Employee[]);
-        if (preselectedEmployeeId) {
-          const emp = data.find((e: any) => e.id === preselectedEmployeeId);
-          if (emp) setSelectedEmployee(emp as unknown as Employee);
-        }
+        setEmployeeData({
+          hire_date: data.hire_date || '',
+          base_salary: data.base_salary || 0
+        });
       }
-    };
-    
-    fetchEmployees();
-  }, [open, companyId, preselectedEmployeeId]);
+    }
+  }, []);
+
+  // Load preselected employee
+  useEffect(() => {
+    if (open && preselectedEmployeeId) {
+      // Will be handled by the search component
+    }
+  }, [open, preselectedEmployeeId]);
 
   const handleCalculate = useCallback(async () => {
-    if (!selectedEmployee || !terminationType || !terminationDate) {
+    if (!selectedEmployee || !employeeData || !terminationType || !terminationDate) {
       toast.error('Completa todos los campos requeridos');
       return;
     }
@@ -160,9 +151,9 @@ export function HRSeveranceCalculatorDialog({
           company_id: companyId,
           employee_id: selectedEmployee.id,
           severance_data: {
-            start_date: selectedEmployee.hire_date,
+            start_date: employeeData.hire_date,
             end_date: terminationDate,
-            base_salary: selectedEmployee.base_salary,
+            base_salary: employeeData.base_salary,
             termination_type: terminationType,
             pending_vacation_days: pendingVacationDays,
             pending_extra_pays: 2 // Assuming 2 extra pays per year (common in Spain)
@@ -187,7 +178,7 @@ export function HRSeveranceCalculatorDialog({
     } finally {
       setIsCalculating(false);
     }
-  }, [selectedEmployee, terminationType, terminationDate, pendingVacationDays, companyId]);
+  }, [selectedEmployee, employeeData, terminationType, terminationDate, pendingVacationDays, companyId]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
@@ -195,11 +186,17 @@ export function HRSeveranceCalculatorDialog({
 
   const resetForm = () => {
     setSelectedEmployee(null);
+    setEmployeeData(null);
     setTerminationType('');
     setTerminationDate(new Date().toISOString().split('T')[0]);
     setPendingVacationDays(0);
     setResult(null);
     setAiExplanation('');
+  };
+
+  const getFullName = () => {
+    if (!selectedEmployee) return '';
+    return `${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim();
   };
 
   return (
@@ -229,39 +226,27 @@ export function HRSeveranceCalculatorDialog({
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="employee">Empleado</Label>
-                    <Select 
-                      value={selectedEmployee?.id || ''} 
-                      onValueChange={(val) => {
-                        const emp = employees.find(e => e.id === val);
-                        setSelectedEmployee(emp || null);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar empleado..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {employees.map(emp => (
-                          <SelectItem key={emp.id} value={emp.id}>
-                            {getFullName(emp)} ({emp.employee_number})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <HREmployeeSearchSelect
+                      value={selectedEmployee?.id || preselectedEmployeeId || ''}
+                      onValueChange={handleEmployeeSelect}
+                      companyId={companyId}
+                      placeholder="Buscar empleado..."
+                    />
                   </div>
 
-                  {selectedEmployee && (
+                  {employeeData && (
                     <div className="grid grid-cols-2 gap-3 p-3 bg-muted/50 rounded-lg text-sm">
                       <div>
                         <p className="text-muted-foreground">Fecha alta</p>
-                        <p className="font-medium">{new Date(selectedEmployee.hire_date).toLocaleDateString('es-ES')}</p>
+                        <p className="font-medium">{new Date(employeeData.hire_date).toLocaleDateString('es-ES')}</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Salario base</p>
-                        <p className="font-medium">{formatCurrency(selectedEmployee.base_salary)}</p>
+                        <p className="font-medium">{formatCurrency(employeeData.base_salary)}</p>
                       </div>
                       <div className="col-span-2">
                         <p className="text-muted-foreground">Empleado</p>
-                        <p className="font-medium">{getFullName(selectedEmployee)}</p>
+                        <p className="font-medium">{getFullName()}</p>
                       </div>
                     </div>
                   )}
@@ -427,73 +412,55 @@ export function HRSeveranceCalculatorDialog({
                           <span>Exento IRPF</span>
                           <span>{formatCurrency(result.severance_calculation.indemnization.tax_exempt)}</span>
                         </div>
+                        <div className="flex justify-between text-destructive">
+                          <span>Retención</span>
+                          <span>-{formatCurrency(result.severance_calculation.indemnization.tax_retention)}</span>
+                        </div>
                         <div className="flex justify-between font-bold text-amber-600">
                           <span>Neto</span>
                           <span>{formatCurrency(result.severance_calculation.indemnization.net_amount)}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {result.severance_calculation.indemnization.legal_reference}
-                        </p>
                       </CardContent>
                     </Card>
                   )}
 
                   {/* Grand Total */}
                   <Card className="border-primary/30 bg-primary/5">
-                    <CardContent className="pt-4">
+                    <CardContent className="py-4">
                       <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Total a percibir</p>
-                          <p className="text-2xl font-bold text-primary">
-                            {formatCurrency(result.severance_calculation.grand_total.net)}
-                          </p>
-                        </div>
-                        <CheckCircle className="h-8 w-8 text-green-500" />
+                        <span className="text-lg font-semibold">Total a Percibir</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {formatCurrency(result.severance_calculation.grand_total.net)}
+                        </span>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* AI Confidence */}
-                  {result.severance_calculation.confidence && (
-                    <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                      <Brain className="h-4 w-4 text-primary" />
-                      <span className="text-sm">
-                        Confianza del cálculo: <strong>{result.severance_calculation.confidence}%</strong>
-                      </span>
-                    </div>
+                  {/* AI Explanation */}
+                  {aiExplanation && (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Info className="h-4 w-4" />
+                          Explicación Legal
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {aiExplanation}
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
                 </>
-              ) : aiExplanation ? (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Brain className="h-4 w-4 text-primary" />
-                      Explicación del Agente IA
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm whitespace-pre-wrap">{aiExplanation}</p>
-                  </CardContent>
-                </Card>
               ) : (
-                <Card className="border-dashed">
-                  <CardContent className="py-12 text-center">
-                    <Calculator className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p className="text-muted-foreground">
-                      Completa los datos y pulsa "Calcular Finiquito" para obtener el cálculo detallado
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Calculator className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">
+                    Selecciona un empleado y tipo de extinción para calcular
+                  </p>
+                </div>
               )}
-
-              {/* Legal Notice */}
-              <div className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-                <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <p>
-                  Este cálculo es orientativo. Consulte con un profesional para casos específicos. 
-                  Normativa aplicable: Estatuto de los Trabajadores (RDL 2/2015), Ley Reguladora de la Jurisdicción Social.
-                </p>
-              </div>
             </div>
           </div>
         </ScrollArea>

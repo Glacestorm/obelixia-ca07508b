@@ -18,6 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Save, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
 
 interface HRContractFormDialogProps {
   open: boolean;
@@ -53,7 +54,6 @@ export function HRContractFormDialog({
   onSaved
 }: HRContractFormDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
   const [formData, setFormData] = useState({
     employee_id: employeeId || '',
     contract_type: 'indefinido',
@@ -71,7 +71,6 @@ export function HRContractFormDialog({
 
   useEffect(() => {
     if (open) {
-      fetchEmployees();
       if (contractId) {
         fetchContract();
       } else {
@@ -79,28 +78,6 @@ export function HRContractFormDialog({
       }
     }
   }, [open, contractId]);
-
-  const fetchEmployees = async () => {
-    try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&is_active=eq.true&select=id,first_name,last_name&order=first_name`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        }
-      });
-      
-      if (response.ok) {
-        const employeeData: Array<{ id: string; first_name: string; last_name: string }> = await response.json();
-        setEmployees(employeeData.map(e => ({
-          id: e.id,
-          name: `${e.first_name} ${e.last_name}`
-        })));
-      }
-    } catch (err) {
-      console.error('Error fetching employees:', err);
-    }
-  };
 
   const fetchContract = async () => {
     if (!contractId) return;
@@ -213,21 +190,12 @@ export function HRContractFormDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Empleado *</Label>
-                <Select
+                <HREmployeeSearchSelect
                   value={formData.employee_id}
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, employee_id: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar empleado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map(emp => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onValueChange={(id) => setFormData(prev => ({ ...prev, employee_id: id }))}
+                  companyId={companyId}
+                  placeholder="Buscar empleado..."
+                />
               </div>
 
               <div className="space-y-2">
