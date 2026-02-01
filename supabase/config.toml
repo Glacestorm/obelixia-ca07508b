@@ -947,3 +947,6 @@ verify_jwt = false
 
 [functions.erp-hr-training-agent]
 verify_jwt = false
+
+[functions.erp-hr-analytics-agent]
+verify_jwt = false

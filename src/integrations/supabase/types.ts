@@ -16018,6 +16018,104 @@ export type Database = {
           },
         ]
       }
+      erp_hr_compa_ratio: {
+        Row: {
+          action_recommended: string | null
+          analysis_date: string
+          analysis_period: string | null
+          calculated_by: string | null
+          compa_ratio: number
+          company_avg_compa_ratio: number | null
+          company_id: string
+          compensation_status: string | null
+          created_at: string | null
+          current_base_salary: number
+          current_total_compensation: number | null
+          department_avg_compa_ratio: number | null
+          employee_id: string
+          geographic_region: string | null
+          id: string
+          industry_avg_compa_ratio: number | null
+          job_family: string | null
+          market_25th_percentile: number | null
+          market_75th_percentile: number | null
+          market_90th_percentile: number | null
+          market_data_date: string | null
+          market_data_source: string | null
+          market_median_salary: number
+          notes: string | null
+          priority_level: string | null
+          range_penetration: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_recommended?: string | null
+          analysis_date: string
+          analysis_period?: string | null
+          calculated_by?: string | null
+          compa_ratio: number
+          company_avg_compa_ratio?: number | null
+          company_id: string
+          compensation_status?: string | null
+          created_at?: string | null
+          current_base_salary: number
+          current_total_compensation?: number | null
+          department_avg_compa_ratio?: number | null
+          employee_id: string
+          geographic_region?: string | null
+          id?: string
+          industry_avg_compa_ratio?: number | null
+          job_family?: string | null
+          market_25th_percentile?: number | null
+          market_75th_percentile?: number | null
+          market_90th_percentile?: number | null
+          market_data_date?: string | null
+          market_data_source?: string | null
+          market_median_salary: number
+          notes?: string | null
+          priority_level?: string | null
+          range_penetration?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_recommended?: string | null
+          analysis_date?: string
+          analysis_period?: string | null
+          calculated_by?: string | null
+          compa_ratio?: number
+          company_avg_compa_ratio?: number | null
+          company_id?: string
+          compensation_status?: string | null
+          created_at?: string | null
+          current_base_salary?: number
+          current_total_compensation?: number | null
+          department_avg_compa_ratio?: number | null
+          employee_id?: string
+          geographic_region?: string | null
+          id?: string
+          industry_avg_compa_ratio?: number | null
+          job_family?: string | null
+          market_25th_percentile?: number | null
+          market_75th_percentile?: number | null
+          market_90th_percentile?: number | null
+          market_data_date?: string | null
+          market_data_source?: string | null
+          market_median_salary?: number
+          notes?: string | null
+          priority_level?: string | null
+          range_penetration?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_compa_ratio_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_competencies: {
         Row: {
           applicable_positions: string[] | null
@@ -17177,6 +17275,165 @@ export type Database = {
           },
         ]
       }
+      erp_hr_enps_responses: {
+        Row: {
+          additional_comments: string | null
+          anonymous_token: string | null
+          company_id: string
+          created_at: string | null
+          department_category: string | null
+          employee_id: string | null
+          engagement_score: number | null
+          id: string
+          recommendation_score: number
+          respondent_category: string
+          role_level_category: string | null
+          satisfaction_score: number | null
+          submitted_at: string | null
+          survey_id: string
+          tenure_category: string | null
+          what_do_you_like: string | null
+          what_would_you_improve: string | null
+        }
+        Insert: {
+          additional_comments?: string | null
+          anonymous_token?: string | null
+          company_id: string
+          created_at?: string | null
+          department_category?: string | null
+          employee_id?: string | null
+          engagement_score?: number | null
+          id?: string
+          recommendation_score: number
+          respondent_category: string
+          role_level_category?: string | null
+          satisfaction_score?: number | null
+          submitted_at?: string | null
+          survey_id: string
+          tenure_category?: string | null
+          what_do_you_like?: string | null
+          what_would_you_improve?: string | null
+        }
+        Update: {
+          additional_comments?: string | null
+          anonymous_token?: string | null
+          company_id?: string
+          created_at?: string | null
+          department_category?: string | null
+          employee_id?: string | null
+          engagement_score?: number | null
+          id?: string
+          recommendation_score?: number
+          respondent_category?: string
+          role_level_category?: string | null
+          satisfaction_score?: number | null
+          submitted_at?: string | null
+          survey_id?: string
+          tenure_category?: string | null
+          what_do_you_like?: string | null
+          what_would_you_improve?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_enps_responses_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_enps_responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enps_surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_enps_surveys: {
+        Row: {
+          analyzed_at: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          department_breakdown: Json | null
+          detractors_count: number | null
+          enps_score: number | null
+          enps_trend: string | null
+          id: string
+          industry_benchmark: number | null
+          is_anonymous: boolean | null
+          passives_count: number | null
+          previous_enps_score: number | null
+          promoters_count: number | null
+          response_rate: number | null
+          status: string | null
+          survey_name: string
+          survey_period_end: string
+          survey_period_start: string
+          survey_type: string | null
+          top_negative_themes: Json | null
+          top_positive_themes: Json | null
+          total_invited: number | null
+          total_responses: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          department_breakdown?: Json | null
+          detractors_count?: number | null
+          enps_score?: number | null
+          enps_trend?: string | null
+          id?: string
+          industry_benchmark?: number | null
+          is_anonymous?: boolean | null
+          passives_count?: number | null
+          previous_enps_score?: number | null
+          promoters_count?: number | null
+          response_rate?: number | null
+          status?: string | null
+          survey_name: string
+          survey_period_end: string
+          survey_period_start: string
+          survey_type?: string | null
+          top_negative_themes?: Json | null
+          top_positive_themes?: Json | null
+          total_invited?: number | null
+          total_responses?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          department_breakdown?: Json | null
+          detractors_count?: number | null
+          enps_score?: number | null
+          enps_trend?: string | null
+          id?: string
+          industry_benchmark?: number | null
+          is_anonymous?: boolean | null
+          passives_count?: number | null
+          previous_enps_score?: number | null
+          promoters_count?: number | null
+          response_rate?: number | null
+          status?: string | null
+          survey_name?: string
+          survey_period_end?: string
+          survey_period_start?: string
+          survey_type?: string | null
+          top_negative_themes?: Json | null
+          top_positive_themes?: Json | null
+          total_invited?: number | null
+          total_responses?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_evaluation_cycles: {
         Row: {
           company_id: string
@@ -17349,6 +17606,113 @@ export type Database = {
           },
         ]
       }
+      erp_hr_flight_risk: {
+        Row: {
+          absence_trend: string | null
+          action_taken: Json | null
+          actual_outcome: string | null
+          alert_date: string | null
+          alert_triggered: boolean | null
+          calculated_at: string | null
+          career_growth_factor: number | null
+          company_id: string
+          compensation_factor: number | null
+          confidence_level: number | null
+          created_at: string | null
+          employee_id: string
+          engagement_factor: number | null
+          id: string
+          manager_relationship_factor: number | null
+          market_demand_factor: number | null
+          outcome_date: string | null
+          performance_factor: number | null
+          prediction_accuracy: boolean | null
+          recent_performance_trend: string | null
+          recommended_actions: Json | null
+          risk_level: string
+          risk_score: number
+          salary_vs_market_percentage: number | null
+          tenure_factor: number | null
+          time_since_last_promotion_months: number | null
+          training_participation_trend: string | null
+          updated_at: string | null
+          valid_until: string | null
+          workload_factor: number | null
+        }
+        Insert: {
+          absence_trend?: string | null
+          action_taken?: Json | null
+          actual_outcome?: string | null
+          alert_date?: string | null
+          alert_triggered?: boolean | null
+          calculated_at?: string | null
+          career_growth_factor?: number | null
+          company_id: string
+          compensation_factor?: number | null
+          confidence_level?: number | null
+          created_at?: string | null
+          employee_id: string
+          engagement_factor?: number | null
+          id?: string
+          manager_relationship_factor?: number | null
+          market_demand_factor?: number | null
+          outcome_date?: string | null
+          performance_factor?: number | null
+          prediction_accuracy?: boolean | null
+          recent_performance_trend?: string | null
+          recommended_actions?: Json | null
+          risk_level: string
+          risk_score: number
+          salary_vs_market_percentage?: number | null
+          tenure_factor?: number | null
+          time_since_last_promotion_months?: number | null
+          training_participation_trend?: string | null
+          updated_at?: string | null
+          valid_until?: string | null
+          workload_factor?: number | null
+        }
+        Update: {
+          absence_trend?: string | null
+          action_taken?: Json | null
+          actual_outcome?: string | null
+          alert_date?: string | null
+          alert_triggered?: boolean | null
+          calculated_at?: string | null
+          career_growth_factor?: number | null
+          company_id?: string
+          compensation_factor?: number | null
+          confidence_level?: number | null
+          created_at?: string | null
+          employee_id?: string
+          engagement_factor?: number | null
+          id?: string
+          manager_relationship_factor?: number | null
+          market_demand_factor?: number | null
+          outcome_date?: string | null
+          performance_factor?: number | null
+          prediction_accuracy?: boolean | null
+          recent_performance_trend?: string | null
+          recommended_actions?: Json | null
+          risk_level?: string
+          risk_score?: number
+          salary_vs_market_percentage?: number | null
+          tenure_factor?: number | null
+          time_since_last_promotion_months?: number | null
+          training_participation_trend?: string | null
+          updated_at?: string | null
+          valid_until?: string | null
+          workload_factor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_flight_risk_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_generated_documents: {
         Row: {
           company_id: string
@@ -17481,6 +17845,108 @@ export type Database = {
           section_code?: string
           section_name?: string
           sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_industry_benchmarks: {
+        Row: {
+          avg_absenteeism_rate: number | null
+          avg_compa_ratio: number | null
+          avg_cost_per_hire: number | null
+          avg_engagement_score: number | null
+          avg_enps_score: number | null
+          avg_first_year_turnover_rate: number | null
+          avg_involuntary_turnover_rate: number | null
+          avg_quality_of_hire_score: number | null
+          avg_time_to_hire_days: number | null
+          avg_total_turnover_rate: number | null
+          avg_training_hours_per_employee: number | null
+          avg_training_investment_per_employee: number | null
+          avg_voluntary_turnover_rate: number | null
+          benchmark_quarter: number | null
+          benchmark_year: number
+          cnae_code: string
+          cnae_description: string | null
+          company_size_category: string | null
+          confidence_level: number | null
+          country_code: string | null
+          created_at: string | null
+          data_date: string
+          data_source: string | null
+          id: string
+          is_active: boolean | null
+          profit_per_employee: number | null
+          region_code: string | null
+          revenue_per_employee: number | null
+          salary_increase_rate: number | null
+          sample_size: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_absenteeism_rate?: number | null
+          avg_compa_ratio?: number | null
+          avg_cost_per_hire?: number | null
+          avg_engagement_score?: number | null
+          avg_enps_score?: number | null
+          avg_first_year_turnover_rate?: number | null
+          avg_involuntary_turnover_rate?: number | null
+          avg_quality_of_hire_score?: number | null
+          avg_time_to_hire_days?: number | null
+          avg_total_turnover_rate?: number | null
+          avg_training_hours_per_employee?: number | null
+          avg_training_investment_per_employee?: number | null
+          avg_voluntary_turnover_rate?: number | null
+          benchmark_quarter?: number | null
+          benchmark_year: number
+          cnae_code: string
+          cnae_description?: string | null
+          company_size_category?: string | null
+          confidence_level?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          data_date: string
+          data_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          profit_per_employee?: number | null
+          region_code?: string | null
+          revenue_per_employee?: number | null
+          salary_increase_rate?: number | null
+          sample_size?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_absenteeism_rate?: number | null
+          avg_compa_ratio?: number | null
+          avg_cost_per_hire?: number | null
+          avg_engagement_score?: number | null
+          avg_enps_score?: number | null
+          avg_first_year_turnover_rate?: number | null
+          avg_involuntary_turnover_rate?: number | null
+          avg_quality_of_hire_score?: number | null
+          avg_time_to_hire_days?: number | null
+          avg_total_turnover_rate?: number | null
+          avg_training_hours_per_employee?: number | null
+          avg_training_investment_per_employee?: number | null
+          avg_voluntary_turnover_rate?: number | null
+          benchmark_quarter?: number | null
+          benchmark_year?: number
+          cnae_code?: string
+          cnae_description?: string | null
+          company_size_category?: string | null
+          confidence_level?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          data_date?: string
+          data_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          profit_per_employee?: number | null
+          region_code?: string | null
+          revenue_per_employee?: number | null
+          salary_increase_rate?: number | null
+          sample_size?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -18037,6 +18503,156 @@ export type Database = {
           updated_at?: string | null
           vacation_days_default?: number | null
           vacation_type?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_kpi_alerts: {
+        Row: {
+          alert_name: string
+          auto_create_task: boolean | null
+          company_id: string
+          condition_operator: string | null
+          condition_type: string
+          consecutive_periods: number | null
+          created_at: string | null
+          created_by: string | null
+          current_status: string | null
+          current_value: number | null
+          id: string
+          is_active: boolean | null
+          is_triggered: boolean | null
+          kpi_category: string
+          kpi_code: string
+          last_triggered_at: string | null
+          notify_emails: string[] | null
+          notify_roles: string[] | null
+          severity: string | null
+          threshold_value: number | null
+          threshold_value_max: number | null
+          trigger_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          alert_name: string
+          auto_create_task?: boolean | null
+          company_id: string
+          condition_operator?: string | null
+          condition_type: string
+          consecutive_periods?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          current_status?: string | null
+          current_value?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_triggered?: boolean | null
+          kpi_category: string
+          kpi_code: string
+          last_triggered_at?: string | null
+          notify_emails?: string[] | null
+          notify_roles?: string[] | null
+          severity?: string | null
+          threshold_value?: number | null
+          threshold_value_max?: number | null
+          trigger_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          alert_name?: string
+          auto_create_task?: boolean | null
+          company_id?: string
+          condition_operator?: string | null
+          condition_type?: string
+          consecutive_periods?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          current_status?: string | null
+          current_value?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_triggered?: boolean | null
+          kpi_category?: string
+          kpi_code?: string
+          last_triggered_at?: string | null
+          notify_emails?: string[] | null
+          notify_roles?: string[] | null
+          severity?: string | null
+          threshold_value?: number | null
+          threshold_value_max?: number | null
+          trigger_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_kpi_history: {
+        Row: {
+          benchmark_value: number | null
+          change_direction: string | null
+          change_percentage: number | null
+          company_id: string
+          created_at: string | null
+          data_quality_score: number | null
+          department_id: string | null
+          department_name: string | null
+          id: string
+          kpi_category: string
+          kpi_code: string
+          kpi_name: string
+          location: string | null
+          notes: string | null
+          period_date: string
+          period_type: string
+          previous_value: number | null
+          target_achievement_percentage: number | null
+          target_value: number | null
+          value: number
+          vs_benchmark_percentage: number | null
+        }
+        Insert: {
+          benchmark_value?: number | null
+          change_direction?: string | null
+          change_percentage?: number | null
+          company_id: string
+          created_at?: string | null
+          data_quality_score?: number | null
+          department_id?: string | null
+          department_name?: string | null
+          id?: string
+          kpi_category: string
+          kpi_code: string
+          kpi_name: string
+          location?: string | null
+          notes?: string | null
+          period_date: string
+          period_type: string
+          previous_value?: number | null
+          target_achievement_percentage?: number | null
+          target_value?: number | null
+          value: number
+          vs_benchmark_percentage?: number | null
+        }
+        Update: {
+          benchmark_value?: number | null
+          change_direction?: string | null
+          change_percentage?: number | null
+          company_id?: string
+          created_at?: string | null
+          data_quality_score?: number | null
+          department_id?: string | null
+          department_name?: string | null
+          id?: string
+          kpi_category?: string
+          kpi_code?: string
+          kpi_name?: string
+          location?: string | null
+          notes?: string | null
+          period_date?: string
+          period_type?: string
+          previous_value?: number | null
+          target_achievement_percentage?: number | null
+          target_value?: number | null
+          value?: number
+          vs_benchmark_percentage?: number | null
         }
         Relationships: []
       }
@@ -18957,6 +19573,188 @@ export type Database = {
             columns: ["parent_position_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_quality_of_hire: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          cultural_fit_score: number | null
+          employee_id: string
+          evaluated_by: string | null
+          evaluation_date: string
+          evaluation_period: number
+          goal_achievement_percentage: number | null
+          id: string
+          is_still_employed: boolean | null
+          manager_satisfaction: number | null
+          notes: string | null
+          performance_rating: number | null
+          quality_score: number | null
+          recruitment_metric_id: string | null
+          skill_match_score: number | null
+          turnover_date: string | null
+          turnover_reason: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          cultural_fit_score?: number | null
+          employee_id: string
+          evaluated_by?: string | null
+          evaluation_date: string
+          evaluation_period: number
+          goal_achievement_percentage?: number | null
+          id?: string
+          is_still_employed?: boolean | null
+          manager_satisfaction?: number | null
+          notes?: string | null
+          performance_rating?: number | null
+          quality_score?: number | null
+          recruitment_metric_id?: string | null
+          skill_match_score?: number | null
+          turnover_date?: string | null
+          turnover_reason?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          cultural_fit_score?: number | null
+          employee_id?: string
+          evaluated_by?: string | null
+          evaluation_date?: string
+          evaluation_period?: number
+          goal_achievement_percentage?: number | null
+          id?: string
+          is_still_employed?: boolean | null
+          manager_satisfaction?: number | null
+          notes?: string | null
+          performance_rating?: number | null
+          quality_score?: number | null
+          recruitment_metric_id?: string | null
+          skill_match_score?: number | null
+          turnover_date?: string | null
+          turnover_reason?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_quality_of_hire_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_quality_of_hire_recruitment_metric_id_fkey"
+            columns: ["recruitment_metric_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_recruitment_metrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_recruitment_metrics: {
+        Row: {
+          acceptance_date: string | null
+          advertising_cost: number | null
+          agency_fees: number | null
+          assessment_costs: number | null
+          candidates_interviewed: number | null
+          candidates_screened: number | null
+          company_id: string
+          created_at: string | null
+          first_interview_date: string | null
+          hiring_manager_id: string | null
+          id: string
+          internal_hours_cost: number | null
+          metadata: Json | null
+          offer_date: string | null
+          offers_accepted: number | null
+          offers_made: number | null
+          position_id: string | null
+          recruiter_id: string | null
+          referral_bonus: number | null
+          requisition_code: string | null
+          requisition_open_date: string
+          source_channel: string | null
+          start_date: string | null
+          time_to_fill_days: number | null
+          time_to_hire_days: number | null
+          total_cost_per_hire: number | null
+          travel_expenses: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          acceptance_date?: string | null
+          advertising_cost?: number | null
+          agency_fees?: number | null
+          assessment_costs?: number | null
+          candidates_interviewed?: number | null
+          candidates_screened?: number | null
+          company_id: string
+          created_at?: string | null
+          first_interview_date?: string | null
+          hiring_manager_id?: string | null
+          id?: string
+          internal_hours_cost?: number | null
+          metadata?: Json | null
+          offer_date?: string | null
+          offers_accepted?: number | null
+          offers_made?: number | null
+          position_id?: string | null
+          recruiter_id?: string | null
+          referral_bonus?: number | null
+          requisition_code?: string | null
+          requisition_open_date: string
+          source_channel?: string | null
+          start_date?: string | null
+          time_to_fill_days?: number | null
+          time_to_hire_days?: number | null
+          total_cost_per_hire?: number | null
+          travel_expenses?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          acceptance_date?: string | null
+          advertising_cost?: number | null
+          agency_fees?: number | null
+          assessment_costs?: number | null
+          candidates_interviewed?: number | null
+          candidates_screened?: number | null
+          company_id?: string
+          created_at?: string | null
+          first_interview_date?: string | null
+          hiring_manager_id?: string | null
+          id?: string
+          internal_hours_cost?: number | null
+          metadata?: Json | null
+          offer_date?: string | null
+          offers_accepted?: number | null
+          offers_made?: number | null
+          position_id?: string | null
+          recruiter_id?: string | null
+          referral_bonus?: number | null
+          requisition_code?: string | null
+          requisition_open_date?: string
+          source_channel?: string | null
+          start_date?: string | null
+          time_to_fill_days?: number | null
+          time_to_hire_days?: number | null
+          total_cost_per_hire?: number | null
+          travel_expenses?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_recruitment_metrics_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_job_positions"
             referencedColumns: ["id"]
           },
         ]
