@@ -1,312 +1,254 @@
 
-# Plan de Implementacion - Mejora Integral del Modulo RRHH
+# Plan de Mejoras Avanzadas del Modulo RRHH
 
-## Estado Actual
-
-Tras el analisis exhaustivo del codigo existente, he identificado los siguientes componentes y su estado:
-
-### Componentes Existentes Analizados
-
-| Componente | Estado | Mejoras Requeridas |
-|------------|--------|-------------------|
-| `HRPayrollPanel.tsx` | Basico | Añadir dialog de entrada de nomina con conceptos |
-| `HRVacationsPanel.tsx` | Basico | Añadir dialog de solicitud con validacion de conflictos |
-| `HRHelpIndex.tsx` | Funcional | Añadir acciones ejecutables y voz |
-| `HRAIAgentPanel.tsx` | Completo con voz | Referencia para integrar voz en HelpIndex |
-| `HRTrends2026Panel.tsx` | Minimo | Expandir con tendencias innovadoras |
-| `HRModule.tsx` | 14 tabs | Añadir navegacion desde HelpIndex |
-| `erp-hr-ai-agent` | Funcional | Añadir acciones de vacaciones y nominas |
+## Objetivo General
+Implementar acciones operativas desde la ayuda, control de acceso basado en roles para el Agente IA, sistema de innovacion 2026+ con implementacion real, y verificacion de todos los botones operativos.
 
 ---
 
-## Fase 1: Infraestructura de Base de Datos
+## Fase 1: Ayuda Activa con Formularios Operativos
 
-### Migracion SQL Requerida
+### Descripcion
+Transformar el indice de ayuda en un centro de comandos donde cada clic en una opcion (como "Calculo de finiquitos") abra directamente un formulario especializado con opciones de calculo automatico supervisadas por el Agente IA.
 
-Crear archivo: `supabase/migrations/20260201150000_hr_vacation_rules_leave_types.sql`
+### Cambios Tecnicos
 
-**Tablas a crear:**
+**1.1 Nuevo Componente: HRSeveranceCalculatorDialog**
+- Formulario para calculo de finiquitos e indemnizaciones
+- Seleccion de empleado desde la base de datos
+- Tipo de extincion: voluntaria, objetivo, improcedente, fin de contrato
+- Fechas de contrato y salario base
+- Calculo automatico via Edge Function `erp-hr-ai-agent`
+- Supervision del Agente IA con explicaciones paso a paso
 
-1. **erp_hr_vacation_rules** - Reglas de vacaciones por departamento
-   - max_simultaneous_percentage (30% por defecto)
-   - min_advance_days (15 dias)
-   - priority_by_seniority
-   - restricted_start_date / restricted_end_date
-   - jurisdiction (ES, AD, FR, PT)
+**1.2 Nuevo Componente: HRIndemnizationCalculatorDialog**
+- Formulario especializado para indemnizaciones por despido
+- Aplicacion automatica de limites legales (20/33 dias por anno)
+- Visualizacion del calculo desglosado
 
-2. **erp_hr_leave_types** - Tipos de permiso por jurisdiccion
-   - code, name, jurisdiction
-   - days_entitled, is_calendar_days
-   - is_paid, requires_documentation
-   - legal_reference, description
+**1.3 Actualizacion de HRHelpIndex.tsx**
+- Nuevas acciones rapidas: `severance_form`, `indemnization_form`, `compliance_audit`, `prl_check`
+- Cada badge de accion rapida abre el formulario correspondiente
+- Integracion con `onAskAgent` para supervision IA
 
-3. **erp_hr_leave_requests** - Solicitudes de vacaciones/permisos
-   - employee_id, leave_type_id
-   - start_date, end_date, days_requested
-   - status, conflict_employees, conflict_percentage
-   - validation_warnings
-
-4. **erp_hr_leave_balances** - Saldos por empleado y año
-   - entitled_days, used_days, pending_days
-   - carried_over_days, remaining_days (calculado)
-
-**Datos iniciales por jurisdiccion:**
-
-| Jurisdiccion | Vacaciones | Matrimonio | Nacimiento | Base Legal |
-|--------------|------------|------------|------------|------------|
-| España (ES) | 30 nat. | 15 nat. | 16 sem | ET, RDL 6/2019 |
-| Andorra (AD) | 30 lab. | 5 lab. | 20 sem | Llei 31/2018 |
-| Francia (FR) | 25 lab. | 4 lab. | 28 dias | Code Travail |
-| Portugal (PT) | 22 lab. | 15 nat. | 28 dias | Codigo Trabalho |
+**1.4 Actualizacion de HRModule.tsx**
+- Estados para nuevos dialogs: `showSeveranceDialog`, `showIndemnizationDialog`
+- Callbacks para abrir dialogs desde HRHelpIndex
+- Prop adicional en HRHelpIndex: `onOpenSeveranceDialog`, `onOpenIndemnizationDialog`
 
 ---
 
-## Fase 2: Componentes de Nominas
+## Fase 2: Control de Acceso del Agente IA por Roles
 
-### Nuevo Archivo: `HRPayrollEntryDialog.tsx`
+### Descripcion
+El Agente IA de RRHH debe conocer todos los datos de empleados, pero solo usuarios con rol de RRHH (o superior jerarquico) pueden consultar esta informacion.
 
-**Funcionalidades:**
+### Cambios Tecnicos
 
-- Selector de empleado con datos precargados
-- Editor de conceptos salariales con 3 categorias:
-  - **Devengos Fijos**: Salario base, plus convenio, antigüedad, complemento puesto, transporte
-  - **Devengos Variables**: Horas extra, comisiones, bonus, nocturnidad, peligrosidad, dietas, km
-  - **Deducciones**: SS (CC, desempleo, FP, MEI), IRPF, anticipos, prestamos, embargos, cuota sindical
-
-- Tipos SS 2026:
-  - CC trabajador: 4.70%
-  - Desempleo: 1.55% (general) / 1.60% (temporal)
-  - FP: 0.10%
-  - MEI: 0.13%
-
-- Calculo automatico de:
-  - Base cotizacion SS
-  - Base IRPF
-  - Total deducciones
-  - Salario neto
-  - Coste empresa (SS empresa 29.90%)
-
-### Modificacion: `HRPayrollPanel.tsx`
-
-- Añadir boton "Nueva Nomina" que abre HRPayrollEntryDialog
-- Conectar boton "Ver" a dialog de visualizacion
-- Hacer funcional "Calcular Todas"
-- Hacer funcional "Exportar" (generacion CSV/SEPA)
-
----
-
-## Fase 3: Sistema de Vacaciones Avanzado
-
-### Nuevo Archivo: `HRVacationRequestDialog.tsx`
-
-**Funcionalidades:**
-
-1. **Visualizacion de saldo** - Dias disponibles, usados, pendientes
-2. **Selector de tipo de permiso** - Cargados desde erp_hr_leave_types por jurisdiccion
-3. **Selector de fechas** - Con calendar picker
-4. **Opcion media jornada** - Solo para dias unicos
-5. **Validacion de conflictos**:
-   - Consulta empleados del mismo departamento con vacaciones aprobadas
-   - Calcula porcentaje de ausencia
-   - Compara con max_simultaneous_percentage de reglas
-   - Muestra alerta si supera limite
-
-6. **Validaciones adicionales**:
-   - Dias de antelacion minimos
-   - Saldo disponible
-   - Documentacion requerida segun tipo
-
-7. **Indicador de compañeros de vacaciones**
-
-### Nuevo Archivo: `HRVacationRulesConfig.tsx`
-
-**Funcionalidades:**
-
-- Configuracion de reglas por departamento
-- Porcentaje maximo simultaneo
-- Dias minimos de antelacion
-- Periodos restringidos (blackout)
-- Prioridad por antigüedad
-
-### Modificacion: `HRVacationsPanel.tsx`
-
-- Boton "Nueva Solicitud" abre HRVacationRequestDialog
-- Botones "Aprobar/Rechazar" funcionales con confirmacion
-- Vista calendario con conflictos destacados
-- Añadir tab de configuracion de reglas
-
----
-
-## Fase 4: Indice de Ayuda Operativo
-
-### Modificacion: `HRHelpIndex.tsx`
-
-**Nuevas funcionalidades:**
-
-1. **Integracion de voz** (copiando patron de HRAIAgentPanel):
-   - Boton de microfono para preguntas por voz
-   - Boton de auto-lectura de respuestas
-   - Uso de Web Speech API
-
-2. **Acciones ejecutables al hacer clic**:
-   - Navegacion a tabs correspondientes
-   - Apertura de dialogs (calcular nomina, solicitar vacaciones)
-   - Consulta automatica al Agente IA
-
-3. **Acciones rapidas mejoradas** (badges clicables):
-   - Calcular nomina -> Abre HRPayrollEntryDialog
-   - Finiquito -> Consulta al Agente IA
-   - Cotizaciones SS -> Navega a tab SS
-   - Vacaciones -> Abre HRVacationRequestDialog
-   - Contratos -> Navega a tab contratos
-
-4. **Prop callback para navegacion**:
-   - onNavigate recibe el codigo de seccion
-   - HRModule escucha y cambia de tab
-
-### Modificacion: `HRModule.tsx`
-
-- Añadir estado para controlar dialogs abiertos
-- Pasar callback onNavigate a HRHelpIndex
-- Manejar cambio de tab desde ayuda
-
----
-
-## Fase 5: Tendencias 2026+ Innovadoras
-
-### Modificacion: `HRTrends2026Panel.tsx`
-
-**Expansion de tendencias:**
-
-| Tendencia | Estado | Descripcion | Demo |
-|-----------|--------|-------------|------|
-| IA Generativa Seleccion | Coming | Analisis automatico CVs | Simulador scoring |
-| People Analytics Predictivo | Active | Prediccion rotacion | Dashboard metricas |
-| Bienestar Digital 360 | Coming | Monitorizacion burnout | Encuesta demo |
-| Onboarding Inmersivo IA | Planned | Asistente virtual | Wizard interactivo |
-| Compensacion Dinamica AI | Planned | Ajuste salarial mercado | Comparador |
-| Blockchain Credenciales | 2027+ | Verificacion titulos | Concepto |
-| Gemelos Digitales RRHH | 2027+ | Simulacion plantilla | Sandbox |
-| Neurotech Wellness | 2028+ | Monitorizacion cognitiva | Roadmap |
-| IA Autonoma HR | 2028+ | Agente autogestivo | Vision |
-| Metaverso Corporativo | 2028+ | Espacios virtuales | Prototipo |
-
-**Nueva estructura:**
-
-- Seccion "Activas" con demos funcionales
-- Seccion "Proximamente" con previews
-- Seccion "Roadmap 2027-2028" con vision
-- Timeline visual interactivo
-
----
-
-## Fase 6: Botones Operativos Generales
-
-### Modificacion: `HRSocialSecurityPanel.tsx`
-
-- Boton "Generar TC1/TC2" -> Toast de simulacion con datos
-- Boton "Presentar RED" -> Confirmacion y estado
-- Boton "Solicitar Certificado" -> Dialog de tipo de certificado
-
-### Modificacion: `HRUnionsPanel.tsx`
-
-- Boton "Registrar Afiliacion" -> Dialog de alta sindical
-- Gestion de cuota sindical en nomina
-- Credito horario editable
-
-### Modificacion: `HREmployeeDocumentsPanel.tsx`
-
-- Upload real al bucket hr-employee-documents (si existe)
-- Previsualizacion de documentos
-- Alertas de caducidad funcionales
-
----
-
-## Archivos a Crear/Modificar
-
-### Nuevos Archivos (6)
-
-1. `supabase/migrations/20260201150000_hr_vacation_rules_leave_types.sql`
-2. `src/components/erp/hr/HRPayrollEntryDialog.tsx`
-3. `src/components/erp/hr/HRVacationRequestDialog.tsx`
-4. `src/components/erp/hr/HRVacationRulesConfig.tsx`
-5. `src/components/erp/hr/HRTrendsDemo.tsx`
-6. Actualizacion de `src/components/erp/hr/index.ts`
-
-### Archivos a Modificar (8)
-
-1. `src/components/erp/hr/HRPayrollPanel.tsx` - Integracion dialog
-2. `src/components/erp/hr/HRVacationsPanel.tsx` - Integracion dialog + reglas
-3. `src/components/erp/hr/HRHelpIndex.tsx` - Voz + acciones ejecutables
-4. `src/components/erp/hr/HRTrends2026Panel.tsx` - Expansion innovadora
-5. `src/components/erp/hr/HRModule.tsx` - Navegacion desde ayuda
-6. `src/components/erp/hr/HRSocialSecurityPanel.tsx` - Botones operativos
-7. `src/components/erp/hr/HRUnionsPanel.tsx` - Botones operativos
-8. `src/components/erp/hr/HREmployeeDocumentsPanel.tsx` - Upload real
-
----
-
-## Secuencia de Implementacion
-
-```
-FASE 1 (15 min)
-├── Crear migracion SQL
-├── Tablas: vacation_rules, leave_types, leave_requests, leave_balances
-├── RLS policies
-└── Seed data por jurisdiccion (ES, AD, FR, PT)
-
-FASE 2 (25 min)
-├── Crear HRPayrollEntryDialog.tsx
-├── Modificar HRPayrollPanel.tsx
-├── Integrar conceptos salariales completos
-└── Calculos SS e IRPF automaticos
-
-FASE 3 (25 min)
-├── Crear HRVacationRequestDialog.tsx
-├── Crear HRVacationRulesConfig.tsx
-├── Modificar HRVacationsPanel.tsx
-└── Logica de validacion de conflictos
-
-FASE 4 (15 min)
-├── Modificar HRHelpIndex.tsx (voz + acciones)
-├── Modificar HRModule.tsx (navegacion)
-└── Integrar callbacks
-
-FASE 5 (20 min)
-├── Expandir HRTrends2026Panel.tsx
-├── Crear HRTrendsDemo.tsx
-└── Añadir demos interactivas
-
-FASE 6 (15 min)
-├── Modificar HRSocialSecurityPanel.tsx
-├── Modificar HRUnionsPanel.tsx
-├── Modificar HREmployeeDocumentsPanel.tsx
-└── Testing integral
+**2.1 Migracion de Base de Datos**
+```text
+- Tabla: erp_hr_agent_access_control
+  - user_id (FK auth.users)
+  - company_id
+  - can_view_all_employees: boolean
+  - can_view_salaries: boolean
+  - can_view_sensitive_data: boolean
+  - hierarchy_level: integer (1=CEO, 2=Director, 3=Manager, 4=Employee)
+  - created_at, updated_at
 ```
 
+**2.2 Actualizacion Edge Function: erp-hr-ai-agent**
+- Nueva accion: `validate_access`
+- Verificar permisos del usuario antes de devolver datos sensibles
+- Consultar `erp_hr_employee_module_access` para validar rol RRHH
+- Verificar posicion jerarquica vs empleado consultado
+- Respuesta filtrada segun permisos
+
+**2.3 Nueva Funcion SQL: check_hr_agent_access**
+```text
+SECURITY DEFINER function que:
+- Recibe user_id y target_employee_id
+- Verifica si usuario tiene acceso RRHH (read/write/admin)
+- Verifica posicion jerarquica
+- Retorna nivel de acceso permitido
+```
+
+**2.4 Actualizacion HRAIAgentPanel.tsx**
+- Verificar permisos del usuario al iniciar chat
+- Mostrar mensaje de acceso denegado si no tiene permisos
+- Indicador visual del nivel de acceso del usuario
+
 ---
 
-## Tiempo Total Estimado
+## Fase 3: Sistema de Innovacion 2026+ Implementable
 
-| Fase | Tiempo |
-|------|--------|
-| 1 - Infraestructura DB | 15 min |
-| 2 - Nominas operativas | 25 min |
-| 3 - Vacaciones avanzadas | 25 min |
-| 4 - Indice ayuda operativo | 15 min |
-| 5 - Tendencias 2026+ | 20 min |
-| 6 - Botones operativos | 15 min |
-| **TOTAL** | **~2 horas** |
+### Descripcion
+Cada idea futurista del panel 2026+ tendra un boton "Implementar" que activara esa funcionalidad progresivamente. Ademas, un sistema de busqueda periodica de nuevas ideas.
+
+### Cambios Tecnicos
+
+**3.1 Migracion de Base de Datos**
+```text
+- Tabla: erp_hr_innovation_features
+  - id, feature_code, feature_name
+  - description, category
+  - is_implemented: boolean
+  - implemented_at: timestamp
+  - implementation_config: jsonb
+  - created_at
+
+- Tabla: erp_hr_innovation_ideas
+  - id, title, description
+  - source: 'ai_discovery' | 'manual' | 'external'
+  - relevance_score: integer
+  - is_reviewed: boolean
+  - is_approved: boolean
+  - discovered_at: timestamp
+```
+
+**3.2 Nueva Edge Function: erp-hr-innovation-discovery**
+- Acciones: `discover_trends`, `check_new_ideas`, `implement_feature`, `get_pending_ideas`
+- Busqueda de tendencias HR via IA (Lovable AI)
+- Evaluacion de relevancia y aplicabilidad
+- Ejecucion semanal automatica (cron job)
+
+**3.3 Actualizacion HRTrends2026Panel.tsx**
+- Boton "Implementar" en cada TrendCard (si no esta implementado)
+- Indicador de estado: "Implementado" / "En progreso" / "Disponible"
+- Seccion nueva: "Ideas Descubiertas" con ideas pendientes de revision
+- Panel de configuracion post-implementacion
+- Llamada a Edge Function para activar feature
+
+**3.4 Nuevo Componente: HRInnovationImplementDialog**
+- Wizard de implementacion por fases
+- Configuracion de parametros especificos
+- Confirmacion y activacion
 
 ---
 
-## Cumplimiento Normativo
+## Fase 4: Verificacion y Operatividad de Todos los Botones
 
-Todas las funcionalidades cumplen con:
+### Descripcion
+Auditoria completa de todos los botones del modulo RRHH para asegurar que cada uno tiene una funcion operativa real.
 
-- Estatuto de los Trabajadores (RDL 2/2015)
-- Ley General de Seguridad Social (RDL 8/2015)
-- RGPD/LOPDGDD para datos de empleados
-- Llei 31/2018 (Andorra)
-- Code du Travail (Francia)
-- Codigo do Trabalho (Portugal)
+### Botones a Verificar y Completar
+
+**4.1 HRPayrollPanel.tsx**
+- "Nueva Nomina" → abre HRPayrollEntryDialog (verificar operativo)
+- "Calcular Todas" → ejecutar calculo masivo via Edge Function
+- "Exportar SEPA" → generar archivo XML SEPA real
+- "Ver Nomina" → abrir dialog de visualizacion de nomina
+
+**4.2 HRVacationsPanel.tsx**
+- "Solicitar Vacaciones" → HRVacationRequestDialog (verificar)
+- "Aprobar" → actualizar estado en DB + sincronizar con IA
+- "Rechazar" → dialog de motivo + actualizar DB
+
+**4.3 HRContractsPanel.tsx**
+- "Nuevo Contrato" → crear HRContractFormDialog
+- "Ver Contrato" → visualizador PDF/dialog
+- "Finalizar" → crear HRContractTerminationDialog
+
+**4.4 HREmployeesPanel.tsx**
+- "Nuevo Empleado" → HREmployeeFormDialog (verificar completo)
+- "Editar" → mismo dialog en modo edicion
+- "Ver Ficha" → dialog de visualizacion readonly
+- Busqueda avanzada → verificar filtros operativos
+
+**4.5 HRAlertsPanel.tsx**
+- "Marcar Leida" → actualizar DB
+- "Enviar por WhatsApp" → invocar send-hr-alert con canal WhatsApp
+- "Enviar por Email" → invocar send-hr-alert con canal Email
+- "Configurar Preferencias" → abrir dialog de preferencias
+
+**4.6 HRSafetyPanel.tsx**
+- "Registrar Incidente" → crear HRIncidentFormDialog
+- "Ver Evaluacion" → visualizador de evaluacion PRL
+- "Generar Informe" → Edge Function para PDF
+
+**4.7 Nuevos Dialogs Necesarios**
+- HRContractFormDialog
+- HRContractTerminationDialog
+- HRIncidentFormDialog
+- HRPayrollViewerDialog
+- HRAlertPreferencesDialog (verificar existencia)
+
+---
+
+## Fase 5: Sincronizacion Completa con Agente IA
+
+### Descripcion
+El Agente IA debe conocer en tiempo real: empleados, ausencias, alertas, y cualquier evento relevante.
+
+### Cambios Tecnicos
+
+**5.1 Actualizacion Edge Function: erp-hr-ai-agent**
+- Nueva accion: `get_all_employees` (con filtro de permisos)
+- Nueva accion: `get_department_structure`
+- Nueva accion: `get_active_incidents`
+- Enriquecimiento del contexto del chat con todos los datos disponibles
+
+**5.2 Trigger de Base de Datos**
+```text
+Trigger en erp_hr_employees, erp_hr_leave_requests, erp_hr_alerts:
+- Al INSERT/UPDATE marcar flag ai_sync_pending = true
+- Permitir al agente consultar cambios pendientes
+```
+
+**5.3 Actualizacion HRAIAgentPanel.tsx**
+- Indicador de "ultima sincronizacion"
+- Boton "Actualizar Contexto"
+- Visualizacion de datos que el agente conoce actualmente
+
+---
+
+## Fase 6: Tab de Alertas Integrada en Navegacion
+
+### Descripcion
+Agregar tab de Alertas visible en la navegacion principal del modulo HR con contador de alertas no leidas.
+
+### Cambios Tecnicos
+
+**6.1 Actualizacion HRModule.tsx**
+- Agregar TabsTrigger para "alerts" con icono Bell
+- Badge con contador de alertas criticas
+- Estado `alertsCount` obtenido de hook o DB
+
+---
+
+## Resumen de Archivos a Crear/Modificar
+
+### Nuevos Archivos
+1. `src/components/erp/hr/HRSeveranceCalculatorDialog.tsx`
+2. `src/components/erp/hr/HRIndemnizationCalculatorDialog.tsx`
+3. `src/components/erp/hr/HRContractFormDialog.tsx`
+4. `src/components/erp/hr/HRContractTerminationDialog.tsx`
+5. `src/components/erp/hr/HRIncidentFormDialog.tsx`
+6. `src/components/erp/hr/HRPayrollViewerDialog.tsx`
+7. `src/components/erp/hr/HRInnovationImplementDialog.tsx`
+8. `supabase/functions/erp-hr-innovation-discovery/index.ts`
+9. `supabase/migrations/XXXXX_hr_innovation_and_access.sql`
+
+### Archivos a Modificar
+1. `src/components/erp/hr/HRHelpIndex.tsx` - Acciones rapidas operativas
+2. `src/components/erp/hr/HRModule.tsx` - Nuevos dialogs y tab alertas
+3. `src/components/erp/hr/HRTrends2026Panel.tsx` - Botones implementar
+4. `src/components/erp/hr/HRPayrollPanel.tsx` - Botones operativos
+5. `src/components/erp/hr/HRContractsPanel.tsx` - Botones operativos
+6. `src/components/erp/hr/HRSafetyPanel.tsx` - Botones operativos
+7. `src/components/erp/hr/HRAlertsPanel.tsx` - Acciones multicanal
+8. `supabase/functions/erp-hr-ai-agent/index.ts` - Control acceso + empleados
+9. `supabase/config.toml` - Nueva funcion innovation-discovery
+10. `src/components/erp/hr/index.ts` - Exports nuevos componentes
+
+---
+
+## Orden de Ejecucion Recomendado
+
+1. **Fase 1** - Ayuda activa (alto impacto UX)
+2. **Fase 4** - Botones operativos (funcionalidad core)
+3. **Fase 2** - Control acceso IA (seguridad)
+4. **Fase 5** - Sincronizacion IA (inteligencia)
+5. **Fase 3** - Innovacion 2026+ (valor futuro)
+6. **Fase 6** - Tab alertas (visibilidad)
+
