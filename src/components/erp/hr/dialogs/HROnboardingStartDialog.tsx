@@ -263,7 +263,7 @@ export function HROnboardingStartDialog({
                   <SelectValue placeholder="Selecciona una plantilla (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin plantilla</SelectItem>
+                  <SelectItem value="none">Sin plantilla</SelectItem>
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>
                       <div className="flex items-center gap-2">
@@ -296,7 +296,7 @@ export function HROnboardingStartDialog({
                   <SelectValue placeholder="Asignar un mentor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin buddy asignado</SelectItem>
+                  <SelectItem value="none">Sin buddy asignado</SelectItem>
                   {buddyCandidates
                     .filter(b => b.id !== selectedEmployeeId)
                     .map(buddy => (

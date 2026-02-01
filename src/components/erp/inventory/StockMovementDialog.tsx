@@ -210,7 +210,7 @@ export function StockMovementDialog({ open, onOpenChange, onSuccess }: StockMove
                 <SelectValue placeholder="Opcional" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin referencia</SelectItem>
+                <SelectItem value="none">Sin referencia</SelectItem>
                 <SelectItem value="purchase_order">Pedido de compra</SelectItem>
                 <SelectItem value="goods_receipt">Albarán de entrada</SelectItem>
                 <SelectItem value="sales_order">Pedido de venta</SelectItem>
