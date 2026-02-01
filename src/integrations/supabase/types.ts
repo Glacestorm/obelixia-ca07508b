@@ -16031,6 +16031,77 @@ export type Database = {
           },
         ]
       }
+      erp_hr_document_templates: {
+        Row: {
+          applicable_contract_types: string[] | null
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          document_type: string
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          jurisdiction: string
+          language_code: string
+          last_updated_by: string | null
+          legal_references: string | null
+          template_code: string
+          template_content: string
+          template_name: string
+          updated_at: string | null
+          variables_schema: Json | null
+          version: number | null
+        }
+        Insert: {
+          applicable_contract_types?: string[] | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_type: string
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          jurisdiction?: string
+          language_code?: string
+          last_updated_by?: string | null
+          legal_references?: string | null
+          template_code: string
+          template_content: string
+          template_name: string
+          updated_at?: string | null
+          variables_schema?: Json | null
+          version?: number | null
+        }
+        Update: {
+          applicable_contract_types?: string[] | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_type?: string
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          jurisdiction?: string
+          language_code?: string
+          last_updated_by?: string | null
+          legal_references?: string | null
+          template_code?: string
+          template_content?: string
+          template_name?: string
+          updated_at?: string | null
+          variables_schema?: Json | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_document_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employee_benefits: {
         Row: {
           approved_at: string | null
@@ -16500,6 +16571,97 @@ export type Database = {
           },
         ]
       }
+      erp_hr_generated_documents: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          document_name: string
+          document_type: string
+          document_url: string | null
+          employee_id: string | null
+          generated_at: string | null
+          generated_by: string | null
+          generated_content: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          signature_data: Json | null
+          signed_at: string | null
+          status: string | null
+          template_id: string | null
+          updated_at: string | null
+          variables_used: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          document_name: string
+          document_type: string
+          document_url?: string | null
+          employee_id?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          generated_content: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signature_data?: Json | null
+          signed_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+          variables_used?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          document_name?: string
+          document_type?: string
+          document_url?: string | null
+          employee_id?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          generated_content?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signature_data?: Json | null
+          signed_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+          variables_used?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_generated_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_generated_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_generated_documents_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_help_index: {
         Row: {
           content: string | null
@@ -16749,6 +16911,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_jurisdictions: {
+        Row: {
+          country_name: string
+          created_at: string | null
+          currency: string | null
+          id: string
+          income_tax_brackets: Json | null
+          is_active: boolean | null
+          jurisdiction_code: string
+          jurisdiction_name: string
+          labor_law_name: string | null
+          language_code: string | null
+          legal_references: Json | null
+          minimum_wage: number | null
+          minimum_wage_year: number | null
+          notice_period_days: number | null
+          probation_max_days: number | null
+          severance_formula: string | null
+          social_security_rate_employee: number | null
+          social_security_rate_employer: number | null
+          updated_at: string | null
+          vacation_days_default: number | null
+          vacation_type: string | null
+        }
+        Insert: {
+          country_name: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          income_tax_brackets?: Json | null
+          is_active?: boolean | null
+          jurisdiction_code: string
+          jurisdiction_name: string
+          labor_law_name?: string | null
+          language_code?: string | null
+          legal_references?: Json | null
+          minimum_wage?: number | null
+          minimum_wage_year?: number | null
+          notice_period_days?: number | null
+          probation_max_days?: number | null
+          severance_formula?: string | null
+          social_security_rate_employee?: number | null
+          social_security_rate_employer?: number | null
+          updated_at?: string | null
+          vacation_days_default?: number | null
+          vacation_type?: string | null
+        }
+        Update: {
+          country_name?: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          income_tax_brackets?: Json | null
+          is_active?: boolean | null
+          jurisdiction_code?: string
+          jurisdiction_name?: string
+          labor_law_name?: string | null
+          language_code?: string | null
+          legal_references?: Json | null
+          minimum_wage?: number | null
+          minimum_wage_year?: number | null
+          notice_period_days?: number | null
+          probation_max_days?: number | null
+          severance_formula?: string | null
+          social_security_rate_employee?: number | null
+          social_security_rate_employer?: number | null
+          updated_at?: string | null
+          vacation_days_default?: number | null
+          vacation_type?: string | null
+        }
+        Relationships: []
       }
       erp_hr_leave_balances: {
         Row: {
