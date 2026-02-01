@@ -39,6 +39,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { HROnboardingStartDialog } from './dialogs';
 
 interface HROnboardingPanelProps {
   companyId: string;
@@ -111,6 +112,7 @@ export function HROnboardingPanel({ companyId }: HROnboardingPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showTasksDialog, setShowTasksDialog] = useState(false);
+  const [showStartOnboardingDialog, setShowStartOnboardingDialog] = useState(false);
 
   // Fetch onboardings
   const fetchOnboardings = useCallback(async () => {
@@ -388,6 +390,15 @@ export function HROnboardingPanel({ companyId }: HROnboardingPanelProps) {
                 disabled={isLoading}
               >
                 <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm" 
+                onClick={() => setShowStartOnboardingDialog(true)}
+                className="gap-1"
+              >
+                <UserPlus className="h-4 w-4" />
+                Nuevo Onboarding
               </Button>
               <Button 
                 size="sm" 
@@ -870,6 +881,18 @@ export function HROnboardingPanel({ companyId }: HROnboardingPanelProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Start Onboarding Dialog */}
+      <HROnboardingStartDialog
+        open={showStartOnboardingDialog}
+        onOpenChange={setShowStartOnboardingDialog}
+        companyId={companyId}
+        templates={templates}
+        onOnboardingCreated={() => {
+          fetchOnboardings();
+          toast.success('Onboarding iniciado correctamente');
+        }}
+      />
     </div>
   );
 }
