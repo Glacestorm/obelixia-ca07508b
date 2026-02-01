@@ -22,6 +22,11 @@ export { HRUnionsPanel } from './HRUnionsPanel';
 export { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
 export { HRHelpIndex } from './HRHelpIndex';
 
+// Fase 2 - Gestión avanzada
+export { HREmployeesPanel } from './HREmployeesPanel';
+export { HREmployeeFormDialog } from './HREmployeeFormDialog';
+export { HRAlertsPanel } from './HRAlertsPanel';
+
 // Dialogs operativos
 export { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 export { HRVacationRequestDialog } from './HRVacationRequestDialog';
