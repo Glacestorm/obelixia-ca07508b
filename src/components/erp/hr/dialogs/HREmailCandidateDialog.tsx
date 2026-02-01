@@ -26,19 +26,20 @@ import { Mail, Sparkles, Send, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface Candidate {
+interface CandidateInfo {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
+  position?: string;
 }
 
 interface HREmailCandidateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  candidate: Candidate | null;
+  candidate: CandidateInfo | null;
   jobTitle?: string;
-  companyId: string;
+  companyId?: string;
+  onEmailSent?: () => void;
 }
 
 const EMAIL_TEMPLATES = [
@@ -54,7 +55,8 @@ export function HREmailCandidateDialog({
   onOpenChange,
   candidate,
   jobTitle,
-  companyId
+  companyId,
+  onEmailSent
 }: HREmailCandidateDialogProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('custom');
   const [subject, setSubject] = useState('');
@@ -81,7 +83,7 @@ export function HREmailCandidateDialog({
           action: 'generate_email',
           params: {
             templateType,
-            candidateName: `${candidate.first_name} ${candidate.last_name}`,
+            candidateName: candidate.name,
             jobTitle: jobTitle || 'la posición',
             companyId
           }
@@ -95,10 +97,10 @@ export function HREmailCandidateDialog({
       } else {
         // Fallback si no hay respuesta de IA
         const fallbackBodies: Record<string, string> = {
-          thanks: `Estimado/a ${candidate.first_name},\n\nGracias por tu interés en unirte a nuestro equipo. Hemos recibido tu candidatura para ${jobTitle || 'la posición'} y la estamos revisando con atención.\n\nTe mantendremos informado/a sobre los próximos pasos del proceso.\n\nSaludos cordiales`,
-          interview: `Estimado/a ${candidate.first_name},\n\nNos complace informarte que has sido seleccionado/a para una entrevista para ${jobTitle || 'la posición'}.\n\nPor favor, responde a este email para coordinar fecha y hora.\n\nSaludos cordiales`,
-          rejected: `Estimado/a ${candidate.first_name},\n\nAgradecemos sinceramente tu interés en nuestra empresa y el tiempo dedicado al proceso de selección.\n\nDespués de una cuidadosa consideración, hemos decidido continuar con otros candidatos que se ajustan más al perfil actual.\n\nTe deseamos mucho éxito en tu búsqueda profesional.\n\nSaludos cordiales`,
-          offer: `Estimado/a ${candidate.first_name},\n\n¡Felicidades! Nos complace comunicarte que has sido seleccionado/a para ${jobTitle || 'la posición'}.\n\nAdjuntamos los detalles de la oferta. Por favor, revísala y no dudes en contactarnos si tienes alguna pregunta.\n\nSaludos cordiales`,
+          thanks: `Estimado/a ${candidate.name},\n\nGracias por tu interés en unirte a nuestro equipo. Hemos recibido tu candidatura para ${jobTitle || candidate.position || 'la posición'} y la estamos revisando con atención.\n\nTe mantendremos informado/a sobre los próximos pasos del proceso.\n\nSaludos cordiales`,
+          interview: `Estimado/a ${candidate.name},\n\nNos complace informarte que has sido seleccionado/a para una entrevista para ${jobTitle || candidate.position || 'la posición'}.\n\nPor favor, responde a este email para coordinar fecha y hora.\n\nSaludos cordiales`,
+          rejected: `Estimado/a ${candidate.name},\n\nAgradecemos sinceramente tu interés en nuestra empresa y el tiempo dedicado al proceso de selección.\n\nDespués de una cuidadosa consideración, hemos decidido continuar con otros candidatos que se ajustan más al perfil actual.\n\nTe deseamos mucho éxito en tu búsqueda profesional.\n\nSaludos cordiales`,
+          offer: `Estimado/a ${candidate.name},\n\n¡Felicidades! Nos complace comunicarte que has sido seleccionado/a para ${jobTitle || candidate.position || 'la posición'}.\n\nAdjuntamos los detalles de la oferta. Por favor, revísala y no dudes en contactarnos si tienes alguna pregunta.\n\nSaludos cordiales`,
         };
         setBody(fallbackBodies[templateType] || '');
       }
@@ -123,6 +125,7 @@ export function HREmailCandidateDialog({
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success(`Email enviado a ${candidate.email}`);
+      onEmailSent?.();
       onOpenChange(false);
       resetForm();
     } catch (error) {
@@ -150,7 +153,7 @@ export function HREmailCandidateDialog({
             Enviar Email a Candidato
           </DialogTitle>
           <DialogDescription>
-            Envía un email a {candidate.first_name} {candidate.last_name} ({candidate.email})
+            Envía un email a {candidate.name} ({candidate.email})
           </DialogDescription>
         </DialogHeader>
 

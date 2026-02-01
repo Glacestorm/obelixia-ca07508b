@@ -63,6 +63,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { HREmailCandidateDialog } from './dialogs/HREmailCandidateDialog';
+import { HRInterviewScheduleDialog } from './dialogs/HRInterviewScheduleDialog';
 
 interface JobOpening {
   id: string;
@@ -150,6 +152,12 @@ export function HRRecruitmentPanel({ companyId }: { companyId?: string }) {
   const [showNewCandidateDialog, setShowNewCandidateDialog] = useState(false);
   const [selectedOpening, setSelectedOpening] = useState<JobOpening | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  
+  // Email and Interview dialog states
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showInterviewDialog, setShowInterviewDialog] = useState(false);
+  const [emailCandidate, setEmailCandidate] = useState<Candidate | null>(null);
+  const [interviewCandidate, setInterviewCandidate] = useState<Candidate | null>(null);
   
   // Form states
   const [newOpening, setNewOpening] = useState({
@@ -988,6 +996,40 @@ export function HRRecruitmentPanel({ companyId }: { companyId?: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Email Candidate Dialog */}
+      <HREmailCandidateDialog
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        candidate={emailCandidate ? {
+          id: emailCandidate.id,
+          name: `${emailCandidate.first_name} ${emailCandidate.last_name}`,
+          email: emailCandidate.email,
+          position: (emailCandidate.job_opening as { title?: string })?.title || 'Posición'
+        } : null}
+        onEmailSent={() => {
+          setShowEmailDialog(false);
+          setEmailCandidate(null);
+          toast.success('Email enviado correctamente');
+        }}
+      />
+
+      {/* Interview Schedule Dialog */}
+      <HRInterviewScheduleDialog
+        open={showInterviewDialog}
+        onOpenChange={setShowInterviewDialog}
+        candidate={interviewCandidate ? {
+          id: interviewCandidate.id,
+          name: `${interviewCandidate.first_name} ${interviewCandidate.last_name}`,
+          email: interviewCandidate.email,
+          position: (interviewCandidate.job_opening as { title?: string })?.title || 'Posición'
+        } : null}
+        onInterviewScheduled={() => {
+          setShowInterviewDialog(false);
+          setInterviewCandidate(null);
+          toast.success('Entrevista agendada correctamente');
+        }}
+      />
     </div>
   );
 }

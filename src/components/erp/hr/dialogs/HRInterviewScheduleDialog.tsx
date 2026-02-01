@@ -25,20 +25,21 @@ import {
 import { Calendar, Clock, Video, MapPin, Users, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Candidate {
+interface CandidateInfo {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
+  position?: string;
 }
 
 interface HRInterviewScheduleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  candidate: Candidate | null;
+  candidate: CandidateInfo | null;
   jobTitle?: string;
-  companyId: string;
+  companyId?: string;
   onScheduled?: () => void;
+  onInterviewScheduled?: () => void;
 }
 
 const INTERVIEW_TYPES = [
@@ -135,8 +136,8 @@ export function HRInterviewScheduleDialog({
             Agendar Entrevista
           </DialogTitle>
           <DialogDescription>
-            Programa una entrevista con {candidate.first_name} {candidate.last_name}
-            {jobTitle && <span className="block mt-1 text-xs">Posición: {jobTitle}</span>}
+            Programa una entrevista con {candidate.name}
+            {(jobTitle || candidate.position) && <span className="block mt-1 text-xs">Posición: {jobTitle || candidate.position}</span>}
           </DialogDescription>
         </DialogHeader>
 
