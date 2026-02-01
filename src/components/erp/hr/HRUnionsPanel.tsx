@@ -20,6 +20,7 @@ import {
   Plus, Edit, FileText, Shield, HeartHandshake,
   Building2, AlertTriangle, CheckCircle
 } from 'lucide-react';
+import { HRUnionMembershipDialog } from './dialogs';
 
 interface HRUnionsPanelProps {
   companyId: string;
@@ -27,6 +28,7 @@ interface HRUnionsPanelProps {
 
 export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
   const [activeTab, setActiveTab] = useState('afiliacion');
+  const [showMembershipDialog, setShowMembershipDialog] = useState(false);
 
   // Demo data - Afiliaciones sindicales
   const memberships = [
@@ -270,7 +272,7 @@ export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
             <TabsContent value="afiliacion" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Trabajadores afiliados</h4>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowMembershipDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Registrar afiliación
                 </Button>
@@ -481,6 +483,13 @@ export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Union Membership Dialog */}
+      <HRUnionMembershipDialog
+        open={showMembershipDialog}
+        onOpenChange={setShowMembershipDialog}
+        companyId={companyId}
+      />
     </div>
   );
 }

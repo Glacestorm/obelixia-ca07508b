@@ -78,7 +78,8 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employee_documents?company_id=eq.${companyId}&select=id,employee_id,document_name,document_type,storage_path,file_size,mime_type,expiry_date,is_confidential,ai_indexed,ai_summary,ai_document_type,ai_confidence,created_at,erp_hr_employees(first_name,last_name)&order=created_at.desc`;
+      // Use only columns that exist in the table
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employee_documents?company_id=eq.${companyId}&select=id,employee_id,document_name,document_type,file_url,file_size,mime_type,expiry_date,is_confidential,ai_indexed,ai_summary,ai_document_type,ai_confidence,created_at,erp_hr_employees(first_name,last_name)&order=created_at.desc`;
       
       const response = await fetch(url, {
         headers: {
@@ -88,12 +89,16 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
         }
       });
 
-      if (!response.ok) throw new Error('Failed to fetch documents');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.warn('Documents fetch issue:', errorData);
+        setDocuments([]);
+        return;
+      }
 
       const data = await response.json();
       const mappedDocs = (data || []).map((doc: any) => ({
         ...doc,
-        file_url: doc.storage_path ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/hr-employee-documents/${doc.storage_path}` : '',
         employee: doc.erp_hr_employees
       }));
       setDocuments(mappedDocs);
@@ -105,10 +110,10 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
     }
   }, [companyId]);
 
-  // Fetch employees for filter using direct fetch
+  // Fetch employees for filter using direct fetch (avoid columns that don't exist)
   const fetchEmployees = useCallback(async () => {
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&is_active=eq.true&select=id,first_name,last_name`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&select=id,first_name,last_name`;
       
       const response = await fetch(url, {
         headers: {
@@ -118,7 +123,11 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
         }
       });
 
-      if (!response.ok) throw new Error('Failed to fetch employees');
+      if (!response.ok) {
+        console.warn('Employees fetch issue');
+        setEmployees([]);
+        return;
+      }
       const data = await response.json();
       setEmployees(data || []);
     } catch (err) {

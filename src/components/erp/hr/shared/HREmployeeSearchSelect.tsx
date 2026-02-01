@@ -71,11 +71,8 @@ export function HREmployeeSearchSelect({
     
     setLoading(true);
     try {
-      let url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&select=id,first_name,last_name,employee_number,nss,dni,phone,email,job_title,department_id,is_active&order=first_name`;
-      
-      if (!showInactive) {
-        url += '&is_active=eq.true';
-      }
+      // Use only columns that exist in the table
+      let url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&select=id,first_name,last_name,employee_number,dni,phone,email,job_title,department_id&order=first_name`;
 
       const response = await fetch(url, {
         headers: {
@@ -97,13 +94,16 @@ export function HREmployeeSearchSelect({
           const selected = filtered.find(e => e.id === value);
           setSelectedEmployee(selected || null);
         }
+      } else {
+        console.warn('Error fetching employees for search');
+        setEmployees([]);
       }
     } catch (err) {
       console.error('Error fetching employees:', err);
     } finally {
       setLoading(false);
     }
-  }, [companyId, showInactive, excludeIds, value, onEmployeesFetched]);
+  }, [companyId, excludeIds, value, onEmployeesFetched]);
 
   useEffect(() => {
     fetchEmployees();
@@ -261,12 +261,6 @@ export function HREmployeeSearchSelect({
                           <span className="flex items-center gap-1">
                             <Hash className="h-3 w-3" />
                             {emp.employee_number}
-                          </span>
-                        )}
-                        {emp.nss && (
-                          <span className="flex items-center gap-1">
-                            <Building2 className="h-3 w-3" />
-                            NSS: {emp.nss}
                           </span>
                         )}
                         {emp.dni && (
