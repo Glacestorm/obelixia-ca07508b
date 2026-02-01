@@ -1,10 +1,11 @@
 /**
  * useHRExecutiveData - Hook para datos del Dashboard Ejecutivo HR
- * Fase 5: Integración con datos reales de Supabase
+ * Fase 4: Panel de Control Ejecutivo con IA Predictiva
  * Usa raw fetch para evitar TS2589 en tablas complejas
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -72,6 +73,61 @@ export interface HRExecutiveMetrics {
   complianceChange: number;
   trainingHours: number;
   trainingChange: number;
+}
+
+// === AI PREDICTIONS ===
+export interface AIPrediction {
+  metric: string;
+  current: number;
+  predicted_3m: number;
+  predicted_6m: number;
+  predicted_12m: number;
+  confidence: number;
+  trend: 'up' | 'down' | 'stable';
+  factors: string[];
+}
+
+export interface AIInsight {
+  id: string;
+  title: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+  urgency: 'immediate' | 'short_term' | 'medium_term';
+  category: string;
+  actions: Array<{
+    action: string;
+    deadline: string;
+    responsible: string;
+    expectedOutcome: string;
+  }>;
+  estimatedSavings: number | null;
+  riskIfIgnored: string;
+}
+
+export interface AIRisk {
+  id: string;
+  name: string;
+  category: 'talent' | 'compliance' | 'cost' | 'operational' | 'legal';
+  probability: 'high' | 'medium' | 'low';
+  impact: 'critical' | 'high' | 'medium' | 'low';
+  riskScore: number;
+  currentIndicators: string[];
+  mitigationActions: Array<{
+    action: string;
+    priority: number;
+    cost: 'low' | 'medium' | 'high';
+    effectiveness: number;
+  }>;
+}
+
+export interface Benchmark {
+  metric: string;
+  companyValue: number;
+  sectorAverage: number;
+  sectorBest: number;
+  percentile: number;
+  gap: number;
+  assessment: 'above_average' | 'average' | 'below_average' | 'critical';
 }
 
 interface EmployeeRow {
@@ -154,6 +210,13 @@ export function useHRExecutiveData(companyId: string) {
   const [alerts, setAlerts] = useState<ContractAlert[]>([]);
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
   const [metrics, setMetrics] = useState<HRExecutiveMetrics | null>(null);
+
+  // AI Analytics states
+  const [predictions, setPredictions] = useState<AIPrediction[]>([]);
+  const [insights, setInsights] = useState<AIInsight[]>([]);
+  const [risks, setRisks] = useState<AIRisk[]>([]);
+  const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
 
   // Auto-refresh ref
   const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
@@ -481,6 +544,154 @@ export function useHRExecutiveData(companyId: string) {
     }
   }, []);
 
+  // === AI ANALYTICS FUNCTIONS ===
+  const fetchPredictions = useCallback(async () => {
+    setIsLoadingAI(true);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        'erp-hr-executive-analytics',
+        {
+          body: {
+            action: 'get_predictions',
+            context: {
+              companyId,
+              metrics: {
+                headcount: workforceStats.totalEmployees,
+                activeEmployees: workforceStats.activeEmployees,
+                newHires: workforceStats.newHiresMonth,
+                departures: workforceStats.departuresMonth,
+                laborCost: laborCosts.totalMonthly,
+                costPerEmployee: laborCosts.costPerEmployee
+              }
+            }
+          }
+        }
+      );
+
+      if (fnError) throw fnError;
+
+      if (fnData?.success && fnData?.data?.predictions) {
+        setPredictions(fnData.data.predictions);
+        return fnData.data.predictions;
+      }
+    } catch (err) {
+      console.error('[useHRExecutiveData] fetchPredictions error:', err);
+      toast.error('Error al generar predicciones');
+    } finally {
+      setIsLoadingAI(false);
+    }
+    return [];
+  }, [companyId, workforceStats, laborCosts]);
+
+  const fetchInsights = useCallback(async () => {
+    setIsLoadingAI(true);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        'erp-hr-executive-analytics',
+        {
+          body: {
+            action: 'generate_insights',
+            context: {
+              companyId,
+              period: '30 días',
+              metrics: {
+                headcount: workforceStats.totalEmployees,
+                turnoverRate: metrics?.turnoverRate || 0,
+                absenteeism: metrics?.absenteeismRate || 0,
+                laborCost: laborCosts.totalMonthly,
+                compliance: metrics?.complianceRate || 0
+              }
+            }
+          }
+        }
+      );
+
+      if (fnError) throw fnError;
+
+      if (fnData?.success && fnData?.data?.insights) {
+        setInsights(fnData.data.insights);
+        return fnData.data.insights;
+      }
+    } catch (err) {
+      console.error('[useHRExecutiveData] fetchInsights error:', err);
+      toast.error('Error al generar insights');
+    } finally {
+      setIsLoadingAI(false);
+    }
+    return [];
+  }, [companyId, workforceStats, metrics, laborCosts]);
+
+  const fetchRiskAssessment = useCallback(async () => {
+    setIsLoadingAI(true);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        'erp-hr-executive-analytics',
+        {
+          body: {
+            action: 'risk_assessment',
+            context: {
+              companyId,
+              metrics: {
+                totalEmployees: workforceStats.totalEmployees,
+                turnoverRate: metrics?.turnoverRate || 0,
+                pendingAlerts: alerts.length,
+                criticalAlerts: alerts.filter(a => a.type === 'critical').length,
+                complianceRate: metrics?.complianceRate || 0
+              }
+            }
+          }
+        }
+      );
+
+      if (fnError) throw fnError;
+
+      if (fnData?.success && fnData?.data?.risks) {
+        setRisks(fnData.data.risks);
+        return fnData.data.risks;
+      }
+    } catch (err) {
+      console.error('[useHRExecutiveData] fetchRiskAssessment error:', err);
+      toast.error('Error al evaluar riesgos');
+    } finally {
+      setIsLoadingAI(false);
+    }
+    return [];
+  }, [companyId, workforceStats, metrics, alerts]);
+
+  const fetchBenchmarks = useCallback(async () => {
+    setIsLoadingAI(true);
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke(
+        'erp-hr-executive-analytics',
+        {
+          body: {
+            action: 'benchmark_analysis',
+            params: {
+              headcount: workforceStats.totalEmployees,
+              turnoverRate: metrics?.turnoverRate || 0,
+              absenteeismRate: metrics?.absenteeismRate || 0,
+              costPerEmployee: laborCosts.costPerEmployee,
+              trainingHours: metrics?.trainingHours || 0
+            }
+          }
+        }
+      );
+
+      if (fnError) throw fnError;
+
+      if (fnData?.success && fnData?.data?.benchmarks) {
+        setBenchmarks(fnData.data.benchmarks);
+        return fnData.data.benchmarks;
+      }
+    } catch (err) {
+      console.error('[useHRExecutiveData] fetchBenchmarks error:', err);
+      toast.error('Error al obtener benchmarks');
+    } finally {
+      setIsLoadingAI(false);
+    }
+    return [];
+  }, [workforceStats, metrics, laborCosts]);
+
   // === CLEANUP ===
   useEffect(() => {
     return () => stopAutoRefresh();
@@ -503,7 +714,16 @@ export function useHRExecutiveData(companyId: string) {
     alerts,
     monthlyTrends,
     metrics,
+    predictions,
+    insights,
+    risks,
+    benchmarks,
+    isLoadingAI,
     refreshData,
+    fetchPredictions,
+    fetchInsights,
+    fetchRiskAssessment,
+    fetchBenchmarks,
     startAutoRefresh,
     stopAutoRefresh
   };
