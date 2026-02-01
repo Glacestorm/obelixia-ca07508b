@@ -14,3 +14,7 @@ export { HREmployeeProfileDialog } from './HREmployeeProfileDialog';
 export { HRTerminationAnalysisDialog } from './HRTerminationAnalysisDialog';
 export { HRCompetencyFormDialog } from './HRCompetencyFormDialog';
 export { HRTrainingCatalogDialog } from './HRTrainingCatalogDialog';
+export { HRSafetyEvaluationDialog } from './HRSafetyEvaluationDialog';
+export { HRSafetyTrainingDialog } from './HRSafetyTrainingDialog';
+export { HRSettlementDialog } from './HRSettlementDialog';
+export { HRVacationRejectDialog } from './HRVacationRejectDialog';

@@ -23,6 +23,7 @@ import { es } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRContractFormDialog } from './HRContractFormDialog';
+import { HRSettlementDialog } from './dialogs';
 
 interface HRContractsPanelProps {
   companyId: string;
@@ -53,6 +54,7 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
   const [loading, setLoading] = useState(false);
   const [showContractDialog, setShowContractDialog] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [showSettlementDialog, setShowSettlementDialog] = useState(false);
 
   // Fetch contracts from database
   const fetchContracts = useCallback(async () => {
@@ -293,7 +295,7 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
                   <CardTitle className="text-base">Finiquitos y Liquidaciones</CardTitle>
                   <CardDescription>Cálculo y gestión de finiquitos</CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowSettlementDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Nuevo Finiquito
                 </Button>
@@ -470,6 +472,14 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
         companyId={companyId}
         contractId={selectedContract?.id}
         onSaved={handleContractSuccess}
+      />
+
+      {/* Settlement Dialog */}
+      <HRSettlementDialog
+        open={showSettlementDialog}
+        onOpenChange={setShowSettlementDialog}
+        companyId={companyId}
+        onSuccess={() => setShowSettlementDialog(false)}
       />
     </div>
   );
