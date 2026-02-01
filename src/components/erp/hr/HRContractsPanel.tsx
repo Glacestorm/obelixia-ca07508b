@@ -1,8 +1,9 @@
 /**
  * HRContractsPanel - Gestión de contratos, finiquitos e indemnizaciones
+ * Integrado con tablas erp_hr_contracts
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,70 +16,79 @@ import {
 } from '@/components/ui/table';
 import { 
   FileText, Plus, Search, Filter, Calendar, AlertTriangle,
-  CheckCircle, Clock, Calculator, UserX, Euro, FileDown
+  CheckCircle, Clock, Calculator, UserX, Euro, FileDown, RefreshCw
 } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { HRContractFormDialog } from './HRContractFormDialog';
 
 interface HRContractsPanelProps {
   companyId: string;
 }
 
+interface Contract {
+  id: string;
+  employee_id: string;
+  contract_type: string;
+  start_date: string;
+  end_date: string | null;
+  base_salary: number | null;
+  category: string | null;
+  workday_type: string;
+  is_active: boolean;
+  employee?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    department_id: string | null;
+  };
+}
+
 export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('contracts');
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showContractDialog, setShowContractDialog] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
-  // Demo data - Contratos
-  const contracts = [
-    { 
-      id: '1', 
-      employee: 'María García López', 
-      department: 'Administración',
-      type: 'indefinido',
-      startDate: '2020-03-15',
-      endDate: null,
-      salary: 2800,
-      category: 'Técnico',
-      workday: 'Completa',
-      status: 'active'
-    },
-    { 
-      id: '2', 
-      employee: 'Juan Martínez Ruiz', 
-      department: 'Producción',
-      type: 'temporal',
-      startDate: '2025-06-01',
-      endDate: '2026-02-28',
-      salary: 2400,
-      category: 'Operario',
-      workday: 'Completa',
-      status: 'expiring'
-    },
-    { 
-      id: '3', 
-      employee: 'Ana Fernández Castro', 
-      department: 'Comercial',
-      type: 'indefinido',
-      startDate: '2021-09-01',
-      endDate: null,
-      salary: 3200,
-      category: 'Comercial',
-      workday: 'Completa',
-      status: 'active'
-    },
-    { 
-      id: '4', 
-      employee: 'Luis Pérez Santos', 
-      department: 'IT',
-      type: 'practicas',
-      startDate: '2025-10-01',
-      endDate: '2026-03-31',
-      salary: 1200,
-      category: 'Becario',
-      workday: 'Parcial',
-      status: 'active'
-    },
-  ];
+  // Fetch contracts from database
+  const fetchContracts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_contracts')
+        .select(`
+          id, employee_id, contract_type, contract_code, start_date, end_date,
+          base_salary, category, workday_type, is_active,
+          erp_hr_employees!employee_id (id, first_name, last_name, department_id)
+        `)
+        .eq('company_id', companyId)
+        .order('start_date', { ascending: false });
+
+      if (error) throw error;
+      setContracts((data || []).map((c: any) => ({
+        ...c,
+        employee: c.erp_hr_employees
+      })));
+    } catch (err) {
+      console.error('Error fetching contracts:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchContracts();
+  }, [fetchContracts]);
+
+  const handleContractSuccess = () => {
+    fetchContracts();
+    setShowContractDialog(false);
+    setSelectedContract(null);
+  };
 
   // Demo data - Finiquitos
   const settlements = [
@@ -117,39 +127,49 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'indefinido':
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/30">Indefinido</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Indefinido</Badge>;
       case 'temporal':
         return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">Temporal</Badge>;
       case 'practicas':
-        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/30">Prácticas</Badge>;
+        return <Badge className="bg-sky-500/10 text-sky-600 border-sky-500/30">Prácticas</Badge>;
       case 'formacion':
-        return <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/30">Formación</Badge>;
+        return <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/30">Formación</Badge>;
       default:
         return <Badge variant="outline">Otro</Badge>;
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (isActive: boolean, endDate: string | null) => {
+    if (!isActive) {
+      return <Badge className="bg-muted text-muted-foreground">Finalizado</Badge>;
+    }
+    if (endDate) {
+      const daysUntilEnd = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysUntilEnd < 0) {
+        return <Badge className="bg-destructive/10 text-destructive">Vencido</Badge>;
+      }
+      if (daysUntilEnd <= 30) {
+        return <Badge className="bg-amber-500/10 text-amber-600">Por vencer</Badge>;
+      }
+    }
+    return <Badge className="bg-emerald-500/10 text-emerald-600">Activo</Badge>;
+  };
+
+  const getSettlementStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/30">Activo</Badge>;
-      case 'expiring':
-        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">Por vencer</Badge>;
-      case 'expired':
-        return <Badge className="bg-red-500/10 text-red-600 border-red-500/30">Vencido</Badge>;
       case 'calculated':
-        return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/30">Calculado</Badge>;
+        return <Badge className="bg-sky-500/10 text-sky-600 border-sky-500/30">Calculado</Badge>;
       case 'paid':
-        return <Badge className="bg-green-500/10 text-green-600 border-green-500/30">Pagado</Badge>;
+        return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Pagado</Badge>;
       default:
-        return <Badge variant="outline">Desconocido</Badge>;
+        return <Badge variant="outline">Pendiente</Badge>;
     }
   };
 
-  const filteredContracts = contracts.filter(c =>
-    c.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredContracts = contracts.filter(c => {
+    const employeeName = c.employee ? `${c.employee.first_name} ${c.employee.last_name}` : '';
+    return employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="space-y-4">
@@ -178,7 +198,7 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
                   <CardTitle className="text-base">Contratos Laborales</CardTitle>
                   <CardDescription>Gestión de contratos activos y vencimientos</CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowContractDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Nuevo Contrato
                 </Button>
@@ -195,9 +215,9 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
                     className="pl-9"
                   />
                 </div>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-1" />
-                  Filtros
+                <Button variant="outline" size="sm" onClick={fetchContracts} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                  Actualizar
                 </Button>
               </div>
 
@@ -216,27 +236,47 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredContracts.map((contract) => (
-                      <TableRow key={contract.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{contract.employee}</p>
-                            <p className="text-xs text-muted-foreground">{contract.department}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getTypeBadge(contract.type)}</TableCell>
-                        <TableCell className="text-sm">{contract.startDate}</TableCell>
-                        <TableCell className="text-sm">
-                          {contract.endDate || <span className="text-muted-foreground">-</span>}
-                        </TableCell>
-                        <TableCell>{contract.category}</TableCell>
-                        <TableCell className="text-right font-medium">€{contract.salary.toLocaleString()}</TableCell>
-                        <TableCell>{getStatusBadge(contract.status)}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">Ver</Button>
+                    {filteredContracts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          {loading ? 'Cargando contratos...' : 'No hay contratos registrados'}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filteredContracts.map((contract) => {
+                        const employeeName = contract.employee 
+                          ? `${contract.employee.first_name} ${contract.employee.last_name}` 
+                          : 'Sin asignar';
+                        return (
+                          <TableRow key={contract.id}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{employeeName}</p>
+                                <p className="text-xs text-muted-foreground">{contract.category || '-'}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>{getTypeBadge(contract.contract_type)}</TableCell>
+                            <TableCell className="text-sm">{contract.start_date}</TableCell>
+                            <TableCell className="text-sm">
+                              {contract.end_date || <span className="text-muted-foreground">-</span>}
+                            </TableCell>
+                            <TableCell>{contract.workday_type === 'completa' ? 'Completa' : 'Parcial'}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              {contract.base_salary ? `€${contract.base_salary.toLocaleString()}` : '-'}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(contract.is_active, contract.end_date)}</TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="sm" onClick={() => {
+                                setSelectedContract(contract);
+                                setShowContractDialog(true);
+                              }}>
+                                Ver
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
                   </TableBody>
                 </Table>
               </ScrollArea>
@@ -284,7 +324,7 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
                         <TableCell className="text-right">€{settlement.extraPays.toFixed(2)}</TableCell>
                         <TableCell className="text-right">€{settlement.compensation.toFixed(2)}</TableCell>
                         <TableCell className="text-right font-semibold">€{settlement.total.toFixed(2)}</TableCell>
-                        <TableCell>{getStatusBadge(settlement.status)}</TableCell>
+                        <TableCell>{getSettlementStatusBadge(settlement.status)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -422,6 +462,15 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Contract Form Dialog */}
+      <HRContractFormDialog
+        open={showContractDialog}
+        onOpenChange={setShowContractDialog}
+        companyId={companyId}
+        contractId={selectedContract?.id}
+        onSaved={handleContractSuccess}
+      />
     </div>
   );
 }
