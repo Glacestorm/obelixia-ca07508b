@@ -15488,6 +15488,791 @@ export type Database = {
           },
         ]
       }
+      erp_hr_departments: {
+        Row: {
+          budget: number | null
+          code: string
+          company_id: string
+          cost_center: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          location: string | null
+          manager_id: string | null
+          metadata: Json | null
+          name: string
+          parent_id: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          code: string
+          company_id: string
+          cost_center?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          manager_id?: string | null
+          metadata?: Json | null
+          name: string
+          parent_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          code?: string
+          company_id?: string
+          cost_center?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          manager_id?: string | null
+          metadata?: Json | null
+          name?: string
+          parent_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_departments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_departments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_department_manager"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_employee_documents: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          document_name: string
+          document_type: string
+          document_url: string
+          employee_id: string
+          expiry_date: string | null
+          file_size: number | null
+          id: string
+          is_confidential: boolean | null
+          metadata: Json | null
+          mime_type: string | null
+          notes: string | null
+          updated_at: string | null
+          uploaded_by: string | null
+          version: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          document_name: string
+          document_type: string
+          document_url: string
+          employee_id: string
+          expiry_date?: string | null
+          file_size?: number | null
+          id?: string
+          is_confidential?: boolean | null
+          metadata?: Json | null
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          document_name?: string
+          document_type?: string
+          document_url?: string
+          employee_id?: string
+          expiry_date?: string | null
+          file_size?: number | null
+          id?: string
+          is_confidential?: boolean | null
+          metadata?: Json | null
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_employees: {
+        Row: {
+          address: Json | null
+          bank_account: string | null
+          base_salary: number | null
+          birth_date: string | null
+          category: string | null
+          company_id: string
+          contract_type: string | null
+          created_at: string | null
+          department_id: string | null
+          email: string | null
+          employee_code: string | null
+          first_name: string
+          gender: string | null
+          hire_date: string
+          id: string
+          job_title: string | null
+          last_name: string
+          metadata: Json | null
+          national_id: string | null
+          phone: string | null
+          position_id: string | null
+          reports_to: string | null
+          ss_number: string | null
+          status: string | null
+          termination_date: string | null
+          updated_at: string | null
+          user_id: string | null
+          weekly_hours: number | null
+          work_schedule: string | null
+        }
+        Insert: {
+          address?: Json | null
+          bank_account?: string | null
+          base_salary?: number | null
+          birth_date?: string | null
+          category?: string | null
+          company_id: string
+          contract_type?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          email?: string | null
+          employee_code?: string | null
+          first_name: string
+          gender?: string | null
+          hire_date: string
+          id?: string
+          job_title?: string | null
+          last_name: string
+          metadata?: Json | null
+          national_id?: string | null
+          phone?: string | null
+          position_id?: string | null
+          reports_to?: string | null
+          ss_number?: string | null
+          status?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          weekly_hours?: number | null
+          work_schedule?: string | null
+        }
+        Update: {
+          address?: Json | null
+          bank_account?: string | null
+          base_salary?: number | null
+          birth_date?: string | null
+          category?: string | null
+          company_id?: string
+          contract_type?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          email?: string | null
+          employee_code?: string | null
+          first_name?: string
+          gender?: string | null
+          hire_date?: string
+          id?: string
+          job_title?: string | null
+          last_name?: string
+          metadata?: Json | null
+          national_id?: string | null
+          phone?: string | null
+          position_id?: string | null
+          reports_to?: string | null
+          ss_number?: string | null
+          status?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          weekly_hours?: number | null
+          work_schedule?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employees_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employees_reports_to_fkey"
+            columns: ["reports_to"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_employee_position"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_help_index: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          keywords: string[] | null
+          parent_section: string | null
+          related_sections: string[] | null
+          section_code: string
+          section_name: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[] | null
+          parent_section?: string | null
+          related_sections?: string[] | null
+          section_code: string
+          section_name: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[] | null
+          parent_section?: string | null
+          related_sections?: string[] | null
+          section_code?: string
+          section_name?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_payroll_concepts: {
+        Row: {
+          category: string | null
+          code: string
+          company_id: string
+          concept_type: string
+          cotiza_ss: boolean | null
+          created_at: string | null
+          default_amount: number | null
+          id: string
+          is_active: boolean | null
+          is_percentage: boolean | null
+          is_prorrateado: boolean | null
+          legal_reference: string | null
+          name: string
+          percentage_base: string | null
+          percentage_value: number | null
+          sort_order: number | null
+          subcategory: string | null
+          tributa_irpf: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          company_id: string
+          concept_type: string
+          cotiza_ss?: boolean | null
+          created_at?: string | null
+          default_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_percentage?: boolean | null
+          is_prorrateado?: boolean | null
+          legal_reference?: string | null
+          name: string
+          percentage_base?: string | null
+          percentage_value?: number | null
+          sort_order?: number | null
+          subcategory?: string | null
+          tributa_irpf?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          company_id?: string
+          concept_type?: string
+          cotiza_ss?: boolean | null
+          created_at?: string | null
+          default_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_percentage?: boolean | null
+          is_prorrateado?: boolean | null
+          legal_reference?: string | null
+          name?: string
+          percentage_base?: string | null
+          percentage_value?: number | null
+          sort_order?: number | null
+          subcategory?: string | null
+          tributa_irpf?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_payroll_concepts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_payrolls: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          base_salary: number | null
+          calculated_at: string | null
+          company_id: string
+          complements: Json | null
+          created_at: string | null
+          employee_id: string
+          gross_salary: number | null
+          id: string
+          irpf_amount: number | null
+          irpf_percentage: number | null
+          metadata: Json | null
+          net_salary: number | null
+          notes: string | null
+          other_deductions: Json | null
+          paid_at: string | null
+          payment_reference: string | null
+          payroll_type: string | null
+          period_month: number
+          period_year: number
+          ss_company: number | null
+          ss_worker: number | null
+          status: string | null
+          total_cost: number | null
+          total_deductions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_salary?: number | null
+          calculated_at?: string | null
+          company_id: string
+          complements?: Json | null
+          created_at?: string | null
+          employee_id: string
+          gross_salary?: number | null
+          id?: string
+          irpf_amount?: number | null
+          irpf_percentage?: number | null
+          metadata?: Json | null
+          net_salary?: number | null
+          notes?: string | null
+          other_deductions?: Json | null
+          paid_at?: string | null
+          payment_reference?: string | null
+          payroll_type?: string | null
+          period_month: number
+          period_year: number
+          ss_company?: number | null
+          ss_worker?: number | null
+          status?: string | null
+          total_cost?: number | null
+          total_deductions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_salary?: number | null
+          calculated_at?: string | null
+          company_id?: string
+          complements?: Json | null
+          created_at?: string | null
+          employee_id?: string
+          gross_salary?: number | null
+          id?: string
+          irpf_amount?: number | null
+          irpf_percentage?: number | null
+          metadata?: Json | null
+          net_salary?: number | null
+          notes?: string | null
+          other_deductions?: Json | null
+          paid_at?: string | null
+          payment_reference?: string | null
+          payroll_type?: string | null
+          period_month?: number
+          period_year?: number
+          ss_company?: number | null
+          ss_worker?: number | null
+          status?: string | null
+          total_cost?: number | null
+          total_deductions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_payrolls_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payrolls_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_positions: {
+        Row: {
+          code: string | null
+          company_id: string
+          created_at: string | null
+          current_occupancy: number | null
+          default_category: string | null
+          department_id: string | null
+          description: string | null
+          headcount: number | null
+          id: string
+          is_active: boolean | null
+          is_management: boolean | null
+          level: number | null
+          metadata: Json | null
+          name: string
+          parent_position_id: string | null
+          required_complements: Json | null
+          salary_max: number | null
+          salary_min: number | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          company_id: string
+          created_at?: string | null
+          current_occupancy?: number | null
+          default_category?: string | null
+          department_id?: string | null
+          description?: string | null
+          headcount?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_management?: boolean | null
+          level?: number | null
+          metadata?: Json | null
+          name: string
+          parent_position_id?: string | null
+          required_complements?: Json | null
+          salary_max?: number | null
+          salary_min?: number | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          company_id?: string
+          created_at?: string | null
+          current_occupancy?: number | null
+          default_category?: string | null
+          department_id?: string | null
+          description?: string | null
+          headcount?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_management?: boolean | null
+          level?: number | null
+          metadata?: Json | null
+          name?: string
+          parent_position_id?: string | null
+          required_complements?: Json | null
+          salary_max?: number | null
+          salary_min?: number | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_positions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_positions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_positions_parent_position_id_fkey"
+            columns: ["parent_position_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_ss_contributions: {
+        Row: {
+          at_ep_company: number | null
+          cc_company: number | null
+          cc_worker: number | null
+          company_id: string
+          created_at: string | null
+          error_message: string | null
+          filed_at: string | null
+          filed_by: string | null
+          filing_reference: string | null
+          filing_type: string | null
+          fogasa: number | null
+          fp_company: number | null
+          fp_worker: number | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payment_date: string | null
+          payment_reference: string | null
+          period_month: number
+          period_year: number
+          status: string | null
+          total_amount: number | null
+          total_base_at: number | null
+          total_base_cc: number | null
+          total_company: number | null
+          total_worker: number | null
+          total_workers: number | null
+          unemployment_company: number | null
+          unemployment_worker: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          at_ep_company?: number | null
+          cc_company?: number | null
+          cc_worker?: number | null
+          company_id: string
+          created_at?: string | null
+          error_message?: string | null
+          filed_at?: string | null
+          filed_by?: string | null
+          filing_reference?: string | null
+          filing_type?: string | null
+          fogasa?: number | null
+          fp_company?: number | null
+          fp_worker?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          period_month: number
+          period_year: number
+          status?: string | null
+          total_amount?: number | null
+          total_base_at?: number | null
+          total_base_cc?: number | null
+          total_company?: number | null
+          total_worker?: number | null
+          total_workers?: number | null
+          unemployment_company?: number | null
+          unemployment_worker?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          at_ep_company?: number | null
+          cc_company?: number | null
+          cc_worker?: number | null
+          company_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          filed_at?: string | null
+          filed_by?: string | null
+          filing_reference?: string | null
+          filing_type?: string | null
+          fogasa?: number | null
+          fp_company?: number | null
+          fp_worker?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          period_month?: number
+          period_year?: number
+          status?: string | null
+          total_amount?: number | null
+          total_base_at?: number | null
+          total_base_cc?: number | null
+          total_company?: number | null
+          total_worker?: number | null
+          total_workers?: number | null
+          unemployment_company?: number | null
+          unemployment_worker?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_ss_contributions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_union_memberships: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          credit_hours_monthly: number | null
+          credit_hours_used: number | null
+          employee_id: string
+          end_date: string | null
+          id: string
+          is_representative: boolean | null
+          membership_date: string
+          membership_number: string | null
+          metadata: Json | null
+          monthly_fee: number | null
+          notes: string | null
+          payroll_deduction: boolean | null
+          representative_end: string | null
+          representative_start: string | null
+          representative_type: string | null
+          status: string | null
+          union_code: string | null
+          union_name: string
+          union_section: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          credit_hours_monthly?: number | null
+          credit_hours_used?: number | null
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          is_representative?: boolean | null
+          membership_date: string
+          membership_number?: string | null
+          metadata?: Json | null
+          monthly_fee?: number | null
+          notes?: string | null
+          payroll_deduction?: boolean | null
+          representative_end?: string | null
+          representative_start?: string | null
+          representative_type?: string | null
+          status?: string | null
+          union_code?: string | null
+          union_name: string
+          union_section?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          credit_hours_monthly?: number | null
+          credit_hours_used?: number | null
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          is_representative?: boolean | null
+          membership_date?: string
+          membership_number?: string | null
+          metadata?: Json | null
+          monthly_fee?: number | null
+          notes?: string | null
+          payroll_deduction?: boolean | null
+          representative_end?: string | null
+          representative_start?: string | null
+          representative_type?: string | null
+          status?: string | null
+          union_code?: string | null
+          union_name?: string
+          union_section?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_union_memberships_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_union_memberships_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_inventory_count_lines: {
         Row: {
           count_id: string
