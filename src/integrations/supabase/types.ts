@@ -15727,6 +15727,153 @@ export type Database = {
           },
         ]
       }
+      erp_hr_candidate_communications: {
+        Row: {
+          auto_generated: boolean | null
+          body: string | null
+          candidate_id: string
+          communication_type: string
+          company_id: string
+          created_at: string | null
+          delivered_at: string | null
+          direction: string | null
+          id: string
+          read_at: string | null
+          sent_at: string | null
+          sent_by: string | null
+          subject: string | null
+          template_used: string | null
+        }
+        Insert: {
+          auto_generated?: boolean | null
+          body?: string | null
+          candidate_id: string
+          communication_type: string
+          company_id: string
+          created_at?: string | null
+          delivered_at?: string | null
+          direction?: string | null
+          id?: string
+          read_at?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          subject?: string | null
+          template_used?: string | null
+        }
+        Update: {
+          auto_generated?: boolean | null
+          body?: string | null
+          candidate_id?: string
+          communication_type?: string
+          company_id?: string
+          created_at?: string | null
+          delivered_at?: string | null
+          direction?: string | null
+          id?: string
+          read_at?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          subject?: string | null
+          template_used?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_candidate_communications_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_candidate_communications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_candidates: {
+        Row: {
+          ai_analysis: Json | null
+          ai_recommendation: string | null
+          ai_score: number | null
+          company_id: string
+          created_at: string | null
+          cv_file_url: string | null
+          cv_parsed_data: Json | null
+          email: string
+          first_name: string
+          id: string
+          job_opening_id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          rejection_email_sent_at: string | null
+          rejection_reason: string | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_recommendation?: string | null
+          ai_score?: number | null
+          company_id: string
+          created_at?: string | null
+          cv_file_url?: string | null
+          cv_parsed_data?: Json | null
+          email: string
+          first_name: string
+          id?: string
+          job_opening_id: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          rejection_email_sent_at?: string | null
+          rejection_reason?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_recommendation?: string | null
+          ai_score?: number | null
+          company_id?: string
+          created_at?: string | null
+          cv_file_url?: string | null
+          cv_parsed_data?: Json | null
+          email?: string
+          first_name?: string
+          id?: string
+          job_opening_id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          rejection_email_sent_at?: string | null
+          rejection_reason?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_candidates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_candidates_job_opening_id_fkey"
+            columns: ["job_opening_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_job_openings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_contracts: {
         Row: {
           annual_salary: number | null
@@ -16981,6 +17128,181 @@ export type Database = {
             columns: ["feature_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_innovation_features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_interviews: {
+        Row: {
+          calendar_invite_sent: boolean | null
+          candidate_id: string
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          duration_minutes: number | null
+          feedback: Json | null
+          id: string
+          interview_type: string | null
+          interviewers: string[] | null
+          job_opening_id: string
+          location_or_link: string | null
+          mode: string | null
+          notes: string | null
+          recommendation: string | null
+          scheduled_at: string | null
+          score: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          calendar_invite_sent?: boolean | null
+          candidate_id: string
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          duration_minutes?: number | null
+          feedback?: Json | null
+          id?: string
+          interview_type?: string | null
+          interviewers?: string[] | null
+          job_opening_id: string
+          location_or_link?: string | null
+          mode?: string | null
+          notes?: string | null
+          recommendation?: string | null
+          scheduled_at?: string | null
+          score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          calendar_invite_sent?: boolean | null
+          candidate_id?: string
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          duration_minutes?: number | null
+          feedback?: Json | null
+          id?: string
+          interview_type?: string | null
+          interviewers?: string[] | null
+          job_opening_id?: string
+          location_or_link?: string | null
+          mode?: string | null
+          notes?: string | null
+          recommendation?: string | null
+          scheduled_at?: string | null
+          score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_interviews_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_interviews_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_interviews_job_opening_id_fkey"
+            columns: ["job_opening_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_job_openings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_job_openings: {
+        Row: {
+          auto_screen_cvs: boolean | null
+          closes_at: string | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          employment_type: string | null
+          id: string
+          interview_mode: string | null
+          location: string | null
+          max_candidates_to_interview: number | null
+          nice_to_have: Json | null
+          position_id: string | null
+          published_at: string | null
+          remote_option: string | null
+          requirements: Json | null
+          salary_range_max: number | null
+          salary_range_min: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          auto_screen_cvs?: boolean | null
+          closes_at?: string | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          employment_type?: string | null
+          id?: string
+          interview_mode?: string | null
+          location?: string | null
+          max_candidates_to_interview?: number | null
+          nice_to_have?: Json | null
+          position_id?: string | null
+          published_at?: string | null
+          remote_option?: string | null
+          requirements?: Json | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          auto_screen_cvs?: boolean | null
+          closes_at?: string | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          employment_type?: string | null
+          id?: string
+          interview_mode?: string | null
+          location?: string | null
+          max_candidates_to_interview?: number | null
+          nice_to_have?: Json | null
+          position_id?: string | null
+          published_at?: string | null
+          remote_option?: string | null
+          requirements?: Json | null
+          salary_range_max?: number | null
+          salary_range_min?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_job_openings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_job_openings_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_job_positions"
             referencedColumns: ["id"]
           },
         ]
