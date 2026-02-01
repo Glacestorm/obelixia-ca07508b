@@ -250,7 +250,7 @@ export function HRIncidentFormDialog({
                   <SelectValue placeholder="Seleccionar (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin empleado específico</SelectItem>
+                  <SelectItem value="none">Sin empleado específico</SelectItem>
                   {employees.map(emp => (
                     <SelectItem key={emp.id} value={emp.id}>
                       {emp.name}

@@ -242,7 +242,7 @@ export const CustomerShippingTab: React.FC<CustomerShippingTabProps> = ({
                 <SelectValue placeholder="Seleccionar almacén" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin preferencia</SelectItem>
+                <SelectItem value="none">Sin preferencia</SelectItem>
                 {warehouses.map((wh) => (
                   <SelectItem key={wh.id} value={wh.id}>
                     {wh.name} ({wh.code})
