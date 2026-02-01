@@ -1,418 +1,395 @@
 
-# Plan: Expansión Integral del Módulo de RRHH
+# Plan: Mejora Integral del Módulo RRHH - Operatividad Completa
 
 ## Resumen Ejecutivo
 
-Este plan implementa una expansión completa del módulo de RRHH con **7 nuevos servicios y mejoras** que convertirán el módulo en una solución enterprise completa para la gestión de personal.
+Este plan implementa mejoras significativas en el módulo RRHH para hacerlo completamente operativo, añadir funcionalidades innovadoras para 2026+ y garantizar que todos los elementos interactivos funcionen correctamente.
 
 ---
 
-## 1. Nuevos Servicios a Implementar
+## 1. Funcionalidades a Implementar
 
-### 1.1 Sistema de Nóminas Completo con Todos los Conceptos
+### 1.1 Restaurar y Mejorar Capacidades de Voz/Micro en el Índice de Ayuda
 
-**Estado actual**: Panel básico con datos demo y campos limitados (bruto, IRPF, SS, extras)
+**Estado actual**: El Agente IA tiene voz y micro, pero el HRHelpIndex no integra estas capacidades.
 
-**Mejoras propuestas**:
+**Mejora propuesta**:
+- Integrar botones de voz y micrófono en HRHelpIndex
+- Cuando el usuario haga clic en cualquier opción del menú de ayuda, se ejecutará una consulta al Agente IA automáticamente
+- Añadir capacidad de "Pregunta por voz" al índice
+
+**Componente afectado**: `HRHelpIndex.tsx`
 
 ```text
-┌────────────────────────────────────────────────────────────────────┐
-│                    CONCEPTOS SALARIALES COMPLETOS                   │
-├────────────────────────────────────────────────────────────────────┤
-│ DEVENGOS                          │ DEDUCCIONES                    │
-├───────────────────────────────────┼────────────────────────────────┤
-│ • Salario base                    │ • Contingencias comunes (4.70%)│
-│ • Complementos personales         │ • Desempleo (1.55/1.60%)       │
-│ • Plus antigüedad                 │ • Formación profesional (0.10%)│
-│ • Plus convenio                   │ • IRPF (según tablas)          │
-│ • Horas extraordinarias           │ • Anticipos                    │
-│ • Nocturnidad                     │ • Embargos judiciales          │
-│ • Peligrosidad/toxicidad          │ • Préstamos empresa            │
-│ • Plus transporte                 │ • Cuota sindical               │
-│ • Plus productividad              │ • Otros legales                │
-│ • Dietas/Kilometraje              │                                │
-│ • Comisiones/Incentivos           │                                │
-│ • Pagas extraordinarias           │                                │
-│ • Complementos en especie         │                                │
-│ • Horas complementarias (parcial) │                                │
-└───────────────────────────────────┴────────────────────────────────┘
-```
-
-**Nuevos componentes**:
-- `HRPayrollConceptsEditor.tsx` - Editor de conceptos salariales personalizados
-- `HRPayrollCalculator.tsx` - Calculadora automática de nóminas
-- `HRPayrollHistory.tsx` - Histórico de nóminas por empleado
-
----
-
-### 1.2 Servicio de Seguridad Social
-
-**Nuevo componente**: `HRSocialSecurityPanel.tsx`
-
-**Funcionalidades**:
-
-| Función | Descripción |
-|---------|-------------|
-| **Cotizaciones** | Cálculo de bases y tipos (CC, AT/EP, Desempleo, FOGASA, FP) |
-| **Boletines TC1/TC2** | Generación y presentación electrónica via TGSS |
-| **Altas/Bajas** | Gestión de afiliación vía Sistema RED |
-| **Variaciones** | Comunicación de cambios contractuales |
-| **Certificados** | Solicitud de vida laboral, bases cotización |
-| **SILTRA** | Integración con remesas de liquidación |
-| **Aplazamientos** | Gestión de fraccionamientos de deuda |
-
-**Tablas de base de datos a crear**:
-- `erp_hr_ss_contributions` - Cotizaciones calculadas
-- `erp_hr_ss_filings` - Presentaciones electrónicas
-- `erp_hr_ss_certificates` - Certificados solicitados
-
----
-
-### 1.3 Servicio de Sindicatos y Representación Laboral
-
-**Nuevo componente**: `HRUnionsPanel.tsx`
-
-**Funcionalidades**:
-- Registro de afiliación sindical por empleado
-- Retención de cuota sindical en nómina
-- Gestión de delegados sindicales y comité de empresa
-- Horas sindicales (crédito horario art. 68 ET)
-- Tablón sindical virtual
-- Elecciones sindicales
-- Convenios y negociación colectiva
-- Permisos retribuidos por funciones sindicales
-
----
-
-### 1.4 Documentación Contractual por Empleado
-
-**Nuevo componente**: `HREmployeeDocumentsPanel.tsx`
-
-**Funcionalidades**:
-- Upload de documentos por empleado (cualquier formato)
-- Categorías: contrato, anexos, certificados, títulos, DNI, vida laboral, etc.
-- Versionado de documentos
-- Fechas de caducidad y alertas
-- Firma digital integrada
-- Historial de visualizaciones (auditoría)
-- Integración con el Agente IA para consultas
-
-**Nueva tabla**: `erp_hr_employee_documents`
-**Nuevo bucket de storage**: `hr-employee-documents`
-
----
-
-### 1.5 Sistema de Ayuda con Índice Completo
-
-**Mejora de**: `HRHelpPanel.tsx`
-
-**Nuevo índice estructurado de servicios**:
-
-```text
-📋 ÍNDICE DE SERVICIOS DEL MÓDULO RRHH
-├── 1. Dashboard
-│   └── Resumen, KPIs, alertas
-├── 2. Nóminas
-│   ├── 2.1 Generación de nóminas
-│   ├── 2.2 Conceptos salariales
-│   ├── 2.3 Histórico
-│   └── 2.4 Exportación/Remesas bancarias
-├── 3. Seguridad Social
-│   ├── 3.1 Cotizaciones
-│   ├── 3.2 Presentaciones RED/SILTRA
-│   ├── 3.3 Certificados
-│   └── 3.4 Aplazamientos
-├── 4. Sindicatos
-│   ├── 4.1 Afiliación
-│   ├── 4.2 Representantes
-│   ├── 4.3 Elecciones
-│   └── 4.4 Crédito horario
-├── 5. Contratos
-│   ├── 5.1 Tipos de contrato
-│   ├── 5.2 Finiquitos
-│   └── 5.3 Indemnizaciones
-├── 6. Documentación
-│   └── 6.1 Subida por empleado
-├── 7. Organigrama
-│   ├── 7.1 Estructura
-│   ├── 7.2 Asignación empleados
-│   └── 7.3 Categorías/Salarios
-├── 8. Vacaciones
-├── 9. Seguridad (PRL)
-├── 10. Agente IA
-└── 11. Normativa
+┌────────────────────────────────────────────────────────┐
+│  ÍNDICE DE AYUDA MEJORADO                              │
+├────────────────────────────────────────────────────────┤
+│  [🔍 Buscar...]  [🎤 Voz]  [🔊 Auto-lectura]          │
+├────────────────────────────────────────────────────────┤
+│  📋 Dashboard                                          │
+│    └─ KPIs, alertas → [Consultar al Agente IA]        │
+│  💰 Nóminas                                            │
+│    ├─ Conceptos salariales → [Ver/Crear]              │
+│    ├─ Cálculo automático → [Calcular ahora]           │
+│    └─ Histórico → [Ver histórico]                     │
+│  ...                                                   │
+└────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 1.6 Organigrama Personalizable con Empleados
+### 1.2 Botones Operativos en Todo el Módulo
 
-**Mejora de**: `HRDepartmentsPanel.tsx`
+**Paneles afectados y acciones a implementar**:
+
+| Panel | Botones Actuales | Mejora |
+|-------|------------------|--------|
+| **HRPayrollPanel** | "Calcular Todas", "Exportar", "Ver" | Dialog modal para crear/editar nómina con conceptos |
+| **HRVacationsPanel** | "Nueva Solicitud", "Aprobar", "Rechazar" | Dialog modal completo con validaciones |
+| **HRHelpIndex** | Opciones del acordeón | Ejecutar consulta al Agente IA o navegar |
+| **HRSocialSecurityPanel** | Generar TC, Presentar | Simulación de generación con toast |
+| **HRUnionsPanel** | Registrar afiliación | Dialog modal para alta sindical |
+| **HREmployeeDocumentsPanel** | Subir documento | Dialog modal de upload real |
+
+---
+
+### 1.3 Sistema de Entrada de Nóminas con Conceptos Completos
+
+**Nuevo componente**: Dialog dentro de `HRPayrollPanel.tsx`
+
+**Funcionalidades**:
+- Selección de empleado
+- Editor de conceptos salariales (devengos y deducciones)
+- Tipos de conceptos según normativa:
+
+```text
+DEVENGOS (Conceptos positivos)
+├── Fijos
+│   ├── Salario base
+│   ├── Plus convenio
+│   ├── Plus antigüedad
+│   ├── Complemento puesto
+│   └── Plus transporte
+├── Variables
+│   ├── Horas extraordinarias
+│   ├── Comisiones
+│   ├── Incentivos/Bonus
+│   ├── Nocturnidad
+│   └── Peligrosidad/Toxicidad
+└── En especie
+    ├── Vehículo empresa
+    ├── Seguro médico
+    └── Tickets restaurante
+
+DEDUCCIONES (Conceptos negativos)
+├── Seguridad Social trabajador
+│   ├── Contingencias comunes (4.70%)
+│   ├── Desempleo (1.55%/1.60%)
+│   ├── Formación profesional (0.10%)
+│   └── MEI (0.13% en 2026)
+├── IRPF (según tablas y situación personal)
+├── Anticipos
+├── Préstamos empresa
+├── Embargos judiciales
+└── Cuota sindical
+```
+
+---
+
+### 1.4 Sistema Avanzado de Vacaciones con Reglas Multi-Jurisdicción
+
+**Mejoras en**: `HRVacationsPanel.tsx`
 
 **Nuevas funcionalidades**:
 
-| Función | Descripción |
+| Funcionalidad | Descripción |
+|---------------|-------------|
+| **Reglas de no coincidencia** | Configuración por departamento del % máximo de ausencias simultáneas |
+| **Validación automática** | Al solicitar vacaciones, verificar conflictos con otros del mismo departamento |
+| **Conceptos por jurisdicción** | Días según normativa (España: 30 naturales, Andorra: 30 laborables, Francia: 25 laborables) |
+| **Tipos de ausencia** | Vacaciones, asuntos propios, permiso matrimonio, nacimiento, mudanza, etc. |
+| **Calendario visual** | Vista de equipo con conflictos destacados |
+
+**Configuración de reglas por departamento**:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  REGLAS DE VACACIONES POR DEPARTAMENTO                      │
+├─────────────────────────────────────────────────────────────┤
+│  Departamento: [Producción ▼]                               │
+│                                                             │
+│  📊 Límite ausencias simultáneas: [30%] del equipo         │
+│  📅 Periodo restricción: [15 Jul - 31 Ago] (opcional)      │
+│  ⚠️ Días mínimos antelación: [15] días                      │
+│  🔄 Prioridad antigüedad: [✓] Sí                           │
+│                                                             │
+│  CONCEPTOS SEGÚN JURISDICCIÓN:                              │
+│  ┌─────────────┬─────────┬───────────────────────────────┐ │
+│  │ Jurisdicción│ Días/año│ Base legal                    │ │
+│  ├─────────────┼─────────┼───────────────────────────────┤ │
+│  │ España      │ 30 nat. │ Art. 38.1 ET                  │ │
+│  │ Andorra     │ 30 lab. │ Llei 31/2018 relacions labs.  │ │
+│  │ Francia     │ 25 lab. │ Code du travail L3141-3       │ │
+│  │ Portugal    │ 22 lab. │ Código do Trabalho art. 238   │ │
+│  └─────────────┴─────────┴───────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 1.5 Tendencias 2026+ Innovadoras
+
+**Mejora de**: `HRTrends2026Panel.tsx`
+
+**Nuevas funcionalidades estratosféricas**:
+
+| Tendencia | Estado | Descripción | Acción Operativa |
+|-----------|--------|-------------|------------------|
+| **IA Generativa en Selección** | Coming | Análisis automático de CVs con scoring | Demo interactiva |
+| **People Analytics Predictivo** | Active | Predicción de rotación y engagement | Dashboard tiempo real |
+| **Bienestar Digital 360** | Coming | Monitorización de burnout y estrés | Encuestas automáticas |
+| **Onboarding Inmersivo IA** | Planned | Asistente virtual para nuevos empleados | Simulador de onboarding |
+| **Compensación Dinámica AI** | Planned | Ajuste salarial basado en mercado en tiempo real | Comparador salarial |
+| **Blockchain Credenciales** | 2027+ | Verificación descentralizada de títulos | Simulador |
+| **Gemelos Digitales RRHH** | 2027+ | Simulación de escenarios de plantilla | Sandbox |
+| **Neurotech Wellness** | 2028+ | Monitorización cognitiva no invasiva | Concepto |
+| **IA Autónoma HR** | 2028+ | Agente que gestiona HR sin intervención | Roadmap |
+| **Metaverso Corporativo** | 2028+ | Espacios virtuales de trabajo y formación | Prototipo |
+
+---
+
+### 1.6 Menú de Ayuda con Acciones Ejecutables
+
+**Mejora de**: `HRHelpIndex.tsx`
+
+Al hacer clic en cualquier opción:
+1. Si es navegación → Cambiar al tab correspondiente
+2. Si es acción → Ejecutar (ej: "Calcular nómina" abre el dialog)
+3. Si es consulta → Enviar pregunta al Agente IA automáticamente
+
+**Nuevas acciones rápidas**:
+
+```text
+ACCIONES DIRECTAS DESDE EL ÍNDICE
+├── 💰 Calcular nómina → Abre dialog de cálculo
+├── 📋 Nuevo contrato → Abre wizard de contrato
+├── 🏖️ Solicitar vacaciones → Abre formulario
+├── 📄 Generar TC1/TC2 → Ejecuta generación
+├── 🧮 Calcular finiquito → Abre calculadora IA
+├── 📊 Ver cotizaciones SS → Navega a tab SS
+└── ❓ Consultar normativa → Envía al Agente IA
+```
+
+---
+
+## 2. Componentes a Modificar/Crear
+
+### 2.1 Componentes a Modificar
+
+| Archivo | Cambios |
+|---------|---------|
+| `HRPayrollPanel.tsx` | Añadir Dialog de creación/edición de nómina con conceptos |
+| `HRVacationsPanel.tsx` | Añadir Dialog de solicitud, validación de conflictos, reglas por departamento |
+| `HRHelpIndex.tsx` | Añadir acciones ejecutables, integración con Agente IA, botones de voz |
+| `HRTrends2026Panel.tsx` | Expandir con tendencias innovadoras y demos interactivas |
+| `HRModule.tsx` | Manejar navegación desde HRHelpIndex |
+| `HRSocialSecurityPanel.tsx` | Hacer operativos los botones de generación |
+| `HRUnionsPanel.tsx` | Añadir dialog de alta sindical |
+| `HREmployeeDocumentsPanel.tsx` | Integrar upload real con storage |
+
+### 2.2 Nuevos Componentes
+
+| Archivo | Descripción |
 |---------|-------------|
-| **Edición visual** | Arrastrar y soltar empleados entre departamentos |
-| **Perfiles de empleado** | Nombre, categoría, salario, fecha incorporación |
-| **Atribuciones salariales** | Asignar complementos por puesto/departamento |
-| **Niveles jerárquicos** | Director → Manager → Supervisor → Empleado |
-| **Líneas de reporte** | Definir jefes directos |
-| **Exportar organigrama** | PDF/PNG del organigrama visual |
-
-**Nueva tabla**: `erp_hr_employees` (ficha completa del empleado)
-**Nueva tabla**: `erp_hr_employee_positions` (asignación a departamento/posición)
+| `HRPayrollEntryDialog.tsx` | Dialog modal para crear/editar nómina con todos los conceptos |
+| `HRVacationRequestDialog.tsx` | Dialog para solicitud de vacaciones con validaciones |
+| `HRVacationRulesConfig.tsx` | Configurador de reglas por departamento |
+| `HRTrendsDemo.tsx` | Componente para demos interactivas de tendencias 2026+ |
 
 ---
 
-### 1.7 Actualización del Agente IA
+## 3. Lógica de Validación de Vacaciones
 
-**Mejora de**: `HRAIAgentPanel.tsx` y Edge Function `erp-hr-ai-agent`
+### 3.1 Regla de No Coincidencia
 
-**Nuevas capacidades a añadir**:
-- Consultar documentación contractual de empleados
-- Asesorar sobre cotizaciones SS
-- Gestionar afiliación sindical
-- Conocer toda la estructura organizativa
-- Responder sobre cualquier servicio del índice de ayuda
+```text
+ALGORITMO DE VALIDACIÓN
+
+1. Obtener departamento del empleado solicitante
+2. Obtener reglas del departamento:
+   - max_simultaneous_percentage (ej: 30%)
+   - min_advance_days (ej: 15)
+   - restricted_periods (ej: verano)
+   
+3. Para el rango de fechas solicitado:
+   a. Contar empleados del departamento
+   b. Contar vacaciones ya aprobadas que solapen
+   c. Si (aprobadas + 1) / total > max_percentage:
+      → RECHAZAR con mensaje de conflicto
+      
+4. Verificar días de antelación:
+   - Si días_hasta_inicio < min_advance_days:
+     → ADVERTIR o RECHAZAR según configuración
+     
+5. Verificar saldo disponible:
+   - dias_solicitados <= saldo_restante
+   
+6. Si todas las validaciones pasan:
+   → APROBAR o PENDIENTE según flujo
+```
+
+### 3.2 Conceptos por Jurisdicción
+
+```text
+JURISDICCIÓN: ESPAÑA
+├── Vacaciones: 30 días naturales (Art. 38.1 ET)
+├── Matrimonio: 15 días naturales (Art. 37.3.a ET)
+├── Nacimiento hijo: 16 semanas (RD-Ley 6/2019)
+├── Fallecimiento familiar: 2-4 días
+├── Mudanza: 1 día
+├── Deber inexcusable: Tiempo indispensable
+└── Lactancia: 1h/día o 9 días adicionales
+
+JURISDICCIÓN: ANDORRA
+├── Vacaciones: 30 días laborables
+├── Matrimonio: 5 días laborables
+├── Nacimiento: 20 semanas (Llei 13/2019)
+└── Fallecimiento: 2-5 días según parentesco
+
+JURISDICCIÓN: FRANCIA
+├── Vacaciones: 25 días laborables + RTT
+├── Matrimonio/PACS: 4 días
+├── Nacimiento: 28 días (paternité)
+└── Congé parental: Hasta 3 años
+```
 
 ---
 
-## 2. Esquema de Base de Datos
+## 4. Actualización del Agente IA
 
-### Nuevas Tablas
+**Edge Function**: `erp-hr-ai-agent/index.ts`
+
+**Nuevas acciones a añadir**:
+- `get_vacation_conflicts` - Verificar conflictos de vacaciones
+- `get_department_rules` - Obtener reglas de departamento
+- `create_payroll_entry` - Crear entrada de nómina
+- `get_help_topic` - Obtener información de un tema específico
+
+---
+
+## 5. Nuevas Tablas (Migración)
 
 ```sql
--- Empleados (ficha maestra)
-CREATE TABLE erp_hr_employees (
+-- Reglas de vacaciones por departamento
+CREATE TABLE IF NOT EXISTS erp_hr_vacation_rules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL REFERENCES erp_companies(id),
-  user_id UUID REFERENCES auth.users(id),
-  employee_code TEXT,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  national_id TEXT, -- DNI/NIE/Pasaporte
-  ss_number TEXT, -- Número Seguridad Social
-  birth_date DATE,
-  gender TEXT,
-  email TEXT,
-  phone TEXT,
-  address JSONB,
-  bank_account TEXT, -- IBAN
-  hire_date DATE NOT NULL,
-  termination_date DATE,
-  status TEXT DEFAULT 'active',
-  department_id UUID,
-  position_id UUID,
-  category TEXT,
-  job_title TEXT,
-  base_salary NUMERIC(12,2),
+  company_id UUID NOT NULL REFERENCES erp_companies(id) ON DELETE CASCADE,
+  department_id UUID REFERENCES erp_hr_departments(id) ON DELETE CASCADE,
+  max_simultaneous_percentage NUMERIC(5,2) DEFAULT 30.00,
+  min_advance_days INTEGER DEFAULT 15,
+  priority_by_seniority BOOLEAN DEFAULT true,
+  restricted_start_date DATE,
+  restricted_end_date DATE,
+  jurisdiction TEXT DEFAULT 'ES',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Documentos de empleado
-CREATE TABLE erp_hr_employee_documents (
+-- Conceptos de permisos por jurisdicción
+CREATE TABLE IF NOT EXISTS erp_hr_leave_types (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  employee_id UUID NOT NULL REFERENCES erp_hr_employees(id),
-  document_type TEXT NOT NULL, -- contrato, anexo, dni, titulo, certificado...
-  document_name TEXT NOT NULL,
-  document_url TEXT NOT NULL,
-  file_size INTEGER,
-  mime_type TEXT,
-  version INTEGER DEFAULT 1,
-  expiry_date DATE,
-  uploaded_by UUID REFERENCES auth.users(id),
-  notes TEXT,
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Cotizaciones SS
-CREATE TABLE erp_hr_ss_contributions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL REFERENCES erp_companies(id),
-  period_month INTEGER NOT NULL,
-  period_year INTEGER NOT NULL,
-  total_workers INTEGER,
-  base_cc NUMERIC(12,2), -- Base contingencias comunes
-  base_at NUMERIC(12,2), -- Base accidentes trabajo
-  cc_company NUMERIC(12,2),
-  cc_worker NUMERIC(12,2),
-  unemployment_company NUMERIC(12,2),
-  unemployment_worker NUMERIC(12,2),
-  fogasa NUMERIC(12,2),
-  fp_company NUMERIC(12,2),
-  fp_worker NUMERIC(12,2),
-  at_ep NUMERIC(12,2),
-  total_company NUMERIC(12,2),
-  total_worker NUMERIC(12,2),
-  total NUMERIC(12,2),
-  status TEXT DEFAULT 'calculated',
-  filing_id TEXT, -- Referencia presentación TGSS
-  filed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Afiliación sindical
-CREATE TABLE erp_hr_union_memberships (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  employee_id UUID NOT NULL REFERENCES erp_hr_employees(id),
-  union_name TEXT NOT NULL,
-  union_code TEXT,
-  membership_date DATE NOT NULL,
-  end_date DATE,
-  monthly_fee NUMERIC(8,2),
-  payroll_deduction BOOLEAN DEFAULT true,
-  is_representative BOOLEAN DEFAULT false,
-  representative_type TEXT, -- delegado, comite_empresa, seccion_sindical
-  credit_hours_monthly INTEGER, -- horas sindicales
-  status TEXT DEFAULT 'active',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Conceptos salariales personalizados
-CREATE TABLE erp_hr_payroll_concepts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL REFERENCES erp_companies(id),
   code TEXT NOT NULL,
   name TEXT NOT NULL,
-  concept_type TEXT NOT NULL, -- devengo, deduccion
-  category TEXT, -- fijo, variable, en_especie
-  default_amount NUMERIC(12,2),
-  is_percentage BOOLEAN DEFAULT false,
-  percentage_base TEXT, -- salario_base, bruto, etc
-  cotiza_ss BOOLEAN DEFAULT true,
-  tributa_irpf BOOLEAN DEFAULT true,
+  jurisdiction TEXT NOT NULL,
+  days_entitled INTEGER,
+  is_paid BOOLEAN DEFAULT true,
+  legal_reference TEXT,
+  description TEXT,
   is_active BOOLEAN DEFAULT true,
-  sort_order INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  UNIQUE(code, jurisdiction)
 );
+
+-- Insertar tipos de permiso por jurisdicción
+INSERT INTO erp_hr_leave_types (code, name, jurisdiction, days_entitled, is_paid, legal_reference) VALUES
+-- España
+('vacation', 'Vacaciones anuales', 'ES', 30, true, 'Art. 38.1 ET'),
+('marriage', 'Matrimonio', 'ES', 15, true, 'Art. 37.3.a ET'),
+('birth', 'Nacimiento/adopción', 'ES', 112, true, 'RD-Ley 6/2019'),
+('death_1st', 'Fallecimiento 1º grado', 'ES', 4, true, 'Art. 37.3.b ET'),
+('death_2nd', 'Fallecimiento 2º grado', 'ES', 2, true, 'Art. 37.3.b ET'),
+('moving', 'Traslado domicilio', 'ES', 1, true, 'Art. 37.3.c ET'),
+-- Andorra
+('vacation', 'Vacances anuals', 'AD', 30, true, 'Llei 31/2018 art. 36'),
+('marriage', 'Matrimoni', 'AD', 5, true, 'Llei 31/2018 art. 37'),
+('birth', 'Naixement/adopció', 'AD', 140, true, 'Llei 13/2019'),
+-- Francia
+('vacation', 'Congés payés', 'FR', 25, true, 'Code travail L3141-3'),
+('marriage', 'Mariage/PACS', 'FR', 4, true, 'Code travail L3142-1'),
+('birth_father', 'Congé paternité', 'FR', 28, true, 'L1225-35');
 ```
 
 ---
 
-## 3. Nuevos Componentes UI
-
-| Archivo | Descripción |
-|---------|-------------|
-| `HRSocialSecurityPanel.tsx` | Gestión completa de SS |
-| `HRUnionsPanel.tsx` | Afiliación y representación sindical |
-| `HREmployeeDocumentsPanel.tsx` | Documentación por empleado |
-| `HRPayrollConceptsEditor.tsx` | Editor de conceptos salariales |
-| `HREmployeeProfile.tsx` | Ficha completa del empleado |
-| `HROrgChartEditor.tsx` | Editor visual de organigrama |
-| `HRHelpIndex.tsx` | Índice interactivo de servicios |
-
----
-
-## 4. Actualización de Navegación
-
-**Archivo**: `HRModule.tsx`
-
-Añadir nuevas pestañas:
-- **Empleados** (fichas completas)
-- **Seguridad Social** (cotizaciones, RED)
-- **Sindicatos** (afiliación, representantes)
-- **Documentos** (por empleado)
-
-Nueva estructura de tabs (14 pestañas):
-
-```
-Dashboard | Empleados | Nóminas | Seg.Social | Vacaciones | Contratos | 
-Sindicatos | Documentos | Organización | Seguridad | Agente IA | 
-Noticias | Normativa | Ayuda
-```
-
----
-
-## 5. Actualización del Agente IA
-
-**Edge Function**: `erp-hr-ai-agent/index.ts`
-
-Nuevas acciones:
-- `get_employee_documents` - Consultar documentos de empleado
-- `calculate_ss_contribution` - Calcular cotizaciones SS
-- `manage_union_membership` - Gestionar afiliación sindical
-- `query_help_index` - Consultar índice de ayuda
-
----
-
-## 6. Storage Bucket
-
-Crear bucket `hr-employee-documents` con:
-- RLS para acceso por empresa
-- Políticas de lectura/escritura según rol
-- Límite de tamaño por archivo
-
----
-
-## 7. Secuencia de Implementación
+## 6. Secuencia de Implementación
 
 ```text
-FASE 1 (Infraestructura)
-├── Migración SQL: nuevas tablas
-├── Bucket storage: hr-employee-documents
+FASE 1 - Infraestructura (15 min)
+├── Migración SQL: erp_hr_vacation_rules, erp_hr_leave_types
 └── RLS policies
 
-FASE 2 (Empleados y Documentos)
-├── HREmployeeProfile.tsx
-├── HREmployeeDocumentsPanel.tsx
-└── Integración con Agente IA
+FASE 2 - Nóminas Operativas (25 min)
+├── HRPayrollEntryDialog.tsx (dialog con conceptos)
+├── Actualizar HRPayrollPanel.tsx
+└── Conectar con DB
 
-FASE 3 (Nóminas Avanzadas)
-├── HRPayrollConceptsEditor.tsx
-├── Actualización HRPayrollPanel.tsx
-└── Nuevas acciones Edge Function
+FASE 3 - Vacaciones Avanzadas (25 min)
+├── HRVacationRequestDialog.tsx
+├── HRVacationRulesConfig.tsx
+├── Lógica de validación de conflictos
+└── Actualizar HRVacationsPanel.tsx
 
-FASE 4 (Seguridad Social)
-├── HRSocialSecurityPanel.tsx
-└── Generación TC1/TC2
+FASE 4 - Índice de Ayuda Operativo (15 min)
+├── Añadir acciones ejecutables a HRHelpIndex.tsx
+├── Integrar con Agente IA (voz)
+└── Navegación entre tabs
 
-FASE 5 (Sindicatos)
-├── HRUnionsPanel.tsx
-├── Retención cuota en nómina
-└── Crédito horario
+FASE 5 - Tendencias 2026+ (20 min)
+├── Expandir HRTrends2026Panel.tsx
+├── Añadir demos interactivas
+└── Roadmap visual
 
-FASE 6 (Organigrama)
-├── HROrgChartEditor.tsx
-├── Asignación empleados visual
-└── Exportación PDF
-
-FASE 7 (Ayuda)
-├── HRHelpIndex.tsx (índice completo)
-└── Actualización HRHelpPanel.tsx
-
-FASE 8 (Integración)
-├── Actualización HRModule.tsx (nueva navegación)
-├── Actualización erp-hr-ai-agent
+FASE 6 - Botones Operativos Generales (15 min)
+├── HRSocialSecurityPanel.tsx (generar TC)
+├── HRUnionsPanel.tsx (alta sindical)
+├── HREmployeeDocumentsPanel.tsx (upload real)
 └── Testing integral
 ```
 
 ---
 
-## 8. Tiempo Estimado
+## 7. Tiempo Estimado
 
 | Fase | Componentes | Tiempo |
 |------|-------------|--------|
 | 1 | Infraestructura DB | 15 min |
-| 2 | Empleados + Docs | 25 min |
-| 3 | Nóminas avanzadas | 20 min |
-| 4 | Seguridad Social | 20 min |
-| 5 | Sindicatos | 15 min |
-| 6 | Organigrama | 20 min |
-| 7 | Ayuda | 10 min |
-| 8 | Integración | 15 min |
-| **TOTAL** | | **~2-2.5 horas** |
+| 2 | Nóminas operativas | 25 min |
+| 3 | Vacaciones avanzadas | 25 min |
+| 4 | Índice ayuda operativo | 15 min |
+| 5 | Tendencias 2026+ | 20 min |
+| 6 | Botones operativos | 15 min |
+| **TOTAL** | | **~2 horas** |
 
 ---
 
-## 9. Cumplimiento Normativo
+## 8. Cumplimiento Normativo
 
 Todas las funcionalidades cumplirán con:
-- Estatuto de los Trabajadores (RDL 2/2015)
-- Ley General de Seguridad Social (RDL 8/2015)
-- Ley Orgánica de Libertad Sindical (11/1985)
-- RGPD/LOPDGDD para datos de empleados
-- Convenios colectivos aplicables según CNAE
 
+| Normativa | Aplicación |
+|-----------|------------|
+| Estatuto de los Trabajadores (RDL 2/2015) | Vacaciones, permisos, contratos |
+| Ley General de Seguridad Social (RDL 8/2015) | Cotizaciones, bases |
+| RGPD/LOPDGDD | Protección datos empleados |
+| Llei 31/2018 (Andorra) | Vacaciones y permisos Andorra |
+| Code du Travail (Francia) | Vacaciones y permisos Francia |
+| Código do Trabalho (Portugal) | Vacaciones y permisos Portugal |
