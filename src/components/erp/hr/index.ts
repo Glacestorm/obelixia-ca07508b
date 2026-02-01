@@ -66,3 +66,6 @@ export { HRPerformancePanel } from './HRPerformancePanel';
 
 // Fase 7 - Sistema de Formación y Desarrollo Profesional
 export { HRTrainingPanel } from './HRTrainingPanel';
+
+// Fase 8 - KPIs Predictivos Avanzados y Métricas Internacionales
+export { HRAdvancedAnalyticsPanel } from './HRAdvancedAnalyticsPanel';
