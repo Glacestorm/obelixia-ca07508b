@@ -16474,6 +16474,89 @@ export type Database = {
           },
         ]
       }
+      erp_hr_employee_onboarding: {
+        Row: {
+          assigned_buddy_id: string | null
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          current_phase: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          progress_percentage: number | null
+          started_at: string | null
+          status: string
+          target_completion_date: string | null
+          tasks_completed: Json | null
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_buddy_id?: string | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          progress_percentage?: number | null
+          started_at?: string | null
+          status?: string
+          target_completion_date?: string | null
+          tasks_completed?: Json | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_buddy_id?: string | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_phase?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          progress_percentage?: number | null
+          started_at?: string | null
+          status?: string
+          target_completion_date?: string | null
+          tasks_completed?: Json | null
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_onboarding_assigned_buddy_id_fkey"
+            columns: ["assigned_buddy_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_onboarding_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_onboarding_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_onboarding_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_onboarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employee_responsibilities: {
         Row: {
           assigned_at: string | null
@@ -17766,6 +17849,133 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: []
+      }
+      erp_hr_onboarding_tasks: {
+        Row: {
+          ai_generated: boolean | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          documents_required: string[] | null
+          documents_uploaded: string[] | null
+          due_date: string | null
+          id: string
+          onboarding_id: string
+          order_in_phase: number | null
+          phase: string
+          priority: string | null
+          requires_signature: boolean | null
+          responsible: string
+          signature_url: string | null
+          status: string | null
+          task_code: string
+          task_name: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          documents_required?: string[] | null
+          documents_uploaded?: string[] | null
+          due_date?: string | null
+          id?: string
+          onboarding_id: string
+          order_in_phase?: number | null
+          phase: string
+          priority?: string | null
+          requires_signature?: boolean | null
+          responsible?: string
+          signature_url?: string | null
+          status?: string | null
+          task_code: string
+          task_name: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          documents_required?: string[] | null
+          documents_uploaded?: string[] | null
+          due_date?: string | null
+          id?: string
+          onboarding_id?: string
+          order_in_phase?: number | null
+          phase?: string
+          priority?: string | null
+          requires_signature?: boolean | null
+          responsible?: string
+          signature_url?: string | null
+          status?: string | null
+          task_code?: string
+          task_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_onboarding_tasks_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employee_onboarding"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_onboarding_templates: {
+        Row: {
+          cnae_code: string | null
+          company_id: string | null
+          created_at: string
+          description: string | null
+          estimated_duration_days: number | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          phases: Json
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          cnae_code?: string | null
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          phases?: Json
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          cnae_code?: string | null
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_duration_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          phases?: Json
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_onboarding_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_payroll_concepts: {
         Row: {

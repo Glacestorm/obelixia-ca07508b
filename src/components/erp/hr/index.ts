@@ -54,3 +54,6 @@ export { HRJobPositionsPanel } from './HRJobPositionsPanel';
 
 // Fase 2 - Sistema de Reclutamiento Inteligente
 export { HRRecruitmentPanel } from './HRRecruitmentPanel';
+
+// Fase 3 - Proceso de Onboarding Adaptativo por CNAE
+export { HROnboardingPanel } from './HROnboardingPanel';
