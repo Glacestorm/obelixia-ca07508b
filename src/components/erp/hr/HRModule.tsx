@@ -59,8 +59,9 @@ import { HRRecruitmentPanel } from './HRRecruitmentPanel';
 import { HROnboardingPanel } from './HROnboardingPanel';
 import { HROffboardingPanel } from './HROffboardingPanel';
 import { HRPerformancePanel } from './HRPerformancePanel';
+import { HRTrainingPanel } from './HRTrainingPanel';
 import { cn } from '@/lib/utils';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, GraduationCap } from 'lucide-react';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -232,6 +233,10 @@ export function HRModule() {
               <Award className="h-3 w-3" />
               Desempeño
             </TabsTrigger>
+            <TabsTrigger value="training" className="gap-1 text-xs">
+              <GraduationCap className="h-3 w-3" />
+              Formación
+            </TabsTrigger>
             <TabsTrigger value="payroll" className="gap-1 text-xs">
               <DollarSign className="h-3 w-3" />
               Nóminas
@@ -330,6 +335,10 @@ export function HRModule() {
 
           <TabsContent value="performance" className="m-0">
             <HRPerformancePanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="training" className="m-0">
+            <HRTrainingPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="alerts" className="m-0">

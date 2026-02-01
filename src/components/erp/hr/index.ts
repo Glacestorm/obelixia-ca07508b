@@ -63,3 +63,6 @@ export { HROffboardingPanel } from './HROffboardingPanel';
 
 // Fase 6 - Evaluación del Desempeño y Bonus
 export { HRPerformancePanel } from './HRPerformancePanel';
+
+// Fase 7 - Sistema de Formación y Desarrollo Profesional
+export { HRTrainingPanel } from './HRTrainingPanel';
