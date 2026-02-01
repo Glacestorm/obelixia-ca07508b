@@ -714,11 +714,17 @@ export function HRRecruitmentPanel({ companyId }: { companyId?: string }) {
                                     <Eye className="h-4 w-4 mr-2" />
                                     Ver Perfil
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    setEmailCandidate(candidate);
+                                    setShowEmailDialog(true);
+                                  }}>
                                     <Mail className="h-4 w-4 mr-2" />
                                     Enviar Email
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    setInterviewCandidate(candidate);
+                                    setShowInterviewDialog(true);
+                                  }}>
                                     <Calendar className="h-4 w-4 mr-2" />
                                     Agendar Entrevista
                                   </DropdownMenuItem>

@@ -2,39 +2,23 @@
  * Módulo de Recursos Humanos - HRModule
  * Gestión integral: nóminas, vacaciones, contratos, finiquitos, departamentos
  * Base de conocimiento laboral + Agente IA + Noticias RRHH
+ * 
+ * FASE A: Nueva navegación agrupada en 5 categorías
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
   Users, 
   Calendar, 
   FileText, 
   DollarSign, 
-  Building2, 
-  Brain,
-  Newspaper,
-  BookOpen,
-  HelpCircle,
-  Rocket,
-  Shield,
   AlertTriangle,
-  TrendingUp,
-  Landmark,
-  UserCog,
-  FolderOpen,
-  Bell,
-  Gift,
-  UserMinus,
-  Award
+  Shield
 } from 'lucide-react';
 import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 import { HRVacationRequestDialog } from './HRVacationRequestDialog';
 import { useERPContext } from '@/hooks/erp';
-import { HRDashboardPanel } from './HRDashboardPanel';
 import { HRExecutiveDashboard } from './HRExecutiveDashboard';
 import { HRPayrollPanel } from './HRPayrollPanel';
 import { HRVacationsPanel } from './HRVacationsPanel';
@@ -43,7 +27,6 @@ import { HRDepartmentsPanel } from './HRDepartmentsPanel';
 import { HRAIAgentPanel } from './HRAIAgentPanel';
 import { HRNewsPanel } from './HRNewsPanel';
 import { HRKnowledgeUploader } from './HRKnowledgeUploader';
-import { HRHelpPanel } from './HRHelpPanel';
 import { HRTrends2026Panel } from './HRTrends2026Panel';
 import { HRSafetyPanel } from './HRSafetyPanel';
 import { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
@@ -61,8 +44,7 @@ import { HROffboardingPanel } from './HROffboardingPanel';
 import { HRPerformancePanel } from './HRPerformancePanel';
 import { HRTrainingPanel } from './HRTrainingPanel';
 import { HRAdvancedAnalyticsPanel } from './HRAdvancedAnalyticsPanel';
-import { cn } from '@/lib/utils';
-import { UserPlus, GraduationCap, BarChart3 } from 'lucide-react';
+import { HRNavigationMenu } from './HRNavigationMenu';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -206,221 +188,57 @@ export function HRModule() {
         </Card>
       </div>
 
-      {/* Navegación por tabs con scroll horizontal */}
-      <Tabs value={activeModule} onValueChange={setActiveModule}>
-        <ScrollArea className="w-full whitespace-nowrap">
-          <TabsList className="inline-flex w-max">
-            <TabsTrigger value="dashboard" className="gap-1 text-xs">
-              <TrendingUp className="h-3 w-3" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="employees" className="gap-1 text-xs">
-              <Users className="h-3 w-3" />
-              Empleados
-            </TabsTrigger>
-            <TabsTrigger value="recruitment" className="gap-1 text-xs">
-              <UserPlus className="h-3 w-3" />
-              Reclutamiento
-            </TabsTrigger>
-            <TabsTrigger value="onboarding" className="gap-1 text-xs">
-              <UserPlus className="h-3 w-3" />
-              Onboarding
-            </TabsTrigger>
-            <TabsTrigger value="offboarding" className="gap-1 text-xs">
-              <UserMinus className="h-3 w-3" />
-              Offboarding
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="gap-1 text-xs">
-              <Award className="h-3 w-3" />
-              Desempeño
-            </TabsTrigger>
-            <TabsTrigger value="training" className="gap-1 text-xs">
-              <GraduationCap className="h-3 w-3" />
-              Formación
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-1 text-xs">
-              <BarChart3 className="h-3 w-3" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="payroll" className="gap-1 text-xs">
-              <DollarSign className="h-3 w-3" />
-              Nóminas
-              {stats.pendingPayrolls > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs">
-                  {stats.pendingPayrolls}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="ss" className="gap-1 text-xs">
-              <Landmark className="h-3 w-3" />
-              Seg. Social
-            </TabsTrigger>
-            <TabsTrigger value="vacations" className="gap-1 text-xs">
-              <Calendar className="h-3 w-3" />
-              Vacaciones
-              {stats.pendingVacations > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs">
-                  {stats.pendingVacations}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="contracts" className="gap-1 text-xs">
-              <FileText className="h-3 w-3" />
-              Contratos
-            </TabsTrigger>
-            <TabsTrigger value="unions" className="gap-1 text-xs">
-              <UserCog className="h-3 w-3" />
-              Sindicatos
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="gap-1 text-xs">
-              <FolderOpen className="h-3 w-3" />
-              Documentos
-            </TabsTrigger>
-            <TabsTrigger value="departments" className="gap-1 text-xs">
-              <Building2 className="h-3 w-3" />
-              Organización
-            </TabsTrigger>
-            <TabsTrigger value="benefits" className="gap-1 text-xs">
-              <Gift className="h-3 w-3" />
-              Beneficios
-            </TabsTrigger>
-            <TabsTrigger value="safety" className="gap-1 text-xs">
-              <Shield className="h-3 w-3" />
-              PRL
-              {stats.safetyAlerts > 0 && (
-                <Badge variant="destructive" className="ml-1 text-xs">
-                  {stats.safetyAlerts}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="agent" className="gap-1 text-xs">
-              <Brain className="h-3 w-3" />
-              Agente IA
-            </TabsTrigger>
-            <TabsTrigger value="news" className="gap-1 text-xs">
-              <Newspaper className="h-3 w-3" />
-              Noticias
-            </TabsTrigger>
-            <TabsTrigger value="knowledge" className="gap-1 text-xs">
-              <BookOpen className="h-3 w-3" />
-              Normativa
-            </TabsTrigger>
-            <TabsTrigger value="help" className="gap-1 text-xs">
-              <HelpCircle className="h-3 w-3" />
-              Ayuda
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="gap-1 text-xs">
-              <Rocket className="h-3 w-3" />
-              2026+
-            </TabsTrigger>
-          </TabsList>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+      {/* Nueva navegación agrupada */}
+      <HRNavigationMenu
+        activeModule={activeModule}
+        onModuleChange={setActiveModule}
+        stats={{
+          pendingPayrolls: stats.pendingPayrolls,
+          pendingVacations: stats.pendingVacations,
+          safetyAlerts: stats.safetyAlerts
+        }}
+      />
 
-        <div className="mt-4">
-          <TabsContent value="dashboard" className="m-0">
-            <HRExecutiveDashboard companyId={demoCompanyId} />
-          </TabsContent>
+      {/* Contenido de los módulos */}
+      <div className="mt-4">
 
-          <TabsContent value="employees" className="m-0">
-            <HREmployeesPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="recruitment" className="m-0">
-            <HRRecruitmentPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="onboarding" className="m-0">
-            <HROnboardingPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="offboarding" className="m-0">
-            <HROffboardingPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="performance" className="m-0">
-            <HRPerformancePanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="training" className="m-0">
-            <HRTrainingPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="m-0">
-            <HRAdvancedAnalyticsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="alerts" className="m-0">
-            <HRAlertsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="payroll" className="m-0">
-            <HRPayrollPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="ss" className="m-0">
-            <HRSocialSecurityPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="vacations" className="m-0">
-            <HRVacationsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="contracts" className="m-0">
-            <HRContractsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="unions" className="m-0">
-            <HRUnionsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="documents" className="m-0">
-            <HREmployeeDocumentsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="departments" className="m-0">
-            <HRDepartmentsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="benefits" className="m-0">
-            <HRSocialBenefitsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="safety" className="m-0">
-            <HRSafetyPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="agent" className="m-0">
-            <HRAIAgentPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="news" className="m-0">
-            <HRNewsPanel companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="knowledge" className="m-0">
-            <HRKnowledgeUploader companyId={demoCompanyId} />
-          </TabsContent>
-
-          <TabsContent value="help" className="m-0">
-            <HRHelpIndex 
-              companyId={demoCompanyId} 
-              onNavigate={handleHelpNavigate}
-              onOpenPayrollDialog={() => setShowPayrollDialog(true)}
-              onOpenVacationDialog={() => setShowVacationDialog(true)}
-              onOpenSeveranceDialog={() => setShowSeveranceDialog(true)}
-              onOpenIndemnizationDialog={() => setShowIndemnizationDialog(true)}
-              onAskAgent={(question) => {
-                setActiveModule('agent');
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="trends" className="m-0">
-            <HRTrends2026Panel />
-          </TabsContent>
-        </div>
-      </Tabs>
+        {/* Renderizado condicional de contenido */}
+        {activeModule === 'dashboard' && <HRExecutiveDashboard companyId={demoCompanyId} />}
+        {activeModule === 'employees' && <HREmployeesPanel companyId={demoCompanyId} />}
+        {activeModule === 'recruitment' && <HRRecruitmentPanel companyId={demoCompanyId} />}
+        {activeModule === 'onboarding' && <HROnboardingPanel companyId={demoCompanyId} />}
+        {activeModule === 'offboarding' && <HROffboardingPanel companyId={demoCompanyId} />}
+        {activeModule === 'performance' && <HRPerformancePanel companyId={demoCompanyId} />}
+        {activeModule === 'training' && <HRTrainingPanel companyId={demoCompanyId} />}
+        {activeModule === 'analytics' && <HRAdvancedAnalyticsPanel companyId={demoCompanyId} />}
+        {activeModule === 'alerts' && <HRAlertsPanel companyId={demoCompanyId} />}
+        {activeModule === 'payroll' && <HRPayrollPanel companyId={demoCompanyId} />}
+        {activeModule === 'ss' && <HRSocialSecurityPanel companyId={demoCompanyId} />}
+        {activeModule === 'vacations' && <HRVacationsPanel companyId={demoCompanyId} />}
+        {activeModule === 'contracts' && <HRContractsPanel companyId={demoCompanyId} />}
+        {activeModule === 'unions' && <HRUnionsPanel companyId={demoCompanyId} />}
+        {activeModule === 'documents' && <HREmployeeDocumentsPanel companyId={demoCompanyId} />}
+        {activeModule === 'departments' && <HRDepartmentsPanel companyId={demoCompanyId} />}
+        {activeModule === 'benefits' && <HRSocialBenefitsPanel companyId={demoCompanyId} />}
+        {activeModule === 'safety' && <HRSafetyPanel companyId={demoCompanyId} />}
+        {activeModule === 'agent' && <HRAIAgentPanel companyId={demoCompanyId} />}
+        {activeModule === 'news' && <HRNewsPanel companyId={demoCompanyId} />}
+        {activeModule === 'knowledge' && <HRKnowledgeUploader companyId={demoCompanyId} />}
+        {activeModule === 'help' && (
+          <HRHelpIndex 
+            companyId={demoCompanyId} 
+            onNavigate={handleHelpNavigate}
+            onOpenPayrollDialog={() => setShowPayrollDialog(true)}
+            onOpenVacationDialog={() => setShowVacationDialog(true)}
+            onOpenSeveranceDialog={() => setShowSeveranceDialog(true)}
+            onOpenIndemnizationDialog={() => setShowIndemnizationDialog(true)}
+            onAskAgent={(question) => {
+              setActiveModule('agent');
+            }}
+          />
+        )}
+        {activeModule === 'trends' && <HRTrends2026Panel />}
+      </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
       <HRPayrollEntryDialog

@@ -15,6 +15,7 @@ export { HRNewsPanel } from './HRNewsPanel';
 export { HRKnowledgeUploader } from './HRKnowledgeUploader';
 export { HRHelpPanel } from './HRHelpPanel';
 export { HRTrends2026Panel } from './HRTrends2026Panel';
+export { HRNavigationMenu } from './HRNavigationMenu';
 
 // Nuevos paneles - Fase 2
 export { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
@@ -69,3 +70,6 @@ export { HRTrainingPanel } from './HRTrainingPanel';
 
 // Fase 8 - KPIs Predictivos Avanzados y Métricas Internacionales
 export { HRAdvancedAnalyticsPanel } from './HRAdvancedAnalyticsPanel';
+
+// Fase D - Dialogs adicionales para completar funcionalidades
+export * from './dialogs';
