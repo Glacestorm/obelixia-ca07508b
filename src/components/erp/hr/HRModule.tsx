@@ -33,6 +33,7 @@ import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 import { HRVacationRequestDialog } from './HRVacationRequestDialog';
 import { useERPContext } from '@/hooks/erp';
 import { HRDashboardPanel } from './HRDashboardPanel';
+import { HRExecutiveDashboard } from './HRExecutiveDashboard';
 import { HRPayrollPanel } from './HRPayrollPanel';
 import { HRVacationsPanel } from './HRVacationsPanel';
 import { HRContractsPanel } from './HRContractsPanel';
@@ -281,7 +282,7 @@ export function HRModule() {
 
         <div className="mt-4">
           <TabsContent value="dashboard" className="m-0">
-            <HRDashboardPanel companyId={demoCompanyId} />
+            <HRExecutiveDashboard companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="employees" className="m-0">
