@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Rocket, Brain, Users, Shield, Sparkles, Target, Zap, Globe, Eye, Cpu, TrendingUp, Play, ChevronRight, Clock, Star, LineChart, Heart, Blocks, Network, Glasses } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Trend {
   id: string;
@@ -72,6 +73,34 @@ export function HRTrends2026Panel() {
     }
   };
 
+const [implementing, setImplementing] = useState<string | null>(null);
+
+  const handleImplementFeature = async (trend: Trend) => {
+    setImplementing(trend.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-innovation-discovery', {
+        body: {
+          action: 'implement_feature',
+          company_id: 'demo-company-id',
+          feature_code: trend.id,
+          config: {
+            feature_name: trend.title,
+            description: trend.description,
+            category: trend.id.includes('ai') ? 'ai' : 'general'
+          }
+        }
+      });
+
+      if (error) throw error;
+      toast.success(`¡${trend.title} está siendo implementado!`);
+    } catch (error) {
+      console.error('Implementation error:', error);
+      toast.error('Error al implementar la funcionalidad');
+    } finally {
+      setImplementing(null);
+    }
+  };
+
   const TrendCard = ({ trend }: { trend: Trend }) => (
     <div className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-all">
       <div className="flex items-start justify-between mb-2">
@@ -84,11 +113,28 @@ export function HRTrends2026Panel() {
             {getStatusBadge(trend.status)}
           </div>
         </div>
-        {trend.demoAvailable && (
-          <Button size="sm" variant="ghost" onClick={() => openDemo(trend)} className="gap-1">
-            <Play className="h-3 w-3" />Demo
-          </Button>
-        )}
+        <div className="flex gap-1">
+          {trend.demoAvailable && (
+            <Button size="sm" variant="ghost" onClick={() => openDemo(trend)} className="gap-1">
+              <Play className="h-3 w-3" />Demo
+            </Button>
+          )}
+          {trend.status !== '2027+' && trend.status !== '2028+' && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => handleImplementFeature(trend)}
+              disabled={implementing === trend.id}
+              className="gap-1"
+            >
+              {implementing === trend.id ? (
+                <><Rocket className="h-3 w-3 animate-pulse" />...</>
+              ) : (
+                <><Rocket className="h-3 w-3" />Implementar</>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
       <p className="text-xs text-muted-foreground mb-3">{trend.description}</p>
       {trend.readinessScore !== undefined && (
