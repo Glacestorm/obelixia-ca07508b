@@ -51,3 +51,6 @@ export { HRExecutiveDashboard } from './HRExecutiveDashboard';
 
 // Fase 1 - Sistema Avanzado de Gestión de Talento
 export { HRJobPositionsPanel } from './HRJobPositionsPanel';
+
+// Fase 2 - Sistema de Reclutamiento Inteligente
+export { HRRecruitmentPanel } from './HRRecruitmentPanel';

@@ -929,3 +929,6 @@ verify_jwt = true
 
 [functions.send-hr-alert]
 verify_jwt = true
+
+[functions.erp-hr-recruitment-agent]
+verify_jwt = true
