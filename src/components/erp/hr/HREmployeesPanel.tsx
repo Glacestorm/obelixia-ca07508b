@@ -56,7 +56,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeFormDialog } from './HREmployeeFormDialog';
-import { HREmployeeProfileDialog } from './dialogs';
+import { HREmployeeProfileDialog, HREmployeeDocumentsDialog, HREmployeeExportDialog } from './dialogs';
 import { cn } from '@/lib/utils';
 
 interface Employee {
@@ -92,6 +92,8 @@ export function HREmployeesPanel({ companyId }: HREmployeesPanelProps) {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [showFormDialog, setShowFormDialog] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   // Fetch employees
@@ -512,11 +514,17 @@ export function HREmployeesPanel({ companyId }: HREmployeesPanelProps) {
                               Gestionar accesos
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => toast.info('Generando documentos...')}>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedEmployee(employee);
+                              setShowDocumentsDialog(true);
+                            }}>
                               <FileText className="h-4 w-4 mr-2" />
                               Documentos
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => toast.info('Exportando ficha...')}>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedEmployee(employee);
+                              setShowExportDialog(true);
+                            }}>
                               <Download className="h-4 w-4 mr-2" />
                               Exportar
                             </DropdownMenuItem>
@@ -611,6 +619,21 @@ export function HREmployeesPanel({ companyId }: HREmployeesPanelProps) {
           setShowProfileDialog(false);
           setShowFormDialog(true);
         }}
+      />
+
+      {/* Dialog de documentos */}
+      <HREmployeeDocumentsDialog
+        open={showDocumentsDialog}
+        onOpenChange={setShowDocumentsDialog}
+        employee={selectedEmployee}
+        companyId={companyId}
+      />
+
+      {/* Dialog de exportación */}
+      <HREmployeeExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        employee={selectedEmployee}
       />
     </div>
   );
