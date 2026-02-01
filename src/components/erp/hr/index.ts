@@ -41,3 +41,7 @@ export { HRIncidentFormDialog } from './HRIncidentFormDialog';
 // Fase 1 - Prestaciones Sociales
 export { HRSocialBenefitsPanel } from './HRSocialBenefitsPanel';
 export { HRBenefitEnrollmentDialog } from './HRBenefitEnrollmentDialog';
+
+// Fase 3 - Modelos Contractuales por Jurisdicción
+export { HRDocumentTemplatesPanel } from './HRDocumentTemplatesPanel';
+export { HRDocumentGeneratorDialog } from './HRDocumentGeneratorDialog';
