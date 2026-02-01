@@ -1,5 +1,6 @@
 /**
  * Módulo RRHH - Barrel exports
+ * Sistema completo de gestión de recursos humanos
  */
 
 export { HRModule } from './HRModule';
@@ -14,3 +15,9 @@ export { HRNewsPanel } from './HRNewsPanel';
 export { HRKnowledgeUploader } from './HRKnowledgeUploader';
 export { HRHelpPanel } from './HRHelpPanel';
 export { HRTrends2026Panel } from './HRTrends2026Panel';
+
+// Nuevos paneles - Fase 2
+export { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
+export { HRUnionsPanel } from './HRUnionsPanel';
+export { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
+export { HRHelpIndex } from './HRHelpIndex';
