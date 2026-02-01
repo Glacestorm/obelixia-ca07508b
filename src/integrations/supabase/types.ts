@@ -17850,6 +17850,148 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_offboarding_history: {
+        Row: {
+          company_id: string
+          created_at: string
+          employee_feedback: string | null
+          employee_id: string
+          employee_snapshot: Json
+          exit_interview_conducted: boolean | null
+          exit_interview_data: Json | null
+          final_settlement_amount: number | null
+          hr_notes: string | null
+          id: string
+          offboarding_duration_days: number | null
+          tasks_completed: number | null
+          tasks_total: number | null
+          tenure_months: number | null
+          termination_date: string
+          termination_id: string | null
+          termination_type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          employee_feedback?: string | null
+          employee_id: string
+          employee_snapshot?: Json
+          exit_interview_conducted?: boolean | null
+          exit_interview_data?: Json | null
+          final_settlement_amount?: number | null
+          hr_notes?: string | null
+          id?: string
+          offboarding_duration_days?: number | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          tenure_months?: number | null
+          termination_date: string
+          termination_id?: string | null
+          termination_type: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          employee_feedback?: string | null
+          employee_id?: string
+          employee_snapshot?: Json
+          exit_interview_conducted?: boolean | null
+          exit_interview_data?: Json | null
+          final_settlement_amount?: number | null
+          hr_notes?: string | null
+          id?: string
+          offboarding_duration_days?: number | null
+          tasks_completed?: number | null
+          tasks_total?: number | null
+          tenure_months?: number | null
+          termination_date?: string
+          termination_id?: string | null
+          termination_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_offboarding_history_termination_id_fkey"
+            columns: ["termination_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_termination_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_offboarding_tasks: {
+        Row: {
+          ai_generated: boolean | null
+          assigned_to: string | null
+          blocking_reason: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          order_in_phase: number | null
+          phase: string
+          responsible_type: string
+          status: string
+          task_code: string
+          task_name: string
+          task_type: string
+          termination_id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          assigned_to?: string | null
+          blocking_reason?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          order_in_phase?: number | null
+          phase?: string
+          responsible_type: string
+          status?: string
+          task_code: string
+          task_name: string
+          task_type: string
+          termination_id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          assigned_to?: string | null
+          blocking_reason?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          order_in_phase?: number | null
+          phase?: string
+          responsible_type?: string
+          status?: string
+          task_code?: string
+          task_name?: string
+          task_type?: string
+          termination_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_offboarding_tasks_termination_id_fkey"
+            columns: ["termination_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_termination_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_onboarding_tasks: {
         Row: {
           ai_generated: boolean | null
@@ -18535,6 +18677,125 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_termination_analysis: {
+        Row: {
+          actual_termination_date: string | null
+          ai_analysis: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          coordination_legal_module_id: string | null
+          cost_breakdown: Json | null
+          created_at: string
+          documents: Json | null
+          employee_id: string
+          estimated_cost_max: number | null
+          estimated_cost_min: number | null
+          executed_at: string | null
+          executed_by: string | null
+          final_cost: number | null
+          id: string
+          indemnity_calculated: boolean | null
+          legal_notes: string | null
+          legal_review_required: boolean | null
+          legal_review_status: string | null
+          legal_risks: Json | null
+          notice_given_at: string | null
+          notice_period_days: number | null
+          optimal_dates: Json | null
+          proposed_termination_date: string | null
+          recommended_approach: string | null
+          requested_at: string
+          requested_by: string | null
+          severance_calculated: boolean | null
+          status: string
+          termination_reason: string | null
+          termination_reason_code: string | null
+          termination_type: string
+          updated_at: string
+        }
+        Insert: {
+          actual_termination_date?: string | null
+          ai_analysis?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          coordination_legal_module_id?: string | null
+          cost_breakdown?: Json | null
+          created_at?: string
+          documents?: Json | null
+          employee_id: string
+          estimated_cost_max?: number | null
+          estimated_cost_min?: number | null
+          executed_at?: string | null
+          executed_by?: string | null
+          final_cost?: number | null
+          id?: string
+          indemnity_calculated?: boolean | null
+          legal_notes?: string | null
+          legal_review_required?: boolean | null
+          legal_review_status?: string | null
+          legal_risks?: Json | null
+          notice_given_at?: string | null
+          notice_period_days?: number | null
+          optimal_dates?: Json | null
+          proposed_termination_date?: string | null
+          recommended_approach?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          severance_calculated?: boolean | null
+          status?: string
+          termination_reason?: string | null
+          termination_reason_code?: string | null
+          termination_type: string
+          updated_at?: string
+        }
+        Update: {
+          actual_termination_date?: string | null
+          ai_analysis?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          coordination_legal_module_id?: string | null
+          cost_breakdown?: Json | null
+          created_at?: string
+          documents?: Json | null
+          employee_id?: string
+          estimated_cost_max?: number | null
+          estimated_cost_min?: number | null
+          executed_at?: string | null
+          executed_by?: string | null
+          final_cost?: number | null
+          id?: string
+          indemnity_calculated?: boolean | null
+          legal_notes?: string | null
+          legal_review_required?: boolean | null
+          legal_review_status?: string | null
+          legal_risks?: Json | null
+          notice_given_at?: string | null
+          notice_period_days?: number | null
+          optimal_dates?: Json | null
+          proposed_termination_date?: string | null
+          recommended_approach?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          severance_calculated?: boolean | null
+          status?: string
+          termination_reason?: string | null
+          termination_reason_code?: string | null
+          termination_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_termination_analysis_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
             referencedColumns: ["id"]
           },
         ]

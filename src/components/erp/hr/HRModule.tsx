@@ -27,7 +27,8 @@ import {
   UserCog,
   FolderOpen,
   Bell,
-  Gift
+  Gift,
+  UserMinus
 } from 'lucide-react';
 import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 import { HRVacationRequestDialog } from './HRVacationRequestDialog';
@@ -55,6 +56,7 @@ import { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDial
 import { HRSocialBenefitsPanel } from './HRSocialBenefitsPanel';
 import { HRRecruitmentPanel } from './HRRecruitmentPanel';
 import { HROnboardingPanel } from './HROnboardingPanel';
+import { HROffboardingPanel } from './HROffboardingPanel';
 import { cn } from '@/lib/utils';
 import { UserPlus } from 'lucide-react';
 
@@ -220,6 +222,10 @@ export function HRModule() {
               <UserPlus className="h-3 w-3" />
               Onboarding
             </TabsTrigger>
+            <TabsTrigger value="offboarding" className="gap-1 text-xs">
+              <UserMinus className="h-3 w-3" />
+              Offboarding
+            </TabsTrigger>
             <TabsTrigger value="payroll" className="gap-1 text-xs">
               <DollarSign className="h-3 w-3" />
               Nóminas
@@ -310,6 +316,10 @@ export function HRModule() {
 
           <TabsContent value="onboarding" className="m-0">
             <HROnboardingPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="offboarding" className="m-0">
+            <HROffboardingPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="alerts" className="m-0">
