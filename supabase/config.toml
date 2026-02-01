@@ -935,3 +935,6 @@ verify_jwt = true
 
 [functions.erp-hr-onboarding-agent]
 verify_jwt = true
+
+[functions.erp-hr-executive-analytics]
+verify_jwt = true
