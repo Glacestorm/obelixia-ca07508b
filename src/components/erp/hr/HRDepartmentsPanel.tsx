@@ -13,6 +13,7 @@ import {
   Building2, Users, Plus, Search, Edit, Trash2,
   ChevronRight, ChevronDown, User, Briefcase, MapPin
 } from 'lucide-react';
+import { HRDepartmentFormDialog } from './dialogs';
 
 interface HRDepartmentsPanelProps {
   companyId: string;
@@ -33,6 +34,7 @@ interface Department {
 export function HRDepartmentsPanel({ companyId }: HRDepartmentsPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set(['1']));
+  const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
 
   // Demo data - Estructura organizativa
   const departments: Department[] = [
@@ -312,7 +314,7 @@ export function HRDepartmentsPanel({ companyId }: HRDepartmentsPanelProps) {
                   className="pl-9 w-[200px]"
                 />
               </div>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setShowDepartmentDialog(true)}>
                 <Plus className="h-4 w-4 mr-1" />
                 Nuevo Departamento
               </Button>
@@ -353,6 +355,14 @@ export function HRDepartmentsPanel({ companyId }: HRDepartmentsPanelProps) {
           </Card>
         ))}
       </div>
+
+      {/* Department Form Dialog */}
+      <HRDepartmentFormDialog
+        open={showDepartmentDialog}
+        onOpenChange={setShowDepartmentDialog}
+        companyId={companyId}
+        parentDepartments={departments.map(d => ({ id: d.id, name: d.name }))}
+      />
     </div>
   );
 }

@@ -21,3 +21,8 @@ export { HRVacationRejectDialog } from './HRVacationRejectDialog';
 export { HRLegalReviewDialog } from './HRLegalReviewDialog';
 export { HREmployeeDocumentsDialog } from './HREmployeeDocumentsDialog';
 export { HREmployeeExportDialog } from './HREmployeeExportDialog';
+
+// New dialogs
+export { HRUnionMembershipDialog } from './HRUnionMembershipDialog';
+export { HRDepartmentFormDialog } from './HRDepartmentFormDialog';
+export { HRObjectiveFormDialog } from './HRObjectiveFormDialog';

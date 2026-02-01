@@ -50,7 +50,7 @@ import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { HRBonusConfigDialog } from './dialogs';
+import { HRBonusConfigDialog, HRObjectiveFormDialog } from './dialogs';
 
 interface HRPerformancePanelProps {
   companyId: string;
@@ -563,7 +563,14 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
               <Button
                 variant="outline"
                 className="gap-2"
-                onClick={() => handleAISuggestObjectives('demo-employee', cycles[0]?.id || '')}
+                onClick={() => {
+                  if (cycles.length === 0) {
+                    toast.error('Crea primero un ciclo de evaluación');
+                    return;
+                  }
+                  setAiLoading(true);
+                  handleAISuggestObjectives('demo-employee', cycles[0]?.id || '');
+                }}
                 disabled={aiLoading || cycles.length === 0}
               >
                 {aiLoading ? (
@@ -573,7 +580,7 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
                 )}
                 IA: Sugerir
               </Button>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => setShowObjectiveDialog(true)}>
                 <Plus className="h-4 w-4" />
                 Nuevo Objetivo
               </Button>
@@ -848,6 +855,15 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
         onConfigCreated={() => {
           toast.success('Política de bonus configurada');
         }}
+      />
+
+      {/* Objective Form Dialog */}
+      <HRObjectiveFormDialog
+        open={showObjectiveDialog}
+        onOpenChange={setShowObjectiveDialog}
+        companyId={companyId}
+        cycleId={cycles[0]?.id}
+        onSuccess={fetchData}
       />
     </div>
   );
