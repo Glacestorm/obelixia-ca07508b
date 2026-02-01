@@ -938,3 +938,6 @@ verify_jwt = true
 
 [functions.erp-hr-executive-analytics]
 verify_jwt = true
+
+[functions.erp-hr-offboarding-agent]
+verify_jwt = false

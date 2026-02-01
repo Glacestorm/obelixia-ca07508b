@@ -57,3 +57,6 @@ export { HRRecruitmentPanel } from './HRRecruitmentPanel';
 
 // Fase 3 - Proceso de Onboarding Adaptativo por CNAE
 export { HROnboardingPanel } from './HROnboardingPanel';
+
+// Fase 5 - Gestión de Salidas (Offboarding)
+export { HROffboardingPanel } from './HROffboardingPanel';
