@@ -1,9 +1,9 @@
 /**
  * HRHelpIndex - Índice completo de servicios del módulo RRHH
- * Navegación estructurada por todos los servicios disponibles
+ * Navegación estructurada + acciones ejecutables + voz
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,16 +11,20 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { 
-  Search, BookOpen, ChevronRight, ExternalLink,
+  Search, BookOpen, ChevronRight,
   TrendingUp, DollarSign, Calendar, FileText, Building2,
-  Shield, Brain, Newspaper, HelpCircle, Rocket,
-  Users, Calculator, Clock, HeartHandshake, Upload
+  Shield, Brain, Newspaper, Rocket,
+  Users, Calculator, HeartHandshake, Upload, Mic, MicOff, Volume2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface HRHelpIndexProps {
   companyId: string;
   onNavigate?: (section: string) => void;
+  onOpenPayrollDialog?: () => void;
+  onOpenVacationDialog?: () => void;
+  onAskAgent?: (question: string) => void;
 }
 
 // Estructura del índice con iconos
@@ -156,9 +160,100 @@ const HELP_INDEX = [
   },
 ];
 
-export function HRHelpIndex({ companyId, onNavigate }: HRHelpIndexProps) {
+export function HRHelpIndex({ 
+  companyId, 
+  onNavigate, 
+  onOpenPayrollDialog,
+  onOpenVacationDialog,
+  onAskAgent 
+}: HRHelpIndexProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [helpData, setHelpData] = useState<any[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Web Speech API para voz
+  const startListening = useCallback(() => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('Tu navegador no soporta reconocimiento de voz');
+      return;
+    }
+
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      toast.error('Error en el reconocimiento de voz');
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchTerm(transcript);
+      // Si hay callback para agente, enviar la pregunta
+      if (onAskAgent && transcript.length > 3) {
+        onAskAgent(transcript);
+      }
+    };
+
+    recognition.start();
+  }, [onAskAgent]);
+
+  // Sintetizar voz
+  const speak = useCallback((text: string) => {
+    if (!('speechSynthesis' in window)) {
+      toast.error('Tu navegador no soporta síntesis de voz');
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'es-ES';
+    utterance.rate = 1;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    speechSynthesis.speak(utterance);
+  }, []);
+
+  // Acciones rápidas
+  const handleQuickAction = useCallback((action: string) => {
+    switch (action) {
+      case 'payroll':
+        if (onOpenPayrollDialog) {
+          onOpenPayrollDialog();
+        } else {
+          onNavigate?.('payroll');
+        }
+        break;
+      case 'severance':
+        if (onAskAgent) {
+          onAskAgent('Calcular finiquito para empleado');
+        } else {
+          onNavigate?.('agent');
+          toast.info('Navega al Agente IA para calcular finiquitos');
+        }
+        break;
+      case 'ss':
+        onNavigate?.('ss');
+        break;
+      case 'vacation':
+        if (onOpenVacationDialog) {
+          onOpenVacationDialog();
+        } else {
+          onNavigate?.('vacations');
+        }
+        break;
+      case 'contracts':
+        onNavigate?.('contracts');
+        break;
+      default:
+        onNavigate?.(action);
+    }
+  }, [onNavigate, onOpenPayrollDialog, onOpenVacationDialog, onAskAgent]);
 
   // Cargar datos de ayuda desde DB
   useEffect(() => {
@@ -203,15 +298,33 @@ export function HRHelpIndex({ companyId, onNavigate }: HRHelpIndexProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Buscador */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar en el índice..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
+          {/* Buscador con voz */}
+          <div className="flex gap-2 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar o preguntar por voz..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button 
+              variant={isListening ? "default" : "outline"} 
+              size="icon"
+              onClick={startListening}
+              className={isListening ? "animate-pulse" : ""}
+            >
+              {isListening ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => speak('Bienvenido al módulo de Recursos Humanos. Puedo ayudarte con nóminas, vacaciones, contratos y más.')}
+              disabled={isSpeaking}
+            >
+              <Volume2 className="h-4 w-4" />
+            </Button>
           </div>
 
           {/* Índice acordeón */}
@@ -267,30 +380,50 @@ export function HRHelpIndex({ companyId, onNavigate }: HRHelpIndexProps) {
         </CardContent>
       </Card>
 
-      {/* Quick links */}
+      {/* Quick links - OPERATIVOS */}
       <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
         <CardContent className="p-4">
           <h4 className="font-medium text-sm mb-3">Accesos rápidos</h4>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-              <Calculator className="h-3 w-3 mr-1" />
+          <div className="flex flex-col gap-2">
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left"
+              onClick={() => handleQuickAction('payroll')}
+            >
+              <Calculator className="h-3 w-3 mr-2 flex-shrink-0" />
               Calcular nómina
             </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-              <DollarSign className="h-3 w-3 mr-1" />
-              Finiquito
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left"
+              onClick={() => handleQuickAction('severance')}
+            >
+              <DollarSign className="h-3 w-3 mr-2 flex-shrink-0" />
+              Calcular finiquito
             </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-              <Shield className="h-3 w-3 mr-1" />
-              Cotizaciones SS
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left"
+              onClick={() => handleQuickAction('ss')}
+            >
+              <Shield className="h-3 w-3 mr-2 flex-shrink-0" />
+              Cotizaciones Seguridad Social
             </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-              <Calendar className="h-3 w-3 mr-1" />
-              Vacaciones
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left"
+              onClick={() => handleQuickAction('vacation')}
+            >
+              <Calendar className="h-3 w-3 mr-2 flex-shrink-0" />
+              Solicitar vacaciones
             </Badge>
-            <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
-              <FileText className="h-3 w-3 mr-1" />
-              Contratos
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left"
+              onClick={() => handleQuickAction('contracts')}
+            >
+              <FileText className="h-3 w-3 mr-2 flex-shrink-0" />
+              Gestionar contratos
             </Badge>
           </div>
         </CardContent>

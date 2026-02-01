@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
+import { HRVacationRequestDialog } from './HRVacationRequestDialog';
 
 interface HRVacationsPanelProps {
   companyId: string;
@@ -27,9 +29,8 @@ interface HRVacationsPanelProps {
 export function HRVacationsPanel({ companyId }: HRVacationsPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-
-  // Demo data
-  const vacationRequests = [
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [vacationRequests, setVacationRequests] = useState([
     { 
       id: '1', 
       employee: 'María García López', 
@@ -74,7 +75,7 @@ export function HRVacationsPanel({ companyId }: HRVacationsPanelProps) {
       status: 'rejected',
       approvedBy: 'Carlos Rodríguez'
     },
-  ];
+  ]);
 
   const balances = [
     { employee: 'María García López', total: 22, used: 10, pending: 5, remaining: 7 },
@@ -180,7 +181,7 @@ export function HRVacationsPanel({ companyId }: HRVacationsPanelProps) {
                 <CardTitle className="text-base">Solicitudes de Vacaciones</CardTitle>
                 <CardDescription>Gestión de solicitudes pendientes y aprobadas</CardDescription>
               </div>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setShowRequestDialog(true)}>
                 <Plus className="h-4 w-4 mr-1" />
                 Nueva Solicitud
               </Button>
@@ -233,10 +234,30 @@ export function HRVacationsPanel({ companyId }: HRVacationsPanelProps) {
                       <TableCell>
                         {request.status === 'pending' && (
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" className="text-green-600 h-7 px-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-green-600 h-7 px-2"
+                              onClick={() => {
+                                setVacationRequests(prev => prev.map(r => 
+                                  r.id === request.id ? { ...r, status: 'approved', approvedBy: 'Usuario actual' } : r
+                                ));
+                                toast.success(`Vacaciones de ${request.employee} aprobadas`);
+                              }}
+                            >
                               <CheckCircle className="h-3 w-3" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600 h-7 px-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-red-600 h-7 px-2"
+                              onClick={() => {
+                                setVacationRequests(prev => prev.map(r => 
+                                  r.id === request.id ? { ...r, status: 'rejected', approvedBy: 'Usuario actual' } : r
+                                ));
+                                toast.error(`Vacaciones de ${request.employee} rechazadas`);
+                              }}
+                            >
                               <XCircle className="h-3 w-3" />
                             </Button>
                           </div>
@@ -281,6 +302,30 @@ export function HRVacationsPanel({ companyId }: HRVacationsPanelProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog de solicitud de vacaciones */}
+      <HRVacationRequestDialog
+        open={showRequestDialog}
+        onOpenChange={setShowRequestDialog}
+        companyId={companyId}
+        employeeName="María García López"
+        onSubmit={(data) => {
+          console.log('Vacation request:', data);
+          toast.success('Solicitud enviada correctamente');
+          // Añadir la nueva solicitud a la lista
+          setVacationRequests(prev => [{
+            id: `new-${Date.now()}`,
+            employee: 'María García López',
+            department: 'Administración',
+            startDate: data.start_date,
+            endDate: data.end_date,
+            days: data.days_requested,
+            type: data.leave_type_code,
+            status: 'pending',
+            approvedBy: null
+          }, ...prev]);
+        }}
+      />
     </div>
   );
 }
