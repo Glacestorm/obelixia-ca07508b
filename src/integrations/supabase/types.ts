@@ -16327,6 +16327,79 @@ export type Database = {
           },
         ]
       }
+      erp_hr_employee_responsibilities: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          company_id: string
+          created_at: string | null
+          custom_responsibilities: Json | null
+          effective_from: string | null
+          effective_until: string | null
+          employee_id: string
+          id: string
+          individual_goals: Json | null
+          is_current: boolean | null
+          notes: string | null
+          position_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          company_id: string
+          created_at?: string | null
+          custom_responsibilities?: Json | null
+          effective_from?: string | null
+          effective_until?: string | null
+          employee_id: string
+          id?: string
+          individual_goals?: Json | null
+          is_current?: boolean | null
+          notes?: string | null
+          position_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          company_id?: string
+          created_at?: string | null
+          custom_responsibilities?: Json | null
+          effective_from?: string | null
+          effective_until?: string | null
+          employee_id?: string
+          id?: string
+          individual_goals?: Json | null
+          is_current?: boolean | null
+          notes?: string | null
+          position_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_responsibilities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_responsibilities_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_responsibilities_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_job_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employees: {
         Row: {
           address: Json | null
@@ -16908,6 +16981,109 @@ export type Database = {
             columns: ["feature_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_innovation_features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_job_positions: {
+        Row: {
+          allows_remote_work: boolean | null
+          cnae_specific_requirements: Json | null
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          department_id: string | null
+          employment_type: string | null
+          evaluation_criteria: Json | null
+          id: string
+          is_active: boolean | null
+          job_level: string | null
+          min_experience_years: number | null
+          obligations: Json | null
+          position_code: string
+          position_name: string
+          remote_work_percentage: number | null
+          reports_to_position_id: string | null
+          required_certifications: string[] | null
+          required_competencies: Json | null
+          responsibilities: Json | null
+          salary_band_max: number | null
+          salary_band_min: number | null
+          salary_currency: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allows_remote_work?: boolean | null
+          cnae_specific_requirements?: Json | null
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          employment_type?: string | null
+          evaluation_criteria?: Json | null
+          id?: string
+          is_active?: boolean | null
+          job_level?: string | null
+          min_experience_years?: number | null
+          obligations?: Json | null
+          position_code: string
+          position_name: string
+          remote_work_percentage?: number | null
+          reports_to_position_id?: string | null
+          required_certifications?: string[] | null
+          required_competencies?: Json | null
+          responsibilities?: Json | null
+          salary_band_max?: number | null
+          salary_band_min?: number | null
+          salary_currency?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allows_remote_work?: boolean | null
+          cnae_specific_requirements?: Json | null
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          employment_type?: string | null
+          evaluation_criteria?: Json | null
+          id?: string
+          is_active?: boolean | null
+          job_level?: string | null
+          min_experience_years?: number | null
+          obligations?: Json | null
+          position_code?: string
+          position_name?: string
+          remote_work_percentage?: number | null
+          reports_to_position_id?: string | null
+          required_certifications?: string[] | null
+          required_competencies?: Json | null
+          responsibilities?: Json | null
+          salary_band_max?: number | null
+          salary_band_min?: number | null
+          salary_currency?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_job_positions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_job_positions_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_job_positions_reports_to_position_id_fkey"
+            columns: ["reports_to_position_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_job_positions"
             referencedColumns: ["id"]
           },
         ]

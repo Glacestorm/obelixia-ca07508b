@@ -48,3 +48,6 @@ export { HRDocumentGeneratorDialog } from './HRDocumentGeneratorDialog';
 
 // Fase 4 - Panel de Control Ejecutivo
 export { HRExecutiveDashboard } from './HRExecutiveDashboard';
+
+// Fase 1 - Sistema Avanzado de Gestión de Talento
+export { HRJobPositionsPanel } from './HRJobPositionsPanel';
