@@ -21,3 +21,7 @@ export { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
 export { HRUnionsPanel } from './HRUnionsPanel';
 export { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
 export { HRHelpIndex } from './HRHelpIndex';
+
+// Dialogs operativos
+export { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
+export { HRVacationRequestDialog } from './HRVacationRequestDialog';

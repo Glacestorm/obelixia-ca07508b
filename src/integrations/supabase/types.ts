@@ -15806,6 +15806,244 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_leave_balances: {
+        Row: {
+          adjustment_days: number | null
+          adjustment_reason: string | null
+          carried_over_days: number | null
+          company_id: string
+          created_at: string | null
+          employee_id: string
+          entitled_days: number
+          expires_at: string | null
+          id: string
+          jurisdiction: string | null
+          leave_type_code: string
+          pending_days: number | null
+          updated_at: string | null
+          used_days: number | null
+          year: number
+        }
+        Insert: {
+          adjustment_days?: number | null
+          adjustment_reason?: string | null
+          carried_over_days?: number | null
+          company_id: string
+          created_at?: string | null
+          employee_id: string
+          entitled_days: number
+          expires_at?: string | null
+          id?: string
+          jurisdiction?: string | null
+          leave_type_code: string
+          pending_days?: number | null
+          updated_at?: string | null
+          used_days?: number | null
+          year: number
+        }
+        Update: {
+          adjustment_days?: number | null
+          adjustment_reason?: string | null
+          carried_over_days?: number | null
+          company_id?: string
+          created_at?: string | null
+          employee_id?: string
+          entitled_days?: number
+          expires_at?: string | null
+          id?: string
+          jurisdiction?: string | null
+          leave_type_code?: string
+          pending_days?: number | null
+          updated_at?: string | null
+          used_days?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_leave_balances_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_leave_balances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_leave_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          conflict_employees: string[] | null
+          conflict_percentage: number | null
+          created_at: string | null
+          days_requested: number
+          documents_url: string[] | null
+          employee_id: string
+          end_date: string
+          half_day_period: string | null
+          id: string
+          is_half_day: boolean | null
+          jurisdiction: string | null
+          leave_type_code: string | null
+          leave_type_id: string | null
+          notes: string | null
+          rejection_reason: string | null
+          requested_at: string | null
+          start_date: string
+          status: string | null
+          updated_at: string | null
+          validation_warnings: string[] | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          conflict_employees?: string[] | null
+          conflict_percentage?: number | null
+          created_at?: string | null
+          days_requested: number
+          documents_url?: string[] | null
+          employee_id: string
+          end_date: string
+          half_day_period?: string | null
+          id?: string
+          is_half_day?: boolean | null
+          jurisdiction?: string | null
+          leave_type_code?: string | null
+          leave_type_id?: string | null
+          notes?: string | null
+          rejection_reason?: string | null
+          requested_at?: string | null
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+          validation_warnings?: string[] | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          conflict_employees?: string[] | null
+          conflict_percentage?: number | null
+          created_at?: string | null
+          days_requested?: number
+          documents_url?: string[] | null
+          employee_id?: string
+          end_date?: string
+          half_day_period?: string | null
+          id?: string
+          is_half_day?: boolean | null
+          jurisdiction?: string | null
+          leave_type_code?: string | null
+          leave_type_id?: string | null
+          notes?: string | null
+          rejection_reason?: string | null
+          requested_at?: string | null
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+          validation_warnings?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_leave_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_leave_requests_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_leave_types: {
+        Row: {
+          applies_to_all_contracts: boolean | null
+          can_be_split: boolean | null
+          category: string | null
+          code: string
+          contract_types: string[] | null
+          created_at: string | null
+          days_entitled: number | null
+          description: string | null
+          documentation_types: string[] | null
+          id: string
+          is_active: boolean | null
+          is_calendar_days: boolean | null
+          is_paid: boolean | null
+          jurisdiction: string
+          legal_reference: string | null
+          max_advance_booking_days: number | null
+          min_consecutive_days: number | null
+          name: string
+          requires_documentation: boolean | null
+          sort_order: number | null
+        }
+        Insert: {
+          applies_to_all_contracts?: boolean | null
+          can_be_split?: boolean | null
+          category?: string | null
+          code: string
+          contract_types?: string[] | null
+          created_at?: string | null
+          days_entitled?: number | null
+          description?: string | null
+          documentation_types?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_calendar_days?: boolean | null
+          is_paid?: boolean | null
+          jurisdiction: string
+          legal_reference?: string | null
+          max_advance_booking_days?: number | null
+          min_consecutive_days?: number | null
+          name: string
+          requires_documentation?: boolean | null
+          sort_order?: number | null
+        }
+        Update: {
+          applies_to_all_contracts?: boolean | null
+          can_be_split?: boolean | null
+          category?: string | null
+          code?: string
+          contract_types?: string[] | null
+          created_at?: string | null
+          days_entitled?: number | null
+          description?: string | null
+          documentation_types?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_calendar_days?: boolean | null
+          is_paid?: boolean | null
+          jurisdiction?: string
+          legal_reference?: string | null
+          max_advance_booking_days?: number | null
+          min_consecutive_days?: number | null
+          name?: string
+          requires_documentation?: boolean | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       erp_hr_payroll_concepts: {
         Row: {
           category: string | null
@@ -16269,6 +16507,81 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_vacation_rules: {
+        Row: {
+          allow_half_days: boolean | null
+          auto_approve_if_no_conflict: boolean | null
+          blackout_periods: Json | null
+          company_id: string
+          created_at: string | null
+          department_id: string | null
+          id: string
+          is_active: boolean | null
+          jurisdiction: string | null
+          max_simultaneous_percentage: number | null
+          min_advance_days: number | null
+          notes: string | null
+          priority_by_seniority: boolean | null
+          require_approval_chain: boolean | null
+          restricted_end_date: string | null
+          restricted_start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_half_days?: boolean | null
+          auto_approve_if_no_conflict?: boolean | null
+          blackout_periods?: Json | null
+          company_id: string
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string | null
+          max_simultaneous_percentage?: number | null
+          min_advance_days?: number | null
+          notes?: string | null
+          priority_by_seniority?: boolean | null
+          require_approval_chain?: boolean | null
+          restricted_end_date?: string | null
+          restricted_start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_half_days?: boolean | null
+          auto_approve_if_no_conflict?: boolean | null
+          blackout_periods?: Json | null
+          company_id?: string
+          created_at?: string | null
+          department_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string | null
+          max_simultaneous_percentage?: number | null
+          min_advance_days?: number | null
+          notes?: string | null
+          priority_by_seniority?: boolean | null
+          require_approval_chain?: boolean | null
+          restricted_end_date?: string | null
+          restricted_start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_vacation_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_vacation_rules_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_departments"
             referencedColumns: ["id"]
           },
         ]
