@@ -35,7 +35,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useERPContext } from '@/contexts/ERPContext';
+import { useERPContext } from '@/hooks/erp/useERPContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -103,7 +103,7 @@ interface Candidate {
   status: string;
   source: string;
   created_at: string;
-  job_opening?: JobOpening;
+  job_opening?: { title: string } | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
