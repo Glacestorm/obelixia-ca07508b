@@ -130,12 +130,12 @@ export function HRDepartmentFormDialog({
 
           <div className="space-y-2">
             <Label>Departamento Superior (opcional)</Label>
-            <Select value={form.parentId} onValueChange={(v) => setForm({ ...form, parentId: v })}>
+          <Select value={form.parentId || "none"} onValueChange={(v) => setForm({ ...form, parentId: v === "none" ? "" : v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Sin departamento superior" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin departamento superior</SelectItem>
+                <SelectItem value="none">Sin departamento superior</SelectItem>
                 {parentDepartments.map(dept => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
