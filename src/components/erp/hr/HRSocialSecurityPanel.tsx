@@ -18,10 +18,16 @@ import {
 import { 
   Shield, Calculator, FileUp, FileDown, Search,
   CheckCircle, Clock, AlertTriangle, Users, Calendar,
-  Building2, Euro, Send, FileText, RefreshCw, Loader2
+  Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { SSNewCommunicationDialog } from './dialogs/SSNewCommunicationDialog';
+import { SSCertificateRequestDialog } from './dialogs/SSCertificateRequestDialog';
+import { SSSILTRASubmitDialog } from './dialogs/SSSILTRASubmitDialog';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface HRSocialSecurityPanelProps {
   companyId: string;
@@ -45,7 +51,11 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
   const [selectedPeriod, setSelectedPeriod] = useState('2026-01');
   const [activeTab, setActiveTab] = useState('cotizaciones');
   const [loading, setLoading] = useState<string | null>(null);
-
+  
+  // Dialog states
+  const [showNewCommDialog, setShowNewCommDialog] = useState(false);
+  const [showCertificateDialog, setShowCertificateDialog] = useState(false);
+  const [showSILTRADialog, setShowSILTRADialog] = useState(false);
   // Demo data - Cotizaciones mensuales
   const contributions = [
     {
@@ -152,31 +162,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     }
   }, [companyId, selectedPeriod]);
 
-  const handleSubmitSILTRA = useCallback(async () => {
-    setLoading('siltra');
-    try {
-      const { data, error } = await supabase.functions.invoke('erp-hr-ai-agent', {
-        body: {
-          action: 'submit_siltra',
-          companyId,
-          period: selectedPeriod
-        }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.success) {
-        toast.success('Presentación SILTRA enviada correctamente');
-      } else {
-        toast.info(`Presentación SILTRA simulada para ${selectedPeriod}`);
-      }
-    } catch (error) {
-      console.error('Error submitting SILTRA:', error);
-      toast.success(`Presentación SILTRA simulada para ${selectedPeriod}`);
-    } finally {
-      setLoading(null);
-    }
-  }, [companyId, selectedPeriod]);
+  // SILTRA now handled via SSSILTRASubmitDialog
 
   const handleRefreshRED = useCallback(async () => {
     setLoading('refresh');
@@ -199,42 +185,104 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
     }
   }, [companyId]);
 
-  const handleNewCommunication = useCallback(async () => {
-    setLoading('communication');
-    try {
-      toast.info('Abriendo formulario de nueva comunicación RED...');
-      // En producción esto abriría un diálogo específico
-      setTimeout(() => {
-        toast.success('Comunicación RED preparada');
-        setLoading(null);
-      }, 1000);
-    } catch (error) {
-      console.error('Error:', error);
-      setLoading(null);
-    }
+  const handleNewCommunication = useCallback(() => {
+    setShowNewCommDialog(true);
   }, []);
 
-  const handleRequestCertificate = useCallback(async () => {
-    setLoading('certificate');
-    try {
-      const { data, error } = await supabase.functions.invoke('erp-hr-ai-agent', {
-        body: {
-          action: 'request_certificate',
-          companyId,
-          certificateType: 'vida_laboral'
-        }
-      });
-      
-      if (error) throw error;
-      
-      toast.success('Solicitud de certificado enviada');
-    } catch (error) {
-      console.error('Error requesting certificate:', error);
-      toast.success('Solicitud de certificado enviada (demo)');
-    } finally {
-      setLoading(null);
-    }
-  }, [companyId]);
+  const handleRequestCertificate = useCallback(() => {
+    setShowCertificateDialog(true);
+  }, []);
+
+  const handleOpenSILTRA = useCallback(() => {
+    setShowSILTRADialog(true);
+  }, []);
+
+  // Export functions
+  const exportContributionsPDF = useCallback(() => {
+    const doc = new jsPDF();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Cotizaciones Seguridad Social', 14, 20);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período: ${selectedPeriod}`, 14, 28);
+    doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, 14, 34);
+    
+    autoTable(doc, {
+      startY: 42,
+      head: [['Período', 'Trabajadores', 'Base CC', 'Empresa', 'Trabajador', 'Total', 'Estado']],
+      body: contributions.map(c => [
+        c.period,
+        c.workers.toString(),
+        `€${c.baseCC.toLocaleString()}`,
+        `€${c.totalCompany.toLocaleString()}`,
+        `€${c.totalWorker.toLocaleString()}`,
+        `€${c.total.toLocaleString()}`,
+        c.status === 'paid' ? 'Pagada' : c.status === 'filed' ? 'Presentada' : 'Pendiente'
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+    
+    doc.save(`cotizaciones_ss_${selectedPeriod}.pdf`);
+    toast.success('PDF de cotizaciones exportado');
+  }, [selectedPeriod, contributions]);
+
+  const exportContributionsExcel = useCallback(() => {
+    const wsData = [
+      ['Cotizaciones Seguridad Social', selectedPeriod],
+      [],
+      ['Período', 'Trabajadores', 'Base CC', 'Empresa', 'Trabajador', 'Total', 'Estado', 'Referencia'],
+      ...contributions.map(c => [
+        c.period,
+        c.workers,
+        c.baseCC,
+        c.totalCompany,
+        c.totalWorker,
+        c.total,
+        c.status === 'paid' ? 'Pagada' : c.status === 'filed' ? 'Presentada' : 'Pendiente',
+        c.filingRef
+      ])
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cotizaciones');
+    XLSX.writeFile(wb, `cotizaciones_ss_${selectedPeriod}.xlsx`);
+    toast.success('Excel de cotizaciones exportado');
+  }, [selectedPeriod, contributions]);
+
+  const exportFilingsPDF = useCallback(() => {
+    const doc = new jsPDF();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Movimientos Sistema RED', 14, 20);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generado: ${new Date().toLocaleDateString('es-ES')}`, 14, 28);
+    
+    autoTable(doc, {
+      startY: 36,
+      head: [['Tipo', 'Descripción', 'Fecha/Período', 'Trabajador', 'Estado']],
+      body: filings.map(f => [
+        f.type,
+        f.desc,
+        f.period || f.date || '',
+        f.worker || '-',
+        f.status === 'confirmed' ? 'Confirmado' : f.status === 'error' ? 'Error' : 'Pendiente'
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [34, 197, 94] }
+    });
+    
+    doc.save(`movimientos_red_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('PDF de movimientos RED exportado');
+  }, [filings]);
+
+  const printSection = useCallback((sectionId: string) => {
+    window.print();
+    toast.info('Abriendo diálogo de impresión...');
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -345,9 +393,17 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
 
             {/* Tab Cotizaciones */}
             <TabsContent value="cotizaciones" className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="text-sm font-medium">Liquidaciones mensuales</h4>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="ghost" size="sm" onClick={exportContributionsPDF} title="Exportar PDF">
+                    <FileDown className="h-4 w-4 mr-1" />
+                    PDF
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={exportContributionsExcel} title="Exportar Excel">
+                    <Download className="h-4 w-4 mr-1" />
+                    Excel
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleCalculateContributions} disabled={loading === 'calculate'}>
                     {loading === 'calculate' ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -356,12 +412,8 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
                     )}
                     Calcular
                   </Button>
-                  <Button size="sm" onClick={handleSubmitSILTRA} disabled={loading === 'siltra'}>
-                    {loading === 'siltra' ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4 mr-1" />
-                    )}
+                  <Button size="sm" onClick={handleOpenSILTRA}>
+                    <Send className="h-4 w-4 mr-1" />
                     Presentar SILTRA
                   </Button>
                 </div>
@@ -429,9 +481,13 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
 
             {/* Tab Sistema RED */}
             <TabsContent value="red" className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="text-sm font-medium">Movimientos Sistema RED</h4>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="ghost" size="sm" onClick={exportFilingsPDF} title="Exportar PDF">
+                    <FileDown className="h-4 w-4 mr-1" />
+                    PDF
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleRefreshRED} disabled={loading === 'refresh'}>
                     {loading === 'refresh' ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -440,12 +496,8 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
                     )}
                     Actualizar
                   </Button>
-                  <Button size="sm" onClick={handleNewCommunication} disabled={loading === 'communication'}>
-                    {loading === 'communication' ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <FileUp className="h-4 w-4 mr-1" />
-                    )}
+                  <Button size="sm" onClick={handleNewCommunication}>
+                    <FileUp className="h-4 w-4 mr-1" />
                     Nueva comunicación
                   </Button>
                 </div>
@@ -473,7 +525,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
                         <TableCell>{f.period || f.date}</TableCell>
                         <TableCell>{f.worker || '-'}</TableCell>
                         <TableCell>{getStatusBadge(f.status)}</TableCell>
-                        <TableCell className="text-xs text-red-500">
+                        <TableCell className="text-xs text-destructive">
                           {f.error || (f.deadline ? `Límite: ${f.deadline}` : '-')}
                         </TableCell>
                       </TableRow>
@@ -485,14 +537,10 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
 
             {/* Tab Certificados */}
             <TabsContent value="certificados" className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h4 className="text-sm font-medium">Solicitud de certificados</h4>
-                <Button size="sm" onClick={handleRequestCertificate} disabled={loading === 'certificate'}>
-                  {loading === 'certificate' ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <FileText className="h-4 w-4 mr-1" />
-                  )}
+                <Button size="sm" onClick={handleRequestCertificate}>
+                  <FileText className="h-4 w-4 mr-1" />
                   Solicitar certificado
                 </Button>
               </div>
@@ -607,6 +655,30 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <SSNewCommunicationDialog
+        open={showNewCommDialog}
+        onOpenChange={setShowNewCommDialog}
+        companyId={companyId}
+        onSuccess={() => toast.success('Comunicación enviada al Sistema RED')}
+      />
+
+      <SSCertificateRequestDialog
+        open={showCertificateDialog}
+        onOpenChange={setShowCertificateDialog}
+        companyId={companyId}
+        onSuccess={() => toast.success('Certificado solicitado correctamente')}
+      />
+
+      <SSSILTRASubmitDialog
+        open={showSILTRADialog}
+        onOpenChange={setShowSILTRADialog}
+        companyId={companyId}
+        period={selectedPeriod}
+        contributionData={currentContribution}
+        onSuccess={() => toast.success('Presentación SILTRA completada')}
+      />
     </div>
   );
 }
