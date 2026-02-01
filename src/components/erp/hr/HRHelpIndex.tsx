@@ -14,8 +14,10 @@ import {
   Search, BookOpen, ChevronRight,
   TrendingUp, DollarSign, Calendar, FileText, Building2,
   Shield, Brain, Newspaper, Rocket,
-  Users, Calculator, HeartHandshake, Upload, Mic, MicOff, Volume2
+  Users, Calculator, HeartHandshake, Upload, Mic, MicOff, Volume2,
+  Scale, AlertTriangle
 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -24,6 +26,8 @@ interface HRHelpIndexProps {
   onNavigate?: (section: string) => void;
   onOpenPayrollDialog?: () => void;
   onOpenVacationDialog?: () => void;
+  onOpenSeveranceDialog?: () => void;
+  onOpenIndemnizationDialog?: () => void;
   onAskAgent?: (question: string) => void;
 }
 
@@ -165,6 +169,8 @@ export function HRHelpIndex({
   onNavigate, 
   onOpenPayrollDialog,
   onOpenVacationDialog,
+  onOpenSeveranceDialog,
+  onOpenIndemnizationDialog,
   onAskAgent 
 }: HRHelpIndexProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -219,7 +225,7 @@ export function HRHelpIndex({
     speechSynthesis.speak(utterance);
   }, []);
 
-  // Acciones rápidas
+  // Acciones rápidas - EJECUTAN FORMULARIOS DIRECTAMENTE
   const handleQuickAction = useCallback((action: string) => {
     switch (action) {
       case 'payroll':
@@ -230,11 +236,24 @@ export function HRHelpIndex({
         }
         break;
       case 'severance':
-        if (onAskAgent) {
+      case 'severance_form':
+        if (onOpenSeveranceDialog) {
+          onOpenSeveranceDialog();
+        } else if (onAskAgent) {
           onAskAgent('Calcular finiquito para empleado');
         } else {
           onNavigate?.('agent');
           toast.info('Navega al Agente IA para calcular finiquitos');
+        }
+        break;
+      case 'indemnization':
+      case 'indemnization_form':
+        if (onOpenIndemnizationDialog) {
+          onOpenIndemnizationDialog();
+        } else if (onAskAgent) {
+          onAskAgent('Calcular indemnización por despido');
+        } else {
+          onNavigate?.('agent');
         }
         break;
       case 'ss':
@@ -250,10 +269,24 @@ export function HRHelpIndex({
       case 'contracts':
         onNavigate?.('contracts');
         break;
+      case 'compliance_audit':
+        if (onAskAgent) {
+          onAskAgent('Realizar auditoría de cumplimiento laboral de la empresa');
+        } else {
+          onNavigate?.('agent');
+        }
+        break;
+      case 'prl_check':
+        if (onAskAgent) {
+          onAskAgent('Verificar cumplimiento de prevención de riesgos laborales');
+        } else {
+          onNavigate?.('safety');
+        }
+        break;
       default:
         onNavigate?.(action);
     }
-  }, [onNavigate, onOpenPayrollDialog, onOpenVacationDialog, onAskAgent]);
+  }, [onNavigate, onOpenPayrollDialog, onOpenVacationDialog, onOpenSeveranceDialog, onOpenIndemnizationDialog, onAskAgent]);
 
   // Cargar datos de ayuda desde DB
   useEffect(() => {
@@ -380,10 +413,10 @@ export function HRHelpIndex({
         </CardContent>
       </Card>
 
-      {/* Quick links - OPERATIVOS */}
+      {/* Quick links - OPERATIVOS - Ejecutan formularios directamente */}
       <Card className="bg-gradient-to-br from-primary/5 to-accent/5">
         <CardContent className="p-4">
-          <h4 className="font-medium text-sm mb-3">Accesos rápidos</h4>
+          <h4 className="font-medium text-sm mb-3">Acciones Rápidas</h4>
           <div className="flex flex-col gap-2">
             <Badge 
               variant="outline" 
@@ -395,11 +428,19 @@ export function HRHelpIndex({
             </Badge>
             <Badge 
               variant="outline" 
-              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left"
-              onClick={() => handleQuickAction('severance')}
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left border-amber-500/30 hover:bg-amber-500/10"
+              onClick={() => handleQuickAction('severance_form')}
             >
-              <DollarSign className="h-3 w-3 mr-2 flex-shrink-0" />
+              <DollarSign className="h-3 w-3 mr-2 flex-shrink-0 text-amber-500" />
               Calcular finiquito
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left border-orange-500/30 hover:bg-orange-500/10"
+              onClick={() => handleQuickAction('indemnization_form')}
+            >
+              <Scale className="h-3 w-3 mr-2 flex-shrink-0 text-orange-500" />
+              Calcular indemnización
             </Badge>
             <Badge 
               variant="outline" 
@@ -424,6 +465,23 @@ export function HRHelpIndex({
             >
               <FileText className="h-3 w-3 mr-2 flex-shrink-0" />
               Gestionar contratos
+            </Badge>
+            <Separator className="my-2" />
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left border-purple-500/30"
+              onClick={() => handleQuickAction('compliance_audit')}
+            >
+              <Brain className="h-3 w-3 mr-2 flex-shrink-0 text-purple-500" />
+              Auditoría de cumplimiento (IA)
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className="cursor-pointer hover:bg-primary/10 justify-start py-2 whitespace-normal text-left border-red-500/30"
+              onClick={() => handleQuickAction('prl_check')}
+            >
+              <AlertTriangle className="h-3 w-3 mr-2 flex-shrink-0 text-red-500" />
+              Verificar PRL
             </Badge>
           </div>
         </CardContent>

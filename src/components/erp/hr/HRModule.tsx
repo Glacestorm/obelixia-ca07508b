@@ -48,6 +48,8 @@ import { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
 import { HRHelpIndex } from './HRHelpIndex';
 import { HREmployeesPanel } from './HREmployeesPanel';
 import { HRAlertsPanel } from './HRAlertsPanel';
+import { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
+import { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
 import { cn } from '@/lib/utils';
 
 export function HRModule() {
@@ -58,6 +60,8 @@ export function HRModule() {
   // Estados para dialogs
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
   const [showVacationDialog, setShowVacationDialog] = useState(false);
+  const [showSeveranceDialog, setShowSeveranceDialog] = useState(false);
+  const [showIndemnizationDialog, setShowIndemnizationDialog] = useState(false);
 
   // Navegación desde HelpIndex
   const handleHelpNavigate = useCallback((section: string) => {
@@ -332,9 +336,10 @@ export function HRModule() {
               onNavigate={handleHelpNavigate}
               onOpenPayrollDialog={() => setShowPayrollDialog(true)}
               onOpenVacationDialog={() => setShowVacationDialog(true)}
+              onOpenSeveranceDialog={() => setShowSeveranceDialog(true)}
+              onOpenIndemnizationDialog={() => setShowIndemnizationDialog(true)}
               onAskAgent={(question) => {
                 setActiveModule('agent');
-                // El agente IA recibiría la pregunta
               }}
             />
           </TabsContent>
@@ -356,6 +361,18 @@ export function HRModule() {
       <HRVacationRequestDialog
         open={showVacationDialog}
         onOpenChange={setShowVacationDialog}
+        companyId={demoCompanyId}
+      />
+
+      <HRSeveranceCalculatorDialog
+        open={showSeveranceDialog}
+        onOpenChange={setShowSeveranceDialog}
+        companyId={demoCompanyId}
+      />
+
+      <HRIndemnizationCalculatorDialog
+        open={showIndemnizationDialog}
+        onOpenChange={setShowIndemnizationDialog}
         companyId={demoCompanyId}
       />
     </div>

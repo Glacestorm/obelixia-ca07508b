@@ -30,3 +30,5 @@ export { HRAlertsPanel } from './HRAlertsPanel';
 // Dialogs operativos
 export { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
 export { HRVacationRequestDialog } from './HRVacationRequestDialog';
+export { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
+export { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
