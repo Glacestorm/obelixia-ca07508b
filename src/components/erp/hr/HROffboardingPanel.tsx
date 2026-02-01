@@ -666,6 +666,7 @@ export function HROffboardingPanel({ companyId }: HROffboardingPanelProps) {
       <HRTerminationAnalysisDialog
         open={showAnalysisDialog}
         onOpenChange={setShowAnalysisDialog}
+        employeeId={selectedTermination?.employee_id || ''}
         employeeName={selectedTermination?.employee ? `${selectedTermination.employee.first_name} ${selectedTermination.employee.last_name}` : ''}
         terminationType={getTypeConfig(selectedTermination?.termination_type || '').label}
         analysisResult={analysisResult as any}

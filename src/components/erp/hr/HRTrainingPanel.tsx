@@ -196,6 +196,56 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
 
       if (certsData) setCertifications(certsData);
 
+      // Calculate average training hours per employee from completed enrollments
+      let avgHoursPerEmployee = 0;
+      try {
+        // Get current year completed training enrollments with their training hours
+        const currentYear = new Date().getFullYear();
+        const startOfYear = `${currentYear}-01-01`;
+        const endOfYear = `${currentYear}-12-31`;
+        
+        const { data: enrollmentData } = await supabase
+          .from('erp_hr_training_enrollments')
+          .select(`
+            id,
+            employee_id,
+            training_id,
+            status,
+            actual_end,
+            erp_hr_training_catalog!inner(duration_hours)
+          `)
+          .eq('status', 'completed')
+          .gte('actual_end', startOfYear)
+          .lte('actual_end', endOfYear);
+        
+        if (enrollmentData && enrollmentData.length > 0) {
+          // Sum all completed training hours
+          const totalHours = enrollmentData.reduce((sum, enrollment) => {
+            const training = (enrollment as any).erp_hr_training_catalog as { duration_hours: number } | null;
+            return sum + (training?.duration_hours || 0);
+          }, 0);
+          
+          // Get unique employees who completed training
+          const uniqueEmployees = new Set(enrollmentData.map(e => (e as any).employee_id));
+          const employeeCount = uniqueEmployees.size;
+          
+          if (employeeCount > 0) {
+            avgHoursPerEmployee = Math.round(totalHours / employeeCount);
+          }
+        }
+      } catch (enrollmentError) {
+        console.warn('Could not calculate training hours, using default:', enrollmentError);
+        // Fallback: use training plan data if available
+        const currentPlan = plansData?.find(p => p.year === new Date().getFullYear());
+        if (currentPlan) {
+          // Estimate based on spent budget and average cost
+          const avgTrainingCost = catalogData?.reduce((sum, t) => sum + (t.cost_per_person || 0), 0) || 500;
+          const avgCatalogCost = catalogData && catalogData.length > 0 ? avgTrainingCost / catalogData.length : 500;
+          const estimatedTrainings = currentPlan.spent_budget / avgCatalogCost;
+          avgHoursPerEmployee = Math.round(estimatedTrainings * 8); // Assume avg 8h per training
+        }
+      }
+
       // Calculate stats
       const currentPlan = plansData?.find(p => p.year === new Date().getFullYear());
       setStats({
@@ -205,7 +255,7 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
         expiringCertifications: certsData?.length || 0,
         totalBudget: currentPlan?.total_budget || 0,
         spentBudget: currentPlan?.spent_budget || 0,
-        averageHoursPerEmployee: 24 // TODO: Calculate from history
+        averageHoursPerEmployee: avgHoursPerEmployee || 0
       });
 
     } catch (error) {

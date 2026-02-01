@@ -38,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { HRLegalReviewDialog } from './HRLegalReviewDialog';
 
 interface LegalRisk {
   risk: string;
@@ -87,6 +88,7 @@ interface AnalysisResult {
 interface HRTerminationAnalysisDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  employeeId: string;
   employeeName: string;
   terminationType: string;
   analysisResult: AnalysisResult | null;
@@ -97,12 +99,14 @@ interface HRTerminationAnalysisDialogProps {
 export function HRTerminationAnalysisDialog({
   open,
   onOpenChange,
+  employeeId,
   employeeName,
   terminationType,
   analysisResult,
   isLoading = false,
   onRunAnalysis
 }: HRTerminationAnalysisDialogProps) {
+  const [showLegalReviewDialog, setShowLegalReviewDialog] = useState(false);
 
   const getRiskColor = (level: string | undefined) => {
     const normalized = level?.toLowerCase();
@@ -258,10 +262,7 @@ export function HRTerminationAnalysisDialog({
                           variant="outline" 
                           size="sm" 
                           className="w-full border-amber-500/50 text-amber-700 hover:bg-amber-500/10"
-                          onClick={() => {
-                            // TODO: Integrate with Legal AI Agent when available
-                            alert('Solicitud de revisión legal enviada al departamento jurídico');
-                          }}
+                          onClick={() => setShowLegalReviewDialog(true)}
                         >
                           <Scale className="h-4 w-4 mr-2" />
                           Solicitar Revisión Legal
@@ -464,6 +465,19 @@ export function HRTerminationAnalysisDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Legal Review Dialog */}
+      <HRLegalReviewDialog
+        open={showLegalReviewDialog}
+        onOpenChange={setShowLegalReviewDialog}
+        employeeId={employeeId}
+        employeeName={employeeName}
+        terminationType={terminationType}
+        estimatedCost={analysisResult?.estimated_cost_max}
+        identifiedRisks={analysisResult?.legal_risks}
+        analysisData={analysisResult as Record<string, unknown> | undefined}
+        onSuccess={() => setShowLegalReviewDialog(false)}
+      />
     </Dialog>
   );
 }

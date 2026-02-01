@@ -18,3 +18,4 @@ export { HRSafetyEvaluationDialog } from './HRSafetyEvaluationDialog';
 export { HRSafetyTrainingDialog } from './HRSafetyTrainingDialog';
 export { HRSettlementDialog } from './HRSettlementDialog';
 export { HRVacationRejectDialog } from './HRVacationRejectDialog';
+export { HRLegalReviewDialog } from './HRLegalReviewDialog';
