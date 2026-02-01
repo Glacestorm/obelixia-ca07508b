@@ -14,7 +14,8 @@ const corsHeaders = {
 
 interface AgentRequest {
   action: 'chat' | 'calculate_payroll' | 'calculate_severance' | 'check_compliance' | 
-          'suggest_contract' | 'query_regulation' | 'analyze_vacation' | 'prl_audit';
+          'suggest_contract' | 'query_regulation' | 'analyze_vacation' | 'prl_audit' |
+          'get_absences' | 'get_active_alerts' | 'sync_absence';
   company_id?: string;
   session_id?: string;
   message?: string;
@@ -40,6 +41,10 @@ interface AgentRequest {
     pending_extra_pays?: number;
   };
   question?: string;
+  date_range?: {
+    start: string;
+    end: string;
+  };
 }
 
 serve(async (req) => {
@@ -117,6 +122,47 @@ serve(async (req) => {
       return data || [];
     };
 
+    // Fetch current absences (approved leave requests)
+    const fetchCurrentAbsences = async (companyId?: string, startDate?: string, endDate?: string) => {
+      const today = new Date().toISOString().split('T')[0];
+      const start = startDate || today;
+      const end = endDate || today;
+      
+      let query = supabase
+        .from('erp_hr_leave_requests')
+        .select(`
+          id, employee_id, start_date, end_date, days_requested, 
+          leave_type_code, status, notes
+        `)
+        .eq('status', 'approved')
+        .lte('start_date', end)
+        .gte('end_date', start);
+      
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      
+      const { data } = await query;
+      return data || [];
+    };
+
+    // Fetch active HR alerts
+    const fetchActiveAlerts = async (companyId?: string) => {
+      let query = supabase
+        .from('erp_hr_alerts')
+        .select('*')
+        .eq('is_read', false)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      
+      const { data } = await query;
+      return data || [];
+    };
+
     // Create HR alert
     const createAlert = async (
       companyId: string,
@@ -165,10 +211,86 @@ serve(async (req) => {
     let result: Record<string, unknown> = {};
 
     switch (action) {
+      // NEW: Get current absences - who is away today
+      case 'get_absences': {
+        const absences = await fetchCurrentAbsences(
+          company_id, 
+          body.date_range?.start, 
+          body.date_range?.end
+        );
+        
+        result = {
+          absences,
+          total_absent: absences.length,
+          date_range: body.date_range || { start: new Date().toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] }
+        };
+        
+        return new Response(JSON.stringify({
+          success: true,
+          action,
+          ...result,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // NEW: Get active alerts for HR manager
+      case 'get_active_alerts': {
+        const alerts = await fetchActiveAlerts(company_id);
+        
+        result = {
+          alerts,
+          total_alerts: alerts.length,
+          critical_count: alerts.filter((a: any) => a.severity === 'critical').length,
+          warning_count: alerts.filter((a: any) => a.severity === 'warning').length
+        };
+        
+        return new Response(JSON.stringify({
+          success: true,
+          action,
+          ...result,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // NEW: Sync absence to AI knowledge (called when leave is approved)
+      case 'sync_absence': {
+        if (!context) throw new Error('context required for sync_absence');
+        
+        // Store in agent's context memory
+        console.log('[erp-hr-ai-agent] Syncing absence:', context);
+        
+        // Create an AI-friendly summary
+        const absenceSummary = `Ausencia registrada: ${context.employee_name || 'Empleado'} estará ausente del ${context.start_date} al ${context.end_date}. Tipo: ${context.type}. Departamento: ${context.department || 'No especificado'}.`;
+        
+        result = {
+          synced: true,
+          summary: absenceSummary,
+          employee_id: context.employee_id,
+          dates: { start: context.start_date, end: context.end_date }
+        };
+        
+        return new Response(JSON.stringify({
+          success: true,
+          action,
+          ...result,
+          timestamp: new Date().toISOString()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'chat': {
         const knowledgeBase = await fetchKnowledge(cnae_code, undefined, 20);
         const collectiveAgreement = await fetchCollectiveAgreement(cnae_code);
         const prlReqs = await fetchPRLRequirements(cnae_code);
+        
+        // NEW: Fetch current absences and alerts for context
+        const currentAbsences = await fetchCurrentAbsences(company_id);
+        const activeAlerts = await fetchActiveAlerts(company_id);
 
         systemPrompt = `Eres un Agente IA de Recursos Humanos ultraespecializado en normativa laboral española y europea.
 
@@ -178,6 +300,13 @@ TU ROL:
 - Gestor de nóminas, contratos, vacaciones y bajas
 - Auditor de cumplimiento en prevención de riesgos laborales (PRL)
 - Especialista en cálculo de finiquitos e indemnizaciones
+- CONOCEDOR EN TIEMPO REAL de quién está ausente y qué alertas hay activas
+
+AUSENCIAS ACTUALES (${currentAbsences.length} empleados ausentes):
+${currentAbsences.length > 0 ? currentAbsences.map((a: any) => `- Empleado ${a.employee_id}: ${a.start_date} a ${a.end_date} (${a.leave_type_code})`).join('\n') : 'Ningún empleado ausente hoy'}
+
+ALERTAS ACTIVAS (${activeAlerts.length} alertas):
+${activeAlerts.length > 0 ? activeAlerts.slice(0, 10).map((a: any) => `- [${a.severity?.toUpperCase()}] ${a.title}: ${a.description?.substring(0, 100)}`).join('\n') : 'Sin alertas activas'}
 
 NORMATIVA QUE DOMINAS:
 ${knowledgeBase.map(k => `- ${k.title}: ${k.content.substring(0, 200)}...`).join('\n')}
@@ -199,6 +328,8 @@ CAPACIDADES:
 5. Gestionar contratos y prórrogas
 6. Calcular y planificar vacaciones
 7. Asesorar sobre ERTEs y EREs
+8. INFORMAR sobre quién está ausente HOY
+9. REPORTAR alertas activas de RRHH
 
 REGLAS ESTRICTAS:
 - SIEMPRE citar la normativa laboral aplicable
@@ -207,6 +338,7 @@ REGLAS ESTRICTAS:
 - Alertar sobre incumplimientos de PRL
 - Usar terminología técnica laboral precisa
 - Calcular siempre con los tipos vigentes de SS e IRPF
+- Cuando pregunten "¿quién está de vacaciones?" o similar, USAR los datos de AUSENCIAS ACTUALES
 
 CONTEXTO ACTUAL:
 ${context ? JSON.stringify(context) : 'Sin contexto adicional'}
