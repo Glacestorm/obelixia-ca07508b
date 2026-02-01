@@ -72,18 +72,25 @@ export function HRIncidentFormDialog({
   }, [open]);
 
   const fetchEmployees = async () => {
-    const { data } = await supabase
-      .from('erp_hr_employees')
-      .select('id, first_name, last_name')
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .order('first_name') as { data: Array<{ id: string; first_name: string; last_name: string }> | null };
-
-    if (data) {
-      setEmployees(data.map(e => ({
-        id: e.id,
-        name: `${e.first_name} ${e.last_name}`
-      })));
+    try {
+      // Using raw fetch to avoid deep type inference issues
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&is_active=eq.true&select=id,first_name,last_name&order=first_name`;
+      const response = await fetch(url, {
+        headers: {
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        }
+      });
+      
+      if (response.ok) {
+        const employeeData: Array<{ id: string; first_name: string; last_name: string }> = await response.json();
+        setEmployees(employeeData.map(e => ({
+          id: e.id,
+          name: `${e.first_name} ${e.last_name}`
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching employees:', err);
     }
   };
 
