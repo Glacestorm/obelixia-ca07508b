@@ -45,3 +45,6 @@ export { HRBenefitEnrollmentDialog } from './HRBenefitEnrollmentDialog';
 // Fase 3 - Modelos Contractuales por Jurisdicción
 export { HRDocumentTemplatesPanel } from './HRDocumentTemplatesPanel';
 export { HRDocumentGeneratorDialog } from './HRDocumentGeneratorDialog';
+
+// Fase 4 - Panel de Control Ejecutivo
+export { HRExecutiveDashboard } from './HRExecutiveDashboard';
