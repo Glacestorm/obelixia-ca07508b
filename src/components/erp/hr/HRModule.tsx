@@ -6,10 +6,9 @@
 
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { 
   Users, 
   Calendar, 
@@ -22,14 +21,11 @@ import {
   HelpCircle,
   Rocket,
   Shield,
-  Calculator,
-  UserCheck,
-  UserX,
-  Clock,
   AlertTriangle,
   TrendingUp,
-  Briefcase,
-  HeartHandshake
+  Landmark,
+  UserCog,
+  FolderOpen
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp';
 import { HRDashboardPanel } from './HRDashboardPanel';
@@ -43,6 +39,10 @@ import { HRKnowledgeUploader } from './HRKnowledgeUploader';
 import { HRHelpPanel } from './HRHelpPanel';
 import { HRTrends2026Panel } from './HRTrends2026Panel';
 import { HRSafetyPanel } from './HRSafetyPanel';
+import { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
+import { HRUnionsPanel } from './HRUnionsPanel';
+import { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
+import { HRHelpIndex } from './HRHelpIndex';
 import { cn } from '@/lib/utils';
 
 export function HRModule() {
@@ -149,69 +149,84 @@ export function HRModule() {
         </Card>
       </div>
 
-      {/* Navegación por tabs */}
+      {/* Navegación por tabs con scroll horizontal */}
       <Tabs value={activeModule} onValueChange={setActiveModule}>
-        <TabsList className="grid w-full max-w-7xl grid-cols-11">
-          <TabsTrigger value="dashboard" className="gap-1 text-xs">
-            <TrendingUp className="h-3 w-3" />
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="payroll" className="gap-1 text-xs">
-            <DollarSign className="h-3 w-3" />
-            Nóminas
-            {stats.pendingPayrolls > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {stats.pendingPayrolls}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="vacations" className="gap-1 text-xs">
-            <Calendar className="h-3 w-3" />
-            Vacaciones
-            {stats.pendingVacations > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {stats.pendingVacations}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="contracts" className="gap-1 text-xs">
-            <FileText className="h-3 w-3" />
-            Contratos
-          </TabsTrigger>
-          <TabsTrigger value="departments" className="gap-1 text-xs">
-            <Building2 className="h-3 w-3" />
-            Organización
-          </TabsTrigger>
-          <TabsTrigger value="safety" className="gap-1 text-xs">
-            <Shield className="h-3 w-3" />
-            Seguridad
-            {stats.safetyAlerts > 0 && (
-              <Badge variant="destructive" className="ml-1 text-xs">
-                {stats.safetyAlerts}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="agent" className="gap-1 text-xs">
-            <Brain className="h-3 w-3" />
-            Agente IA
-          </TabsTrigger>
-          <TabsTrigger value="news" className="gap-1 text-xs">
-            <Newspaper className="h-3 w-3" />
-            Noticias
-          </TabsTrigger>
-          <TabsTrigger value="knowledge" className="gap-1 text-xs">
-            <BookOpen className="h-3 w-3" />
-            Normativa
-          </TabsTrigger>
-          <TabsTrigger value="help" className="gap-1 text-xs">
-            <HelpCircle className="h-3 w-3" />
-            Ayuda
-          </TabsTrigger>
-          <TabsTrigger value="trends" className="gap-1 text-xs">
-            <Rocket className="h-3 w-3" />
-            2026+
-          </TabsTrigger>
-        </TabsList>
+        <ScrollArea className="w-full whitespace-nowrap">
+          <TabsList className="inline-flex w-max">
+            <TabsTrigger value="dashboard" className="gap-1 text-xs">
+              <TrendingUp className="h-3 w-3" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="payroll" className="gap-1 text-xs">
+              <DollarSign className="h-3 w-3" />
+              Nóminas
+              {stats.pendingPayrolls > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {stats.pendingPayrolls}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="ss" className="gap-1 text-xs">
+              <Landmark className="h-3 w-3" />
+              Seg. Social
+            </TabsTrigger>
+            <TabsTrigger value="vacations" className="gap-1 text-xs">
+              <Calendar className="h-3 w-3" />
+              Vacaciones
+              {stats.pendingVacations > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {stats.pendingVacations}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="contracts" className="gap-1 text-xs">
+              <FileText className="h-3 w-3" />
+              Contratos
+            </TabsTrigger>
+            <TabsTrigger value="unions" className="gap-1 text-xs">
+              <UserCog className="h-3 w-3" />
+              Sindicatos
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="gap-1 text-xs">
+              <FolderOpen className="h-3 w-3" />
+              Documentos
+            </TabsTrigger>
+            <TabsTrigger value="departments" className="gap-1 text-xs">
+              <Building2 className="h-3 w-3" />
+              Organización
+            </TabsTrigger>
+            <TabsTrigger value="safety" className="gap-1 text-xs">
+              <Shield className="h-3 w-3" />
+              PRL
+              {stats.safetyAlerts > 0 && (
+                <Badge variant="destructive" className="ml-1 text-xs">
+                  {stats.safetyAlerts}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="gap-1 text-xs">
+              <Brain className="h-3 w-3" />
+              Agente IA
+            </TabsTrigger>
+            <TabsTrigger value="news" className="gap-1 text-xs">
+              <Newspaper className="h-3 w-3" />
+              Noticias
+            </TabsTrigger>
+            <TabsTrigger value="knowledge" className="gap-1 text-xs">
+              <BookOpen className="h-3 w-3" />
+              Normativa
+            </TabsTrigger>
+            <TabsTrigger value="help" className="gap-1 text-xs">
+              <HelpCircle className="h-3 w-3" />
+              Ayuda
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="gap-1 text-xs">
+              <Rocket className="h-3 w-3" />
+              2026+
+            </TabsTrigger>
+          </TabsList>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
 
         <div className="mt-4">
           <TabsContent value="dashboard" className="m-0">
@@ -222,12 +237,24 @@ export function HRModule() {
             <HRPayrollPanel companyId={demoCompanyId} />
           </TabsContent>
 
+          <TabsContent value="ss" className="m-0">
+            <HRSocialSecurityPanel companyId={demoCompanyId} />
+          </TabsContent>
+
           <TabsContent value="vacations" className="m-0">
             <HRVacationsPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="contracts" className="m-0">
             <HRContractsPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="unions" className="m-0">
+            <HRUnionsPanel companyId={demoCompanyId} />
+          </TabsContent>
+
+          <TabsContent value="documents" className="m-0">
+            <HREmployeeDocumentsPanel companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="departments" className="m-0">
@@ -251,7 +278,7 @@ export function HRModule() {
           </TabsContent>
 
           <TabsContent value="help" className="m-0">
-            <HRHelpPanel companyId={demoCompanyId} />
+            <HRHelpIndex companyId={demoCompanyId} />
           </TabsContent>
 
           <TabsContent value="trends" className="m-0">

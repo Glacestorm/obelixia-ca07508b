@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { 
   FileText, Upload, Download, Search, Filter, Eye,
-  File, FileImage, FilePdf, FileSpreadsheet,
+  File, FileImage, FileSpreadsheet, FileType,
   Clock, AlertTriangle, CheckCircle, Trash2, Plus,
   User, Calendar, Lock, Unlock
 } from 'lucide-react';
@@ -170,11 +170,11 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
   });
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.includes('pdf')) return <FilePdf className="h-4 w-4 text-red-500" />;
-    if (mimeType.includes('image')) return <FileImage className="h-4 w-4 text-blue-500" />;
+    if (mimeType.includes('pdf')) return <FileType className="h-4 w-4 text-destructive" />;
+    if (mimeType.includes('image')) return <FileImage className="h-4 w-4 text-primary" />;
     if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) 
-      return <FileSpreadsheet className="h-4 w-4 text-green-500" />;
-    return <File className="h-4 w-4 text-gray-500" />;
+      return <FileSpreadsheet className="h-4 w-4 text-accent-foreground" />;
+    return <File className="h-4 w-4 text-muted-foreground" />;
   };
 
   const isExpiringSoon = (expiryDate: string | null) => {
