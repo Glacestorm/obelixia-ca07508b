@@ -47,6 +47,8 @@ import { ERPAIAssistantPanel } from './ERPAIAssistantPanel';
 import { ERPAdvancedToolsPanel } from './ERPAdvancedToolsPanel';
 import { ERPFiscalReconciliationPanel } from './ERPFiscalReconciliationPanel';
 import { ERPTrends2026Panel } from './ERPTrends2026Panel';
+import { ERPKnowledgeUploader } from './ERPKnowledgeUploader';
+import { ERPNewsPanel } from './ERPNewsPanel';
 
 interface ERPMigrationDashboardProps {
   companyId?: string;
@@ -205,6 +207,8 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
           <TabsTrigger value="reports" className="text-xs">Reportes</TabsTrigger>
           <TabsTrigger value="tools" className="text-xs">Herramientas</TabsTrigger>
           <TabsTrigger value="ai-assistant" className="text-xs">IA</TabsTrigger>
+          <TabsTrigger value="knowledge" className="text-xs">Conocimiento</TabsTrigger>
+          <TabsTrigger value="news" className="text-xs">Noticias</TabsTrigger>
           <TabsTrigger value="trends" className="text-xs">2026+</TabsTrigger>
         </TabsList>
 
@@ -385,6 +389,14 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
 
         <TabsContent value="ai-assistant">
           <ERPAIAssistantPanel sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="knowledge">
+          <ERPKnowledgeUploader sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="news">
+          <ERPNewsPanel sessionId={activeSession?.id} />
         </TabsContent>
 
         <TabsContent value="trends">
