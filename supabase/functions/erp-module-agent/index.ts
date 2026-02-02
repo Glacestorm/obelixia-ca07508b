@@ -5,8 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Dominios que SIEMPRE requieren validación legal pre-acción
+const LEGAL_VALIDATION_REQUIRED_DOMAINS = ['hr', 'financial', 'compliance'];
+
+// Tipos de acciones que SIEMPRE requieren validación legal
+const LEGAL_VALIDATION_REQUIRED_ACTIONS = [
+  'terminate_employee', 'modify_contract', 'process_payroll',
+  'create_invoice', 'approve_payment', 'modify_tax_config',
+  'delete_data', 'export_personal_data', 'modify_permissions'
+];
+
 interface AgentRequest {
-  action: 'execute' | 'coordinate_domain' | 'supervisor_orchestrate' | 'get_predictive_insights';
+  action: 'execute' | 'coordinate_domain' | 'supervisor_orchestrate' | 'get_predictive_insights' | 'execute_with_legal_validation';
   agentType?: string;
   domain?: string;
   context?: Record<string, unknown>;
@@ -26,6 +36,90 @@ interface AgentRequest {
     activeModules: number;
   }>;
   currentState?: Record<string, unknown>;
+  skipLegalValidation?: boolean; // Solo para acciones de bajo riesgo
+  jurisdictions?: string[];
+}
+
+interface LegalValidationResult {
+  approved: boolean;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  warnings: string[];
+  conditions: string[];
+  blocking_issues: string[];
+}
+
+/**
+ * Función helper para solicitar validación legal al Agente Jurídico
+ */
+async function requestLegalValidation(
+  supabaseUrl: string,
+  supabaseKey: string,
+  agentId: string,
+  agentType: string,
+  actionType: string,
+  actionData: Record<string, unknown>,
+  jurisdictions: string[] = ['ES', 'AD', 'EU']
+): Promise<LegalValidationResult> {
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/legal-ai-advisor`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'validate_action',
+        requesting_agent: agentId,
+        requesting_agent_type: agentType,
+        jurisdictions,
+        urgency: 'immediate',
+        agent_action: {
+          action_type: actionType,
+          action_data: actionData
+        }
+      })
+    });
+
+    if (!response.ok) {
+      console.warn('[erp-module-agent] Legal validation failed, proceeding with caution');
+      return {
+        approved: false,
+        risk_level: 'high',
+        warnings: ['Validación legal no disponible'],
+        conditions: ['Requiere revisión manual'],
+        blocking_issues: ['Error en servicio de validación legal']
+      };
+    }
+
+    const data = await response.json();
+    
+    if (data?.success && data?.data) {
+      return {
+        approved: data.data.approved ?? false,
+        risk_level: data.data.risk_level ?? 'medium',
+        warnings: data.data.warnings ?? [],
+        conditions: data.data.conditions ?? [],
+        blocking_issues: data.data.blocking_issues ?? []
+      };
+    }
+
+    return {
+      approved: true,
+      risk_level: 'low',
+      warnings: [],
+      conditions: [],
+      blocking_issues: []
+    };
+  } catch (error) {
+    console.error('[erp-module-agent] Legal validation error:', error);
+    return {
+      approved: false,
+      risk_level: 'high',
+      warnings: ['Error en validación legal'],
+      conditions: [],
+      blocking_issues: ['Servicio legal no disponible - escalar a supervisión']
+    };
+  }
 }
 
 serve(async (req) => {
@@ -35,21 +129,86 @@ serve(async (req) => {
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { action, agentType, domain, context, capabilities, objective, priority, moduleAgents, domains, currentState } = await req.json() as AgentRequest;
+    const requestData = await req.json() as AgentRequest;
+    const { 
+      action, agentType, domain, context, capabilities, 
+      objective, priority, moduleAgents, domains, currentState,
+      skipLegalValidation, jurisdictions 
+    } = requestData;
 
     console.log(`[erp-module-agent] Action: ${action}, AgentType: ${agentType}, Domain: ${domain}`);
 
     let systemPrompt = '';
     let userPrompt = '';
+    let legalValidation: LegalValidationResult | null = null;
+
+    // === VALIDACIÓN LEGAL PRE-ACCIÓN ===
+    // Verificar si esta acción requiere validación legal
+    const requiresLegalValidation = 
+      !skipLegalValidation && 
+      action === 'execute' && 
+      domain && 
+      agentType && 
+      (
+        LEGAL_VALIDATION_REQUIRED_DOMAINS.includes(domain) ||
+        LEGAL_VALIDATION_REQUIRED_ACTIONS.some(a => 
+          context && JSON.stringify(context).toLowerCase().includes(a)
+        )
+      );
+
+    if (requiresLegalValidation) {
+      console.log(`[erp-module-agent] Requesting legal validation for ${domain}/${agentType}`);
+      
+      legalValidation = await requestLegalValidation(
+        SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY,
+        `agent_${domain}_${agentType}`,
+        agentType,
+        action,
+        context || {},
+        jurisdictions || ['ES', 'AD', 'EU']
+      );
+
+      // Si la validación legal rechaza la acción, devolver inmediatamente
+      if (!legalValidation.approved && legalValidation.blocking_issues.length > 0) {
+        console.log(`[erp-module-agent] Action blocked by legal validation`);
+        return new Response(JSON.stringify({
+          success: false,
+          action,
+          blocked_by_legal: true,
+          legal_validation: legalValidation,
+          message: 'Acción bloqueada por validación legal',
+          timestamp: new Date().toISOString()
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     switch (action) {
       case 'execute':
-        systemPrompt = `Eres un agente IA especializado de tipo "${agentType}" para el dominio "${domain}" de un ERP enterprise.
+      case 'execute_with_legal_validation':
+        // Incluir resultado de validación legal en el contexto del agente
+        const legalContext = legalValidation ? `
+VALIDACIÓN LEGAL PRE-ACCIÓN:
+- Aprobado: ${legalValidation.approved ? 'Sí' : 'Con condiciones'}
+- Nivel de riesgo: ${legalValidation.risk_level}
+- Advertencias: ${legalValidation.warnings.join(', ') || 'Ninguna'}
+- Condiciones: ${legalValidation.conditions.join(', ') || 'Ninguna'}
 
+IMPORTANTE: Debes considerar estas condiciones y advertencias legales en tu análisis.
+` : '';
+
+        systemPrompt = `Eres un agente IA especializado de tipo "${agentType}" para el dominio "${domain}" de un ERP enterprise.
+${legalContext}
 CAPACIDADES DISPONIBLES:
 ${capabilities?.join('\n- ') || 'Ninguna especificada'}
 
@@ -57,6 +216,7 @@ ROL:
 - Analizar el contexto proporcionado
 - Identificar acciones requeridas según tus capacidades
 - Proponer métricas y resultados
+- Cumplir con las condiciones legales indicadas
 
 FORMATO DE RESPUESTA (JSON estricto):
 {
