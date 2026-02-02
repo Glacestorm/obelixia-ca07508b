@@ -20,7 +20,7 @@ import {
   Plus, Edit, FileText, Shield, HeartHandshake,
   Building2, AlertTriangle, CheckCircle
 } from 'lucide-react';
-import { HRUnionMembershipDialog, HRElectionFormDialog } from './dialogs';
+import { HRUnionMembershipDialog, HRElectionFormDialog, HRUnionCreditUsageDialog } from './dialogs';
 
 interface HRUnionsPanelProps {
   companyId: string;
@@ -30,6 +30,7 @@ export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
   const [activeTab, setActiveTab] = useState('afiliacion');
   const [showMembershipDialog, setShowMembershipDialog] = useState(false);
   const [showElectionDialog, setShowElectionDialog] = useState(false);
+  const [showCreditUsageDialog, setShowCreditUsageDialog] = useState(false);
 
   // Demo data - Afiliaciones sindicales
   const memberships = [
@@ -385,7 +386,7 @@ export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
             <TabsContent value="credito" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Control de horas sindicales</h4>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowCreditUsageDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Registrar uso
                 </Button>
@@ -500,6 +501,13 @@ export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
       <HRElectionFormDialog
         open={showElectionDialog}
         onOpenChange={setShowElectionDialog}
+        companyId={companyId}
+      />
+
+      {/* Credit Usage Dialog */}
+      <HRUnionCreditUsageDialog
+        open={showCreditUsageDialog}
+        onOpenChange={setShowCreditUsageDialog}
         companyId={companyId}
       />
     </div>
