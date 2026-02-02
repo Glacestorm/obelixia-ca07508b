@@ -28,5 +28,9 @@ export { ERPAIAssistantPanel } from './ERPAIAssistantPanel';
 // Tendencias y futuro
 export { ERPTrends2026Panel } from './ERPTrends2026Panel';
 
+// Base de conocimiento y noticias
+export { ERPKnowledgeUploader } from './ERPKnowledgeUploader';
+export { ERPNewsPanel } from './ERPNewsPanel';
+
 // Componentes de UI
 export { ERPConnectorLogo } from './ERPConnectorLogo';
