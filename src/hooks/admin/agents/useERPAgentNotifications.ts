@@ -283,7 +283,8 @@ export function useERPAgentNotifications(options: UseERPAgentNotificationsOption
       compliance: notifications.filter(n => n.domain === 'compliance').length,
       operations: notifications.filter(n => n.domain === 'operations').length,
       hr: notifications.filter(n => n.domain === 'hr').length,
-      analytics: notifications.filter(n => n.domain === 'analytics').length
+      analytics: notifications.filter(n => n.domain === 'analytics').length,
+      legal: notifications.filter(n => n.domain === 'legal').length
     }
   };
 

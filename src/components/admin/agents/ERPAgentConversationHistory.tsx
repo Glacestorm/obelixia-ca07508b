@@ -95,14 +95,15 @@ interface ERPAgentConversationHistoryProps {
 // === DATOS MOCK ===
 
 const generateMockConversations = (): ERPConversation[] => {
-  const domains: AgentDomain[] = ['financial', 'crm_cs', 'compliance', 'operations', 'hr', 'analytics'];
+  const domains: AgentDomain[] = ['financial', 'crm_cs', 'compliance', 'operations', 'hr', 'analytics', 'legal'];
   const agentTypes: Record<AgentDomain, string[]> = {
     financial: ['Contabilidad', 'Tesorería', 'Facturación', 'Cobros'],
     crm_cs: ['Ventas', 'Customer Success', 'Pipeline', 'Anti-Churn'],
     compliance: ['GDPR', 'PSD2', 'ESG', 'Auditoría'],
     operations: ['Inventario', 'Logística', 'Mantenimiento', 'Scheduling'],
     hr: ['Nóminas', 'Reclutamiento', 'Formación', 'Rendimiento'],
-    analytics: ['Reporting', 'Forecasting', 'Anomalías']
+    analytics: ['Reporting', 'Forecasting', 'Anomalías'],
+    legal: ['Derecho Laboral', 'Derecho Mercantil', 'Derecho Fiscal', 'Protección Datos', 'Compliance Bancario']
   };
 
   const conversations: ERPConversation[] = [];

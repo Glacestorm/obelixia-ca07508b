@@ -5,7 +5,7 @@
 
 // === TIPOS DE AGENTES ===
 
-export type AgentDomain = 'financial' | 'crm_cs' | 'compliance' | 'operations' | 'hr' | 'analytics';
+export type AgentDomain = 'financial' | 'crm_cs' | 'compliance' | 'operations' | 'hr' | 'analytics' | 'legal';
 
 export type ModuleAgentType = 
   // Financiero
@@ -19,7 +19,9 @@ export type ModuleAgentType =
   // RRHH - Extendido
   | 'payroll' | 'recruitment' | 'training' | 'performance' | 'contracts' | 'vacations' | 'prl_safety'
   // Analytics
-  | 'reporting' | 'forecasting' | 'anomaly_detection';
+  | 'reporting' | 'forecasting' | 'anomaly_detection'
+  // Legal - Módulo Jurídico Enterprise
+  | 'labor_law' | 'corporate_law' | 'tax_law' | 'data_protection' | 'banking_compliance' | 'contract_analysis';
 
 export type ModuleAgentStatus = 'active' | 'idle' | 'analyzing' | 'error' | 'paused';
 export type DomainAgentStatus = 'active' | 'coordinating' | 'idle' | 'error';

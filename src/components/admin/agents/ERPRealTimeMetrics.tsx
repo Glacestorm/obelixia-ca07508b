@@ -100,7 +100,8 @@ const DOMAIN_COLORS: Record<AgentDomain, string> = {
   compliance: '#8b5cf6',
   operations: '#f59e0b',
   hr: '#ec4899',
-  analytics: '#06b6d4'
+  analytics: '#06b6d4',
+  legal: '#6366f1'
 };
 
 // Generador de datos mock realistas
@@ -118,7 +119,7 @@ const generateMockMetrics = (): MetricDataPoint[] => {
 
 const generateDomainPerformance = (): MetricDataPoint[] => {
   const now = new Date();
-  const domains: AgentDomain[] = ['financial', 'crm_cs', 'compliance', 'operations', 'hr', 'analytics'];
+  const domains: AgentDomain[] = ['financial', 'crm_cs', 'compliance', 'operations', 'hr', 'analytics', 'legal'];
   
   return Array.from({ length: 12 }, (_, i) => {
     const time = new Date(now.getTime() - (11 - i) * 5 * 60 * 1000);
@@ -128,7 +129,8 @@ const generateDomainPerformance = (): MetricDataPoint[] => {
       compliance: 95,
       operations: 85,
       hr: 90,
-      analytics: 87
+      analytics: 87,
+      legal: 94
     };
     
     return domains.map(domain => ({

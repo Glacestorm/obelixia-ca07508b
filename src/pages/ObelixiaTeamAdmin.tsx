@@ -67,6 +67,9 @@ const AgentOrchestratorDashboard = lazy(() => import('@/components/admin/agents/
 const AgentHelpDashboard = lazy(() => import('@/components/admin/agents/AgentHelpDashboard').then(m => ({ default: m.AgentHelpDashboard })));
 const VerticalAgentsRegistryPanel = lazy(() => import('@/components/admin/verticals/agents/VerticalAgentsRegistryPanel').then(m => ({ default: m.VerticalAgentsRegistryPanel })));
 
+// Legal Advisor - Lazy loaded
+const LegalAdvisorDashboard = lazy(() => import('@/components/admin/legal-advisor/LegalAdvisorDashboard').then(m => ({ default: m.LegalAdvisorDashboard })));
+
 // Premium components
 import { ObelixiaAdminSidebar } from '@/components/obelixia-admin/ObelixiaAdminSidebar';
 import { ObelixiaAdminHeader } from '@/components/obelixia-admin/ObelixiaAdminHeader';
@@ -193,6 +196,7 @@ const ObelixiaTeamAdmin: React.FC = () => {
       'rfm-dashboard': 'RFM Analysis',
       'predictive-analytics': 'Predictive Analytics',
       // Compliance & ML
+      'legal-advisor': 'Asesor Jurídico IA',
       'iso27001': 'ISO 27001',
       'dora-compliance': 'DORA Compliance',
       'adaptive-auth': 'Adaptive Auth',
@@ -613,6 +617,13 @@ const ObelixiaTeamAdmin: React.FC = () => {
               </TabsContent>
 
               {/* Compliance & ML */}
+              {/* Legal Advisor - Módulo Jurídico */}
+              <TabsContent value="legal-advisor" className="m-0">
+                <Suspense fallback={<LoadingFallback />}>
+                  <LegalAdvisorDashboard />
+                </Suspense>
+              </TabsContent>
+
               <TabsContent value="iso27001" className="m-0">
                 <Suspense fallback={<LoadingFallback />}>
                   <ISO27001Dashboard />

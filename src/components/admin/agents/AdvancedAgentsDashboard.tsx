@@ -68,7 +68,8 @@ import {
   ArrowDownRight,
   Circle,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  Scale
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG, MODULE_AGENT_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
 import type { ModuleAgentType, SupervisorInsight, InsightPriority, ExecutionMode } from '@/hooks/admin/agents/erpAgentTypes';
@@ -109,7 +110,8 @@ const DOMAIN_ICONS: Record<AgentDomain, React.ElementType> = {
   compliance: Shield,
   operations: Cog,
   hr: UserCheck,
-  analytics: BarChart3
+  analytics: BarChart3,
+  legal: Scale
 };
 
 // Estado de métricas simuladas con historial

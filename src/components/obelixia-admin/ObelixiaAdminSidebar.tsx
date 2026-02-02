@@ -150,6 +150,7 @@ const categories: NavCategory[] = [
     icon: ShieldCheck,
     color: 'indigo',
     items: [
+      { id: 'legal-advisor', label: 'Asesor Jurídico IA', icon: Shield },
       { id: 'iso27001', label: 'ISO 27001', icon: ShieldCheck },
       { id: 'dora-compliance', label: 'DORA Compliance', icon: Shield },
       { id: 'adaptive-auth', label: 'Adaptive Auth', icon: Key },

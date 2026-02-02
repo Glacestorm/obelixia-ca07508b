@@ -44,7 +44,8 @@ import {
   Lightbulb,
   Bell,
   MessageSquare,
-  History
+  History,
+  Scale
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
 import { useERPAgentNotifications } from '@/hooks/admin/agents/useERPAgentNotifications';
@@ -66,7 +67,8 @@ const DOMAIN_ICONS: Record<AgentDomain, React.ElementType> = {
   compliance: Shield,
   operations: Cog,
   hr: UserCheck,
-  analytics: BarChart3
+  analytics: BarChart3,
+  legal: Scale
 };
 
 // Variantes de animación

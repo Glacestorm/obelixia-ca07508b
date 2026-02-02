@@ -8,7 +8,8 @@ import { ModulePlaceholder } from './ModulePlaceholder';
 const IMPLEMENTED_COMPONENTS: Record<string, React.LazyExoticComponent<React.ComponentType<any>>> = {
   // Core CRM - usando import con then para manejar exports nombrados
   'crm-companies': React.lazy(() => import('@/components/admin/CompaniesManager').then(m => ({ default: m.CompaniesManager }))),
-  // Añadir más componentes implementados aquí según se vayan creando
+  // Legal Advisor - Módulo Jurídico Enterprise
+  'legal-advisor': React.lazy(() => import('@/components/admin/legal-advisor/LegalAdvisorDashboard').then(m => ({ default: m.LegalAdvisorDashboard }))),
 };
 
 interface DynamicModuleRouterProps {
