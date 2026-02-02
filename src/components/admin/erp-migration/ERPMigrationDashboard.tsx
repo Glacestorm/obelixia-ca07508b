@@ -49,8 +49,8 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewMigration, setShowNewMigration] = useState(false);
 
-  const { selectedCompany } = useERPContext();
-  const effectiveCompanyId = companyId || selectedCompany?.id;
+  const { currentCompany } = useERPContext();
+  const effectiveCompanyId = companyId || currentCompany?.id;
 
   const {
     connectors,
