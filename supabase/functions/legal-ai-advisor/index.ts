@@ -1,0 +1,624 @@
+/**
+ * legal-ai-advisor - Edge Function para el Agente Jurídico Central
+ * Asesor legal IA multi-jurisdiccional para todos los agentes del sistema
+ */
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Tipos de acciones soportadas
+type LegalAction = 
+  | 'validate_action'      // Validar acción de otro agente
+  | 'consult_legal'        // Consulta jurídica general
+  | 'analyze_contract'     // Análisis de contratos
+  | 'check_compliance'     // Verificación de cumplimiento
+  | 'find_precedents'      // Búsqueda de precedentes
+  | 'generate_document'    // Generación de documentos
+  | 'assess_risk'          // Evaluación de riesgo legal
+  | 'advise_agent'         // Asesoría a otro agente IA
+  | 'get_jurisdictions'    // Listar jurisdicciones
+  | 'get_knowledge';       // Obtener base de conocimiento
+
+interface LegalRequest {
+  action: LegalAction;
+  requesting_agent?: string;
+  requesting_agent_type?: string;
+  query?: string;
+  contract_text?: string;
+  contract_type?: string;
+  regulations?: string[];
+  jurisdictions?: string[];
+  legal_area?: string;
+  context?: Record<string, unknown>;
+  urgency?: 'immediate' | 'standard' | 'scheduled';
+  scenario?: string;
+  template_type?: string;
+  template_data?: Record<string, unknown>;
+  agent_action?: {
+    action_type: string;
+    action_data: Record<string, unknown>;
+    target_entity?: string;
+  };
+}
+
+// Prompts especializados por sub-agente
+const SUB_AGENT_PROMPTS: Record<string, string> = {
+  labor: `Eres un experto en Derecho Laboral multi-jurisdiccional.
+JURISDICCIONES:
+- España: Estatuto de los Trabajadores, Convenios Colectivos, LISOS
+- Andorra: Codi de Relacions Laborals, Llei 31/2018
+- UE: Directivas de Tiempo de Trabajo, Despido Colectivo
+- UK: Employment Rights Act 1996, Equality Act 2010
+- UAE: Federal Labour Law, Free Zone Regulations
+- US: FLSA, Title VII, ADA, State Laws
+
+CAPACIDADES:
+- Análisis de contratos laborales
+- Validación de despidos y sanciones
+- Cumplimiento de convenios colectivos
+- Cálculo de indemnizaciones
+- Prevención de riesgos laborales`,
+
+  corporate: `Eres un experto en Derecho Mercantil y Societario.
+JURISDICCIONES:
+- España: Ley de Sociedades de Capital, Código de Comercio
+- Andorra: Llei 95/2010, Llei 20/2007
+- UE: Directivas de Sociedades, Reglamento SE
+- UK: Companies Act 2006, Insolvency Act
+- UAE: Commercial Companies Law, DIFC/ADGM
+- US: Delaware LLC Act, Model Business Corporation Act
+
+CAPACIDADES:
+- Constitución y modificación de sociedades
+- Gobierno corporativo
+- Operaciones M&A
+- Insolvencia y reestructuración
+- Contratos mercantiles`,
+
+  tax: `Eres un experto en Derecho Fiscal y Tributario.
+JURISDICCIONES:
+- España: LIS, LIRPF, LIVA, LGT, Convenios de Doble Imposición
+- Andorra: Impost sobre Societats, Impost sobre la Renda
+- UE: Directivas IVA, DAC 6, ATAD
+- UK: Corporation Tax, VAT, IR35
+- UAE: Corporate Tax, VAT, Transfer Pricing
+- US: IRC, State Taxes, FATCA
+
+CAPACIDADES:
+- Planificación fiscal
+- Cumplimiento tributario
+- Precios de transferencia
+- Operaciones internacionales
+- Procedimientos de inspección`,
+
+  data_protection: `Eres un experto en Protección de Datos y Privacidad.
+NORMATIVAS:
+- GDPR (Reglamento UE 2016/679)
+- APDA Andorra (Llei 29/2021)
+- LOPDGDD España
+- UK GDPR / Data Protection Act 2018
+- UAE PDPL / DIFC DP Law
+- US: CCPA, State Privacy Laws, Sectorial
+
+CAPACIDADES:
+- Evaluaciones de impacto (DPIA)
+- Transferencias internacionales
+- Derechos de los interesados
+- Brechas de seguridad
+- Designación DPO`,
+
+  banking: `Eres un experto en Compliance Bancario y Financiero.
+NORMATIVAS:
+- MiFID II / MiFIR
+- Basel III/IV, CRR/CRD
+- DORA (Digital Operational Resilience)
+- PSD2/PSD3
+- AML/CFT (5AMLD, 6AMLD)
+- Circular BE 4/2017
+
+CAPACIDADES:
+- Conducta de mercado
+- Requisitos de capital
+- Resiliencia operativa
+- Prevención blanqueo
+- Protección del inversor`,
+
+  contract: `Eres un experto en Derecho Contractual.
+CAPACIDADES:
+- Redacción de contratos
+- Análisis de cláusulas
+- Identificación de riesgos
+- Negociación contractual
+- Resolución de disputas
+- Contratos internacionales
+
+TIPOS DE CONTRATOS:
+- Compraventa, Suministro, Distribución
+- Servicios, Consultoría, SLA
+- Licencias, Franquicias
+- Arrendamientos, Préstamos
+- Joint Ventures, Partnerships`
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const requestData = await req.json() as LegalRequest;
+    const { 
+      action, 
+      requesting_agent,
+      requesting_agent_type,
+      query, 
+      contract_text,
+      contract_type,
+      regulations, 
+      jurisdictions = ['ES', 'AD', 'EU'],
+      legal_area,
+      context,
+      urgency = 'standard',
+      scenario,
+      template_type,
+      template_data,
+      agent_action
+    } = requestData;
+
+    const startTime = Date.now();
+
+    // Acciones que no requieren IA
+    if (action === 'get_jurisdictions') {
+      const { data: jurisdictionsData, error } = await supabase
+        .from('legal_jurisdictions')
+        .select('*')
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({
+        success: true,
+        action,
+        data: jurisdictionsData,
+        timestamp: new Date().toISOString()
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'get_knowledge') {
+      const { data: knowledgeData, error } = await supabase
+        .from('legal_knowledge_base')
+        .select('*')
+        .eq('is_active', true)
+        .in('jurisdiction_code', jurisdictions)
+        .limit(50);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({
+        success: true,
+        action,
+        data: knowledgeData,
+        timestamp: new Date().toISOString()
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Construir prompt según la acción
+    let systemPrompt = '';
+    let userPrompt = '';
+    let selectedSubAgent = 'contract'; // Default
+
+    // Seleccionar sub-agente según área legal
+    if (legal_area && SUB_AGENT_PROMPTS[legal_area]) {
+      selectedSubAgent = legal_area;
+    }
+
+    const basePrompt = `Eres el Agente Jurídico Central de ObelixIA, un sistema enterprise multi-agente.
+Tu rol es asesorar legalmente a todos los demás agentes de IA (HR, Fiscal, CRM, ERP) y al Supervisor.
+
+${SUB_AGENT_PROMPTS[selectedSubAgent]}
+
+PRINCIPIOS FUNDAMENTALES:
+1. Cumplimiento normativo es OBLIGATORIO, no opcional
+2. En caso de duda, adoptar postura conservadora
+3. Documentar siempre la base legal de las decisiones
+4. Considerar todas las jurisdicciones aplicables
+5. Alertar sobre riesgos aunque no se pregunte
+
+JURISDICCIONES EN CONTEXTO: ${jurisdictions.join(', ')}
+URGENCIA: ${urgency}
+`;
+
+    switch (action) {
+      case 'validate_action':
+        systemPrompt = `${basePrompt}
+
+TAREA: Validar legalmente una acción propuesta por otro agente IA.
+Debes evaluar si la acción cumple con la normativa aplicable.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "approved": true/false,
+  "risk_level": "low" | "medium" | "high" | "critical",
+  "legal_basis": ["Lista de normas aplicables"],
+  "conditions": ["Condiciones para aprobar si aplica"],
+  "warnings": ["Advertencias importantes"],
+  "blocking_issues": ["Problemas que impiden la aprobación"],
+  "recommendations": ["Recomendaciones de mejora"],
+  "confidence": 0-100
+}`;
+
+        userPrompt = `El agente ${requesting_agent} (tipo: ${requesting_agent_type}) solicita validación para:
+
+ACCIÓN: ${agent_action?.action_type}
+DATOS: ${JSON.stringify(agent_action?.action_data || {})}
+ENTIDAD OBJETIVO: ${agent_action?.target_entity || 'N/A'}
+
+CONTEXTO ADICIONAL: ${JSON.stringify(context || {})}
+
+Evalúa la legalidad de esta acción considerando las jurisdicciones ${jurisdictions.join(', ')}.`;
+        break;
+
+      case 'consult_legal':
+        systemPrompt = `${basePrompt}
+
+TAREA: Responder una consulta jurídica de forma clara y fundamentada.
+
+FORMATO DE RESPUESTA:
+1. Respuesta directa y clara
+2. Base normativa aplicable
+3. Jurisprudencia relevante (si existe)
+4. Consideraciones prácticas
+5. Riesgos a tener en cuenta
+6. Recomendaciones`;
+
+        userPrompt = query || 'Consulta general sobre normativa aplicable';
+        break;
+
+      case 'analyze_contract':
+        systemPrompt = `${basePrompt}
+
+TAREA: Analizar un contrato identificando riesgos, cláusulas problemáticas y recomendaciones.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "summary": "Resumen ejecutivo del contrato",
+  "contract_type_detected": "Tipo de contrato identificado",
+  "parties_identified": ["Lista de partes"],
+  "risk_score": 0-100,
+  "risk_level": "low" | "medium" | "high" | "critical",
+  "clauses_analysis": [
+    {
+      "clause_name": "Nombre de la cláusula",
+      "risk_level": "low/medium/high/critical",
+      "issue": "Problema identificado",
+      "recommendation": "Recomendación de mejora",
+      "legal_basis": "Base normativa"
+    }
+  ],
+  "missing_clauses": ["Cláusulas que deberían incluirse"],
+  "favorable_clauses": ["Cláusulas beneficiosas"],
+  "key_dates": {"fecha_clave": "valor"},
+  "monetary_values": {"concepto": "valor"},
+  "recommendations": ["Recomendaciones generales"],
+  "compliance_issues": ["Problemas de cumplimiento normativo"]
+}`;
+
+        userPrompt = `Analiza el siguiente contrato (${contract_type || 'tipo no especificado'}):
+
+${contract_text}
+
+Jurisdicciones aplicables: ${jurisdictions.join(', ')}`;
+        break;
+
+      case 'check_compliance':
+        systemPrompt = `${basePrompt}
+
+TAREA: Verificar el cumplimiento de normativas específicas.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "overall_status": "compliant" | "partial" | "non_compliant",
+  "overall_score": 0-100,
+  "checks": [
+    {
+      "regulation": "Nombre de la normativa",
+      "status": "compliant" | "partial" | "non_compliant",
+      "score": 0-100,
+      "findings": ["Hallazgos"],
+      "gaps": ["Brechas identificadas"],
+      "recommendations": ["Recomendaciones"]
+    }
+  ],
+  "priority_actions": ["Acciones prioritarias ordenadas"],
+  "risk_areas": ["Áreas de mayor riesgo"],
+  "next_steps": ["Próximos pasos recomendados"]
+}`;
+
+        userPrompt = `Evalúa el cumplimiento de las siguientes normativas: ${regulations?.join(', ') || 'normativas generales'}
+
+Contexto de evaluación: ${JSON.stringify(context || {})}
+Jurisdicciones: ${jurisdictions.join(', ')}`;
+        break;
+
+      case 'find_precedents':
+        systemPrompt = `${basePrompt}
+
+TAREA: Buscar precedentes judiciales relevantes para un caso.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "precedents": [
+    {
+      "case_reference": "Número/referencia del caso",
+      "court": "Tribunal",
+      "date": "Fecha",
+      "jurisdiction": "Jurisdicción",
+      "summary": "Resumen del caso",
+      "key_holdings": ["Principales pronunciamientos"],
+      "relevance_score": 0-100,
+      "how_to_apply": "Cómo aplicar a tu caso"
+    }
+  ],
+  "legal_principles": ["Principios legales extraídos"],
+  "trends": "Tendencia jurisprudencial observada",
+  "recommendations": ["Recomendaciones basadas en precedentes"]
+}`;
+
+        userPrompt = `Busca precedentes judiciales para: ${query}
+
+Área legal: ${legal_area || 'general'}
+Jurisdicciones: ${jurisdictions.join(', ')}`;
+        break;
+
+      case 'assess_risk':
+        systemPrompt = `${basePrompt}
+
+TAREA: Evaluar el riesgo legal de un escenario o decisión.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "overall_risk_level": "low" | "medium" | "high" | "critical",
+  "overall_risk_score": 0-100,
+  "risk_factors": [
+    {
+      "factor": "Descripción del factor de riesgo",
+      "severity": "low/medium/high/critical",
+      "probability": "low/medium/high",
+      "impact": "Impacto potencial",
+      "legal_basis": "Base normativa"
+    }
+  ],
+  "potential_consequences": [
+    {
+      "consequence": "Descripción",
+      "probability": "low/medium/high",
+      "severity": "Gravedad",
+      "financial_impact": "Impacto económico estimado"
+    }
+  ],
+  "mitigation_strategies": [
+    {
+      "strategy": "Estrategia de mitigación",
+      "effectiveness": "high/medium/low",
+      "cost": "Coste estimado",
+      "implementation_time": "Tiempo de implementación"
+    }
+  ],
+  "recommendations": ["Recomendaciones ordenadas por prioridad"],
+  "confidence": 0-100
+}`;
+
+        userPrompt = `Evalúa el riesgo legal del siguiente escenario:
+
+${scenario || query}
+
+Contexto: ${JSON.stringify(context || {})}
+Jurisdicciones: ${jurisdictions.join(', ')}`;
+        break;
+
+      case 'generate_document':
+        systemPrompt = `${basePrompt}
+
+TAREA: Generar un documento legal basado en una plantilla y datos proporcionados.
+
+IMPORTANTE: Genera el documento completo, profesional y legalmente válido.
+Incluye todas las cláusulas estándar necesarias para este tipo de documento.`;
+
+        userPrompt = `Genera un documento de tipo: ${template_type}
+
+Datos para el documento:
+${JSON.stringify(template_data || {})}
+
+Jurisdicción principal: ${jurisdictions[0]}`;
+        break;
+
+      case 'advise_agent':
+        systemPrompt = `${basePrompt}
+
+TAREA: Proporcionar asesoría legal específica a un agente IA del sistema.
+Tu respuesta debe ser práctica y directamente aplicable por el agente.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "advice": "Asesoría principal clara y concisa",
+  "legal_framework": ["Marco normativo aplicable"],
+  "constraints": ["Limitaciones legales que debe respetar"],
+  "permissions": ["Lo que SÍ puede hacer legalmente"],
+  "prohibitions": ["Lo que NO puede hacer bajo ningún concepto"],
+  "recommended_actions": ["Acciones recomendadas en orden"],
+  "escalation_triggers": ["Cuándo debe escalar a revisión humana"],
+  "documentation_required": ["Documentación que debe generar/conservar"],
+  "review_frequency": "Con qué frecuencia revisar cumplimiento"
+}`;
+
+        userPrompt = `El agente ${requesting_agent} (tipo: ${requesting_agent_type}) solicita asesoría sobre:
+
+${query}
+
+Contexto operativo: ${JSON.stringify(context || {})}
+Jurisdicciones: ${jurisdictions.join(', ')}`;
+        break;
+
+      default:
+        throw new Error(`Acción no soportada: ${action}`);
+    }
+
+    console.log(`[legal-ai-advisor] Processing action: ${action} for agent: ${requesting_agent || 'direct'}`);
+
+    // Llamada a la IA
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3, // Más conservador para respuestas legales
+        max_tokens: 4000,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Rate limit exceeded',
+          message: 'Demasiadas solicitudes. Intenta más tarde.'
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          error: 'Payment required',
+          message: 'Créditos de IA insuficientes.'
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error(`AI API error: ${response.status}`);
+    }
+
+    const aiData = await response.json();
+    const content = aiData.choices?.[0]?.message?.content;
+
+    if (!content) throw new Error('No content in AI response');
+
+    const processingTime = Date.now() - startTime;
+
+    // Parsear respuesta
+    let result;
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[0]);
+      } else {
+        result = { response: content };
+      }
+    } catch {
+      result = { response: content, parseError: true };
+    }
+
+    // Registrar consulta si viene de otro agente
+    if (requesting_agent) {
+      try {
+        await supabase.from('legal_agent_queries').insert({
+          requesting_agent,
+          requesting_agent_type: requesting_agent_type || 'unknown',
+          query_type: action,
+          query_content: { query, context, agent_action },
+          jurisdictions,
+          urgency,
+          response: result,
+          approved: result.approved,
+          risk_level: result.risk_level || result.overall_risk_level,
+          legal_basis: result.legal_basis || [],
+          conditions: result.conditions || [],
+          warnings: result.warnings || [],
+          recommendations: result.recommendations || [],
+          processing_time_ms: processingTime,
+          tokens_used: aiData.usage?.total_tokens,
+          responded_at: new Date().toISOString()
+        });
+      } catch (logError) {
+        console.error('[legal-ai-advisor] Error logging query:', logError);
+      }
+
+      // Si es validación, registrar en validation_logs
+      if (action === 'validate_action' && agent_action) {
+        try {
+          await supabase.from('legal_validation_logs').insert({
+            agent_id: requesting_agent,
+            agent_type: requesting_agent_type || 'unknown',
+            action_type: agent_action.action_type,
+            action_description: `${agent_action.action_type} on ${agent_action.target_entity || 'N/A'}`,
+            action_data: agent_action.action_data,
+            validation_result: result,
+            is_approved: result.approved || false,
+            risk_level: result.risk_level,
+            legal_basis: result.legal_basis || [],
+            applicable_regulations: regulations || [],
+            warnings: result.warnings || [],
+            blocking_issues: result.blocking_issues || [],
+            conditions_required: result.conditions || [],
+            jurisdictions_checked: jurisdictions,
+            processing_time_ms: processingTime,
+            auto_approved: result.approved && result.risk_level === 'low'
+          });
+        } catch (valError) {
+          console.error('[legal-ai-advisor] Error logging validation:', valError);
+        }
+      }
+    }
+
+    console.log(`[legal-ai-advisor] Success: ${action} in ${processingTime}ms`);
+
+    return new Response(JSON.stringify({
+      success: true,
+      action,
+      sub_agent: selectedSubAgent,
+      jurisdictions,
+      data: result,
+      processing_time_ms: processingTime,
+      timestamp: new Date().toISOString()
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('[legal-ai-advisor] Error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
