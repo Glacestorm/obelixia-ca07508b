@@ -40,6 +40,10 @@ export function ERPMigrationPanel({ companyId, showNewDialog, onCloseDialog }: E
   const [file, setFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [internalShowDialog, setInternalShowDialog] = useState(false);
+  
+  // Combine external and internal dialog state
+  const showMigrationDialog = showNewDialog || internalShowDialog;
 
   const {
     connectors,
@@ -119,7 +123,7 @@ export function ERPMigrationPanel({ companyId, showNewDialog, onCloseDialog }: E
   return (
     <>
       {/* New Migration Dialog */}
-      <Dialog open={showNewDialog} onOpenChange={(open) => !open && handleClose()}>
+      <Dialog open={showMigrationDialog} onOpenChange={(open) => { if (!open) { handleClose(); setInternalShowDialog(false); } }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Nueva Migración ERP</DialogTitle>
@@ -274,7 +278,7 @@ export function ERPMigrationPanel({ companyId, showNewDialog, onCloseDialog }: E
                         </Badge>
                       </div>
                       {analysis.warnings.length > 0 && (
-                        <div className="flex items-start gap-2 p-2 rounded bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+                        <div className="flex items-start gap-2 p-2 rounded bg-destructive/10 text-destructive">
                           <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                           <span className="text-xs">{analysis.warnings[0]}</span>
                         </div>
@@ -360,20 +364,77 @@ export function ERPMigrationPanel({ companyId, showNewDialog, onCloseDialog }: E
       </Dialog>
 
       {/* Main Panel Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Migraciones Activas</CardTitle>
-          <CardDescription>
-            Gestiona tus migraciones en curso
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <FileSpreadsheet className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Selecciona una sesión de migración para continuar</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        {/* All Connectors Grid */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Conectores Disponibles ({connectors.length})
+                </CardTitle>
+                <CardDescription>
+                  Sistemas ERP y contables soportados para migración
+                </CardDescription>
+              </div>
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar conector..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[400px]">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {filteredConnectors.map((connector) => (
+                  <div
+                    key={connector.id}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md",
+                      selectedConnector?.id === connector.id
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "hover:bg-muted/50 hover:border-primary/30"
+                    )}
+                    onClick={() => {
+                      setSelectedConnector(connector);
+                      setInternalShowDialog(true);
+                    }}
+                  >
+                    {connector.logo_url ? (
+                      <img 
+                        src={connector.logo_url} 
+                        alt={connector.label}
+                        className="h-10 w-10 object-contain"
+                      />
+                    ) : (
+                      <Building2 className="h-10 w-10 text-muted-foreground" />
+                    )}
+                    <div className="text-center">
+                      <p className="font-medium text-sm truncate w-full">{connector.label}</p>
+                      <p className="text-xs text-muted-foreground truncate w-full">{connector.vendor}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {connector.region || 'Global'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              {filteredConnectors.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>No se encontraron conectores para "{searchTerm}"</p>
+                </div>
+              )}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </>
   );
 }
