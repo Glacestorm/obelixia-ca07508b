@@ -235,6 +235,12 @@ function ERPModularDashboardContent() {
                   RRHH
                 </TabsTrigger>
               )}
+              {hasPermission('legal.read') && (
+                <TabsTrigger value="legal" className="gap-2">
+                  <Scale className="h-4 w-4" />
+                  Jurídico
+                </TabsTrigger>
+              )}
             </>
           )}
           
@@ -251,6 +257,7 @@ function ERPModularDashboardContent() {
               {activeTab === 'logistics' && <><Truck className="h-4 w-4" /> Logística</>}
               {activeTab === 'tax' && <><Receipt className="h-4 w-4" /> Fiscal</>}
               {activeTab === 'hr' && <><UserCog className="h-4 w-4" /> RRHH</>}
+              {activeTab === 'legal' && <><Scale className="h-4 w-4" /> Jurídico</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
             </Badge>
           )}
@@ -481,6 +488,11 @@ function ERPModularDashboardContent() {
         {/* HR Tab */}
         <TabsContent value="hr">
           <HRModule />
+        </TabsContent>
+
+        {/* Legal Tab */}
+        <TabsContent value="legal">
+          <LegalModule />
         </TabsContent>
 
         {/* Companies Tab */}
