@@ -40,6 +40,7 @@ import { ERPValidationPanel } from './ERPValidationPanel';
 import { ERPMonitoringPanel } from './ERPMonitoringPanel';
 import { ERPDataMappingPanel } from './ERPDataMappingPanel';
 import { ERPCompliancePanel } from './ERPCompliancePanel';
+import { ERPConnectorLogo } from './ERPConnectorLogo';
 
 interface ERPMigrationDashboardProps {
   companyId?: string;
@@ -270,15 +271,12 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
                         key={connector.id}
                         className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50 transition-colors"
                       >
-                        {connector.logo_url ? (
-                          <img 
-                            src={connector.logo_url} 
-                            alt={connector.label}
-                            className="h-6 w-6 object-contain"
-                          />
-                        ) : (
-                          <Building2 className="h-6 w-6 text-muted-foreground" />
-                        )}
+                        <ERPConnectorLogo 
+                          logoUrl={connector.logo_url}
+                          label={connector.label}
+                          vendor={connector.vendor}
+                          size="sm"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{connector.label}</p>
                           <p className="text-xs text-muted-foreground truncate">{connector.vendor}</p>

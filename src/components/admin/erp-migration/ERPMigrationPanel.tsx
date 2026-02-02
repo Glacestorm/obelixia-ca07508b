@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Upload,
   FileSpreadsheet,
@@ -24,6 +23,7 @@ import {
   Search
 } from 'lucide-react';
 import { useERPMigration, ERPConnector } from '@/hooks/admin/integrations/useERPMigration';
+import { ERPConnectorLogo } from './ERPConnectorLogo';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -159,15 +159,12 @@ export function ERPMigrationPanel({ companyId, showNewDialog, onCloseDialog }: E
                         )}
                         onClick={() => setSelectedConnector(connector)}
                       >
-                        {connector.logo_url ? (
-                          <img 
-                            src={connector.logo_url} 
-                            alt={connector.label}
-                            className="h-8 w-8 object-contain"
-                          />
-                        ) : (
-                          <Building2 className="h-8 w-8 text-muted-foreground" />
-                        )}
+                        <ERPConnectorLogo 
+                          logoUrl={connector.logo_url}
+                          label={connector.label}
+                          vendor={connector.vendor}
+                          size="md"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{connector.label}</p>
                           <p className="text-xs text-muted-foreground truncate">{connector.vendor}</p>
@@ -406,15 +403,12 @@ export function ERPMigrationPanel({ companyId, showNewDialog, onCloseDialog }: E
                       setInternalShowDialog(true);
                     }}
                   >
-                    {connector.logo_url ? (
-                      <img 
-                        src={connector.logo_url} 
-                        alt={connector.label}
-                        className="h-10 w-10 object-contain"
-                      />
-                    ) : (
-                      <Building2 className="h-10 w-10 text-muted-foreground" />
-                    )}
+                    <ERPConnectorLogo 
+                      logoUrl={connector.logo_url}
+                      label={connector.label}
+                      vendor={connector.vendor}
+                      size="lg"
+                    />
                     <div className="text-center">
                       <p className="font-medium text-sm truncate w-full">{connector.label}</p>
                       <p className="text-xs text-muted-foreground truncate w-full">{connector.vendor}</p>
