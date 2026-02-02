@@ -12677,6 +12677,80 @@ export type Database = {
           },
         ]
       }
+      erp_chart_mappings: {
+        Row: {
+          ai_confidence: number | null
+          ai_reasoning: string | null
+          created_at: string | null
+          id: string
+          is_verified: boolean | null
+          manual_override: boolean | null
+          notes: string | null
+          session_id: string
+          source_account_code: string
+          source_account_name: string | null
+          source_account_type: string | null
+          target_account_code: string | null
+          target_account_name: string | null
+          target_account_type: string | null
+          transform_rules: Json | null
+          transform_type: string | null
+          updated_at: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_reasoning?: string | null
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          manual_override?: boolean | null
+          notes?: string | null
+          session_id: string
+          source_account_code: string
+          source_account_name?: string | null
+          source_account_type?: string | null
+          target_account_code?: string | null
+          target_account_name?: string | null
+          target_account_type?: string | null
+          transform_rules?: Json | null
+          transform_type?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_reasoning?: string | null
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          manual_override?: boolean | null
+          notes?: string | null
+          session_id?: string
+          source_account_code?: string
+          source_account_name?: string | null
+          source_account_type?: string | null
+          target_account_code?: string | null
+          target_account_name?: string | null
+          target_account_type?: string | null
+          transform_rules?: Json | null
+          transform_type?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_chart_mappings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "erp_migration_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_chart_templates: {
         Row: {
           account_groups: Json | null
@@ -14410,6 +14484,68 @@ export type Database = {
           },
         ]
       }
+      erp_field_mappings: {
+        Row: {
+          ai_confidence: number | null
+          created_at: string | null
+          default_value: string | null
+          entity_type: string
+          id: string
+          is_required: boolean | null
+          manual_override: boolean | null
+          notes: string | null
+          sample_values: Json | null
+          session_id: string
+          source_field: string
+          target_field: string
+          transform_formula: string | null
+          transform_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          created_at?: string | null
+          default_value?: string | null
+          entity_type: string
+          id?: string
+          is_required?: boolean | null
+          manual_override?: boolean | null
+          notes?: string | null
+          sample_values?: Json | null
+          session_id: string
+          source_field: string
+          target_field: string
+          transform_formula?: string | null
+          transform_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          created_at?: string | null
+          default_value?: string | null
+          entity_type?: string
+          id?: string
+          is_required?: boolean | null
+          manual_override?: boolean | null
+          notes?: string | null
+          sample_values?: Json | null
+          session_id?: string
+          source_field?: string
+          target_field?: string
+          transform_formula?: string | null
+          transform_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_field_mappings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "erp_migration_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_financial_entities: {
         Row: {
           address: string | null
@@ -15172,6 +15308,74 @@ export type Database = {
             columns: ["jurisdiction_id"]
             isOneToOne: false
             referencedRelation: "erp_tax_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_fiscal_reconciliations: {
+        Row: {
+          adjustments: Json | null
+          created_at: string | null
+          details: Json | null
+          difference: number | null
+          difference_percentage: number | null
+          id: string
+          is_reconciled: boolean | null
+          period_end: string | null
+          period_start: string | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciliation_notes: string | null
+          reconciliation_type: string
+          session_id: string
+          source_total: number | null
+          target_total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          adjustments?: Json | null
+          created_at?: string | null
+          details?: Json | null
+          difference?: number | null
+          difference_percentage?: number | null
+          id?: string
+          is_reconciled?: boolean | null
+          period_end?: string | null
+          period_start?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_notes?: string | null
+          reconciliation_type: string
+          session_id: string
+          source_total?: number | null
+          target_total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          adjustments?: Json | null
+          created_at?: string | null
+          details?: Json | null
+          difference?: number | null
+          difference_percentage?: number | null
+          id?: string
+          is_reconciled?: boolean | null
+          period_end?: string | null
+          period_start?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciliation_notes?: string | null
+          reconciliation_type?: string
+          session_id?: string
+          source_total?: number | null
+          target_total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_fiscal_reconciliations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "erp_migration_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -22568,6 +22772,63 @@ export type Database = {
           },
         ]
       }
+      erp_mapping_templates: {
+        Row: {
+          chart_mappings: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          field_mappings: Json
+          id: string
+          is_official: boolean | null
+          is_public: boolean | null
+          source_chart_type: string | null
+          source_system: string
+          success_rate: number | null
+          target_chart_type: string
+          template_name: string
+          transform_rules: Json | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          chart_mappings?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          field_mappings?: Json
+          id?: string
+          is_official?: boolean | null
+          is_public?: boolean | null
+          source_chart_type?: string | null
+          source_system: string
+          success_rate?: number | null
+          target_chart_type?: string
+          template_name: string
+          transform_rules?: Json | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          chart_mappings?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          field_mappings?: Json
+          id?: string
+          is_official?: boolean | null
+          is_public?: boolean | null
+          source_chart_type?: string | null
+          source_system?: string
+          success_rate?: number | null
+          target_chart_type?: string
+          template_name?: string
+          transform_rules?: Json | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       erp_market_interest_rates: {
         Row: {
           change_bps: number | null
@@ -22776,6 +23037,59 @@ export type Database = {
           vendor?: string | null
         }
         Relationships: []
+      }
+      erp_migration_logs: {
+        Row: {
+          action: string
+          action_type: string
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          execution_time_ms: number | null
+          hash_integrity: string | null
+          id: string
+          message: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          action_type: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          execution_time_ms?: number | null
+          hash_integrity?: string | null
+          id?: string
+          message: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          action_type?: string
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          execution_time_ms?: number | null
+          hash_integrity?: string | null
+          id?: string
+          message?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_migration_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "erp_migration_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_migration_records: {
         Row: {
@@ -26743,6 +27057,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_validation_rules: {
+        Row: {
+          applies_to_chart_types: string[] | null
+          created_at: string | null
+          description: string | null
+          entity_type: string
+          error_message_template: string | null
+          id: string
+          is_active: boolean | null
+          is_blocking: boolean | null
+          rule_key: string
+          rule_name: string
+          rule_type: string
+          severity:
+            | Database["public"]["Enums"]["erp_validation_severity"]
+            | null
+          updated_at: string | null
+          validation_logic: Json
+        }
+        Insert: {
+          applies_to_chart_types?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          entity_type: string
+          error_message_template?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blocking?: boolean | null
+          rule_key: string
+          rule_name: string
+          rule_type: string
+          severity?:
+            | Database["public"]["Enums"]["erp_validation_severity"]
+            | null
+          updated_at?: string | null
+          validation_logic: Json
+        }
+        Update: {
+          applies_to_chart_types?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          entity_type?: string
+          error_message_template?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_blocking?: boolean | null
+          rule_key?: string
+          rule_name?: string
+          rule_type?: string
+          severity?:
+            | Database["public"]["Enums"]["erp_validation_severity"]
+            | null
+          updated_at?: string | null
+          validation_logic?: Json
+        }
+        Relationships: []
       }
       erp_vat_ledger: {
         Row: {
@@ -50112,6 +50483,15 @@ export type Database = {
         | "biometric"
         | "security_question"
       auth_risk_level: "low" | "medium" | "high" | "critical"
+      erp_chart_type:
+        | "pgc_2007"
+        | "pgc_pyme"
+        | "niif"
+        | "niic"
+        | "us_gaap"
+        | "uk_gaap"
+        | "ifrs"
+        | "custom"
       erp_module_access_level: "none" | "read" | "write" | "admin"
       erp_permission_level: "none" | "read" | "write" | "full"
       erp_role_type:
@@ -50121,6 +50501,7 @@ export type Database = {
         | "user"
         | "auditor"
         | "readonly"
+      erp_validation_severity: "info" | "warning" | "error" | "critical"
       financial_data_source: "manual" | "pdf_import"
       financial_statement_status: "draft" | "submitted" | "approved"
       financial_statement_type: "normal" | "abreujat" | "simplificat"
@@ -50324,6 +50705,16 @@ export const Constants = {
         "security_question",
       ],
       auth_risk_level: ["low", "medium", "high", "critical"],
+      erp_chart_type: [
+        "pgc_2007",
+        "pgc_pyme",
+        "niif",
+        "niic",
+        "us_gaap",
+        "uk_gaap",
+        "ifrs",
+        "custom",
+      ],
       erp_module_access_level: ["none", "read", "write", "admin"],
       erp_permission_level: ["none", "read", "write", "full"],
       erp_role_type: [
@@ -50334,6 +50725,7 @@ export const Constants = {
         "auditor",
         "readonly",
       ],
+      erp_validation_severity: ["info", "warning", "error", "critical"],
       financial_data_source: ["manual", "pdf_import"],
       financial_statement_status: ["draft", "submitted", "approved"],
       financial_statement_type: ["normal", "abreujat", "simplificat"],
