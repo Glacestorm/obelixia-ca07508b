@@ -49,3 +49,19 @@ export type {
   SyncHistoryItem,
   SyncSettings 
 } from './useWorkspaceIntegrations';
+
+// ERP Migration exports
+export { useERPMigration } from './useERPMigration';
+export type { 
+  ERPConnector, 
+  ERPMigrationSession, 
+  ERPMigrationRecord, 
+  ERPChartMapping,
+  ERPFieldMapping as ERPMigrationFieldMapping,
+  ERPMappingTemplate as ERPMigrationMappingTemplate,
+  ERPValidationRule,
+  ERPFiscalReconciliation,
+  MigrationAnalysis as ERPMigrationAnalysis,
+  MigrationStats as ERPMigrationStats,
+  ValidationSummary as ERPValidationSummary
+} from './useERPMigration';
