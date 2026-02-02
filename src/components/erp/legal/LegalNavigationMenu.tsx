@@ -1,13 +1,17 @@
 /**
  * LegalNavigationMenu - Navegación agrupada del módulo jurídico
  * Categorías: Principal, Compliance, Documentos, Herramientas, Tendencias
+ * Usa NavigationMenu para evitar desplazamiento de categorías
  */
 
-import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '@/components/ui/navigation-menu';
 import { 
   LayoutDashboard,
   MessageSquare,
@@ -19,7 +23,7 @@ import {
   Activity,
   Newspaper,
   Sparkles,
-  ChevronDown,
+  ChevronRight,
   Scale
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -38,7 +42,7 @@ interface NavCategory {
   label: string;
   icon: React.ElementType;
   items: NavItem[];
-  defaultOpen?: boolean;
+  badge?: number;
 }
 
 interface NavItem {
@@ -54,20 +58,12 @@ export function LegalNavigationMenu({
   onModuleChange,
   stats = {}
 }: LegalNavigationMenuProps) {
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    principal: true,
-    compliance: true,
-    documents: false,
-    tools: false,
-    trends: false
-  });
 
   const categories: NavCategory[] = [
     {
       id: 'principal',
       label: 'Principal',
       icon: Scale,
-      defaultOpen: true,
       items: [
         { id: 'dashboard', label: 'Dashboard Ejecutivo', icon: LayoutDashboard },
         { id: 'advisor', label: 'Asesor Jurídico IA', icon: MessageSquare },
@@ -77,7 +73,7 @@ export function LegalNavigationMenu({
       id: 'compliance',
       label: 'Compliance',
       icon: Shield,
-      defaultOpen: true,
+      badge: stats.riskAlerts,
       items: [
         { id: 'compliance', label: 'Matriz de Cumplimiento', icon: Shield },
         { id: 'risk', label: 'Evaluación de Riesgos', icon: AlertTriangle, badge: stats.riskAlerts, badgeVariant: 'destructive' },
@@ -87,6 +83,7 @@ export function LegalNavigationMenu({
       id: 'documents',
       label: 'Documentos',
       icon: FileText,
+      badge: stats.pendingReviews,
       items: [
         { id: 'documents', label: 'Generador Documentos', icon: FileText, badge: stats.pendingReviews, badgeVariant: 'warning' },
         { id: 'contracts', label: 'Análisis Contratos', icon: FileSearch },
@@ -112,93 +109,86 @@ export function LegalNavigationMenu({
     }
   ];
 
-  const toggleCategory = (categoryId: string) => {
-    setOpenCategories(prev => ({
-      ...prev,
-      [categoryId]: !prev[categoryId]
-    }));
+  // Determinar categoría activa basada en el módulo seleccionado
+  const getActiveCategory = () => {
+    for (const category of categories) {
+      if (category.items.some(item => item.id === activeModule)) {
+        return category.id;
+      }
+    }
+    return null;
   };
 
-  const renderBadge = (item: NavItem) => {
-    if (!item.badge || item.badge <= 0) return null;
-    
-    return (
-      <Badge 
-        variant={item.badgeVariant === 'destructive' ? 'destructive' : 'secondary'}
-        className={cn(
-          "ml-auto h-5 min-w-5 px-1.5 text-xs",
-          item.badgeVariant === 'warning' && "bg-amber-500 text-white hover:bg-amber-600"
-        )}
-      >
-        {item.badge}
-      </Badge>
-    );
-  };
+  const activeCategory = getActiveCategory();
 
   return (
-    <div className="border rounded-lg bg-card">
-      <ScrollArea className="w-full">
-        <div className="flex flex-col lg:flex-row lg:items-start gap-1 p-2">
+    <div className="border rounded-lg bg-card p-2">
+      <NavigationMenu>
+        <NavigationMenuList className="gap-1">
           {categories.map((category) => {
             const CategoryIcon = category.icon;
-            const isOpen = openCategories[category.id] ?? category.defaultOpen ?? false;
-            const hasActiveItem = category.items.some(item => item.id === activeModule);
-
+            const isActive = activeCategory === category.id;
+            
             return (
-              <Collapsible
-                key={category.id}
-                open={isOpen}
-                onOpenChange={() => toggleCategory(category.id)}
-                className="lg:min-w-[180px]"
-              >
-                <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      "w-full justify-between gap-2 text-sm font-medium",
-                      hasActiveItem && "bg-accent text-accent-foreground"
-                    )}
-                  >
-                    <span className="flex items-center gap-2">
-                      <CategoryIcon className="h-4 w-4" />
-                      {category.label}
-                    </span>
-                    <ChevronDown className={cn(
-                      "h-4 w-4 transition-transform",
-                      isOpen && "rotate-180"
-                    )} />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-1 space-y-0.5">
-                  {category.items.map((item) => {
-                    const ItemIcon = item.icon;
-                    const isActive = activeModule === item.id;
-
-                    return (
-                      <Button
-                        key={item.id}
-                        variant={isActive ? "secondary" : "ghost"}
-                        size="sm"
-                        onClick={() => onModuleChange(item.id)}
-                        className={cn(
-                          "w-full justify-start gap-2 text-sm pl-6",
-                          isActive && "bg-primary/10 text-primary font-medium"
-                        )}
-                      >
-                        <ItemIcon className="h-4 w-4" />
-                        <span className="truncate">{item.label}</span>
-                        {renderBadge(item)}
-                      </Button>
-                    );
-                  })}
-                </CollapsibleContent>
-              </Collapsible>
+              <NavigationMenuItem key={category.id}>
+                <NavigationMenuTrigger 
+                  className={cn(
+                    "h-9 px-3 text-sm gap-1.5",
+                    isActive && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <CategoryIcon className="h-4 w-4" />
+                  {category.label}
+                  {category.badge && category.badge > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs h-5 min-w-5 justify-center">
+                      {category.badge}
+                    </Badge>
+                  )}
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-64 p-2">
+                    {category.items.map((item) => {
+                      const ItemIcon = item.icon;
+                      const isItemActive = activeModule === item.id;
+                      
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => onModuleChange(item.id)}
+                          className={cn(
+                            "flex items-center justify-between w-full px-3 py-2 text-sm rounded-md transition-colors",
+                            "hover:bg-accent hover:text-accent-foreground",
+                            isItemActive && "bg-accent text-accent-foreground font-medium"
+                          )}
+                        >
+                          <span className="flex items-center gap-2">
+                            <ItemIcon className="h-4 w-4" />
+                            {item.label}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {item.badge && Number(item.badge) > 0 && (
+                              <Badge 
+                                variant={item.badgeVariant === 'destructive' ? 'destructive' : 'secondary'}
+                                className={cn(
+                                  "text-xs h-5 min-w-5 justify-center",
+                                  item.badgeVariant === 'warning' && "bg-amber-500 text-white hover:bg-amber-600"
+                                )}
+                              >
+                                {item.badge}
+                              </Badge>
+                            )}
+                            {isItemActive && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
             );
           })}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+        </NavigationMenuList>
+      </NavigationMenu>
     </div>
   );
 }
