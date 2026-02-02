@@ -25,6 +25,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRBenefitEnrollmentDialog } from './HRBenefitEnrollmentDialog';
+import { HRBenefitFormDialog } from './dialogs/HRBenefitFormDialog';
 
 interface HRSocialBenefitsPanelProps {
   companyId: string;
@@ -109,6 +110,7 @@ export function HRSocialBenefitsPanel({ companyId }: HRSocialBenefitsPanelProps)
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnrollDialog, setShowEnrollDialog] = useState(false);
+  const [showBenefitFormDialog, setShowBenefitFormDialog] = useState(false);
   const [selectedBenefit, setSelectedBenefit] = useState<Benefit | null>(null);
 
   const fetchBenefits = useCallback(async () => {
@@ -285,7 +287,7 @@ export function HRSocialBenefitsPanel({ companyId }: HRSocialBenefitsPanelProps)
                     <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
                     Actualizar
                   </Button>
-                  <Button size="sm">
+                  <Button size="sm" onClick={() => setShowBenefitFormDialog(true)}>
                     <Plus className="h-4 w-4 mr-1" />
                     Nuevo Beneficio
                   </Button>
@@ -309,7 +311,7 @@ export function HRSocialBenefitsPanel({ companyId }: HRSocialBenefitsPanelProps)
                 <div className="text-center py-12">
                   <Gift className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
                   <p className="text-muted-foreground">No hay beneficios configurados</p>
-                  <Button className="mt-4" size="sm">
+                  <Button className="mt-4" size="sm" onClick={() => setShowBenefitFormDialog(true)}>
                     <Plus className="h-4 w-4 mr-1" />
                     Crear Primer Beneficio
                   </Button>

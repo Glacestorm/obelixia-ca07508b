@@ -23,7 +23,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRIncidentFormDialog } from './HRIncidentFormDialog';
-import { HRSafetyEvaluationDialog, HRSafetyTrainingDialog } from './dialogs';
+import { HRSafetyEvaluationDialog, HRSafetyTrainingDialog, HREPIManagementDialog } from './dialogs';
 
 interface HRSafetyPanelProps {
   companyId: string;
@@ -51,6 +51,7 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
   const [showIncidentDialog, setShowIncidentDialog] = useState(false);
   const [showEvaluationDialog, setShowEvaluationDialog] = useState(false);
   const [showTrainingDialog, setShowTrainingDialog] = useState(false);
+  const [showEPIDialog, setShowEPIDialog] = useState(false);
 
   // Fetch incidents from database
   const fetchIncidents = useCallback(async () => {
@@ -392,7 +393,7 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
                   <CardTitle className="text-base">Registro de Incidentes</CardTitle>
                   <CardDescription>Historial de accidentes e incidentes laborales</CardDescription>
                 </div>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setShowIncidentDialog(true)}>
                   <Plus className="h-4 w-4 mr-1" />
                   Registrar Incidente
                 </Button>
@@ -458,10 +459,13 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
               <CardDescription>Gestión de EPIs por empleado y área</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Gestión de EPIs disponible próximamente</p>
-                <p className="text-sm mt-1">Incluirá control de entregas, caducidades y renovaciones</p>
+              <div className="text-center py-8">
+                <Eye className="h-12 w-12 mx-auto mb-4 text-primary opacity-70" />
+                <p className="text-muted-foreground mb-4">Gestión de entregas, caducidades y renovaciones de EPIs</p>
+                <Button onClick={() => setShowEPIDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Gestionar EPIs
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -481,6 +485,21 @@ export function HRSafetyPanel({ companyId }: HRSafetyPanelProps) {
         onOpenChange={setShowTrainingDialog}
         companyId={companyId}
         onSuccess={() => setShowTrainingDialog(false)}
+      />
+
+      <HRIncidentFormDialog
+        open={showIncidentDialog}
+        onOpenChange={(open) => {
+          setShowIncidentDialog(open);
+          if (!open) fetchIncidents();
+        }}
+        companyId={companyId}
+      />
+
+      <HREPIManagementDialog
+        open={showEPIDialog}
+        onOpenChange={setShowEPIDialog}
+        companyId={companyId}
       />
     </div>
   );

@@ -26,3 +26,9 @@ export { HREmployeeExportDialog } from './HREmployeeExportDialog';
 export { HRUnionMembershipDialog } from './HRUnionMembershipDialog';
 export { HRDepartmentFormDialog } from './HRDepartmentFormDialog';
 export { HRObjectiveFormDialog } from './HRObjectiveFormDialog';
+
+// Phase 2 - Additional operational dialogs
+export { HRBenefitFormDialog } from './HRBenefitFormDialog';
+export { HRCertificationFormDialog } from './HRCertificationFormDialog';
+export { HRBonusPolicyImportDialog } from './HRBonusPolicyImportDialog';
+export { HREPIManagementDialog } from './HREPIManagementDialog';

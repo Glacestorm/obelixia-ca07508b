@@ -50,7 +50,7 @@ import { toast } from 'sonner';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { HRBonusConfigDialog, HRObjectiveFormDialog } from './dialogs';
+import { HRBonusConfigDialog, HRObjectiveFormDialog, HRBonusPolicyImportDialog } from './dialogs';
 
 interface HRPerformancePanelProps {
   companyId: string;
@@ -143,6 +143,7 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
   const [showCycleDialog, setShowCycleDialog] = useState(false);
   const [showObjectiveDialog, setShowObjectiveDialog] = useState(false);
   const [showBonusConfigDialog, setShowBonusConfigDialog] = useState(false);
+  const [showBonusPolicyImportDialog, setShowBonusPolicyImportDialog] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
 
   // Form states
@@ -792,7 +793,7 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
                 Define los parámetros de compensación variable basada en desempeño
               </p>
               <div className="flex gap-2 justify-center">
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => setShowBonusPolicyImportDialog(true)}>
                   <FileText className="h-4 w-4 mr-2" />
                   Importar Política
                 </Button>
@@ -863,6 +864,14 @@ export function HRPerformancePanel({ companyId }: HRPerformancePanelProps) {
         onOpenChange={setShowObjectiveDialog}
         companyId={companyId}
         cycleId={cycles[0]?.id}
+        onSuccess={fetchData}
+      />
+
+      {/* Bonus Policy Import Dialog */}
+      <HRBonusPolicyImportDialog
+        open={showBonusPolicyImportDialog}
+        onOpenChange={setShowBonusPolicyImportDialog}
+        companyId={companyId}
         onSuccess={fetchData}
       />
     </div>
