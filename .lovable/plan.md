@@ -1,212 +1,511 @@
 
-# Plan de Optimización del Módulo RRHH
+# Plan de Implementación: Módulo de Migración ERP/Contable Empresarial
 
-## Contexto del Problema
+## Visión General
 
-El módulo de RRHH actualmente tiene **22 pestañas** en su navegación horizontal, lo que causa que no quepan visualmente en la pantalla (ver imagen). Además, cuando se accede al módulo de RRHH, la barra de navegación superior del ERP mantiene visibles los accesos a todos los módulos (Maestros, Ventas, Compras, etc.), lo cual es redundante porque estos ya son accesibles desde la pestaña "Resumen".
+Creación de un módulo de migración hipercompleto para sistemas ERP y contables, siguiendo la arquitectura del módulo de migración CRM existente pero especializado en la complejidad técnica, fiscal y normativa de los sistemas contables empresariales.
 
----
-
-## Objetivos
-
-1. **Reorganizar el menú del módulo RRHH** agrupando las 22 pestañas en categorías lógicas
-2. **Ocultar las pestañas de módulos ERP** (Maestros, Ventas, Compras, Almacén, Contabilidad, Tesorería, Comercio, Logística, Fiscal, RRHH) cuando se está dentro de un módulo específico, mostrándolas solo en "Resumen"
-3. **Revisar y completar los botones de las 8 nuevas Fases** para que sean 100% funcionales
-
----
-
-## Plan de Implementación
-
-### FASE A: Reorganización del Menú del Módulo RRHH
-
-**Problema actual:** 22 pestañas en línea horizontal que no caben en pantalla.
-
-**Solución propuesta:** Agrupar las pestañas en **5 categorías principales** usando un sistema de navegación jerárquico con submenús:
+## Estructura de Archivos
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ Dashboard │ Talento ▼ │ Operaciones ▼ │ Desarrollo ▼ │ Herramientas ▼ │ Tendencias │
-└─────────────────────────────────────────────────────────────────────────────────────┘
+src/
+├── pages/admin/
+│   └── ERPMigrationPage.tsx                    # Página principal del módulo
+├── components/admin/erp-migration/
+│   ├── ERPMigrationDashboard.tsx               # Dashboard principal con KPIs
+│   ├── ERPMigrationPanel.tsx                   # Panel de migración y conectores
+│   ├── ERPValidationPanel.tsx                  # Validación de datos contables
+│   ├── ERPMonitoringPanel.tsx                  # Monitoreo en tiempo real
+│   ├── ERPRollbackPanel.tsx                    # Rollback y recuperación
+│   ├── ERPReportsPanel.tsx                     # Reportes y auditoría
+│   ├── ERPAIAssistantPanel.tsx                 # Asistente IA especializado
+│   ├── ERPAdvancedToolsPanel.tsx               # Herramientas avanzadas
+│   ├── ERPCompliancePanel.tsx                  # Verificación normativa PGC/NIIF
+│   ├── ERPDataMappingPanel.tsx                 # Mapeo avanzado plan de cuentas
+│   ├── ERPFiscalReconciliationPanel.tsx        # Conciliación fiscal
+│   ├── ERPTrends2026Panel.tsx                  # Tendencias 2026-2030
+│   ├── ERPKnowledgeUploader.tsx                # Base de conocimiento
+│   ├── ERPNewsPanel.tsx                        # Noticias y actualizaciones
+│   └── index.ts                                # Barrel exports
+├── hooks/admin/integrations/
+│   └── useERPMigration.ts                      # Hook principal de lógica
+└── config/
+    └── routes.ts                               # Añadir ruta /admin/erp-migration
+
+supabase/
+├── functions/erp-migration-engine/
+│   └── index.ts                                # Edge function principal
+└── migrations/
+    └── xxx_erp_migration_tables.sql            # Tablas de migración ERP
 ```
 
-**Estructura de categorías:**
+---
 
-| Categoría | Pestañas incluidas |
-|-----------|-------------------|
-| **Dashboard** | Panel ejecutivo (actual) |
-| **Talento** | Empleados, Reclutamiento, Onboarding, Offboarding, Puestos |
-| **Operaciones** | Nóminas, Seg. Social, Vacaciones, Contratos, Sindicatos, Documentos, Organización |
-| **Desarrollo** | Desempeño, Formación, Analytics, Beneficios, PRL |
-| **Herramientas** | Agente IA, Noticias, Normativa, Ayuda |
-| **Tendencias** | 2026+ |
+## FASE 1: Infraestructura Base (Semana 1-2)
 
-**Cambios técnicos:**
-- Crear componente `HRNavigationMenu.tsx` con navegación desplegable
-- Modificar `HRModule.tsx` para usar el nuevo sistema de navegación
-- Mantener compatibilidad con deep linking existente
+### 1.1 Base de Datos
+
+**Nuevas tablas:**
+- `erp_migration_connectors` - Conectores de sistemas ERP/contables soportados
+- `erp_migrations` - Registro de migraciones con metadatos extendidos
+- `erp_field_mappings` - Mapeos de campos con transformaciones contables
+- `erp_migration_records` - Registros individuales de migración
+- `erp_mapping_templates` - Plantillas de mapeo por sistema origen
+- `erp_validation_rules` - Reglas de validación contable/fiscal
+- `erp_chart_mappings` - Mapeos de planes de cuentas (PGC, NIIF, etc.)
+- `erp_fiscal_reconciliations` - Reconciliaciones fiscales
+
+**Conectores iniciales (20+ sistemas):**
+
+| Tier Enterprise | Tier Popular | Tier Estándar | Legacy/España |
+|-----------------|--------------|---------------|---------------|
+| SAP S/4HANA | Odoo | ContaPlus | FacturaPlus |
+| SAP Business One | Sage 200cloud | Sage 50 | NCS (Grupo SP) |
+| Oracle NetSuite | Holded | A3 Asesor | Logic Control |
+| Microsoft Dynamics 365 | Zoho Books | Contasol | Classic |
+| | QuickBooks | Cegid | |
+
+### 1.2 Edge Function `erp-migration-engine`
+
+**Acciones principales:**
+- `list_connectors` - Listar conectores disponibles
+- `analyze_file` - Análisis inteligente de archivos (CSV, XML, JSON, BAK, MDB)
+- `create_migration` - Crear nueva migración
+- `validate_accounting` - Validación contable (cuadre débito/crédito)
+- `map_chart_of_accounts` - Mapeo automático de planes de cuentas
+- `run_migration` - Ejecutar migración
+- `rollback_migration` - Rollback completo con audit trail
+- `export_audit_report` - Generar informe de auditoría
+
+### 1.3 Hook `useERPMigration`
+
+Estado y operaciones para:
+- Gestión de migraciones activas
+- Mapeo de campos y transformaciones
+- Validación contable en tiempo real
+- Progreso y monitoreo
+- Rollback y recuperación
 
 ---
 
-### FASE B: Ocultación Condicional de Módulos en Navegación ERP
+## FASE 2: Conectores y Análisis Inteligente (Semana 3-4)
 
-**Problema actual:** Cuando estás en el módulo RRHH, la barra superior sigue mostrando todas las pestañas de módulos (Maestros, Ventas, Compras...), ocupando espacio innecesario.
+### 2.1 Sistema de Conectores Multi-Formato
 
-**Solución propuesta:** Modificar `ERPModularDashboard.tsx` para ocultar dinámicamente las pestañas de módulos cuando `activeTab` no sea "overview".
+**Formatos soportados:**
+- **Estándar**: CSV, XLSX, XML, JSON
+- **Específicos**: SAP IDoc, Dynamics OData, NetSuite SuiteQL
+- **Legacy España**: Ficheros ContaPlus (.bak), A3 exports, Sage 50 backups
+- **Modernos**: API REST (Holded, Odoo, Zoho)
 
-**Lógica:**
-- Si `activeTab === 'overview'`: Mostrar todas las pestañas de módulos
-- Si `activeTab !== 'overview'` (ej: 'hr', 'sales', 'tax'): Ocultar pestañas de módulos y mostrar solo:
-  - Botón "Resumen" (para volver al dashboard)
-  - Pestañas de configuración (Empresas, Usuarios, Roles, Ejercicios, Series, Auditoría, Agentes IA, Supervisor)
+**Detección automática de sistema origen:**
+- Análisis de estructura de campos
+- Reconocimiento de patrones de códigos de cuenta
+- Identificación de formato de fechas y monedas
 
-**Cambios técnicos:**
-- Crear variable `isInsideModule = activeTab !== 'overview'`
-- Filtrar condicionalmente las `TabsTrigger` de módulos
-- Añadir indicador visual del módulo activo en el header
+### 2.2 Análisis de Datos con IA
 
----
-
-### FASE C: Revisión Exhaustiva de Botones de las 8 Fases
-
-A continuación se detalla el estado de funcionalidad de cada fase y las correcciones necesarias:
-
-#### Fase 1: Puestos de Trabajo (HRJobPositionsPanel)
-| Botón/Acción | Estado | Corrección necesaria |
-|--------------|--------|---------------------|
-| "Nuevo Puesto" | ✅ Funcional | - |
-| Editar puesto | ✅ Funcional | - |
-| Eliminar puesto | ✅ Funcional | - |
-| Añadir Responsabilidad | ✅ Funcional | - |
-| Añadir Obligación | ✅ Funcional | - |
-
-#### Fase 2: Reclutamiento (HRRecruitmentPanel)
-| Botón/Acción | Estado | Corrección necesaria |
-|--------------|--------|---------------------|
-| "Nueva Oferta" | ✅ Funcional | - |
-| "Añadir Candidato" | ✅ Funcional | - |
-| "Publicar oferta" | ✅ Funcional | - |
-| "Analizar con IA" (candidato) | ✅ Funcional | - |
-| **"Enviar Email"** | ❌ Sin handler | Implementar dialog de email |
-| **"Agendar Entrevista"** | ❌ Sin handler | Implementar dialog de entrevista |
-| Cambiar estado candidato | ✅ Funcional | - |
-
-#### Fase 3: Onboarding (HROnboardingPanel)
-| Botón/Acción | Estado | Corrección necesaria |
-|--------------|--------|---------------------|
-| "Generar Plan IA" | ✅ Funcional | - |
-| "Completar tarea" | ✅ Funcional | - |
-| Ver tareas detalle | ✅ Funcional | - |
-| **"Nuevo Onboarding"** | ⚠️ Dialog vacío | Implementar formulario completo con selector de empleado |
-
-#### Fase 5: Offboarding (HROffboardingPanel)
-| Botón/Acción | Estado | Corrección necesaria |
-|--------------|--------|---------------------|
-| "Nuevo Proceso" | ✅ Funcional | - |
-| Análisis IA | ✅ Funcional | - |
-| Generar tareas | ✅ Funcional | - |
-| **Ver análisis legal** | ⚠️ Solo muestra datos | Añadir botón de acción para solicitar revisión legal |
-
-#### Fase 6: Desempeño (HRPerformancePanel)
-| Botón/Acción | Estado | Corrección necesaria |
-|--------------|--------|---------------------|
-| "Nuevo Ciclo" | ✅ Funcional | - |
-| Crear objetivo | ⚠️ Dialog existe | Conectar con empleados reales |
-| "Sugerir Objetivos IA" | ✅ Funcional | - |
-| "Predecir Flight Risk" | ✅ Funcional | - |
-| **Generar 9-Box Grid** | ⚠️ Solo visualización demo | Implementar llamada a IA para poblar grid real |
-| **Configurar Bonus** | ❌ No implementado | Crear dialog de configuración de políticas de bonus |
-
-#### Fase 7: Formación (HRTrainingPanel)
-| Botón/Acción | Estado | Corrección necesaria |
-|--------------|--------|---------------------|
-| "Análisis IA" (gaps) | ✅ Funcional | - |
-| **"Nueva Competencia"** | ⚠️ Dialog declarado | Implementar formulario completo |
-| **"Nueva Formación"** | ⚠️ Dialog declarado | Implementar formulario de catálogo |
-| **"Nuevo Plan Formativo"** | ❌ No existe | Crear dialog de plan anual |
-| **"Inscribir empleado"** | ❌ No existe | Crear dialog de inscripción |
-
-#### Fase 8: Analytics Avanzado (HRAdvancedAnalyticsPanel)
-| Botón/Acción | Estado | Corrección necesaria |
-|--------------|--------|---------------------|
-| "Actualizar" (cargar KPIs) | ✅ Funcional | - |
-| **"Ver detalles" Flight Risk** | ⚠️ Solo tabla | Añadir dialog con plan de acción |
-| **"Lanzar encuesta eNPS"** | ❌ No existe | Crear funcionalidad de encuesta |
-| **"Exportar 9-Box"** | ❌ No existe | Implementar export PDF/Excel |
+**Capacidades:**
+- Detección automática del plan de cuentas origen (PGC, NIIF, etc.)
+- Sugerencia de mapeos con nivel de confianza
+- Identificación de anomalías contables
+- Detección de asientos descuadrados
+- Análisis de calidad de datos
 
 ---
 
-### FASE D: Implementación de Formularios Faltantes
+## FASE 3: Mapeo Avanzado de Plan de Cuentas (Semana 5-6)
 
-Basado en la revisión anterior, se crearán los siguientes componentes:
+### 3.1 ERPDataMappingPanel
 
-1. **HREmailCandidateDialog.tsx** - Envío de emails a candidatos
-2. **HRInterviewScheduleDialog.tsx** - Agendar entrevistas
-3. **HROnboardingStartDialog.tsx** - Iniciar onboarding con empleado
-4. **HRBonusConfigDialog.tsx** - Configuración de políticas de bonus
-5. **HRCompetencyFormDialog.tsx** - Crear/editar competencias
-6. **HRTrainingCatalogDialog.tsx** - Añadir formaciones al catálogo
-7. **HRTrainingPlanDialog.tsx** - Crear plan formativo anual
-8. **HRTrainingEnrollDialog.tsx** - Inscribir empleados en formación
-9. **HRFlightRiskActionDialog.tsx** - Plan de acción para empleados en riesgo
-10. **HRENPSSurveyDialog.tsx** - Lanzar encuesta eNPS
+**Funcionalidades:**
+- Visualización lado a lado del plan origen vs destino
+- Mapeo drag-and-drop de cuentas
+- Transformaciones automáticas por grupo (1-9 PGC)
+- Reglas de conversión personalizables
+- Preview de asientos transformados
 
----
+### 3.2 Transformaciones Contables
 
-## Resumen de Archivos a Modificar
+**Tipos de transformación:**
+- Mapeo directo de códigos de cuenta
+- Agregación de cuentas
+- Desagregación con reglas
+- Conversión de naturaleza (Debe/Haber)
+- Ajuste de decimales y redondeo
+- Conversión de moneda con tipo de cambio histórico
 
-| Archivo | Tipo de cambio |
-|---------|----------------|
-| `src/components/erp/ERPModularDashboard.tsx` | Modificar - Navegación condicional |
-| `src/components/erp/hr/HRModule.tsx` | Modificar - Nueva navegación agrupada |
-| `src/components/erp/hr/HRNavigationMenu.tsx` | **Crear** - Componente de navegación |
-| `src/components/erp/hr/HRRecruitmentPanel.tsx` | Modificar - Añadir handlers email/entrevista |
-| `src/components/erp/hr/HROnboardingPanel.tsx` | Modificar - Dialog de inicio completo |
-| `src/components/erp/hr/HRPerformancePanel.tsx` | Modificar - Añadir config bonus, 9-Box real |
-| `src/components/erp/hr/HRTrainingPanel.tsx` | Modificar - Completar dialogs |
-| `src/components/erp/hr/HRAdvancedAnalyticsPanel.tsx` | Modificar - Añadir acciones |
-| `src/components/erp/hr/dialogs/*.tsx` | **Crear** - 10 nuevos dialogs |
-| `src/components/erp/hr/index.ts` | Modificar - Exportar nuevos componentes |
+### 3.3 Plantillas de Mapeo Preconfiguradas
+
+- ContaPlus a PGC 2007
+- Sage 50 a PGC PYME
+- SAP a NIIF/PGC
+- Odoo a PGC 2007
+- A3 a formato ObelixIA
 
 ---
 
-## Orden de Ejecución
+## FASE 4: Validación Contable y Fiscal (Semana 7-8)
 
-1. **Fase A** (Prioridad Alta): Reorganizar menú RRHH - Impacto visual inmediato
-2. **Fase B** (Prioridad Alta): Ocultar módulos en navegación - Mejora UX
-3. **Fase C** (Prioridad Media): Revisar y documentar botones faltantes
-4. **Fase D** (Prioridad Media): Implementar dialogs faltantes uno a uno
+### 4.1 ERPValidationPanel
+
+**Validaciones automáticas:**
+- Cuadre de asientos (Debe = Haber)
+- Consistencia de ejercicios fiscales
+- Verificación de períodos cerrados
+- Duplicados por número de asiento
+- Coherencia de terceros (clientes/proveedores)
+- Validación de IVA/IGI y retenciones
+
+### 4.2 ERPCompliancePanel
+
+**Verificaciones normativas:**
+- Cumplimiento PGC 2007 / PGC PYME
+- Compatibilidad NIIF/NIIC
+- Requisitos SII (si aplica)
+- Verificación de Libros Registro
+- Auditoría de cuentas obligatorias
+
+### 4.3 ERPFiscalReconciliationPanel
+
+**Conciliaciones:**
+- IVA Repercutido vs Libro de Ventas
+- IVA Soportado vs Libro de Compras
+- Retenciones vs Modelo 111/115
+- Conciliación bancaria preliminar
 
 ---
 
-## Sección Técnica
+## FASE 5: Ejecución y Monitoreo (Semana 9-10)
 
-### Componente HRNavigationMenu propuesto
+### 5.1 Motor de Migración
+
+**Características:**
+- Procesamiento por lotes configurables (batch size)
+- Migración incremental
+- Puntos de control (checkpoints)
+- Reintento automático con backoff
+- Migración en horario programado
+
+### 5.2 ERPMonitoringPanel
+
+**Monitoreo en tiempo real:**
+- Progreso por entidad (asientos, cuentas, terceros)
+- Logs en vivo con filtrado
+- Alertas de errores críticos
+- Métricas de rendimiento
+- Estimación de tiempo restante
+
+### 5.3 ERPRollbackPanel
+
+**Capacidades de recuperación:**
+- Rollback selectivo por entidad
+- Rollback por rango de fechas
+- Dry-run de rollback
+- Preservación de logs de auditoría
+- Restauración de estado anterior
+
+---
+
+## FASE 6: Asistente IA Especializado (Semana 11-12)
+
+### 6.1 ERPAIAssistantPanel
+
+**Capacidades del Agente IA:**
+- Chat interactivo para resolución de problemas
+- Explicación de errores de mapeo
+- Sugerencias de transformación
+- Análisis predictivo de migración
+- Detección de anomalías contables
+
+### 6.2 Análisis Predictivo
+
+**Predicciones:**
+- Probabilidad de éxito de migración
+- Tiempo estimado de procesamiento
+- Posibles errores antes de ejecutar
+- Recomendaciones de optimización
+
+### 6.3 Detección de Anomalías
+
+**Tipos de anomalías:**
+- Asientos con importes inusuales
+- Cuentas sin movimientos esperados
+- Terceros duplicados
+- Fechas inconsistentes
+- Patrones de fraude potencial
+
+---
+
+## FASE 7: Reportes y Auditoría (Semana 13-14)
+
+### 7.1 ERPReportsPanel
+
+**Informes disponibles:**
+- Resumen ejecutivo de migración
+- Detalle de errores y warnings
+- Mapeo de cuentas aplicado
+- Estadísticas por entidad
+- Comparativa origen vs destino
+
+### 7.2 Exportación Multi-Formato
+
+**Formatos de exportación:**
+- PDF con firma digital
+- Excel detallado
+- XML estructurado
+- JSON para integración
+- XBRL para reporting
+
+### 7.3 Audit Trail Completo
+
+**Registro de auditoría:**
+- Usuario que ejecutó cada acción
+- Timestamp con precisión de ms
+- Antes/después de cada cambio
+- IP y dispositivo
+- Hash de integridad
+
+---
+
+## FASE 8: Herramientas Avanzadas (Semana 15-16)
+
+### 8.1 ERPAdvancedToolsPanel
+
+**Herramientas especializadas:**
+- Conversión masiva de códigos de cuenta
+- Fusión de terceros duplicados
+- Reasignación de ejercicios
+- Recálculo de saldos
+- Generación de asientos de apertura
+
+### 8.2 Migración de Entidades Específicas
+
+**Entidades migrables:**
+- Plan de Cuentas completo
+- Asientos contables (libro diario)
+- Saldos de apertura
+- Maestro de clientes/proveedores
+- Cartera de efectos
+- Activos fijos y amortizaciones
+- Presupuestos
+
+### 8.3 Integración con Módulos ERP
+
+**Conexión automática con:**
+- Módulo de Contabilidad (ObelixIA Accounting)
+- Módulo Fiscal (SII, modelos)
+- Módulo de Tesorería
+- Módulo de Activos Fijos
+
+---
+
+## FASE 9: Base de Conocimiento y Ayuda (Semana 17)
+
+### 9.1 ERPKnowledgeUploader
+
+**Contenido importable:**
+- Manuales de sistemas origen
+- Guías de exportación por sistema
+- Regulaciones contables
+- FAQs de migración
+
+### 9.2 ERPNewsPanel
+
+**Actualizaciones:**
+- Nuevos conectores disponibles
+- Cambios normativos que afectan migraciones
+- Mejoras del motor de migración
+- Casos de éxito
+
+### 9.3 Sistema de Ayuda Contextual
+
+**Ayuda integrada:**
+- Tooltips explicativos
+- Guías paso a paso
+- Videos tutoriales
+- Chat con soporte
+
+---
+
+## FASE 10: Tendencias 2026-2030 y Disrupción (Semana 18)
+
+### 10.1 ERPTrends2026Panel
+
+**Tendencias implementadas:**
+
+**Migración Autónoma con IA Generativa:**
+- El agente IA analiza el sistema origen sin intervención
+- Genera automáticamente el plan de migración
+- Ejecuta la migración con supervisión mínima
+
+**Factura Electrónica Obligatoria:**
+- Preparación para Ley Crea y Crece 2026
+- Migración de histórico a formato Factura-e
+- Validación de TicketBAI/VeriFactu
+
+**Blockchain para Audit Trail:**
+- Hash inmutable de cada operación
+- Certificación de integridad de datos
+- Cumplimiento DORA/NIS2
+
+**API-First Migration:**
+- Conexión directa con APIs de sistemas origen
+- Sincronización en tiempo real
+- Migración continua vs. big-bang
+
+### 10.2 Características Disruptivas
+
+**Zero-Configuration Migration:**
+- Subir backup del sistema origen
+- IA detecta todo automáticamente
+- Un clic para migrar
+
+**Multi-Empresa Simultánea:**
+- Migrar múltiples empresas en paralelo
+- Consolidación automática
+- Grupo de empresas con intercompany
+
+**Migración Predictiva:**
+- IA sugiere cuándo migrar basándose en patrones
+- Optimización automática de horarios
+- Predicción de problemas antes de que ocurran
+
+---
+
+## Arquitectura Técnica
+
+### Diagrama de Componentes
 
 ```text
-Interface:
-- activeModule: string
-- onModuleChange: (module: string) => void
-- stats: { pendingPayrolls, pendingVacations, safetyAlerts }
-
-Estructura:
-- Tabs primario (5 categorías + Dashboard + Tendencias)
-- Dropdown/Popover para submenús
-- Badges con contadores en categorías relevantes
-- Animaciones suaves en transiciones
+┌─────────────────────────────────────────────────────────────────┐
+│                    ERPMigrationPage.tsx                         │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
+│  │   Dashboard  │ │  Migration   │ │      Validation          │ │
+│  │    Panel     │ │    Panel     │ │        Panel             │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
+│  │  Monitoring  │ │   Rollback   │ │       Reports            │ │
+│  │    Panel     │ │    Panel     │ │        Panel             │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
+│  │ AI Assistant │ │  Compliance  │ │     Advanced Tools       │ │
+│  │    Panel     │ │    Panel     │ │        Panel             │ │
+│  └──────────────┘ └──────────────┘ └──────────────────────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│                    useERPMigration Hook                         │
+├─────────────────────────────────────────────────────────────────┤
+│                 erp-migration-engine (Edge Function)            │
+├─────────────────────────────────────────────────────────────────┤
+│  erp_migrations │ erp_connectors │ erp_mappings │ erp_records   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Lógica de ocultación en ERPModularDashboard
+### Conectores Soportados
 
 ```text
-const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 
-                      'accounting', 'treasury', 'trade', 'logistics', 
-                      'tax', 'hr'];
-
-const isInsideModule = moduleTabIds.includes(activeTab) || activeTab !== 'overview';
-
-// En el render del TabsList:
-{!isInsideModule && hasPermission('masters.read') && (
-  <TabsTrigger value="maestros">Maestros</TabsTrigger>
-)}
-// ... repetir para cada módulo
+┌─────────────────────────────────────────────────────────────────┐
+│                    TIER ENTERPRISE                               │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────────────┐│
+│  │   SAP   │ │ Oracle  │ │Microsoft│ │         Workday          ││
+│  │ S/4HANA │ │NetSuite │ │Dynamics │ │        Financials        ││
+│  └─────────┘ └─────────┘ └─────────┘ └─────────────────────────┘│
+├─────────────────────────────────────────────────────────────────┤
+│                    TIER POPULAR                                  │
+│  ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌─────────┐ │
+│  │ Odoo  │ │ Sage  │ │Holded │ │ Zoho  │ │  A3   │ │QuickBooks│ │
+│  └───────┘ └───────┘ └───────┘ └───────┘ └───────┘ └─────────┘ │
+├─────────────────────────────────────────────────────────────────┤
+│                    TIER LEGACY ESPAÑA                            │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │ContaPlus │ │FacturaPlus│ │  NCS    │ │ Classic  │            │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘            │
+├─────────────────────────────────────────────────────────────────┤
+│                    FORMATOS UNIVERSALES                          │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐         │
+│  │ CSV  │ │ XLSX │ │ XML  │ │ JSON │ │  XLS │ │  MDB │         │
+│  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘         │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Detalle Técnico
+
+### Tablas de Base de Datos
+
+**erp_migration_connectors:**
+- `id`, `connector_key`, `connector_name`, `vendor`
+- `logo_url`, `description`, `tier` (enterprise/popular/standard)
+- `supported_formats[]`, `supported_entities[]`
+- `field_definitions` (JSON), `export_guide_url`
+- `chart_of_accounts_mappings` (JSON)
+
+**erp_migrations:**
+- `id`, `migration_name`, `source_system`, `source_version`
+- `status`, `total_records`, `migrated_records`, `failed_records`
+- `source_fiscal_year`, `target_fiscal_year`
+- `source_chart_type`, `target_chart_type` (PGC/NIIF/etc.)
+- `config`, `ai_analysis`, `rollback_data`
+- `compliance_checks`, `fiscal_reconciliation`
+
+**erp_chart_mappings:**
+- `id`, `migration_id`
+- `source_account_code`, `source_account_name`
+- `target_account_code`, `target_account_name`
+- `transform_type`, `ai_confidence`
+- `manual_override`, `notes`
+
+### Edge Function: Acciones Principales
+
+```typescript
+// Acciones del erp-migration-engine
+type ERPMigrationAction =
+  | 'list_connectors'           // Listar conectores
+  | 'analyze_file'              // Análisis IA de archivo
+  | 'detect_chart_type'         // Detectar tipo de plan de cuentas
+  | 'suggest_mappings'          // Sugerir mapeos con IA
+  | 'create_migration'          // Crear migración
+  | 'validate_accounting'       // Validar contabilidad
+  | 'validate_compliance'       // Verificar cumplimiento normativo
+  | 'run_migration'             // Ejecutar migración
+  | 'pause_migration'           // Pausar
+  | 'resume_migration'          // Reanudar
+  | 'rollback_migration'        // Rollback
+  | 'export_audit_report'       // Generar informe auditoría
+  | 'reconcile_fiscal'          // Conciliación fiscal
+  | 'get_progress'              // Obtener progreso
+  | 'get_statistics';           // Obtener estadísticas
+```
+
+---
+
+## Resumen de Entregables por Fase
+
+| Fase | Componentes | Funcionalidades Clave |
+|------|-------------|----------------------|
+| 1 | DB + Edge Function + Hook | Infraestructura base |
+| 2 | Conectores + Análisis | 20+ sistemas, detección automática |
+| 3 | DataMappingPanel | Mapeo visual plan de cuentas |
+| 4 | Validation + Compliance | Cuadre contable, PGC/NIIF |
+| 5 | Ejecución + Monitoring | Migración real, logs en vivo |
+| 6 | AI Assistant | Chat IA, análisis predictivo |
+| 7 | Reports | Auditoría, multi-formato |
+| 8 | Advanced Tools | Herramientas especializadas |
+| 9 | Knowledge + News | Base de conocimiento |
+| 10 | Trends 2026-2030 | Migración autónoma, blockchain |
+
+---
+
+## Diferenciadores Clave vs. Competencia
+
+1. **IA Nativa**: Mapeo automático con Lovable AI, no requiere API keys externas
+2. **Multi-Plan de Cuentas**: Soporte PGC, NIIF, y planes internacionales
+3. **Cumplimiento Español**: SII, modelos fiscales, TicketBAI
+4. **Legacy Support**: ContaPlus, FacturaPlus, sistemas obsoletos
+5. **Zero-Config**: Subir backup detectar todo migrar
+6. **Audit Trail**: Trazabilidad completa para auditorías
+7. **Rollback Inteligente**: Recuperación selectiva sin perder datos
+8. **Tendencias 2026-2030**: Preparado para factura electrónica obligatoria
+
