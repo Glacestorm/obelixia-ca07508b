@@ -10,13 +10,15 @@ interface AgentOrchestratorRequest {
     | 'create_agent'
     | 'execute_goal'
     | 'agent_collaboration'
+    | 'legal_collaboration'      // Nueva acción para colaboración con agente jurídico
     | 'get_agent_memory'
     | 'update_agent_memory'
     | 'list_agents'
     | 'get_agent_status'
     | 'pause_agent'
     | 'resume_agent'
-    | 'get_execution_history';
+    | 'get_execution_history'
+    | 'validate_with_legal';     // Solicitar validación legal pre-acción
   agentConfig?: {
     name: string;
     type: 'analyst' | 'executor' | 'monitor' | 'optimizer' | 'communicator';
@@ -36,6 +38,14 @@ interface AgentOrchestratorRequest {
     agentIds: string[];
     taskDescription: string;
     coordinationType: 'sequential' | 'parallel' | 'hierarchical';
+  };
+  legalValidationParams?: {
+    requesting_agent: string;
+    requesting_agent_type: string;
+    action_type: string;
+    action_data: Record<string, unknown>;
+    jurisdictions?: string[];
+    urgency?: 'immediate' | 'standard' | 'scheduled';
   };
   memoryParams?: {
     agentId: string;
