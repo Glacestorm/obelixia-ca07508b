@@ -3,6 +3,7 @@
 
 export const IMPLEMENTED_MODULE_KEYS = new Set<string>([
   'crm-companies',
+  'legal-advisor',
 ]);
 
 export function isModuleImplemented(moduleKey?: string | null) {

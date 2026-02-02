@@ -49,6 +49,13 @@ export const DOMAIN_CONFIG: Record<AgentDomain, DomainConfig> = {
     icon: 'BarChart3',
     description: 'Reporting, forecasting y detección de anomalías',
     moduleTypes: ['reporting', 'forecasting', 'anomaly_detection']
+  },
+  legal: {
+    name: 'Jurídico Enterprise',
+    color: 'from-indigo-500 to-purple-600',
+    icon: 'Scale',
+    description: 'Asesoría jurídica IA multi-jurisdiccional (AD/ES/EU), análisis de contratos, compliance y validación de agentes',
+    moduleTypes: ['labor_law', 'corporate_law', 'tax_law', 'data_protection', 'banking_compliance', 'contract_analysis']
   }
 };
 
@@ -256,6 +263,44 @@ export const MODULE_AGENT_CONFIG: Record<ModuleAgentType, ModuleAgentConfig> = {
     name: 'Agente Anomalías',
     description: 'Detección de patrones anómalos',
     capabilities: ['statistical_analysis', 'pattern_recognition', 'alert_generation', 'root_cause_analysis'],
+    defaultPriority: 1
+  },
+
+  // === LEGAL - MÓDULO JURÍDICO ENTERPRISE ===
+  labor_law: {
+    name: 'Agente Derecho Laboral',
+    description: 'Especialista en normativa laboral española, ET, convenios colectivos y relaciones laborales',
+    capabilities: ['contract_review', 'dismissal_analysis', 'collective_bargaining', 'labor_disputes', 'work_permits'],
+    defaultPriority: 1
+  },
+  corporate_law: {
+    name: 'Agente Derecho Mercantil',
+    description: 'Especialista en derecho societario, M&A, LSC y operaciones corporativas',
+    capabilities: ['corporate_governance', 'ma_due_diligence', 'shareholder_agreements', 'board_resolutions', 'statutory_compliance'],
+    defaultPriority: 1
+  },
+  tax_law: {
+    name: 'Agente Derecho Fiscal',
+    description: 'Especialista en fiscalidad española, andorrana e internacional, impuestos y planificación fiscal',
+    capabilities: ['tax_planning', 'transfer_pricing', 'vat_analysis', 'tax_litigation', 'international_taxation'],
+    defaultPriority: 1
+  },
+  data_protection: {
+    name: 'Agente Protección Datos',
+    description: 'Especialista en RGPD, LOPDGDD, APDA Andorra y normativa de privacidad',
+    capabilities: ['gdpr_compliance', 'dpia_assessment', 'data_breach_response', 'consent_management', 'dpo_advisory'],
+    defaultPriority: 1
+  },
+  banking_compliance: {
+    name: 'Agente Compliance Bancario',
+    description: 'Especialista en MiFID II, DORA, PSD2/3 y normativa bancaria',
+    capabilities: ['mifid_compliance', 'dora_assessment', 'aml_kyc', 'prudential_regulation', 'conduct_risk'],
+    defaultPriority: 1
+  },
+  contract_analysis: {
+    name: 'Agente Análisis Contratos',
+    description: 'Análisis y revisión de contratos comerciales, identificación de cláusulas abusivas y riesgos',
+    capabilities: ['contract_review', 'clause_extraction', 'risk_identification', 'negotiation_points', 'template_generation'],
     defaultPriority: 1
   }
 };
