@@ -496,6 +496,17 @@ export function HRSocialBenefitsPanel({ companyId }: HRSocialBenefitsPanelProps)
         benefit={selectedBenefit}
         onSuccess={handleEnrollSuccess}
       />
+
+      {/* Benefit Form Dialog */}
+      <HRBenefitFormDialog
+        open={showBenefitFormDialog}
+        onOpenChange={setShowBenefitFormDialog}
+        companyId={companyId}
+        onSuccess={() => {
+          fetchBenefits();
+          setShowBenefitFormDialog(false);
+        }}
+      />
     </div>
   );
 }

@@ -56,7 +56,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format, differenceInDays, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { HRTrainingPlanDialog, HRTrainingEnrollDialog, HRCompetencyFormDialog, HRTrainingCatalogDialog } from './dialogs';
+import { HRTrainingPlanDialog, HRTrainingEnrollDialog, HRCompetencyFormDialog, HRTrainingCatalogDialog, HRCertificationFormDialog } from './dialogs';
 
 interface HRTrainingPanelProps {
   companyId: string;
@@ -139,6 +139,7 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
   const [showEnrollDialog, setShowEnrollDialog] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<TrainingCatalogItem | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showCertificationDialog, setShowCertificationDialog] = useState(false);
 
   // Stats
   const [stats, setStats] = useState({
@@ -901,11 +902,17 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
         {/* Tab: Certificaciones */}
         <TabsContent value="certifications" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Gestión de Certificaciones</CardTitle>
-              <CardDescription>
-                Control de certificaciones profesionales y vencimientos
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Gestión de Certificaciones</CardTitle>
+                <CardDescription>
+                  Control de certificaciones profesionales y vencimientos
+                </CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setShowCertificationDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nueva Certificación
+              </Button>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
@@ -1130,6 +1137,16 @@ export function HRTrainingPanel({ companyId }: HRTrainingPanelProps) {
           modality: selectedTraining.modality
         } : null}
         onEnrolled={() => {
+          loadData();
+        }}
+      />
+
+      {/* Dialog: Nueva Certificación */}
+      <HRCertificationFormDialog
+        open={showCertificationDialog}
+        onOpenChange={setShowCertificationDialog}
+        companyId={companyId}
+        onSuccess={() => {
           loadData();
         }}
       />
