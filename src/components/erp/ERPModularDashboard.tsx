@@ -32,7 +32,8 @@ import {
   Globe,
   Bot,
   Truck,
-  UserCog
+  UserCog,
+  Scale
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
 import { ERPCompanySelector } from './config/ERPCompanySelector';
@@ -54,6 +55,7 @@ import { AdvisorAgentPanel } from './advisor';
 import { LogisticsModuleDashboard } from './logistics';
 import { FiscalModule } from './fiscal';
 import { HRModule } from './hr';
+import { LegalModule } from './legal';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
@@ -68,7 +70,7 @@ function ERPModularDashboardContent() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
-  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'migration'];
+  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'migration'];
   
   // Detectar si estamos dentro de un módulo específico
   const isInsideModule = moduleTabIds.includes(activeTab);
@@ -139,6 +141,7 @@ function ERPModularDashboardContent() {
     { id: 'logistics', name: 'Logística', icon: Truck, permission: 'logistics.read', color: 'bg-indigo-500' },
     { id: 'tax', name: 'Fiscal', icon: Receipt, permission: 'tax.read', color: 'bg-red-500' },
     { id: 'hr', name: 'RRHH', icon: UserCog, permission: 'hr.read', color: 'bg-pink-500' },
+    { id: 'legal', name: 'Jurídico', icon: Scale, permission: 'legal.read', color: 'bg-indigo-600' },
   ];
 
   const availableModules = modules.filter(m => hasPermission(m.permission));
