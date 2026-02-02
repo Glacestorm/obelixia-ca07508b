@@ -214,7 +214,10 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
                       <Button 
                         variant="link" 
                         className="mt-2"
-                        onClick={() => setShowNewMigration(true)}
+                        onClick={() => {
+                          setShowNewMigration(true);
+                          setActiveTab('migration');
+                        }}
                       >
                         Crear primera migración
                       </Button>
@@ -284,7 +287,11 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
                     ))}
                   </div>
                   {connectors.length > 12 && (
-                    <Button variant="link" className="w-full mt-2">
+                    <Button 
+                      variant="link" 
+                      className="w-full mt-2"
+                      onClick={() => setActiveTab('migration')}
+                    >
                       Ver todos los {connectors.length} conectores
                     </Button>
                   )}
