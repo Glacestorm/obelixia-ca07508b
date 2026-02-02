@@ -123,14 +123,14 @@ export function LegalNavigationMenu({
 
   return (
     <div className="border rounded-lg bg-card p-2">
-      <NavigationMenu className="z-50">
+      <NavigationMenu>
         <NavigationMenuList className="gap-1">
           {categories.map((category) => {
             const CategoryIcon = category.icon;
             const isActive = activeCategory === category.id;
             
             return (
-              <NavigationMenuItem key={category.id} className="relative">
+              <NavigationMenuItem key={category.id}>
                 <NavigationMenuTrigger 
                   className={cn(
                     "h-9 px-3 text-sm gap-1.5",
@@ -145,8 +145,8 @@ export function LegalNavigationMenu({
                     </Badge>
                   )}
                 </NavigationMenuTrigger>
-                <NavigationMenuContent className="absolute left-0 top-full mt-1 data-[motion^=from-]:animate-in data-[motion^=to-]:animate-out data-[motion^=from-]:fade-in data-[motion^=to-]:fade-out data-[motion=from-end]:slide-in-from-right-52 data-[motion=from-start]:slide-in-from-left-52 data-[motion=to-end]:slide-out-to-right-52 data-[motion=to-start]:slide-out-to-left-52">
-                  <div className="w-64 p-2">
+                <NavigationMenuContent>
+                  <div className="w-64 p-2 bg-popover rounded-md">
                     {category.items.map((item) => {
                       const ItemIcon = item.icon;
                       const isItemActive = activeModule === item.id;
@@ -171,7 +171,7 @@ export function LegalNavigationMenu({
                                 variant={item.badgeVariant === 'destructive' ? 'destructive' : 'secondary'}
                                 className={cn(
                                   "text-xs h-5 min-w-5 justify-center",
-                                  item.badgeVariant === 'warning' && "bg-amber-500 text-white hover:bg-amber-600"
+                                  item.badgeVariant === 'warning' && "bg-warning text-warning-foreground"
                                 )}
                               >
                                 {item.badge}
