@@ -30598,6 +30598,730 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_agent_queries: {
+        Row: {
+          approved: boolean | null
+          conditions: string[] | null
+          context: Json | null
+          created_at: string | null
+          feedback: string | null
+          id: string
+          jurisdictions: string[] | null
+          legal_basis: string[] | null
+          processing_time_ms: number | null
+          query_content: Json
+          query_type: string
+          recommendations: string[] | null
+          requesting_agent: string
+          requesting_agent_type: string
+          responded_at: string | null
+          response: Json | null
+          risk_level: string | null
+          tokens_used: number | null
+          urgency: string | null
+          warnings: string[] | null
+          was_helpful: boolean | null
+        }
+        Insert: {
+          approved?: boolean | null
+          conditions?: string[] | null
+          context?: Json | null
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          jurisdictions?: string[] | null
+          legal_basis?: string[] | null
+          processing_time_ms?: number | null
+          query_content: Json
+          query_type: string
+          recommendations?: string[] | null
+          requesting_agent: string
+          requesting_agent_type: string
+          responded_at?: string | null
+          response?: Json | null
+          risk_level?: string | null
+          tokens_used?: number | null
+          urgency?: string | null
+          warnings?: string[] | null
+          was_helpful?: boolean | null
+        }
+        Update: {
+          approved?: boolean | null
+          conditions?: string[] | null
+          context?: Json | null
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          jurisdictions?: string[] | null
+          legal_basis?: string[] | null
+          processing_time_ms?: number | null
+          query_content?: Json
+          query_type?: string
+          recommendations?: string[] | null
+          requesting_agent?: string
+          requesting_agent_type?: string
+          responded_at?: string | null
+          response?: Json | null
+          risk_level?: string | null
+          tokens_used?: number | null
+          urgency?: string | null
+          warnings?: string[] | null
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
+      legal_case_templates: {
+        Row: {
+          avg_rating: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          example_filled: string | null
+          id: string
+          is_active: boolean | null
+          is_official: boolean | null
+          jurisdiction_code: string
+          legal_area: string
+          name: string
+          optional_fields: Json | null
+          required_fields: Json | null
+          template_content: string
+          template_type: string
+          updated_at: string | null
+          usage_count: number | null
+          usage_instructions: string | null
+          variables: Json | null
+          version: string | null
+        }
+        Insert: {
+          avg_rating?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          example_filled?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_official?: boolean | null
+          jurisdiction_code: string
+          legal_area: string
+          name: string
+          optional_fields?: Json | null
+          required_fields?: Json | null
+          template_content: string
+          template_type: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_instructions?: string | null
+          variables?: Json | null
+          version?: string | null
+        }
+        Update: {
+          avg_rating?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          example_filled?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_official?: boolean | null
+          jurisdiction_code?: string
+          legal_area?: string
+          name?: string
+          optional_fields?: Json | null
+          required_fields?: Json | null
+          template_content?: string
+          template_type?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_instructions?: string | null
+          variables?: Json | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      legal_compliance_checks: {
+        Row: {
+          action_items: Json | null
+          check_name: string
+          created_at: string | null
+          detailed_results: Json
+          entity_id: string | null
+          entity_type: string
+          gaps_identified: Json | null
+          id: string
+          jurisdictions: string[]
+          next_review_date: string | null
+          overall_score: number | null
+          overall_status: string | null
+          performed_by: string | null
+          recommendations: Json | null
+          regulations_checked: string[]
+          updated_at: string | null
+        }
+        Insert: {
+          action_items?: Json | null
+          check_name: string
+          created_at?: string | null
+          detailed_results: Json
+          entity_id?: string | null
+          entity_type: string
+          gaps_identified?: Json | null
+          id?: string
+          jurisdictions: string[]
+          next_review_date?: string | null
+          overall_score?: number | null
+          overall_status?: string | null
+          performed_by?: string | null
+          recommendations?: Json | null
+          regulations_checked: string[]
+          updated_at?: string | null
+        }
+        Update: {
+          action_items?: Json | null
+          check_name?: string
+          created_at?: string | null
+          detailed_results?: Json
+          entity_id?: string | null
+          entity_type?: string
+          gaps_identified?: Json | null
+          id?: string
+          jurisdictions?: string[]
+          next_review_date?: string | null
+          overall_score?: number | null
+          overall_status?: string | null
+          performed_by?: string | null
+          recommendations?: Json | null
+          regulations_checked?: string[]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      legal_contracts: {
+        Row: {
+          analysis_result: Json | null
+          clauses_analysis: Json | null
+          content: string | null
+          contract_name: string
+          contract_type: string
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          jurisdiction_code: string
+          key_dates: Json | null
+          legal_area: string
+          monetary_values: Json | null
+          parties: Json
+          recommendations: string[] | null
+          risk_factors: Json | null
+          risk_score: number | null
+          signed_at: string | null
+          status: string | null
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_result?: Json | null
+          clauses_analysis?: Json | null
+          content?: string | null
+          contract_name: string
+          contract_type: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          jurisdiction_code: string
+          key_dates?: Json | null
+          legal_area: string
+          monetary_values?: Json | null
+          parties: Json
+          recommendations?: string[] | null
+          risk_factors?: Json | null
+          risk_score?: number | null
+          signed_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_result?: Json | null
+          clauses_analysis?: Json | null
+          content?: string | null
+          contract_name?: string
+          contract_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          jurisdiction_code?: string
+          key_dates?: Json | null
+          legal_area?: string
+          monetary_values?: Json | null
+          parties?: Json
+          recommendations?: string[] | null
+          risk_factors?: Json | null
+          risk_score?: number | null
+          signed_at?: string | null
+          status?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "legal_case_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_jurisdictions: {
+        Row: {
+          code: string
+          country_codes: string[]
+          created_at: string | null
+          currency_code: string | null
+          id: string
+          is_active: boolean | null
+          legal_system: string
+          metadata: Json | null
+          name: string
+          official_gazettes: Json | null
+          primary_language: string
+          regulatory_bodies: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          country_codes: string[]
+          created_at?: string | null
+          currency_code?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_system: string
+          metadata?: Json | null
+          name: string
+          official_gazettes?: Json | null
+          primary_language: string
+          regulatory_bodies?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          country_codes?: string[]
+          created_at?: string | null
+          currency_code?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_system?: string
+          metadata?: Json | null
+          name?: string
+          official_gazettes?: Json | null
+          primary_language?: string
+          regulatory_bodies?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      legal_knowledge_base: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          effective_date: string | null
+          expiry_date: string | null
+          helpful_count: number | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          jurisdiction_code: string
+          jurisdiction_id: string | null
+          keywords: string[] | null
+          knowledge_type: string
+          legal_area: string
+          reference_code: string | null
+          related_articles: string[] | null
+          source_name: string | null
+          source_url: string | null
+          sub_area: string | null
+          summary: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          verified_at: string | null
+          verified_by: string | null
+          view_count: number | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          jurisdiction_code: string
+          jurisdiction_id?: string | null
+          keywords?: string[] | null
+          knowledge_type: string
+          legal_area: string
+          reference_code?: string | null
+          related_articles?: string[] | null
+          source_name?: string | null
+          source_url?: string | null
+          sub_area?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          jurisdiction_code?: string
+          jurisdiction_id?: string | null
+          keywords?: string[] | null
+          knowledge_type?: string
+          legal_area?: string
+          reference_code?: string | null
+          related_articles?: string[] | null
+          source_name?: string | null
+          source_url?: string | null
+          sub_area?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_knowledge_base_jurisdiction_id_fkey"
+            columns: ["jurisdiction_id"]
+            isOneToOne: false
+            referencedRelation: "legal_jurisdictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_precedents: {
+        Row: {
+          case_name: string
+          case_number: string
+          citations: string[] | null
+          cited_by: string[] | null
+          court_level: string
+          court_name: string
+          created_at: string | null
+          created_by: string | null
+          decision_date: string
+          decision_type: string
+          full_text: string | null
+          id: string
+          is_active: boolean | null
+          is_landmark: boolean | null
+          is_overruled: boolean | null
+          jurisdiction_code: string
+          key_holdings: string[] | null
+          keywords: string[] | null
+          legal_area: string
+          legal_principles: string[] | null
+          overruled_by: string | null
+          relevance_score: number | null
+          source_url: string | null
+          summary: string
+          updated_at: string | null
+        }
+        Insert: {
+          case_name: string
+          case_number: string
+          citations?: string[] | null
+          cited_by?: string[] | null
+          court_level: string
+          court_name: string
+          created_at?: string | null
+          created_by?: string | null
+          decision_date: string
+          decision_type: string
+          full_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_landmark?: boolean | null
+          is_overruled?: boolean | null
+          jurisdiction_code: string
+          key_holdings?: string[] | null
+          keywords?: string[] | null
+          legal_area: string
+          legal_principles?: string[] | null
+          overruled_by?: string | null
+          relevance_score?: number | null
+          source_url?: string | null
+          summary: string
+          updated_at?: string | null
+        }
+        Update: {
+          case_name?: string
+          case_number?: string
+          citations?: string[] | null
+          cited_by?: string[] | null
+          court_level?: string
+          court_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          decision_date?: string
+          decision_type?: string
+          full_text?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_landmark?: boolean | null
+          is_overruled?: boolean | null
+          jurisdiction_code?: string
+          key_holdings?: string[] | null
+          keywords?: string[] | null
+          legal_area?: string
+          legal_principles?: string[] | null
+          overruled_by?: string | null
+          relevance_score?: number | null
+          source_url?: string | null
+          summary?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      legal_regulation_updates: {
+        Row: {
+          action_required: string | null
+          affected_agents: string[] | null
+          affected_areas: string[] | null
+          created_at: string | null
+          deadline: string | null
+          effective_date: string | null
+          full_content: string | null
+          id: string
+          impact_level: string | null
+          is_processed: boolean | null
+          jurisdiction_code: string
+          legal_area: string
+          notifications_sent: boolean | null
+          notifications_sent_at: string | null
+          processed_at: string | null
+          publication_date: string
+          regulation_code: string | null
+          regulation_name: string
+          source_gazette: string | null
+          source_url: string | null
+          summary: string
+          update_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_required?: string | null
+          affected_agents?: string[] | null
+          affected_areas?: string[] | null
+          created_at?: string | null
+          deadline?: string | null
+          effective_date?: string | null
+          full_content?: string | null
+          id?: string
+          impact_level?: string | null
+          is_processed?: boolean | null
+          jurisdiction_code: string
+          legal_area: string
+          notifications_sent?: boolean | null
+          notifications_sent_at?: string | null
+          processed_at?: string | null
+          publication_date: string
+          regulation_code?: string | null
+          regulation_name: string
+          source_gazette?: string | null
+          source_url?: string | null
+          summary: string
+          update_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_required?: string | null
+          affected_agents?: string[] | null
+          affected_areas?: string[] | null
+          created_at?: string | null
+          deadline?: string | null
+          effective_date?: string | null
+          full_content?: string | null
+          id?: string
+          impact_level?: string | null
+          is_processed?: boolean | null
+          jurisdiction_code?: string
+          legal_area?: string
+          notifications_sent?: boolean | null
+          notifications_sent_at?: string | null
+          processed_at?: string | null
+          publication_date?: string
+          regulation_code?: string | null
+          regulation_name?: string
+          source_gazette?: string | null
+          source_url?: string | null
+          summary?: string
+          update_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      legal_risk_assessments: {
+        Row: {
+          assessment_name: string
+          confidence_score: number | null
+          context: Json | null
+          created_at: string | null
+          id: string
+          jurisdictions: string[]
+          legal_areas: string[]
+          legal_basis: string[] | null
+          mitigation_strategies: Json | null
+          overall_risk_level: string | null
+          overall_risk_score: number | null
+          performed_by: string | null
+          potential_consequences: Json | null
+          precedents_considered: string[] | null
+          recommendations: string[] | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_factors: Json
+          scenario_description: string
+          updated_at: string | null
+        }
+        Insert: {
+          assessment_name: string
+          confidence_score?: number | null
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          jurisdictions: string[]
+          legal_areas: string[]
+          legal_basis?: string[] | null
+          mitigation_strategies?: Json | null
+          overall_risk_level?: string | null
+          overall_risk_score?: number | null
+          performed_by?: string | null
+          potential_consequences?: Json | null
+          precedents_considered?: string[] | null
+          recommendations?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_factors: Json
+          scenario_description: string
+          updated_at?: string | null
+        }
+        Update: {
+          assessment_name?: string
+          confidence_score?: number | null
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          jurisdictions?: string[]
+          legal_areas?: string[]
+          legal_basis?: string[] | null
+          mitigation_strategies?: Json | null
+          overall_risk_level?: string | null
+          overall_risk_score?: number | null
+          performed_by?: string | null
+          potential_consequences?: Json | null
+          precedents_considered?: string[] | null
+          recommendations?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_factors?: Json
+          scenario_description?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      legal_validation_logs: {
+        Row: {
+          action_data: Json
+          action_description: string | null
+          action_type: string
+          agent_id: string
+          agent_type: string
+          applicable_regulations: string[] | null
+          auto_approved: boolean | null
+          blocking_issues: string[] | null
+          conditions_required: string[] | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_approved: boolean
+          jurisdictions_checked: string[] | null
+          legal_basis: string[] | null
+          processing_time_ms: number | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_level: string | null
+          validation_result: Json
+          warnings: string[] | null
+        }
+        Insert: {
+          action_data: Json
+          action_description?: string | null
+          action_type: string
+          agent_id: string
+          agent_type: string
+          applicable_regulations?: string[] | null
+          auto_approved?: boolean | null
+          blocking_issues?: string[] | null
+          conditions_required?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_approved: boolean
+          jurisdictions_checked?: string[] | null
+          legal_basis?: string[] | null
+          processing_time_ms?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string | null
+          validation_result: Json
+          warnings?: string[] | null
+        }
+        Update: {
+          action_data?: Json
+          action_description?: string | null
+          action_type?: string
+          agent_id?: string
+          agent_type?: string
+          applicable_regulations?: string[] | null
+          auto_approved?: boolean | null
+          blocking_issues?: string[] | null
+          conditions_required?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_approved?: boolean
+          jurisdictions_checked?: string[] | null
+          legal_basis?: string[] | null
+          processing_time_ms?: number | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string | null
+          validation_result?: Json
+          warnings?: string[] | null
+        }
+        Relationships: []
+      }
       license_anomaly_alerts: {
         Row: {
           alert_type: string
