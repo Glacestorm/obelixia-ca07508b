@@ -1,511 +1,422 @@
 
-# Plan de Implementación: Módulo de Migración ERP/Contable Empresarial
+# Plan: Módulo Jurídico Enterprise - Asesor IA Multi-Agente
 
-## Visión General
+## Resumen Ejecutivo
 
-Creación de un módulo de migración hipercompleto para sistemas ERP y contables, siguiendo la arquitectura del módulo de migración CRM existente pero especializado en la complejidad técnica, fiscal y normativa de los sistemas contables empresariales.
+Implementación de un **Módulo Jurídico integral** que actúa como asesor legal experto para todos los agentes de IA del sistema y el Supervisor. Este módulo centraliza el conocimiento jurídico multi-jurisdiccional y proporciona validación legal en tiempo real para cualquier operación automatizada.
 
-## Estructura de Archivos
+---
+
+## Arquitectura del Sistema
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                     AGENTE SUPERVISOR                           │
+│                  (ai-agent-orchestrator)                        │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+        ▼                 ▼                 ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│  ERP Agents   │ │   HR Agents   │ │  CRM Agents   │
+│  (Fiscal,     │ │  (Nóminas,    │ │  (Ventas,     │
+│   Contable)   │ │   Contratos)  │ │   GDPR)       │
+└───────┬───────┘ └───────┬───────┘ └───────┬───────┘
+        │                 │                 │
+        └─────────────────┼─────────────────┘
+                          │
+                          ▼
+        ┌─────────────────────────────────────┐
+        │     AGENTE JURÍDICO CENTRAL         │
+        │    (legal-ai-advisor)               │
+        │                                     │
+        │  ┌─────────────────────────────┐   │
+        │  │    Sub-Agentes Jurídicos    │   │
+        │  ├─────────────────────────────┤   │
+        │  │ • Laboral                   │   │
+        │  │ • Mercantil                 │   │
+        │  │ • Fiscal                    │   │
+        │  │ • Protección de Datos       │   │
+        │  │ • Compliance Bancario       │   │
+        │  │ • Contractual               │   │
+        │  └─────────────────────────────┘   │
+        └─────────────────────────────────────┘
+```
+
+---
+
+## Fases de Implementación
+
+### FASE 1: Infraestructura Base de Datos
+**Duración estimada**: 1 sesión
+
+**Tablas a crear**:
+- `legal_knowledge_base` - Base de conocimiento jurídico multi-jurisdiccional
+- `legal_jurisdictions` - Configuración de jurisdicciones (ES, AD, EU, UK, AE, US)
+- `legal_case_templates` - Plantillas de casos y contratos por tipo
+- `legal_agent_queries` - Historial de consultas de otros agentes
+- `legal_validation_logs` - Registro de validaciones legales
+- `legal_precedents` - Base de precedentes judiciales
+- `legal_regulation_updates` - Actualizaciones normativas monitorizadas
+
+**Índices y triggers**:
+- Índices para búsqueda semántica en knowledge base
+- Trigger para notificar cambios regulatorios a agentes afectados
+
+---
+
+### FASE 2: Edge Function Principal - Agente Jurídico
+**Duración estimada**: 1-2 sesiones
+
+**Archivo**: `supabase/functions/legal-ai-advisor/index.ts`
+
+**Acciones del agente**:
+1. `validate_action` - Validar si una acción de otro agente cumple normativa
+2. `consult_legal` - Consulta jurídica general con contexto
+3. `analyze_contract` - Análisis completo de contratos
+4. `check_compliance` - Verificación de cumplimiento multi-normativo
+5. `find_precedents` - Búsqueda de precedentes judiciales
+6. `generate_document` - Generación de documentos legales
+7. `assess_risk` - Evaluación de riesgo legal
+8. `monitor_regulations` - Monitoreo de cambios normativos
+9. `advise_agent` - Asesoría específica para un agente IA
+
+**Jurisdicciones soportadas**:
+- España (Código Civil, Estatuto de los Trabajadores, Ley de Sociedades)
+- Andorra (APDA, Codi de Relacions Laborals)
+- Unión Europea (GDPR, AI Act, MiFID II, DORA)
+- Reino Unido (Employment Rights Act, Companies Act)
+- Emiratos Árabes (Free Zone Regulations, UAE Labor Law)
+- Estados Unidos (Delaware LLC, California Labor Code)
+
+---
+
+### FASE 3: Hook Principal y Sub-Agentes
+**Duración estimada**: 1 sesión
+
+**Archivo**: `src/hooks/admin/legal/useLegalAdvisor.ts`
+
+**Funcionalidades**:
+```typescript
+interface UseLegalAdvisor {
+  // Consultas generales
+  consultLegal(query: string, jurisdiction?: string): Promise<LegalAdvice>;
+  
+  // Validación para otros agentes
+  validateAgentAction(agentId: string, action: AgentAction): Promise<ValidationResult>;
+  
+  // Análisis de contratos
+  analyzeContract(contractText: string, type: string): Promise<ContractAnalysis>;
+  
+  // Cumplimiento normativo
+  checkMultiCompliance(regulations: string[]): Promise<ComplianceReport>;
+  
+  // Precedentes
+  findPrecedents(caseType: string, jurisdiction: string): Promise<LegalPrecedent[]>;
+  
+  // Generación de documentos
+  generateLegalDocument(template: string, data: Record<string, unknown>): Promise<Document>;
+  
+  // Riesgo legal
+  assessLegalRisk(scenario: string): Promise<RiskAssessment>;
+  
+  // Suscripción a cambios regulatorios
+  subscribeToRegulationUpdates(jurisdictions: string[]): Subscription;
+}
+```
+
+**Sub-Agentes especializados** (delegación automática):
+- `LaborLegalAgent` - Derecho laboral multi-jurisdiccional
+- `CorporateLegalAgent` - Derecho mercantil y societario
+- `TaxLegalAgent` - Fiscalidad y tributación
+- `DataProtectionAgent` - GDPR, APDA, privacidad
+- `BankingComplianceAgent` - MiFID II, Basel, DORA
+- `ContractLegalAgent` - Análisis y redacción contractual
+
+---
+
+### FASE 4: Dashboard Jurídico Principal
+**Duración estimada**: 1 sesión
+
+**Archivo**: `src/components/admin/legal/LegalAdvisorDashboard.tsx`
+
+**Pestañas del Dashboard**:
+1. **Overview** - KPIs, consultas recientes, alertas regulatorias
+2. **Consultas** - Chat con el agente jurídico
+3. **Contratos** - Análisis y gestión de contratos
+4. **Compliance** - Estado de cumplimiento multi-normativo
+5. **Precedentes** - Búsqueda de jurisprudencia
+6. **Documentos** - Generador de documentos legales
+7. **Regulaciones** - Monitor de cambios normativos
+8. **Agentes** - Panel de asesoría a otros agentes IA
+9. **Validaciones** - Historial de validaciones legales
+10. **Riesgos** - Mapa de riesgos legales
+
+---
+
+### FASE 5: Paneles Especializados
+**Duración estimada**: 1-2 sesiones
+
+**Componentes a crear**:
+
+1. **LegalQueryPanel.tsx** - Chat especializado con el agente jurídico
+2. **ContractAnalysisPanel.tsx** - Análisis IA de contratos con riesgos
+3. **LegalCompliancePanel.tsx** - Dashboard de cumplimiento multi-normativo
+4. **LegalPrecedentsPanel.tsx** - Búsqueda de jurisprudencia
+5. **LegalDocumentGeneratorPanel.tsx** - Generador de documentos
+6. **RegulationMonitorPanel.tsx** - Monitor de cambios regulatorios
+7. **AgentAdvisoryPanel.tsx** - Panel para asesorar otros agentes
+8. **LegalRiskMapPanel.tsx** - Mapa interactivo de riesgos
+9. **LegalValidationHistoryPanel.tsx** - Historial de validaciones
+10. **LegalKnowledgeBasePanel.tsx** - Gestión de base de conocimiento
+
+---
+
+### FASE 6: Integración con Agente Supervisor
+**Duración estimada**: 1 sesión
+
+**Modificaciones necesarias**:
+
+1. **ai-agent-orchestrator** - Añadir delegación automática al Legal Agent
+2. **erp-hr-ai-agent** - Integrar validación legal pre-acción
+3. **erp-fiscal-ai-agent** - Consulta jurídica para decisiones fiscales
+4. **crm-agent-ai** - Validación GDPR en operaciones CRM
+5. **useERPModuleAgents.ts** - Añadir dominio "Legal" al orquestador
+
+**Protocolo de comunicación**:
+```typescript
+interface LegalAdvisoryRequest {
+  requesting_agent: string;
+  action_type: string;
+  context: Record<string, unknown>;
+  jurisdictions: string[];
+  urgency: 'immediate' | 'standard' | 'scheduled';
+}
+
+interface LegalAdvisoryResponse {
+  approved: boolean;
+  conditions?: string[];
+  warnings?: string[];
+  legal_basis?: string[];
+  recommendations?: string[];
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+}
+```
+
+---
+
+### FASE 7: Base de Conocimiento Jurídico
+**Duración estimada**: 1 sesión
+
+**Componentes**:
+
+1. **LegalKnowledgeUploader.tsx** - Carga de documentos jurídicos
+2. **Embeddings semánticos** - Para búsqueda inteligente
+3. **Categorización automática** - Por jurisdicción, área, vigencia
+4. **Sistema de alertas** - Notificación de cambios normativos
+
+**Estructura de conocimiento**:
+- Códigos y leyes vigentes
+- Convenios colectivos
+- Sentencias y precedentes
+- Doctrina administrativa
+- Circulares y resoluciones
+- Contratos tipo homologados
+
+---
+
+### FASE 8: Sistema de Alertas Regulatorias
+**Duración estimada**: 1 sesión
+
+**Funcionalidades**:
+
+1. **Monitor de BOE/DOGC/BOPA** - Scraping de boletines oficiales
+2. **Detector de cambios** - IA para identificar impacto
+3. **Notificación proactiva** - A agentes y usuarios afectados
+4. **Timeline de entrada en vigor** - Calendario de obligaciones
+5. **Plan de adaptación** - Generación automática de acciones
+
+---
+
+### FASE 9: Reportes y Auditoría Legal
+**Duración estimada**: 1 sesión
+
+**Tipos de reportes**:
+
+1. **Due Diligence Report** - Para M&A y operaciones corporativas
+2. **Compliance Status Report** - Estado de cumplimiento global
+3. **Risk Assessment Report** - Evaluación de riesgos legales
+4. **Audit Trail Report** - Historial de validaciones
+5. **Regulation Impact Report** - Impacto de nuevas normativas
+
+**Formatos de exportación**: PDF, DOCX, Excel, XML
+
+---
+
+### FASE 10: Tendencias 2026+ y Smart Contracts
+**Duración estimada**: 1 sesión
+
+**Funcionalidades avanzadas**:
+
+1. **LegalTrends2026Panel.tsx** - Roadmap de innovación legal
+2. **Smart Contract Generator** - Contratos autoejecutables
+3. **Blockchain Audit Trail** - Inmutabilidad de validaciones
+4. **Predictive Legal Analytics** - Predicción de resultados judiciales
+5. **AI Regulatory Sandbox** - Testing de compliance antes de implementar
+
+---
+
+## Sección Técnica
+
+### Estructura de Archivos
 
 ```text
 src/
-├── pages/admin/
-│   └── ERPMigrationPage.tsx                    # Página principal del módulo
-├── components/admin/erp-migration/
-│   ├── ERPMigrationDashboard.tsx               # Dashboard principal con KPIs
-│   ├── ERPMigrationPanel.tsx                   # Panel de migración y conectores
-│   ├── ERPValidationPanel.tsx                  # Validación de datos contables
-│   ├── ERPMonitoringPanel.tsx                  # Monitoreo en tiempo real
-│   ├── ERPRollbackPanel.tsx                    # Rollback y recuperación
-│   ├── ERPReportsPanel.tsx                     # Reportes y auditoría
-│   ├── ERPAIAssistantPanel.tsx                 # Asistente IA especializado
-│   ├── ERPAdvancedToolsPanel.tsx               # Herramientas avanzadas
-│   ├── ERPCompliancePanel.tsx                  # Verificación normativa PGC/NIIF
-│   ├── ERPDataMappingPanel.tsx                 # Mapeo avanzado plan de cuentas
-│   ├── ERPFiscalReconciliationPanel.tsx        # Conciliación fiscal
-│   ├── ERPTrends2026Panel.tsx                  # Tendencias 2026-2030
-│   ├── ERPKnowledgeUploader.tsx                # Base de conocimiento
-│   ├── ERPNewsPanel.tsx                        # Noticias y actualizaciones
-│   └── index.ts                                # Barrel exports
-├── hooks/admin/integrations/
-│   └── useERPMigration.ts                      # Hook principal de lógica
-└── config/
-    └── routes.ts                               # Añadir ruta /admin/erp-migration
+├── hooks/admin/legal/
+│   ├── useLegalAdvisor.ts          # Hook principal
+│   ├── useLegalKnowledge.ts        # Gestión de conocimiento
+│   ├── useLegalCompliance.ts       # Cumplimiento normativo
+│   ├── useLegalDocuments.ts        # Generación de documentos
+│   ├── useLegalPrecedents.ts       # Búsqueda de precedentes
+│   ├── useLegalAgentIntegration.ts # Integración con otros agentes
+│   └── index.ts                    # Barrel exports
+│
+├── components/admin/legal/
+│   ├── LegalAdvisorDashboard.tsx   # Dashboard principal
+│   ├── LegalQueryPanel.tsx         # Chat jurídico
+│   ├── ContractAnalysisPanel.tsx   # Análisis de contratos
+│   ├── LegalCompliancePanel.tsx    # Cumplimiento
+│   ├── LegalPrecedentsPanel.tsx    # Precedentes
+│   ├── LegalDocumentGeneratorPanel.tsx
+│   ├── RegulationMonitorPanel.tsx  # Monitor regulatorio
+│   ├── AgentAdvisoryPanel.tsx      # Asesoría a agentes
+│   ├── LegalRiskMapPanel.tsx       # Mapa de riesgos
+│   ├── LegalValidationHistoryPanel.tsx
+│   ├── LegalKnowledgeBasePanel.tsx
+│   ├── LegalTrends2026Panel.tsx    # Tendencias futuras
+│   └── index.ts
 
 supabase/
-├── functions/erp-migration-engine/
-│   └── index.ts                                # Edge function principal
-└── migrations/
-    └── xxx_erp_migration_tables.sql            # Tablas de migración ERP
+├── functions/
+│   ├── legal-ai-advisor/           # Agente principal
+│   │   └── index.ts
+│   ├── legal-precedent-search/     # Búsqueda de precedentes
+│   │   └── index.ts
+│   ├── legal-document-generator/   # Generador de documentos
+│   │   └── index.ts
+│   └── legal-regulation-monitor/   # Monitor de regulaciones
+│       └── index.ts
 ```
-
----
-
-## FASE 1: Infraestructura Base (Semana 1-2)
-
-### 1.1 Base de Datos
-
-**Nuevas tablas:**
-- `erp_migration_connectors` - Conectores de sistemas ERP/contables soportados
-- `erp_migrations` - Registro de migraciones con metadatos extendidos
-- `erp_field_mappings` - Mapeos de campos con transformaciones contables
-- `erp_migration_records` - Registros individuales de migración
-- `erp_mapping_templates` - Plantillas de mapeo por sistema origen
-- `erp_validation_rules` - Reglas de validación contable/fiscal
-- `erp_chart_mappings` - Mapeos de planes de cuentas (PGC, NIIF, etc.)
-- `erp_fiscal_reconciliations` - Reconciliaciones fiscales
-
-**Conectores iniciales (20+ sistemas):**
-
-| Tier Enterprise | Tier Popular | Tier Estándar | Legacy/España |
-|-----------------|--------------|---------------|---------------|
-| SAP S/4HANA | Odoo | ContaPlus | FacturaPlus |
-| SAP Business One | Sage 200cloud | Sage 50 | NCS (Grupo SP) |
-| Oracle NetSuite | Holded | A3 Asesor | Logic Control |
-| Microsoft Dynamics 365 | Zoho Books | Contasol | Classic |
-| | QuickBooks | Cegid | |
-
-### 1.2 Edge Function `erp-migration-engine`
-
-**Acciones principales:**
-- `list_connectors` - Listar conectores disponibles
-- `analyze_file` - Análisis inteligente de archivos (CSV, XML, JSON, BAK, MDB)
-- `create_migration` - Crear nueva migración
-- `validate_accounting` - Validación contable (cuadre débito/crédito)
-- `map_chart_of_accounts` - Mapeo automático de planes de cuentas
-- `run_migration` - Ejecutar migración
-- `rollback_migration` - Rollback completo con audit trail
-- `export_audit_report` - Generar informe de auditoría
-
-### 1.3 Hook `useERPMigration`
-
-Estado y operaciones para:
-- Gestión de migraciones activas
-- Mapeo de campos y transformaciones
-- Validación contable en tiempo real
-- Progreso y monitoreo
-- Rollback y recuperación
-
----
-
-## FASE 2: Conectores y Análisis Inteligente (Semana 3-4)
-
-### 2.1 Sistema de Conectores Multi-Formato
-
-**Formatos soportados:**
-- **Estándar**: CSV, XLSX, XML, JSON
-- **Específicos**: SAP IDoc, Dynamics OData, NetSuite SuiteQL
-- **Legacy España**: Ficheros ContaPlus (.bak), A3 exports, Sage 50 backups
-- **Modernos**: API REST (Holded, Odoo, Zoho)
-
-**Detección automática de sistema origen:**
-- Análisis de estructura de campos
-- Reconocimiento de patrones de códigos de cuenta
-- Identificación de formato de fechas y monedas
-
-### 2.2 Análisis de Datos con IA
-
-**Capacidades:**
-- Detección automática del plan de cuentas origen (PGC, NIIF, etc.)
-- Sugerencia de mapeos con nivel de confianza
-- Identificación de anomalías contables
-- Detección de asientos descuadrados
-- Análisis de calidad de datos
-
----
-
-## FASE 3: Mapeo Avanzado de Plan de Cuentas (Semana 5-6)
-
-### 3.1 ERPDataMappingPanel
-
-**Funcionalidades:**
-- Visualización lado a lado del plan origen vs destino
-- Mapeo drag-and-drop de cuentas
-- Transformaciones automáticas por grupo (1-9 PGC)
-- Reglas de conversión personalizables
-- Preview de asientos transformados
-
-### 3.2 Transformaciones Contables
-
-**Tipos de transformación:**
-- Mapeo directo de códigos de cuenta
-- Agregación de cuentas
-- Desagregación con reglas
-- Conversión de naturaleza (Debe/Haber)
-- Ajuste de decimales y redondeo
-- Conversión de moneda con tipo de cambio histórico
-
-### 3.3 Plantillas de Mapeo Preconfiguradas
-
-- ContaPlus a PGC 2007
-- Sage 50 a PGC PYME
-- SAP a NIIF/PGC
-- Odoo a PGC 2007
-- A3 a formato ObelixIA
-
----
-
-## FASE 4: Validación Contable y Fiscal (Semana 7-8)
-
-### 4.1 ERPValidationPanel
-
-**Validaciones automáticas:**
-- Cuadre de asientos (Debe = Haber)
-- Consistencia de ejercicios fiscales
-- Verificación de períodos cerrados
-- Duplicados por número de asiento
-- Coherencia de terceros (clientes/proveedores)
-- Validación de IVA/IGI y retenciones
-
-### 4.2 ERPCompliancePanel
-
-**Verificaciones normativas:**
-- Cumplimiento PGC 2007 / PGC PYME
-- Compatibilidad NIIF/NIIC
-- Requisitos SII (si aplica)
-- Verificación de Libros Registro
-- Auditoría de cuentas obligatorias
-
-### 4.3 ERPFiscalReconciliationPanel
-
-**Conciliaciones:**
-- IVA Repercutido vs Libro de Ventas
-- IVA Soportado vs Libro de Compras
-- Retenciones vs Modelo 111/115
-- Conciliación bancaria preliminar
-
----
-
-## FASE 5: Ejecución y Monitoreo (Semana 9-10)
-
-### 5.1 Motor de Migración
-
-**Características:**
-- Procesamiento por lotes configurables (batch size)
-- Migración incremental
-- Puntos de control (checkpoints)
-- Reintento automático con backoff
-- Migración en horario programado
-
-### 5.2 ERPMonitoringPanel
-
-**Monitoreo en tiempo real:**
-- Progreso por entidad (asientos, cuentas, terceros)
-- Logs en vivo con filtrado
-- Alertas de errores críticos
-- Métricas de rendimiento
-- Estimación de tiempo restante
-
-### 5.3 ERPRollbackPanel
-
-**Capacidades de recuperación:**
-- Rollback selectivo por entidad
-- Rollback por rango de fechas
-- Dry-run de rollback
-- Preservación de logs de auditoría
-- Restauración de estado anterior
-
----
-
-## FASE 6: Asistente IA Especializado (Semana 11-12)
-
-### 6.1 ERPAIAssistantPanel
-
-**Capacidades del Agente IA:**
-- Chat interactivo para resolución de problemas
-- Explicación de errores de mapeo
-- Sugerencias de transformación
-- Análisis predictivo de migración
-- Detección de anomalías contables
-
-### 6.2 Análisis Predictivo
-
-**Predicciones:**
-- Probabilidad de éxito de migración
-- Tiempo estimado de procesamiento
-- Posibles errores antes de ejecutar
-- Recomendaciones de optimización
-
-### 6.3 Detección de Anomalías
-
-**Tipos de anomalías:**
-- Asientos con importes inusuales
-- Cuentas sin movimientos esperados
-- Terceros duplicados
-- Fechas inconsistentes
-- Patrones de fraude potencial
-
----
-
-## FASE 7: Reportes y Auditoría (Semana 13-14)
-
-### 7.1 ERPReportsPanel
-
-**Informes disponibles:**
-- Resumen ejecutivo de migración
-- Detalle de errores y warnings
-- Mapeo de cuentas aplicado
-- Estadísticas por entidad
-- Comparativa origen vs destino
-
-### 7.2 Exportación Multi-Formato
-
-**Formatos de exportación:**
-- PDF con firma digital
-- Excel detallado
-- XML estructurado
-- JSON para integración
-- XBRL para reporting
-
-### 7.3 Audit Trail Completo
-
-**Registro de auditoría:**
-- Usuario que ejecutó cada acción
-- Timestamp con precisión de ms
-- Antes/después de cada cambio
-- IP y dispositivo
-- Hash de integridad
-
----
-
-## FASE 8: Herramientas Avanzadas (Semana 15-16)
-
-### 8.1 ERPAdvancedToolsPanel
-
-**Herramientas especializadas:**
-- Conversión masiva de códigos de cuenta
-- Fusión de terceros duplicados
-- Reasignación de ejercicios
-- Recálculo de saldos
-- Generación de asientos de apertura
-
-### 8.2 Migración de Entidades Específicas
-
-**Entidades migrables:**
-- Plan de Cuentas completo
-- Asientos contables (libro diario)
-- Saldos de apertura
-- Maestro de clientes/proveedores
-- Cartera de efectos
-- Activos fijos y amortizaciones
-- Presupuestos
-
-### 8.3 Integración con Módulos ERP
-
-**Conexión automática con:**
-- Módulo de Contabilidad (ObelixIA Accounting)
-- Módulo Fiscal (SII, modelos)
-- Módulo de Tesorería
-- Módulo de Activos Fijos
-
----
-
-## FASE 9: Base de Conocimiento y Ayuda (Semana 17)
-
-### 9.1 ERPKnowledgeUploader
-
-**Contenido importable:**
-- Manuales de sistemas origen
-- Guías de exportación por sistema
-- Regulaciones contables
-- FAQs de migración
-
-### 9.2 ERPNewsPanel
-
-**Actualizaciones:**
-- Nuevos conectores disponibles
-- Cambios normativos que afectan migraciones
-- Mejoras del motor de migración
-- Casos de éxito
-
-### 9.3 Sistema de Ayuda Contextual
-
-**Ayuda integrada:**
-- Tooltips explicativos
-- Guías paso a paso
-- Videos tutoriales
-- Chat con soporte
-
----
-
-## FASE 10: Tendencias 2026-2030 y Disrupción (Semana 18)
-
-### 10.1 ERPTrends2026Panel
-
-**Tendencias implementadas:**
-
-**Migración Autónoma con IA Generativa:**
-- El agente IA analiza el sistema origen sin intervención
-- Genera automáticamente el plan de migración
-- Ejecuta la migración con supervisión mínima
-
-**Factura Electrónica Obligatoria:**
-- Preparación para Ley Crea y Crece 2026
-- Migración de histórico a formato Factura-e
-- Validación de TicketBAI/VeriFactu
-
-**Blockchain para Audit Trail:**
-- Hash inmutable de cada operación
-- Certificación de integridad de datos
-- Cumplimiento DORA/NIS2
-
-**API-First Migration:**
-- Conexión directa con APIs de sistemas origen
-- Sincronización en tiempo real
-- Migración continua vs. big-bang
-
-### 10.2 Características Disruptivas
-
-**Zero-Configuration Migration:**
-- Subir backup del sistema origen
-- IA detecta todo automáticamente
-- Un clic para migrar
-
-**Multi-Empresa Simultánea:**
-- Migrar múltiples empresas en paralelo
-- Consolidación automática
-- Grupo de empresas con intercompany
-
-**Migración Predictiva:**
-- IA sugiere cuándo migrar basándose en patrones
-- Optimización automática de horarios
-- Predicción de problemas antes de que ocurran
-
----
-
-## Arquitectura Técnica
-
-### Diagrama de Componentes
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    ERPMigrationPage.tsx                         │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
-│  │   Dashboard  │ │  Migration   │ │      Validation          │ │
-│  │    Panel     │ │    Panel     │ │        Panel             │ │
-│  └──────────────┘ └──────────────┘ └──────────────────────────┘ │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
-│  │  Monitoring  │ │   Rollback   │ │       Reports            │ │
-│  │    Panel     │ │    Panel     │ │        Panel             │ │
-│  └──────────────┘ └──────────────┘ └──────────────────────────┘ │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────────────┐ │
-│  │ AI Assistant │ │  Compliance  │ │     Advanced Tools       │ │
-│  │    Panel     │ │    Panel     │ │        Panel             │ │
-│  └──────────────┘ └──────────────┘ └──────────────────────────┘ │
-├─────────────────────────────────────────────────────────────────┤
-│                    useERPMigration Hook                         │
-├─────────────────────────────────────────────────────────────────┤
-│                 erp-migration-engine (Edge Function)            │
-├─────────────────────────────────────────────────────────────────┤
-│  erp_migrations │ erp_connectors │ erp_mappings │ erp_records   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Conectores Soportados
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    TIER ENTERPRISE                               │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────────────────────┐│
-│  │   SAP   │ │ Oracle  │ │Microsoft│ │         Workday          ││
-│  │ S/4HANA │ │NetSuite │ │Dynamics │ │        Financials        ││
-│  └─────────┘ └─────────┘ └─────────┘ └─────────────────────────┘│
-├─────────────────────────────────────────────────────────────────┤
-│                    TIER POPULAR                                  │
-│  ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌─────────┐ │
-│  │ Odoo  │ │ Sage  │ │Holded │ │ Zoho  │ │  A3   │ │QuickBooks│ │
-│  └───────┘ └───────┘ └───────┘ └───────┘ └───────┘ └─────────┘ │
-├─────────────────────────────────────────────────────────────────┤
-│                    TIER LEGACY ESPAÑA                            │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐            │
-│  │ContaPlus │ │FacturaPlus│ │  NCS    │ │ Classic  │            │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘            │
-├─────────────────────────────────────────────────────────────────┤
-│                    FORMATOS UNIVERSALES                          │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐         │
-│  │ CSV  │ │ XLSX │ │ XML  │ │ JSON │ │  XLS │ │  MDB │         │
-│  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘ └──────┘         │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Detalle Técnico
 
 ### Tablas de Base de Datos
 
-**erp_migration_connectors:**
-- `id`, `connector_key`, `connector_name`, `vendor`
-- `logo_url`, `description`, `tier` (enterprise/popular/standard)
-- `supported_formats[]`, `supported_entities[]`
-- `field_definitions` (JSON), `export_guide_url`
-- `chart_of_accounts_mappings` (JSON)
+```sql
+-- Base de conocimiento jurídico
+CREATE TABLE legal_knowledge_base (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  knowledge_type TEXT NOT NULL, -- 'law', 'regulation', 'precedent', 'doctrine', 'template'
+  jurisdiction TEXT NOT NULL,   -- 'ES', 'AD', 'EU', 'UK', 'AE', 'US'
+  legal_area TEXT NOT NULL,     -- 'labor', 'corporate', 'tax', 'data_protection', 'banking'
+  effective_date DATE,
+  expiry_date DATE,
+  source_url TEXT,
+  tags TEXT[],
+  embedding VECTOR(1536),       -- Para búsqueda semántica
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
-**erp_migrations:**
-- `id`, `migration_name`, `source_system`, `source_version`
-- `status`, `total_records`, `migrated_records`, `failed_records`
-- `source_fiscal_year`, `target_fiscal_year`
-- `source_chart_type`, `target_chart_type` (PGC/NIIF/etc.)
-- `config`, `ai_analysis`, `rollback_data`
-- `compliance_checks`, `fiscal_reconciliation`
+-- Consultas de agentes
+CREATE TABLE legal_agent_queries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  requesting_agent TEXT NOT NULL,
+  query_type TEXT NOT NULL,
+  query_content JSONB NOT NULL,
+  response JSONB,
+  approved BOOLEAN,
+  risk_level TEXT,
+  processing_time_ms INTEGER,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-**erp_chart_mappings:**
-- `id`, `migration_id`
-- `source_account_code`, `source_account_name`
-- `target_account_code`, `target_account_name`
-- `transform_type`, `ai_confidence`
-- `manual_override`, `notes`
+-- Validaciones legales
+CREATE TABLE legal_validation_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id TEXT NOT NULL,
+  action_type TEXT NOT NULL,
+  action_data JSONB NOT NULL,
+  validation_result JSONB NOT NULL,
+  legal_basis TEXT[],
+  warnings TEXT[],
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
 
-### Edge Function: Acciones Principales
+### Integración con Supervisor
+
+El Agente Jurídico se registra como dominio especial en el orquestador:
 
 ```typescript
-// Acciones del erp-migration-engine
-type ERPMigrationAction =
-  | 'list_connectors'           // Listar conectores
-  | 'analyze_file'              // Análisis IA de archivo
-  | 'detect_chart_type'         // Detectar tipo de plan de cuentas
-  | 'suggest_mappings'          // Sugerir mapeos con IA
-  | 'create_migration'          // Crear migración
-  | 'validate_accounting'       // Validar contabilidad
-  | 'validate_compliance'       // Verificar cumplimiento normativo
-  | 'run_migration'             // Ejecutar migración
-  | 'pause_migration'           // Pausar
-  | 'resume_migration'          // Reanudar
-  | 'rollback_migration'        // Rollback
-  | 'export_audit_report'       // Generar informe auditoría
-  | 'reconcile_fiscal'          // Conciliación fiscal
-  | 'get_progress'              // Obtener progreso
-  | 'get_statistics';           // Obtener estadísticas
+// En useERPModuleAgents.ts
+const LEGAL_DOMAIN: DomainAgent = {
+  id: 'legal-advisor',
+  domain: 'legal',
+  name: 'Asesor Jurídico IA',
+  status: 'active',
+  capabilities: [
+    'contract_analysis',
+    'compliance_check',
+    'legal_validation',
+    'precedent_search',
+    'document_generation',
+    'risk_assessment',
+    'regulation_monitoring'
+  ],
+  moduleAgents: [
+    { id: 'labor-legal', type: 'labor_law', name: 'Agente Derecho Laboral' },
+    { id: 'corporate-legal', type: 'corporate_law', name: 'Agente Derecho Mercantil' },
+    { id: 'tax-legal', type: 'tax_law', name: 'Agente Derecho Fiscal' },
+    { id: 'data-legal', type: 'data_protection', name: 'Agente Protección Datos' },
+    { id: 'banking-legal', type: 'banking_compliance', name: 'Agente Compliance Bancario' },
+    { id: 'contract-legal', type: 'contract_law', name: 'Agente Contractual' }
+  ]
+};
 ```
 
 ---
 
-## Resumen de Entregables por Fase
+## Jurisdicciones y Normativas Cubiertas
 
-| Fase | Componentes | Funcionalidades Clave |
-|------|-------------|----------------------|
-| 1 | DB + Edge Function + Hook | Infraestructura base |
-| 2 | Conectores + Análisis | 20+ sistemas, detección automática |
-| 3 | DataMappingPanel | Mapeo visual plan de cuentas |
-| 4 | Validation + Compliance | Cuadre contable, PGC/NIIF |
-| 5 | Ejecución + Monitoring | Migración real, logs en vivo |
-| 6 | AI Assistant | Chat IA, análisis predictivo |
-| 7 | Reports | Auditoría, multi-formato |
-| 8 | Advanced Tools | Herramientas especializadas |
-| 9 | Knowledge + News | Base de conocimiento |
-| 10 | Trends 2026-2030 | Migración autónoma, blockchain |
+| Jurisdicción | Área | Normativas Principales |
+|--------------|------|------------------------|
+| España | Laboral | Estatuto de los Trabajadores, Convenios Colectivos |
+| España | Mercantil | Ley de Sociedades de Capital, Código de Comercio |
+| España | Fiscal | LIS, LIRPF, LIVA, LGT |
+| Andorra | General | APDA, Codi de Relacions Laborals, Llei 95/2010 |
+| UE | Datos | GDPR, ePrivacy, AI Act |
+| UE | Bancario | MiFID II, Basel III/IV, DORA, CRR/CRD |
+| UK | Laboral | Employment Rights Act, Equality Act |
+| UAE | Corporativo | Free Zone Regulations, Commercial Companies Law |
+| US | Corporativo | Delaware LLC Act, California Labor Code |
 
 ---
 
-## Diferenciadores Clave vs. Competencia
+## Resultado Esperado
 
-1. **IA Nativa**: Mapeo automático con Lovable AI, no requiere API keys externas
-2. **Multi-Plan de Cuentas**: Soporte PGC, NIIF, y planes internacionales
-3. **Cumplimiento Español**: SII, modelos fiscales, TicketBAI
-4. **Legacy Support**: ContaPlus, FacturaPlus, sistemas obsoletos
-5. **Zero-Config**: Subir backup detectar todo migrar
-6. **Audit Trail**: Trazabilidad completa para auditorías
-7. **Rollback Inteligente**: Recuperación selectiva sin perder datos
-8. **Tendencias 2026-2030**: Preparado para factura electrónica obligatoria
+Al completar las 10 fases, el sistema dispondrá de:
 
+1. **Agente Jurídico Central** que asesora a todos los demás agentes
+2. **Validación legal automática** para cualquier acción automatizada
+3. **Base de conocimiento multi-jurisdiccional** actualizada
+4. **Sistema de alertas proactivo** ante cambios regulatorios
+5. **Generación de documentos legales** con plantillas homologadas
+6. **Búsqueda de precedentes judiciales** con IA semántica
+7. **Dashboard completo** para gestión jurídica enterprise
+8. **Auditoría inmutable** de todas las validaciones legales
+9. **Integración nativa** con HR, Fiscal, CRM y demás módulos
+10. **Compliance multi-normativo** con reporting automatizado
