@@ -9,3 +9,4 @@ export { ERPValidationPanel } from './ERPValidationPanel';
 export { ERPMonitoringPanel } from './ERPMonitoringPanel';
 export { ERPDataMappingPanel } from './ERPDataMappingPanel';
 export { ERPCompliancePanel } from './ERPCompliancePanel';
+export { PGCAccountTree } from './PGCAccountTree';
