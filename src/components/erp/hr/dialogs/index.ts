@@ -32,3 +32,4 @@ export { HRBenefitFormDialog } from './HRBenefitFormDialog';
 export { HRCertificationFormDialog } from './HRCertificationFormDialog';
 export { HRBonusPolicyImportDialog } from './HRBonusPolicyImportDialog';
 export { HREPIManagementDialog } from './HREPIManagementDialog';
+export { HRElectionFormDialog } from './HRElectionFormDialog';

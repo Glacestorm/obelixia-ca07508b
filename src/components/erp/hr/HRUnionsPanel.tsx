@@ -20,7 +20,7 @@ import {
   Plus, Edit, FileText, Shield, HeartHandshake,
   Building2, AlertTriangle, CheckCircle
 } from 'lucide-react';
-import { HRUnionMembershipDialog } from './dialogs';
+import { HRUnionMembershipDialog, HRElectionFormDialog } from './dialogs';
 
 interface HRUnionsPanelProps {
   companyId: string;
@@ -29,6 +29,7 @@ interface HRUnionsPanelProps {
 export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
   const [activeTab, setActiveTab] = useState('afiliacion');
   const [showMembershipDialog, setShowMembershipDialog] = useState(false);
+  const [showElectionDialog, setShowElectionDialog] = useState(false);
 
   // Demo data - Afiliaciones sindicales
   const memberships = [
@@ -426,6 +427,10 @@ export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
             <TabsContent value="elecciones" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Historial de elecciones sindicales</h4>
+                <Button size="sm" onClick={() => setShowElectionDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nueva Convocatoria
+                </Button>
               </div>
 
               {elections.map((election) => (
@@ -488,6 +493,13 @@ export function HRUnionsPanel({ companyId }: HRUnionsPanelProps) {
       <HRUnionMembershipDialog
         open={showMembershipDialog}
         onOpenChange={setShowMembershipDialog}
+        companyId={companyId}
+      />
+
+      {/* Election Form Dialog */}
+      <HRElectionFormDialog
+        open={showElectionDialog}
+        onOpenChange={setShowElectionDialog}
         companyId={companyId}
       />
     </div>
