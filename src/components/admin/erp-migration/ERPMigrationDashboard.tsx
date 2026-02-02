@@ -41,6 +41,12 @@ import { ERPMonitoringPanel } from './ERPMonitoringPanel';
 import { ERPDataMappingPanel } from './ERPDataMappingPanel';
 import { ERPCompliancePanel } from './ERPCompliancePanel';
 import { ERPConnectorLogo } from './ERPConnectorLogo';
+import { ERPRollbackPanel } from './ERPRollbackPanel';
+import { ERPReportsPanel } from './ERPReportsPanel';
+import { ERPAIAssistantPanel } from './ERPAIAssistantPanel';
+import { ERPAdvancedToolsPanel } from './ERPAdvancedToolsPanel';
+import { ERPFiscalReconciliationPanel } from './ERPFiscalReconciliationPanel';
+import { ERPTrends2026Panel } from './ERPTrends2026Panel';
 
 interface ERPMigrationDashboardProps {
   companyId?: string;
@@ -187,13 +193,19 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Resumen</TabsTrigger>
-          <TabsTrigger value="migration">Migración</TabsTrigger>
-          <TabsTrigger value="mapping">Mapeo</TabsTrigger>
-          <TabsTrigger value="validation">Validación</TabsTrigger>
-          <TabsTrigger value="monitoring">Monitoreo</TabsTrigger>
-          <TabsTrigger value="compliance">Cumplimiento</TabsTrigger>
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+          <TabsTrigger value="overview" className="text-xs">Resumen</TabsTrigger>
+          <TabsTrigger value="migration" className="text-xs">Migración</TabsTrigger>
+          <TabsTrigger value="mapping" className="text-xs">Mapeo</TabsTrigger>
+          <TabsTrigger value="validation" className="text-xs">Validación</TabsTrigger>
+          <TabsTrigger value="monitoring" className="text-xs">Monitoreo</TabsTrigger>
+          <TabsTrigger value="compliance" className="text-xs">Cumplimiento</TabsTrigger>
+          <TabsTrigger value="fiscal" className="text-xs">Fiscal</TabsTrigger>
+          <TabsTrigger value="rollback" className="text-xs">Rollback</TabsTrigger>
+          <TabsTrigger value="reports" className="text-xs">Reportes</TabsTrigger>
+          <TabsTrigger value="tools" className="text-xs">Herramientas</TabsTrigger>
+          <TabsTrigger value="ai-assistant" className="text-xs">IA</TabsTrigger>
+          <TabsTrigger value="trends" className="text-xs">2026+</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -353,6 +365,30 @@ export function ERPMigrationDashboard({ companyId }: ERPMigrationDashboardProps)
 
         <TabsContent value="compliance">
           <ERPCompliancePanel sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="fiscal">
+          <ERPFiscalReconciliationPanel sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="rollback">
+          <ERPRollbackPanel sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <ERPReportsPanel sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="tools">
+          <ERPAdvancedToolsPanel sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="ai-assistant">
+          <ERPAIAssistantPanel sessionId={activeSession?.id} />
+        </TabsContent>
+
+        <TabsContent value="trends">
+          <ERPTrends2026Panel />
         </TabsContent>
       </Tabs>
     </div>
