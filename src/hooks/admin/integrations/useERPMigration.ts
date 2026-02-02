@@ -768,6 +768,11 @@ export function useERPMigration() {
     }
   }, []);
 
+  // === INITIAL LOAD ===
+  useEffect(() => {
+    fetchConnectors();
+  }, [fetchConnectors]);
+
   // === CLEANUP ===
   useEffect(() => {
     return () => stopProgressPolling();
