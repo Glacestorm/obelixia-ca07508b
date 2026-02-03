@@ -1,8 +1,9 @@
 /**
  * LegalKnowledgePanel - Base de conocimiento jurídico con búsqueda semántica
+ * Fase 7: Integración con LegalKnowledgeUploader y categorización automática
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,95 +18,57 @@ import {
   GraduationCap,
   Clock,
   ExternalLink,
-  Upload,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  ThumbsUp,
+  Eye,
+  CheckCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLegalKnowledge, LegalKnowledgeItem } from '@/hooks/admin/legal/useLegalKnowledge';
+import { LegalKnowledgeUploader } from './LegalKnowledgeUploader';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface LegalKnowledgePanelProps {
   companyId: string;
-}
-
-interface KnowledgeItem {
-  id: string;
-  title: string;
-  type: 'law' | 'precedent' | 'doctrine' | 'internal';
-  jurisdiction: string;
-  summary: string;
-  relevance: number;
-  lastUpdated: string;
-  source: string;
 }
 
 export function LegalKnowledgePanel({ companyId }: LegalKnowledgePanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [activeType, setActiveType] = useState('all');
-  const [results, setResults] = useState<KnowledgeItem[]>([
-    {
-      id: '1',
-      title: 'Reglamento General de Protección de Datos (GDPR)',
-      type: 'law',
-      jurisdiction: 'EU',
-      summary: 'Reglamento (UE) 2016/679 sobre protección de personas físicas en tratamiento de datos personales.',
-      relevance: 0.95,
-      lastUpdated: '2024-01-15',
-      source: 'EUR-Lex'
-    },
-    {
-      id: '2',
-      title: 'STS 1234/2024 - Despido Objetivo',
-      type: 'precedent',
-      jurisdiction: 'ES',
-      summary: 'Sentencia del Tribunal Supremo sobre requisitos formales del despido objetivo.',
-      relevance: 0.88,
-      lastUpdated: '2024-02-10',
-      source: 'CENDOJ'
-    },
-    {
-      id: '3',
-      title: 'Directiva MiFID II - Análisis doctrinal',
-      type: 'doctrine',
-      jurisdiction: 'EU',
-      summary: 'Análisis académico sobre obligaciones de transparencia en servicios de inversión.',
-      relevance: 0.82,
-      lastUpdated: '2023-11-20',
-      source: 'Revista Derecho Financiero'
-    },
-    {
-      id: '4',
-      title: 'Política Interna de Compliance',
-      type: 'internal',
-      jurisdiction: 'AD',
-      summary: 'Manual interno de cumplimiento normativo y procedimientos de control.',
-      relevance: 0.78,
-      lastUpdated: '2024-01-01',
-      source: 'Documentación Interna'
-    },
-    {
-      id: '5',
-      title: 'Llei 29/2021 de Protecció de Dades (APDA)',
-      type: 'law',
-      jurisdiction: 'AD',
-      summary: 'Ley andorrana de protección de datos personales adaptada al marco europeo.',
-      relevance: 0.90,
-      lastUpdated: '2021-12-01',
-      source: 'BOPA'
-    }
-  ]);
+  const [searchResults, setSearchResults] = useState<LegalKnowledgeItem[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  const {
+    knowledge,
+    stats,
+    isLoading,
+    fetchKnowledge,
+    incrementViewCount,
+    markAsHelpful,
+    verifyKnowledgeItem,
+  } = useLegalKnowledge();
+
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
     
     setIsSearching(true);
+    setHasSearched(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke('legal-ai-advisor', {
         body: {
           action: 'search_knowledge',
+          query: searchQuery,
           context: {
             companyId,
-            query: searchQuery,
             type: activeType === 'all' ? undefined : activeType
           }
         }
@@ -113,53 +76,91 @@ export function LegalKnowledgePanel({ companyId }: LegalKnowledgePanelProps) {
 
       if (error) throw error;
       
+      // Si hay resultados de la API, usarlos; sino filtrar localmente
       if (data?.data?.results) {
-        setResults(data.data.results);
+        setSearchResults(data.data.results);
+      } else {
+        // Filtrado local como fallback
+        const filtered = knowledge.filter(item =>
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.summary && item.summary.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+        setSearchResults(filtered);
       }
     } catch (error) {
       console.error('Error searching knowledge:', error);
-      toast.error('Error en la búsqueda');
+      // Filtrado local como fallback
+      const filtered = knowledge.filter(item =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.content.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setSearchResults(filtered);
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [searchQuery, activeType, companyId, knowledge]);
 
-  const getTypeIcon = (type: KnowledgeItem['type']) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case 'law': return <Scale className="h-4 w-4" />;
+      case 'regulation': return <Scale className="h-4 w-4" />;
       case 'precedent': return <GraduationCap className="h-4 w-4" />;
       case 'doctrine': return <BookOpen className="h-4 w-4" />;
-      case 'internal': return <FileText className="h-4 w-4" />;
+      case 'template': return <FileText className="h-4 w-4" />;
+      case 'circular': return <FileText className="h-4 w-4" />;
+      case 'convention': return <FileText className="h-4 w-4" />;
+      case 'treaty': return <FileText className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
     }
   };
 
-  const getTypeBadge = (type: KnowledgeItem['type']) => {
-    const config = {
+  const getTypeBadge = (type: string) => {
+    const config: Record<string, { label: string; className: string }> = {
       law: { label: 'Legislación', className: 'bg-blue-600' },
+      regulation: { label: 'Reglamento', className: 'bg-blue-500' },
       precedent: { label: 'Jurisprudencia', className: 'bg-purple-600' },
       doctrine: { label: 'Doctrina', className: 'bg-amber-600' },
-      internal: { label: 'Interno', className: 'bg-green-600' }
+      template: { label: 'Plantilla', className: 'bg-green-600' },
+      circular: { label: 'Circular', className: 'bg-cyan-600' },
+      convention: { label: 'Convenio', className: 'bg-orange-600' },
+      treaty: { label: 'Tratado', className: 'bg-indigo-600' },
     };
-    return <Badge className={config[type].className}>{config[type].label}</Badge>;
+    const item = config[type] || { label: type, className: 'bg-gray-600' };
+    return <Badge className={item.className}>{item.label}</Badge>;
   };
 
   const getJurisdictionFlag = (code: string) => {
-    const flags: Record<string, string> = { 'AD': '🇦🇩', 'ES': '🇪🇸', 'EU': '🇪🇺', 'INT': '🌍' };
+    const flags: Record<string, string> = { 'AD': '🇦🇩', 'ES': '🇪🇸', 'EU': '🇪🇺', 'UK': '🇬🇧', 'AE': '🇦🇪', 'US': '🇺🇸', 'INT': '🌍' };
     return flags[code] || '🏳️';
   };
 
-  const filteredResults = results.filter(
-    item => activeType === 'all' || item.type === activeType
+  // Use search results if searched, otherwise use all knowledge
+  const displayItems = hasSearched ? searchResults : knowledge;
+  const filteredResults = displayItems.filter(
+    item => activeType === 'all' || item.knowledge_type === activeType
   );
 
   return (
     <div className="space-y-6">
+      {/* Stats Bar */}
+      {stats && (
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <span><strong>{stats.total_items}</strong> documentos</span>
+          <span><strong>{stats.verified_count}</strong> verificados</span>
+          <Button variant="ghost" size="sm" onClick={() => fetchKnowledge()}>
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Actualizar
+          </Button>
+        </div>
+      )}
+
       {/* Barra de búsqueda */}
       <Card>
         <CardContent className="py-4">
           <div className="flex gap-3">
             <div className="relative flex-1">
-              <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-500" />
+              <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
               <Input
                 placeholder="Búsqueda semántica en la base de conocimiento jurídico..."
                 value={searchQuery}
@@ -168,14 +169,11 @@ export function LegalKnowledgePanel({ companyId }: LegalKnowledgePanelProps) {
                 className="pl-10"
               />
             </div>
-            <Button onClick={handleSearch} disabled={isSearching}>
+            <Button onClick={handleSearch} disabled={isSearching || isLoading}>
               <Search className="h-4 w-4 mr-2" />
               {isSearching ? 'Buscando...' : 'Buscar'}
             </Button>
-            <Button variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Subir Documento
-            </Button>
+            <LegalKnowledgeUploader companyId={companyId} onUploadComplete={() => fetchKnowledge()} />
           </div>
         </CardContent>
       </Card>
@@ -214,42 +212,59 @@ export function LegalKnowledgePanel({ companyId }: LegalKnowledgePanelProps) {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                          {getTypeIcon(item.type)}
+                          {getTypeIcon(item.knowledge_type)}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-medium">{item.title}</h3>
+                            {item.is_verified && <CheckCircle className="h-4 w-4 text-green-500" />}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            {item.summary}
+                            {item.summary || item.content.substring(0, 150) + '...'}
                           </p>
                           <div className="flex items-center gap-2 flex-wrap">
-                            {getTypeBadge(item.type)}
+                            {getTypeBadge(item.knowledge_type)}
                             <Badge variant="outline">
-                              {getJurisdictionFlag(item.jurisdiction)} {item.jurisdiction}
+                              {getJurisdictionFlag(item.jurisdiction_code)} {item.jurisdiction_code}
                             </Badge>
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {new Date(item.lastUpdated).toLocaleDateString()}
+                              {formatDistanceToNow(new Date(item.updated_at), { addSuffix: true, locale: es })}
                             </span>
-                            <span className="text-xs text-muted-foreground">
-                              Fuente: {item.source}
-                            </span>
+                            {item.source_name && (
+                              <span className="text-xs text-muted-foreground">
+                                Fuente: {item.source_name}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {Math.round(item.relevance * 100)}% relevancia
-                        </Badge>
-                        <Button size="sm" variant="ghost">
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Eye className="h-3 w-3" /> {item.view_count}
+                          <ThumbsUp className="h-3 w-3 ml-2" /> {item.helpful_count}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => markAsHelpful(item.id)}>
+                            <ThumbsUp className="h-3 w-3" />
+                          </Button>
+                          {item.source_url && (
+                            <Button size="sm" variant="ghost" onClick={() => window.open(item.source_url!, '_blank')}>
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+              {filteredResults.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>{hasSearched ? 'No se encontraron resultados' : 'Carga documentos para comenzar'}</p>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </TabsContent>

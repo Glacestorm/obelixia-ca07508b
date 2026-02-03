@@ -15,3 +15,7 @@ export { LegalContractAnalysisPanel } from './LegalContractAnalysisPanel';
 export { LegalRiskAssessmentPanel } from './LegalRiskAssessmentPanel';
 export { LegalNewsPanel } from './LegalNewsPanel';
 export { LegalTrends2026Panel } from './LegalTrends2026Panel';
+
+// Fase 7: Base de Conocimiento Jurídico
+export { LegalKnowledgeUploader } from './LegalKnowledgeUploader';
+export { LegalRegulationAlertsPanel } from './LegalRegulationAlertsPanel';

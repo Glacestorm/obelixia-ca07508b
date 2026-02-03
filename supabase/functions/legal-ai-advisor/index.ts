@@ -13,17 +13,20 @@ const corsHeaders = {
 
 // Tipos de acciones soportadas
 type LegalAction = 
-  | 'validate_action'      // Validar acción de otro agente
-  | 'consult_legal'        // Consulta jurídica general
-  | 'analyze_contract'     // Análisis de contratos
-  | 'check_compliance'     // Verificación de cumplimiento
-  | 'find_precedents'      // Búsqueda de precedentes
-  | 'generate_document'    // Generación de documentos
-  | 'assess_risk'          // Evaluación de riesgo legal
-  | 'advise_agent'         // Asesoría a otro agente IA
-  | 'get_jurisdictions'    // Listar jurisdicciones
-  | 'get_knowledge'        // Obtener base de conocimiento
-  | 'get_dashboard_stats'; // Estadísticas del dashboard
+  | 'validate_action'        // Validar acción de otro agente
+  | 'consult_legal'          // Consulta jurídica general
+  | 'analyze_contract'       // Análisis de contratos
+  | 'check_compliance'       // Verificación de cumplimiento
+  | 'find_precedents'        // Búsqueda de precedentes
+  | 'generate_document'      // Generación de documentos
+  | 'assess_risk'            // Evaluación de riesgo legal
+  | 'advise_agent'           // Asesoría a otro agente IA
+  | 'get_jurisdictions'      // Listar jurisdicciones
+  | 'get_knowledge'          // Obtener base de conocimiento
+  | 'get_dashboard_stats'    // Estadísticas del dashboard
+  | 'categorize_document'    // Categorizar documento automáticamente (Fase 7)
+  | 'search_knowledge'       // Búsqueda semántica en base de conocimiento (Fase 7)
+  | 'get_regulation_alerts'; // Obtener alertas regulatorias (Fase 7)
 
 interface LegalRequest {
   action: LegalAction;
@@ -542,6 +545,58 @@ ${query}
 
 Contexto operativo: ${JSON.stringify(context || {})}
 Jurisdicciones: ${jurisdictions.join(', ')}`;
+        break;
+
+      // === FASE 7: Categorización automática de documentos ===
+      case 'categorize_document':
+        systemPrompt = `Eres un experto clasificador de documentos jurídicos.
+Tu tarea es analizar un documento legal y categorizarlo automáticamente.
+
+JURISDICCIONES SOPORTADAS: AD (Andorra), ES (España), EU (Unión Europea), UK (Reino Unido), AE (Emiratos), US (Estados Unidos), INT (Internacional)
+
+TIPOS DE DOCUMENTO: law, regulation, precedent, doctrine, template, circular, convention, treaty
+
+ÁREAS LEGALES: labor, corporate, tax, data_protection, banking, contract, administrative, criminal, civil, intellectual_property
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "knowledge_type": "tipo del documento",
+  "jurisdiction": "código de jurisdicción",
+  "legal_area": "área legal principal",
+  "tags": ["etiquetas relevantes"],
+  "effective_date": "fecha si se detecta (YYYY-MM-DD o null)",
+  "reference_code": "código de referencia si existe",
+  "summary": "resumen breve del contenido",
+  "confidence": 0-100
+}`;
+
+        userPrompt = `Analiza y categoriza el siguiente documento jurídico:
+
+TÍTULO: ${context?.title || 'Sin título'}
+
+CONTENIDO:
+${context?.content || query}
+
+Identifica la jurisdicción, tipo, área legal y etiquetas relevantes.`;
+        break;
+
+      // === FASE 7: Búsqueda semántica en base de conocimiento ===
+      case 'search_knowledge':
+        // Esta acción no usa IA directamente, usa la base de datos
+        // Pero preparamos el prompt por si queremos mejorar la búsqueda
+        systemPrompt = `Eres un asistente de búsqueda jurídica.
+Analiza la consulta del usuario y extrae términos clave para búsqueda.`;
+
+        userPrompt = `Consulta: ${query}
+Tipo filtro: ${context?.type || 'all'}`;
+        break;
+
+      // === FASE 7: Alertas regulatorias ===
+      case 'get_regulation_alerts':
+        // Esta acción principalmente usa la base de datos
+        // Preparamos para posible enriquecimiento con IA
+        systemPrompt = `Eres un monitor de cambios regulatorios.`;
+        userPrompt = `Jurisdicciones a monitorear: ${jurisdictions.join(', ')}`;
         break;
 
       default:
