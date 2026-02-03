@@ -19,3 +19,10 @@ export { LegalTrends2026Panel } from './LegalTrends2026Panel';
 // Fase 7: Base de Conocimiento Jurídico
 export { LegalKnowledgeUploader } from './LegalKnowledgeUploader';
 export { LegalRegulationAlertsPanel } from './LegalRegulationAlertsPanel';
+
+// Fase 8: Sistema de Alertas Regulatorias
+export { LegalBulletinMonitorPanel } from './LegalBulletinMonitorPanel';
+export { LegalChangeDetectorPanel } from './LegalChangeDetectorPanel';
+export { LegalNotificationsPanel } from './LegalNotificationsPanel';
+export { LegalEnforcementTimelinePanel } from './LegalEnforcementTimelinePanel';
+export { LegalAdaptationPlanPanel } from './LegalAdaptationPlanPanel';
