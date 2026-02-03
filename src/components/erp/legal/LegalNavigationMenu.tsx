@@ -1,17 +1,13 @@
 /**
  * LegalNavigationMenu - Navegación agrupada del módulo jurídico
  * Categorías: Principal, Compliance, Documentos, Herramientas, Tendencias
- * Usa NavigationMenu para evitar desplazamiento de categorías
+ * Usa Popover anclado al trigger para que el submenú se abra justo debajo
  */
 
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from '@/components/ui/navigation-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   LayoutDashboard,
   MessageSquare,
@@ -24,6 +20,7 @@ import {
   Newspaper,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   Scale
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -58,6 +55,8 @@ export function LegalNavigationMenu({
   onModuleChange,
   stats = {}
 }: LegalNavigationMenuProps) {
+
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
 
   const categories: NavCategory[] = [
     {
@@ -123,19 +122,23 @@ export function LegalNavigationMenu({
 
   return (
     <div className="border rounded-lg bg-card p-2">
-      <NavigationMenu>
-        <NavigationMenuList className="gap-1">
-          {categories.map((category) => {
-            const CategoryIcon = category.icon;
-            const isActive = activeCategory === category.id;
-            
-            return (
-              <NavigationMenuItem key={category.id}>
-                <NavigationMenuTrigger 
-                  className={cn(
-                    "h-9 px-3 text-sm gap-1.5",
-                    isActive && "bg-accent text-accent-foreground"
-                  )}
+      <div className="flex items-center gap-1 flex-wrap">
+        {categories.map((category) => {
+          const CategoryIcon = category.icon;
+          const isActive = activeCategory === category.id;
+          const isOpen = openCategory === category.id;
+
+          return (
+            <Popover
+              key={category.id}
+              open={isOpen}
+              onOpenChange={(open) => setOpenCategory(open ? category.id : null)}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  variant={isActive ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className={cn("h-9 px-3 text-sm gap-1.5", isOpen && "bg-accent text-accent-foreground")}
                 >
                   <CategoryIcon className="h-4 w-4" />
                   {category.label}
@@ -144,51 +147,56 @@ export function LegalNavigationMenu({
                       {category.badge}
                     </Badge>
                   )}
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-64 p-2 bg-popover rounded-md">
-                    {category.items.map((item) => {
-                      const ItemIcon = item.icon;
-                      const isItemActive = activeModule === item.id;
-                      
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => onModuleChange(item.id)}
-                          className={cn(
-                            "flex items-center justify-between w-full px-3 py-2 text-sm rounded-md transition-colors",
-                            "hover:bg-accent hover:text-accent-foreground",
-                            isItemActive && "bg-accent text-accent-foreground font-medium"
+                  <ChevronDown className={cn("ml-1 h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent align="start" side="bottom" sideOffset={6} className="w-64 p-2">
+                <div className="space-y-1">
+                  {category.items.map((item) => {
+                    const ItemIcon = item.icon;
+                    const isItemActive = activeModule === item.id;
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onModuleChange(item.id);
+                          setOpenCategory(null);
+                        }}
+                        className={cn(
+                          "flex items-center justify-between w-full px-3 py-2 text-sm rounded-md transition-colors",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          isItemActive && "bg-accent text-accent-foreground font-medium"
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <ItemIcon className="h-4 w-4" />
+                          {item.label}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {item.badge && Number(item.badge) > 0 && (
+                            <Badge
+                              variant={item.badgeVariant === 'destructive' ? 'destructive' : 'secondary'}
+                              className={cn(
+                                "text-xs h-5 min-w-5 justify-center",
+                                item.badgeVariant === 'warning' && "bg-warning text-warning-foreground"
+                              )}
+                            >
+                              {item.badge}
+                            </Badge>
                           )}
-                        >
-                          <span className="flex items-center gap-2">
-                            <ItemIcon className="h-4 w-4" />
-                            {item.label}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {item.badge && Number(item.badge) > 0 && (
-                              <Badge 
-                                variant={item.badgeVariant === 'destructive' ? 'destructive' : 'secondary'}
-                                className={cn(
-                                  "text-xs h-5 min-w-5 justify-center",
-                                  item.badgeVariant === 'warning' && "bg-warning text-warning-foreground"
-                                )}
-                              >
-                                {item.badge}
-                              </Badge>
-                            )}
-                            {isItemActive && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            );
-          })}
-        </NavigationMenuList>
-      </NavigationMenu>
+                          {isItemActive && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+          );
+        })}
+      </div>
     </div>
   );
 }
