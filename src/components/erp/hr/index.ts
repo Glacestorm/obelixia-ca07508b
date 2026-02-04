@@ -98,3 +98,7 @@ export type { AgreementData } from './shared/HRCollectiveAgreementSelect';
 export { HRPayrollRecalculationPanel } from './HRPayrollRecalculationPanel';
 export { HRPayrollRecalculationDialog } from './dialogs/HRPayrollRecalculationDialog';
 export { HRPayrollComplianceWidget } from './widgets/HRPayrollComplianceWidget';
+
+// Fase: Sistema de Gestión de Finiquitos con Validación Multinivel
+export { HRSettlementsPanel } from './HRSettlementsPanel';
+export { HRSettlementComplianceWidget } from './widgets/HRSettlementComplianceWidget';

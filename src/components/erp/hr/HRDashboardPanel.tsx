@@ -21,6 +21,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HRPayrollComplianceWidget } from './widgets/HRPayrollComplianceWidget';
+import { HRSettlementComplianceWidget } from './widgets/HRSettlementComplianceWidget';
 
 interface HRDashboardPanelProps {
   companyId: string;
@@ -358,6 +359,9 @@ export function HRDashboardPanel({ companyId }: HRDashboardPanelProps) {
             </ScrollArea>
           </CardContent>
         </Card>
+
+        {/* Settlement Compliance Widget */}
+        <HRSettlementComplianceWidget companyId={companyId} />
       </div>
     </div>
   );

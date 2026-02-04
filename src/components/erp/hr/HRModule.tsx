@@ -48,6 +48,7 @@ import { HRPerformancePanel } from './HRPerformancePanel';
 import { HRTrainingPanel } from './HRTrainingPanel';
 import { HRAdvancedAnalyticsPanel } from './HRAdvancedAnalyticsPanel';
 import { HRNavigationMenu } from './HRNavigationMenu';
+import { HRSettlementsPanel } from './HRSettlementsPanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -255,6 +256,7 @@ export function HRModule() {
         {activeModule === 'alerts' && <HRAlertsPanel companyId={demoCompanyId} />}
         {activeModule === 'payroll' && <HRPayrollPanel companyId={demoCompanyId} />}
         {activeModule === 'payroll-recalc' && <HRPayrollRecalculationPanel companyId={demoCompanyId} />}
+        {activeModule === 'settlements' && <HRSettlementsPanel companyId={demoCompanyId} />}
         {activeModule === 'ss' && <HRSocialSecurityPanel companyId={demoCompanyId} />}
         {activeModule === 'vacations' && <HRVacationsPanel companyId={demoCompanyId} />}
         {activeModule === 'contracts' && <HRContractsPanel companyId={demoCompanyId} />}
