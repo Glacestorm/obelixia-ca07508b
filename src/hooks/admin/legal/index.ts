@@ -41,3 +41,24 @@ export type {
   ValidationContext,
   ValidationResult as GatewayValidationResult
 } from './useLegalValidationGateway';
+
+// Fase 8: Legal Entity & IP Management
+export { useLegalEntityManagement } from './useLegalEntityManagement';
+export type {
+  LegalEntity,
+  EntityStructureAnalysis,
+  GovernanceAssessment,
+  PowerOfAttorney,
+  PowersAnalysis,
+  IPAsset,
+  IPPortfolioAnalysis,
+  TrademarkAlert,
+  TrademarkMonitoring,
+  DiscoveryDocument,
+  EDiscoveryResults,
+  LitigationHold,
+  LitigationHoldManagement,
+  CorporateEvent,
+  CorporateCalendar,
+  EntityRiskAssessment
+} from './useLegalEntityManagement';

@@ -41,3 +41,6 @@ export { LegalRegulationImpactPanel } from './LegalRegulationImpactPanel';
 export { LegalValidationGatewayPanel } from './LegalValidationGatewayPanel';
 export { LegalAgentSupervisorPanel } from './LegalAgentSupervisorPanel';
 export { LegalComplianceAPIPanel } from './LegalComplianceAPIPanel';
+
+// Fase 8 (Plan): Legal Entity & IP Management
+export * from './entity';
