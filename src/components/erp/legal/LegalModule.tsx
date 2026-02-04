@@ -35,6 +35,10 @@ import { LegalAuditTrailPanel } from './LegalAuditTrailPanel';
 import { LegalComplianceReportPanel } from './LegalComplianceReportPanel';
 import { LegalRiskReportPanel } from './LegalRiskReportPanel';
 import { LegalRegulationImpactPanel } from './LegalRegulationImpactPanel';
+// Fase 10: Gateway de Validación Legal
+import { LegalValidationGatewayPanel } from './LegalValidationGatewayPanel';
+import { LegalAgentSupervisorPanel } from './LegalAgentSupervisorPanel';
+import { LegalComplianceAPIPanel } from './LegalComplianceAPIPanel';
 
 export function LegalModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -205,6 +209,10 @@ export function LegalModule() {
         {activeModule === 'risk-report' && <LegalRiskReportPanel companyId={companyId} />}
         {activeModule === 'audit-trail' && <LegalAuditTrailPanel companyId={companyId} />}
         {activeModule === 'regulation-impact' && <LegalRegulationImpactPanel companyId={companyId} />}
+        {/* Fase 10: Gateway de Validación Legal Cross-Module */}
+        {activeModule === 'validation-gateway' && <LegalValidationGatewayPanel companyId={companyId} />}
+        {activeModule === 'agent-supervisor' && <LegalAgentSupervisorPanel companyId={companyId} />}
+        {activeModule === 'compliance-api' && <LegalComplianceAPIPanel companyId={companyId} />}
       </div>
     </div>
   );

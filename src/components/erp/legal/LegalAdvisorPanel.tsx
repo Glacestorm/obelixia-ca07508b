@@ -171,11 +171,11 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
             <label className="text-sm font-medium mb-2 block">Jurisdicción</label>
             <Select value={jurisdiction} onValueChange={setJurisdiction}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Seleccionar jurisdicción" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[9999] bg-popover">
                 {JURISDICTIONS.map((j) => (
-                  <SelectItem key={j.code} value={j.code}>
+                  <SelectItem key={j.code} value={j.code} textValue={j.name}>
                     <span className="flex items-center gap-2">
                       <span>{j.flag}</span>
                       <span>{j.name}</span>
@@ -190,11 +190,11 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
             <label className="text-sm font-medium mb-2 block">Especialidad</label>
             <Select value={specialty} onValueChange={setSpecialty}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Seleccionar especialidad" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[9999] bg-popover">
                 {SPECIALTIES.map((s) => (
-                  <SelectItem key={s.code} value={s.code}>
+                  <SelectItem key={s.code} value={s.code} textValue={s.name}>
                     <span className="flex items-center gap-2">
                       <span>{s.icon}</span>
                       <span>{s.name}</span>
