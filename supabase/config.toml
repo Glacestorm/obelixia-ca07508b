@@ -980,3 +980,6 @@ verify_jwt = true
 
 [functions.erp-hr-analytics-intelligence]
 verify_jwt = true
+
+[functions.legal-entity-management]
+verify_jwt = true
