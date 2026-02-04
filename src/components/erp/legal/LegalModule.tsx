@@ -30,6 +30,11 @@ import { LegalContractAnalysisPanel } from './LegalContractAnalysisPanel';
 import { LegalRiskAssessmentPanel } from './LegalRiskAssessmentPanel';
 import { LegalNewsPanel } from './LegalNewsPanel';
 import { LegalTrends2026Panel } from './LegalTrends2026Panel';
+import { LegalDueDiligencePanel } from './LegalDueDiligencePanel';
+import { LegalAuditTrailPanel } from './LegalAuditTrailPanel';
+import { LegalComplianceReportPanel } from './LegalComplianceReportPanel';
+import { LegalRiskReportPanel } from './LegalRiskReportPanel';
+import { LegalRegulationImpactPanel } from './LegalRegulationImpactPanel';
 
 export function LegalModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -194,6 +199,12 @@ export function LegalModule() {
         {activeModule === 'activity' && <LegalAgentActivityPanel companyId={companyId} />}
         {activeModule === 'news' && <LegalNewsPanel companyId={companyId} />}
         {activeModule === 'trends' && <LegalTrends2026Panel />}
+        {/* Fase 9: Reportes y Auditoría */}
+        {activeModule === 'due-diligence' && <LegalDueDiligencePanel companyId={companyId} />}
+        {activeModule === 'compliance-report' && <LegalComplianceReportPanel companyId={companyId} />}
+        {activeModule === 'risk-report' && <LegalRiskReportPanel companyId={companyId} />}
+        {activeModule === 'audit-trail' && <LegalAuditTrailPanel companyId={companyId} />}
+        {activeModule === 'regulation-impact' && <LegalRegulationImpactPanel companyId={companyId} />}
       </div>
     </div>
   );
