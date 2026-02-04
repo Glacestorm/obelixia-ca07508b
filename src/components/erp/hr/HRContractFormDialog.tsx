@@ -1,5 +1,6 @@
 /**
  * HRContractFormDialog - Crear/Editar contratos laborales
+ * Incluye CNO obligatorio desde 15/02/2022 (RD 504/2022)
  */
 
 import { useState, useEffect } from 'react';
@@ -11,14 +12,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Save, Loader2 } from 'lucide-react';
+import { FileText, Save, Loader2, AlertCircle, Briefcase } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
+import { HRCNOSelect } from './shared/HRCNOSelect';
 
 interface HRContractFormDialogProps {
   open: boolean;
@@ -66,6 +69,8 @@ export function HRContractFormDialog({
     workday_type: 'completa',
     category: '',
     professional_group: '',
+    cno_code: '',
+    cno_description: '',
     notes: ''
   });
 
@@ -101,6 +106,8 @@ export function HRContractFormDialog({
         workday_type: data.workday_type || 'completa',
         category: data.category || '',
         professional_group: data.professional_group || '',
+        cno_code: (data as Record<string, unknown>).cno_code as string || '',
+        cno_description: (data as Record<string, unknown>).cno_description as string || '',
         notes: data.notes || ''
       });
     }
@@ -119,6 +126,8 @@ export function HRContractFormDialog({
       workday_type: 'completa',
       category: '',
       professional_group: '',
+      cno_code: '',
+      cno_description: '',
       notes: ''
     });
   };
@@ -126,6 +135,12 @@ export function HRContractFormDialog({
   const handleSubmit = async () => {
     if (!formData.employee_id || !formData.start_date) {
       toast.error('Empleado y fecha de inicio son obligatorios');
+      return;
+    }
+
+    // Validar CNO obligatorio (RD 504/2022)
+    if (!formData.cno_code) {
+      toast.error('El código CNO es obligatorio para comunicaciones al Sistema RED y TGSS');
       return;
     }
 
@@ -143,6 +158,8 @@ export function HRContractFormDialog({
         working_hours: parseFloat(formData.working_hours) || 40,
         workday_type: formData.workday_type,
         category: formData.category || null,
+        cno_code: formData.cno_code || null,
+        cno_description: formData.cno_description || null,
         professional_group: formData.professional_group || null,
         notes: formData.notes || null
       };
@@ -275,6 +292,33 @@ export function HRContractFormDialog({
                   onChange={(e) => setFormData(prev => ({ ...prev, working_hours: e.target.value }))}
                 />
               </div>
+            </div>
+
+            {/* CNO - Código Nacional de Ocupación (OBLIGATORIO) */}
+            <div className="space-y-2 p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-primary" />
+                <Label className="font-semibold">
+                  Código Nacional de Ocupación (CNO) *
+                </Label>
+                <Badge variant="outline" className="text-xs">
+                  Obligatorio Sistema RED
+                </Badge>
+              </div>
+              <HRCNOSelect
+                value={formData.cno_code}
+                onValueChange={(code, desc) => setFormData(prev => ({ 
+                  ...prev, 
+                  cno_code: code, 
+                  cno_description: desc 
+                }))}
+                required
+                showValidation
+              />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                RD 504/2022 - Obligatorio desde 15/02/2022 para Contrat@, TGSS e IT
+              </p>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
