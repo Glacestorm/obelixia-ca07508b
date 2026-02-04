@@ -16329,6 +16329,102 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_cno_migrations: {
+        Row: {
+          created_at: string
+          from_version_id: string | null
+          id: string
+          migration_type: string
+          new_cno_code: string
+          new_cno_name: string | null
+          notes: string | null
+          old_cno_code: string
+          old_cno_name: string | null
+          to_version_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_version_id?: string | null
+          id?: string
+          migration_type: string
+          new_cno_code: string
+          new_cno_name?: string | null
+          notes?: string | null
+          old_cno_code: string
+          old_cno_name?: string | null
+          to_version_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_version_id?: string | null
+          id?: string
+          migration_type?: string
+          new_cno_code?: string
+          new_cno_name?: string | null
+          notes?: string | null
+          old_cno_code?: string
+          old_cno_name?: string | null
+          to_version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_cno_migrations_from_version_id_fkey"
+            columns: ["from_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_cno_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_cno_migrations_to_version_id_fkey"
+            columns: ["to_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_cno_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_cno_versions: {
+        Row: {
+          changes_from_previous: Json | null
+          created_at: string
+          effective_date: string
+          id: string
+          is_current: boolean | null
+          official_publication: string | null
+          official_publication_url: string | null
+          publication_date: string
+          total_codes: number | null
+          version_code: string
+          version_name: string
+        }
+        Insert: {
+          changes_from_previous?: Json | null
+          created_at?: string
+          effective_date: string
+          id?: string
+          is_current?: boolean | null
+          official_publication?: string | null
+          official_publication_url?: string | null
+          publication_date: string
+          total_codes?: number | null
+          version_code: string
+          version_name: string
+        }
+        Update: {
+          changes_from_previous?: Json | null
+          created_at?: string
+          effective_date?: string
+          id?: string
+          is_current?: boolean | null
+          official_publication?: string | null
+          official_publication_url?: string | null
+          publication_date?: string
+          total_codes?: number | null
+          version_code?: string
+          version_name?: string
+        }
+        Relationships: []
+      }
       erp_hr_collective_agreements: {
         Row: {
           annual_updates: Json | null
@@ -20269,6 +20365,321 @@ export type Database = {
             columns: ["position_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_job_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_regulatory_alerts: {
+        Row: {
+          action_deadline: string | null
+          action_required: string | null
+          alert_type: string
+          company_id: string | null
+          created_at: string
+          dismissed_at: string | null
+          dismissed_by: string | null
+          id: string
+          is_dismissed: boolean | null
+          is_read: boolean | null
+          message: string
+          read_at: string | null
+          read_by: string | null
+          severity: string
+          title: string
+          watch_item_id: string | null
+        }
+        Insert: {
+          action_deadline?: string | null
+          action_required?: string | null
+          alert_type: string
+          company_id?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          message: string
+          read_at?: string | null
+          read_by?: string | null
+          severity?: string
+          title: string
+          watch_item_id?: string | null
+        }
+        Update: {
+          action_deadline?: string | null
+          action_required?: string | null
+          alert_type?: string
+          company_id?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          dismissed_by?: string | null
+          id?: string
+          is_dismissed?: boolean | null
+          is_read?: boolean | null
+          message?: string
+          read_at?: string | null
+          read_by?: string | null
+          severity?: string
+          title?: string
+          watch_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_regulatory_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_regulatory_alerts_dismissed_by_fkey"
+            columns: ["dismissed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_regulatory_alerts_read_by_fkey"
+            columns: ["read_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_regulatory_alerts_watch_item_id_fkey"
+            columns: ["watch_item_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_regulatory_watch"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_regulatory_watch: {
+        Row: {
+          affected_articles: string[] | null
+          affected_cnae_codes: string[] | null
+          approval_status: string
+          category: string
+          company_id: string | null
+          created_at: string
+          description: string | null
+          detected_at: string
+          effective_date: string | null
+          estimated_affected_employees: number | null
+          id: string
+          impact_level: string
+          implementation_status: string | null
+          implemented_at: string | null
+          implemented_by: string | null
+          jurisdiction: string
+          key_changes: Json | null
+          knowledge_base_id: string | null
+          official_publication: string | null
+          official_publication_date: string | null
+          official_publication_number: string | null
+          official_publication_url: string | null
+          replaces_regulation_id: string | null
+          requires_contract_update: boolean | null
+          requires_immediate_action: boolean | null
+          requires_payroll_recalc: boolean | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_name: string | null
+          source_type: string
+          source_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_articles?: string[] | null
+          affected_cnae_codes?: string[] | null
+          approval_status?: string
+          category: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          effective_date?: string | null
+          estimated_affected_employees?: number | null
+          id?: string
+          impact_level?: string
+          implementation_status?: string | null
+          implemented_at?: string | null
+          implemented_by?: string | null
+          jurisdiction?: string
+          key_changes?: Json | null
+          knowledge_base_id?: string | null
+          official_publication?: string | null
+          official_publication_date?: string | null
+          official_publication_number?: string | null
+          official_publication_url?: string | null
+          replaces_regulation_id?: string | null
+          requires_contract_update?: boolean | null
+          requires_immediate_action?: boolean | null
+          requires_payroll_recalc?: boolean | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_name?: string | null
+          source_type: string
+          source_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_articles?: string[] | null
+          affected_cnae_codes?: string[] | null
+          approval_status?: string
+          category?: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          effective_date?: string | null
+          estimated_affected_employees?: number | null
+          id?: string
+          impact_level?: string
+          implementation_status?: string | null
+          implemented_at?: string | null
+          implemented_by?: string | null
+          jurisdiction?: string
+          key_changes?: Json | null
+          knowledge_base_id?: string | null
+          official_publication?: string | null
+          official_publication_date?: string | null
+          official_publication_number?: string | null
+          official_publication_url?: string | null
+          replaces_regulation_id?: string | null
+          requires_contract_update?: boolean | null
+          requires_immediate_action?: boolean | null
+          requires_payroll_recalc?: boolean | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_name?: string | null
+          source_type?: string
+          source_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_regulatory_watch_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_regulatory_watch_implemented_by_fkey"
+            columns: ["implemented_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_regulatory_watch_replaces_regulation_id_fkey"
+            columns: ["replaces_regulation_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_regulatory_watch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_regulatory_watch_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_regulatory_watch_config: {
+        Row: {
+          auto_check_enabled: boolean | null
+          check_frequency: string | null
+          check_time: string | null
+          company_id: string | null
+          created_at: string
+          id: string
+          jurisdictions: string[] | null
+          last_check_at: string | null
+          last_check_results: Json | null
+          last_check_status: string | null
+          notify_on_approval: boolean | null
+          notify_on_detection: boolean | null
+          notify_responsible_ids: string[] | null
+          updated_at: string
+          watch_bocm: boolean | null
+          watch_boe: boolean | null
+          watch_bopa: boolean | null
+          watch_bopv: boolean | null
+          watch_categories: string[] | null
+          watch_dogc: boolean | null
+          watch_eu_official_journal: boolean | null
+          watch_ministry_announcements: boolean | null
+          watch_press: boolean | null
+          watch_union_communications: boolean | null
+        }
+        Insert: {
+          auto_check_enabled?: boolean | null
+          check_frequency?: string | null
+          check_time?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          jurisdictions?: string[] | null
+          last_check_at?: string | null
+          last_check_results?: Json | null
+          last_check_status?: string | null
+          notify_on_approval?: boolean | null
+          notify_on_detection?: boolean | null
+          notify_responsible_ids?: string[] | null
+          updated_at?: string
+          watch_bocm?: boolean | null
+          watch_boe?: boolean | null
+          watch_bopa?: boolean | null
+          watch_bopv?: boolean | null
+          watch_categories?: string[] | null
+          watch_dogc?: boolean | null
+          watch_eu_official_journal?: boolean | null
+          watch_ministry_announcements?: boolean | null
+          watch_press?: boolean | null
+          watch_union_communications?: boolean | null
+        }
+        Update: {
+          auto_check_enabled?: boolean | null
+          check_frequency?: string | null
+          check_time?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          jurisdictions?: string[] | null
+          last_check_at?: string | null
+          last_check_results?: Json | null
+          last_check_status?: string | null
+          notify_on_approval?: boolean | null
+          notify_on_detection?: boolean | null
+          notify_responsible_ids?: string[] | null
+          updated_at?: string
+          watch_bocm?: boolean | null
+          watch_boe?: boolean | null
+          watch_bopa?: boolean | null
+          watch_bopv?: boolean | null
+          watch_categories?: string[] | null
+          watch_dogc?: boolean | null
+          watch_eu_official_journal?: boolean | null
+          watch_ministry_announcements?: boolean | null
+          watch_press?: boolean | null
+          watch_union_communications?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_regulatory_watch_config_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -51536,6 +51947,21 @@ export type Database = {
         }[]
       }
       get_partner_company_id: { Args: { _user_id: string }; Returns: string }
+      get_pending_regulatory_implementations: {
+        Args: { p_company_id: string }
+        Returns: {
+          approval_status: string
+          category: string
+          days_until_effective: number
+          effective_date: string
+          id: string
+          impact_level: string
+          jurisdiction: string
+          requires_contract_update: boolean
+          requires_payroll_recalc: boolean
+          title: string
+        }[]
+      }
       get_process_mining_stats: {
         Args: {
           p_date_from?: string

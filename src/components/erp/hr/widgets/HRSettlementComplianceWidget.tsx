@@ -89,13 +89,22 @@ export function HRSettlementComplianceWidget({
     const indicators: ComplianceIndicator[] = [];
 
     try {
-      // 1. Verificar convenios colectivos asignados
-      const { count: employeesWithoutConvenio } = await supabase
-        .from('erp_hr_contracts')
-        .select('id', { count: 'exact', head: true })
-        .eq('company_id', companyId)
-        .is('collective_agreement_id', null)
-        .eq('status', 'active');
+      // 1. Verificar convenios colectivos asignados - usando fetch directo para evitar recursión TS
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      const contractsResponse = await fetch(
+        `${supabaseUrl}/rest/v1/erp_hr_contracts?company_id=eq.${companyId}&collective_agreement_id=is.null&status=eq.active&select=id`,
+        {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'count=exact'
+          }
+        }
+      );
+      const employeesWithoutConvenio = parseInt(contractsResponse.headers.get('content-range')?.split('/')[1] || '0', 10);
 
       indicators.push({
         id: 'convenio',

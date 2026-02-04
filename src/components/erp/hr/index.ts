@@ -102,3 +102,6 @@ export { HRPayrollComplianceWidget } from './widgets/HRPayrollComplianceWidget';
 // Fase: Sistema de Gestión de Finiquitos con Validación Multinivel
 export { HRSettlementsPanel } from './HRSettlementsPanel';
 export { HRSettlementComplianceWidget } from './widgets/HRSettlementComplianceWidget';
+
+// Fase: Sistema de Vigilancia Normativa (Convenios, CNO, BOE/BOPA)
+export { HRRegulatoryWatchPanel } from './HRRegulatoryWatchPanel';
