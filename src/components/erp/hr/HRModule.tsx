@@ -51,6 +51,7 @@ import { HRNavigationMenu } from './HRNavigationMenu';
 import { HRSettlementsPanel } from './HRSettlementsPanel';
 import { HRRegulatoryWatchPanel } from './HRRegulatoryWatchPanel';
 import { HRLegalComplianceDashboard } from './compliance';
+import { HRIntegrationDashboard } from './integration';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -286,6 +287,7 @@ export function HRModule() {
         {activeModule === 'trends' && <HRTrends2026Panel />}
         {activeModule === 'regulatory-watch' && <HRRegulatoryWatchPanel companyId={demoCompanyId} />}
         {activeModule === 'legal-compliance' && <HRLegalComplianceDashboard companyId={demoCompanyId} />}
+        {activeModule === 'integration' && <HRIntegrationDashboard companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}

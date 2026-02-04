@@ -86,8 +86,13 @@ const demoPayrolls: PayrollForSync[] = [
   }
 ];
 
-export function HRTreasurySync() {
+interface HRTreasurySyncProps {
+  companyId?: string;
+}
+
+export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
   const { currentCompany } = useERPContext();
+  const effectiveCompanyId = companyId || currentCompany?.id;
   const [activeTab, setActiveTab] = useState('pending');
   const [payrolls, setPayrolls] = useState<PayrollForSync[]>(demoPayrolls);
   const [selectedPayrolls, setSelectedPayrolls] = useState<string[]>([]);
@@ -136,7 +141,7 @@ export function HRTreasurySync() {
   };
 
   const handleSyncToTreasury = async () => {
-    if (!currentCompany?.id || selectedPayrolls.length === 0) return;
+    if (!effectiveCompanyId || selectedPayrolls.length === 0) return;
 
     setIsSyncing(true);
     try {
@@ -146,7 +151,7 @@ export function HRTreasurySync() {
 
       // 1. Crear vencimientos de netos a empleados
       for (const payroll of selectedData) {
-        const result = await createPayrollPayment(currentCompany.id, {
+        const result = await createPayrollPayment(effectiveCompanyId, {
           payrollId: payroll.id,
           payrollReference: `NOM-${payroll.period}-${payroll.employee_name.split(' ')[0]}`,
           employeeId: payroll.id,
@@ -166,7 +171,7 @@ export function HRTreasurySync() {
         dueDate.setMonth(dueDate.getMonth() + 1);
         dueDate.setDate(0); // Último día del mes
         
-        await createSSContributionPayment(currentCompany.id, {
+        await createSSContributionPayment(effectiveCompanyId, {
           periodId: `ss-${format(new Date(), 'yyyy-MM')}`,
           periodReference: `SS-${format(new Date(), 'yyyy-MM')}`,
           totalAmount: totalSS,
@@ -182,7 +187,7 @@ export function HRTreasurySync() {
         dueDate.setMonth(dueDate.getMonth() + 1);
         dueDate.setDate(20);
         
-        await createIRPFRetentionPayment(currentCompany.id, {
+        await createIRPFRetentionPayment(effectiveCompanyId, {
           periodId: `irpf-${new Date().getFullYear()}-Q${quarter}`,
           periodReference: `IRPF-Q${quarter}-${new Date().getFullYear()}`,
           totalAmount: totalIRPF,
