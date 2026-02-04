@@ -6,3 +6,4 @@
 export { HRAccountingBridge } from './HRAccountingBridge';
 export { HRTreasurySync } from './HRTreasurySync';
 export { HRSocialSecurityBridge } from './HRSocialSecurityBridge';
+export { HRIntegrationDashboard } from './HRIntegrationDashboard';
