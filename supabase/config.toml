@@ -968,3 +968,9 @@ verify_jwt = true
 
 [functions.erp-hr-clm-agent]
 verify_jwt = true
+
+[functions.erp-hr-credentials-agent]
+verify_jwt = true
+
+[functions.erp-hr-autonomous-copilot]
+verify_jwt = true
