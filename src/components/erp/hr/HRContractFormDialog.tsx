@@ -1,6 +1,7 @@
 /**
  * HRContractFormDialog - Crear/Editar contratos laborales
  * Incluye CNO obligatorio desde 15/02/2022 (RD 504/2022)
+ * Incluye Convenio Colectivo obligatorio (Art. 8.5 ET)
  */
 
 import { useState, useEffect } from 'react';
@@ -17,11 +18,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Save, Loader2, AlertCircle, Briefcase } from 'lucide-react';
+import { FileText, Save, Loader2, AlertCircle, Briefcase, Scale } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeSearchSelect } from './shared/HREmployeeSearchSelect';
 import { HRCNOSelect } from './shared/HRCNOSelect';
+import { HRCollectiveAgreementSelect, type AgreementData } from './shared/HRCollectiveAgreementSelect';
 
 interface HRContractFormDialogProps {
   open: boolean;
@@ -29,6 +31,7 @@ interface HRContractFormDialogProps {
   companyId: string;
   contractId?: string;
   employeeId?: string;
+  companyCNAE?: string;
   onSaved?: () => void;
 }
 
@@ -54,9 +57,11 @@ export function HRContractFormDialog({
   companyId,
   contractId,
   employeeId,
+  companyCNAE,
   onSaved
 }: HRContractFormDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [selectedAgreement, setSelectedAgreement] = useState<AgreementData | null>(null);
   const [formData, setFormData] = useState({
     employee_id: employeeId || '',
     contract_type: 'indefinido',
@@ -71,6 +76,7 @@ export function HRContractFormDialog({
     professional_group: '',
     cno_code: '',
     cno_description: '',
+    collective_agreement_id: '',
     notes: ''
   });
 
@@ -108,6 +114,7 @@ export function HRContractFormDialog({
         professional_group: data.professional_group || '',
         cno_code: (data as Record<string, unknown>).cno_code as string || '',
         cno_description: (data as Record<string, unknown>).cno_description as string || '',
+        collective_agreement_id: (data as Record<string, unknown>).collective_agreement_id as string || '',
         notes: data.notes || ''
       });
     }
@@ -128,8 +135,10 @@ export function HRContractFormDialog({
       professional_group: '',
       cno_code: '',
       cno_description: '',
+      collective_agreement_id: '',
       notes: ''
     });
+    setSelectedAgreement(null);
   };
 
   const handleSubmit = async () => {
@@ -144,8 +153,19 @@ export function HRContractFormDialog({
       return;
     }
 
+    // Validar Convenio Colectivo obligatorio (Art. 8.5 ET)
+    if (!formData.collective_agreement_id) {
+      toast.error('El convenio colectivo es obligatorio según Art. 8.5 del Estatuto de los Trabajadores');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Manejar IDs locales del catálogo (convertir a null para insertar luego en DB)
+      const agreementId = formData.collective_agreement_id.startsWith('local_') 
+        ? null 
+        : formData.collective_agreement_id;
+
       const contractData = {
         company_id: companyId,
         employee_id: formData.employee_id,
@@ -160,6 +180,7 @@ export function HRContractFormDialog({
         category: formData.category || null,
         cno_code: formData.cno_code || null,
         cno_description: formData.cno_description || null,
+        collective_agreement_id: agreementId,
         professional_group: formData.professional_group || null,
         notes: formData.notes || null
       };
@@ -292,6 +313,42 @@ export function HRContractFormDialog({
                   onChange={(e) => setFormData(prev => ({ ...prev, working_hours: e.target.value }))}
                 />
               </div>
+            </div>
+
+            {/* CONVENIO COLECTIVO (OBLIGATORIO Art. 8.5 ET) */}
+            <div className="space-y-2 p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Scale className="h-4 w-4 text-primary" />
+                <Label className="font-semibold">
+                  Convenio Colectivo Aplicable *
+                </Label>
+                <Badge variant="outline" className="text-xs">
+                  Art. 8.5 ET
+                </Badge>
+              </div>
+              <HRCollectiveAgreementSelect
+                value={formData.collective_agreement_id}
+                onValueChange={(id, agreement) => {
+                  setFormData(prev => ({ ...prev, collective_agreement_id: id }));
+                  setSelectedAgreement(agreement);
+                  // Actualizar jornada si viene del convenio
+                  if (agreement && !formData.working_hours) {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      collective_agreement_id: id,
+                      working_hours: agreement.working_hours_week.toString()
+                    }));
+                  }
+                }}
+                companyId={companyId}
+                companyCNAE={companyCNAE}
+                required
+                showValidation
+              />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                El empresario debe informar por escrito del convenio aplicable
+              </p>
             </div>
 
             {/* CNO - Código Nacional de Ocupación (OBLIGATORIO) */}

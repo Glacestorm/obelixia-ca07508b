@@ -15787,6 +15787,80 @@ export type Database = {
           },
         ]
       }
+      erp_hr_agreement_salary_concepts: {
+        Row: {
+          agreement_id: string
+          applies_to_categories: string[] | null
+          base_amount: number | null
+          calculation_type: string
+          concept_code: string
+          concept_name: string
+          concept_type: string
+          conditions: Json | null
+          cotiza_ss: boolean | null
+          created_at: string | null
+          formula: string | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          is_mandatory: boolean | null
+          order_index: number | null
+          percentage: number | null
+          tributa_irpf: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          agreement_id: string
+          applies_to_categories?: string[] | null
+          base_amount?: number | null
+          calculation_type: string
+          concept_code: string
+          concept_name: string
+          concept_type: string
+          conditions?: Json | null
+          cotiza_ss?: boolean | null
+          created_at?: string | null
+          formula?: string | null
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          order_index?: number | null
+          percentage?: number | null
+          tributa_irpf?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          agreement_id?: string
+          applies_to_categories?: string[] | null
+          base_amount?: number | null
+          calculation_type?: string
+          concept_code?: string
+          concept_name?: string
+          concept_type?: string
+          conditions?: Json | null
+          cotiza_ss?: boolean | null
+          created_at?: string | null
+          formula?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          is_mandatory?: boolean | null
+          order_index?: number | null
+          percentage?: number | null
+          tributa_irpf?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_agreement_salary_concepts_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_alert_preferences: {
         Row: {
           advance_days: number | null
@@ -16254,6 +16328,92 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      erp_hr_collective_agreements: {
+        Row: {
+          annual_updates: Json | null
+          cnae_codes: string[] | null
+          code: string
+          company_id: string | null
+          created_at: string | null
+          effective_date: string
+          expiration_date: string | null
+          extra_payments: number | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          jurisdiction_code: string
+          metadata: Json | null
+          name: string
+          night_shift_bonus: Json | null
+          other_concepts: Json | null
+          salary_tables: Json | null
+          seniority_rules: Json | null
+          source_url: string | null
+          union_obligations: Json | null
+          updated_at: string | null
+          vacation_days: number | null
+          working_hours_week: number | null
+        }
+        Insert: {
+          annual_updates?: Json | null
+          cnae_codes?: string[] | null
+          code: string
+          company_id?: string | null
+          created_at?: string | null
+          effective_date: string
+          expiration_date?: string | null
+          extra_payments?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          jurisdiction_code?: string
+          metadata?: Json | null
+          name: string
+          night_shift_bonus?: Json | null
+          other_concepts?: Json | null
+          salary_tables?: Json | null
+          seniority_rules?: Json | null
+          source_url?: string | null
+          union_obligations?: Json | null
+          updated_at?: string | null
+          vacation_days?: number | null
+          working_hours_week?: number | null
+        }
+        Update: {
+          annual_updates?: Json | null
+          cnae_codes?: string[] | null
+          code?: string
+          company_id?: string | null
+          created_at?: string | null
+          effective_date?: string
+          expiration_date?: string | null
+          extra_payments?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          jurisdiction_code?: string
+          metadata?: Json | null
+          name?: string
+          night_shift_bonus?: Json | null
+          other_concepts?: Json | null
+          salary_tables?: Json | null
+          seniority_rules?: Json | null
+          source_url?: string | null
+          union_obligations?: Json | null
+          updated_at?: string | null
+          vacation_days?: number | null
+          working_hours_week?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_collective_agreements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_compa_ratio: {
         Row: {
@@ -19526,6 +19686,111 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "erp_hr_payroll_concepts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_payroll_recalculations: {
+        Row: {
+          agreement_id: string | null
+          ai_validation: Json | null
+          ai_validation_status: string | null
+          applied_at: string | null
+          approved_at: string | null
+          company_id: string
+          compliance_issues: Json | null
+          contract_id: string | null
+          created_at: string | null
+          differences: Json | null
+          employee_id: string
+          hr_approval: Json | null
+          hr_approval_status: string | null
+          hr_approver_id: string | null
+          id: string
+          legal_review_id: string | null
+          legal_validation: Json | null
+          legal_validation_status: string | null
+          notes: string | null
+          original_values: Json | null
+          payroll_id: string | null
+          period: string
+          recalculated_values: Json | null
+          risk_level: string | null
+          status: string | null
+          total_difference: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          agreement_id?: string | null
+          ai_validation?: Json | null
+          ai_validation_status?: string | null
+          applied_at?: string | null
+          approved_at?: string | null
+          company_id: string
+          compliance_issues?: Json | null
+          contract_id?: string | null
+          created_at?: string | null
+          differences?: Json | null
+          employee_id: string
+          hr_approval?: Json | null
+          hr_approval_status?: string | null
+          hr_approver_id?: string | null
+          id?: string
+          legal_review_id?: string | null
+          legal_validation?: Json | null
+          legal_validation_status?: string | null
+          notes?: string | null
+          original_values?: Json | null
+          payroll_id?: string | null
+          period: string
+          recalculated_values?: Json | null
+          risk_level?: string | null
+          status?: string | null
+          total_difference?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          agreement_id?: string | null
+          ai_validation?: Json | null
+          ai_validation_status?: string | null
+          applied_at?: string | null
+          approved_at?: string | null
+          company_id?: string
+          compliance_issues?: Json | null
+          contract_id?: string | null
+          created_at?: string | null
+          differences?: Json | null
+          employee_id?: string
+          hr_approval?: Json | null
+          hr_approval_status?: string | null
+          hr_approver_id?: string | null
+          id?: string
+          legal_review_id?: string | null
+          legal_validation?: Json | null
+          legal_validation_status?: string | null
+          notes?: string | null
+          original_values?: Json | null
+          payroll_id?: string | null
+          period?: string
+          recalculated_values?: Json | null
+          risk_level?: string | null
+          status?: string | null
+          total_difference?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_payroll_recalculations_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_collective_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_recalculations_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
