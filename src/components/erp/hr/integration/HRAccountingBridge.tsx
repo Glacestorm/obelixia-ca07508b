@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useHRAccountingIntegration } from '@/hooks/admin/useHRAccountingIntegration';
+import { useHRIntegrationLog } from '@/hooks/admin/hr';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -108,6 +109,9 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
     isLoading
   } = useHRAccountingIntegration();
 
+  // Hook de logging para registrar sincronizaciones
+  const { syncToAccounting } = useHRIntegrationLog(companyId);
+
   const pendingPayrolls = payrolls.filter(p => !p.is_accounted && p.status === 'calculated');
   const accountedPayrolls = payrolls.filter(p => p.is_accounted);
 
@@ -176,6 +180,21 @@ export function HRAccountingBridge({ companyId, period }: HRAccountingBridgeProp
             ? { ...p, is_accounted: true, journal_entry_id: result.journal_entry_id }
             : p
         ));
+        
+        // Registrar en el log de integración
+        await syncToAccounting({
+          payrollId: result.journal_entry_id || 'batch',
+          payrollRef: `BATCH-${selectedIds.length}`,
+          period,
+          amounts: {
+            grossSalary: totals.gross,
+            socialSecurityEmployee: totals.ss_employee,
+            socialSecurityCompany: totals.ss_company,
+            irpf: totals.irpf,
+            netSalary: totals.net
+          }
+        });
+        
         setSelectedIds([]);
         toast.success(
           consolidate
