@@ -1,380 +1,530 @@
 
-# Plan de Integración: RRHH ↔ Tesorería ↔ Contabilidad
-
-## Contexto Legal y Normativo
-
-La vinculación entre estos módulos debe cumplir con:
-
-- **Plan General Contable (PGC 2007)**: Grupo 64 para gastos de personal
-- **Ley General Tributaria (LGT)**: Obligaciones de retención IRPF
-- **Ley General de Seguridad Social (LGSS)**: Cotizaciones y liquidaciones
-- **Ley 15/2010**: Plazos de pago y gestión de tesorería
-- **Estatuto de los Trabajadores (ET)**: Art. 29 sobre pago de salarios
+# Plan Maestro: Auditoría y Evolución Enterprise 
+## Módulos RRHH y Jurídico - Benchmark vs. SAP, Workday, Oracle, Icertis
 
 ---
 
-## Arquitectura Propuesta
+## Resumen Ejecutivo
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         FLUJO DE INTEGRACIÓN                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────────┐  │
-│  │   RRHH      │────▶│   TESORERÍA      │────▶│    CONTABILIDAD         │  │
-│  │             │     │                  │     │                         │  │
-│  │ • Nóminas   │     │ • Pagos SEPA     │     │ • Asientos automáticos  │  │
-│  │ • Finiquitos│     │ • Vencimientos   │     │ • Grupo 64 PGC          │  │
-│  │ • Seg.Social│     │ • Conciliación   │     │ • Modelo 111/190        │  │
-│  │ • Contratos │     │ • Cash Flow      │     │ • Cierre mensual        │  │
-│  └─────────────┘     └──────────────────┘     └─────────────────────────┘  │
-│        │                      │                          │                  │
-│        └──────────────────────┴──────────────────────────┘                  │
-│                               │                                             │
-│                    ┌──────────▼──────────┐                                  │
-│                    │  TABLAS PUENTE      │                                  │
-│                    │  erp_hr_accounting_ │                                  │
-│                    │  integration        │                                  │
-│                    └─────────────────────┘                                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+Tras un análisis exhaustivo de los módulos actuales de RRHH y Jurídico, y compararlos con SAP SuccessFactors, Workday HCM, Oracle Cloud HCM, Icertis CLM y otros ERPs líderes mundiales, se identifican gaps significativos y oportunidades de implementación disruptiva para posicionar ObelixIA como el ERP más avanzado del mercado.
 
----
+### Estado Actual (Lo que ya tienes)
 
-## FASE 1: Infraestructura de Base de Datos (Semana 1)
+**Módulo RRHH - 22 secciones implementadas:**
+- Gestión de empleados, contratos, nóminas, vacaciones
+- Reclutamiento inteligente con IA y scoring de candidatos
+- Onboarding/Offboarding adaptativo por CNAE
+- Evaluación del desempeño con 9-Box Grid
+- Formación y competencias
+- Seguridad Social y cotizaciones
+- PRL (Prevención de Riesgos Laborales)
+- Representación sindical y elecciones
+- Finiquitos con validación legal multinivel
+- Analytics predictivos (Flight Risk, eNPS, Compa-Ratio)
+- Integración con Contabilidad/Tesorería
+- Multi-agente IA especializado
 
-### Objetivo
-Crear las tablas de vinculación y las funciones de mapeo contable.
-
-### Entregables
-
-**1.1 Nueva tabla `erp_hr_accounting_mapping`**
-- Mapeo de conceptos de nómina a cuentas PGC
-- Campos: `concept_code`, `account_code`, `account_name`, `debit_credit`, `jurisdiction`
-- Datos maestros precargados:
-  - 640 - Sueldos y salarios
-  - 641 - Indemnizaciones
-  - 642 - Seguridad Social empresa
-  - 4751 - HP Acreedora IRPF
-  - 476 - Organismos SS acreedores
-  - 465 - Remuneraciones pendientes de pago
-  - 572 - Bancos (contrapartida pago)
-
-**1.2 Nueva tabla `erp_hr_treasury_integration`**
-- Vínculo entre nóminas/finiquitos y vencimientos de tesorería
-- Campos: `source_type` (payroll/settlement/ss_contribution), `source_id`, `payable_id`, `amount`, `due_date`, `status`
-
-**1.3 Nueva tabla `erp_hr_journal_entries`**
-- Registro de asientos generados desde RRHH
-- Campos: `source_type`, `source_id`, `journal_entry_id`, `entry_date`, `auto_generated`, `validation_status`
-
-**1.4 Funciones SQL**
-- `fn_map_payroll_to_accounts()`: Descompone nómina en líneas contables
-- `fn_create_payroll_payable()`: Genera vencimiento en tesorería
-- `fn_payroll_to_journal_entry()`: Genera asiento contable
+**Módulo Jurídico - 18 secciones implementadas:**
+- Asesor jurídico IA multi-jurisdiccional (ES, AD, EU, UK, UAE, US)
+- Sub-agentes especializados (Laboral, Mercantil, Fiscal, GDPR, Bancario)
+- Gateway de validación legal cross-module
+- Análisis de contratos con IA
+- Base de conocimiento jurídico
+- Compliance y evaluación de riesgos
+- Alertas regulatorias y bulletins
+- Due diligence y audit trail
 
 ---
 
-## FASE 2: Contabilización Automática de Nóminas (Semana 2)
+## Análisis Comparativo: Gaps Identificados
 
-### Objetivo
-Generar asientos contables automáticos cuando se calculan/confirman nóminas.
+### RRHH - Funcionalidades que faltan vs. Competencia
 
-### Entregables
+| Funcionalidad | SAP | Workday | Oracle | ObelixIA | Gap |
+|---------------|-----|---------|--------|----------|-----|
+| Skills Ontology/Taxonomy | ✅ | ✅ | ✅ | ⚠️ Parcial | ALTO |
+| Talent Marketplace interno | ✅ | ✅ | ✅ | ❌ | CRÍTICO |
+| Sucesión y Carrera | ✅ | ✅ | ✅ | ❌ | CRÍTICO |
+| Employee Experience Platform | ✅ | ✅ | ✅ | ❌ | ALTO |
+| Wellbeing & Mental Health | ✅ | ✅ | ✅ | ❌ | ALTO |
+| Workforce Planning | ✅ | ✅ | ✅ | ⚠️ Parcial | MEDIO |
+| Time & Attendance avanzado | ✅ | ✅ | ✅ | ⚠️ Parcial | MEDIO |
+| Compensation Management | ✅ | ✅ | ✅ | ⚠️ Parcial | MEDIO |
+| Total Rewards Statement | ✅ | ✅ | ✅ | ❌ | ALTO |
+| Gig/Contingent Workforce | ✅ | ✅ | ✅ | ❌ | ALTO |
+| DEI Analytics | ✅ | ✅ | ✅ | ❌ | ALTO |
+| ESG Reporting (Social) | ✅ | ✅ | ✅ | ❌ | ALTO |
+| EU Whistleblower Channel | ✅ | ✅ | ✅ | ❌ | CRÍTICO |
+| Blockchain Credentials | ⚠️ | ⚠️ | ⚠️ | ❌ | INNOVACIÓN |
 
-**2.1 Hook `useHRAccountingIntegration`**
-```typescript
-// Funciones principales:
-- generatePayrollJournalEntry(payrollId)
-- generateSettlementJournalEntry(settlementId)  
-- generateSSContributionEntry(periodId)
-- validateAccountingEntry(entryId)
-- reverseAccountingEntry(entryId)
-```
+### Jurídico - Funcionalidades que faltan vs. Competencia
 
-**2.2 Plantillas de Asientos PGC**
-
-| Concepto | Debe | Haber |
-|----------|------|-------|
-| Sueldos brutos | 640 | - |
-| Retención IRPF | - | 4751 |
-| SS Trabajador | - | 476 |
-| Neto a pagar | - | 465 |
-| SS Empresa | 642 | 476 |
-| Pago nómina | 465 | 572 |
-
-**2.3 Edge Function `erp-hr-accounting-bridge`**
-- Acciones: `generate_payroll_entry`, `generate_settlement_entry`, `generate_ss_entry`, `reverse_entry`
-- Validación de partida doble
-- Integración con módulo de auditoría
-
----
-
-## FASE 3: Integración con Tesorería (Semana 3)
-
-### Objetivo
-Crear automáticamente vencimientos de pago en tesorería al confirmar nóminas.
-
-### Entregables
-
-**3.1 Flujo de Vencimientos**
-```text
-Nómina Calculada
-      │
-      ▼
-┌─────────────────┐
-│ Crear Payable   │
-│ en erp_payables │
-│                 │
-│ - Tipo: NOMINA  │
-│ - Fecha: día 30 │
-│ - Proveedor:    │
-│   EMPLEADOS     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Remesa SEPA    │
-│ (opcional)      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Conciliación   │
-│ Bancaria       │
-└─────────────────┘
-```
-
-**3.2 Actualización `HRPayrollPanel`**
-- Botón "Generar Vencimiento Tesorería"
-- Estado de sincronización con tesorería
-- Enlace directo al vencimiento en TreasuryDashboard
-
-**3.3 Actualización `TreasuryDashboard`**
-- Filtro por tipo "Nóminas" en PayablesManager
-- Widget resumen gastos de personal en CashFlowForecast
-- Indicador de nóminas pendientes de pago
-
-**3.4 Hooks Compartidos**
-- `useHRTreasuryIntegration`: Sincroniza nóminas ↔ vencimientos
-- `usePayrollPayables`: Gestiona pagos de nómina
+| Funcionalidad | Icertis | LexisNexis | Thomson Reuters | ObelixIA | Gap |
+|---------------|---------|------------|-----------------|----------|-----|
+| CLM Completo (Lifecycle) | ✅ | ✅ | ✅ | ⚠️ Parcial | CRÍTICO |
+| Matter Management | ✅ | ✅ | ✅ | ❌ | CRÍTICO |
+| Legal Spend Management | ✅ | ✅ | ✅ | ❌ | ALTO |
+| eDiscovery Integration | ✅ | ✅ | ✅ | ❌ | ALTO |
+| Obligation Tracking | ✅ | ✅ | ⚠️ | ⚠️ Parcial | MEDIO |
+| Clause Library | ✅ | ✅ | ✅ | ❌ | ALTO |
+| Playbook Automation | ✅ | ✅ | ⚠️ | ❌ | ALTO |
+| Legal Entity Management | ✅ | ✅ | ✅ | ❌ | MEDIO |
+| IP/Trademark Portfolio | ⚠️ | ✅ | ✅ | ❌ | MEDIO |
+| Litigation Hold | ⚠️ | ✅ | ✅ | ❌ | MEDIO |
+| AI Clause Negotiation | ✅ | ⚠️ | ⚠️ | ❌ | INNOVACIÓN |
+| Smart Contracts Blockchain | ⚠️ | ❌ | ❌ | ❌ | INNOVACIÓN |
 
 ---
 
-## FASE 4: Integración Seguridad Social (Semana 4)
+## Plan de Implementación por Fases
 
-### Objetivo
-Vincular liquidaciones de SS con tesorería y contabilidad.
+### FASE 1: Compliance Legal Crítico (Semanas 1-3)
+**Prioridad: CRÍTICA - Requisitos legales obligatorios**
 
-### Entregables
+#### 1.1 Canal de Denuncias (EU Whistleblower Directive)
+- **Requisito legal**: Directiva (EU) 2019/1937 - Obligatorio para +50 empleados
+- **Componentes**:
+  - Portal de denuncias anónimo/confidencial
+  - Workflow de investigación con plazos legales (7 días acuse, 3 meses resolución)
+  - Protección del denunciante (anti-represalias)
+  - Registro de denuncias con cifrado
+  - Integración con módulo Jurídico para validación
+- **Tablas**: `erp_hr_whistleblower_reports`, `erp_hr_whistleblower_investigations`
+- **Edge Function**: `erp-hr-whistleblower-agent`
 
-**4.1 Flujo SS Completo**
-```text
-Cálculo Cotizaciones (HRSocialSecurityPanel)
-      │
-      ├──────────────────────────────────┐
-      ▼                                  ▼
-┌─────────────────┐           ┌─────────────────┐
-│ Asiento Contable│           │ Vencimiento TGSS│
-│                 │           │ en erp_payables │
-│ 642 / 476       │           │                 │
-│ (SS Empresa)    │           │ Fecha: día 30   │
-└─────────────────┘           └─────────────────┘
-```
+#### 1.2 Igualdad y No Discriminación (Compliance obligatorio)
+- **Requisito legal**: Ley Orgánica 3/2007, RD 901/2020 (Plan de Igualdad), Ley 15/2022 (Igualdad de trato)
+- **Componentes**:
+  - Plan de Igualdad con diagnóstico automático
+  - Registro salarial con brecha de género
+  - Auditoría retributiva por IA
+  - Protocolo acoso laboral/sexual
+  - Métricas DEI (Diversidad, Equidad, Inclusión)
+- **Tablas**: `erp_hr_equality_plans`, `erp_hr_salary_audits`, `erp_hr_harassment_protocols`
 
-**4.2 Actualización `HRSocialSecurityPanel`**
-- Botón "Contabilizar Período"
-- Estado de contabilización por período
-- Exportación datos para Modelo 111
-
-**4.3 Conexión con Declaraciones Fiscales**
-- Modelo 111: Retenciones trimestrales IRPF
-- Modelo 190: Resumen anual retenciones
-- Datos automáticos desde nóminas contabilizadas
-
----
-
-## FASE 5: Finiquitos y Liquidaciones (Semana 5)
-
-### Objetivo
-Contabilización especial de finiquitos según tipo de despido.
-
-### Entregables
-
-**5.1 Plantillas por Tipo de Baja**
-
-| Tipo | Cuentas |
-|------|---------|
-| Baja voluntaria | 640, 465 |
-| Despido objetivo | 640, 641, 465 |
-| Despido improcedente | 640, 641, 465, 678 |
-| ERE | 640, 641, 1410 |
-
-**5.2 Actualización `HRSettlementsPanel`**
-- Paso adicional en workflow: "Contabilizar"
-- Vista previa del asiento antes de confirmar
-- Validación legal → contable integrada
-
-**5.3 Provisiones (Art. 104 PGC)**
-- Cuenta 1410: Provisión para reestructuraciones
-- Dotación automática en EREs
-- Reversión al efectuar pagos
+#### 1.3 Registro Horario Avanzado (Art. 34.9 ET)
+- **Requisito legal**: RD-ley 8/2019 - Obligatorio para todas las empresas
+- **Componentes**:
+  - Control de presencia multi-canal (app, web, biométrico, geolocalización)
+  - Cálculo automático de horas extra
+  - Alertas de exceso de jornada
+  - Integración con nóminas
+  - Derecho a la desconexión digital
+- **Tablas**: `erp_hr_time_entries`, `erp_hr_time_policies`, `erp_hr_disconnection_policies`
 
 ---
 
-## FASE 6: Dashboard Unificado y Reporting (Semana 6)
+### FASE 2: Gestión del Talento Avanzada (Semanas 4-7)
+**Prioridad: ALTA - Diferenciación competitiva clave**
 
-### Objetivo
-Panel ejecutivo que muestre la visión integrada RRHH-Tesorería-Contabilidad.
+#### 2.1 Skills Ontology & Taxonomy
+- **Benchmark**: SAP Skills Ontology, Workday Skills Cloud
+- **Componentes**:
+  - Catálogo de competencias multinivel (Hard/Soft/Leadership)
+  - Mapeo de skills por puesto y CNAE
+  - Evaluación de gaps de competencias
+  - Sugerencias de formación personalizadas por IA
+  - Skills matching para movilidad interna
+- **Tablas**: `erp_hr_skills_catalog`, `erp_hr_employee_skills`, `erp_hr_skill_gaps`
+- **Edge Function**: `erp-hr-skills-agent`
 
-### Entregables
+#### 2.2 Talent Marketplace Interno
+- **Benchmark**: Workday Talent Marketplace, SAP Opportunity Marketplace
+- **Componentes**:
+  - Bolsa de trabajo interna con matching por IA
+  - Proyectos internos y gigs temporales
+  - Mentoring marketplace
+  - Shadowing y rotaciones
+  - Dashboard de oportunidades personalizadas
+- **Tablas**: `erp_hr_internal_opportunities`, `erp_hr_gig_assignments`, `erp_hr_mentoring_pairs`
 
-**6.1 Componente `HRAccountingDashboard`**
-- KPIs:
-  - Coste de personal mensual/anual
-  - Ratio gastos personal / ingresos
-  - Deuda pendiente SS/IRPF
-  - Provisiones activas
-- Gráficos:
-  - Evolución gastos personal (grupo 64)
-  - Comparativa presupuesto vs real
-  - Aging de pagos a empleados
-
-**6.2 Informes Integrados**
-- Libro Mayor cuenta 640-649
-- Extracto movimientos por empleado
-- Conciliación nóminas-bancos
-- Informe para auditoría
-
-**6.3 Alertas Cruzadas**
-- Nómina sin contabilizar > 5 días
-- Vencimiento TGSS próximo (7 días)
-- Desviación presupuesto > 10%
-- Falta pago empleado > fecha legal
+#### 2.3 Succession Planning & Career Paths
+- **Benchmark**: SAP Succession, Workday Career Hub
+- **Componentes**:
+  - Planes de sucesión por puesto crítico
+  - Career paths visuales con requisitos
+  - Identificación automática de sucesores (9-Box + Skills)
+  - Desarrollo de pools de talento
+  - Simulación de escenarios de sucesión
+- **Tablas**: `erp_hr_succession_plans`, `erp_hr_career_paths`, `erp_hr_talent_pools`
 
 ---
 
-## FASE 7: Automatización Avanzada con IA (Semana 7-8)
+### FASE 3: Employee Experience & Wellbeing (Semanas 8-10)
+**Prioridad: ALTA - Tendencia crítica 2025-2026**
 
-### Objetivo
-Orquestación inteligente del flujo completo.
+#### 3.1 Employee Experience Platform
+- **Benchmark**: Workday Peakon, SAP Qualtrics
+- **Componentes**:
+  - Encuestas de clima y pulso automatizadas
+  - Employee Journey mapping
+  - Momentos clave (hitos, aniversarios, logros)
+  - Personalización del employee portal
+  - Gamificación y reconocimientos
+- **Tablas**: `erp_hr_surveys`, `erp_hr_pulse_responses`, `erp_hr_recognitions`, `erp_hr_milestones`
 
-### Entregables
+#### 3.2 Wellbeing & Mental Health
+- **Benchmark**: Workday Wellness, SAP SuccessFactors Work-Life
+- **Componentes**:
+  - Dashboard de bienestar personal
+  - Evaluación de riesgo de burnout por IA
+  - Programas de wellness (físico, mental, financiero)
+  - Recursos de salud mental y EAP
+  - Integración con wearables (opcional)
+  - Métricas de workload y balance
+- **Tablas**: `erp_hr_wellbeing_programs`, `erp_hr_wellbeing_assessments`, `erp_hr_eap_resources`
+- **Edge Function**: `erp-hr-wellbeing-agent`
 
-**7.1 Edge Function `erp-hr-treasury-accounting-orchestrator`**
-- Flujo automático: Nómina → Asiento → Vencimiento → Remesa
-- Validación multinivel (IA + Legal + Contable)
-- Rollback automático si falla algún paso
+#### 3.3 Total Rewards Statement
+- **Benchmark**: SAP Total Rewards, Workday Total Compensation
+- **Componentes**:
+  - Visualización del paquete retributivo total
+  - Desglose: salario, beneficios, equity, pensiones
+  - Comparativa con mercado
+  - Simulador de escenarios retributivos
+  - Exportación PDF personalizada
+- **Componente**: `HRTotalRewardsPanel`
 
-**7.2 Actualización Agente IA RRHH**
-- Nuevas acciones:
-  - `generate_accounting_entries`
-  - `sync_treasury`
-  - `validate_fiscal_compliance`
-- Contexto contable en respuestas
+---
 
-**7.3 Trigger Automático**
-```text
-ON payroll.status = 'approved'
-  → generate_journal_entry()
-  → create_treasury_payable()
-  → notify_accounting_module()
-```
+### FASE 4: CLM Enterprise y Legal Ops (Semanas 11-14)
+**Prioridad: CRÍTICA - Gap más grande vs. competencia**
 
-**7.4 Reconciliación Inteligente**
-- Match automático: Pago banco ↔ Nómina
-- Sugerencias de asientos correctivos
-- Detección anomalías (pagos duplicados, importes incorrectos)
+#### 4.1 Contract Lifecycle Management Completo
+- **Benchmark**: Icertis, DocuSign CLM, Ironclad
+- **Componentes**:
+  - Creación de contratos con templates dinámicos
+  - Flujo de aprobación configurable
+  - Negociación colaborativa con redlining
+  - Firma electrónica integrada (DocuSign, Adobe Sign)
+  - Versionado y comparativa de borradores
+  - Alertas de renovación y vencimiento
+  - Extracción automática de datos clave por IA
+- **Tablas**: `legal_contracts`, `legal_contract_versions`, `legal_contract_approvals`, `legal_negotiations`
+- **Edge Function**: `legal-clm-engine`
+
+#### 4.2 Clause Library & Playbooks
+- **Benchmark**: Icertis Clause Library, Luminance
+- **Componentes**:
+  - Biblioteca de cláusulas pre-aprobadas por tipo
+  - Playbooks de negociación por tipo de contrato
+  - Sugerencias de cláusulas por IA
+  - Análisis de riesgo por cláusula
+  - Fallback positions automáticas
+  - Scoring de posición negociadora
+- **Tablas**: `legal_clause_library`, `legal_playbooks`, `legal_playbook_rules`
+
+#### 4.3 Matter Management
+- **Benchmark**: LexisNexis CounselLink, Thomson Reuters Legal Tracker
+- **Componentes**:
+  - Gestión de asuntos legales (litigios, consultas, proyectos)
+  - Asignación a abogados internos/externos
+  - Tracking de tiempos y tareas
+  - Gestión de plazos procesales
+  - Vinculación con documentos y contratos
+  - Reporting de carga de trabajo
+- **Tablas**: `legal_matters`, `legal_matter_tasks`, `legal_matter_documents`
+
+#### 4.4 Legal Spend Management
+- **Benchmark**: Brightflag, Onit
+- **Componentes**:
+  - Gestión de presupuestos legales
+  - Facturación de servicios externos (LEDES format)
+  - Análisis de facturas con IA
+  - Comparativa de tasas por proveedor
+  - Accruals y forecasting
+  - Dashboards de spend analytics
+- **Tablas**: `legal_budgets`, `legal_invoices`, `legal_vendor_rates`
+
+---
+
+### FASE 5: Workforce Planning & Analytics (Semanas 15-17)
+**Prioridad: ALTA - Capacidad estratégica**
+
+#### 5.1 Strategic Workforce Planning
+- **Benchmark**: SAP Analytics Cloud, Workday Adaptive Planning
+- **Componentes**:
+  - Planificación de headcount por período
+  - Modelado de escenarios (crecimiento, reducción, M&A)
+  - Gap analysis skills vs. demanda futura
+  - Integración con presupuesto financiero
+  - What-if scenarios con IA
+- **Tablas**: `erp_hr_workforce_plans`, `erp_hr_headcount_forecasts`, `erp_hr_scenario_models`
+- **Edge Function**: `erp-hr-workforce-planning`
+
+#### 5.2 Compensation Management Avanzado
+- **Benchmark**: SAP Compensation, Workday Advanced Compensation
+- **Componentes**:
+  - Revisiones salariales con guidelines
+  - Merit matrices configurables
+  - Equity/Stock plan management
+  - Long-term incentives (LTI)
+  - Budgeting de compensación
+  - Simulador de incrementos
+- **Tablas**: `erp_hr_compensation_reviews`, `erp_hr_merit_matrices`, `erp_hr_equity_plans`
+
+#### 5.3 ESG Reporting - Dimensión Social
+- **Benchmark**: SAP Sustainability, Workday VIBE
+- **Componentes**:
+  - Métricas CSRD/ESRS S1-S4 (Social)
+  - Reporting de diversidad e inclusión
+  - Brecha salarial de género
+  - Condiciones de trabajo
+  - Derechos humanos en cadena de suministro
+  - Dashboard ESG Social
+- **Componente**: `HRESGReportingPanel`
+
+---
+
+### FASE 6: Innovación Disruptiva (Semanas 18-22)
+**Prioridad: DIFERENCIACIÓN - Superar a la competencia**
+
+#### 6.1 Blockchain para Credenciales y Verificación
+- **Innovación**: Más allá de SAP/Workday/Oracle
+- **Componentes**:
+  - Credenciales verificables (títulos, certificaciones)
+  - Verificación de empleo instantánea
+  - Historial laboral inmutable
+  - Integración con EBSI (European Blockchain Services Infrastructure)
+  - Smart contracts para nóminas internacionales
+- **Edge Function**: `erp-hr-blockchain-credentials`
+
+#### 6.2 AI Copilot Autónomo para HR
+- **Innovación**: Next-gen beyond current AI assistants
+- **Componentes**:
+  - Agente autónomo que ejecuta tareas completas
+  - Redacción automática de contratos
+  - Generación de ofertas de empleo optimizadas
+  - Respuesta automática a empleados (FAQ)
+  - Análisis proactivo de problemas
+  - Voice-first interface mejorada
+- **Edge Function**: `erp-hr-autonomous-copilot`
+
+#### 6.3 Smart Legal Contracts
+- **Innovación**: Contratos auto-ejecutables
+- **Componentes**:
+  - Cláusulas programables (penalizaciones, renovaciones)
+  - Ejecución automática de obligaciones
+  - Integración con pagos automatizados
+  - Audit trail inmutable
+  - Resolución de disputas automatizada
+- **Edge Function**: `legal-smart-contracts`
+
+#### 6.4 Predictive Legal Analytics
+- **Innovación**: Legal Intelligence Platform
+- **Componentes**:
+  - Predicción de resultados de litigios
+  - Estimación de costes legales
+  - Identificación proactiva de riesgos
+  - Benchmark de cláusulas de mercado
+  - Tendencias jurisprudenciales por IA
+- **Edge Function**: `legal-predictive-analytics`
+
+---
+
+### FASE 7: Gig Economy & External Workforce (Semanas 23-25)
+**Prioridad: MEDIA-ALTA - Tendencia creciente**
+
+#### 7.1 Contingent Workforce Management
+- **Benchmark**: SAP Fieldglass, Workday VNDLY
+- **Componentes**:
+  - Gestión de trabajadores externos (freelancers, contractors)
+  - Onboarding específico para contingentes
+  - Compliance legal por tipo de relación
+  - Integración con plataformas de talento
+  - Spend analytics de workforce externo
+- **Tablas**: `erp_hr_contingent_workers`, `erp_hr_vendor_assignments`
+
+#### 7.2 Statement of Work (SOW) Management
+- **Componentes**:
+  - Gestión de proyectos con externos
+  - Milestones y entregables
+  - Facturación por proyecto
+  - Evaluación de proveedores
+- **Tablas**: `legal_sow_contracts`, `legal_sow_milestones`
+
+---
+
+### FASE 8: Legal Entity & IP Management (Semanas 26-28)
+**Prioridad: MEDIA - Completar suite legal**
+
+#### 8.1 Legal Entity Management
+- **Benchmark**: Diligent Entities, LexisNexis
+- **Componentes**:
+  - Registro de entidades del grupo
+  - Gobierno corporativo por entidad
+  - Secretaría societaria digital
+  - Calendario de obligaciones mercantiles
+  - Poderes y representaciones
+- **Tablas**: `legal_entities`, `legal_corporate_documents`, `legal_powers_of_attorney`
+
+#### 8.2 IP/Trademark Portfolio
+- **Componentes**:
+  - Registro de marcas, patentes, dominios
+  - Tracking de renovaciones
+  - Vigilancia de marcas
+  - Gestión de licencias IP
+- **Tablas**: `legal_ip_portfolio`, `legal_ip_renewals`
+
+#### 8.3 eDiscovery & Litigation Hold
+- **Componentes**:
+  - Legal holds automatizados
+  - Preservación de documentos
+  - Búsqueda en repositorios
+  - Exportación para litigios
+- **Tablas**: `legal_litigation_holds`, `legal_discovery_requests`
 
 ---
 
 ## Sección Técnica
 
-### Nuevas Tablas de Base de Datos
-
-```sql
--- Mapeo conceptos nómina → cuentas PGC
-CREATE TABLE erp_hr_accounting_mapping (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  concept_code TEXT NOT NULL,
-  concept_name TEXT NOT NULL,
-  account_code TEXT NOT NULL,
-  account_name TEXT NOT NULL,
-  debit_credit TEXT CHECK (debit_credit IN ('D', 'C')),
-  jurisdiction TEXT DEFAULT 'spain',
-  is_active BOOLEAN DEFAULT true
-);
-
--- Integración RRHH → Tesorería
-CREATE TABLE erp_hr_treasury_integration (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  source_type TEXT NOT NULL, -- 'payroll', 'settlement', 'ss_contribution'
-  source_id UUID NOT NULL,
-  payable_id UUID REFERENCES erp_payables(id),
-  amount NUMERIC(15,2) NOT NULL,
-  due_date DATE NOT NULL,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Asientos generados desde RRHH
-CREATE TABLE erp_hr_journal_entries (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  source_type TEXT NOT NULL,
-  source_id UUID NOT NULL,
-  journal_entry_id UUID REFERENCES erp_journal_entries(id),
-  entry_date DATE NOT NULL,
-  auto_generated BOOLEAN DEFAULT true,
-  validation_status TEXT DEFAULT 'pending',
-  validated_by UUID,
-  validated_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### Estructura de Archivos Nuevos
+### Arquitectura de Base de Datos (Nuevas Tablas por Fase)
 
 ```text
-src/hooks/admin/
-  └── useHRAccountingIntegration.ts
-  └── useHRTreasuryIntegration.ts
+FASE 1 - Compliance:
+├── erp_hr_whistleblower_reports (canal denuncias)
+├── erp_hr_whistleblower_investigations
+├── erp_hr_equality_plans (planes igualdad)
+├── erp_hr_salary_audits (auditoría retributiva)
+├── erp_hr_time_entries (registro horario)
+└── erp_hr_disconnection_policies
 
-src/components/erp/hr/
-  └── integration/
-      └── HRAccountingBridge.tsx
-      └── HRTreasurySync.tsx
-      └── HRAccountingDashboard.tsx
+FASE 2 - Talento:
+├── erp_hr_skills_catalog (taxonomía skills)
+├── erp_hr_employee_skills
+├── erp_hr_internal_opportunities (marketplace)
+├── erp_hr_succession_plans
+├── erp_hr_career_paths
+└── erp_hr_talent_pools
 
-supabase/functions/
-  └── erp-hr-accounting-bridge/index.ts
-  └── erp-hr-treasury-accounting-orchestrator/index.ts
+FASE 3 - Experience:
+├── erp_hr_surveys
+├── erp_hr_pulse_responses
+├── erp_hr_wellbeing_programs
+├── erp_hr_wellbeing_assessments
+├── erp_hr_total_rewards_config
+└── erp_hr_recognitions
+
+FASE 4 - Legal CLM:
+├── legal_contracts (CLM core)
+├── legal_contract_versions
+├── legal_clause_library
+├── legal_playbooks
+├── legal_matters
+├── legal_budgets
+└── legal_invoices
+
+FASE 5 - Planning:
+├── erp_hr_workforce_plans
+├── erp_hr_compensation_reviews
+├── erp_hr_merit_matrices
+└── erp_hr_esg_metrics
+
+FASE 6 - Innovación:
+├── erp_hr_blockchain_credentials
+├── legal_smart_contracts
+└── legal_predictive_models
+
+FASE 7-8 - Externos y Legal Entity:
+├── erp_hr_contingent_workers
+├── legal_entities
+├── legal_ip_portfolio
+└── legal_litigation_holds
 ```
 
-### Dependencias entre Fases
+### Edge Functions Nuevas
 
-| Fase | Depende de |
-|------|------------|
-| 1 | - |
-| 2 | Fase 1 |
-| 3 | Fases 1, 2 |
-| 4 | Fases 1, 2, 3 |
-| 5 | Fases 1, 2 |
-| 6 | Fases 1-5 |
-| 7 | Todas las anteriores |
+```text
+FASE 1:
+- erp-hr-whistleblower-agent
+- erp-hr-equality-auditor
+- erp-hr-time-tracking
+
+FASE 2:
+- erp-hr-skills-agent
+- erp-hr-succession-planner
+- erp-hr-talent-marketplace
+
+FASE 3:
+- erp-hr-experience-agent
+- erp-hr-wellbeing-agent
+- erp-hr-total-rewards
+
+FASE 4:
+- legal-clm-engine
+- legal-clause-analyzer
+- legal-matter-manager
+- legal-spend-analyzer
+
+FASE 5:
+- erp-hr-workforce-planning
+- erp-hr-compensation-engine
+- erp-hr-esg-reporter
+
+FASE 6:
+- erp-hr-blockchain-credentials
+- erp-hr-autonomous-copilot
+- legal-smart-contracts
+- legal-predictive-analytics
+```
+
+### Componentes UI Nuevos (por Módulo)
+
+**RRHH - Nuevas secciones en navegación:**
+- Igualdad y Diversidad (DEI)
+- Canal de Denuncias
+- Registro Horario
+- Skills & Carrera
+- Marketplace Interno
+- Sucesión
+- Bienestar
+- Total Rewards
+- Workforce Planning
+- Compensación
+- ESG Social
+- Externos/Gig
+
+**Jurídico - Nuevas secciones:**
+- Contratos (CLM)
+- Cláusulas
+- Playbooks
+- Asuntos Legales
+- Gasto Legal
+- Entidades
+- Propiedad Intelectual
+- Litigios
+- Smart Contracts
 
 ---
 
-## Estimación de Tiempo
+## Cronograma Estimado
 
-| Fase | Duración | Complejidad |
-|------|----------|-------------|
-| Fase 1 | 3-4 días | Media |
-| Fase 2 | 4-5 días | Alta |
-| Fase 3 | 3-4 días | Media |
-| Fase 4 | 3-4 días | Media |
-| Fase 5 | 2-3 días | Media |
-| Fase 6 | 3-4 días | Media |
-| Fase 7 | 5-6 días | Alta |
-| **Total** | **~6-8 semanas** | |
+| Fase | Duración | Prioridad | ROI Esperado |
+|------|----------|-----------|--------------|
+| Fase 1: Compliance | 3 semanas | CRÍTICA | Evitar multas |
+| Fase 2: Talento | 4 semanas | ALTA | Retención +20% |
+| Fase 3: Experience | 3 semanas | ALTA | Engagement +30% |
+| Fase 4: CLM Legal | 4 semanas | CRÍTICA | Eficiencia +50% |
+| Fase 5: Planning | 3 semanas | ALTA | Decisiones +40% |
+| Fase 6: Innovación | 5 semanas | DIFERENCIACIÓN | Liderazgo mercado |
+| Fase 7: Gig Economy | 3 semanas | MEDIA-ALTA | Flexibilidad |
+| Fase 8: Entity/IP | 3 semanas | MEDIA | Completar suite |
+
+**Total: ~28 semanas (7 meses)**
+
+---
+
+## Resultado Esperado
+
+Al completar este plan, ObelixIA dispondrá de:
+
+1. **Compliance legal 100%**: Canal denuncias, igualdad, registro horario
+2. **Talento avanzado**: Skills, marketplace, sucesión, carrera
+3. **Employee Experience**: Wellbeing, encuestas, total rewards
+4. **CLM Enterprise**: Gestión contratos completa como Icertis
+5. **Legal Ops**: Matter management, spend, eDiscovery
+6. **Workforce Planning**: Planificación estratégica como SAP
+7. **Innovación disruptiva**: Blockchain, AI autónomo, smart contracts
+
+**Posicionamiento final**: El único ERP que combina HCM + Legal en una plataforma integrada con IA multi-agente, superando a SAP, Workday y Oracle en funcionalidad, y a Icertis/Thomson Reuters en integración HR-Legal.
+
