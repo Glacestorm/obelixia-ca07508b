@@ -1,12 +1,14 @@
 /**
  * useSettlements - Hook para gestión de finiquitos con validación multinivel
  * Sistema completo: Persistencia + IA + Legal + RRHH
+ * Incluye validación de convenios colectivos y obligaciones sindicales
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { usePayrollComplianceValidation } from './usePayrollComplianceValidation';
 
 // === INTERFACES ===
 export interface Settlement {
@@ -112,11 +114,13 @@ export interface CreateSettlementInput {
 // === HOOK ===
 export function useSettlements(companyId: string) {
   const { user } = useAuth();
+  const { validateSettlement: runComplianceValidation } = usePayrollComplianceValidation();
   const [isLoading, setIsLoading] = useState(false);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [metrics, setMetrics] = useState<SettlementMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [complianceResult, setComplianceResult] = useState<Record<string, unknown> | null>(null);
   
   const autoRefreshInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -263,13 +267,34 @@ export function useSettlements(companyId: string) {
     }
   }, [companyId, user?.id, loadSettlements]);
 
-  // === CALCULATE WITH AI ===
+  // === CALCULATE WITH AI + COMPLIANCE VALIDATION ===
   const calculateWithAI = useCallback(async (settlementId: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const settlement = settlements.find(s => s.id === settlementId);
       if (!settlement) throw new Error('Finiquito no encontrado');
 
+      // 1. Ejecutar validación de compliance (convenios + sindicatos)
+      let complianceData;
+      try {
+        complianceData = await runComplianceValidation(
+          settlement.employee_id,
+          companyId,
+          {
+            terminationType: settlement.termination_type,
+            terminationDate: settlement.termination_date,
+            baseSalary: settlement.base_salary,
+            yearsWorked: settlement.years_worked || 0,
+            indemnizationDays: settlement.indemnization_days_per_year || 0,
+            convenioId: settlement.collective_agreement_id || undefined,
+          }
+        );
+        setComplianceResult(complianceData as unknown as Record<string, unknown>);
+      } catch (compError) {
+        console.warn('[useSettlements] Compliance validation failed, continuing with AI calc:', compError);
+      }
+
+      // 2. Ejecutar cálculo con IA
       const { data, error: fnError } = await supabase.functions.invoke('erp-hr-ai-agent', {
         body: {
           action: 'calculate_severance',
@@ -282,6 +307,9 @@ export function useSettlements(companyId: string) {
             termination_type: settlement.termination_type,
             pending_vacation_days: settlement.pending_vacation_days,
             pending_extra_pays: 2,
+            // Incluir datos de compliance para que IA tenga contexto
+            compliance_checks: complianceData?.allChecks || [],
+            convenio_name: complianceData?.convenio?.convenioName,
           }
         }
       });
@@ -291,7 +319,28 @@ export function useSettlements(companyId: string) {
       const calc = data?.severance_calculation;
       if (!calc) throw new Error('Sin resultado del cálculo');
 
-      // Update settlement with calculated values
+      // 3. Preparar warnings de compliance
+      const complianceWarnings = (complianceData?.criticalIssues || []).map((issue: { code: string; title: string }) => ({
+        code: issue.code,
+        message: issue.title,
+      }));
+
+      // 4. Preparar referencias legales combinadas
+      const legalRefs = [
+        ...(calc.indemnization?.legal_reference 
+          ? [{ ref: calc.indemnization.legal_reference, description: 'Cálculo indemnización' }] 
+          : []),
+        ...(complianceData?.legalReferences || []),
+      ];
+
+      // 5. Preparar checks de compliance legal
+      const legalComplianceChecks = (complianceData?.allChecks || []).map((check: { id: string; passed: boolean; title: string }) => ({
+        check: check.id,
+        passed: check.passed,
+        notes: check.title,
+      }));
+
+      // 6. Update settlement with calculated values + compliance data
       const { error: updateError } = await supabase
         .from('erp_hr_settlements')
         .update({
@@ -310,21 +359,38 @@ export function useSettlements(companyId: string) {
           irpf_retention: calc.finiquito?.irpf_retention || 0,
           irpf_percentage: 15,
           net_total: calc.grand_total?.net || calc.finiquito?.net_total || 0,
-          legal_references: calc.indemnization?.legal_reference 
-            ? [{ ref: calc.indemnization.legal_reference, description: 'Normativa aplicada' }] 
-            : [],
-          ai_validation_status: 'approved',
+          legal_references: legalRefs,
+          ai_validation_status: complianceData?.isCompliant ? 'approved' : 'warning',
           ai_validation_at: new Date().toISOString(),
-          ai_validation_result: calc,
-          ai_confidence_score: calc.confidence || 85,
-          ai_explanation: calc.explanation,
+          ai_validation_result: {
+            ...calc,
+            compliance: {
+              score: complianceData?.complianceScore || 0,
+              isCompliant: complianceData?.isCompliant || false,
+              convenioValid: complianceData?.convenio?.hasConvenio || false,
+              sindicatoNotified: complianceData?.sindicato?.notificationSent || true,
+            }
+          },
+          ai_confidence_score: complianceData?.isCompliant ? (calc.confidence || 85) : Math.min(calc.confidence || 85, 60),
+          ai_warnings: complianceWarnings,
+          ai_explanation: complianceData?.summary || calc.explanation,
+          legal_compliance_checks: legalComplianceChecks,
+          collective_agreement_name: complianceData?.convenio?.convenioName,
           status: 'pending_legal_validation',
         })
         .eq('id', settlementId);
 
       if (updateError) throw updateError;
 
-      toast.success('Cálculo completado - Pendiente validación legal');
+      // 7. Mostrar resultado apropiado
+      if (complianceData?.isCompliant) {
+        toast.success('Cálculo completado - Cumple convenio colectivo');
+      } else if (complianceData?.criticalIssues?.length) {
+        toast.warning(`Cálculo completado - ${complianceData.criticalIssues.length} incumplimiento(s) detectados`);
+      } else {
+        toast.success('Cálculo completado - Pendiente validación legal');
+      }
+
       await loadSettlements();
       return true;
     } catch (err) {
@@ -334,7 +400,7 @@ export function useSettlements(companyId: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [settlements, companyId, loadSettlements]);
+  }, [settlements, companyId, loadSettlements, runComplianceValidation]);
 
   // === LEGAL VALIDATION ===
   const submitLegalValidation = useCallback(async (
@@ -481,6 +547,7 @@ export function useSettlements(companyId: string) {
     metrics,
     error,
     lastRefresh,
+    complianceResult,
     // Acciones
     loadSettlements,
     loadMetrics,

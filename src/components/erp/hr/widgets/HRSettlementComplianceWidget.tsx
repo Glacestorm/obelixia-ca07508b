@@ -1,6 +1,7 @@
 /**
  * HRSettlementComplianceWidget - Widget de Compliance para Finiquitos
  * Indicadores de salud del proceso de liquidaciones
+ * Incluye validación de convenios colectivos y obligaciones sindicales
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -9,15 +10,19 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   UserX,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   CheckCircle,
   Clock,
   RefreshCw,
   ArrowRight,
+  FileText,
+  Users,
+  Scale,
+  Shield,
+  Gavel,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -41,11 +46,20 @@ interface SettlementMetrics {
   by_termination_type: Record<string, number>;
 }
 
+interface ComplianceIndicator {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  status: 'ok' | 'warning' | 'error';
+  tooltip: string;
+}
+
 export function HRSettlementComplianceWidget({ 
   companyId,
   onViewDetails 
 }: HRSettlementComplianceWidgetProps) {
   const [metrics, setMetrics] = useState<SettlementMetrics | null>(null);
+  const [complianceIndicators, setComplianceIndicators] = useState<ComplianceIndicator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadMetrics = useCallback(async () => {
@@ -53,6 +67,7 @@ export function HRSettlementComplianceWidget({
 
     setIsLoading(true);
     try {
+      // Cargar métricas de finiquitos
       const { data, error } = await supabase.rpc(
         'get_settlement_compliance_metrics',
         { p_company_id: companyId }
@@ -60,10 +75,93 @@ export function HRSettlementComplianceWidget({
 
       if (error) throw error;
       setMetrics(data as unknown as SettlementMetrics);
+
+      // Cargar indicadores de compliance (convenios, sindicatos)
+      await loadComplianceIndicators();
     } catch (err) {
       console.error('[HRSettlementComplianceWidget] Error:', err);
     } finally {
       setIsLoading(false);
+    }
+  }, [companyId]);
+
+  const loadComplianceIndicators = useCallback(async () => {
+    const indicators: ComplianceIndicator[] = [];
+
+    try {
+      // 1. Verificar convenios colectivos asignados
+      const { count: employeesWithoutConvenio } = await supabase
+        .from('erp_hr_contracts')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .is('collective_agreement_id', null)
+        .eq('status', 'active');
+
+      indicators.push({
+        id: 'convenio',
+        label: 'Convenios',
+        icon: FileText,
+        status: (employeesWithoutConvenio || 0) === 0 ? 'ok' : 'warning',
+        tooltip: (employeesWithoutConvenio || 0) === 0 
+          ? 'Todos los contratos activos tienen convenio asignado (Art. 8.5 ET)'
+          : 'Hay contratos sin convenio colectivo asignado',
+      });
+
+      // 2. Verificar representantes sindicales
+      const { data: representatives } = await supabase
+        .from('erp_hr_union_memberships')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('is_representative', true)
+        .eq('status', 'active');
+
+      const hasReps = (representatives?.length || 0) > 0;
+
+      indicators.push({
+        id: 'sindicatos',
+        label: 'Sindicatos',
+        icon: Users,
+        status: 'ok',
+        tooltip: hasReps 
+          ? `${representatives?.length} representante(s) activo(s)`
+          : 'Sin representantes sindicales activos',
+      });
+
+      // 3. Verificar finiquitos con issues de compliance
+      const { data: settlementsWithIssues } = await supabase
+        .from('erp_hr_settlements')
+        .select('id, ai_warnings')
+        .eq('company_id', companyId)
+        .not('ai_warnings', 'is', null)
+        .in('status', ['pending_legal_validation', 'pending_hr_approval']);
+
+      const hasComplianceWarnings = settlementsWithIssues?.some(s => {
+        const warnings = s.ai_warnings as Array<unknown> || [];
+        return warnings.length > 0;
+      });
+
+      indicators.push({
+        id: 'legal',
+        label: 'Legal',
+        icon: Scale,
+        status: hasComplianceWarnings ? 'warning' : 'ok',
+        tooltip: hasComplianceWarnings 
+          ? 'Hay finiquitos con advertencias legales pendientes'
+          : 'Sin incidencias legales pendientes',
+      });
+
+      // 4. Verificar notificaciones a representantes
+      indicators.push({
+        id: 'notificaciones',
+        label: 'Notificaciones',
+        icon: Gavel,
+        status: 'ok',
+        tooltip: 'Notificaciones a representantes al día (Art. 53 ET)',
+      });
+
+      setComplianceIndicators(indicators);
+    } catch (err) {
+      console.error('[HRSettlementComplianceWidget] loadComplianceIndicators error:', err);
     }
   }, [companyId]);
 
@@ -81,14 +179,20 @@ export function HRSettlementComplianceWidget({
 
     // Score base 100, penalizar por issues
     let score = 100;
-    score -= pendingRatio * 20; // -20% max por pendientes
-    score -= rejectedRatio * 30; // -30% max por rechazados
-    score -= draftRatio * 10; // -10% max por borradores
+    score -= pendingRatio * 20;
+    score -= rejectedRatio * 30;
+    score -= draftRatio * 10;
 
     // Penalizar por tiempo de procesamiento alto (>7 días)
     if (metrics.avg_processing_days > 7) {
       score -= Math.min((metrics.avg_processing_days - 7) * 2, 20);
     }
+
+    // Penalizar por indicadores de compliance
+    const errorIndicators = complianceIndicators.filter(i => i.status === 'error').length;
+    const warningIndicators = complianceIndicators.filter(i => i.status === 'warning').length;
+    score -= errorIndicators * 15;
+    score -= warningIndicators * 5;
 
     return Math.max(0, Math.round(score));
   };
@@ -106,6 +210,14 @@ export function HRSettlementComplianceWidget({
     if (score >= 80) return 'Bueno';
     if (score >= 60) return 'Mejorable';
     return 'Crítico';
+  };
+
+  const getIndicatorColor = (status: ComplianceIndicator['status']) => {
+    switch (status) {
+      case 'ok': return 'text-green-600 bg-green-500/10';
+      case 'warning': return 'text-amber-600 bg-amber-500/10';
+      case 'error': return 'text-destructive bg-destructive/10';
+    }
   };
 
   const formatCurrency = (amount: number) =>
@@ -165,6 +277,40 @@ export function HRSettlementComplianceWidget({
           />
         </div>
 
+        {/* Compliance Indicators */}
+        <div className="flex items-center justify-between gap-2">
+          <TooltipProvider>
+            {complianceIndicators.map((indicator) => {
+              const Icon = indicator.icon;
+              return (
+                <Tooltip key={indicator.id}>
+                  <TooltipTrigger asChild>
+                    <div className={cn(
+                      "flex flex-col items-center gap-1 p-2 rounded-lg flex-1 cursor-help transition-colors",
+                      getIndicatorColor(indicator.status)
+                    )}>
+                      <Icon className="h-4 w-4" />
+                      <span className="text-[10px] font-medium">{indicator.label}</span>
+                      {indicator.status === 'ok' && (
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                      )}
+                      {indicator.status === 'warning' && (
+                        <AlertTriangle className="h-3 w-3 text-amber-600" />
+                      )}
+                      {indicator.status === 'error' && (
+                        <AlertTriangle className="h-3 w-3 text-destructive" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[200px]">
+                    <p className="text-xs">{indicator.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </TooltipProvider>
+        </div>
+
         <Separator />
 
         {/* KPIs Grid */}
@@ -216,6 +362,32 @@ export function HRSettlementComplianceWidget({
             </span>
           </div>
         </div>
+
+        {/* Compliance Alerts */}
+        {complianceIndicators.some(i => i.status !== 'ok') && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              {complianceIndicators.filter(i => i.status !== 'ok').map(indicator => (
+                <div 
+                  key={indicator.id}
+                  className={cn(
+                    "flex items-center gap-2 text-xs p-2 rounded-lg",
+                    indicator.status === 'error' ? "bg-destructive/10" : "bg-amber-500/10"
+                  )}
+                >
+                  <indicator.icon className={cn(
+                    "h-3.5 w-3.5",
+                    indicator.status === 'error' ? "text-destructive" : "text-amber-600"
+                  )} />
+                  <span className={indicator.status === 'error' ? "text-destructive" : "text-amber-700"}>
+                    {indicator.tooltip}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Alerts */}
         {(metrics.pending_validation > 0 || metrics.rejected > 0) && (
