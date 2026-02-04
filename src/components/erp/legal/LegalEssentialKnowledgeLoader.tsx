@@ -1,6 +1,7 @@
 /**
  * LegalEssentialKnowledgeLoader
  * Componente para cargar el contenido jurídico esencial en la base de conocimiento
+ * Incluye: Legislación, Jurisprudencia (CENDOJ, EUR-Lex, BOPA) y Doctrina (DGT, TEAC, AEPD)
  */
 
 import { useState, useCallback } from 'react';
@@ -25,7 +26,9 @@ import {
   Loader2,
   Scale,
   FileText,
-  Globe
+  Globe,
+  GraduationCap,
+  Building
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,17 +37,22 @@ import {
   ALL_ESSENTIAL_KNOWLEDGE,
   type EssentialKnowledgeItem 
 } from '@/data/legal/essentialKnowledgeBase';
+import {
+  JURISPRUDENCE_CATEGORIES,
+  ALL_JURISPRUDENCE_AND_DOCTRINE
+} from '@/data/legal/jurisprudenceKnowledgeBase';
 
 interface LegalEssentialKnowledgeLoaderProps {
   onLoadComplete?: () => void;
 }
 
 interface CategoryInfo {
-  key: keyof typeof KNOWLEDGE_CATEGORIES;
+  key: string;
   label: string;
   icon: React.ReactNode;
   count: number;
   description: string;
+  source: 'legislation' | 'jurisprudence';
 }
 
 export function LegalEssentialKnowledgeLoader({ onLoadComplete }: LegalEssentialKnowledgeLoaderProps) {
@@ -53,38 +61,93 @@ export function LegalEssentialKnowledgeLoader({ onLoadComplete }: LegalEssential
   const [progress, setProgress] = useState(0);
   const [loadedCount, setLoadedCount] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
-    new Set(['SPANISH', 'ANDORRAN', 'EUROPEAN', 'PROCUREMENT'])
+    new Set(['SPANISH', 'ANDORRAN', 'EUROPEAN', 'PROCUREMENT', 'SPANISH_JURISPRUDENCE', 'EU_JURISPRUDENCE', 'ANDORRAN_JURISPRUDENCE', 'DGT_DOCTRINE', 'TEAC_DOCTRINE', 'AEPD_DOCTRINE'])
   );
   const [results, setResults] = useState<{ success: number; errors: number }>({ success: 0, errors: 0 });
 
   const categories: CategoryInfo[] = [
+    // Legislación
     {
       key: 'SPANISH',
       label: 'Legislación Española',
       icon: <Scale className="h-4 w-4" />,
       count: KNOWLEDGE_CATEGORIES.SPANISH.length,
-      description: 'Estatuto Trabajadores, LGT, LIVA, LOPDGDD, Código Comercio...'
+      description: 'Estatuto Trabajadores, LGT, LIVA, LOPDGDD, Código Comercio...',
+      source: 'legislation'
     },
     {
       key: 'ANDORRAN',
       label: 'Legislación Andorrana',
       icon: <FileText className="h-4 w-4" />,
       count: KNOWLEDGE_CATEGORIES.ANDORRAN.length,
-      description: 'APDA, IGI y normativa del Principado'
+      description: 'APDA, IGI y normativa del Principado',
+      source: 'legislation'
     },
     {
       key: 'EUROPEAN',
       label: 'Normativa Europea',
       icon: <Globe className="h-4 w-4" />,
       count: KNOWLEDGE_CATEGORIES.EUROPEAN.length,
-      description: 'RGPD, DORA, NIS2, AI Act...'
+      description: 'RGPD, DORA, NIS2, AI Act...',
+      source: 'legislation'
     },
     {
       key: 'PROCUREMENT',
       label: 'Compras y Contratación',
       icon: <BookOpen className="h-4 w-4" />,
       count: KNOWLEDGE_CATEGORIES.PROCUREMENT.length,
-      description: 'Ley 15/2010, LCSP, Incoterms, IVA intracomunitario...'
+      description: 'Ley 15/2010, LCSP, Incoterms, IVA intracomunitario...',
+      source: 'legislation'
+    },
+    // Jurisprudencia
+    {
+      key: 'SPANISH_JURISPRUDENCE',
+      label: 'Jurisprudencia Española (CENDOJ)',
+      icon: <GraduationCap className="h-4 w-4" />,
+      count: JURISPRUDENCE_CATEGORIES.SPANISH_JURISPRUDENCE.length,
+      description: 'Tribunal Supremo, Audiencia Nacional, TSJ...',
+      source: 'jurisprudence'
+    },
+    {
+      key: 'EU_JURISPRUDENCE',
+      label: 'Jurisprudencia Europea (EUR-Lex)',
+      icon: <GraduationCap className="h-4 w-4" />,
+      count: JURISPRUDENCE_CATEGORIES.EU_JURISPRUDENCE.length,
+      description: 'TJUE, Tribunal General (Schrems II, etc.)',
+      source: 'jurisprudence'
+    },
+    {
+      key: 'ANDORRAN_JURISPRUDENCE',
+      label: 'Jurisprudencia Andorrana (BOPA)',
+      icon: <GraduationCap className="h-4 w-4" />,
+      count: JURISPRUDENCE_CATEGORIES.ANDORRAN_JURISPRUDENCE.length,
+      description: 'Tribunal Superior d\'Andorra',
+      source: 'jurisprudence'
+    },
+    // Doctrina
+    {
+      key: 'DGT_DOCTRINE',
+      label: 'Doctrina DGT',
+      icon: <Building className="h-4 w-4" />,
+      count: JURISPRUDENCE_CATEGORIES.DGT_DOCTRINE.length,
+      description: 'Consultas Vinculantes Dirección General de Tributos',
+      source: 'jurisprudence'
+    },
+    {
+      key: 'TEAC_DOCTRINE',
+      label: 'Doctrina TEAC',
+      icon: <Building className="h-4 w-4" />,
+      count: JURISPRUDENCE_CATEGORIES.TEAC_DOCTRINE.length,
+      description: 'Resoluciones Tribunal Económico-Administrativo Central',
+      source: 'jurisprudence'
+    },
+    {
+      key: 'AEPD_DOCTRINE',
+      label: 'Informes AEPD',
+      icon: <Building className="h-4 w-4" />,
+      count: JURISPRUDENCE_CATEGORIES.AEPD_DOCTRINE.length,
+      description: 'Informes jurídicos Agencia Protección de Datos',
+      source: 'jurisprudence'
     }
   ];
 
@@ -103,9 +166,15 @@ export function LegalEssentialKnowledgeLoader({ onLoadComplete }: LegalEssential
   const getSelectedItems = useCallback((): EssentialKnowledgeItem[] => {
     const items: EssentialKnowledgeItem[] = [];
     selectedCategories.forEach(key => {
-      const category = KNOWLEDGE_CATEGORIES[key as keyof typeof KNOWLEDGE_CATEGORIES];
-      if (category) {
-        items.push(...category);
+      // Check legislation categories
+      const legislationCategory = KNOWLEDGE_CATEGORIES[key as keyof typeof KNOWLEDGE_CATEGORIES];
+      if (legislationCategory) {
+        items.push(...legislationCategory);
+      }
+      // Check jurisprudence/doctrine categories
+      const jurisprudenceCategory = JURISPRUDENCE_CATEGORIES[key as keyof typeof JURISPRUDENCE_CATEGORIES];
+      if (jurisprudenceCategory) {
+        items.push(...jurisprudenceCategory);
       }
     });
     return items;
@@ -213,6 +282,10 @@ export function LegalEssentialKnowledgeLoader({ onLoadComplete }: LegalEssential
   }, [getSelectedItems, onLoadComplete]);
 
   const totalSelected = getSelectedItems().length;
+  const totalAvailable = ALL_ESSENTIAL_KNOWLEDGE.length + ALL_JURISPRUDENCE_AND_DOCTRINE.length;
+  
+  const legislationCategories = categories.filter(c => c.source === 'legislation');
+  const jurisprudenceCategories = categories.filter(c => c.source === 'jurisprudence');
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

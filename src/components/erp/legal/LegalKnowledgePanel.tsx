@@ -29,6 +29,8 @@ import { toast } from 'sonner';
 import { useLegalKnowledge, LegalKnowledgeItem } from '@/hooks/admin/legal/useLegalKnowledge';
 import { LegalKnowledgeUploader } from './LegalKnowledgeUploader';
 import { LegalEssentialKnowledgeLoader } from './LegalEssentialKnowledgeLoader';
+import { LegalKnowledgeSyncConfig } from './LegalKnowledgeSyncConfig';
+import { LegalKnowledgeExportPanel } from './LegalKnowledgeExportPanel';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -175,6 +177,8 @@ export function LegalKnowledgePanel({ companyId }: LegalKnowledgePanelProps) {
               {isSearching ? 'Buscando...' : 'Buscar'}
             </Button>
             <LegalEssentialKnowledgeLoader onLoadComplete={() => fetchKnowledge()} />
+            <LegalKnowledgeSyncConfig onSyncTriggered={() => fetchKnowledge()} />
+            <LegalKnowledgeExportPanel companyId={companyId} />
             <LegalKnowledgeUploader companyId={companyId} onUploadComplete={() => fetchKnowledge()} />
           </div>
         </CardContent>
