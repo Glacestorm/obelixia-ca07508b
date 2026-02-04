@@ -114,3 +114,6 @@ export * from './integration';
 
 // Fase 2: Gestión del Talento Avanzada
 export * from './talent';
+
+// Fase 3: Employee Experience & Wellbeing
+export * from './wellbeing';

@@ -51,3 +51,19 @@ export type {
   SuccessionCandidate,
   CareerPath
 } from './useHRTalentSkills';
+
+// Phase 3 - Employee Experience & Wellbeing Hooks
+export { useHRWellbeing } from './useHRWellbeing';
+export type {
+  WellbeingScore,
+  WellbeingFactor,
+  BurnoutRisk,
+  WellbeingRecommendation,
+  Survey,
+  SurveyQuestion,
+  SurveyResults,
+  WellnessProgram,
+  ProgramRecommendations,
+  BurnoutAnalysis,
+  WellnessPlan
+} from './useHRWellbeing';

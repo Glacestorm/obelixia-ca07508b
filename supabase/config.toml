@@ -960,5 +960,8 @@ verify_jwt = true
 [functions.erp-hr-talent-skills-agent]
 verify_jwt = true
 
+[functions.erp-hr-wellbeing-agent]
+verify_jwt = true
+
 [functions.erp-hr-whistleblower-agent]
 verify_jwt = true
