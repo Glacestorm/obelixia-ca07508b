@@ -831,9 +831,6 @@ verify_jwt = true
 [functions.erp-esg-carbon-accounting]
 verify_jwt = true
 
-[functions.obelixia-accounting-engine]
-verify_jwt = true
-
 [functions.erp-financial-reports]
 verify_jwt = true
 
@@ -886,7 +883,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.erp-voice-tts]
-verify_jwt = true
+verify_jwt = false
 
 [functions.erp-voice-orchestrator]
 verify_jwt = true
@@ -907,9 +904,6 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.erp-accounting-supervisor]
-verify_jwt = false
-
-[functions.erp-voice-tts]
 verify_jwt = false
 
 [functions.erp-module-agent]
@@ -952,4 +946,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.legal-knowledge-sync]
+verify_jwt = false
+
+[functions.erp-hr-payroll-recalculation]
 verify_jwt = false
