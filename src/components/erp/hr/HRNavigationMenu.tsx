@@ -84,6 +84,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
       items: [
         { id: 'payroll', label: 'Nóminas', icon: DollarSign, badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
         { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator },
+        { id: 'settlements', label: 'Finiquitos', icon: UserMinus },
         { id: 'ss', label: 'Seg. Social', icon: Landmark },
         { id: 'vacations', label: 'Vacaciones', icon: Calendar, badge: stats.pendingVacations, badgeVariant: 'secondary' },
         { id: 'contracts', label: 'Contratos', icon: FileText },

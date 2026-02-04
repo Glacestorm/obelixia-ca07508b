@@ -20378,6 +20378,273 @@ export type Database = {
           },
         ]
       }
+      erp_hr_settlement_history: {
+        Row: {
+          action: string
+          changes: Json | null
+          id: string
+          ip_address: unknown
+          new_status: string | null
+          notes: string | null
+          performed_at: string
+          performed_by: string | null
+          previous_status: string | null
+          settlement_id: string
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          id?: string
+          ip_address?: unknown
+          new_status?: string | null
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          previous_status?: string | null
+          settlement_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          id?: string
+          ip_address?: unknown
+          new_status?: string | null
+          notes?: string | null
+          performed_at?: string
+          performed_by?: string | null
+          previous_status?: string | null
+          settlement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_settlement_history_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_settlement_history_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_settlements: {
+        Row: {
+          ai_confidence_score: number | null
+          ai_explanation: string | null
+          ai_validation_at: string | null
+          ai_validation_result: Json | null
+          ai_validation_status: string | null
+          ai_warnings: Json | null
+          base_salary: number
+          collective_agreement_id: string | null
+          collective_agreement_name: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          daily_salary: number | null
+          document_generated_at: string | null
+          document_url: string | null
+          employee_id: string
+          employee_snapshot: Json | null
+          extra_pays_proportional: number | null
+          gross_total: number
+          hire_date: string
+          hr_approval_notes: string | null
+          hr_approval_status: string | null
+          hr_approved_at: string | null
+          hr_approved_by: string | null
+          id: string
+          indemnization_days_per_year: number | null
+          indemnization_exempt: number | null
+          indemnization_gross: number | null
+          indemnization_taxable: number | null
+          indemnization_total_days: number | null
+          indemnization_type: string | null
+          irpf_percentage: number | null
+          irpf_retention: number | null
+          last_work_day: string | null
+          legal_compliance_checks: Json | null
+          legal_references: Json | null
+          legal_validated_by: string | null
+          legal_validation_at: string | null
+          legal_validation_notes: string | null
+          legal_validation_status: string | null
+          net_total: number
+          other_concepts: number | null
+          other_concepts_detail: Json | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          pending_vacation_days: number | null
+          salary_current_month: number | null
+          ss_retention: number | null
+          status: string
+          termination_date: string
+          termination_reason: string | null
+          termination_type: string
+          updated_at: string
+          vacation_amount: number | null
+          years_worked: number | null
+        }
+        Insert: {
+          ai_confidence_score?: number | null
+          ai_explanation?: string | null
+          ai_validation_at?: string | null
+          ai_validation_result?: Json | null
+          ai_validation_status?: string | null
+          ai_warnings?: Json | null
+          base_salary?: number
+          collective_agreement_id?: string | null
+          collective_agreement_name?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          daily_salary?: number | null
+          document_generated_at?: string | null
+          document_url?: string | null
+          employee_id: string
+          employee_snapshot?: Json | null
+          extra_pays_proportional?: number | null
+          gross_total?: number
+          hire_date: string
+          hr_approval_notes?: string | null
+          hr_approval_status?: string | null
+          hr_approved_at?: string | null
+          hr_approved_by?: string | null
+          id?: string
+          indemnization_days_per_year?: number | null
+          indemnization_exempt?: number | null
+          indemnization_gross?: number | null
+          indemnization_taxable?: number | null
+          indemnization_total_days?: number | null
+          indemnization_type?: string | null
+          irpf_percentage?: number | null
+          irpf_retention?: number | null
+          last_work_day?: string | null
+          legal_compliance_checks?: Json | null
+          legal_references?: Json | null
+          legal_validated_by?: string | null
+          legal_validation_at?: string | null
+          legal_validation_notes?: string | null
+          legal_validation_status?: string | null
+          net_total?: number
+          other_concepts?: number | null
+          other_concepts_detail?: Json | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          pending_vacation_days?: number | null
+          salary_current_month?: number | null
+          ss_retention?: number | null
+          status?: string
+          termination_date: string
+          termination_reason?: string | null
+          termination_type: string
+          updated_at?: string
+          vacation_amount?: number | null
+          years_worked?: number | null
+        }
+        Update: {
+          ai_confidence_score?: number | null
+          ai_explanation?: string | null
+          ai_validation_at?: string | null
+          ai_validation_result?: Json | null
+          ai_validation_status?: string | null
+          ai_warnings?: Json | null
+          base_salary?: number
+          collective_agreement_id?: string | null
+          collective_agreement_name?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          daily_salary?: number | null
+          document_generated_at?: string | null
+          document_url?: string | null
+          employee_id?: string
+          employee_snapshot?: Json | null
+          extra_pays_proportional?: number | null
+          gross_total?: number
+          hire_date?: string
+          hr_approval_notes?: string | null
+          hr_approval_status?: string | null
+          hr_approved_at?: string | null
+          hr_approved_by?: string | null
+          id?: string
+          indemnization_days_per_year?: number | null
+          indemnization_exempt?: number | null
+          indemnization_gross?: number | null
+          indemnization_taxable?: number | null
+          indemnization_total_days?: number | null
+          indemnization_type?: string | null
+          irpf_percentage?: number | null
+          irpf_retention?: number | null
+          last_work_day?: string | null
+          legal_compliance_checks?: Json | null
+          legal_references?: Json | null
+          legal_validated_by?: string | null
+          legal_validation_at?: string | null
+          legal_validation_notes?: string | null
+          legal_validation_status?: string | null
+          net_total?: number
+          other_concepts?: number | null
+          other_concepts_detail?: Json | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          pending_vacation_days?: number | null
+          salary_current_month?: number | null
+          ss_retention?: number | null
+          status?: string
+          termination_date?: string
+          termination_reason?: string | null
+          termination_type?: string
+          updated_at?: string
+          vacation_amount?: number | null
+          years_worked?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_settlements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_settlements_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_settlements_hr_approved_by_fkey"
+            columns: ["hr_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_settlements_legal_validated_by_fkey"
+            columns: ["legal_validated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_social_benefits: {
         Row: {
           annual_limit: number | null
@@ -51289,6 +51556,10 @@ export type Database = {
           requirements: Json
           summary: string
         }[]
+      }
+      get_settlement_compliance_metrics: {
+        Args: { p_company_id: string }
+        Returns: Json
       }
       get_turnover_tier: { Args: { p_turnover: number }; Returns: string }
       get_user_oficina: { Args: { _user_id: string }; Returns: string }
