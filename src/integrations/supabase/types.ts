@@ -52344,6 +52344,7 @@ export type Database = {
         Args: { p_entry_date?: string; p_period_id: string }
         Returns: boolean
       }
+      escalate_critical_alerts_to_legal: { Args: never; Returns: undefined }
       expire_open_banking_consents: { Args: never; Returns: undefined }
       expire_pending_approval_requests: { Args: never; Returns: undefined }
       find_applicable_bundles: {
@@ -52363,6 +52364,7 @@ export type Database = {
           items_processed: number
         }[]
       }
+      generate_compliance_alerts: { Args: never; Returns: undefined }
       generate_hr_alerts: { Args: never; Returns: undefined }
       generate_invoice_number: {
         Args: { p_organization_id?: string }
@@ -52490,6 +52492,18 @@ export type Database = {
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: { Args: { _user_id: string }; Returns: string }
       get_volume_discount: { Args: { p_cnae_count: number }; Returns: number }
+      get_weekly_compliance_summary: {
+        Args: { p_company_id: string }
+        Returns: {
+          critical_alerts: number
+          resolved_this_week: number
+          total_completed: number
+          total_overdue: number
+          total_pending: number
+          upcoming_7_days: number
+          urgent_alerts: number
+        }[]
+      }
       get_zscore_coefficients: { Args: { p_sector_key: string }; Returns: Json }
       has_crm_permission: {
         Args: {
@@ -52578,6 +52592,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_overdue_deadlines: { Args: never; Returns: undefined }
       publish_notification: {
         Args: {
           p_action_label?: string
@@ -52594,6 +52609,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      run_daily_compliance_check: { Args: never; Returns: undefined }
       search_employee_documents: {
         Args: {
           p_company_id: string
