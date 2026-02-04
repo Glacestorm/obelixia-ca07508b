@@ -1,6 +1,6 @@
 /**
  * Legal Hooks - Barrel Export
- * Fase 3: Sistema de hooks para el Módulo Jurídico Enterprise
+ * Fase 3-10: Sistema de hooks para el Módulo Jurídico Enterprise
  */
 
 export { useLegalAdvisor } from './useLegalAdvisor';
@@ -27,3 +27,17 @@ export type { LegalTemplate, GeneratedDocument } from './useLegalDocuments';
 
 export { useLegalAgentIntegration } from './useLegalAgentIntegration';
 export type { AgentQuery, ValidationLog, AgentStats } from './useLegalAgentIntegration';
+
+// Fase 10: Legal Validation Gateway
+export { useLegalValidationGateway } from './useLegalValidationGateway';
+export type {
+  ValidationRiskLevel,
+  ValidationStatus,
+  ModuleType,
+  ValidationRequest,
+  ValidationRule,
+  ModuleConnectionStatus,
+  GatewayStats,
+  ValidationContext,
+  ValidationResult as GatewayValidationResult
+} from './useLegalValidationGateway';
