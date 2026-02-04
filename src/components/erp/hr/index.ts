@@ -117,3 +117,6 @@ export * from './talent';
 
 // Fase 3: Employee Experience & Wellbeing
 export * from './wellbeing';
+
+// Fase 4: Contract Lifecycle Management (CLM)
+export * from './clm';
