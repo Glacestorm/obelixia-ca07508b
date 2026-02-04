@@ -1,379 +1,514 @@
 
-# Plan de Implementación: Sistema Inteligente de Recálculo de Nóminas con Cumplimiento de Convenios
+# Plan de Implementación: Sistema de Alertas de Cumplimiento Legal y Comunicaciones Obligatorias
 
 ## Resumen Ejecutivo
-Este plan implementa un sistema integral de recálculo salarial que garantiza el cumplimiento de los convenios colectivos por sector (CNAE), validación automática por IA, coordinación con el Agente Jurídico para revisión legal, y aprobación final por el Responsable de RRHH.
+
+Se implementará un sistema integral de alertas y automatización para:
+1. **Comunicaciones obligatorias con empleados** (despidos, modificaciones contractuales, cambios de convenio)
+2. **Obligaciones con administraciones públicas** (Seguridad Social, Hacienda, SEPE, inspección)
+3. **Sistema de pre-alertas para evitar sanciones** (basado en LISOS - Ley de Infracciones y Sanciones del Orden Social)
+4. **Comunicaciones automáticas** con formularios oficiales y checklist de cumplimiento
+5. **Coordinación con Agentes IA** (RRHH y Jurídico) para seguimiento y defensa
 
 ---
 
-## Fase 1: Base de Datos - Convenios Colectivos y Conceptos Salariales
+## Fase 1: Infraestructura de Base de Datos
 
-### 1.1 Tabla de Convenios Colectivos
-Crear tabla `erp_hr_collective_agreements` para almacenar los convenios por sector:
+### 1.1 Nuevas Tablas
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│ erp_hr_collective_agreements                                    │
+│  erp_hr_legal_communications                                    │
 ├─────────────────────────────────────────────────────────────────┤
-│ id (uuid, PK)                                                   │
-│ code (text) - Código oficial del convenio                       │
-│ name (text) - Nombre completo                                   │
-│ cnae_codes (text[]) - Sectores CNAE aplicables                  │
-│ jurisdiction_code (text) - ES, AD, EU, etc.                     │
-│ effective_date / expiration_date (date)                         │
-│ salary_tables (jsonb) - Tablas salariales por categoría         │
-│ annual_updates (jsonb) - Histórico de actualizaciones           │
-│ extra_payments (integer) - Número de pagas extra (12, 14, 15)   │
-│ working_hours_week (numeric) - Jornada semanal                  │
-│ vacation_days (integer) - Días de vacaciones                    │
-│ seniority_rules (jsonb) - Reglas de antigüedad                  │
-│ night_shift_bonus (jsonb) - Plus nocturnidad                    │
-│ other_concepts (jsonb) - Otros conceptos obligatorios           │
-│ union_obligations (jsonb) - Obligaciones sindicales             │
-│ source_url (text) - URL BOE/BOPA/publicación                    │
-│ is_active (boolean)                                             │
-│ created_at / updated_at (timestamptz)                           │
+│ - Registro de todas las comunicaciones obligatorias             │
+│ - Tipos: despido, modificación sustancial, ERTE, cambio turno   │
+│ - Estados: borrador, enviada, recibida, firmada, archivada      │
+│ - Plazos legales y fechas límite                               │
+│ - Canales: carta certificada, burofax, email certificado, mano  │
+│ - Acuse de recibo y firma digital                               │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  erp_hr_admin_obligations                                       │
+├─────────────────────────────────────────────────────────────────┤
+│ - Obligaciones con AAPP por jurisdicción (ES, AD, EU)           │
+│ - Tipos: declaración, comunicación, liquidación, certificado    │
+│ - Periodicidad: mensual, trimestral, anual, puntual             │
+│ - Organismo: TGSS, AEAT, SEPE, ITSS, FOGASA                     │
+│ - Modelo oficial y plazos                                       │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  erp_hr_obligation_deadlines                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ - Calendario de vencimientos por empresa                        │
+│ - Estado: pendiente, en_proceso, completada, vencida            │
+│ - Responsable asignado                                          │
+│ - Documentación adjunta                                         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  erp_hr_sanction_risks                                          │
+├─────────────────────────────────────────────────────────────────┤
+│ - Catálogo de infracciones LISOS y otras normativas             │
+│ - Clasificación: leve, grave, muy grave                         │
+│ - Cuantías de sanción (mín/máx por grado)                       │
+│ - Artículos de referencia                                       │
+│ - Medidas preventivas                                           │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  erp_hr_sanction_alerts                                         │
+├─────────────────────────────────────────────────────────────────┤
+│ - Pre-alertas de riesgo de sanción                              │
+│ - Nivel: prealerta, alerta, urgente, crítico                    │
+│ - Días restantes para vencimiento                               │
+│ - Notificación a Agente IA RRHH                                │
+│ - Escalado a Agente IA Jurídico                                 │
+│ - Acciones correctivas propuestas                               │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  erp_hr_communication_templates                                 │
+├─────────────────────────────────────────────────────────────────┤
+│ - Plantillas de comunicaciones oficiales                        │
+│ - Por tipo: despido objetivo, disciplinario, ERTE, etc.         │
+│ - Por jurisdicción: ES, AD, EU                                  │
+│ - Campos dinámicos para autocompletado                          │
+│ - Referencias legales incluidas                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  erp_hr_compliance_checklist                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ - Checklist de cumplimiento por tipo de comunicación            │
+│ - Items obligatorios vs recomendados                            │
+│ - Estado: pendiente, completado, no_aplica                      │
+│ - Validación automática por IA                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 1.2 Campo Convenio en Contratos (Obligatorio por Art. 8.5 ET)
-Añadir columna obligatoria `collective_agreement_id` a `erp_hr_contracts`:
-- **Verificación legal**: El Art. 8.5 del Estatuto de los Trabajadores (RD 2/2015) establece que el empresario debe informar por escrito al trabajador sobre el convenio colectivo aplicable. Por tanto, es un dato obligatorio en el contrato.
+### 1.2 Funciones RPC
 
-### 1.3 Catálogo de Conceptos Salariales por Convenio
-Crear tabla `erp_hr_agreement_salary_concepts` para los conceptos específicos:
+- `get_upcoming_deadlines(company_id, days_ahead)`: Obligaciones próximas
+- `get_sanction_risk_assessment(company_id)`: Evaluación de riesgo de sanciones
+- `get_communication_compliance_status(company_id)`: Estado de cumplimiento
+
+---
+
+## Fase 2: Catálogo de Obligaciones Legales
+
+### 2.1 Comunicaciones a Empleados (España - Art. ET)
+
+| Tipo | Plazo Legal | Base Legal | Consecuencia Incumplimiento |
+|------|-------------|------------|----------------------------|
+| Despido objetivo | 15 días preaviso | Art. 53.1.c ET | Despido improcedente |
+| Despido disciplinario | Sin preaviso pero inmediato | Art. 55 ET | Caducidad 20 días |
+| Modificación sustancial | 15 días preaviso | Art. 41 ET | Nulidad |
+| Movilidad geográfica | 30 días preaviso | Art. 40 ET | Nulidad |
+| ERTE | Según procedimiento | Art. 47 ET | Improcedencia |
+| Fin contrato temporal | 15 días si >1 año | Art. 49.1.c ET | Indemnización |
+| Cambio de turno/horario | Según convenio | Convenio colectivo | Sanción LISOS |
+
+### 2.2 Obligaciones con Administraciones (España)
+
+| Organismo | Modelo/Comunicación | Periodicidad | Plazo |
+|-----------|---------------------|--------------|-------|
+| **TGSS** | TC-1, TC-2 (Cotizaciones) | Mensual | Día 30 mes siguiente |
+| **TGSS** | Altas/Bajas (Sistema RED) | Puntual | 3 días antes/después |
+| **TGSS** | Variaciones de datos | Puntual | 6 días |
+| **AEAT** | Modelo 111 (Retenciones) | Trimestral/Mensual | Día 20 mes siguiente |
+| **AEAT** | Modelo 190 (Resumen anual) | Anual | Enero siguiente |
+| **AEAT** | Modelo 216 (No residentes) | Mensual/Trimestral | Día 20 |
+| **SEPE** | Contrat@ (Contratos) | Puntual | 10 días hábiles |
+| **SEPE** | Certificado empresa | Puntual | 10 días tras baja |
+
+### 2.3 Catálogo LISOS de Infracciones
+
+| Tipo | Clasificación | Sanción Mínima | Sanción Máxima |
+|------|---------------|----------------|----------------|
+| No alta trabajador | Muy grave | 7.501€ | 225.018€ |
+| Retraso cotización | Grave | 751€ | 7.500€ |
+| No entregar copia contrato | Leve | 70€ | 750€ |
+| Incumplir preaviso despido | Grave | 751€ | 7.500€ |
+| No informar representantes | Grave | 751€ | 7.500€ |
+| Transgresión jornada | Grave | 751€ | 7.500€ |
+| Incumplimiento PRL | Muy grave | 49.181€ | 983.736€ |
+
+---
+
+## Fase 3: Panel de Control de Cumplimiento
+
+### 3.1 Componente Principal: `HRComplianceDashboard`
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│ erp_hr_agreement_salary_concepts                                │
-├─────────────────────────────────────────────────────────────────┤
-│ id (uuid, PK)                                                   │
-│ agreement_id (uuid, FK)                                         │
-│ concept_code (text) - PLUS_CONV, PLUS_TRANS, PLUS_TOXIC, etc.   │
-│ concept_name (text) - Nombre descriptivo                        │
-│ concept_type (text) - earning / deduction                       │
-│ is_mandatory (boolean) - Obligatorio por convenio               │
-│ calculation_type (text) - fixed, percentage, formula            │
-│ base_amount (numeric)                                           │
-│ percentage (numeric)                                            │
-│ formula (text) - Fórmula de cálculo si aplica                   │
-│ applies_to_categories (text[]) - Categorías profesionales       │
-│ cotiza_ss (boolean) - Cotiza Seguridad Social                   │
-│ tributa_irpf (boolean) - Tributa IRPF                           │
-│ frequency (text) - monthly, annual, per_day                     │
-│ conditions (jsonb) - Condiciones de aplicación                  │
-│ is_active (boolean)                                             │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│  🎯 Panel de Cumplimiento Legal RRHH                               │
+├──────────┬──────────┬──────────┬──────────┬────────────────────────┤
+│ ⚠️ 3     │ 🟡 5     │ 🟢 12    │ 📋 8     │ 🔴 1 Riesgo Crítico   │
+│ Urgentes │ Próximas │ Al día   │ Comunic. │                        │
+│ (7 días) │ (30 días)│          │ Pendient.│                        │
+└──────────┴──────────┴──────────┴──────────┴────────────────────────┘
 ```
 
-### 1.4 Histórico de Recálculos y Validaciones
-Crear tabla `erp_hr_payroll_recalculations` para auditoría:
+### 3.2 Tabs del Panel
+
+1. **📋 Comunicaciones Empleados**
+   - Lista de comunicaciones pendientes/enviadas
+   - Generador con plantillas oficiales
+   - Validación de requisitos legales
+   - Tracking de entrega y firma
+
+2. **🏛️ Obligaciones AAPP**
+   - Calendario de vencimientos por organismo
+   - Estado de cumplimiento por modelo
+   - Alertas de próximos vencimientos
+   - Histórico de presentaciones
+
+3. **⚠️ Riesgos de Sanción**
+   - Evaluación automática de riesgos
+   - Pre-alertas configurables (30/15/7/3 días)
+   - Cuantificación de sanciones potenciales
+   - Recomendaciones de mitigación
+
+4. **📝 Checklist Cumplimiento**
+   - Por tipo de comunicación
+   - Items obligatorios marcados
+   - Validación automática por IA
+   - Exportación para auditoría
+
+---
+
+## Fase 4: Sistema de Alertas Inteligentes
+
+### 4.1 Niveles de Alerta
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│ erp_hr_payroll_recalculations                                   │
-├─────────────────────────────────────────────────────────────────┤
-│ id (uuid, PK)                                                   │
-│ payroll_id (uuid, FK)                                           │
-│ employee_id (uuid, FK)                                          │
-│ company_id (uuid, FK)                                           │
-│ period (text) - YYYY-MM                                         │
-│ original_values (jsonb) - Valores originales                    │
-│ recalculated_values (jsonb) - Valores recalculados              │
-│ differences (jsonb) - Diferencias detectadas                    │
-│ compliance_issues (jsonb) - Incumplimientos detectados          │
-│ ai_validation (jsonb) - Resultado validación IA RRHH            │
-│ legal_validation (jsonb) - Resultado validación Agente Jurídico │
-│ legal_validation_status (text) - pending, approved, rejected    │
-│ hr_approval (jsonb) - Aprobación Responsable Humano             │
-│ hr_approval_status (text) - pending, approved, rejected         │
-│ hr_approver_id (uuid) - Usuario que aprueba                     │
-│ status (text) - draft, ai_reviewed, legal_reviewed, approved    │
-│ notes (text)                                                    │
-│ created_at / approved_at (timestamptz)                          │
-└─────────────────────────────────────────────────────────────────┘
+PREALERTA (30 días)  →  ALERTA (15 días)  →  URGENTE (7 días)  →  CRÍTICO (3 días)
+     🔵                      🟡                    🟠                   🔴
+  Informativo            Planificar           Actuar ahora        Riesgo sanción
+```
+
+### 4.2 Flujo de Notificaciones
+
+```text
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│  Detección de   │─────▶│  Agente IA      │─────▶│  Agente IA      │
+│  Riesgo/Plazo   │      │  RRHH           │      │  Jurídico       │
+└─────────────────┘      │  (Seguimiento)  │      │  (Análisis)     │
+                         └─────────────────┘      └─────────────────┘
+                                │                        │
+                                ▼                        ▼
+                         ┌─────────────────┐      ┌─────────────────┐
+                         │  Notificación   │      │  Defensa Legal  │
+                         │  Responsable HR │      │  (si procede)   │
+                         └─────────────────┘      └─────────────────┘
+```
+
+### 4.3 Triggers Automáticos
+
+- **Cron diario 08:00**: Revisar vencimientos próximos
+- **Cron semanal lunes**: Informe de cumplimiento
+- **Evento contrato**: Recordar comunicación Contrat@
+- **Evento despido**: Iniciar checklist de requisitos
+- **Evento baja SS**: Recordar certificado empresa SEPE
+
+---
+
+## Fase 5: Automatización de Comunicaciones
+
+### 5.1 Generador de Comunicaciones
+
+- Selección de tipo de comunicación
+- Autocompletado con datos del empleado
+- Inclusión automática de referencias legales
+- Validación de requisitos por IA
+- Generación de PDF oficial
+
+### 5.2 Plantillas por Jurisdicción
+
+**España:**
+- Carta de despido objetivo (Art. 52/53 ET)
+- Carta de despido disciplinario (Art. 54/55 ET)
+- Comunicación modificación sustancial (Art. 41 ET)
+- Comunicación a representantes sindicales (Art. 68 ET)
+- Comunicación ERTE (Art. 47 ET)
+
+**Andorra:**
+- Preavís de cessament (Codi Relacions Laborals)
+- Comunicació modificació contracte
+
+### 5.3 Checklist Automático
+
+Ejemplo para despido objetivo:
+```text
+☐ Carta por escrito con causa clara
+☐ Preaviso 15 días
+☐ Indemnización puesta a disposición (20 días/año)
+☐ Comunicación a representantes (si >50 empleados)
+☐ Acuse de recibo firmado
+☐ Baja en Seguridad Social (3 días)
+☐ Certificado empresa SEPE (10 días)
+☐ Finiquito calculado y firmado
 ```
 
 ---
 
-## Fase 2: Selector de Convenio Colectivo en Contratos
+## Fase 6: Edge Function de Cumplimiento
 
-### 2.1 Componente HRCollectiveAgreementSelect
-Crear un componente de búsqueda similar a `HRCNOSelect`:
-- Búsqueda por nombre o código de convenio
-- Filtrado automático por CNAE de la empresa
-- Información resumida (pagas extra, jornada, vacaciones)
-- Alerta si el convenio está próximo a expirar
+### 6.1 Nueva Edge Function: `erp-hr-compliance-monitor`
 
-### 2.2 Integración en HRContractFormDialog
-- Añadir campo **obligatorio** "Convenio Colectivo Aplicable"
-- Validación: No permitir guardar contrato sin convenio seleccionado
-- Auto-sugerencia basada en el CNAE de la empresa
-- Mostrar resumen del convenio seleccionado
+**Acciones:**
+- `check_deadlines`: Revisar vencimientos próximos
+- `evaluate_sanction_risk`: Evaluar riesgo de sanciones
+- `generate_communication`: Generar comunicación con plantilla
+- `validate_checklist`: Validar cumplimiento de requisitos
+- `notify_agents`: Notificar a Agentes IA (RRHH y Jurídico)
+- `get_obligation_calendar`: Calendario de obligaciones
+- `escalate_to_legal`: Escalar a revisión jurídica
 
-### 2.3 Actualización de HREmployeeFormDialog
-- Mostrar convenio aplicable del contrato activo
-- Información de categoría según tablas salariales del convenio
+### 6.2 Integración con Agentes
+
+```text
+erp-hr-compliance-monitor
+         │
+         ├──▶ erp-hr-ai-agent (seguimiento operativo)
+         │
+         └──▶ legal-ai-advisor (análisis jurídico y defensa)
+```
 
 ---
 
-## Fase 3: Motor de Recálculo de Nóminas
+## Fase 7: Cron Jobs Automáticos
 
-### 3.1 Edge Function `erp-hr-payroll-recalculation`
-Crear función que realice:
+### 7.1 Tareas Programadas
 
-**Entradas:**
-- employee_id o lista de empleados
-- period (YYYY-MM)
-- company_id
+| Tarea | Frecuencia | Hora | Descripción |
+|-------|------------|------|-------------|
+| `check_compliance_deadlines` | Diario | 08:00 | Revisar vencimientos |
+| `generate_sanction_alerts` | Diario | 09:00 | Generar pre-alertas |
+| `weekly_compliance_report` | Lunes | 08:00 | Informe semanal |
+| `monthly_admin_obligations` | Día 1 | 09:00 | Recordatorio mensual |
+| `notify_ai_agents` | Diario | 10:00 | Sincronizar con agentes |
 
-**Proceso de Recálculo:**
-1. **Obtener datos del empleado y contrato activo**
-2. **Cargar convenio colectivo aplicable**
-3. **Validar salario base vs. tablas salariales del convenio**
-4. **Aplicar conceptos obligatorios del convenio:**
-   - Plus de convenio
-   - Plus de antigüedad (según reglas del convenio)
-   - Plus de nocturnidad (si aplica)
-   - Plus de transporte
-   - Plus de toxicidad/peligrosidad (según CNAE)
-   - Complementos personales
-5. **Verificar pagas extraordinarias (14, 15 pagas)**
-6. **Calcular cotizaciones SS actualizadas:**
-   - Contingencias comunes (23.60% empresa / 4.70% trabajador)
-   - Desempleo (según tipo contrato)
-   - FOGASA (0.20%)
-   - Formación Profesional (0.60% / 0.10%)
-   - MEI (0.13%)
-7. **Calcular IRPF según situación personal**
-8. **Verificar cumplimiento de jornada laboral máxima**
-9. **Detectar posibles incumplimientos**
+---
 
-**Salida:**
-```json
-{
-  "recalculated_payroll": {...},
-  "differences": [...],
-  "compliance_issues": [...],
-  "recommendations": [...],
-  "requires_legal_review": true/false
+## Fase 8: Integración UI Completa
+
+### 8.1 Nuevos Componentes
+
+1. `HRComplianceDashboard.tsx` - Panel principal
+2. `HRCommunicationGeneratorDialog.tsx` - Generador comunicaciones
+3. `HRAdminObligationsPanel.tsx` - Obligaciones AAPP
+4. `HRSanctionRisksPanel.tsx` - Panel de riesgos
+5. `HRComplianceChecklistDialog.tsx` - Validador checklist
+6. `HRComplianceCalendar.tsx` - Calendario visual
+
+### 8.2 Integración en Navegación
+
+Añadir en `HRNavigationMenu.tsx`:
+```text
+Herramientas
+├── Vigilancia Normativa ✓ (existente)
+├── Cumplimiento Legal ← NUEVO
+│   ├── Comunicaciones Empleados
+│   ├── Obligaciones AAPP
+│   ├── Riesgos de Sanción
+│   └── Checklist
+└── ...
+```
+
+---
+
+## Resumen de Entregables
+
+| Fase | Componentes | Estimación |
+|------|-------------|------------|
+| **Fase 1** | 7 tablas + 3 funciones RPC | Base de datos |
+| **Fase 2** | Catálogos de obligaciones pre-poblados | Datos maestros |
+| **Fase 3** | Panel de control principal | 1 componente |
+| **Fase 4** | Sistema de alertas multinivel | 1 hook + triggers |
+| **Fase 5** | Generador automático + plantillas | 2 componentes |
+| **Fase 6** | Edge function de monitoreo | 1 función |
+| **Fase 7** | Cron jobs automáticos | Configuración |
+| **Fase 8** | Integración UI completa | 5 componentes |
+
+---
+
+## Sección Técnica
+
+### Estructura de Tablas (SQL)
+
+```sql
+-- Comunicaciones legales a empleados
+CREATE TABLE erp_hr_legal_communications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID NOT NULL,
+  employee_id UUID NOT NULL,
+  communication_type TEXT NOT NULL, -- despido_objetivo, despido_disciplinario, etc.
+  jurisdiction TEXT DEFAULT 'ES',
+  title TEXT NOT NULL,
+  content TEXT,
+  legal_references TEXT[],
+  required_notice_days INTEGER,
+  notice_date DATE,
+  effective_date DATE,
+  deadline_date DATE,
+  delivery_method TEXT, -- burofax, carta_certificada, email_certificado, mano
+  delivery_status TEXT DEFAULT 'draft',
+  delivered_at TIMESTAMPTZ,
+  acknowledged_at TIMESTAMPTZ,
+  acknowledgment_document_url TEXT,
+  union_notification_required BOOLEAN DEFAULT false,
+  union_notified_at TIMESTAMPTZ,
+  checklist_status JSONB DEFAULT '{}',
+  ai_validated BOOLEAN DEFAULT false,
+  ai_validation_notes TEXT,
+  legal_reviewed BOOLEAN DEFAULT false,
+  legal_review_notes TEXT,
+  created_by UUID,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Obligaciones con administraciones públicas
+CREATE TABLE erp_hr_admin_obligations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  jurisdiction TEXT NOT NULL, -- ES, AD, EU
+  organism TEXT NOT NULL, -- TGSS, AEAT, SEPE, ITSS, FOGASA
+  model_code TEXT, -- 111, 190, TC-1
+  obligation_name TEXT NOT NULL,
+  obligation_type TEXT NOT NULL, -- declaracion, comunicacion, liquidacion
+  periodicity TEXT NOT NULL, -- mensual, trimestral, anual, puntual
+  deadline_day INTEGER, -- día del mes
+  deadline_month INTEGER, -- mes (para anuales)
+  deadline_description TEXT,
+  legal_reference TEXT,
+  sanction_type TEXT, -- leve, grave, muy_grave
+  sanction_min DECIMAL(12,2),
+  sanction_max DECIMAL(12,2),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Vencimientos por empresa
+CREATE TABLE erp_hr_obligation_deadlines (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID NOT NULL,
+  obligation_id UUID REFERENCES erp_hr_admin_obligations(id),
+  period_start DATE,
+  period_end DATE,
+  deadline_date DATE NOT NULL,
+  status TEXT DEFAULT 'pending', -- pending, in_progress, completed, overdue
+  responsible_id UUID,
+  completed_at TIMESTAMPTZ,
+  document_url TEXT,
+  notes TEXT,
+  ai_reminded BOOLEAN DEFAULT false,
+  legal_reviewed BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Catálogo de riesgos de sanción
+CREATE TABLE erp_hr_sanction_risks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  jurisdiction TEXT NOT NULL,
+  legal_reference TEXT NOT NULL, -- Art. X LISOS
+  infraction_type TEXT NOT NULL,
+  classification TEXT NOT NULL, -- leve, grave, muy_grave
+  description TEXT NOT NULL,
+  sanction_min_minor DECIMAL(12,2),
+  sanction_max_minor DECIMAL(12,2),
+  sanction_min_medium DECIMAL(12,2),
+  sanction_max_medium DECIMAL(12,2),
+  sanction_min_major DECIMAL(12,2),
+  sanction_max_major DECIMAL(12,2),
+  preventive_measures TEXT[],
+  detection_triggers TEXT[],
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Alertas de riesgo de sanción
+CREATE TABLE erp_hr_sanction_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID NOT NULL,
+  risk_id UUID REFERENCES erp_hr_sanction_risks(id),
+  obligation_deadline_id UUID,
+  communication_id UUID,
+  alert_level TEXT DEFAULT 'prealert', -- prealert, alert, urgent, critical
+  days_remaining INTEGER,
+  potential_sanction_min DECIMAL(12,2),
+  potential_sanction_max DECIMAL(12,2),
+  title TEXT NOT NULL,
+  description TEXT,
+  recommended_actions TEXT[],
+  hr_agent_notified BOOLEAN DEFAULT false,
+  hr_agent_notified_at TIMESTAMPTZ,
+  legal_agent_notified BOOLEAN DEFAULT false,
+  legal_agent_notified_at TIMESTAMPTZ,
+  is_resolved BOOLEAN DEFAULT false,
+  resolved_at TIMESTAMPTZ,
+  resolution_notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Plantillas de comunicaciones
+CREATE TABLE erp_hr_communication_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  jurisdiction TEXT NOT NULL,
+  communication_type TEXT NOT NULL,
+  template_name TEXT NOT NULL,
+  template_content TEXT NOT NULL,
+  dynamic_fields JSONB DEFAULT '[]',
+  legal_references TEXT[],
+  checklist_items JSONB DEFAULT '[]',
+  is_official BOOLEAN DEFAULT false,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Checklist de cumplimiento
+CREATE TABLE erp_hr_compliance_checklist (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  communication_id UUID REFERENCES erp_hr_legal_communications(id),
+  item_order INTEGER,
+  item_text TEXT NOT NULL,
+  is_mandatory BOOLEAN DEFAULT true,
+  status TEXT DEFAULT 'pending', -- pending, completed, not_applicable
+  completed_at TIMESTAMPTZ,
+  completed_by UUID,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+### Patrones de Hook
+
+```typescript
+// useComplianceMonitor.ts
+export function useComplianceMonitor(companyId: string) {
+  // Estado: deadlines, alerts, communications, risks
+  // Acciones: checkDeadlines, evaluateRisks, generateCommunication
+  // Notificaciones: notifyHRAgent, notifyLegalAgent
 }
 ```
 
-### 3.2 Casuísticas Contempladas (Problemas comunes en RRHH)
+### Edge Function Pattern
 
-| Casuística | Verificación |
-|------------|--------------|
-| Salario mínimo por categoría | Validar vs. tablas convenio |
-| Antigüedad no aplicada | Detectar años y calcular plus |
-| Horas extra no compensadas | Verificar registro horario |
-| Plus convenio no pagado | Comparar con conceptos obligatorios |
-| Pagas extra prorrateadas incorrectamente | Validar cálculo 12/14/15 pagas |
-| Jornada parcial mal calculada | Proporcionalidad correcta |
-| Nocturnidad sin compensar | Detectar horarios nocturnos |
-| Festivos trabajados | Verificar compensación |
-| Vacaciones no disfrutadas | Alertar y calcular finiquito |
-| IRPF desactualizado | Recalcular según situación |
-| Cuotas sindicales | Verificar descuentos si procede |
-| Permisos retribuidos | Verificar no descuento |
-| Bajas IT | Verificar complementos convenio |
-| Teletrabajo | Compensación gastos (Ley 10/2021) |
-
----
-
-## Fase 4: Validación por IA y Flujo de Aprobación
-
-### 4.1 Revisión Automática por Agente IA RRHH
-Extender `erp-hr-ai-agent` con nueva acción `validate_payroll_recalculation`:
-
-```text
-Flujo:
-1. Recibir recálculo propuesto
-2. Analizar coherencia de datos
-3. Verificar contra normativa vigente
-4. Identificar riesgos de incumplimiento
-5. Generar informe de validación
-6. Decidir si requiere revisión legal
-```
-
-### 4.2 Coordinación con Agente Jurídico
-Extender `legal-ai-advisor` para recibir validaciones de nóminas:
-
-```text
-Tipos de revisión legal:
-- ALTO RIESGO: Salario bajo mínimo convenio
-- MEDIO RIESGO: Conceptos obligatorios no incluidos
-- BAJO RIESGO: Diferencias menores en cálculos
-```
-
-La función `validate_action` del agente jurídico recibirá:
-- Datos del recálculo
-- Informe del agente RRHH
-- Convenio colectivo aplicable
-- Jurisdicción
-
-### 4.3 Panel de Aprobación para Responsable RRHH
-Crear componente `HRPayrollRecalculationApprovalPanel`:
-- Lista de recálculos pendientes de aprobación
-- Detalle de diferencias detectadas
-- Validación IA visible
-- Validación legal visible
-- Botones: Aprobar / Rechazar / Solicitar más info
-- Comentarios y notas
-
----
-
-## Fase 5: Interfaz de Usuario
-
-### 5.1 HRPayrollRecalculationPanel (Nuevo Panel Principal)
-- Selector de período
-- Botón "Recalcular Todas las Nóminas"
-- Botón "Recalcular Empleado Específico"
-- Tabla con estado de cada recálculo:
-  - Empleado | Diferencia | Estado IA | Estado Legal | Estado HR
-- Filtros por estado, departamento, tipo de incidencia
-
-### 5.2 HRPayrollRecalculationDialog
-- Vista detallada de un recálculo
-- Comparativa lado a lado (Original vs. Recalculado)
-- Lista de incumplimientos con severidad
-- Recomendaciones de la IA
-- Opinión del Agente Jurídico
-- Formulario de aprobación
-
-### 5.3 HRSalaryConceptsManagerDialog
-- CRUD de conceptos salariales personalizados por empresa
-- Importar conceptos desde convenio
-- Activar/desactivar conceptos por categoría
-
-### 5.4 HRCollectiveAgreementsPanel
-- Listado de convenios cargados
-- Importador de convenios (manual o desde BOE)
-- Alertas de expiración de convenios
-- Visor de tablas salariales
-
----
-
-## Fase 6: Notificaciones y Alertas
-
-### 6.1 Alertas Automáticas
-- **Convenio próximo a expirar**: 30, 15, 7 días antes
-- **Nuevo convenio publicado**: Según CNAE de la empresa
-- **Incumplimiento detectado**: Notificación inmediata
-- **Recálculo pendiente de aprobación**: Notificación a Responsable HR
-
-### 6.2 Integración con Panel de Alertas HR
-Añadir tipos de alerta:
-- `payroll_compliance_issue`
-- `agreement_expiring`
-- `recalculation_pending_approval`
-
----
-
-## Fase 7: Base de Conocimiento Jurídico Complementaria
-
-### 7.1 Actualización de Knowledge Base Legal
-Añadir documentación específica para nóminas:
-- Estatuto de los Trabajadores (Arts. 26-31 sobre salarios)
-- Ley General de la Seguridad Social
-- Principales convenios colectivos por CNAE
-- Doctrina DGT sobre retribuciones
-- Jurisprudencia sobre salarios (CENDOJ)
-
-### 7.2 Sincronización Automática
-- Detectar actualizaciones de convenios en BOE/BOPA
-- Notificar cambios en tipos de cotización SS
-- Alertar sobre sentencias relevantes
-
----
-
-## Arquitectura del Flujo
-
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│                    FLUJO DE RECÁLCULO DE NÓMINAS                     │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  1. INICIO                                                           │
-│     └─► Usuario solicita recálculo (manual o automático mensual)     │
-│                                                                      │
-│  2. MOTOR DE RECÁLCULO (Edge Function)                               │
-│     ├─► Cargar datos empleado + contrato + convenio                  │
-│     ├─► Aplicar tablas salariales del convenio                       │
-│     ├─► Calcular todos los conceptos obligatorios                    │
-│     ├─► Verificar SS + IRPF actualizados                             │
-│     └─► Detectar diferencias e incumplimientos                       │
-│                                                                      │
-│  3. VALIDACIÓN IA RRHH                                               │
-│     ├─► Analizar coherencia del recálculo                            │
-│     ├─► Clasificar riesgo de incumplimiento                          │
-│     └─► Decidir si requiere revisión legal                           │
-│                                                                      │
-│  4. REVISIÓN AGENTE JURÍDICO (si riesgo medio/alto)                  │
-│     ├─► Verificar cumplimiento normativo                             │
-│     ├─► Evaluar riesgo legal                                         │
-│     └─► Emitir dictamen (aprobar/rechazar/modificar)                 │
-│                                                                      │
-│  5. APROBACIÓN RESPONSABLE HUMANO HR                                 │
-│     ├─► Revisar informe completo                                     │
-│     ├─► Aprobar / Rechazar / Solicitar cambios                       │
-│     └─► Firmar digitalmente la aprobación                            │
-│                                                                      │
-│  6. APLICACIÓN                                                       │
-│     ├─► Actualizar nómina con valores aprobados                      │
-│     ├─► Registrar en auditoría                                       │
-│     └─► Notificar al empleado si procede                             │
-│                                                                      │
-└──────────────────────────────────────────────────────────────────────┘
+```typescript
+// erp-hr-compliance-monitor/index.ts
+interface ComplianceRequest {
+  action: 'check_deadlines' | 'evaluate_risk' | 'generate_communication' | 
+          'validate_checklist' | 'notify_agents' | 'escalate_to_legal';
+  company_id: string;
+  // ...params específicos
+}
 ```
 
 ---
 
-## Archivos a Crear/Modificar
-
-### Nuevos Archivos
-| Archivo | Descripción |
-|---------|-------------|
-| `src/data/hr/collectiveAgreementsCatalog.ts` | Catálogo inicial de convenios |
-| `src/components/erp/hr/shared/HRCollectiveAgreementSelect.tsx` | Selector de convenios |
-| `src/components/erp/hr/HRPayrollRecalculationPanel.tsx` | Panel principal de recálculo |
-| `src/components/erp/hr/dialogs/HRPayrollRecalculationDialog.tsx` | Detalle de recálculo |
-| `src/components/erp/hr/dialogs/HRSalaryConceptsManagerDialog.tsx` | Gestión de conceptos |
-| `src/components/erp/hr/HRCollectiveAgreementsPanel.tsx` | Gestión de convenios |
-| `src/components/erp/hr/dialogs/HRPayrollApprovalDialog.tsx` | Dialog de aprobación |
-| `supabase/functions/erp-hr-payroll-recalculation/index.ts` | Motor de recálculo |
-| `src/data/legal/payrollComplianceDocs.ts` | Documentación legal nóminas |
-
-### Archivos a Modificar
-| Archivo | Cambios |
-|---------|---------|
-| `HRContractFormDialog.tsx` | Añadir selector de convenio obligatorio |
-| `HRPayrollPanel.tsx` | Integrar acceso a recálculo |
-| `HRPayrollEntryDialog.tsx` | Cargar conceptos desde convenio |
-| `erp-hr-ai-agent/index.ts` | Nueva acción validate_payroll_recalculation |
-| `legal-ai-advisor/index.ts` | Soporte para validación de nóminas |
-| `src/components/erp/hr/index.ts` | Exportar nuevos componentes |
-
----
-
-## Estimación de Esfuerzo
-
-| Fase | Complejidad | Componentes |
-|------|-------------|-------------|
-| Fase 1 - Base de Datos | Media | 4 migraciones |
-| Fase 2 - Selector Convenio | Baja | 2 componentes |
-| Fase 3 - Motor Recálculo | Alta | 1 edge function compleja |
-| Fase 4 - Validación IA | Alta | 2 edge functions |
-| Fase 5 - Interfaz Usuario | Media | 6 componentes |
-| Fase 6 - Notificaciones | Baja | Triggers + alertas |
-| Fase 7 - Knowledge Base | Baja | Datos estáticos |
-
----
-
-## Consideraciones Técnicas
-
-1. **Rendimiento**: El recálculo masivo se ejecutará en batch con límite de 50 empleados por llamada
-2. **Auditoría**: Todas las operaciones quedarán registradas en `erp_hr_payroll_recalculations`
-3. **Seguridad**: RLS restringirá acceso por empresa y rol (solo HR Managers pueden aprobar)
-4. **Internacionalización**: Soporte para convenios de España, Andorra y otros países
-5. **Escalabilidad**: Arquitectura preparada para múltiples empresas y convenios simultáneos
+¿Deseas que proceda con la implementación de este plan?
