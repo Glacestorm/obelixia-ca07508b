@@ -4,13 +4,26 @@
  * Incluye: Legislación, Reglamentos, Normativas, Convenios
  */
 
+// Valid legal_area values matching DB constraint
+export type LegalAreaCode = 
+  | 'labor' 
+  | 'corporate' 
+  | 'tax' 
+  | 'data_protection' 
+  | 'banking' 
+  | 'contract' 
+  | 'criminal' 
+  | 'administrative' 
+  | 'international' 
+  | 'intellectual_property';
+
 export interface EssentialKnowledgeItem {
   title: string;
   content: string;
   summary: string;
   knowledge_type: 'law' | 'regulation' | 'precedent' | 'doctrine' | 'template' | 'circular' | 'convention' | 'treaty';
   jurisdiction_code: string;
-  legal_area: string;
+  legal_area: LegalAreaCode;
   sub_area?: string;
   reference_code?: string;
   effective_date?: string;
@@ -61,7 +74,7 @@ ASPECTOS CLAVE PARA VALIDACIÓN:
     summary: 'Norma fundamental del derecho laboral español que regula las relaciones individuales y colectivas de trabajo',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Laboral',
+    legal_area: 'labor',
     sub_area: 'Contrato de trabajo',
     reference_code: 'RDL 2/2015',
     effective_date: '2015-10-24',
@@ -104,7 +117,7 @@ INFRACCIONES Y SANCIONES:
     summary: 'Marco normativo para garantizar la seguridad y salud de los trabajadores',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Laboral',
+    legal_area: 'labor',
     sub_area: 'Prevención de riesgos',
     reference_code: 'L 31/1995',
     effective_date: '1995-11-10',
@@ -153,7 +166,7 @@ PRESCRIPCIÓN: 4 años para:
     summary: 'Marco jurídico general del sistema tributario español',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Fiscal',
+    legal_area: 'tax',
     sub_area: 'General',
     reference_code: 'L 58/2003',
     effective_date: '2003-12-18',
@@ -194,7 +207,7 @@ OPERACIONES INTRACOMUNITARIAS:
     summary: 'Regulación del IVA como impuesto indirecto sobre el consumo',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Fiscal',
+    legal_area: 'tax',
     sub_area: 'IVA',
     reference_code: 'L 37/1992',
     effective_date: '1993-01-01',
@@ -238,7 +251,7 @@ OBLIGACIONES FORMALES:
     summary: 'Impuesto directo sobre la renta de sociedades y entidades jurídicas',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Fiscal',
+    legal_area: 'tax',
     sub_area: 'Impuesto Sociedades',
     reference_code: 'L 27/2014',
     effective_date: '2015-01-01',
@@ -285,7 +298,7 @@ RELEVANCIA PARA MÓDULO COMPRAS:
     summary: 'Plazos máximos de pago y medidas contra la morosidad en operaciones comerciales',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Mercantil',
+    legal_area: 'contract',
     sub_area: 'Contratación comercial',
     reference_code: 'L 15/2010',
     effective_date: '2010-07-07',
@@ -330,7 +343,7 @@ COMPRAVENTA MERCANTIL (arts. 325-345):
     summary: 'Normativa fundamental del derecho mercantil español',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Mercantil',
+    legal_area: 'corporate',
     sub_area: 'General',
     reference_code: 'RD 22/08/1885',
     effective_date: '1885-08-22',
@@ -385,7 +398,7 @@ SANCIONES:
     summary: 'Adaptación del RGPD al ordenamiento español y derechos digitales',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Protección de datos',
+    legal_area: 'data_protection',
     sub_area: 'RGPD',
     reference_code: 'LO 3/2018',
     effective_date: '2018-12-07',
@@ -437,7 +450,7 @@ TRANSFERÈNCIES INTERNACIONALS:
     summary: 'Marc normatiu andorrà de protecció de dades personals',
     knowledge_type: 'law',
     jurisdiction_code: 'AD',
-    legal_area: 'Protección de datos',
+    legal_area: 'data_protection',
     sub_area: 'APDA',
     reference_code: 'L 29/2021',
     effective_date: '2021-11-11',
@@ -478,7 +491,7 @@ OPERACIONS EXEMPLES:
     summary: 'Impuesto indirecto general de Andorra, equivalente al IVA',
     knowledge_type: 'law',
     jurisdiction_code: 'AD',
-    legal_area: 'Fiscal',
+    legal_area: 'tax',
     sub_area: 'IGI',
     reference_code: 'L 11/2012',
     effective_date: '2013-01-01',
@@ -534,7 +547,7 @@ SANCIONES (Art. 83):
     summary: 'Marco normativo europeo de protección de datos personales',
     knowledge_type: 'regulation',
     jurisdiction_code: 'EU',
-    legal_area: 'Protección de datos',
+    legal_area: 'data_protection',
     sub_area: 'RGPD',
     reference_code: 'R (UE) 2016/679',
     effective_date: '2018-05-25',
@@ -589,7 +602,7 @@ ENTRADA EN VIGOR: 17 enero 2025`,
     summary: 'Regulación europea de resiliencia operativa digital para el sector financiero',
     knowledge_type: 'regulation',
     jurisdiction_code: 'EU',
-    legal_area: 'Bancario',
+    legal_area: 'banking',
     sub_area: 'Tecnología financiera',
     reference_code: 'R (UE) 2022/2554',
     effective_date: '2025-01-17',
@@ -648,7 +661,7 @@ SANCIONES:
     summary: 'Directiva europea sobre ciberseguridad de redes y sistemas de información',
     knowledge_type: 'regulation',
     jurisdiction_code: 'EU',
-    legal_area: 'Tecnología',
+    legal_area: 'administrative',
     sub_area: 'Ciberseguridad',
     reference_code: 'D (UE) 2022/2555',
     effective_date: '2024-10-18',
@@ -709,7 +722,7 @@ SANCIONES:
     summary: 'Primera regulación integral de IA en el mundo',
     knowledge_type: 'regulation',
     jurisdiction_code: 'EU',
-    legal_area: 'Tecnología',
+    legal_area: 'administrative',
     sub_area: 'Inteligencia Artificial',
     reference_code: 'R (UE) 2024/1689',
     effective_date: '2024-08-01',
@@ -771,7 +784,7 @@ MODIFICACIÓN DE CONTRATOS (Arts. 203-207):
     summary: 'Regulación de la contratación de las Administraciones Públicas españolas',
     knowledge_type: 'law',
     jurisdiction_code: 'ES',
-    legal_area: 'Administrativo',
+    legal_area: 'administrative',
     sub_area: 'Contratación pública',
     reference_code: 'L 9/2017',
     effective_date: '2018-03-09',
@@ -817,7 +830,7 @@ RELEVANCIA PARA COMPRAS:
     summary: 'Términos comerciales internacionales que regulan obligaciones en compraventa internacional',
     knowledge_type: 'convention',
     jurisdiction_code: 'INT',
-    legal_area: 'Mercantil',
+    legal_area: 'international',
     sub_area: 'Comercio internacional',
     reference_code: 'Incoterms 2020',
     effective_date: '2020-01-01',
@@ -863,7 +876,7 @@ RELEVANCIA PARA COMPRAS:
     summary: 'Tratamiento fiscal de compras y ventas entre empresas de la UE',
     knowledge_type: 'regulation',
     jurisdiction_code: 'EU',
-    legal_area: 'Fiscal',
+    legal_area: 'tax',
     sub_area: 'IVA intracomunitario',
     reference_code: 'Dir 2006/112/CE',
     effective_date: '2007-01-01',
