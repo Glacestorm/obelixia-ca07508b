@@ -37,3 +37,17 @@ export type {
   TimePolicy, 
   DisconnectionPolicy 
 } from './useHRTimeTracking';
+
+// Phase 2 - Talent Management Hooks
+export { useHRTalentSkills } from './useHRTalentSkills';
+export type {
+  SkillGap,
+  SkillStrength,
+  SkillsAnalysis,
+  DevelopmentAction,
+  DevelopmentRecommendation,
+  DevelopmentPlan,
+  OpportunityMatch,
+  SuccessionCandidate,
+  CareerPath
+} from './useHRTalentSkills';

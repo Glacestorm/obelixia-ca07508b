@@ -111,3 +111,6 @@ export * from './compliance';
 
 // Fase: Integración RRHH ↔ Tesorería ↔ Contabilidad
 export * from './integration';
+
+// Fase 2: Gestión del Talento Avanzada
+export * from './talent';
