@@ -32,7 +32,8 @@ import {
   Rocket,
   ChevronRight,
   ChevronDown,
-  Calculator
+  Calculator,
+  Link2
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -116,6 +117,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'news', label: 'Noticias', icon: Newspaper },
         { id: 'knowledge', label: 'Normativa', icon: BookOpen },
         { id: 'legal-compliance', label: 'Cumplimiento Legal', icon: Shield },
+        { id: 'integration', label: 'Integración Módulos', icon: Link2 },
         { id: 'help', label: 'Ayuda', icon: HelpCircle },
       ]
     },

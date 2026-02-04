@@ -72,7 +72,11 @@ interface DashboardMetrics {
   syncHealthScore: number;
 }
 
-export function HRIntegrationDashboard() {
+interface HRIntegrationDashboardProps {
+  companyId: string;
+}
+
+export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
   const [integrations, setIntegrations] = useState<IntegrationStatus[]>([]);
@@ -497,19 +501,19 @@ export function HRIntegrationDashboard() {
         {/* Tab: Contabilidad */}
         <TabsContent value="accounting">
           <HRAccountingBridge 
-            companyId="current" 
+            companyId={companyId} 
             period={format(new Date(), 'yyyy-MM')}
           />
         </TabsContent>
 
         {/* Tab: Tesorería */}
         <TabsContent value="treasury">
-          <HRTreasurySync />
+          <HRTreasurySync companyId={companyId} />
         </TabsContent>
 
         {/* Tab: Seguridad Social */}
         <TabsContent value="social_security">
-          <HRSocialSecurityBridge companyId="current" />
+          <HRSocialSecurityBridge companyId={companyId} />
         </TabsContent>
       </Tabs>
     </div>
