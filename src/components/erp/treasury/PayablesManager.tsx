@@ -26,21 +26,25 @@ interface Payable {
   status: string;
   currency_code: string;
   supplier_id: string;
+  source_type?: string; // 'payroll' | 'ss_contribution' | 'irpf' | 'supplier'
+  source_reference?: string;
   created_at: string;
 }
 
 interface PayablesManagerProps {
   companyId: string;
+  filterBySource?: 'all' | 'payroll' | 'ss_contribution' | 'irpf' | 'supplier';
 }
 
-export function PayablesManager({ companyId }: PayablesManagerProps) {
+export function PayablesManager({ companyId, filterBySource = 'all' }: PayablesManagerProps) {
   const [payables, setPayables] = useState<Payable[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<string>(filterBySource);
 
   useEffect(() => {
     fetchPayables();
-  }, [companyId]);
+  }, [companyId, sourceFilter]);
 
   const fetchPayables = async () => {
     try {
@@ -51,11 +55,36 @@ export function PayablesManager({ companyId }: PayablesManagerProps) {
         .order('due_date', { ascending: true });
 
       if (error) throw error;
-      setPayables(data || []);
+      
+      // Filtrar por fuente en cliente si se especifica
+      let filteredData = data || [];
+      if (sourceFilter !== 'all') {
+        filteredData = filteredData.filter(p => (p as Payable).source_type === sourceFilter);
+      }
+      
+      setPayables(filteredData as Payable[]);
     } catch (err) {
       console.error('[PayablesManager] Error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getSourceIcon = (sourceType?: string) => {
+    switch (sourceType) {
+      case 'payroll': return <span className="text-blue-600">👤</span>;
+      case 'ss_contribution': return <span className="text-orange-600">🏛️</span>;
+      case 'irpf': return <span className="text-purple-600">📄</span>;
+      default: return <Building2 className="h-4 w-4 text-red-600" />;
+    }
+  };
+
+  const getSourceLabel = (sourceType?: string) => {
+    switch (sourceType) {
+      case 'payroll': return 'Nómina';
+      case 'ss_contribution': return 'TGSS';
+      case 'irpf': return 'IRPF';
+      default: return 'Proveedor';
     }
   };
 

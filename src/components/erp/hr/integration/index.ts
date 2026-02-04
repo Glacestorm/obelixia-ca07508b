@@ -4,3 +4,4 @@
  */
 
 export { HRAccountingBridge } from './HRAccountingBridge';
+export { HRTreasurySync } from './HRTreasurySync';
