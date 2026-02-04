@@ -91,6 +91,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'unions', label: 'Sindicatos', icon: UserCog },
         { id: 'documents', label: 'Documentos', icon: FolderOpen },
         { id: 'departments', label: 'Organización', icon: Building2 },
+        { id: 'regulatory-watch', label: 'Vigilancia Normativa', icon: Shield },
       ]
     },
     {
