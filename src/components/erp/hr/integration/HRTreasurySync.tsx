@@ -27,6 +27,7 @@ import {
   Banknote
 } from 'lucide-react';
 import { useHRTreasuryIntegration } from '@/hooks/admin/useHRTreasuryIntegration';
+import { useHRIntegrationLog } from '@/hooks/admin/hr';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { cn } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
@@ -106,6 +107,9 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
     integrations,
     fetchIntegrations
   } = useHRTreasuryIntegration();
+
+  // Hook de logging para registrar sincronizaciones
+  const { syncToTreasury: logToTreasury } = useHRIntegrationLog(effectiveCompanyId);
 
   // Cargar integraciones existentes
   useEffect(() => {
@@ -200,6 +204,15 @@ export function HRTreasurySync({ companyId }: HRTreasurySyncProps) {
         selectedPayrolls.includes(p.id) ? { ...p, treasury_synced: true } : p
       ));
       setSelectedPayrolls([]);
+
+      // Registrar en el log de integración
+      await logToTreasury({
+        payrollId: `batch-${selectedPayrolls.length}`,
+        payrollRef: `BATCH-${format(new Date(), 'yyyy-MM')}`,
+        period: format(new Date(), 'yyyy-MM'),
+        netAmount: totals.net,
+        dueDate: format(addDays(new Date(), 5), 'yyyy-MM-dd')
+      });
 
       toast.success(`${successCount} nóminas sincronizadas con tesorería`);
     } catch (error) {

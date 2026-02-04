@@ -3,7 +3,7 @@
  * Panel central para monitorizar sincronización RRHH ↔ Tesorería ↔ Contabilidad ↔ SS
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ import { toast } from 'sonner';
 import { HRAccountingBridge } from './HRAccountingBridge';
 import { HRTreasurySync } from './HRTreasurySync';
 import { HRSocialSecurityBridge } from './HRSocialSecurityBridge';
+import { useHRIntegrationLog } from '@/hooks/admin/hr';
 
 interface IntegrationStatus {
   id: string;
@@ -78,114 +79,96 @@ interface HRIntegrationDashboardProps {
 
 export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
-  const [isLoading, setIsLoading] = useState(false);
   const [integrations, setIntegrations] = useState<IntegrationStatus[]>([]);
-  const [events, setEvents] = useState<IntegrationEvent[]>([]);
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Hook de logging real
+  const {
+    logs,
+    metrics: hookMetrics,
+    isLoading,
+    fetchLogs,
+    calculateMetrics,
+    syncToAccounting,
+    syncToTreasury,
+    syncToSocialSecurity
+  } = useHRIntegrationLog(companyId);
+
+  // Convertir logs a eventos
+  const events = useMemo<IntegrationEvent[]>(() => {
+    return logs.slice(0, 10).map(log => ({
+      id: log.id,
+      type: log.status === 'completed' ? 'sync' : log.status === 'failed' ? 'error' : 'info',
+      module: log.integration_type === 'accounting' ? 'Contabilidad' 
+        : log.integration_type === 'treasury' ? 'Tesorería' 
+        : log.integration_type === 'social_security' ? 'Seguridad Social' 
+        : log.integration_type,
+      message: `${log.action} - ${log.source_type || 'Sistema'}`,
+      timestamp: log.performed_at || new Date().toISOString(),
+      details: log.details as Record<string, unknown>
+    }));
+  }, [logs]);
+
+  // Métricas derivadas
+  const metrics = useMemo<DashboardMetrics | null>(() => {
+    if (!hookMetrics) return null;
+    return {
+      totalPayrolls: hookMetrics.totalPayrolls,
+      syncedToAccounting: hookMetrics.syncedToAccounting,
+      syncedToTreasury: hookMetrics.syncedToTreasury,
+      syncedToSS: hookMetrics.syncedToSS,
+      pendingSync: hookMetrics.pendingSync,
+      errorCount: hookMetrics.failedSync,
+      lastFullSync: new Date().toISOString(),
+      syncHealthScore: hookMetrics.syncHealthScore
+    };
+  }, [hookMetrics]);
 
   // Cargar datos de integración
   const loadIntegrationData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Simular carga de datos (en producción vendría de edge function)
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Mock data - en producción se obtendría de erp_hr_integration_log
+    await fetchLogs();
+    await calculateMetrics();
+    
+    // Generar estado de integraciones desde métricas
+    if (hookMetrics) {
       const mockIntegrations: IntegrationStatus[] = [
         {
           id: 'acc-int',
           name: 'Contabilidad (PGC 2007)',
           module: 'accounting',
-          status: 'synced',
+          status: hookMetrics.syncedToAccounting > 0 ? 'synced' : 'pending',
           lastSync: new Date().toISOString(),
-          pendingItems: 0,
-          syncedItems: 45,
-          errorCount: 0,
-          healthScore: 100
+          pendingItems: hookMetrics.pendingSync,
+          syncedItems: hookMetrics.syncedToAccounting,
+          errorCount: hookMetrics.failedSync,
+          healthScore: hookMetrics.syncHealthScore
         },
         {
           id: 'tres-int',
           name: 'Tesorería (Vencimientos)',
           module: 'treasury',
-          status: 'pending',
-          lastSync: subDays(new Date(), 1).toISOString(),
-          pendingItems: 3,
-          syncedItems: 42,
+          status: hookMetrics.syncedToTreasury > 0 ? 'synced' : 'pending',
+          lastSync: new Date().toISOString(),
+          pendingItems: hookMetrics.pendingSync,
+          syncedItems: hookMetrics.syncedToTreasury,
           errorCount: 0,
-          healthScore: 93
+          healthScore: hookMetrics.syncHealthScore
         },
         {
           id: 'ss-int',
           name: 'Seguridad Social (TGSS)',
           module: 'social_security',
-          status: 'synced',
+          status: hookMetrics.syncedToSS > 0 ? 'synced' : 'pending',
           lastSync: new Date().toISOString(),
           pendingItems: 0,
-          syncedItems: 12,
+          syncedItems: hookMetrics.syncedToSS,
           errorCount: 0,
-          healthScore: 100
+          healthScore: hookMetrics.syncHealthScore
         }
       ];
-
-      const mockEvents: IntegrationEvent[] = [
-        {
-          id: 'evt-1',
-          type: 'sync',
-          module: 'Contabilidad',
-          message: 'Asiento nóminas Enero 2026 contabilizado correctamente',
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: 'evt-2',
-          type: 'sync',
-          module: 'Seguridad Social',
-          message: 'Cuotas TC1 Enero sincronizadas con Tesorería',
-          timestamp: subDays(new Date(), 0.5).toISOString()
-        },
-        {
-          id: 'evt-3',
-          type: 'info',
-          module: 'Tesorería',
-          message: '3 vencimientos de nómina pendientes de confirmar',
-          timestamp: subDays(new Date(), 1).toISOString()
-        },
-        {
-          id: 'evt-4',
-          type: 'sync',
-          module: 'Contabilidad',
-          message: 'Finiquito contabilizado - Empleado #1042',
-          timestamp: subDays(new Date(), 2).toISOString()
-        },
-        {
-          id: 'evt-5',
-          type: 'warning',
-          module: 'Seguridad Social',
-          message: 'Diferencia de 0.02€ en cuadre de bases - ajustado automáticamente',
-          timestamp: subDays(new Date(), 3).toISOString()
-        }
-      ];
-
-      const mockMetrics: DashboardMetrics = {
-        totalPayrolls: 45,
-        syncedToAccounting: 45,
-        syncedToTreasury: 42,
-        syncedToSS: 12,
-        pendingSync: 3,
-        errorCount: 0,
-        lastFullSync: new Date().toISOString(),
-        syncHealthScore: 98
-      };
-
       setIntegrations(mockIntegrations);
-      setEvents(mockEvents);
-      setMetrics(mockMetrics);
-    } catch (error) {
-      console.error('[HRIntegrationDashboard] Error loading data:', error);
-      toast.error('Error al cargar datos de integración');
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [fetchLogs, calculateMetrics, hookMetrics]);
 
   useEffect(() => {
     loadIntegrationData();
@@ -193,17 +176,16 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
 
   // Sincronización completa
   const handleFullSync = async () => {
-    setIsLoading(true);
+    setIsSyncing(true);
     toast.info('Iniciando sincronización completa...');
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
       await loadIntegrationData();
       toast.success('Sincronización completa finalizada');
     } catch (error) {
       toast.error('Error en sincronización');
     } finally {
-      setIsLoading(false);
+      setIsSyncing(false);
     }
   };
 
