@@ -1,514 +1,380 @@
 
-# Plan de Implementación: Sistema de Alertas de Cumplimiento Legal y Comunicaciones Obligatorias
+# Plan de Integración: RRHH ↔ Tesorería ↔ Contabilidad
 
-## Resumen Ejecutivo
+## Contexto Legal y Normativo
 
-Se implementará un sistema integral de alertas y automatización para:
-1. **Comunicaciones obligatorias con empleados** (despidos, modificaciones contractuales, cambios de convenio)
-2. **Obligaciones con administraciones públicas** (Seguridad Social, Hacienda, SEPE, inspección)
-3. **Sistema de pre-alertas para evitar sanciones** (basado en LISOS - Ley de Infracciones y Sanciones del Orden Social)
-4. **Comunicaciones automáticas** con formularios oficiales y checklist de cumplimiento
-5. **Coordinación con Agentes IA** (RRHH y Jurídico) para seguimiento y defensa
+La vinculación entre estos módulos debe cumplir con:
 
----
-
-## Fase 1: Infraestructura de Base de Datos
-
-### 1.1 Nuevas Tablas
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  erp_hr_legal_communications                                    │
-├─────────────────────────────────────────────────────────────────┤
-│ - Registro de todas las comunicaciones obligatorias             │
-│ - Tipos: despido, modificación sustancial, ERTE, cambio turno   │
-│ - Estados: borrador, enviada, recibida, firmada, archivada      │
-│ - Plazos legales y fechas límite                               │
-│ - Canales: carta certificada, burofax, email certificado, mano  │
-│ - Acuse de recibo y firma digital                               │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│  erp_hr_admin_obligations                                       │
-├─────────────────────────────────────────────────────────────────┤
-│ - Obligaciones con AAPP por jurisdicción (ES, AD, EU)           │
-│ - Tipos: declaración, comunicación, liquidación, certificado    │
-│ - Periodicidad: mensual, trimestral, anual, puntual             │
-│ - Organismo: TGSS, AEAT, SEPE, ITSS, FOGASA                     │
-│ - Modelo oficial y plazos                                       │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│  erp_hr_obligation_deadlines                                    │
-├─────────────────────────────────────────────────────────────────┤
-│ - Calendario de vencimientos por empresa                        │
-│ - Estado: pendiente, en_proceso, completada, vencida            │
-│ - Responsable asignado                                          │
-│ - Documentación adjunta                                         │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│  erp_hr_sanction_risks                                          │
-├─────────────────────────────────────────────────────────────────┤
-│ - Catálogo de infracciones LISOS y otras normativas             │
-│ - Clasificación: leve, grave, muy grave                         │
-│ - Cuantías de sanción (mín/máx por grado)                       │
-│ - Artículos de referencia                                       │
-│ - Medidas preventivas                                           │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│  erp_hr_sanction_alerts                                         │
-├─────────────────────────────────────────────────────────────────┤
-│ - Pre-alertas de riesgo de sanción                              │
-│ - Nivel: prealerta, alerta, urgente, crítico                    │
-│ - Días restantes para vencimiento                               │
-│ - Notificación a Agente IA RRHH                                │
-│ - Escalado a Agente IA Jurídico                                 │
-│ - Acciones correctivas propuestas                               │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│  erp_hr_communication_templates                                 │
-├─────────────────────────────────────────────────────────────────┤
-│ - Plantillas de comunicaciones oficiales                        │
-│ - Por tipo: despido objetivo, disciplinario, ERTE, etc.         │
-│ - Por jurisdicción: ES, AD, EU                                  │
-│ - Campos dinámicos para autocompletado                          │
-│ - Referencias legales incluidas                                 │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│  erp_hr_compliance_checklist                                    │
-├─────────────────────────────────────────────────────────────────┤
-│ - Checklist de cumplimiento por tipo de comunicación            │
-│ - Items obligatorios vs recomendados                            │
-│ - Estado: pendiente, completado, no_aplica                      │
-│ - Validación automática por IA                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 1.2 Funciones RPC
-
-- `get_upcoming_deadlines(company_id, days_ahead)`: Obligaciones próximas
-- `get_sanction_risk_assessment(company_id)`: Evaluación de riesgo de sanciones
-- `get_communication_compliance_status(company_id)`: Estado de cumplimiento
+- **Plan General Contable (PGC 2007)**: Grupo 64 para gastos de personal
+- **Ley General Tributaria (LGT)**: Obligaciones de retención IRPF
+- **Ley General de Seguridad Social (LGSS)**: Cotizaciones y liquidaciones
+- **Ley 15/2010**: Plazos de pago y gestión de tesorería
+- **Estatuto de los Trabajadores (ET)**: Art. 29 sobre pago de salarios
 
 ---
 
-## Fase 2: Catálogo de Obligaciones Legales
-
-### 2.1 Comunicaciones a Empleados (España - Art. ET)
-
-| Tipo | Plazo Legal | Base Legal | Consecuencia Incumplimiento |
-|------|-------------|------------|----------------------------|
-| Despido objetivo | 15 días preaviso | Art. 53.1.c ET | Despido improcedente |
-| Despido disciplinario | Sin preaviso pero inmediato | Art. 55 ET | Caducidad 20 días |
-| Modificación sustancial | 15 días preaviso | Art. 41 ET | Nulidad |
-| Movilidad geográfica | 30 días preaviso | Art. 40 ET | Nulidad |
-| ERTE | Según procedimiento | Art. 47 ET | Improcedencia |
-| Fin contrato temporal | 15 días si >1 año | Art. 49.1.c ET | Indemnización |
-| Cambio de turno/horario | Según convenio | Convenio colectivo | Sanción LISOS |
-
-### 2.2 Obligaciones con Administraciones (España)
-
-| Organismo | Modelo/Comunicación | Periodicidad | Plazo |
-|-----------|---------------------|--------------|-------|
-| **TGSS** | TC-1, TC-2 (Cotizaciones) | Mensual | Día 30 mes siguiente |
-| **TGSS** | Altas/Bajas (Sistema RED) | Puntual | 3 días antes/después |
-| **TGSS** | Variaciones de datos | Puntual | 6 días |
-| **AEAT** | Modelo 111 (Retenciones) | Trimestral/Mensual | Día 20 mes siguiente |
-| **AEAT** | Modelo 190 (Resumen anual) | Anual | Enero siguiente |
-| **AEAT** | Modelo 216 (No residentes) | Mensual/Trimestral | Día 20 |
-| **SEPE** | Contrat@ (Contratos) | Puntual | 10 días hábiles |
-| **SEPE** | Certificado empresa | Puntual | 10 días tras baja |
-
-### 2.3 Catálogo LISOS de Infracciones
-
-| Tipo | Clasificación | Sanción Mínima | Sanción Máxima |
-|------|---------------|----------------|----------------|
-| No alta trabajador | Muy grave | 7.501€ | 225.018€ |
-| Retraso cotización | Grave | 751€ | 7.500€ |
-| No entregar copia contrato | Leve | 70€ | 750€ |
-| Incumplir preaviso despido | Grave | 751€ | 7.500€ |
-| No informar representantes | Grave | 751€ | 7.500€ |
-| Transgresión jornada | Grave | 751€ | 7.500€ |
-| Incumplimiento PRL | Muy grave | 49.181€ | 983.736€ |
-
----
-
-## Fase 3: Panel de Control de Cumplimiento
-
-### 3.1 Componente Principal: `HRComplianceDashboard`
+## Arquitectura Propuesta
 
 ```text
-┌────────────────────────────────────────────────────────────────────┐
-│  🎯 Panel de Cumplimiento Legal RRHH                               │
-├──────────┬──────────┬──────────┬──────────┬────────────────────────┤
-│ ⚠️ 3     │ 🟡 5     │ 🟢 12    │ 📋 8     │ 🔴 1 Riesgo Crítico   │
-│ Urgentes │ Próximas │ Al día   │ Comunic. │                        │
-│ (7 días) │ (30 días)│          │ Pendient.│                        │
-└──────────┴──────────┴──────────┴──────────┴────────────────────────┘
-```
-
-### 3.2 Tabs del Panel
-
-1. **📋 Comunicaciones Empleados**
-   - Lista de comunicaciones pendientes/enviadas
-   - Generador con plantillas oficiales
-   - Validación de requisitos legales
-   - Tracking de entrega y firma
-
-2. **🏛️ Obligaciones AAPP**
-   - Calendario de vencimientos por organismo
-   - Estado de cumplimiento por modelo
-   - Alertas de próximos vencimientos
-   - Histórico de presentaciones
-
-3. **⚠️ Riesgos de Sanción**
-   - Evaluación automática de riesgos
-   - Pre-alertas configurables (30/15/7/3 días)
-   - Cuantificación de sanciones potenciales
-   - Recomendaciones de mitigación
-
-4. **📝 Checklist Cumplimiento**
-   - Por tipo de comunicación
-   - Items obligatorios marcados
-   - Validación automática por IA
-   - Exportación para auditoría
-
----
-
-## Fase 4: Sistema de Alertas Inteligentes
-
-### 4.1 Niveles de Alerta
-
-```text
-PREALERTA (30 días)  →  ALERTA (15 días)  →  URGENTE (7 días)  →  CRÍTICO (3 días)
-     🔵                      🟡                    🟠                   🔴
-  Informativo            Planificar           Actuar ahora        Riesgo sanción
-```
-
-### 4.2 Flujo de Notificaciones
-
-```text
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  Detección de   │─────▶│  Agente IA      │─────▶│  Agente IA      │
-│  Riesgo/Plazo   │      │  RRHH           │      │  Jurídico       │
-└─────────────────┘      │  (Seguimiento)  │      │  (Análisis)     │
-                         └─────────────────┘      └─────────────────┘
-                                │                        │
-                                ▼                        ▼
-                         ┌─────────────────┐      ┌─────────────────┐
-                         │  Notificación   │      │  Defensa Legal  │
-                         │  Responsable HR │      │  (si procede)   │
-                         └─────────────────┘      └─────────────────┘
-```
-
-### 4.3 Triggers Automáticos
-
-- **Cron diario 08:00**: Revisar vencimientos próximos
-- **Cron semanal lunes**: Informe de cumplimiento
-- **Evento contrato**: Recordar comunicación Contrat@
-- **Evento despido**: Iniciar checklist de requisitos
-- **Evento baja SS**: Recordar certificado empresa SEPE
-
----
-
-## Fase 5: Automatización de Comunicaciones
-
-### 5.1 Generador de Comunicaciones
-
-- Selección de tipo de comunicación
-- Autocompletado con datos del empleado
-- Inclusión automática de referencias legales
-- Validación de requisitos por IA
-- Generación de PDF oficial
-
-### 5.2 Plantillas por Jurisdicción
-
-**España:**
-- Carta de despido objetivo (Art. 52/53 ET)
-- Carta de despido disciplinario (Art. 54/55 ET)
-- Comunicación modificación sustancial (Art. 41 ET)
-- Comunicación a representantes sindicales (Art. 68 ET)
-- Comunicación ERTE (Art. 47 ET)
-
-**Andorra:**
-- Preavís de cessament (Codi Relacions Laborals)
-- Comunicació modificació contracte
-
-### 5.3 Checklist Automático
-
-Ejemplo para despido objetivo:
-```text
-☐ Carta por escrito con causa clara
-☐ Preaviso 15 días
-☐ Indemnización puesta a disposición (20 días/año)
-☐ Comunicación a representantes (si >50 empleados)
-☐ Acuse de recibo firmado
-☐ Baja en Seguridad Social (3 días)
-☐ Certificado empresa SEPE (10 días)
-☐ Finiquito calculado y firmado
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         FLUJO DE INTEGRACIÓN                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────────┐  │
+│  │   RRHH      │────▶│   TESORERÍA      │────▶│    CONTABILIDAD         │  │
+│  │             │     │                  │     │                         │  │
+│  │ • Nóminas   │     │ • Pagos SEPA     │     │ • Asientos automáticos  │  │
+│  │ • Finiquitos│     │ • Vencimientos   │     │ • Grupo 64 PGC          │  │
+│  │ • Seg.Social│     │ • Conciliación   │     │ • Modelo 111/190        │  │
+│  │ • Contratos │     │ • Cash Flow      │     │ • Cierre mensual        │  │
+│  └─────────────┘     └──────────────────┘     └─────────────────────────┘  │
+│        │                      │                          │                  │
+│        └──────────────────────┴──────────────────────────┘                  │
+│                               │                                             │
+│                    ┌──────────▼──────────┐                                  │
+│                    │  TABLAS PUENTE      │                                  │
+│                    │  erp_hr_accounting_ │                                  │
+│                    │  integration        │                                  │
+│                    └─────────────────────┘                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Fase 6: Edge Function de Cumplimiento
+## FASE 1: Infraestructura de Base de Datos (Semana 1)
 
-### 6.1 Nueva Edge Function: `erp-hr-compliance-monitor`
+### Objetivo
+Crear las tablas de vinculación y las funciones de mapeo contable.
 
-**Acciones:**
-- `check_deadlines`: Revisar vencimientos próximos
-- `evaluate_sanction_risk`: Evaluar riesgo de sanciones
-- `generate_communication`: Generar comunicación con plantilla
-- `validate_checklist`: Validar cumplimiento de requisitos
-- `notify_agents`: Notificar a Agentes IA (RRHH y Jurídico)
-- `get_obligation_calendar`: Calendario de obligaciones
-- `escalate_to_legal`: Escalar a revisión jurídica
+### Entregables
 
-### 6.2 Integración con Agentes
+**1.1 Nueva tabla `erp_hr_accounting_mapping`**
+- Mapeo de conceptos de nómina a cuentas PGC
+- Campos: `concept_code`, `account_code`, `account_name`, `debit_credit`, `jurisdiction`
+- Datos maestros precargados:
+  - 640 - Sueldos y salarios
+  - 641 - Indemnizaciones
+  - 642 - Seguridad Social empresa
+  - 4751 - HP Acreedora IRPF
+  - 476 - Organismos SS acreedores
+  - 465 - Remuneraciones pendientes de pago
+  - 572 - Bancos (contrapartida pago)
 
+**1.2 Nueva tabla `erp_hr_treasury_integration`**
+- Vínculo entre nóminas/finiquitos y vencimientos de tesorería
+- Campos: `source_type` (payroll/settlement/ss_contribution), `source_id`, `payable_id`, `amount`, `due_date`, `status`
+
+**1.3 Nueva tabla `erp_hr_journal_entries`**
+- Registro de asientos generados desde RRHH
+- Campos: `source_type`, `source_id`, `journal_entry_id`, `entry_date`, `auto_generated`, `validation_status`
+
+**1.4 Funciones SQL**
+- `fn_map_payroll_to_accounts()`: Descompone nómina en líneas contables
+- `fn_create_payroll_payable()`: Genera vencimiento en tesorería
+- `fn_payroll_to_journal_entry()`: Genera asiento contable
+
+---
+
+## FASE 2: Contabilización Automática de Nóminas (Semana 2)
+
+### Objetivo
+Generar asientos contables automáticos cuando se calculan/confirman nóminas.
+
+### Entregables
+
+**2.1 Hook `useHRAccountingIntegration`**
+```typescript
+// Funciones principales:
+- generatePayrollJournalEntry(payrollId)
+- generateSettlementJournalEntry(settlementId)  
+- generateSSContributionEntry(periodId)
+- validateAccountingEntry(entryId)
+- reverseAccountingEntry(entryId)
+```
+
+**2.2 Plantillas de Asientos PGC**
+
+| Concepto | Debe | Haber |
+|----------|------|-------|
+| Sueldos brutos | 640 | - |
+| Retención IRPF | - | 4751 |
+| SS Trabajador | - | 476 |
+| Neto a pagar | - | 465 |
+| SS Empresa | 642 | 476 |
+| Pago nómina | 465 | 572 |
+
+**2.3 Edge Function `erp-hr-accounting-bridge`**
+- Acciones: `generate_payroll_entry`, `generate_settlement_entry`, `generate_ss_entry`, `reverse_entry`
+- Validación de partida doble
+- Integración con módulo de auditoría
+
+---
+
+## FASE 3: Integración con Tesorería (Semana 3)
+
+### Objetivo
+Crear automáticamente vencimientos de pago en tesorería al confirmar nóminas.
+
+### Entregables
+
+**3.1 Flujo de Vencimientos**
 ```text
-erp-hr-compliance-monitor
+Nómina Calculada
+      │
+      ▼
+┌─────────────────┐
+│ Crear Payable   │
+│ en erp_payables │
+│                 │
+│ - Tipo: NOMINA  │
+│ - Fecha: día 30 │
+│ - Proveedor:    │
+│   EMPLEADOS     │
+└────────┬────────┘
          │
-         ├──▶ erp-hr-ai-agent (seguimiento operativo)
+         ▼
+┌─────────────────┐
+│ Remesa SEPA    │
+│ (opcional)      │
+└────────┬────────┘
          │
-         └──▶ legal-ai-advisor (análisis jurídico y defensa)
+         ▼
+┌─────────────────┐
+│ Conciliación   │
+│ Bancaria       │
+└─────────────────┘
 ```
 
+**3.2 Actualización `HRPayrollPanel`**
+- Botón "Generar Vencimiento Tesorería"
+- Estado de sincronización con tesorería
+- Enlace directo al vencimiento en TreasuryDashboard
+
+**3.3 Actualización `TreasuryDashboard`**
+- Filtro por tipo "Nóminas" en PayablesManager
+- Widget resumen gastos de personal en CashFlowForecast
+- Indicador de nóminas pendientes de pago
+
+**3.4 Hooks Compartidos**
+- `useHRTreasuryIntegration`: Sincroniza nóminas ↔ vencimientos
+- `usePayrollPayables`: Gestiona pagos de nómina
+
 ---
 
-## Fase 7: Cron Jobs Automáticos
+## FASE 4: Integración Seguridad Social (Semana 4)
 
-### 7.1 Tareas Programadas
+### Objetivo
+Vincular liquidaciones de SS con tesorería y contabilidad.
 
-| Tarea | Frecuencia | Hora | Descripción |
-|-------|------------|------|-------------|
-| `check_compliance_deadlines` | Diario | 08:00 | Revisar vencimientos |
-| `generate_sanction_alerts` | Diario | 09:00 | Generar pre-alertas |
-| `weekly_compliance_report` | Lunes | 08:00 | Informe semanal |
-| `monthly_admin_obligations` | Día 1 | 09:00 | Recordatorio mensual |
-| `notify_ai_agents` | Diario | 10:00 | Sincronizar con agentes |
+### Entregables
 
----
-
-## Fase 8: Integración UI Completa
-
-### 8.1 Nuevos Componentes
-
-1. `HRComplianceDashboard.tsx` - Panel principal
-2. `HRCommunicationGeneratorDialog.tsx` - Generador comunicaciones
-3. `HRAdminObligationsPanel.tsx` - Obligaciones AAPP
-4. `HRSanctionRisksPanel.tsx` - Panel de riesgos
-5. `HRComplianceChecklistDialog.tsx` - Validador checklist
-6. `HRComplianceCalendar.tsx` - Calendario visual
-
-### 8.2 Integración en Navegación
-
-Añadir en `HRNavigationMenu.tsx`:
+**4.1 Flujo SS Completo**
 ```text
-Herramientas
-├── Vigilancia Normativa ✓ (existente)
-├── Cumplimiento Legal ← NUEVO
-│   ├── Comunicaciones Empleados
-│   ├── Obligaciones AAPP
-│   ├── Riesgos de Sanción
-│   └── Checklist
-└── ...
+Cálculo Cotizaciones (HRSocialSecurityPanel)
+      │
+      ├──────────────────────────────────┐
+      ▼                                  ▼
+┌─────────────────┐           ┌─────────────────┐
+│ Asiento Contable│           │ Vencimiento TGSS│
+│                 │           │ en erp_payables │
+│ 642 / 476       │           │                 │
+│ (SS Empresa)    │           │ Fecha: día 30   │
+└─────────────────┘           └─────────────────┘
 ```
+
+**4.2 Actualización `HRSocialSecurityPanel`**
+- Botón "Contabilizar Período"
+- Estado de contabilización por período
+- Exportación datos para Modelo 111
+
+**4.3 Conexión con Declaraciones Fiscales**
+- Modelo 111: Retenciones trimestrales IRPF
+- Modelo 190: Resumen anual retenciones
+- Datos automáticos desde nóminas contabilizadas
 
 ---
 
-## Resumen de Entregables
+## FASE 5: Finiquitos y Liquidaciones (Semana 5)
 
-| Fase | Componentes | Estimación |
-|------|-------------|------------|
-| **Fase 1** | 7 tablas + 3 funciones RPC | Base de datos |
-| **Fase 2** | Catálogos de obligaciones pre-poblados | Datos maestros |
-| **Fase 3** | Panel de control principal | 1 componente |
-| **Fase 4** | Sistema de alertas multinivel | 1 hook + triggers |
-| **Fase 5** | Generador automático + plantillas | 2 componentes |
-| **Fase 6** | Edge function de monitoreo | 1 función |
-| **Fase 7** | Cron jobs automáticos | Configuración |
-| **Fase 8** | Integración UI completa | 5 componentes |
+### Objetivo
+Contabilización especial de finiquitos según tipo de despido.
+
+### Entregables
+
+**5.1 Plantillas por Tipo de Baja**
+
+| Tipo | Cuentas |
+|------|---------|
+| Baja voluntaria | 640, 465 |
+| Despido objetivo | 640, 641, 465 |
+| Despido improcedente | 640, 641, 465, 678 |
+| ERE | 640, 641, 1410 |
+
+**5.2 Actualización `HRSettlementsPanel`**
+- Paso adicional en workflow: "Contabilizar"
+- Vista previa del asiento antes de confirmar
+- Validación legal → contable integrada
+
+**5.3 Provisiones (Art. 104 PGC)**
+- Cuenta 1410: Provisión para reestructuraciones
+- Dotación automática en EREs
+- Reversión al efectuar pagos
+
+---
+
+## FASE 6: Dashboard Unificado y Reporting (Semana 6)
+
+### Objetivo
+Panel ejecutivo que muestre la visión integrada RRHH-Tesorería-Contabilidad.
+
+### Entregables
+
+**6.1 Componente `HRAccountingDashboard`**
+- KPIs:
+  - Coste de personal mensual/anual
+  - Ratio gastos personal / ingresos
+  - Deuda pendiente SS/IRPF
+  - Provisiones activas
+- Gráficos:
+  - Evolución gastos personal (grupo 64)
+  - Comparativa presupuesto vs real
+  - Aging de pagos a empleados
+
+**6.2 Informes Integrados**
+- Libro Mayor cuenta 640-649
+- Extracto movimientos por empleado
+- Conciliación nóminas-bancos
+- Informe para auditoría
+
+**6.3 Alertas Cruzadas**
+- Nómina sin contabilizar > 5 días
+- Vencimiento TGSS próximo (7 días)
+- Desviación presupuesto > 10%
+- Falta pago empleado > fecha legal
+
+---
+
+## FASE 7: Automatización Avanzada con IA (Semana 7-8)
+
+### Objetivo
+Orquestación inteligente del flujo completo.
+
+### Entregables
+
+**7.1 Edge Function `erp-hr-treasury-accounting-orchestrator`**
+- Flujo automático: Nómina → Asiento → Vencimiento → Remesa
+- Validación multinivel (IA + Legal + Contable)
+- Rollback automático si falla algún paso
+
+**7.2 Actualización Agente IA RRHH**
+- Nuevas acciones:
+  - `generate_accounting_entries`
+  - `sync_treasury`
+  - `validate_fiscal_compliance`
+- Contexto contable en respuestas
+
+**7.3 Trigger Automático**
+```text
+ON payroll.status = 'approved'
+  → generate_journal_entry()
+  → create_treasury_payable()
+  → notify_accounting_module()
+```
+
+**7.4 Reconciliación Inteligente**
+- Match automático: Pago banco ↔ Nómina
+- Sugerencias de asientos correctivos
+- Detección anomalías (pagos duplicados, importes incorrectos)
 
 ---
 
 ## Sección Técnica
 
-### Estructura de Tablas (SQL)
+### Nuevas Tablas de Base de Datos
 
 ```sql
--- Comunicaciones legales a empleados
-CREATE TABLE erp_hr_legal_communications (
+-- Mapeo conceptos nómina → cuentas PGC
+CREATE TABLE erp_hr_accounting_mapping (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL,
-  employee_id UUID NOT NULL,
-  communication_type TEXT NOT NULL, -- despido_objetivo, despido_disciplinario, etc.
-  jurisdiction TEXT DEFAULT 'ES',
-  title TEXT NOT NULL,
-  content TEXT,
-  legal_references TEXT[],
-  required_notice_days INTEGER,
-  notice_date DATE,
-  effective_date DATE,
-  deadline_date DATE,
-  delivery_method TEXT, -- burofax, carta_certificada, email_certificado, mano
-  delivery_status TEXT DEFAULT 'draft',
-  delivered_at TIMESTAMPTZ,
-  acknowledged_at TIMESTAMPTZ,
-  acknowledgment_document_url TEXT,
-  union_notification_required BOOLEAN DEFAULT false,
-  union_notified_at TIMESTAMPTZ,
-  checklist_status JSONB DEFAULT '{}',
-  ai_validated BOOLEAN DEFAULT false,
-  ai_validation_notes TEXT,
-  legal_reviewed BOOLEAN DEFAULT false,
-  legal_review_notes TEXT,
-  created_by UUID,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
+  concept_code TEXT NOT NULL,
+  concept_name TEXT NOT NULL,
+  account_code TEXT NOT NULL,
+  account_name TEXT NOT NULL,
+  debit_credit TEXT CHECK (debit_credit IN ('D', 'C')),
+  jurisdiction TEXT DEFAULT 'spain',
+  is_active BOOLEAN DEFAULT true
 );
 
--- Obligaciones con administraciones públicas
-CREATE TABLE erp_hr_admin_obligations (
+-- Integración RRHH → Tesorería
+CREATE TABLE erp_hr_treasury_integration (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  jurisdiction TEXT NOT NULL, -- ES, AD, EU
-  organism TEXT NOT NULL, -- TGSS, AEAT, SEPE, ITSS, FOGASA
-  model_code TEXT, -- 111, 190, TC-1
-  obligation_name TEXT NOT NULL,
-  obligation_type TEXT NOT NULL, -- declaracion, comunicacion, liquidacion
-  periodicity TEXT NOT NULL, -- mensual, trimestral, anual, puntual
-  deadline_day INTEGER, -- día del mes
-  deadline_month INTEGER, -- mes (para anuales)
-  deadline_description TEXT,
-  legal_reference TEXT,
-  sanction_type TEXT, -- leve, grave, muy_grave
-  sanction_min DECIMAL(12,2),
-  sanction_max DECIMAL(12,2),
-  is_active BOOLEAN DEFAULT true,
+  company_id UUID REFERENCES erp_companies(id),
+  source_type TEXT NOT NULL, -- 'payroll', 'settlement', 'ss_contribution'
+  source_id UUID NOT NULL,
+  payable_id UUID REFERENCES erp_payables(id),
+  amount NUMERIC(15,2) NOT NULL,
+  due_date DATE NOT NULL,
+  status TEXT DEFAULT 'pending',
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Vencimientos por empresa
-CREATE TABLE erp_hr_obligation_deadlines (
+-- Asientos generados desde RRHH
+CREATE TABLE erp_hr_journal_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL,
-  obligation_id UUID REFERENCES erp_hr_admin_obligations(id),
-  period_start DATE,
-  period_end DATE,
-  deadline_date DATE NOT NULL,
-  status TEXT DEFAULT 'pending', -- pending, in_progress, completed, overdue
-  responsible_id UUID,
-  completed_at TIMESTAMPTZ,
-  document_url TEXT,
-  notes TEXT,
-  ai_reminded BOOLEAN DEFAULT false,
-  legal_reviewed BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Catálogo de riesgos de sanción
-CREATE TABLE erp_hr_sanction_risks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  jurisdiction TEXT NOT NULL,
-  legal_reference TEXT NOT NULL, -- Art. X LISOS
-  infraction_type TEXT NOT NULL,
-  classification TEXT NOT NULL, -- leve, grave, muy_grave
-  description TEXT NOT NULL,
-  sanction_min_minor DECIMAL(12,2),
-  sanction_max_minor DECIMAL(12,2),
-  sanction_min_medium DECIMAL(12,2),
-  sanction_max_medium DECIMAL(12,2),
-  sanction_min_major DECIMAL(12,2),
-  sanction_max_major DECIMAL(12,2),
-  preventive_measures TEXT[],
-  detection_triggers TEXT[],
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Alertas de riesgo de sanción
-CREATE TABLE erp_hr_sanction_alerts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL,
-  risk_id UUID REFERENCES erp_hr_sanction_risks(id),
-  obligation_deadline_id UUID,
-  communication_id UUID,
-  alert_level TEXT DEFAULT 'prealert', -- prealert, alert, urgent, critical
-  days_remaining INTEGER,
-  potential_sanction_min DECIMAL(12,2),
-  potential_sanction_max DECIMAL(12,2),
-  title TEXT NOT NULL,
-  description TEXT,
-  recommended_actions TEXT[],
-  hr_agent_notified BOOLEAN DEFAULT false,
-  hr_agent_notified_at TIMESTAMPTZ,
-  legal_agent_notified BOOLEAN DEFAULT false,
-  legal_agent_notified_at TIMESTAMPTZ,
-  is_resolved BOOLEAN DEFAULT false,
-  resolved_at TIMESTAMPTZ,
-  resolution_notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Plantillas de comunicaciones
-CREATE TABLE erp_hr_communication_templates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  jurisdiction TEXT NOT NULL,
-  communication_type TEXT NOT NULL,
-  template_name TEXT NOT NULL,
-  template_content TEXT NOT NULL,
-  dynamic_fields JSONB DEFAULT '[]',
-  legal_references TEXT[],
-  checklist_items JSONB DEFAULT '[]',
-  is_official BOOLEAN DEFAULT false,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Checklist de cumplimiento
-CREATE TABLE erp_hr_compliance_checklist (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  communication_id UUID REFERENCES erp_hr_legal_communications(id),
-  item_order INTEGER,
-  item_text TEXT NOT NULL,
-  is_mandatory BOOLEAN DEFAULT true,
-  status TEXT DEFAULT 'pending', -- pending, completed, not_applicable
-  completed_at TIMESTAMPTZ,
-  completed_by UUID,
-  notes TEXT,
+  company_id UUID REFERENCES erp_companies(id),
+  source_type TEXT NOT NULL,
+  source_id UUID NOT NULL,
+  journal_entry_id UUID REFERENCES erp_journal_entries(id),
+  entry_date DATE NOT NULL,
+  auto_generated BOOLEAN DEFAULT true,
+  validation_status TEXT DEFAULT 'pending',
+  validated_by UUID,
+  validated_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
-### Patrones de Hook
+### Estructura de Archivos Nuevos
 
-```typescript
-// useComplianceMonitor.ts
-export function useComplianceMonitor(companyId: string) {
-  // Estado: deadlines, alerts, communications, risks
-  // Acciones: checkDeadlines, evaluateRisks, generateCommunication
-  // Notificaciones: notifyHRAgent, notifyLegalAgent
-}
+```text
+src/hooks/admin/
+  └── useHRAccountingIntegration.ts
+  └── useHRTreasuryIntegration.ts
+
+src/components/erp/hr/
+  └── integration/
+      └── HRAccountingBridge.tsx
+      └── HRTreasurySync.tsx
+      └── HRAccountingDashboard.tsx
+
+supabase/functions/
+  └── erp-hr-accounting-bridge/index.ts
+  └── erp-hr-treasury-accounting-orchestrator/index.ts
 ```
 
-### Edge Function Pattern
+### Dependencias entre Fases
 
-```typescript
-// erp-hr-compliance-monitor/index.ts
-interface ComplianceRequest {
-  action: 'check_deadlines' | 'evaluate_risk' | 'generate_communication' | 
-          'validate_checklist' | 'notify_agents' | 'escalate_to_legal';
-  company_id: string;
-  // ...params específicos
-}
-```
+| Fase | Depende de |
+|------|------------|
+| 1 | - |
+| 2 | Fase 1 |
+| 3 | Fases 1, 2 |
+| 4 | Fases 1, 2, 3 |
+| 5 | Fases 1, 2 |
+| 6 | Fases 1-5 |
+| 7 | Todas las anteriores |
 
 ---
 
-¿Deseas que proceda con la implementación de este plan?
+## Estimación de Tiempo
+
+| Fase | Duración | Complejidad |
+|------|----------|-------------|
+| Fase 1 | 3-4 días | Media |
+| Fase 2 | 4-5 días | Alta |
+| Fase 3 | 3-4 días | Media |
+| Fase 4 | 3-4 días | Media |
+| Fase 5 | 2-3 días | Media |
+| Fase 6 | 3-4 días | Media |
+| Fase 7 | 5-6 días | Alta |
+| **Total** | **~6-8 semanas** | |
