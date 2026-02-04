@@ -3,7 +3,7 @@
  * Permite recalcular nóminas verificando cumplimiento de convenios colectivos
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -127,6 +127,11 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
       setIsLoading(false);
     }
   }, [companyId, selectedPeriod]);
+
+  // Cargar datos al montar y cuando cambie el período
+  useEffect(() => {
+    loadRecalculations();
+  }, [loadRecalculations]);
 
   // Ejecutar recálculo individual
   const handleSingleRecalculation = async (employeeId: string) => {
