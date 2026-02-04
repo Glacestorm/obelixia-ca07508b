@@ -62,3 +62,19 @@ export type {
   CorporateCalendar,
   EntityRiskAssessment
 } from './useLegalEntityManagement';
+
+// Fase 9: AI Autonomous Agents & Predictive Legal Analytics
+export { usePredictiveLegalAnalytics } from './usePredictiveLegalAnalytics';
+export type {
+  LitigationPrediction,
+  LegalCostEstimate,
+  JurisprudenceTrend
+} from './usePredictiveLegalAnalytics';
+
+export { useLegalAutonomousCopilot } from './useLegalAutonomousCopilot';
+export type {
+  AutonomyLevel,
+  SituationAnalysis,
+  SuggestedAction,
+  TaskExecution
+} from './useLegalAutonomousCopilot';

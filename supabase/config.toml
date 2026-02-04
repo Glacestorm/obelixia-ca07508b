@@ -983,3 +983,12 @@ verify_jwt = true
 
 [functions.legal-entity-management]
 verify_jwt = true
+
+[functions.legal-predictive-analytics]
+verify_jwt = true
+
+[functions.legal-autonomous-copilot]
+verify_jwt = true
+
+[functions.blockchain-credentials]
+verify_jwt = true
