@@ -86,7 +86,7 @@ export function LegalValidationGatewayPanel({ companyId }: LegalValidationGatewa
   const [gatewayEnabled, setGatewayEnabled] = useState(true);
   const [lastSync, setLastSync] = useState<Date | null>(null);
 
-  // Demo validation rules
+  // Demo validation rules - incluye módulo de Compras
   const demoRules: ValidationRule[] = [
     {
       id: '1',
@@ -153,10 +153,66 @@ export function LegalValidationGatewayPanel({ companyId }: LegalValidationGatewa
       jurisdictions: ['ES', 'AD', 'EU'],
       description: 'Resolución anticipada de contratos',
       isActive: true
+    },
+    // Reglas para módulo de Compras
+    {
+      id: '7',
+      module: 'purchases' as any,
+      operation: 'purchase_order_high_value',
+      riskLevel: 'high',
+      requiresApproval: true,
+      autoBlock: false,
+      jurisdictions: ['ES', 'AD', 'EU'],
+      description: 'Orden de compra superior a €25,000',
+      isActive: true
+    },
+    {
+      id: '8',
+      module: 'purchases' as any,
+      operation: 'supplier_contract',
+      riskLevel: 'high',
+      requiresApproval: true,
+      autoBlock: false,
+      jurisdictions: ['ES', 'AD', 'EU'],
+      description: 'Contrato con nuevo proveedor',
+      isActive: true
+    },
+    {
+      id: '9',
+      module: 'purchases' as any,
+      operation: 'international_import',
+      riskLevel: 'critical',
+      requiresApproval: true,
+      autoBlock: true,
+      jurisdictions: ['ES', 'AD', 'EU'],
+      description: 'Importación internacional (aduanas, IVA intracomunitario)',
+      isActive: true
+    },
+    {
+      id: '10',
+      module: 'purchases' as any,
+      operation: 'supplier_payment_terms',
+      riskLevel: 'medium',
+      requiresApproval: false,
+      autoBlock: false,
+      jurisdictions: ['ES'],
+      description: 'Modificación condiciones de pago a proveedor (Ley 15/2010)',
+      isActive: true
+    },
+    {
+      id: '11',
+      module: 'purchases' as any,
+      operation: 'rfq_award',
+      riskLevel: 'medium',
+      requiresApproval: true,
+      autoBlock: false,
+      jurisdictions: ['ES', 'AD', 'EU'],
+      description: 'Adjudicación de solicitud de cotización (RFQ)',
+      isActive: true
     }
   ];
 
-  // Demo pending requests
+  // Demo pending requests - incluye compras
   const demoPendingRequests: ValidationRequest[] = [
     {
       id: '1',
@@ -187,11 +243,23 @@ export function LegalValidationGatewayPanel({ companyId }: LegalValidationGatewa
       riskLevel: 'critical',
       details: 'Destino: UAE. Importe: €125,000. Requiere verificación AML.',
       timestamp: new Date(Date.now() - 1800000).toISOString()
+    },
+    {
+      id: '4',
+      module: 'Compras',
+      operation: 'Orden de compra alto valor',
+      requestedBy: 'Director Compras',
+      status: 'pending',
+      riskLevel: 'high',
+      details: 'Proveedor: Tech Solutions S.L. Importe: €32,500. Material IT.',
+      timestamp: new Date(Date.now() - 900000).toISOString()
     }
   ];
 
-  // Demo module statuses
-  const demoModuleStatuses: ModuleStatus[] = [
+  // Demo module statuses - Compras inicialmente desconectado
+  const [purchasesConnected, setPurchasesConnected] = useState(false);
+  
+  const getModuleStatuses = useCallback((): ModuleStatus[] => [
     {
       module: 'RRHH',
       icon: <Users className="h-5 w-5" />,
@@ -227,19 +295,49 @@ export function LegalValidationGatewayPanel({ companyId }: LegalValidationGatewa
     {
       module: 'Compras',
       icon: <Building2 className="h-5 w-5" />,
-      validationsToday: 0,
-      blockedOperations: 0,
-      complianceScore: 0,
-      isConnected: false
+      validationsToday: purchasesConnected ? 7 : 0,
+      blockedOperations: purchasesConnected ? 1 : 0,
+      complianceScore: purchasesConnected ? 91 : 0,
+      isConnected: purchasesConnected
     }
-  ];
+  ], [purchasesConnected]);
+
+  const handleConnectPurchases = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Simular conexión con el módulo de compras
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setPurchasesConnected(true);
+      toast.success('Módulo de Compras conectado al Gateway Legal');
+      
+      // Actualizar reglas activas para compras
+      setValidationRules(prev => 
+        prev.map(rule => 
+          (rule.module as string) === 'purchases' 
+            ? { ...rule, isActive: true } 
+            : rule
+        )
+      );
+    } catch (error) {
+      console.error('Error connecting purchases module:', error);
+      toast.error('Error al conectar módulo de Compras');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     setValidationRules(demoRules);
     setPendingRequests(demoPendingRequests);
-    setModuleStatuses(demoModuleStatuses);
+    setModuleStatuses(getModuleStatuses());
     setLastSync(new Date());
-  }, []);
+  }, [purchasesConnected]);
+
+  // Actualizar módulos cuando cambia el estado de conexión
+  useEffect(() => {
+    setModuleStatuses(getModuleStatuses());
+  }, [getModuleStatuses]);
 
   const handleValidationAction = useCallback(async (
     requestId: string, 
@@ -480,7 +578,14 @@ export function LegalValidationGatewayPanel({ companyId }: LegalValidationGatewa
                             </Badge>
                           </>
                         ) : (
-                          <Button size="sm" variant="outline">Conectar</Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={module.module === 'Compras' ? handleConnectPurchases : undefined}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? 'Conectando...' : 'Conectar'}
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -701,9 +806,14 @@ export function LegalValidationGatewayPanel({ companyId }: LegalValidationGatewa
                       <p className="text-sm text-muted-foreground mb-3">
                         Módulo no integrado con el Gateway Legal
                       </p>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={module.module === 'Compras' ? handleConnectPurchases : undefined}
+                        disabled={isLoading}
+                      >
                         <Zap className="h-4 w-4 mr-2" />
-                        Conectar Módulo
+                        {isLoading ? 'Conectando...' : 'Conectar Módulo'}
                       </Button>
                     </div>
                   )}
