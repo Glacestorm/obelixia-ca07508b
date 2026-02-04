@@ -33,3 +33,8 @@ export { LegalAuditTrailPanel } from './LegalAuditTrailPanel';
 export { LegalComplianceReportPanel } from './LegalComplianceReportPanel';
 export { LegalRiskReportPanel } from './LegalRiskReportPanel';
 export { LegalRegulationImpactPanel } from './LegalRegulationImpactPanel';
+
+// Fase 10: Validación Legal Cross-Module y Gateway
+export { LegalValidationGatewayPanel } from './LegalValidationGatewayPanel';
+export { LegalAgentSupervisorPanel } from './LegalAgentSupervisorPanel';
+export { LegalComplianceAPIPanel } from './LegalComplianceAPIPanel';
