@@ -117,3 +117,11 @@ export type { BulkGenerateParams, BulkImportRow, BulkOperationResult } from './u
 
 export { useLicenseScheduledReports } from './useLicenseScheduledReports';
 export type { ScheduledReport, ReportHistory, CreateScheduledReportParams } from './useLicenseScheduledReports';
+
+// Fase 9: Blockchain Credentials
+export { useBlockchainCredentials } from './useBlockchainCredentials';
+export type {
+  VerifiableCredential,
+  CredentialVerification,
+  EmploymentHistory
+} from './useBlockchainCredentials';

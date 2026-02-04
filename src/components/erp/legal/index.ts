@@ -44,3 +44,6 @@ export { LegalComplianceAPIPanel } from './LegalComplianceAPIPanel';
 
 // Fase 8 (Plan): Legal Entity & IP Management
 export * from './entity';
+
+// Fase 9: AI Autonomous Agents & Predictive Legal Analytics
+export * from './analytics';
