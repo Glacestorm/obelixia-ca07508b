@@ -974,3 +974,6 @@ verify_jwt = true
 
 [functions.erp-hr-autonomous-copilot]
 verify_jwt = true
+
+[functions.erp-hr-smart-contracts]
+verify_jwt = true
