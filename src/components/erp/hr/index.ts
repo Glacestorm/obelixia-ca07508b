@@ -95,3 +95,5 @@ export { HREmployeeExportDialog } from './dialogs/HREmployeeExportDialog';
 // Fase: Sistema de Convenios Colectivos y Recálculo de Nóminas
 export { HRCollectiveAgreementSelect } from './shared/HRCollectiveAgreementSelect';
 export type { AgreementData } from './shared/HRCollectiveAgreementSelect';
+export { HRPayrollRecalculationPanel } from './HRPayrollRecalculationPanel';
+export { HRPayrollRecalculationDialog } from './dialogs/HRPayrollRecalculationDialog';
