@@ -120,3 +120,7 @@ export * from './wellbeing';
 
 // Fase 4: Contract Lifecycle Management (CLM)
 export * from './clm';
+
+// Fase 5: Credenciales Blockchain y Copilotos IA Autónomos
+export * from './credentials';
+export * from './autonomous';

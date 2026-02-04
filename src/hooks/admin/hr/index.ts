@@ -86,3 +86,31 @@ export type {
   RiskAssessment,
   ContractAmendment
 } from './useHRContractLifecycle';
+
+// Phase 5 - Credenciales Blockchain y Copilotos IA Autónomos
+export { useHRCredentials } from './useHRCredentials';
+export type {
+  CredentialProof,
+  CredentialSubject,
+  BlockchainRecord,
+  DigitalCredential,
+  IssuedCredential,
+  VerificationResult,
+  SelectiveProof,
+  AuditEntry,
+  CredentialsList,
+  CredentialType
+} from './useHRCredentials';
+
+export { useHRAutonomousCopilot } from './useHRAutonomousCopilot';
+export type {
+  AutonomyLevel,
+  ReviewFinding,
+  AutoAction,
+  DocumentReview,
+  ProactiveAlert,
+  ScheduledEvent,
+  TaskDelegation,
+  Prediction,
+  Optimization
+} from './useHRAutonomousCopilot';
