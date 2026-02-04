@@ -562,6 +562,21 @@ export function HREmployeeFormDialog({
 
               <Separator />
 
+              {/* CNO - Solo para jurisdicción España */}
+              {formData.jurisdiction === 'ES' && (
+                <div className="space-y-2 p-3 rounded-lg border-2 border-primary/20 bg-primary/5">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <Label className="font-semibold">
+                      Código Nacional de Ocupación (CNO) *
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Obligatorio para Sistema RED desde 15/02/2022 (RD 504/2022)
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="gross_salary">Salario Bruto Anual (€)</Label>

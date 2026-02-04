@@ -16222,6 +16222,39 @@ export type Database = {
           },
         ]
       }
+      erp_hr_cno_catalog: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string
+          group_level: number
+          id: string
+          is_active: boolean | null
+          parent_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description: string
+          group_level?: number
+          id?: string
+          is_active?: boolean | null
+          parent_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string
+          group_level?: number
+          id?: string
+          is_active?: boolean | null
+          parent_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_compa_ratio: {
         Row: {
           action_recommended: string | null
@@ -16376,6 +16409,8 @@ export type Database = {
           base_salary: number | null
           bonuses: Json | null
           category: string | null
+          cno_code: string | null
+          cno_description: string | null
           collective_agreement_id: string | null
           company_id: string | null
           contract_code: string | null
@@ -16406,6 +16441,8 @@ export type Database = {
           base_salary?: number | null
           bonuses?: Json | null
           category?: string | null
+          cno_code?: string | null
+          cno_description?: string | null
           collective_agreement_id?: string | null
           company_id?: string | null
           contract_code?: string | null
@@ -16436,6 +16473,8 @@ export type Database = {
           base_salary?: number | null
           bonuses?: Json | null
           category?: string | null
+          cno_code?: string | null
+          cno_description?: string | null
           collective_agreement_id?: string | null
           company_id?: string | null
           contract_code?: string | null
@@ -17352,6 +17391,8 @@ export type Database = {
           base_salary: number | null
           birth_date: string | null
           category: string | null
+          cno_code: string | null
+          cno_description: string | null
           company_id: string
           contract_type: string | null
           created_at: string | null
@@ -17386,6 +17427,8 @@ export type Database = {
           base_salary?: number | null
           birth_date?: string | null
           category?: string | null
+          cno_code?: string | null
+          cno_description?: string | null
           company_id: string
           contract_type?: string | null
           created_at?: string | null
@@ -17420,6 +17463,8 @@ export type Database = {
           base_salary?: number | null
           birth_date?: string | null
           category?: string | null
+          cno_code?: string | null
+          cno_description?: string | null
           company_id?: string
           contract_type?: string | null
           created_at?: string | null
