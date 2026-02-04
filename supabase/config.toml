@@ -977,3 +977,6 @@ verify_jwt = true
 
 [functions.erp-hr-smart-contracts]
 verify_jwt = true
+
+[functions.erp-hr-analytics-intelligence]
+verify_jwt = true

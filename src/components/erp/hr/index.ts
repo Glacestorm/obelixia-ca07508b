@@ -127,3 +127,6 @@ export * from './autonomous';
 
 // Fase 6: Smart Contracts Legales
 export * from './smart-contracts';
+
+// Fase 7: HR Analytics Predictivos y Workforce Intelligence
+export * from './analytics';

@@ -133,3 +133,24 @@ export type {
   ContractMonitoring,
   ClauseExecution
 } from './useHRSmartContracts';
+
+// Phase 7 - HR Analytics Predictivos y Workforce Intelligence
+export { useHRAnalyticsIntelligence } from './useHRAnalyticsIntelligence';
+export type {
+  TurnoverRiskFactor,
+  TurnoverRecommendation,
+  TurnoverPrediction,
+  TurnoverAnalysis,
+  DepartmentState,
+  HiringNeed,
+  WorkforceProjection,
+  WorkforceRiskArea,
+  WorkforcePlan,
+  RoleComparison,
+  SalaryBenchmark,
+  TalentDemandForecast,
+  SuccessionRisk,
+  ProductivityInsights,
+  EngagementPrediction,
+  SkillsGapForecast
+} from './useHRAnalyticsIntelligence';
