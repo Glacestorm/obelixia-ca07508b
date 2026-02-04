@@ -117,6 +117,16 @@ export function LegalNavigationMenu({
         { id: 'news', label: 'Noticias Legales', icon: Newspaper },
         { id: 'trends', label: 'Tendencias 2026', icon: Sparkles },
       ]
+    },
+    {
+      id: 'gateway',
+      label: 'Gateway Legal',
+      icon: Shield,
+      items: [
+        { id: 'validation-gateway', label: 'Gateway Validación', icon: Shield },
+        { id: 'agent-supervisor', label: 'Supervisor Agentes', icon: Activity },
+        { id: 'compliance-api', label: 'API Compliance', icon: FileText },
+      ]
     }
   ];
 
