@@ -115,6 +115,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'agent', label: 'Agente IA', icon: Brain },
         { id: 'news', label: 'Noticias', icon: Newspaper },
         { id: 'knowledge', label: 'Normativa', icon: BookOpen },
+        { id: 'legal-compliance', label: 'Cumplimiento Legal', icon: Shield },
         { id: 'help', label: 'Ayuda', icon: HelpCircle },
       ]
     },

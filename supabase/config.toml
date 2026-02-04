@@ -950,3 +950,6 @@ verify_jwt = false
 
 [functions.erp-hr-payroll-recalculation]
 verify_jwt = false
+
+[functions.erp-hr-compliance-monitor]
+verify_jwt = false

@@ -105,3 +105,6 @@ export { HRSettlementComplianceWidget } from './widgets/HRSettlementComplianceWi
 
 // Fase: Sistema de Vigilancia Normativa (Convenios, CNO, BOE/BOPA)
 export { HRRegulatoryWatchPanel } from './HRRegulatoryWatchPanel';
+
+// Fase: Sistema de Cumplimiento Legal y Comunicaciones Obligatorias
+export * from './compliance';
