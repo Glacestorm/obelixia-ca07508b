@@ -23,6 +23,7 @@ import { useERPContext } from '@/hooks/erp';
 import { supabase } from '@/integrations/supabase/client';
 import { HRExecutiveDashboard } from './HRExecutiveDashboard';
 import { HRPayrollPanel } from './HRPayrollPanel';
+import { HRPayrollRecalculationPanel } from './HRPayrollRecalculationPanel';
 import { HRVacationsPanel } from './HRVacationsPanel';
 import { HRContractsPanel } from './HRContractsPanel';
 import { HRDepartmentsPanel } from './HRDepartmentsPanel';
@@ -253,6 +254,7 @@ export function HRModule() {
         {activeModule === 'analytics' && <HRAdvancedAnalyticsPanel companyId={demoCompanyId} />}
         {activeModule === 'alerts' && <HRAlertsPanel companyId={demoCompanyId} />}
         {activeModule === 'payroll' && <HRPayrollPanel companyId={demoCompanyId} />}
+        {activeModule === 'payroll-recalc' && <HRPayrollRecalculationPanel companyId={demoCompanyId} />}
         {activeModule === 'ss' && <HRSocialSecurityPanel companyId={demoCompanyId} />}
         {activeModule === 'vacations' && <HRVacationsPanel companyId={demoCompanyId} />}
         {activeModule === 'contracts' && <HRContractsPanel companyId={demoCompanyId} />}
