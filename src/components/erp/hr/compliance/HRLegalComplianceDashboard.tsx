@@ -23,7 +23,9 @@ import {
   TrendingUp,
   Calendar,
   Gavel,
-  Euro
+  Euro,
+  Plus,
+  CalendarDays
 } from 'lucide-react';
 import { useHRLegalCompliance } from '@/hooks/admin/useHRLegalCompliance';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -35,6 +37,8 @@ import { HRCommunicationsPanel } from './HRCommunicationsPanel';
 import { HRObligationsPanel } from './HRObligationsPanel';
 import { HRSanctionRisksPanel } from './HRSanctionRisksPanel';
 import { HRComplianceChecklistPanel } from './HRComplianceChecklistPanel';
+import { HRCommunicationGeneratorDialog } from './HRCommunicationGeneratorDialog';
+import { HRComplianceCalendar } from './HRComplianceCalendar';
 
 interface HRLegalComplianceDashboardProps {
   companyId: string;
@@ -42,6 +46,8 @@ interface HRLegalComplianceDashboardProps {
 
 export function HRLegalComplianceDashboard({ companyId }: HRLegalComplianceDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showGeneratorDialog, setShowGeneratorDialog] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const {
     communications,
@@ -80,10 +86,20 @@ export function HRLegalComplianceDashboard({ companyId }: HRLegalComplianceDashb
             Gestión de comunicaciones obligatorias, obligaciones AAPP y alertas de sanción
           </p>
         </div>
-        <Button onClick={refreshAll} disabled={isLoading} variant="outline" size="sm">
-          <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowCalendar(true)} variant="outline" size="sm">
+            <CalendarDays className="h-4 w-4 mr-2" />
+            Calendario
+          </Button>
+          <Button onClick={() => setShowGeneratorDialog(true)} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Comunicación
+          </Button>
+          <Button onClick={refreshAll} disabled={isLoading} variant="outline" size="sm">
+            <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -201,7 +217,7 @@ export function HRLegalComplianceDashboard({ companyId }: HRLegalComplianceDashb
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-1">
             <TrendingUp className="h-4 w-4" />
             Resumen
@@ -212,11 +228,15 @@ export function HRLegalComplianceDashboard({ companyId }: HRLegalComplianceDashb
           </TabsTrigger>
           <TabsTrigger value="obligations" className="flex items-center gap-1">
             <Building2 className="h-4 w-4" />
-            Obligaciones AAPP
+            Obligaciones
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex items-center gap-1">
+            <CalendarDays className="h-4 w-4" />
+            Calendario
           </TabsTrigger>
           <TabsTrigger value="risks" className="flex items-center gap-1">
             <Shield className="h-4 w-4" />
-            Riesgos Sanción
+            Riesgos
           </TabsTrigger>
           <TabsTrigger value="checklist" className="flex items-center gap-1">
             <CheckSquare className="h-4 w-4" />
@@ -330,6 +350,10 @@ export function HRLegalComplianceDashboard({ companyId }: HRLegalComplianceDashb
           <HRObligationsPanel companyId={companyId} />
         </TabsContent>
 
+        <TabsContent value="calendar" className="mt-4">
+          <HRComplianceCalendar companyId={companyId} />
+        </TabsContent>
+
         <TabsContent value="risks" className="mt-4">
           <HRSanctionRisksPanel companyId={companyId} />
         </TabsContent>
@@ -338,6 +362,34 @@ export function HRLegalComplianceDashboard({ companyId }: HRLegalComplianceDashb
           <HRComplianceChecklistPanel companyId={companyId} />
         </TabsContent>
       </Tabs>
+
+      {/* Generator Dialog */}
+      <HRCommunicationGeneratorDialog
+        open={showGeneratorDialog}
+        onOpenChange={setShowGeneratorDialog}
+        companyId={companyId}
+        onSuccess={refreshAll}
+      />
+
+      {/* Calendar Modal */}
+      {showCalendar && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <CalendarDays className="h-5 w-5" />
+                Calendario de Cumplimiento
+              </h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowCalendar(false)}>
+                ✕
+              </Button>
+            </div>
+            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
+              <HRComplianceCalendar companyId={companyId} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

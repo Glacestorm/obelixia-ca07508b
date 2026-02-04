@@ -489,6 +489,138 @@ export function useHRLegalCompliance(companyId: string) {
     }
   }, []);
 
+  // === GENERATE AI COMMUNICATION ===
+  const generateCommunication = useCallback(async (
+    communicationType: string,
+    employeeId?: string
+  ) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-compliance-monitor', {
+        body: {
+          action: 'generate_communication',
+          company_id: companyId,
+          communication_type: communicationType,
+          employee_id: employeeId,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        return data.data;
+      }
+      return null;
+    } catch (err) {
+      console.error('[useHRLegalCompliance] generateCommunication error:', err);
+      toast.error('Error al generar comunicación');
+      return null;
+    }
+  }, [companyId]);
+
+  // === VALIDATE CHECKLIST WITH AI ===
+  const validateChecklist = useCallback(async (communicationType: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-compliance-monitor', {
+        body: {
+          action: 'validate_checklist',
+          company_id: companyId,
+          communication_type: communicationType,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        return data.data;
+      }
+      return null;
+    } catch (err) {
+      console.error('[useHRLegalCompliance] validateChecklist error:', err);
+      toast.error('Error en validación');
+      return null;
+    }
+  }, [companyId]);
+
+  // === GET DASHBOARD SUMMARY ===
+  const getDashboardSummary = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-compliance-monitor', {
+        body: {
+          action: 'get_dashboard_summary',
+          company_id: companyId,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        return data.data;
+      }
+      return null;
+    } catch (err) {
+      console.error('[useHRLegalCompliance] getDashboardSummary error:', err);
+      return null;
+    }
+  }, [companyId]);
+
+  // === CREATE COMPLIANCE ALERT ===
+  const createAlert = useCallback(async (alertData: {
+    title: string;
+    description?: string;
+    alert_level: 'prealert' | 'alert' | 'urgent' | 'critical';
+    obligation_deadline_id?: string;
+    communication_id?: string;
+    risk_id?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-compliance-monitor', {
+        body: {
+          action: 'create_alert',
+          company_id: companyId,
+          ...alertData
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Alerta creada');
+        await fetchAlerts();
+        return data.data;
+      }
+      return null;
+    } catch (err) {
+      console.error('[useHRLegalCompliance] createAlert error:', err);
+      toast.error('Error al crear alerta');
+      return null;
+    }
+  }, [companyId, fetchAlerts]);
+
+  // === ESCALATE TO LEGAL ===
+  const escalateToLegal = useCallback(async (alertId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-compliance-monitor', {
+        body: {
+          action: 'escalate_to_legal',
+          company_id: companyId,
+          alert_id: alertId,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success('Escalado al departamento jurídico');
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('[useHRLegalCompliance] escalateToLegal error:', err);
+      toast.error('Error al escalar');
+      return false;
+    }
+  }, [companyId]);
+
   // === REFRESH ALL ===
   const refreshAll = useCallback(async () => {
     setIsLoading(true);
@@ -612,6 +744,11 @@ export function useHRLegalCompliance(companyId: string) {
     updateDeadline,
     resolveAlert,
     notifyAgents,
+    generateCommunication,
+    validateChecklist,
+    getDashboardSummary,
+    createAlert,
+    escalateToLegal,
     refreshAll,
     startAutoRefresh,
     stopAutoRefresh,
