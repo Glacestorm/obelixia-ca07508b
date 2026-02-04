@@ -1,422 +1,379 @@
 
-# Plan: Módulo Jurídico Enterprise - Asesor IA Multi-Agente
+# Plan de Implementación: Sistema Inteligente de Recálculo de Nóminas con Cumplimiento de Convenios
 
 ## Resumen Ejecutivo
-
-Implementación de un **Módulo Jurídico integral** que actúa como asesor legal experto para todos los agentes de IA del sistema y el Supervisor. Este módulo centraliza el conocimiento jurídico multi-jurisdiccional y proporciona validación legal en tiempo real para cualquier operación automatizada.
+Este plan implementa un sistema integral de recálculo salarial que garantiza el cumplimiento de los convenios colectivos por sector (CNAE), validación automática por IA, coordinación con el Agente Jurídico para revisión legal, y aprobación final por el Responsable de RRHH.
 
 ---
 
-## Arquitectura del Sistema
+## Fase 1: Base de Datos - Convenios Colectivos y Conceptos Salariales
+
+### 1.1 Tabla de Convenios Colectivos
+Crear tabla `erp_hr_collective_agreements` para almacenar los convenios por sector:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                     AGENTE SUPERVISOR                           │
-│                  (ai-agent-orchestrator)                        │
-└─────────────────────────┬───────────────────────────────────────┘
-                          │
-        ┌─────────────────┼─────────────────┐
-        │                 │                 │
-        ▼                 ▼                 ▼
-┌───────────────┐ ┌───────────────┐ ┌───────────────┐
-│  ERP Agents   │ │   HR Agents   │ │  CRM Agents   │
-│  (Fiscal,     │ │  (Nóminas,    │ │  (Ventas,     │
-│   Contable)   │ │   Contratos)  │ │   GDPR)       │
-└───────┬───────┘ └───────┬───────┘ └───────┬───────┘
-        │                 │                 │
-        └─────────────────┼─────────────────┘
-                          │
-                          ▼
-        ┌─────────────────────────────────────┐
-        │     AGENTE JURÍDICO CENTRAL         │
-        │    (legal-ai-advisor)               │
-        │                                     │
-        │  ┌─────────────────────────────┐   │
-        │  │    Sub-Agentes Jurídicos    │   │
-        │  ├─────────────────────────────┤   │
-        │  │ • Laboral                   │   │
-        │  │ • Mercantil                 │   │
-        │  │ • Fiscal                    │   │
-        │  │ • Protección de Datos       │   │
-        │  │ • Compliance Bancario       │   │
-        │  │ • Contractual               │   │
-        │  └─────────────────────────────┘   │
-        └─────────────────────────────────────┘
+│ erp_hr_collective_agreements                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ id (uuid, PK)                                                   │
+│ code (text) - Código oficial del convenio                       │
+│ name (text) - Nombre completo                                   │
+│ cnae_codes (text[]) - Sectores CNAE aplicables                  │
+│ jurisdiction_code (text) - ES, AD, EU, etc.                     │
+│ effective_date / expiration_date (date)                         │
+│ salary_tables (jsonb) - Tablas salariales por categoría         │
+│ annual_updates (jsonb) - Histórico de actualizaciones           │
+│ extra_payments (integer) - Número de pagas extra (12, 14, 15)   │
+│ working_hours_week (numeric) - Jornada semanal                  │
+│ vacation_days (integer) - Días de vacaciones                    │
+│ seniority_rules (jsonb) - Reglas de antigüedad                  │
+│ night_shift_bonus (jsonb) - Plus nocturnidad                    │
+│ other_concepts (jsonb) - Otros conceptos obligatorios           │
+│ union_obligations (jsonb) - Obligaciones sindicales             │
+│ source_url (text) - URL BOE/BOPA/publicación                    │
+│ is_active (boolean)                                             │
+│ created_at / updated_at (timestamptz)                           │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
----
+### 1.2 Campo Convenio en Contratos (Obligatorio por Art. 8.5 ET)
+Añadir columna obligatoria `collective_agreement_id` a `erp_hr_contracts`:
+- **Verificación legal**: El Art. 8.5 del Estatuto de los Trabajadores (RD 2/2015) establece que el empresario debe informar por escrito al trabajador sobre el convenio colectivo aplicable. Por tanto, es un dato obligatorio en el contrato.
 
-## Fases de Implementación
-
-### FASE 1: Infraestructura Base de Datos
-**Duración estimada**: 1 sesión
-
-**Tablas a crear**:
-- `legal_knowledge_base` - Base de conocimiento jurídico multi-jurisdiccional
-- `legal_jurisdictions` - Configuración de jurisdicciones (ES, AD, EU, UK, AE, US)
-- `legal_case_templates` - Plantillas de casos y contratos por tipo
-- `legal_agent_queries` - Historial de consultas de otros agentes
-- `legal_validation_logs` - Registro de validaciones legales
-- `legal_precedents` - Base de precedentes judiciales
-- `legal_regulation_updates` - Actualizaciones normativas monitorizadas
-
-**Índices y triggers**:
-- Índices para búsqueda semántica en knowledge base
-- Trigger para notificar cambios regulatorios a agentes afectados
-
----
-
-### FASE 2: Edge Function Principal - Agente Jurídico
-**Duración estimada**: 1-2 sesiones
-
-**Archivo**: `supabase/functions/legal-ai-advisor/index.ts`
-
-**Acciones del agente**:
-1. `validate_action` - Validar si una acción de otro agente cumple normativa
-2. `consult_legal` - Consulta jurídica general con contexto
-3. `analyze_contract` - Análisis completo de contratos
-4. `check_compliance` - Verificación de cumplimiento multi-normativo
-5. `find_precedents` - Búsqueda de precedentes judiciales
-6. `generate_document` - Generación de documentos legales
-7. `assess_risk` - Evaluación de riesgo legal
-8. `monitor_regulations` - Monitoreo de cambios normativos
-9. `advise_agent` - Asesoría específica para un agente IA
-
-**Jurisdicciones soportadas**:
-- España (Código Civil, Estatuto de los Trabajadores, Ley de Sociedades)
-- Andorra (APDA, Codi de Relacions Laborals)
-- Unión Europea (GDPR, AI Act, MiFID II, DORA)
-- Reino Unido (Employment Rights Act, Companies Act)
-- Emiratos Árabes (Free Zone Regulations, UAE Labor Law)
-- Estados Unidos (Delaware LLC, California Labor Code)
-
----
-
-### FASE 3: Hook Principal y Sub-Agentes
-**Duración estimada**: 1 sesión
-
-**Archivo**: `src/hooks/admin/legal/useLegalAdvisor.ts`
-
-**Funcionalidades**:
-```typescript
-interface UseLegalAdvisor {
-  // Consultas generales
-  consultLegal(query: string, jurisdiction?: string): Promise<LegalAdvice>;
-  
-  // Validación para otros agentes
-  validateAgentAction(agentId: string, action: AgentAction): Promise<ValidationResult>;
-  
-  // Análisis de contratos
-  analyzeContract(contractText: string, type: string): Promise<ContractAnalysis>;
-  
-  // Cumplimiento normativo
-  checkMultiCompliance(regulations: string[]): Promise<ComplianceReport>;
-  
-  // Precedentes
-  findPrecedents(caseType: string, jurisdiction: string): Promise<LegalPrecedent[]>;
-  
-  // Generación de documentos
-  generateLegalDocument(template: string, data: Record<string, unknown>): Promise<Document>;
-  
-  // Riesgo legal
-  assessLegalRisk(scenario: string): Promise<RiskAssessment>;
-  
-  // Suscripción a cambios regulatorios
-  subscribeToRegulationUpdates(jurisdictions: string[]): Subscription;
-}
-```
-
-**Sub-Agentes especializados** (delegación automática):
-- `LaborLegalAgent` - Derecho laboral multi-jurisdiccional
-- `CorporateLegalAgent` - Derecho mercantil y societario
-- `TaxLegalAgent` - Fiscalidad y tributación
-- `DataProtectionAgent` - GDPR, APDA, privacidad
-- `BankingComplianceAgent` - MiFID II, Basel, DORA
-- `ContractLegalAgent` - Análisis y redacción contractual
-
----
-
-### FASE 4: Dashboard Jurídico Principal
-**Duración estimada**: 1 sesión
-
-**Archivo**: `src/components/admin/legal/LegalAdvisorDashboard.tsx`
-
-**Pestañas del Dashboard**:
-1. **Overview** - KPIs, consultas recientes, alertas regulatorias
-2. **Consultas** - Chat con el agente jurídico
-3. **Contratos** - Análisis y gestión de contratos
-4. **Compliance** - Estado de cumplimiento multi-normativo
-5. **Precedentes** - Búsqueda de jurisprudencia
-6. **Documentos** - Generador de documentos legales
-7. **Regulaciones** - Monitor de cambios normativos
-8. **Agentes** - Panel de asesoría a otros agentes IA
-9. **Validaciones** - Historial de validaciones legales
-10. **Riesgos** - Mapa de riesgos legales
-
----
-
-### FASE 5: Paneles Especializados
-**Duración estimada**: 1-2 sesiones
-
-**Componentes a crear**:
-
-1. **LegalQueryPanel.tsx** - Chat especializado con el agente jurídico
-2. **ContractAnalysisPanel.tsx** - Análisis IA de contratos con riesgos
-3. **LegalCompliancePanel.tsx** - Dashboard de cumplimiento multi-normativo
-4. **LegalPrecedentsPanel.tsx** - Búsqueda de jurisprudencia
-5. **LegalDocumentGeneratorPanel.tsx** - Generador de documentos
-6. **RegulationMonitorPanel.tsx** - Monitor de cambios regulatorios
-7. **AgentAdvisoryPanel.tsx** - Panel para asesorar otros agentes
-8. **LegalRiskMapPanel.tsx** - Mapa interactivo de riesgos
-9. **LegalValidationHistoryPanel.tsx** - Historial de validaciones
-10. **LegalKnowledgeBasePanel.tsx** - Gestión de base de conocimiento
-
----
-
-### FASE 6: Integración con Agente Supervisor
-**Duración estimada**: 1 sesión
-
-**Modificaciones necesarias**:
-
-1. **ai-agent-orchestrator** - Añadir delegación automática al Legal Agent
-2. **erp-hr-ai-agent** - Integrar validación legal pre-acción
-3. **erp-fiscal-ai-agent** - Consulta jurídica para decisiones fiscales
-4. **crm-agent-ai** - Validación GDPR en operaciones CRM
-5. **useERPModuleAgents.ts** - Añadir dominio "Legal" al orquestador
-
-**Protocolo de comunicación**:
-```typescript
-interface LegalAdvisoryRequest {
-  requesting_agent: string;
-  action_type: string;
-  context: Record<string, unknown>;
-  jurisdictions: string[];
-  urgency: 'immediate' | 'standard' | 'scheduled';
-}
-
-interface LegalAdvisoryResponse {
-  approved: boolean;
-  conditions?: string[];
-  warnings?: string[];
-  legal_basis?: string[];
-  recommendations?: string[];
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
-}
-```
-
----
-
-### FASE 7: Base de Conocimiento Jurídico
-**Duración estimada**: 1 sesión
-
-**Componentes**:
-
-1. **LegalKnowledgeUploader.tsx** - Carga de documentos jurídicos
-2. **Embeddings semánticos** - Para búsqueda inteligente
-3. **Categorización automática** - Por jurisdicción, área, vigencia
-4. **Sistema de alertas** - Notificación de cambios normativos
-
-**Estructura de conocimiento**:
-- Códigos y leyes vigentes
-- Convenios colectivos
-- Sentencias y precedentes
-- Doctrina administrativa
-- Circulares y resoluciones
-- Contratos tipo homologados
-
----
-
-### FASE 8: Sistema de Alertas Regulatorias
-**Duración estimada**: 1 sesión
-
-**Funcionalidades**:
-
-1. **Monitor de BOE/DOGC/BOPA** - Scraping de boletines oficiales
-2. **Detector de cambios** - IA para identificar impacto
-3. **Notificación proactiva** - A agentes y usuarios afectados
-4. **Timeline de entrada en vigor** - Calendario de obligaciones
-5. **Plan de adaptación** - Generación automática de acciones
-
----
-
-### FASE 9: Reportes y Auditoría Legal
-**Duración estimada**: 1 sesión
-
-**Tipos de reportes**:
-
-1. **Due Diligence Report** - Para M&A y operaciones corporativas
-2. **Compliance Status Report** - Estado de cumplimiento global
-3. **Risk Assessment Report** - Evaluación de riesgos legales
-4. **Audit Trail Report** - Historial de validaciones
-5. **Regulation Impact Report** - Impacto de nuevas normativas
-
-**Formatos de exportación**: PDF, DOCX, Excel, XML
-
----
-
-### FASE 10: Tendencias 2026+ y Smart Contracts
-**Duración estimada**: 1 sesión
-
-**Funcionalidades avanzadas**:
-
-1. **LegalTrends2026Panel.tsx** - Roadmap de innovación legal
-2. **Smart Contract Generator** - Contratos autoejecutables
-3. **Blockchain Audit Trail** - Inmutabilidad de validaciones
-4. **Predictive Legal Analytics** - Predicción de resultados judiciales
-5. **AI Regulatory Sandbox** - Testing de compliance antes de implementar
-
----
-
-## Sección Técnica
-
-### Estructura de Archivos
+### 1.3 Catálogo de Conceptos Salariales por Convenio
+Crear tabla `erp_hr_agreement_salary_concepts` para los conceptos específicos:
 
 ```text
-src/
-├── hooks/admin/legal/
-│   ├── useLegalAdvisor.ts          # Hook principal
-│   ├── useLegalKnowledge.ts        # Gestión de conocimiento
-│   ├── useLegalCompliance.ts       # Cumplimiento normativo
-│   ├── useLegalDocuments.ts        # Generación de documentos
-│   ├── useLegalPrecedents.ts       # Búsqueda de precedentes
-│   ├── useLegalAgentIntegration.ts # Integración con otros agentes
-│   └── index.ts                    # Barrel exports
-│
-├── components/admin/legal/
-│   ├── LegalAdvisorDashboard.tsx   # Dashboard principal
-│   ├── LegalQueryPanel.tsx         # Chat jurídico
-│   ├── ContractAnalysisPanel.tsx   # Análisis de contratos
-│   ├── LegalCompliancePanel.tsx    # Cumplimiento
-│   ├── LegalPrecedentsPanel.tsx    # Precedentes
-│   ├── LegalDocumentGeneratorPanel.tsx
-│   ├── RegulationMonitorPanel.tsx  # Monitor regulatorio
-│   ├── AgentAdvisoryPanel.tsx      # Asesoría a agentes
-│   ├── LegalRiskMapPanel.tsx       # Mapa de riesgos
-│   ├── LegalValidationHistoryPanel.tsx
-│   ├── LegalKnowledgeBasePanel.tsx
-│   ├── LegalTrends2026Panel.tsx    # Tendencias futuras
-│   └── index.ts
-
-supabase/
-├── functions/
-│   ├── legal-ai-advisor/           # Agente principal
-│   │   └── index.ts
-│   ├── legal-precedent-search/     # Búsqueda de precedentes
-│   │   └── index.ts
-│   ├── legal-document-generator/   # Generador de documentos
-│   │   └── index.ts
-│   └── legal-regulation-monitor/   # Monitor de regulaciones
-│       └── index.ts
+┌─────────────────────────────────────────────────────────────────┐
+│ erp_hr_agreement_salary_concepts                                │
+├─────────────────────────────────────────────────────────────────┤
+│ id (uuid, PK)                                                   │
+│ agreement_id (uuid, FK)                                         │
+│ concept_code (text) - PLUS_CONV, PLUS_TRANS, PLUS_TOXIC, etc.   │
+│ concept_name (text) - Nombre descriptivo                        │
+│ concept_type (text) - earning / deduction                       │
+│ is_mandatory (boolean) - Obligatorio por convenio               │
+│ calculation_type (text) - fixed, percentage, formula            │
+│ base_amount (numeric)                                           │
+│ percentage (numeric)                                            │
+│ formula (text) - Fórmula de cálculo si aplica                   │
+│ applies_to_categories (text[]) - Categorías profesionales       │
+│ cotiza_ss (boolean) - Cotiza Seguridad Social                   │
+│ tributa_irpf (boolean) - Tributa IRPF                           │
+│ frequency (text) - monthly, annual, per_day                     │
+│ conditions (jsonb) - Condiciones de aplicación                  │
+│ is_active (boolean)                                             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Tablas de Base de Datos
+### 1.4 Histórico de Recálculos y Validaciones
+Crear tabla `erp_hr_payroll_recalculations` para auditoría:
 
-```sql
--- Base de conocimiento jurídico
-CREATE TABLE legal_knowledge_base (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  knowledge_type TEXT NOT NULL, -- 'law', 'regulation', 'precedent', 'doctrine', 'template'
-  jurisdiction TEXT NOT NULL,   -- 'ES', 'AD', 'EU', 'UK', 'AE', 'US'
-  legal_area TEXT NOT NULL,     -- 'labor', 'corporate', 'tax', 'data_protection', 'banking'
-  effective_date DATE,
-  expiry_date DATE,
-  source_url TEXT,
-  tags TEXT[],
-  embedding VECTOR(1536),       -- Para búsqueda semántica
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Consultas de agentes
-CREATE TABLE legal_agent_queries (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  requesting_agent TEXT NOT NULL,
-  query_type TEXT NOT NULL,
-  query_content JSONB NOT NULL,
-  response JSONB,
-  approved BOOLEAN,
-  risk_level TEXT,
-  processing_time_ms INTEGER,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Validaciones legales
-CREATE TABLE legal_validation_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id TEXT NOT NULL,
-  action_type TEXT NOT NULL,
-  action_data JSONB NOT NULL,
-  validation_result JSONB NOT NULL,
-  legal_basis TEXT[],
-  warnings TEXT[],
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### Integración con Supervisor
-
-El Agente Jurídico se registra como dominio especial en el orquestador:
-
-```typescript
-// En useERPModuleAgents.ts
-const LEGAL_DOMAIN: DomainAgent = {
-  id: 'legal-advisor',
-  domain: 'legal',
-  name: 'Asesor Jurídico IA',
-  status: 'active',
-  capabilities: [
-    'contract_analysis',
-    'compliance_check',
-    'legal_validation',
-    'precedent_search',
-    'document_generation',
-    'risk_assessment',
-    'regulation_monitoring'
-  ],
-  moduleAgents: [
-    { id: 'labor-legal', type: 'labor_law', name: 'Agente Derecho Laboral' },
-    { id: 'corporate-legal', type: 'corporate_law', name: 'Agente Derecho Mercantil' },
-    { id: 'tax-legal', type: 'tax_law', name: 'Agente Derecho Fiscal' },
-    { id: 'data-legal', type: 'data_protection', name: 'Agente Protección Datos' },
-    { id: 'banking-legal', type: 'banking_compliance', name: 'Agente Compliance Bancario' },
-    { id: 'contract-legal', type: 'contract_law', name: 'Agente Contractual' }
-  ]
-};
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ erp_hr_payroll_recalculations                                   │
+├─────────────────────────────────────────────────────────────────┤
+│ id (uuid, PK)                                                   │
+│ payroll_id (uuid, FK)                                           │
+│ employee_id (uuid, FK)                                          │
+│ company_id (uuid, FK)                                           │
+│ period (text) - YYYY-MM                                         │
+│ original_values (jsonb) - Valores originales                    │
+│ recalculated_values (jsonb) - Valores recalculados              │
+│ differences (jsonb) - Diferencias detectadas                    │
+│ compliance_issues (jsonb) - Incumplimientos detectados          │
+│ ai_validation (jsonb) - Resultado validación IA RRHH            │
+│ legal_validation (jsonb) - Resultado validación Agente Jurídico │
+│ legal_validation_status (text) - pending, approved, rejected    │
+│ hr_approval (jsonb) - Aprobación Responsable Humano             │
+│ hr_approval_status (text) - pending, approved, rejected         │
+│ hr_approver_id (uuid) - Usuario que aprueba                     │
+│ status (text) - draft, ai_reviewed, legal_reviewed, approved    │
+│ notes (text)                                                    │
+│ created_at / approved_at (timestamptz)                          │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Jurisdicciones y Normativas Cubiertas
+## Fase 2: Selector de Convenio Colectivo en Contratos
 
-| Jurisdicción | Área | Normativas Principales |
-|--------------|------|------------------------|
-| España | Laboral | Estatuto de los Trabajadores, Convenios Colectivos |
-| España | Mercantil | Ley de Sociedades de Capital, Código de Comercio |
-| España | Fiscal | LIS, LIRPF, LIVA, LGT |
-| Andorra | General | APDA, Codi de Relacions Laborals, Llei 95/2010 |
-| UE | Datos | GDPR, ePrivacy, AI Act |
-| UE | Bancario | MiFID II, Basel III/IV, DORA, CRR/CRD |
-| UK | Laboral | Employment Rights Act, Equality Act |
-| UAE | Corporativo | Free Zone Regulations, Commercial Companies Law |
-| US | Corporativo | Delaware LLC Act, California Labor Code |
+### 2.1 Componente HRCollectiveAgreementSelect
+Crear un componente de búsqueda similar a `HRCNOSelect`:
+- Búsqueda por nombre o código de convenio
+- Filtrado automático por CNAE de la empresa
+- Información resumida (pagas extra, jornada, vacaciones)
+- Alerta si el convenio está próximo a expirar
+
+### 2.2 Integración en HRContractFormDialog
+- Añadir campo **obligatorio** "Convenio Colectivo Aplicable"
+- Validación: No permitir guardar contrato sin convenio seleccionado
+- Auto-sugerencia basada en el CNAE de la empresa
+- Mostrar resumen del convenio seleccionado
+
+### 2.3 Actualización de HREmployeeFormDialog
+- Mostrar convenio aplicable del contrato activo
+- Información de categoría según tablas salariales del convenio
 
 ---
 
-## Resultado Esperado
+## Fase 3: Motor de Recálculo de Nóminas
 
-Al completar las 10 fases, el sistema dispondrá de:
+### 3.1 Edge Function `erp-hr-payroll-recalculation`
+Crear función que realice:
 
-1. **Agente Jurídico Central** que asesora a todos los demás agentes
-2. **Validación legal automática** para cualquier acción automatizada
-3. **Base de conocimiento multi-jurisdiccional** actualizada
-4. **Sistema de alertas proactivo** ante cambios regulatorios
-5. **Generación de documentos legales** con plantillas homologadas
-6. **Búsqueda de precedentes judiciales** con IA semántica
-7. **Dashboard completo** para gestión jurídica enterprise
-8. **Auditoría inmutable** de todas las validaciones legales
-9. **Integración nativa** con HR, Fiscal, CRM y demás módulos
-10. **Compliance multi-normativo** con reporting automatizado
+**Entradas:**
+- employee_id o lista de empleados
+- period (YYYY-MM)
+- company_id
+
+**Proceso de Recálculo:**
+1. **Obtener datos del empleado y contrato activo**
+2. **Cargar convenio colectivo aplicable**
+3. **Validar salario base vs. tablas salariales del convenio**
+4. **Aplicar conceptos obligatorios del convenio:**
+   - Plus de convenio
+   - Plus de antigüedad (según reglas del convenio)
+   - Plus de nocturnidad (si aplica)
+   - Plus de transporte
+   - Plus de toxicidad/peligrosidad (según CNAE)
+   - Complementos personales
+5. **Verificar pagas extraordinarias (14, 15 pagas)**
+6. **Calcular cotizaciones SS actualizadas:**
+   - Contingencias comunes (23.60% empresa / 4.70% trabajador)
+   - Desempleo (según tipo contrato)
+   - FOGASA (0.20%)
+   - Formación Profesional (0.60% / 0.10%)
+   - MEI (0.13%)
+7. **Calcular IRPF según situación personal**
+8. **Verificar cumplimiento de jornada laboral máxima**
+9. **Detectar posibles incumplimientos**
+
+**Salida:**
+```json
+{
+  "recalculated_payroll": {...},
+  "differences": [...],
+  "compliance_issues": [...],
+  "recommendations": [...],
+  "requires_legal_review": true/false
+}
+```
+
+### 3.2 Casuísticas Contempladas (Problemas comunes en RRHH)
+
+| Casuística | Verificación |
+|------------|--------------|
+| Salario mínimo por categoría | Validar vs. tablas convenio |
+| Antigüedad no aplicada | Detectar años y calcular plus |
+| Horas extra no compensadas | Verificar registro horario |
+| Plus convenio no pagado | Comparar con conceptos obligatorios |
+| Pagas extra prorrateadas incorrectamente | Validar cálculo 12/14/15 pagas |
+| Jornada parcial mal calculada | Proporcionalidad correcta |
+| Nocturnidad sin compensar | Detectar horarios nocturnos |
+| Festivos trabajados | Verificar compensación |
+| Vacaciones no disfrutadas | Alertar y calcular finiquito |
+| IRPF desactualizado | Recalcular según situación |
+| Cuotas sindicales | Verificar descuentos si procede |
+| Permisos retribuidos | Verificar no descuento |
+| Bajas IT | Verificar complementos convenio |
+| Teletrabajo | Compensación gastos (Ley 10/2021) |
+
+---
+
+## Fase 4: Validación por IA y Flujo de Aprobación
+
+### 4.1 Revisión Automática por Agente IA RRHH
+Extender `erp-hr-ai-agent` con nueva acción `validate_payroll_recalculation`:
+
+```text
+Flujo:
+1. Recibir recálculo propuesto
+2. Analizar coherencia de datos
+3. Verificar contra normativa vigente
+4. Identificar riesgos de incumplimiento
+5. Generar informe de validación
+6. Decidir si requiere revisión legal
+```
+
+### 4.2 Coordinación con Agente Jurídico
+Extender `legal-ai-advisor` para recibir validaciones de nóminas:
+
+```text
+Tipos de revisión legal:
+- ALTO RIESGO: Salario bajo mínimo convenio
+- MEDIO RIESGO: Conceptos obligatorios no incluidos
+- BAJO RIESGO: Diferencias menores en cálculos
+```
+
+La función `validate_action` del agente jurídico recibirá:
+- Datos del recálculo
+- Informe del agente RRHH
+- Convenio colectivo aplicable
+- Jurisdicción
+
+### 4.3 Panel de Aprobación para Responsable RRHH
+Crear componente `HRPayrollRecalculationApprovalPanel`:
+- Lista de recálculos pendientes de aprobación
+- Detalle de diferencias detectadas
+- Validación IA visible
+- Validación legal visible
+- Botones: Aprobar / Rechazar / Solicitar más info
+- Comentarios y notas
+
+---
+
+## Fase 5: Interfaz de Usuario
+
+### 5.1 HRPayrollRecalculationPanel (Nuevo Panel Principal)
+- Selector de período
+- Botón "Recalcular Todas las Nóminas"
+- Botón "Recalcular Empleado Específico"
+- Tabla con estado de cada recálculo:
+  - Empleado | Diferencia | Estado IA | Estado Legal | Estado HR
+- Filtros por estado, departamento, tipo de incidencia
+
+### 5.2 HRPayrollRecalculationDialog
+- Vista detallada de un recálculo
+- Comparativa lado a lado (Original vs. Recalculado)
+- Lista de incumplimientos con severidad
+- Recomendaciones de la IA
+- Opinión del Agente Jurídico
+- Formulario de aprobación
+
+### 5.3 HRSalaryConceptsManagerDialog
+- CRUD de conceptos salariales personalizados por empresa
+- Importar conceptos desde convenio
+- Activar/desactivar conceptos por categoría
+
+### 5.4 HRCollectiveAgreementsPanel
+- Listado de convenios cargados
+- Importador de convenios (manual o desde BOE)
+- Alertas de expiración de convenios
+- Visor de tablas salariales
+
+---
+
+## Fase 6: Notificaciones y Alertas
+
+### 6.1 Alertas Automáticas
+- **Convenio próximo a expirar**: 30, 15, 7 días antes
+- **Nuevo convenio publicado**: Según CNAE de la empresa
+- **Incumplimiento detectado**: Notificación inmediata
+- **Recálculo pendiente de aprobación**: Notificación a Responsable HR
+
+### 6.2 Integración con Panel de Alertas HR
+Añadir tipos de alerta:
+- `payroll_compliance_issue`
+- `agreement_expiring`
+- `recalculation_pending_approval`
+
+---
+
+## Fase 7: Base de Conocimiento Jurídico Complementaria
+
+### 7.1 Actualización de Knowledge Base Legal
+Añadir documentación específica para nóminas:
+- Estatuto de los Trabajadores (Arts. 26-31 sobre salarios)
+- Ley General de la Seguridad Social
+- Principales convenios colectivos por CNAE
+- Doctrina DGT sobre retribuciones
+- Jurisprudencia sobre salarios (CENDOJ)
+
+### 7.2 Sincronización Automática
+- Detectar actualizaciones de convenios en BOE/BOPA
+- Notificar cambios en tipos de cotización SS
+- Alertar sobre sentencias relevantes
+
+---
+
+## Arquitectura del Flujo
+
+```text
+┌──────────────────────────────────────────────────────────────────────┐
+│                    FLUJO DE RECÁLCULO DE NÓMINAS                     │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  1. INICIO                                                           │
+│     └─► Usuario solicita recálculo (manual o automático mensual)     │
+│                                                                      │
+│  2. MOTOR DE RECÁLCULO (Edge Function)                               │
+│     ├─► Cargar datos empleado + contrato + convenio                  │
+│     ├─► Aplicar tablas salariales del convenio                       │
+│     ├─► Calcular todos los conceptos obligatorios                    │
+│     ├─► Verificar SS + IRPF actualizados                             │
+│     └─► Detectar diferencias e incumplimientos                       │
+│                                                                      │
+│  3. VALIDACIÓN IA RRHH                                               │
+│     ├─► Analizar coherencia del recálculo                            │
+│     ├─► Clasificar riesgo de incumplimiento                          │
+│     └─► Decidir si requiere revisión legal                           │
+│                                                                      │
+│  4. REVISIÓN AGENTE JURÍDICO (si riesgo medio/alto)                  │
+│     ├─► Verificar cumplimiento normativo                             │
+│     ├─► Evaluar riesgo legal                                         │
+│     └─► Emitir dictamen (aprobar/rechazar/modificar)                 │
+│                                                                      │
+│  5. APROBACIÓN RESPONSABLE HUMANO HR                                 │
+│     ├─► Revisar informe completo                                     │
+│     ├─► Aprobar / Rechazar / Solicitar cambios                       │
+│     └─► Firmar digitalmente la aprobación                            │
+│                                                                      │
+│  6. APLICACIÓN                                                       │
+│     ├─► Actualizar nómina con valores aprobados                      │
+│     ├─► Registrar en auditoría                                       │
+│     └─► Notificar al empleado si procede                             │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Archivos a Crear/Modificar
+
+### Nuevos Archivos
+| Archivo | Descripción |
+|---------|-------------|
+| `src/data/hr/collectiveAgreementsCatalog.ts` | Catálogo inicial de convenios |
+| `src/components/erp/hr/shared/HRCollectiveAgreementSelect.tsx` | Selector de convenios |
+| `src/components/erp/hr/HRPayrollRecalculationPanel.tsx` | Panel principal de recálculo |
+| `src/components/erp/hr/dialogs/HRPayrollRecalculationDialog.tsx` | Detalle de recálculo |
+| `src/components/erp/hr/dialogs/HRSalaryConceptsManagerDialog.tsx` | Gestión de conceptos |
+| `src/components/erp/hr/HRCollectiveAgreementsPanel.tsx` | Gestión de convenios |
+| `src/components/erp/hr/dialogs/HRPayrollApprovalDialog.tsx` | Dialog de aprobación |
+| `supabase/functions/erp-hr-payroll-recalculation/index.ts` | Motor de recálculo |
+| `src/data/legal/payrollComplianceDocs.ts` | Documentación legal nóminas |
+
+### Archivos a Modificar
+| Archivo | Cambios |
+|---------|---------|
+| `HRContractFormDialog.tsx` | Añadir selector de convenio obligatorio |
+| `HRPayrollPanel.tsx` | Integrar acceso a recálculo |
+| `HRPayrollEntryDialog.tsx` | Cargar conceptos desde convenio |
+| `erp-hr-ai-agent/index.ts` | Nueva acción validate_payroll_recalculation |
+| `legal-ai-advisor/index.ts` | Soporte para validación de nóminas |
+| `src/components/erp/hr/index.ts` | Exportar nuevos componentes |
+
+---
+
+## Estimación de Esfuerzo
+
+| Fase | Complejidad | Componentes |
+|------|-------------|-------------|
+| Fase 1 - Base de Datos | Media | 4 migraciones |
+| Fase 2 - Selector Convenio | Baja | 2 componentes |
+| Fase 3 - Motor Recálculo | Alta | 1 edge function compleja |
+| Fase 4 - Validación IA | Alta | 2 edge functions |
+| Fase 5 - Interfaz Usuario | Media | 6 componentes |
+| Fase 6 - Notificaciones | Baja | Triggers + alertas |
+| Fase 7 - Knowledge Base | Baja | Datos estáticos |
+
+---
+
+## Consideraciones Técnicas
+
+1. **Rendimiento**: El recálculo masivo se ejecutará en batch con límite de 50 empleados por llamada
+2. **Auditoría**: Todas las operaciones quedarán registradas en `erp_hr_payroll_recalculations`
+3. **Seguridad**: RLS restringirá acceso por empresa y rol (solo HR Managers pueden aprobar)
+4. **Internacionalización**: Soporte para convenios de España, Andorra y otros países
+5. **Escalabilidad**: Arquitectura preparada para múltiples empresas y convenios simultáneos
