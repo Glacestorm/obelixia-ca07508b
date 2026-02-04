@@ -17131,6 +17131,83 @@ export type Database = {
           },
         ]
       }
+      erp_hr_disconnection_policies: {
+        Row: {
+          applies_holidays: boolean | null
+          applies_weekdays: boolean | null
+          applies_weekends: boolean | null
+          awareness_training_required: boolean | null
+          communicated_to_employees: boolean | null
+          communication_date: string | null
+          company_id: string | null
+          created_at: string | null
+          disconnection_end: string
+          disconnection_start: string
+          effective_date: string
+          email_delay_enabled: boolean | null
+          exception_roles: string[] | null
+          exception_situations: Json | null
+          id: string
+          is_active: boolean | null
+          notification_blocking: boolean | null
+          policy_name: string
+          updated_at: string | null
+          urgent_contact_method: string | null
+        }
+        Insert: {
+          applies_holidays?: boolean | null
+          applies_weekdays?: boolean | null
+          applies_weekends?: boolean | null
+          awareness_training_required?: boolean | null
+          communicated_to_employees?: boolean | null
+          communication_date?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          disconnection_end: string
+          disconnection_start: string
+          effective_date: string
+          email_delay_enabled?: boolean | null
+          exception_roles?: string[] | null
+          exception_situations?: Json | null
+          id?: string
+          is_active?: boolean | null
+          notification_blocking?: boolean | null
+          policy_name: string
+          updated_at?: string | null
+          urgent_contact_method?: string | null
+        }
+        Update: {
+          applies_holidays?: boolean | null
+          applies_weekdays?: boolean | null
+          applies_weekends?: boolean | null
+          awareness_training_required?: boolean | null
+          communicated_to_employees?: boolean | null
+          communication_date?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          disconnection_end?: string
+          disconnection_start?: string
+          effective_date?: string
+          email_delay_enabled?: boolean | null
+          exception_roles?: string[] | null
+          exception_situations?: Json | null
+          id?: string
+          is_active?: boolean | null
+          notification_blocking?: boolean | null
+          policy_name?: string
+          updated_at?: string | null
+          urgent_contact_method?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_disconnection_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_document_ai_processing: {
         Row: {
           company_id: string
@@ -18154,6 +18231,83 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_equality_plans: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          diagnosis_data: Json | null
+          document_urls: string[] | null
+          end_date: string
+          equality_commission: Json | null
+          id: string
+          last_review_date: string | null
+          measures: Json | null
+          objectives: Json | null
+          plan_code: string | null
+          plan_name: string
+          registration_date: string | null
+          registration_number: string | null
+          review_dates: Json | null
+          start_date: string
+          status: Database["public"]["Enums"]["equality_plan_status"] | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          diagnosis_data?: Json | null
+          document_urls?: string[] | null
+          end_date: string
+          equality_commission?: Json | null
+          id?: string
+          last_review_date?: string | null
+          measures?: Json | null
+          objectives?: Json | null
+          plan_code?: string | null
+          plan_name: string
+          registration_date?: string | null
+          registration_number?: string | null
+          review_dates?: Json | null
+          start_date: string
+          status?: Database["public"]["Enums"]["equality_plan_status"] | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          diagnosis_data?: Json | null
+          document_urls?: string[] | null
+          end_date?: string
+          equality_commission?: Json | null
+          id?: string
+          last_review_date?: string | null
+          measures?: Json | null
+          objectives?: Json | null
+          plan_code?: string | null
+          plan_name?: string
+          registration_date?: string | null
+          registration_number?: string | null
+          review_dates?: Json | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["equality_plan_status"] | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_equality_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_evaluation_cycles: {
         Row: {
           company_id: string
@@ -18520,6 +18674,92 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_harassment_protocols: {
+        Row: {
+          communicated_at: string | null
+          communication_proof: string | null
+          company_id: string | null
+          complaint_procedure: Json | null
+          contact_person_id: string | null
+          created_at: string | null
+          declaration_principles: string | null
+          definitions: Json | null
+          document_url: string | null
+          effective_date: string
+          id: string
+          investigation_committee: Json | null
+          investigation_procedure: Json | null
+          is_active: boolean | null
+          prevention_measures: Json | null
+          protocol_name: string
+          protocol_type: string
+          review_date: string | null
+          sanctions: Json | null
+          scope_application: string | null
+          support_measures: Json | null
+          training_requirements: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          communicated_at?: string | null
+          communication_proof?: string | null
+          company_id?: string | null
+          complaint_procedure?: Json | null
+          contact_person_id?: string | null
+          created_at?: string | null
+          declaration_principles?: string | null
+          definitions?: Json | null
+          document_url?: string | null
+          effective_date: string
+          id?: string
+          investigation_committee?: Json | null
+          investigation_procedure?: Json | null
+          is_active?: boolean | null
+          prevention_measures?: Json | null
+          protocol_name: string
+          protocol_type: string
+          review_date?: string | null
+          sanctions?: Json | null
+          scope_application?: string | null
+          support_measures?: Json | null
+          training_requirements?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          communicated_at?: string | null
+          communication_proof?: string | null
+          company_id?: string | null
+          complaint_procedure?: Json | null
+          contact_person_id?: string | null
+          created_at?: string | null
+          declaration_principles?: string | null
+          definitions?: Json | null
+          document_url?: string | null
+          effective_date?: string
+          id?: string
+          investigation_committee?: Json | null
+          investigation_procedure?: Json | null
+          is_active?: boolean | null
+          prevention_measures?: Json | null
+          protocol_name?: string
+          protocol_type?: string
+          review_date?: string | null
+          sanctions?: Json | null
+          scope_application?: string | null
+          support_measures?: Json | null
+          training_requirements?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_harassment_protocols_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -21289,6 +21529,84 @@ export type Database = {
           },
         ]
       }
+      erp_hr_salary_audits: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          audit_period: string | null
+          audit_year: number
+          company_id: string | null
+          correction_measures: Json | null
+          correction_timeline: Json | null
+          created_at: string | null
+          equality_plan_id: string | null
+          gap_by_category: Json | null
+          gap_by_concept: Json | null
+          gap_causes: Json | null
+          id: string
+          legal_justification: string | null
+          overall_gap_percentage: number | null
+          salary_data: Json | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          audit_period?: string | null
+          audit_year: number
+          company_id?: string | null
+          correction_measures?: Json | null
+          correction_timeline?: Json | null
+          created_at?: string | null
+          equality_plan_id?: string | null
+          gap_by_category?: Json | null
+          gap_by_concept?: Json | null
+          gap_causes?: Json | null
+          id?: string
+          legal_justification?: string | null
+          overall_gap_percentage?: number | null
+          salary_data?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          audit_period?: string | null
+          audit_year?: number
+          company_id?: string | null
+          correction_measures?: Json | null
+          correction_timeline?: Json | null
+          created_at?: string | null
+          equality_plan_id?: string | null
+          gap_by_category?: Json | null
+          gap_by_concept?: Json | null
+          gap_causes?: Json | null
+          id?: string
+          legal_justification?: string | null
+          overall_gap_percentage?: number | null
+          salary_data?: Json | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_salary_audits_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_salary_audits_equality_plan_id_fkey"
+            columns: ["equality_plan_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_equality_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_sanction_alerts: {
         Row: {
           alert_level: string | null
@@ -22089,6 +22407,219 @@ export type Database = {
           },
         ]
       }
+      erp_hr_time_entries: {
+        Row: {
+          break_end: string | null
+          break_minutes: number | null
+          break_start: string | null
+          clock_in: string | null
+          clock_in_location: Json | null
+          clock_out: string | null
+          clock_out_location: Json | null
+          company_id: string | null
+          created_at: string | null
+          employee_id: string | null
+          entry_date: string
+          entry_method: string | null
+          has_incident: boolean | null
+          id: string
+          incident_notes: string | null
+          incident_type: string | null
+          is_validated: boolean | null
+          modification_reason: string | null
+          modified_by: string | null
+          original_values: Json | null
+          overtime_hours: number | null
+          policy_id: string | null
+          status: string | null
+          updated_at: string | null
+          validated_at: string | null
+          validated_by: string | null
+          was_modified: boolean | null
+          worked_hours: number | null
+        }
+        Insert: {
+          break_end?: string | null
+          break_minutes?: number | null
+          break_start?: string | null
+          clock_in?: string | null
+          clock_in_location?: Json | null
+          clock_out?: string | null
+          clock_out_location?: Json | null
+          company_id?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          entry_date: string
+          entry_method?: string | null
+          has_incident?: boolean | null
+          id?: string
+          incident_notes?: string | null
+          incident_type?: string | null
+          is_validated?: boolean | null
+          modification_reason?: string | null
+          modified_by?: string | null
+          original_values?: Json | null
+          overtime_hours?: number | null
+          policy_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          was_modified?: boolean | null
+          worked_hours?: number | null
+        }
+        Update: {
+          break_end?: string | null
+          break_minutes?: number | null
+          break_start?: string | null
+          clock_in?: string | null
+          clock_in_location?: Json | null
+          clock_out?: string | null
+          clock_out_location?: Json | null
+          company_id?: string | null
+          created_at?: string | null
+          employee_id?: string | null
+          entry_date?: string
+          entry_method?: string | null
+          has_incident?: boolean | null
+          id?: string
+          incident_notes?: string | null
+          incident_type?: string | null
+          is_validated?: boolean | null
+          modification_reason?: string | null
+          modified_by?: string | null
+          original_values?: Json | null
+          overtime_hours?: number | null
+          policy_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          was_modified?: boolean | null
+          worked_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_time_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_time_entries_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_time_entries_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_time_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_time_policies: {
+        Row: {
+          allowed_methods: Json | null
+          applies_to_departments: string[] | null
+          applies_to_positions: string[] | null
+          break_duration_minutes: number | null
+          break_is_paid: boolean | null
+          company_id: string | null
+          core_hours_end: string | null
+          core_hours_start: string | null
+          created_at: string | null
+          daily_hours: number | null
+          flex_end_time: string | null
+          flex_start_time: string | null
+          geolocation_radius_meters: number | null
+          geolocation_required: boolean | null
+          id: string
+          is_active: boolean | null
+          is_flexible: boolean | null
+          max_annual_overtime: number | null
+          max_daily_overtime: number | null
+          overtime_allowed: boolean | null
+          overtime_compensation: string | null
+          policy_code: string | null
+          policy_name: string
+          remote_days_per_week: number | null
+          remote_work_allowed: boolean | null
+          updated_at: string | null
+          weekly_hours: number | null
+        }
+        Insert: {
+          allowed_methods?: Json | null
+          applies_to_departments?: string[] | null
+          applies_to_positions?: string[] | null
+          break_duration_minutes?: number | null
+          break_is_paid?: boolean | null
+          company_id?: string | null
+          core_hours_end?: string | null
+          core_hours_start?: string | null
+          created_at?: string | null
+          daily_hours?: number | null
+          flex_end_time?: string | null
+          flex_start_time?: string | null
+          geolocation_radius_meters?: number | null
+          geolocation_required?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_flexible?: boolean | null
+          max_annual_overtime?: number | null
+          max_daily_overtime?: number | null
+          overtime_allowed?: boolean | null
+          overtime_compensation?: string | null
+          policy_code?: string | null
+          policy_name: string
+          remote_days_per_week?: number | null
+          remote_work_allowed?: boolean | null
+          updated_at?: string | null
+          weekly_hours?: number | null
+        }
+        Update: {
+          allowed_methods?: Json | null
+          applies_to_departments?: string[] | null
+          applies_to_positions?: string[] | null
+          break_duration_minutes?: number | null
+          break_is_paid?: boolean | null
+          company_id?: string | null
+          core_hours_end?: string | null
+          core_hours_start?: string | null
+          created_at?: string | null
+          daily_hours?: number | null
+          flex_end_time?: string | null
+          flex_start_time?: string | null
+          geolocation_radius_meters?: number | null
+          geolocation_required?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_flexible?: boolean | null
+          max_annual_overtime?: number | null
+          max_daily_overtime?: number | null
+          overtime_allowed?: boolean | null
+          overtime_compensation?: string | null
+          policy_code?: string | null
+          policy_name?: string
+          remote_days_per_week?: number | null
+          remote_work_allowed?: boolean | null
+          updated_at?: string | null
+          weekly_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_time_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_training_catalog: {
         Row: {
           certification_name: string | null
@@ -22694,6 +23225,157 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_whistleblower_investigations: {
+        Row: {
+          completed_at: string | null
+          corrective_actions: Json | null
+          created_at: string | null
+          disciplinary_actions: Json | null
+          findings: string | null
+          id: string
+          internal_notes: string | null
+          investigator_id: string | null
+          investigator_role: string | null
+          phase: string | null
+          protection_measures: Json | null
+          recommendations: string | null
+          report_id: string | null
+          retaliation_check_date: string | null
+          retaliation_detected: boolean | null
+          started_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          corrective_actions?: Json | null
+          created_at?: string | null
+          disciplinary_actions?: Json | null
+          findings?: string | null
+          id?: string
+          internal_notes?: string | null
+          investigator_id?: string | null
+          investigator_role?: string | null
+          phase?: string | null
+          protection_measures?: Json | null
+          recommendations?: string | null
+          report_id?: string | null
+          retaliation_check_date?: string | null
+          retaliation_detected?: boolean | null
+          started_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          corrective_actions?: Json | null
+          created_at?: string | null
+          disciplinary_actions?: Json | null
+          findings?: string | null
+          id?: string
+          internal_notes?: string | null
+          investigator_id?: string | null
+          investigator_role?: string | null
+          phase?: string | null
+          protection_measures?: Json | null
+          recommendations?: string | null
+          report_id?: string | null
+          retaliation_check_date?: string | null
+          retaliation_detected?: boolean | null
+          started_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_whistleblower_investigations_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_whistleblower_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_whistleblower_reports: {
+        Row: {
+          accused_info_encrypted: string | null
+          acknowledged_at: string | null
+          category: Database["public"]["Enums"]["whistleblower_category"]
+          company_id: string | null
+          created_at: string | null
+          description: string
+          evidence_urls: string[] | null
+          id: string
+          is_anonymous: boolean | null
+          jurisdiction: string | null
+          priority: string | null
+          received_at: string | null
+          report_code: string
+          reporter_contact_encrypted: string | null
+          resolution_deadline: string | null
+          resolved_at: string | null
+          status:
+            | Database["public"]["Enums"]["whistleblower_report_status"]
+            | null
+          subject: string
+          updated_at: string | null
+          witnesses_encrypted: string | null
+        }
+        Insert: {
+          accused_info_encrypted?: string | null
+          acknowledged_at?: string | null
+          category: Database["public"]["Enums"]["whistleblower_category"]
+          company_id?: string | null
+          created_at?: string | null
+          description: string
+          evidence_urls?: string[] | null
+          id?: string
+          is_anonymous?: boolean | null
+          jurisdiction?: string | null
+          priority?: string | null
+          received_at?: string | null
+          report_code: string
+          reporter_contact_encrypted?: string | null
+          resolution_deadline?: string | null
+          resolved_at?: string | null
+          status?:
+            | Database["public"]["Enums"]["whistleblower_report_status"]
+            | null
+          subject: string
+          updated_at?: string | null
+          witnesses_encrypted?: string | null
+        }
+        Update: {
+          accused_info_encrypted?: string | null
+          acknowledged_at?: string | null
+          category?: Database["public"]["Enums"]["whistleblower_category"]
+          company_id?: string | null
+          created_at?: string | null
+          description?: string
+          evidence_urls?: string[] | null
+          id?: string
+          is_anonymous?: boolean | null
+          jurisdiction?: string | null
+          priority?: string | null
+          received_at?: string | null
+          report_code?: string
+          reporter_contact_encrypted?: string | null
+          resolution_deadline?: string | null
+          resolved_at?: string | null
+          status?:
+            | Database["public"]["Enums"]["whistleblower_report_status"]
+            | null
+          subject?: string
+          updated_at?: string | null
+          witnesses_encrypted?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_whistleblower_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -53048,6 +53730,15 @@ export type Database = {
         | "biometric"
         | "security_question"
       auth_risk_level: "low" | "medium" | "high" | "critical"
+      equality_plan_status:
+        | "draft"
+        | "diagnosis"
+        | "negotiation"
+        | "approved"
+        | "registered"
+        | "active"
+        | "expired"
+        | "under_review"
       erp_chart_type:
         | "pgc_2007"
         | "pgc_pyme"
@@ -53125,6 +53816,24 @@ export type Database = {
         | "periodic"
         | "post_onboarding"
       survey_type: "nps" | "csat" | "ces"
+      whistleblower_category:
+        | "fraud"
+        | "corruption"
+        | "harassment"
+        | "discrimination"
+        | "safety_violation"
+        | "environmental"
+        | "data_protection"
+        | "financial_crime"
+        | "labor_violation"
+        | "other"
+      whistleblower_report_status:
+        | "received"
+        | "acknowledged"
+        | "investigating"
+        | "resolved"
+        | "archived"
+        | "escalated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -53270,6 +53979,16 @@ export const Constants = {
         "security_question",
       ],
       auth_risk_level: ["low", "medium", "high", "critical"],
+      equality_plan_status: [
+        "draft",
+        "diagnosis",
+        "negotiation",
+        "approved",
+        "registered",
+        "active",
+        "expired",
+        "under_review",
+      ],
       erp_chart_type: [
         "pgc_2007",
         "pgc_pyme",
@@ -53354,6 +54073,26 @@ export const Constants = {
         "post_onboarding",
       ],
       survey_type: ["nps", "csat", "ces"],
+      whistleblower_category: [
+        "fraud",
+        "corruption",
+        "harassment",
+        "discrimination",
+        "safety_violation",
+        "environmental",
+        "data_protection",
+        "financial_crime",
+        "labor_violation",
+        "other",
+      ],
+      whistleblower_report_status: [
+        "received",
+        "acknowledged",
+        "investigating",
+        "resolved",
+        "archived",
+        "escalated",
+      ],
     },
   },
 } as const
