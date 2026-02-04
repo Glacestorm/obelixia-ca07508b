@@ -965,3 +965,6 @@ verify_jwt = true
 
 [functions.erp-hr-whistleblower-agent]
 verify_jwt = true
+
+[functions.erp-hr-clm-agent]
+verify_jwt = true

@@ -67,3 +67,22 @@ export type {
   BurnoutAnalysis,
   WellnessPlan
 } from './useHRWellbeing';
+
+// Phase 4 - Contract Lifecycle Management Hooks
+export { useHRContractLifecycle } from './useHRContractLifecycle';
+export type {
+  ContractParty,
+  ContractRisk,
+  ContractAnalysis,
+  SuggestedClause,
+  ClauseSuggestions,
+  NegotiationProposal,
+  NegotiationStrategy,
+  VersionChange,
+  VersionComparison,
+  ContractObligation,
+  ObligationsExtraction,
+  ContractRiskItem,
+  RiskAssessment,
+  ContractAmendment
+} from './useHRContractLifecycle';
