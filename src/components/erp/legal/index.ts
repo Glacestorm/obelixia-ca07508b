@@ -20,6 +20,8 @@ export { LegalTrends2026Panel } from './LegalTrends2026Panel';
 export { LegalKnowledgeUploader } from './LegalKnowledgeUploader';
 export { LegalRegulationAlertsPanel } from './LegalRegulationAlertsPanel';
 export { LegalEssentialKnowledgeLoader } from './LegalEssentialKnowledgeLoader';
+export { LegalKnowledgeSyncConfig } from './LegalKnowledgeSyncConfig';
+export { LegalKnowledgeExportPanel } from './LegalKnowledgeExportPanel';
 
 // Fase 8: Sistema de Alertas Regulatorias
 export { LegalBulletinMonitorPanel } from './LegalBulletinMonitorPanel';
