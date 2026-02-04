@@ -114,3 +114,22 @@ export type {
   Prediction,
   Optimization
 } from './useHRAutonomousCopilot';
+
+// Phase 6 - Smart Contracts Legales
+export { useHRSmartContracts } from './useHRSmartContracts';
+export type {
+  ContractType as SmartContractType,
+  ContractStatus as SmartContractStatus,
+  ConditionType,
+  TriggerCategory,
+  ContractParty as SmartContractParty,
+  SmartContractClause,
+  SmartContractCondition,
+  SmartContract,
+  ContractTrigger,
+  SimulationResult,
+  ComplianceReport as SmartContractComplianceReport,
+  AuditTrail as SmartContractAuditTrail,
+  ContractMonitoring,
+  ClauseExecution
+} from './useHRSmartContracts';
