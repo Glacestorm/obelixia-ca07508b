@@ -15725,6 +15725,62 @@ export type Database = {
           },
         ]
       }
+      erp_hr_accounting_mapping: {
+        Row: {
+          account_code: string
+          account_name: string
+          category: string
+          company_id: string | null
+          concept_code: string
+          concept_name: string
+          created_at: string | null
+          debit_credit: string
+          id: string
+          is_active: boolean | null
+          jurisdiction: string
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_code: string
+          account_name: string
+          category?: string
+          company_id?: string | null
+          concept_code: string
+          concept_name: string
+          created_at?: string | null
+          debit_credit: string
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_code?: string
+          account_name?: string
+          category?: string
+          company_id?: string | null
+          concept_code?: string
+          concept_name?: string
+          created_at?: string | null
+          debit_credit?: string
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_accounting_mapping_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_admin_obligations: {
         Row: {
           created_at: string | null
@@ -18820,6 +18876,56 @@ export type Database = {
           },
         ]
       }
+      erp_hr_integration_log: {
+        Row: {
+          action: string
+          company_id: string | null
+          details: Json | null
+          error_message: string | null
+          id: string
+          integration_type: string
+          performed_at: string | null
+          performed_by: string | null
+          source_id: string
+          source_type: string
+          status: string
+        }
+        Insert: {
+          action: string
+          company_id?: string | null
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          integration_type: string
+          performed_at?: string | null
+          performed_by?: string | null
+          source_id: string
+          source_type: string
+          status?: string
+        }
+        Update: {
+          action?: string
+          company_id?: string | null
+          details?: Json | null
+          error_message?: string | null
+          id?: string
+          integration_type?: string
+          performed_at?: string | null
+          performed_by?: string | null
+          source_id?: string
+          source_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_integration_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_interviews: {
         Row: {
           calendar_invite_sent: boolean | null
@@ -19094,6 +19200,89 @@ export type Database = {
             columns: ["reports_to_position_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_job_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_journal_entries: {
+        Row: {
+          auto_generated: boolean | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          entry_date: string
+          entry_lines: Json | null
+          error_message: string | null
+          fiscal_year_id: string | null
+          generation_status: string | null
+          id: string
+          journal_entry_id: string | null
+          metadata: Json | null
+          period_id: string | null
+          source_id: string
+          source_reference: string | null
+          source_type: string
+          total_credit: number | null
+          total_debit: number | null
+          updated_at: string | null
+          validated_at: string | null
+          validated_by: string | null
+          validation_status: string | null
+        }
+        Insert: {
+          auto_generated?: boolean | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          entry_date: string
+          entry_lines?: Json | null
+          error_message?: string | null
+          fiscal_year_id?: string | null
+          generation_status?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          metadata?: Json | null
+          period_id?: string | null
+          source_id: string
+          source_reference?: string | null
+          source_type: string
+          total_credit?: number | null
+          total_debit?: number | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_status?: string | null
+        }
+        Update: {
+          auto_generated?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          entry_date?: string
+          entry_lines?: Json | null
+          error_message?: string | null
+          fiscal_year_id?: string | null
+          generation_status?: string | null
+          id?: string
+          journal_entry_id?: string | null
+          metadata?: Json | null
+          period_id?: string | null
+          source_id?: string
+          source_reference?: string | null
+          source_type?: string
+          total_credit?: number | null
+          total_debit?: number | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_journal_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -22260,6 +22449,86 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_treasury_integration: {
+        Row: {
+          amount: number
+          bank_account_iban: string | null
+          beneficiary_id: string | null
+          beneficiary_name: string | null
+          beneficiary_type: string
+          company_id: string
+          created_at: string | null
+          currency: string | null
+          due_date: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payable_id: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          source_id: string
+          source_reference: string | null
+          source_type: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          bank_account_iban?: string | null
+          beneficiary_id?: string | null
+          beneficiary_name?: string | null
+          beneficiary_type?: string
+          company_id: string
+          created_at?: string | null
+          currency?: string | null
+          due_date: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payable_id?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          source_id: string
+          source_reference?: string | null
+          source_type: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_account_iban?: string | null
+          beneficiary_id?: string | null
+          beneficiary_name?: string | null
+          beneficiary_type?: string
+          company_id?: string
+          created_at?: string | null
+          currency?: string | null
+          due_date?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payable_id?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          source_id?: string
+          source_reference?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_treasury_integration_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -52357,6 +52626,56 @@ export type Database = {
           matching_cnaes: string[]
         }[]
       }
+      fn_create_hr_journal_entry: {
+        Args: {
+          p_company_id: string
+          p_description: string
+          p_entry_date: string
+          p_entry_lines: Json
+          p_source_id: string
+          p_source_reference: string
+          p_source_type: string
+        }
+        Returns: string
+      }
+      fn_create_hr_treasury_payable: {
+        Args: {
+          p_amount: number
+          p_bank_account_iban?: string
+          p_beneficiary_name: string
+          p_beneficiary_type: string
+          p_company_id: string
+          p_due_date: string
+          p_source_id: string
+          p_source_reference: string
+          p_source_type: string
+        }
+        Returns: string
+      }
+      fn_generate_payroll_entry_lines: {
+        Args: {
+          p_company_id: string
+          p_gross_salary: number
+          p_irpf_retention: number
+          p_jurisdiction?: string
+          p_other_deductions?: number
+          p_ss_company: number
+          p_ss_employee: number
+        }
+        Returns: Json
+      }
+      fn_get_hr_account_mapping: {
+        Args: {
+          p_company_id: string
+          p_concept_code: string
+          p_jurisdiction?: string
+        }
+        Returns: {
+          account_code: string
+          account_name: string
+          debit_credit: string
+        }[]
+      }
       fn_recalculate_warehouse_stock: {
         Args: { p_company_id: string; p_warehouse_id?: string }
         Returns: {
@@ -52364,6 +52683,7 @@ export type Database = {
           items_processed: number
         }[]
       }
+      fn_validate_double_entry: { Args: { p_lines: Json }; Returns: boolean }
       generate_compliance_alerts: { Args: never; Returns: undefined }
       generate_hr_alerts: { Args: never; Returns: undefined }
       generate_invoice_number: {
