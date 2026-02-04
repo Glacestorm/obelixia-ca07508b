@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { HRPayrollComplianceWidget } from './widgets/HRPayrollComplianceWidget';
 
 interface HRDashboardPanelProps {
   companyId: string;
@@ -287,7 +288,12 @@ export function HRDashboardPanel({ companyId }: HRDashboardPanelProps) {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Widget de Cumplimiento de Nóminas */}
+        <HRPayrollComplianceWidget 
+          companyId={companyId}
+          className="lg:row-span-2"
+        />
         {/* Tipos de contrato */}
         <Card>
           <CardHeader className="pb-2">
