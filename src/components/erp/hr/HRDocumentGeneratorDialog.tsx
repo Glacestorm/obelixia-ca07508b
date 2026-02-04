@@ -115,7 +115,7 @@ export function HRDocumentGeneratorDialog({
       setVariableValues(prev => ({
         ...prev,
         employee_name: `${employee.first_name} ${employee.last_name}`,
-        employee_dni: employee.dni || '',
+        employee_dni: employee.social_security_number || '',
         job_position: employee.job_title || prev.job_position || ''
       }));
     }

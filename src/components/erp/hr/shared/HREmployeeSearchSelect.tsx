@@ -27,13 +27,12 @@ export interface EmployeeOption {
   first_name: string;
   last_name: string;
   employee_number?: string;
-  nss?: string; // Número Seguridad Social
-  dni?: string;
+  social_security_number?: string; // Número Seguridad Social
   phone?: string;
   email?: string;
   job_title?: string;
   department_name?: string;
-  is_active?: boolean;
+  status?: string;
 }
 
 interface HREmployeeSearchSelectProps {
@@ -71,8 +70,8 @@ export function HREmployeeSearchSelect({
     
     setLoading(true);
     try {
-      // Use only columns that exist in the table
-      let url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&select=id,first_name,last_name,employee_number,dni,phone,email,job_title,department_id&order=first_name`;
+      // Use only columns that exist in the table (excluding dni which doesn't exist)
+      let url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&select=id,first_name,last_name,employee_number,social_security_number,phone,email,job_title,department_id,status&order=first_name`;
 
       const response = await fetch(url, {
         headers: {
@@ -127,8 +126,7 @@ export function HREmployeeSearchSelect({
     return employees.filter(emp => {
       const fullName = `${emp.first_name} ${emp.last_name}`.toLowerCase();
       const employeeNumber = emp.employee_number?.toLowerCase() || '';
-      const nss = emp.nss?.toLowerCase() || '';
-      const dni = emp.dni?.toLowerCase() || '';
+      const nss = emp.social_security_number?.toLowerCase() || '';
       const phone = emp.phone?.toLowerCase() || '';
       const email = emp.email?.toLowerCase() || '';
       const jobTitle = emp.job_title?.toLowerCase() || '';
@@ -137,7 +135,6 @@ export function HREmployeeSearchSelect({
         fullName.includes(term) ||
         employeeNumber.includes(term) ||
         nss.includes(term) ||
-        dni.includes(term) ||
         phone.includes(term) ||
         email.includes(term) ||
         jobTitle.includes(term)
@@ -249,7 +246,7 @@ export function HREmployeeSearchSelect({
                         <span className="font-medium truncate">
                           {getFullName(emp)}
                         </span>
-                        {!emp.is_active && (
+                        {emp.status === 'inactive' && (
                           <Badge variant="destructive" className="text-xs">
                             Inactivo
                           </Badge>
@@ -263,8 +260,8 @@ export function HREmployeeSearchSelect({
                             {emp.employee_number}
                           </span>
                         )}
-                        {emp.dni && (
-                          <span>DNI: {emp.dni}</span>
+                        {emp.social_security_number && (
+                          <span>NSS: {emp.social_security_number}</span>
                         )}
                         {emp.phone && (
                           <span className="flex items-center gap-1">

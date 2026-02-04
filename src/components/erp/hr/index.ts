@@ -97,3 +97,4 @@ export { HRCollectiveAgreementSelect } from './shared/HRCollectiveAgreementSelec
 export type { AgreementData } from './shared/HRCollectiveAgreementSelect';
 export { HRPayrollRecalculationPanel } from './HRPayrollRecalculationPanel';
 export { HRPayrollRecalculationDialog } from './dialogs/HRPayrollRecalculationDialog';
+export { HRPayrollComplianceWidget } from './widgets/HRPayrollComplianceWidget';
