@@ -496,6 +496,135 @@ export function useHRAccountingIntegration() {
     }
   }, []);
 
+  // === GENERATE PAYROLL ENTRY (via Edge Function) ===
+  const generatePayrollEntry = useCallback(async (
+    companyId: string,
+    payroll: {
+      id: string;
+      employee_id: string;
+      employee_name: string;
+      period: string;
+      gross_salary: number;
+      net_salary: number;
+      irpf_amount: number;
+      irpf_percentage: number;
+      ss_employee: number;
+      ss_company: number;
+      extras: number;
+      deductions: number;
+    },
+    entryDate: string,
+    journalId?: string,
+    autoPost?: boolean
+  ) => {
+    setIsLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('erp-hr-accounting-bridge', {
+        body: {
+          action: 'generate_payroll_entry',
+          payload: {
+            company_id: companyId,
+            payroll,
+            entry_date: entryDate,
+            journal_id: journalId,
+            auto_post: autoPost
+          }
+        }
+      });
+
+      if (fnError) throw fnError;
+      if (!data?.success) throw new Error(data?.error || 'Error al generar asiento');
+
+      toast.success(`Asiento de nómina generado: ${data.journal_entry_id}`);
+      return data;
+    } catch (err) {
+      console.error('[useHRAccountingIntegration] generatePayrollEntry error:', err);
+      const msg = err instanceof Error ? err.message : 'Error al generar asiento';
+      toast.error(msg);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // === GENERATE BATCH PAYROLL ENTRIES ===
+  const generateBatchPayrollEntries = useCallback(async (
+    companyId: string,
+    period: string,
+    payrolls: Array<{
+      id: string;
+      employee_id: string;
+      employee_name: string;
+      period: string;
+      gross_salary: number;
+      net_salary: number;
+      irpf_amount: number;
+      irpf_percentage: number;
+      ss_employee: number;
+      ss_company: number;
+      extras: number;
+      deductions: number;
+    }>,
+    entryDate: string,
+    journalId?: string,
+    consolidate: boolean = true
+  ) => {
+    setIsLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('erp-hr-accounting-bridge', {
+        body: {
+          action: 'generate_batch_payroll_entries',
+          payload: {
+            company_id: companyId,
+            period,
+            payrolls,
+            entry_date: entryDate,
+            journal_id: journalId,
+            consolidate
+          }
+        }
+      });
+
+      if (fnError) throw fnError;
+      if (!data?.success) throw new Error(data?.error || 'Error al generar asientos');
+
+      toast.success(consolidate 
+        ? `Asiento consolidado creado: ${data.journal_entry_id}`
+        : `${data.entries_created} asientos creados`
+      );
+      return data;
+    } catch (err) {
+      console.error('[useHRAccountingIntegration] generateBatchPayrollEntries error:', err);
+      const msg = err instanceof Error ? err.message : 'Error al generar asientos';
+      toast.error(msg);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // === GET ACCOUNTING STATUS (from Edge Function) ===
+  const getAccountingStatus = useCallback(async (
+    companyId: string,
+    sourceType: 'payroll' | 'settlement' | 'ss_contribution',
+    sourceIds: string[]
+  ) => {
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('erp-hr-accounting-bridge', {
+        body: {
+          action: 'get_accounting_status',
+          payload: { company_id: companyId, source_type: sourceType, source_ids: sourceIds }
+        }
+      });
+
+      if (fnError) throw fnError;
+      return data?.status || {};
+    } catch (err) {
+      console.error('[useHRAccountingIntegration] getAccountingStatus error:', err);
+      return {};
+    }
+  }, []);
+
   // === GET SUMMARY ===
   const getAccountingSummary = useCallback(async (companyId: string, period?: string) => {
     try {
@@ -545,15 +674,19 @@ export function useHRAccountingIntegration() {
     // Fetch
     fetchMappings,
     fetchJournalEntries,
-    // Generación de líneas
+    // Generación de líneas (local)
     generatePayrollEntryLines,
     generateSettlementEntryLines,
     // Validación
     validateDoubleEntry,
-    // CRUD
+    // CRUD local
     createJournalEntry,
     updateEntryStatus,
     reverseEntry,
+    // Edge Function actions
+    generatePayrollEntry,
+    generateBatchPayrollEntries,
+    getAccountingStatus,
     // Resumen
     getAccountingSummary
   };
