@@ -15725,6 +15725,63 @@ export type Database = {
           },
         ]
       }
+      erp_hr_admin_obligations: {
+        Row: {
+          created_at: string | null
+          deadline_day: number | null
+          deadline_description: string | null
+          deadline_month: number | null
+          id: string
+          is_active: boolean | null
+          jurisdiction: string
+          legal_reference: string | null
+          model_code: string | null
+          obligation_name: string
+          obligation_type: string
+          organism: string
+          periodicity: string
+          sanction_max: number | null
+          sanction_min: number | null
+          sanction_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deadline_day?: number | null
+          deadline_description?: string | null
+          deadline_month?: number | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction: string
+          legal_reference?: string | null
+          model_code?: string | null
+          obligation_name: string
+          obligation_type: string
+          organism: string
+          periodicity: string
+          sanction_max?: number | null
+          sanction_min?: number | null
+          sanction_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deadline_day?: number | null
+          deadline_description?: string | null
+          deadline_month?: number | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          legal_reference?: string | null
+          model_code?: string | null
+          obligation_name?: string
+          obligation_type?: string
+          organism?: string
+          periodicity?: string
+          sanction_max?: number | null
+          sanction_min?: number | null
+          sanction_type?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_agent_access_control: {
         Row: {
           can_view_all_employees: boolean | null
@@ -16511,6 +16568,51 @@ export type Database = {
           },
         ]
       }
+      erp_hr_communication_templates: {
+        Row: {
+          checklist_items: Json | null
+          communication_type: string
+          created_at: string | null
+          dynamic_fields: Json | null
+          id: string
+          is_active: boolean | null
+          is_official: boolean | null
+          jurisdiction: string
+          legal_references: string[] | null
+          template_content: string
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          checklist_items?: Json | null
+          communication_type: string
+          created_at?: string | null
+          dynamic_fields?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_official?: boolean | null
+          jurisdiction: string
+          legal_references?: string[] | null
+          template_content: string
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          checklist_items?: Json | null
+          communication_type?: string
+          created_at?: string | null
+          dynamic_fields?: Json | null
+          id?: string
+          is_active?: boolean | null
+          is_official?: boolean | null
+          jurisdiction?: string
+          legal_references?: string[] | null
+          template_content?: string
+          template_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_compa_ratio: {
         Row: {
           action_recommended: string | null
@@ -16655,6 +16757,63 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_compliance_checklist: {
+        Row: {
+          communication_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          id: string
+          is_mandatory: boolean | null
+          item_order: number | null
+          item_text: string
+          notes: string | null
+          status: string | null
+          template_id: string | null
+        }
+        Insert: {
+          communication_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          item_order?: number | null
+          item_text: string
+          notes?: string | null
+          status?: string | null
+          template_id?: string | null
+        }
+        Update: {
+          communication_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          item_order?: number | null
+          item_text?: string
+          notes?: string | null
+          status?: string | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_compliance_checklist_communication_id_fkey"
+            columns: ["communication_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_communications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_compliance_checklist_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_communication_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -19446,6 +19605,158 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_legal_communications: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledgment_document_url: string | null
+          ai_validated: boolean | null
+          ai_validation_notes: string | null
+          checklist_status: Json | null
+          communication_type: string
+          company_id: string
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          deadline_date: string | null
+          delivered_at: string | null
+          delivery_method: string | null
+          delivery_status: string | null
+          effective_date: string | null
+          employee_id: string
+          id: string
+          jurisdiction: string | null
+          legal_references: string[] | null
+          legal_review_notes: string | null
+          legal_reviewed: boolean | null
+          notice_date: string | null
+          required_notice_days: number | null
+          title: string
+          union_notification_required: boolean | null
+          union_notified_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledgment_document_url?: string | null
+          ai_validated?: boolean | null
+          ai_validation_notes?: string | null
+          checklist_status?: Json | null
+          communication_type: string
+          company_id: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline_date?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          delivery_status?: string | null
+          effective_date?: string | null
+          employee_id: string
+          id?: string
+          jurisdiction?: string | null
+          legal_references?: string[] | null
+          legal_review_notes?: string | null
+          legal_reviewed?: boolean | null
+          notice_date?: string | null
+          required_notice_days?: number | null
+          title: string
+          union_notification_required?: boolean | null
+          union_notified_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledgment_document_url?: string | null
+          ai_validated?: boolean | null
+          ai_validation_notes?: string | null
+          checklist_status?: Json | null
+          communication_type?: string
+          company_id?: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deadline_date?: string | null
+          delivered_at?: string | null
+          delivery_method?: string | null
+          delivery_status?: string | null
+          effective_date?: string | null
+          employee_id?: string
+          id?: string
+          jurisdiction?: string | null
+          legal_references?: string[] | null
+          legal_review_notes?: string | null
+          legal_reviewed?: boolean | null
+          notice_date?: string | null
+          required_notice_days?: number | null
+          title?: string
+          union_notification_required?: boolean | null
+          union_notified_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_obligation_deadlines: {
+        Row: {
+          ai_reminded: boolean | null
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          deadline_date: string
+          document_url: string | null
+          id: string
+          legal_reviewed: boolean | null
+          notes: string | null
+          obligation_id: string | null
+          period_end: string | null
+          period_start: string | null
+          responsible_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_reminded?: boolean | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          deadline_date: string
+          document_url?: string | null
+          id?: string
+          legal_reviewed?: boolean | null
+          notes?: string | null
+          obligation_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          responsible_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_reminded?: boolean | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          deadline_date?: string
+          document_url?: string | null
+          id?: string
+          legal_reviewed?: boolean | null
+          notes?: string | null
+          obligation_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          responsible_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_obligation_deadlines_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_admin_obligations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_offboarding_history: {
         Row: {
           company_id: string
@@ -20788,6 +21099,157 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_sanction_alerts: {
+        Row: {
+          alert_level: string | null
+          communication_id: string | null
+          company_id: string
+          created_at: string | null
+          days_remaining: number | null
+          description: string | null
+          hr_agent_notified: boolean | null
+          hr_agent_notified_at: string | null
+          id: string
+          is_resolved: boolean | null
+          legal_agent_notified: boolean | null
+          legal_agent_notified_at: string | null
+          obligation_deadline_id: string | null
+          potential_sanction_max: number | null
+          potential_sanction_min: number | null
+          recommended_actions: string[] | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          risk_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          alert_level?: string | null
+          communication_id?: string | null
+          company_id: string
+          created_at?: string | null
+          days_remaining?: number | null
+          description?: string | null
+          hr_agent_notified?: boolean | null
+          hr_agent_notified_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          legal_agent_notified?: boolean | null
+          legal_agent_notified_at?: string | null
+          obligation_deadline_id?: string | null
+          potential_sanction_max?: number | null
+          potential_sanction_min?: number | null
+          recommended_actions?: string[] | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          risk_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          alert_level?: string | null
+          communication_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          days_remaining?: number | null
+          description?: string | null
+          hr_agent_notified?: boolean | null
+          hr_agent_notified_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          legal_agent_notified?: boolean | null
+          legal_agent_notified_at?: string | null
+          obligation_deadline_id?: string | null
+          potential_sanction_max?: number | null
+          potential_sanction_min?: number | null
+          recommended_actions?: string[] | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          risk_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_sanction_alerts_communication_id_fkey"
+            columns: ["communication_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_communications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_sanction_alerts_obligation_deadline_id_fkey"
+            columns: ["obligation_deadline_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_obligation_deadlines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_sanction_alerts_risk_id_fkey"
+            columns: ["risk_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_sanction_risks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_sanction_risks: {
+        Row: {
+          classification: string
+          created_at: string | null
+          description: string
+          detection_triggers: string[] | null
+          id: string
+          infraction_type: string
+          is_active: boolean | null
+          jurisdiction: string
+          legal_reference: string
+          preventive_measures: string[] | null
+          sanction_max_major: number | null
+          sanction_max_medium: number | null
+          sanction_max_minor: number | null
+          sanction_min_major: number | null
+          sanction_min_medium: number | null
+          sanction_min_minor: number | null
+        }
+        Insert: {
+          classification: string
+          created_at?: string | null
+          description: string
+          detection_triggers?: string[] | null
+          id?: string
+          infraction_type: string
+          is_active?: boolean | null
+          jurisdiction: string
+          legal_reference: string
+          preventive_measures?: string[] | null
+          sanction_max_major?: number | null
+          sanction_max_medium?: number | null
+          sanction_max_minor?: number | null
+          sanction_min_major?: number | null
+          sanction_min_medium?: number | null
+          sanction_min_minor?: number | null
+        }
+        Update: {
+          classification?: string
+          created_at?: string | null
+          description?: string
+          detection_triggers?: string[] | null
+          id?: string
+          infraction_type?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          legal_reference?: string
+          preventive_measures?: string[] | null
+          sanction_max_major?: number | null
+          sanction_max_medium?: number | null
+          sanction_max_minor?: number | null
+          sanction_min_major?: number | null
+          sanction_min_medium?: number | null
+          sanction_min_minor?: number | null
+        }
+        Relationships: []
       }
       erp_hr_settlement_history: {
         Row: {
@@ -51918,6 +52380,17 @@ export type Database = {
         }
         Returns: string
       }
+      get_communication_compliance_status: {
+        Args: { p_company_id: string }
+        Returns: {
+          acknowledged_count: number
+          communication_type: string
+          draft_count: number
+          overdue_count: number
+          sent_count: number
+          total_count: number
+        }[]
+      }
       get_company_chart_of_accounts: {
         Args: { p_company_id: string }
         Returns: Json
@@ -51970,6 +52443,18 @@ export type Database = {
         }
         Returns: Json
       }
+      get_sanction_risk_assessment: {
+        Args: { p_company_id: string }
+        Returns: {
+          critical_alerts: number
+          overdue_obligations: number
+          pending_communications: number
+          potential_sanctions_max: number
+          potential_sanctions_min: number
+          total_alerts: number
+          urgent_alerts: number
+        }[]
+      }
       get_sector_ratios: { Args: { p_cnae_code: string }; Returns: Json }
       get_sector_regulations: {
         Args: { _sector_key: string }
@@ -51988,6 +52473,19 @@ export type Database = {
         Returns: Json
       }
       get_turnover_tier: { Args: { p_turnover: number }; Returns: string }
+      get_upcoming_deadlines: {
+        Args: { p_company_id: string; p_days_ahead?: number }
+        Returns: {
+          days_remaining: number
+          deadline_date: string
+          deadline_id: string
+          obligation_name: string
+          organism: string
+          sanction_max: number
+          sanction_type: string
+          status: string
+        }[]
+      }
       get_user_oficina: { Args: { _user_id: string }; Returns: string }
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: { Args: { _user_id: string }; Returns: string }
