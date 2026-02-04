@@ -953,3 +953,6 @@ verify_jwt = false
 
 [functions.erp-hr-compliance-monitor]
 verify_jwt = false
+
+[functions.erp-hr-accounting-bridge]
+verify_jwt = true

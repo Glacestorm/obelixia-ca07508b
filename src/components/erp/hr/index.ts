@@ -108,3 +108,6 @@ export { HRRegulatoryWatchPanel } from './HRRegulatoryWatchPanel';
 
 // Fase: Sistema de Cumplimiento Legal y Comunicaciones Obligatorias
 export * from './compliance';
+
+// Fase: Integración RRHH ↔ Tesorería ↔ Contabilidad
+export * from './integration';
