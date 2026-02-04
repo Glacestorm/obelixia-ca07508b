@@ -950,3 +950,6 @@ verify_jwt = false
 
 [functions.erp-hr-analytics-agent]
 verify_jwt = false
+
+[functions.legal-knowledge-sync]
+verify_jwt = false
