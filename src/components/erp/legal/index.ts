@@ -26,3 +26,10 @@ export { LegalChangeDetectorPanel } from './LegalChangeDetectorPanel';
 export { LegalNotificationsPanel } from './LegalNotificationsPanel';
 export { LegalEnforcementTimelinePanel } from './LegalEnforcementTimelinePanel';
 export { LegalAdaptationPlanPanel } from './LegalAdaptationPlanPanel';
+
+// Fase 9: Reportes y Auditoría Legal
+export { LegalDueDiligencePanel } from './LegalDueDiligencePanel';
+export { LegalAuditTrailPanel } from './LegalAuditTrailPanel';
+export { LegalComplianceReportPanel } from './LegalComplianceReportPanel';
+export { LegalRiskReportPanel } from './LegalRiskReportPanel';
+export { LegalRegulationImpactPanel } from './LegalRegulationImpactPanel';

@@ -98,6 +98,18 @@ export function LegalNavigationMenu({
       ]
     },
     {
+      id: 'reports',
+      label: 'Reportes',
+      icon: FileText,
+      items: [
+        { id: 'due-diligence', label: 'Due Diligence', icon: FileSearch },
+        { id: 'compliance-report', label: 'Reporte Compliance', icon: Shield },
+        { id: 'risk-report', label: 'Reporte Riesgos', icon: AlertTriangle },
+        { id: 'audit-trail', label: 'Audit Trail', icon: Activity },
+        { id: 'regulation-impact', label: 'Impacto Regulatorio', icon: Scale },
+      ]
+    },
+    {
       id: 'trends',
       label: 'Tendencias',
       icon: Sparkles,
