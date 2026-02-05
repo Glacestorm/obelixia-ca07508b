@@ -1004,3 +1004,12 @@ verify_jwt = true
 
 [functions.advanced-clm-engine]
 verify_jwt = true
+
+[functions.crm-marketing-automation]
+verify_jwt = true
+
+[functions.crm-email-sequencer]
+verify_jwt = true
+
+[functions.crm-audience-segmentation]
+verify_jwt = true
