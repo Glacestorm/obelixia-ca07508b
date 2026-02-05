@@ -17485,6 +17485,65 @@ export type Database = {
           },
         ]
       }
+      erp_hr_benefit_valuations: {
+        Row: {
+          annual_company_cost: number | null
+          benefit_name: string
+          benefit_type: string
+          company_id: string | null
+          coverage_details: Json | null
+          created_at: string | null
+          description: string | null
+          effective_date: string | null
+          employee_perceived_value: number | null
+          expiry_date: string | null
+          id: string
+          is_active: boolean | null
+          market_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_company_cost?: number | null
+          benefit_name: string
+          benefit_type: string
+          company_id?: string | null
+          coverage_details?: Json | null
+          created_at?: string | null
+          description?: string | null
+          effective_date?: string | null
+          employee_perceived_value?: number | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          market_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_company_cost?: number | null
+          benefit_name?: string
+          benefit_type?: string
+          company_id?: string | null
+          coverage_details?: Json | null
+          created_at?: string | null
+          description?: string | null
+          effective_date?: string | null
+          employee_perceived_value?: number | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          market_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_benefit_valuations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_bonus_allocations: {
         Row: {
           adjusted_amount: number | null
@@ -18130,6 +18189,68 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_compensation_components: {
+        Row: {
+          calculation_formula: string | null
+          calculation_type: string | null
+          category: string
+          color: string | null
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_cash_equivalent: boolean | null
+          is_taxable: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          calculation_formula?: string | null
+          calculation_type?: string | null
+          category: string
+          color?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_cash_equivalent?: boolean | null
+          is_taxable?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          calculation_formula?: string | null
+          calculation_type?: string | null
+          category?: string
+          color?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_cash_equivalent?: boolean | null
+          is_taxable?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_compensation_components_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -18829,6 +18950,62 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_employee_compensation: {
+        Row: {
+          amount: number
+          component_id: string | null
+          created_at: string | null
+          currency: string | null
+          effective_date: string | null
+          employee_id: string
+          end_date: string | null
+          fiscal_year: number
+          frequency: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          component_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          effective_date?: string | null
+          employee_id: string
+          end_date?: string | null
+          fiscal_year: number
+          frequency?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          component_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          effective_date?: string | null
+          employee_id?: string
+          end_date?: string | null
+          fiscal_year?: number
+          frequency?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_employee_compensation_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_compensation_components"
             referencedColumns: ["id"]
           },
         ]
@@ -21491,6 +21668,65 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_market_benchmarks: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          job_family: string | null
+          job_level: string | null
+          location: string | null
+          percentile_25: number | null
+          percentile_50: number | null
+          percentile_75: number | null
+          percentile_90: number | null
+          source: string | null
+          survey_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          job_family?: string | null
+          job_level?: string | null
+          location?: string | null
+          percentile_25?: number | null
+          percentile_50?: number | null
+          percentile_75?: number | null
+          percentile_90?: number | null
+          source?: string | null
+          survey_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          job_family?: string | null
+          job_level?: string | null
+          location?: string | null
+          percentile_25?: number | null
+          percentile_50?: number | null
+          percentile_75?: number | null
+          percentile_90?: number | null
+          source?: string | null
+          survey_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_market_benchmarks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_obligation_deadlines: {
         Row: {
           ai_reminded: boolean | null
@@ -22790,6 +23026,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_rewards_statements: {
+        Row: {
+          breakdown: Json
+          comparisons: Json | null
+          created_at: string | null
+          currency: string | null
+          employee_id: string
+          fiscal_year: number
+          generated_by: string | null
+          id: string
+          pdf_url: string | null
+          sent_at: string | null
+          statement_date: string
+          status: string | null
+          total_benefits_value: number | null
+          total_cash: number | null
+          total_compensation: number | null
+          total_equity_value: number | null
+          updated_at: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          breakdown?: Json
+          comparisons?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          employee_id: string
+          fiscal_year: number
+          generated_by?: string | null
+          id?: string
+          pdf_url?: string | null
+          sent_at?: string | null
+          statement_date: string
+          status?: string | null
+          total_benefits_value?: number | null
+          total_cash?: number | null
+          total_compensation?: number | null
+          total_equity_value?: number | null
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          breakdown?: Json
+          comparisons?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          employee_id?: string
+          fiscal_year?: number
+          generated_by?: string | null
+          id?: string
+          pdf_url?: string | null
+          sent_at?: string | null
+          statement_date?: string
+          status?: string | null
+          total_benefits_value?: number | null
+          total_cash?: number | null
+          total_compensation?: number | null
+          total_equity_value?: number | null
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: []
       }
       erp_hr_safety_incidents: {
         Row: {

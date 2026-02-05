@@ -130,3 +130,6 @@ export * from './smart-contracts';
 
 // Fase 7: HR Analytics Predictivos y Workforce Intelligence
 export * from './analytics';
+
+// Fase 4 (Plan Mejoras): Total Rewards Statement
+export * from './rewards';
