@@ -7967,6 +7967,65 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_ab_tests: {
+        Row: {
+          campaign_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          name: string
+          results: Json | null
+          sample_size_percent: number | null
+          started_at: string | null
+          status: string | null
+          test_duration_hours: number | null
+          test_type: string | null
+          variants: Json
+          winner_criteria: string | null
+          winning_variant: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          results?: Json | null
+          sample_size_percent?: number | null
+          started_at?: string | null
+          status?: string | null
+          test_duration_hours?: number | null
+          test_type?: string | null
+          variants?: Json
+          winner_criteria?: string | null
+          winning_variant?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          results?: Json | null
+          sample_size_percent?: number | null
+          started_at?: string | null
+          status?: string | null
+          test_duration_hours?: number | null
+          test_type?: string | null
+          variants?: Json
+          winner_criteria?: string | null
+          winning_variant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_ab_tests_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_activities: {
         Row: {
           activity_type: string
@@ -8053,6 +8112,59 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_audience_segments: {
+        Row: {
+          company_id: string | null
+          conditions: Json
+          contact_count: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          filter_type: string | null
+          id: string
+          is_active: boolean | null
+          last_calculated_at: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          conditions?: Json
+          contact_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          filter_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_calculated_at?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          conditions?: Json
+          contact_count?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          filter_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_calculated_at?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_audience_segments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -8320,6 +8432,223 @@ export type Database = {
           },
         ]
       }
+      crm_email_sends: {
+        Row: {
+          campaign_id: string | null
+          click_count: number | null
+          clicked_at: string | null
+          contact_id: string | null
+          created_at: string | null
+          email_address: string
+          error_message: string | null
+          id: string
+          links_clicked: Json | null
+          metadata: Json | null
+          open_count: number | null
+          opened_at: string | null
+          sent_at: string | null
+          sequence_id: string | null
+          status: string | null
+          subject: string | null
+          template_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          click_count?: number | null
+          clicked_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          email_address: string
+          error_message?: string | null
+          id?: string
+          links_clicked?: Json | null
+          metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
+          sent_at?: string | null
+          sequence_id?: string | null
+          status?: string | null
+          subject?: string | null
+          template_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          click_count?: number | null
+          clicked_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          email_address?: string
+          error_message?: string | null
+          id?: string
+          links_clicked?: Json | null
+          metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
+          sent_at?: string | null
+          sequence_id?: string | null
+          status?: string | null
+          subject?: string | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_sends_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_sends_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "crm_email_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_sends_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "crm_email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_email_sequences: {
+        Row: {
+          campaign_id: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          stats: Json | null
+          steps: Json
+          trigger_config: Json | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          stats?: Json | null
+          steps?: Json
+          trigger_config?: Json | null
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          stats?: Json | null
+          steps?: Json
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_sequences_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_sequences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_email_templates: {
+        Row: {
+          category: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          design_json: Json | null
+          html_content: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          plain_content: string | null
+          preview_text: string | null
+          stats: Json | null
+          subject: string | null
+          thumbnail_url: string | null
+          updated_at: string | null
+          variables: Json | null
+        }
+        Insert: {
+          category?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          design_json?: Json | null
+          html_content?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          plain_content?: string | null
+          preview_text?: string | null
+          stats?: Json | null
+          subject?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          category?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          design_json?: Json | null
+          html_content?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          plain_content?: string | null
+          preview_text?: string | null
+          stats?: Json | null
+          subject?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_field_mappings: {
         Row: {
           ai_confidence: number | null
@@ -8447,6 +8776,77 @@ export type Database = {
           validation_rules?: Json | null
         }
         Relationships: []
+      }
+      crm_marketing_campaigns: {
+        Row: {
+          audience_segment_id: string | null
+          budget: number | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          goals: Json | null
+          id: string
+          metrics: Json | null
+          name: string
+          settings: Json | null
+          spent: number | null
+          start_date: string | null
+          status: string | null
+          tags: string[] | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          audience_segment_id?: string | null
+          budget?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          goals?: Json | null
+          id?: string
+          metrics?: Json | null
+          name: string
+          settings?: Json | null
+          spent?: number | null
+          start_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          audience_segment_id?: string | null
+          budget?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          goals?: Json | null
+          id?: string
+          metrics?: Json | null
+          name?: string
+          settings?: Json | null
+          spent?: number | null
+          start_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_marketing_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_migration_records: {
         Row: {
@@ -8697,6 +9097,102 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_segment_members: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          contact_id: string | null
+          id: string
+          segment_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          contact_id?: string | null
+          id?: string
+          segment_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          contact_id?: string | null
+          id?: string
+          segment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_segment_members_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_segment_members_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "crm_audience_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_sequence_enrollments: {
+        Row: {
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string | null
+          current_step: number | null
+          enrolled_at: string | null
+          id: string
+          last_step_at: string | null
+          metadata: Json | null
+          next_step_at: string | null
+          sequence_id: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          current_step?: number | null
+          enrolled_at?: string | null
+          id?: string
+          last_step_at?: string | null
+          metadata?: Json | null
+          next_step_at?: string | null
+          sequence_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          current_step?: number | null
+          enrolled_at?: string | null
+          id?: string
+          last_step_at?: string | null
+          metadata?: Json | null
+          next_step_at?: string | null
+          sequence_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_sequence_enrollments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sequence_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "crm_email_sequences"
             referencedColumns: ["id"]
           },
         ]

@@ -11,5 +11,8 @@ export type { CRMDeal, DealStage } from './useCRMDeals';
 export { useCRMActivities, ACTIVITY_TYPES } from './useCRMActivities';
 export type { CRMActivity, ActivityType } from './useCRMActivities';
 
+// Marketing Automation (Phase 1)
+export * from './marketing';
+
 // Agents
 export * from './agents';
