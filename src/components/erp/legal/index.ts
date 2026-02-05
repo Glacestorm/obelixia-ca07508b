@@ -47,3 +47,6 @@ export * from './entity';
 
 // Fase 9: AI Autonomous Agents & Predictive Legal Analytics
 export * from './analytics';
+
+// Fase 10: Legal Validation Gateway Enhanced & Cross-Module Orchestration
+export * from './gateway';
