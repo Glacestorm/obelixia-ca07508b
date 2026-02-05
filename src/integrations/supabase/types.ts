@@ -26349,6 +26349,701 @@ export type Database = {
           },
         ]
       }
+      erp_legal_expenses: {
+        Row: {
+          amount: number
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          attachments: Json | null
+          billable: boolean | null
+          billed_amount: number | null
+          billing_status: string | null
+          company_id: string
+          created_at: string | null
+          currency: string | null
+          description: string
+          expense_code: string | null
+          expense_date: string
+          expense_type: string
+          id: string
+          invoice_reference: string | null
+          markup_percentage: number | null
+          matter_id: string
+          reimbursable: boolean | null
+          reimbursement_status: string | null
+          updated_at: string | null
+          vendor_id: string | null
+          vendor_name: string | null
+        }
+        Insert: {
+          amount: number
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          attachments?: Json | null
+          billable?: boolean | null
+          billed_amount?: number | null
+          billing_status?: string | null
+          company_id: string
+          created_at?: string | null
+          currency?: string | null
+          description: string
+          expense_code?: string | null
+          expense_date: string
+          expense_type: string
+          id?: string
+          invoice_reference?: string | null
+          markup_percentage?: number | null
+          matter_id: string
+          reimbursable?: boolean | null
+          reimbursement_status?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Update: {
+          amount?: number
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          attachments?: Json | null
+          billable?: boolean | null
+          billed_amount?: number | null
+          billing_status?: string | null
+          company_id?: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string
+          expense_code?: string | null
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          invoice_reference?: string | null
+          markup_percentage?: number | null
+          matter_id?: string
+          reimbursable?: boolean | null
+          reimbursement_status?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+          vendor_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_legal_expenses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_legal_expenses_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "erp_legal_matters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_legal_invoices: {
+        Row: {
+          ai_analysis: Json | null
+          anomaly_flags: Json | null
+          billing_entity_type: string
+          company_id: string
+          created_at: string | null
+          currency: string | null
+          discount_amount: number | null
+          due_date: string | null
+          entity_id: string | null
+          entity_name: string | null
+          expenses_amount: number | null
+          fees_amount: number | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          ledes_data: Json | null
+          ledes_file_url: string | null
+          ledes_format: string | null
+          matter_id: string | null
+          notes: string | null
+          payment_amount: number | null
+          payment_date: string | null
+          payment_reference: string | null
+          status: string | null
+          tax_amount: number | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          anomaly_flags?: Json | null
+          billing_entity_type: string
+          company_id: string
+          created_at?: string | null
+          currency?: string | null
+          discount_amount?: number | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_name?: string | null
+          expenses_amount?: number | null
+          fees_amount?: number | null
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          ledes_data?: Json | null
+          ledes_file_url?: string | null
+          ledes_format?: string | null
+          matter_id?: string | null
+          notes?: string | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          status?: string | null
+          tax_amount?: number | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          anomaly_flags?: Json | null
+          billing_entity_type?: string
+          company_id?: string
+          created_at?: string | null
+          currency?: string | null
+          discount_amount?: number | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_name?: string | null
+          expenses_amount?: number | null
+          fees_amount?: number | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          ledes_data?: Json | null
+          ledes_file_url?: string | null
+          ledes_format?: string | null
+          matter_id?: string | null
+          notes?: string | null
+          payment_amount?: number | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          status?: string | null
+          tax_amount?: number | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_legal_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_legal_invoices_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "erp_legal_matters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_legal_matters: {
+        Row: {
+          agreed_fee: number | null
+          assigned_team: Json | null
+          billing_type: string | null
+          budget_amount: number | null
+          budget_spent: number | null
+          client_matter_id: string | null
+          close_date: string | null
+          company_id: string
+          court_reference: string | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          custom_fields: Json | null
+          description: string | null
+          id: string
+          jurisdiction: string | null
+          lead_attorney_id: string | null
+          matter_number: string
+          matter_type: string
+          next_deadline: string | null
+          open_date: string
+          opposing_counsel: string | null
+          opposing_party: string | null
+          outcome: string | null
+          outcome_amount: number | null
+          practice_area: string | null
+          priority: string | null
+          responsible_partner_id: string | null
+          risk_assessment: string | null
+          risk_notes: string | null
+          status: string | null
+          statute_of_limitations: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          agreed_fee?: number | null
+          assigned_team?: Json | null
+          billing_type?: string | null
+          budget_amount?: number | null
+          budget_spent?: number | null
+          client_matter_id?: string | null
+          close_date?: string | null
+          company_id: string
+          court_reference?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          id?: string
+          jurisdiction?: string | null
+          lead_attorney_id?: string | null
+          matter_number: string
+          matter_type: string
+          next_deadline?: string | null
+          open_date?: string
+          opposing_counsel?: string | null
+          opposing_party?: string | null
+          outcome?: string | null
+          outcome_amount?: number | null
+          practice_area?: string | null
+          priority?: string | null
+          responsible_partner_id?: string | null
+          risk_assessment?: string | null
+          risk_notes?: string | null
+          status?: string | null
+          statute_of_limitations?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          agreed_fee?: number | null
+          assigned_team?: Json | null
+          billing_type?: string | null
+          budget_amount?: number | null
+          budget_spent?: number | null
+          client_matter_id?: string | null
+          close_date?: string | null
+          company_id?: string
+          court_reference?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          id?: string
+          jurisdiction?: string | null
+          lead_attorney_id?: string | null
+          matter_number?: string
+          matter_type?: string
+          next_deadline?: string | null
+          open_date?: string
+          opposing_counsel?: string | null
+          opposing_party?: string | null
+          outcome?: string | null
+          outcome_amount?: number | null
+          practice_area?: string | null
+          priority?: string | null
+          responsible_partner_id?: string | null
+          risk_assessment?: string | null
+          risk_notes?: string | null
+          status?: string | null
+          statute_of_limitations?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_legal_matters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_legal_spend_analytics: {
+        Row: {
+          ai_insights: Json | null
+          anomalies_detected: Json | null
+          average_matter_cost: number | null
+          budget_variance_percentage: number | null
+          calculated_at: string | null
+          company_id: string
+          cost_optimization_opportunities: Json | null
+          created_at: string | null
+          expenses_spend: number | null
+          external_spend: number | null
+          fees_spend: number | null
+          forecast_next_period: number | null
+          id: string
+          internal_spend: number | null
+          matters_closed: number | null
+          matters_opened: number | null
+          period_end: string
+          period_start: string
+          spend_by_jurisdiction: Json | null
+          spend_by_matter_type: Json | null
+          spend_by_practice_area: Json | null
+          spend_by_vendor: Json | null
+          spend_vs_previous_period: number | null
+          total_spend: number | null
+        }
+        Insert: {
+          ai_insights?: Json | null
+          anomalies_detected?: Json | null
+          average_matter_cost?: number | null
+          budget_variance_percentage?: number | null
+          calculated_at?: string | null
+          company_id: string
+          cost_optimization_opportunities?: Json | null
+          created_at?: string | null
+          expenses_spend?: number | null
+          external_spend?: number | null
+          fees_spend?: number | null
+          forecast_next_period?: number | null
+          id?: string
+          internal_spend?: number | null
+          matters_closed?: number | null
+          matters_opened?: number | null
+          period_end: string
+          period_start: string
+          spend_by_jurisdiction?: Json | null
+          spend_by_matter_type?: Json | null
+          spend_by_practice_area?: Json | null
+          spend_by_vendor?: Json | null
+          spend_vs_previous_period?: number | null
+          total_spend?: number | null
+        }
+        Update: {
+          ai_insights?: Json | null
+          anomalies_detected?: Json | null
+          average_matter_cost?: number | null
+          budget_variance_percentage?: number | null
+          calculated_at?: string | null
+          company_id?: string
+          cost_optimization_opportunities?: Json | null
+          created_at?: string | null
+          expenses_spend?: number | null
+          external_spend?: number | null
+          fees_spend?: number | null
+          forecast_next_period?: number | null
+          id?: string
+          internal_spend?: number | null
+          matters_closed?: number | null
+          matters_opened?: number | null
+          period_end?: string
+          period_start?: string
+          spend_by_jurisdiction?: Json | null
+          spend_by_matter_type?: Json | null
+          spend_by_practice_area?: Json | null
+          spend_by_vendor?: Json | null
+          spend_vs_previous_period?: number | null
+          total_spend?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_legal_spend_analytics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_legal_tasks: {
+        Row: {
+          actual_hours: number | null
+          assigned_team: Json | null
+          assigned_to: string | null
+          attachments: Json | null
+          billable: boolean | null
+          checklist: Json | null
+          company_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          dependencies: string[] | null
+          description: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          matter_id: string
+          parent_task_id: string | null
+          priority: string | null
+          reminder_date: string | null
+          status: string | null
+          task_type: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_team?: Json | null
+          assigned_to?: string | null
+          attachments?: Json | null
+          billable?: boolean | null
+          checklist?: Json | null
+          company_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          matter_id: string
+          parent_task_id?: string | null
+          priority?: string | null
+          reminder_date?: string | null
+          status?: string | null
+          task_type?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_team?: Json | null
+          assigned_to?: string | null
+          attachments?: Json | null
+          billable?: boolean | null
+          checklist?: Json | null
+          company_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          dependencies?: string[] | null
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          matter_id?: string
+          parent_task_id?: string | null
+          priority?: string | null
+          reminder_date?: string | null
+          status?: string | null
+          task_type?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_legal_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_legal_tasks_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "erp_legal_matters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_legal_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "erp_legal_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_legal_time_entries: {
+        Row: {
+          activity_code: string | null
+          amount: number | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          billable: boolean | null
+          billing_status: string | null
+          company_id: string
+          created_at: string | null
+          description: string
+          expense_code: string | null
+          hourly_rate: number | null
+          hours: number
+          id: string
+          invoice_id: string | null
+          matter_id: string
+          rejection_reason: string | null
+          task_code: string | null
+          task_id: string | null
+          timekeeper_id: string
+          timekeeper_role: string | null
+          updated_at: string | null
+          work_date: string
+        }
+        Insert: {
+          activity_code?: string | null
+          amount?: number | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          billable?: boolean | null
+          billing_status?: string | null
+          company_id: string
+          created_at?: string | null
+          description: string
+          expense_code?: string | null
+          hourly_rate?: number | null
+          hours: number
+          id?: string
+          invoice_id?: string | null
+          matter_id: string
+          rejection_reason?: string | null
+          task_code?: string | null
+          task_id?: string | null
+          timekeeper_id: string
+          timekeeper_role?: string | null
+          updated_at?: string | null
+          work_date: string
+        }
+        Update: {
+          activity_code?: string | null
+          amount?: number | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          billable?: boolean | null
+          billing_status?: string | null
+          company_id?: string
+          created_at?: string | null
+          description?: string
+          expense_code?: string | null
+          hourly_rate?: number | null
+          hours?: number
+          id?: string
+          invoice_id?: string | null
+          matter_id?: string
+          rejection_reason?: string | null
+          task_code?: string | null
+          task_id?: string | null
+          timekeeper_id?: string
+          timekeeper_role?: string | null
+          updated_at?: string | null
+          work_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_legal_time_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_legal_time_entries_matter_id_fkey"
+            columns: ["matter_id"]
+            isOneToOne: false
+            referencedRelation: "erp_legal_matters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_legal_time_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "erp_legal_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_legal_vendors: {
+        Row: {
+          address: string | null
+          company_id: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          country: string | null
+          created_at: string | null
+          currency: string | null
+          diversity_certified: boolean | null
+          id: string
+          jurisdictions: string[] | null
+          notes: string | null
+          panel_category: string | null
+          panel_member: boolean | null
+          payment_terms: number | null
+          performance_rating: number | null
+          practice_areas: string[] | null
+          relationship_status: string | null
+          standard_rates: Json | null
+          updated_at: string | null
+          vendor_name: string
+          vendor_type: string
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          diversity_certified?: boolean | null
+          id?: string
+          jurisdictions?: string[] | null
+          notes?: string | null
+          panel_category?: string | null
+          panel_member?: boolean | null
+          payment_terms?: number | null
+          performance_rating?: number | null
+          practice_areas?: string[] | null
+          relationship_status?: string | null
+          standard_rates?: Json | null
+          updated_at?: string | null
+          vendor_name: string
+          vendor_type: string
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          diversity_certified?: boolean | null
+          id?: string
+          jurisdictions?: string[] | null
+          notes?: string | null
+          panel_category?: string | null
+          panel_member?: boolean | null
+          payment_terms?: number | null
+          performance_rating?: number | null
+          practice_areas?: string[] | null
+          relationship_status?: string | null
+          standard_rates?: Json | null
+          updated_at?: string | null
+          vendor_name?: string
+          vendor_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_legal_vendors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_logistics_accounting_rules: {
         Row: {
           auto_post: boolean | null

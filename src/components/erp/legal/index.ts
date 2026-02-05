@@ -50,3 +50,6 @@ export * from './analytics';
 
 // Fase 10: Legal Validation Gateway Enhanced & Cross-Module Orchestration
 export * from './gateway';
+
+// Fase 6 (Plan Expansion): Matter Management & Legal Spend
+export { LegalDashboardPanel } from './LegalDashboardPanel';
