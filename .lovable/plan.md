@@ -1,387 +1,704 @@
 
-# Plan: Generador de Informe PDF de Auditoria Enterprise - RRHH, Fiscal y Juridico
+# Plan de Implementacion por Fases: Mejoras Sugeridas en Informe de Auditoria
 
-## Resumen
+## Resumen del Alcance
 
-Creacion de un generador de PDF profesional y muy detallado que documente de forma exhaustiva los tres modulos principales (RRHH, Fiscal, Juridico), compare sus funcionalidades con los lideres mundiales (SAP, Workday, Oracle, Icertis) y proporcione un analisis honesto de la posicion competitiva de ObelixIA.
+El informe de auditoria identifica las siguientes **areas de mejora pendientes** que deben implementarse para alcanzar paridad completa con los lideres del mercado (SAP, Salesforce, Workday, Oracle, Icertis):
 
-## Arquitectura Propuesta
+### Mejoras Identificadas por Modulo
+
+**CRM (2 pendientes):**
+- Marketing Automation Suite (Campanas multicanal automatizadas)
+- Advanced Workflow Builder Visual
+
+**RRHH (3 pendientes):**
+- Gig/Contingent Workforce Management
+- Total Rewards Statement
+- ESG Reporting Social (CSRD/ESRS S1-S4)
+
+**Juridico (2 pendientes):**
+- Matter Management Dedicado
+- Legal Spend Management (LEDES)
+
+**Roadmap 2026-2027 (8 adicionales):**
+- Marketing-Sales Fusion
+- Unified Analytics Dashboard
+- ESG Suite Completa
+- Advanced Cross-Module AI
+- Partner/Vendor Portal
+- Customer Self-Service Portal
+- Industry Cloud Templates
+- Global Expansion Pack
+
+---
+
+## FASE 1: Marketing Automation Suite (CRM)
+**Duracion estimada: 2-3 semanas**
+**Prioridad: CRITICA - Gap competitivo vs. HubSpot/Salesforce**
+
+### Componentes a Crear
 
 ```text
 src/
   components/
-    reports/
-      EnterpriseModulesAuditGenerator.tsx   # Componente UI principal
-  lib/
-    enterpriseModulesAuditPDF.ts            # Generador PDF especializado
+    crm/
+      marketing/
+        MarketingDashboard.tsx           # Panel principal
+        CampaignBuilder.tsx              # Constructor visual de campanas
+        CampaignList.tsx                 # Listado de campanas
+        EmailTemplateEditor.tsx          # Editor plantillas email
+        EmailSequenceBuilder.tsx         # Secuencias automatizadas
+        AudienceSegmentBuilder.tsx       # Constructor de segmentos
+        CampaignAnalytics.tsx            # Metricas de campanas
+        ABTestingPanel.tsx               # Tests A/B
+        LeadNurturingFlows.tsx           # Flujos de nurturing
+        MarketingCalendar.tsx            # Calendario de campanas
+        LandingPageBuilder.tsx           # Constructor landing pages
+        FormBuilder.tsx                  # Constructor de formularios
+        SocialMediaScheduler.tsx         # Programador redes sociales
+        UTMManager.tsx                   # Gestion parametros UTM
+        ROITracker.tsx                   # Seguimiento ROI
+  hooks/
+    crm/
+      useMarketingCampaigns.ts           # Hook gestion campanas
+      useEmailSequences.ts               # Hook secuencias email
+      useAudienceSegments.ts             # Hook segmentos
+      useMarketingAnalytics.ts           # Hook analiticas
+
+supabase/
+  functions/
+    crm-marketing-automation/index.ts    # Orquestador campanas
+    crm-email-sequencer/index.ts         # Ejecutor secuencias
+    crm-audience-segmentation/index.ts   # Segmentacion IA
 ```
 
-## Estructura del Documento PDF
+### Tablas de Base de Datos
 
-El informe constara de 7 secciones principales:
+```sql
+-- Campanas de marketing
+CREATE TABLE crm_marketing_campaigns (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  name VARCHAR(255) NOT NULL,
+  type VARCHAR(50), -- email, social, multichannel
+  status VARCHAR(50) DEFAULT 'draft',
+  start_date TIMESTAMPTZ,
+  end_date TIMESTAMPTZ,
+  audience_segment_id UUID,
+  budget DECIMAL(12,2),
+  spent DECIMAL(12,2) DEFAULT 0,
+  goals JSONB,
+  metrics JSONB,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-### Seccion 1: Resumen Ejecutivo (5-7 paginas)
-- Vision general de ObelixIA ERP Enterprise
-- Posicionamiento en el mercado global
-- Principales fortalezas y diferenciadores
-- Areas de mejora identificadas
-- Conclusion ejecutiva con recomendaciones
+-- Secuencias de email
+CREATE TABLE crm_email_sequences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id UUID REFERENCES crm_marketing_campaigns(id),
+  name VARCHAR(255) NOT NULL,
+  trigger_type VARCHAR(50), -- form_submit, tag_added, deal_stage
+  steps JSONB NOT NULL, -- Array de pasos con delays y templates
+  is_active BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-### Seccion 2: Auditoria Modulo RRHH (20-25 paginas)
+-- Segmentos de audiencia
+CREATE TABLE crm_audience_segments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  name VARCHAR(255) NOT NULL,
+  conditions JSONB NOT NULL, -- Reglas de segmentacion
+  contact_count INTEGER DEFAULT 0,
+  is_dynamic BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-**2.1 Inventario de Funcionalidades Implementadas**
+-- Templates de email
+CREATE TABLE crm_email_templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  name VARCHAR(255) NOT NULL,
+  subject VARCHAR(500),
+  html_content TEXT,
+  plain_content TEXT,
+  variables JSONB, -- Variables disponibles
+  category VARCHAR(100),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
 
-*Categoria: Talento (4 secciones)*
-- Empleados: Gestion completa con 4 pestanas (General, Laboral, Documentos, Accesos)
-- Reclutamiento: Portal IA con scoring automatico de candidatos
-- Onboarding: Proceso adaptativo por CNAE con tareas por fases
-- Offboarding: Gestion optimizada con analisis legal previo
+### Funcionalidades Clave
+1. Constructor visual de campanas multicanal
+2. Secuencias de email con delays configurables
+3. Segmentacion de audiencia con reglas dinamicas
+4. Editor de templates drag-and-drop
+5. Tests A/B automaticos
+6. Tracking de conversiones y ROI
+7. Integracion con pipeline CRM
 
-*Categoria: Operaciones (10 secciones)*
-- Nominas: Calculo completo con IRPF, SS, extras
-- Recalculo: Validacion contra convenios colectivos
-- Finiquitos: Sistema 3 niveles (IA, Juridico, RRHH)
-- Seguridad Social: SILTRA, RED, certificados
-- Vacaciones: Solicitudes con aprobacion multinivel
-- Contratos: Plantillas por jurisdiccion
-- Sindicatos: Credito horario Art.68 ET, elecciones
-- Documentos: OCR + clasificacion IA
-- Organizacion: Organigramas visuales
-- Vigilancia Normativa: Monitoreo BOE/BOPA
+---
 
-*Categoria: Desarrollo (5 secciones)*
-- Desempeno: 9-Box Grid, evaluaciones
-- Formacion: Catalogo por CNAE
-- Analytics: Flight Risk, eNPS, Compa-Ratio
-- Beneficios: Flex remuneration
-- PRL: Auditorias por sector
+## FASE 2: Advanced Workflow Builder (CRM)
+**Duracion estimada: 2-3 semanas**
+**Prioridad: ALTA - Automatizacion empresarial**
 
-*Categoria: Herramientas (6 secciones)*
-- Agente IA: Copiloto autonomo 3 niveles
-- Noticias: Feed sectorial
-- Normativa: Base conocimiento laboral
-- Cumplimiento Legal: Dashboard alertas
-- Integracion Modulos: Contabilidad/Tesoreria
-- Ayuda: Indice interactivo
-
-*Subsistemas Avanzados (Fases 1-7)*
-- Fase 1: Whistleblower, Igualdad, Time Tracking
-- Fase 2: Skills Ontology, Talent Marketplace, Sucesion
-- Fase 3: Wellbeing, Burnout Prediction, Surveys
-- Fase 4: CLM, Clause Library, Risk Scoring
-- Fase 5: Blockchain Credentials, Autonomous Copilot
-- Fase 6: Smart Contracts Legales
-- Fase 7: HR Analytics Intelligence, Workforce Planning
-
-**2.2 Edge Functions Implementadas (18 funciones)**
-- erp-hr-ai-agent (orquestador principal)
-- erp-hr-analytics-agent
-- erp-hr-analytics-intelligence
-- erp-hr-autonomous-copilot
-- erp-hr-clm-agent
-- erp-hr-compliance-monitor
-- erp-hr-credentials-agent
-- erp-hr-executive-analytics
-- erp-hr-innovation-discovery
-- erp-hr-offboarding-agent
-- erp-hr-onboarding-agent
-- erp-hr-payroll-recalculation
-- erp-hr-performance-agent
-- erp-hr-recruitment-agent
-- erp-hr-regulatory-watch
-- erp-hr-smart-contracts
-- erp-hr-talent-skills-agent
-- erp-hr-wellbeing-agent
-- erp-hr-whistleblower-agent
-
-**2.3 Comparativa con Competencia**
-
-Tabla detallada comparando 45+ funcionalidades con:
-- SAP SuccessFactors
-- Workday HCM
-- Oracle Cloud HCM
-- Factorial HR
-- Personio
-
-### Seccion 3: Auditoria Modulo Fiscal (15-20 paginas)
-
-**3.1 Funcionalidades Implementadas**
-
-*Sistema SII (Suministro Inmediato de Informacion)*
-- Dashboard de registros pendientes/rechazados
-- Generacion automatica de registros
-- Sistema de tareas para correcciones
-- Configuracion por empresa
-
-*Sistema Intrastat*
-- Declaraciones de expediciones/introducciones
-- Editor de lineas con codigos CN8
-- Validacion de masa neta e incoterms
-- Dashboard de estadisticas
-
-*Jurisdicciones Globales (20+)*
-- Espana: SII, IVA, IRPF, IS
-- Andorra: IGI, IRPF, IS
-- UAE: Free Zones (DIFC, DMCC)
-- UK: MTD VAT
-- US: LLCs (Delaware, Wyoming, Nevada)
-- EU: OSS, IOSS, Intrastat
-
-*Generacion de Documentos Oficiales*
-- Modelo 303 (IVA)
-- Modelo 390 (Resumen anual IVA)
-- Modelo 111 (Retenciones)
-- Modelo 115 (Alquileres)
-- Modelo 200 (Impuesto Sociedades)
-- Export PDF/Excel/XBRL
-
-*Agente IA Fiscal*
-- Chat especializado
-- Verificacion de cumplimiento
-- Sugerencia de asientos
-- Consulta de normativa
-- Monitorizacion de actualizaciones
-- Interaccion por voz (ElevenLabs)
-
-*Ayuda Activa*
-- Deteccion de errores en asientos
-- Guia contextual en tiempo real
-
-**3.2 Edge Functions (8 funciones)**
-- erp-fiscal-ai-agent
-- erp-fiscal-closing-wizard
-- erp-fiscal-documents
-- erp-regulations-ai
-- erp-regulations-search
-- erp-financial-reports
-- erp-auto-accounting
-- erp-auto-reconciliation
-
-**3.3 Comparativa con Competencia**
-
-Tabla comparando con:
-- SAP S/4HANA Finance
-- Oracle Financials Cloud
-- Sage X3
-- Holded
-- A3ERP
-
-### Seccion 4: Auditoria Modulo Juridico (20-25 paginas)
-
-**4.1 Funcionalidades Implementadas**
-
-*Core Legal*
-- Dashboard Ejecutivo con KPIs
-- Asesor Juridico IA multi-jurisdiccional
-- Sub-agentes: Laboral, Mercantil, Fiscal, GDPR, Bancario
-
-*Compliance*
-- Matriz de cumplimiento
-- Evaluacion de riesgos con scoring
-- Alertas regulatorias automaticas
-
-*Documentos*
-- Generador con plantillas dinamicas
-- Analisis de contratos por IA
-- Extraccion de obligaciones
-
-*Knowledge Management*
-- Base de conocimiento juridico
-- Sincronizacion automatica (06:00 UTC)
-- Jurisprudencia CENDOJ, EUR-Lex, BOPA
-
-*Reportes*
-- Due Diligence
-- Compliance Reports
-- Risk Reports
-- Audit Trail inmutable
-- Impacto Regulatorio
-
-*Gateway Legal (Fase 10)*
-- Validacion legal cross-module
-- Bloqueo automatico de operaciones riesgo
-- Supervisor de agentes
-- API Compliance
-
-*Subsistemas Avanzados (Fases 8-10)*
-- Fase 8: Entity Management, IP Portfolio, eDiscovery
-- Fase 9: Predictive Analytics, Autonomous Copilot
-- Fase 10: Enhanced Gateway, Cross-Module Orchestrator, Smart Contracts, Advanced CLM
-
-**4.2 Edge Functions (14 funciones)**
-- legal-ai-advisor
-- legal-autonomous-copilot
-- legal-entity-management
-- legal-knowledge-sync
-- legal-predictive-analytics
-- legal-validation-gateway-enhanced
-- cross-module-orchestrator
-- smart-legal-contracts
-- advanced-clm-engine
-- blockchain-credentials
-- Y otras 4 funciones de soporte
-
-**4.3 Comparativa con Competencia**
-
-Tabla comparando con:
-- Icertis CLM
-- DocuSign CLM
-- LexisNexis CounselLink
-- Thomson Reuters Legal Tracker
-- Ironclad
-
-### Seccion 5: Matriz Comparativa Global (10 paginas)
-
-**5.1 Funcionalidades RRHH vs Competencia**
-
-| Funcionalidad | SAP | Workday | Oracle | ObelixIA | Estado |
-|---|---|---|---|---|---|
-| Skills Ontology | OK | OK | OK | OK | Completo |
-| Talent Marketplace | OK | OK | OK | OK | Completo |
-| Sucesion | OK | OK | OK | OK | Completo |
-| Wellbeing | OK | OK | OK | OK | Completo |
-| Whistleblower | OK | OK | OK | OK | Completo |
-| Blockchain Credentials | Parcial | Parcial | Parcial | OK | Ventaja |
-| Copiloto Autonomo | Parcial | Parcial | No | OK | Ventaja |
-| Smart Contracts HR | No | No | No | OK | Innovacion |
-| Gig/Contingent | OK | OK | OK | Parcial | Pendiente |
-| Total Rewards | OK | OK | OK | Parcial | Pendiente |
-| ESG Social | OK | OK | OK | No | Pendiente |
-
-**5.2 Funcionalidades Fiscal vs Competencia**
-
-| Funcionalidad | SAP | Oracle | Sage | ObelixIA | Estado |
-|---|---|---|---|---|---|
-| SII Espana | OK | OK | OK | OK | Completo |
-| Intrastat | OK | OK | OK | OK | Completo |
-| Multi-jurisdiccion | OK | OK | Parcial | OK | Completo |
-| Agente IA Fiscal | Parcial | Parcial | No | OK | Ventaja |
-| Voz bidireccional | No | No | No | OK | Innovacion |
-| Ayuda activa | Parcial | No | No | OK | Ventaja |
-
-**5.3 Funcionalidades Juridico vs Competencia**
-
-| Funcionalidad | Icertis | LexisNexis | Thomson | ObelixIA | Estado |
-|---|---|---|---|---|---|
-| CLM Completo | OK | OK | OK | OK | Completo |
-| Clause Library | OK | OK | OK | OK | Completo |
-| Playbooks | OK | OK | Parcial | OK | Completo |
-| eDiscovery | OK | OK | OK | OK | Completo |
-| Smart Contracts | Parcial | No | No | OK | Innovacion |
-| Cross-Module Orchestration | No | No | No | OK | Innovacion |
-| Predictive Litigation | Parcial | Parcial | Parcial | OK | Ventaja |
-| Matter Management | OK | OK | OK | Parcial | Pendiente |
-| Legal Spend | OK | OK | OK | Parcial | Pendiente |
-
-### Seccion 6: Analisis de Posicion Competitiva (8-10 paginas)
-
-**6.1 Fortalezas Principales**
-- Unico ERP que integra HCM + Legal + Fiscal en plataforma unificada
-- Arquitectura multi-agente IA con orquestador supervisor
-- Innovaciones disruptivas: Blockchain, Smart Contracts, Copiloto Autonomo
-- Multi-jurisdiccion nativa (ES, AD, EU, UK, UAE, US)
-- Interfaz moderna con interaccion por voz
-
-**6.2 Posicion en el Mercado**
-
-*Ranking Estimado por Categoria:*
-- RRHH: Top 5 (por detras de SAP/Workday/Oracle en escala, a la par en funcionalidad)
-- Fiscal: Top 3 en Espana (superior a soluciones locales)
-- Juridico: Top 3 (comparable a Icertis en CLM, superior en integracion)
-
-*Posicion Global Consolidada:*
-- Lider en integracion HCM-Legal-Fiscal
-- Top 5 en innovacion tecnologica
-- Referente en cumplimiento normativo espanol
-
-**6.3 Areas de Mejora Identificadas**
-1. Gig/Contingent Workforce Management
-2. Total Rewards Statement
-3. ESG Reporting Social (CSRD/ESRS)
-4. Matter Management dedicado
-5. Legal Spend Management
-
-**6.4 Conclusion Honesta**
-
-ObelixIA ha alcanzado paridad funcional con los lideres mundiales en la mayoria de capacidades core, y los supera en:
-- Integracion cross-modular con IA
-- Innovacion tecnologica (Blockchain, Smart Contracts)
-- Especializacion normativa espanola
-
-Quedan gaps menores en:
-- Funcionalidades de nicho de grandes corporaciones
-- Escala de implementacion y casos de exito documentados
-- Cobertura de workforce externo
-
-### Seccion 7: Roadmap y Recomendaciones (5 paginas)
-
-**7.1 Prioridades Inmediatas**
-1. Completar Gig Economy module
-2. Implementar Total Rewards
-3. Desarrollar ESG Reporting
-
-**7.2 Roadmap 2026-2027**
-- Q1 2026: Gig Workforce + Total Rewards
-- Q2 2026: ESG Social + Matter Management
-- Q3 2026: Legal Spend + Expansion US
-- Q4 2026: Certificaciones ISO + SOC2
-
-## Seccion Tecnica de Implementacion
-
-### Componente UI: EnterpriseModulesAuditGenerator.tsx
+### Componentes a Crear
 
 ```text
-Caracteristicas:
-- Selector de modulos a incluir (RRHH, Fiscal, Juridico, Todos)
-- Configuracion de nivel de detalle (Ejecutivo, Detallado, Completo)
-- Inclusion opcional de graficos comparativos
-- Preview antes de generar
-- Exportacion PDF con logo ObelixIA
-- Aproximadamente 400-500 lineas
+src/
+  components/
+    crm/
+      workflows/
+        WorkflowBuilderCanvas.tsx        # Canvas visual principal
+        WorkflowNodePalette.tsx          # Paleta de nodos
+        WorkflowNode.tsx                 # Componente nodo base
+        WorkflowConnection.tsx           # Conexiones entre nodos
+        WorkflowTriggerNodes.tsx         # Nodos de trigger
+        WorkflowActionNodes.tsx          # Nodos de accion
+        WorkflowConditionNodes.tsx       # Nodos de condicion
+        WorkflowDelayNodes.tsx           # Nodos de espera
+        WorkflowTestRunner.tsx           # Ejecutor de pruebas
+        WorkflowHistory.tsx              # Historial de ejecuciones
+        WorkflowTemplates.tsx            # Templates predefinidos
 ```
 
-### Generador PDF: enterpriseModulesAuditPDF.ts
+### Tipos de Nodos
+
+**Triggers:**
+- Form Submitted
+- Deal Stage Changed
+- Contact Created/Updated
+- Tag Added/Removed
+- Scheduled (Cron)
+- Webhook Received
+- Email Opened/Clicked
+
+**Actions:**
+- Send Email
+- Send SMS/WhatsApp
+- Create/Update Record
+- Add Tag
+- Assign to User
+- Create Task
+- Call Webhook
+- Wait/Delay
+- Update Deal Stage
+- Send Notification
+
+**Conditions:**
+- If/Else Branch
+- A/B Split
+- Filter by Property
+- Time-based Condition
+
+---
+
+## FASE 3: Gig/Contingent Workforce Management (RRHH)
+**Duracion estimada: 2-3 semanas**
+**Prioridad: ALTA - Gap vs. SAP/Workday**
+
+### Componentes a Crear
 
 ```text
-Caracteristicas:
-- Uso de EnhancedPDFGenerator existente
-- Logo ObelixIA en todas las paginas
-- Indice de contenidos con links internos
-- Tablas comparativas con autoTable
-- Graficos de posicion competitiva
-- Sanitizacion de caracteres especiales
-- Aproximadamente 1200-1500 lineas
+src/
+  components/
+    erp/
+      hr/
+        gig/
+          GigWorkforceDashboard.tsx      # Dashboard principal
+          ContractorList.tsx             # Listado contractors
+          ContractorProfile.tsx          # Perfil contractor
+          GigProjectsPanel.tsx           # Proyectos/Gigs
+          GigMatchingEngine.tsx          # Motor matching IA
+          ContractorOnboarding.tsx       # Onboarding simplificado
+          GigPaymentsPanel.tsx           # Gestion pagos
+          ContractorCompliancePanel.tsx  # Compliance IR35/TRADE
+          FreelancerMarketplace.tsx      # Marketplace interno
+          GigAnalyticsPanel.tsx          # Analiticas
+          SOWBuilder.tsx                 # Constructor SOW
+          TimeTrackingExternal.tsx       # Control horario externos
 ```
 
-### Datos del Informe
+### Tablas de Base de Datos
 
-El generador recopilara datos de:
-1. Estructura de componentes (navegacion, paneles)
-2. Hooks implementados (index.ts de cada modulo)
-3. Edge Functions desplegadas (config.toml)
-4. Investigacion web para datos de competencia (web_search)
+```sql
+-- Contractors/Freelancers
+CREATE TABLE erp_hr_contractors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  type VARCHAR(50), -- freelancer, agency, contractor
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255),
+  phone VARCHAR(50),
+  tax_id VARCHAR(50),
+  skills JSONB,
+  rate_hourly DECIMAL(10,2),
+  rate_daily DECIMAL(10,2),
+  currency VARCHAR(3) DEFAULT 'EUR',
+  status VARCHAR(50) DEFAULT 'active',
+  compliance_status VARCHAR(50), -- ir35_inside, ir35_outside, trade_ok
+  documents JSONB,
+  rating DECIMAL(3,2),
+  total_projects INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-### Flujo de Generacion
+-- Proyectos/Gigs
+CREATE TABLE erp_hr_gig_projects (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  contractor_id UUID REFERENCES erp_hr_contractors(id),
+  project_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  start_date DATE,
+  end_date DATE,
+  budget DECIMAL(12,2),
+  spent DECIMAL(12,2) DEFAULT 0,
+  status VARCHAR(50) DEFAULT 'draft',
+  sow_document_id UUID,
+  milestones JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Pagos a contractors
+CREATE TABLE erp_hr_contractor_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contractor_id UUID REFERENCES erp_hr_contractors(id),
+  project_id UUID REFERENCES erp_hr_gig_projects(id),
+  amount DECIMAL(12,2) NOT NULL,
+  currency VARCHAR(3) DEFAULT 'EUR',
+  invoice_number VARCHAR(100),
+  invoice_date DATE,
+  due_date DATE,
+  status VARCHAR(50) DEFAULT 'pending',
+  payment_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Funcionalidades Clave
+1. Gestion de contractors/freelancers
+2. Compliance IR35 (UK) / TRADE (ES)
+3. SOW (Statement of Work) Builder
+4. Matching IA por skills
+5. Time tracking para externos
+6. Gestion de pagos y facturas
+7. Rating y feedback
+8. Integracion con Contabilidad
+
+---
+
+## FASE 4: Total Rewards Statement (RRHH)
+**Duracion estimada: 1-2 semanas**
+**Prioridad: MEDIA - Diferenciador employee experience**
+
+### Componentes a Crear
 
 ```text
-Usuario -> Selecciona opciones -> Click "Generar"
-  -> Analiza estructura de codigo
-  -> Realiza busqueda web de competencia
-  -> Genera secciones del PDF
-  -> Aplica branding ObelixIA
-  -> Descarga PDF
+src/
+  components/
+    erp/
+      hr/
+        rewards/
+          TotalRewardsPanel.tsx          # Panel principal
+          RewardsStatementGenerator.tsx  # Generador statements
+          RewardsCategoryBreakdown.tsx   # Desglose categorias
+          RewardsVisualization.tsx       # Graficos visuales
+          RewardsComparison.tsx          # Comparativa mercado
+          RewardsExportPDF.tsx           # Exportar PDF
+          BenefitsValueCalculator.tsx    # Calculadora valor
 ```
 
-## Estimacion
+### Categorias de Compensacion Total
+1. Salario base
+2. Bonus y variable
+3. Beneficios sociales (seguro medico, vida, pension)
+4. Stock options / RSUs
+5. Retribucion flexible
+6. Formacion patrocinada
+7. Dias adicionales vacaciones
+8. Otros beneficios (coche, parking, comedor)
 
-- Tiempo: 2-3 horas de implementacion
-- Archivos: 2 nuevos
-- Lineas de codigo: ~2000
+---
 
-## Resultado Esperado
+## FASE 5: ESG Reporting Suite (RRHH + Cross-Module)
+**Duracion estimada: 3-4 semanas**
+**Prioridad: CRITICA - Regulacion CSRD obligatoria 2025**
 
-Un documento PDF profesional de 80-100 paginas que sirva como:
-- Informe de auditoria interna
-- Material de venta para clientes potenciales
-- Documentacion tecnica para inversores
-- Benchmark competitivo actualizado
+### Componentes a Crear
+
+```text
+src/
+  components/
+    erp/
+      esg/
+        ESGDashboard.tsx                 # Dashboard ESG principal
+        ESGDataCollection.tsx            # Recoleccion datos
+        ESGSocialMetrics.tsx             # Metricas sociales (ESRS S1-S4)
+        ESGEnvironmentalMetrics.tsx      # Metricas ambientales
+        ESGGovernanceMetrics.tsx         # Metricas gobernanza
+        CSRDReportGenerator.tsx          # Generador informes CSRD
+        ESRSComplianceMatrix.tsx         # Matriz compliance ESRS
+        CarbonFootprintCalculator.tsx    # Calculadora huella carbono
+        DEIMetricsPanel.tsx              # Diversidad e Inclusion
+        SupplyChainESG.tsx               # ESG cadena suministro
+        ESGRatingsTracker.tsx            # Seguimiento ratings
+        GRIReportExporter.tsx            # Export formato GRI
+        MaterialityAssessment.tsx        # Analisis materialidad
+```
+
+### Tablas de Base de Datos
+
+```sql
+-- Metricas ESG
+CREATE TABLE erp_esg_metrics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  fiscal_year_id UUID REFERENCES erp_fiscal_years(id),
+  category VARCHAR(50), -- environmental, social, governance
+  metric_code VARCHAR(50), -- ESRS code
+  metric_name VARCHAR(255),
+  value DECIMAL(15,4),
+  unit VARCHAR(50),
+  period_start DATE,
+  period_end DATE,
+  verified BOOLEAN DEFAULT false,
+  verifier VARCHAR(255),
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Objetivos ESG
+CREATE TABLE erp_esg_targets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  metric_code VARCHAR(50),
+  target_value DECIMAL(15,4),
+  target_year INTEGER,
+  baseline_value DECIMAL(15,4),
+  baseline_year INTEGER,
+  progress_percent DECIMAL(5,2),
+  status VARCHAR(50),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Metricas ESRS Sociales (S1-S4)
+- **S1 - Propia Fuerza Laboral:** Headcount, rotacion, brecha salarial, formacion
+- **S2 - Trabajadores Cadena Valor:** Due diligence proveedores
+- **S3 - Comunidades Afectadas:** Impacto local
+- **S4 - Consumidores/Usuarios:** Privacidad, seguridad producto
+
+---
+
+## FASE 6: Matter Management & Legal Spend (Juridico)
+**Duracion estimada: 2-3 semanas**
+**Prioridad: ALTA - Paridad con Icertis/LegalTracker**
+
+### Componentes a Crear
+
+```text
+src/
+  components/
+    erp/
+      legal/
+        matters/
+          MattersDashboard.tsx           # Dashboard asuntos
+          MatterList.tsx                 # Listado asuntos
+          MatterDetail.tsx               # Detalle asunto
+          MatterTimeline.tsx             # Timeline del asunto
+          MatterDocuments.tsx            # Documentos asociados
+          MatterParties.tsx              # Partes involucradas
+          MatterTasks.tsx                # Tareas del asunto
+          LitigationTracker.tsx          # Seguimiento litigios
+        spend/
+          LegalSpendDashboard.tsx        # Dashboard gastos legales
+          BudgetManager.tsx              # Gestion presupuestos
+          InvoiceReview.tsx              # Revision facturas
+          LEDESImporter.tsx              # Importador LEDES
+          VendorManagement.tsx           # Gestion despachos externos
+          RateCardManager.tsx            # Tarificadores
+          SpendAnalytics.tsx             # Analiticas gastos
+          AccrualManagement.tsx          # Gestion provisiones
+```
+
+### Tablas de Base de Datos
+
+```sql
+-- Asuntos legales
+CREATE TABLE erp_legal_matters (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  matter_number VARCHAR(50) UNIQUE,
+  title VARCHAR(500) NOT NULL,
+  type VARCHAR(100), -- litigation, contract, regulatory, ip, employment
+  status VARCHAR(50) DEFAULT 'open',
+  priority VARCHAR(20),
+  practice_area VARCHAR(100),
+  jurisdiction VARCHAR(100),
+  description TEXT,
+  open_date DATE,
+  close_date DATE,
+  lead_attorney VARCHAR(255),
+  external_counsel JSONB,
+  parties JSONB,
+  budget DECIMAL(12,2),
+  spent DECIMAL(12,2) DEFAULT 0,
+  outcome VARCHAR(100),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Gastos legales
+CREATE TABLE erp_legal_invoices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  matter_id UUID REFERENCES erp_legal_matters(id),
+  vendor_id UUID,
+  invoice_number VARCHAR(100),
+  invoice_date DATE,
+  due_date DATE,
+  total_amount DECIMAL(12,2),
+  currency VARCHAR(3) DEFAULT 'EUR',
+  status VARCHAR(50) DEFAULT 'pending',
+  ledes_data JSONB, -- Datos LEDES parseados
+  line_items JSONB,
+  approved_by UUID,
+  approved_at TIMESTAMPTZ,
+  paid_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Rate cards
+CREATE TABLE erp_legal_rate_cards (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID REFERENCES erp_companies(id),
+  vendor_id UUID,
+  effective_date DATE,
+  expiry_date DATE,
+  rates JSONB, -- Por timekeeper level
+  caps JSONB, -- Limites por tipo
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+---
+
+## FASE 7: Partner/Vendor Portal (Cross-Module)
+**Duracion estimada: 2-3 semanas**
+**Prioridad: MEDIA - Q3 2026 Roadmap**
+
+### Componentes a Crear
+
+```text
+src/
+  components/
+    portals/
+      partner/
+        PartnerPortalDashboard.tsx       # Dashboard partner
+        PartnerRegistration.tsx          # Registro partners
+        PartnerOnboarding.tsx            # Onboarding partners
+        DealRegistration.tsx             # Registro oportunidades
+        PartnerPerformance.tsx           # Performance/KPIs
+        CommissionTracker.tsx            # Comisiones
+        PartnerResources.tsx             # Centro recursos
+        PartnerCertifications.tsx        # Certificaciones
+      vendor/
+        VendorPortalDashboard.tsx        # Dashboard proveedor
+        VendorOnboarding.tsx             # Onboarding proveedores
+        RFQResponder.tsx                 # Responder RFQs
+        POTracker.tsx                    # Seguimiento pedidos
+        InvoiceSubmission.tsx            # Envio facturas
+        VendorPerformance.tsx            # Scorecard proveedor
+```
+
+---
+
+## FASE 8: Customer Self-Service Portal (CRM)
+**Duracion estimada: 2 semanas**
+**Prioridad: MEDIA - Q3 2026 Roadmap**
+
+### Componentes a Crear
+
+```text
+src/
+  components/
+    portals/
+      customer/
+        CustomerPortalDashboard.tsx      # Dashboard cliente
+        CustomerLogin.tsx                # Login portal
+        TicketCenter.tsx                 # Centro de tickets
+        KnowledgeBase.tsx                # Base conocimiento
+        CustomerInvoices.tsx             # Mis facturas
+        CustomerContracts.tsx            # Mis contratos
+        CustomerQuotes.tsx               # Mis presupuestos
+        CustomerOrders.tsx               # Mis pedidos
+        CustomerPreferences.tsx          # Preferencias
+        CustomerChatWidget.tsx           # Chat soporte
+```
+
+---
+
+## FASE 9: Industry Cloud Templates
+**Duracion estimada: 3-4 semanas**
+**Prioridad: MEDIA - Verticalizacion sectorial**
+
+### Templates por Sector
+
+```text
+src/
+  templates/
+    industries/
+      banking/
+        BankingCRMTemplate.tsx
+        BankingComplianceTemplate.tsx
+        BankingReportingTemplate.tsx
+      insurance/
+        InsuranceCRMTemplate.tsx
+        ClaimsManagementTemplate.tsx
+        PolicyManagementTemplate.tsx
+      healthcare/
+        HealthcareCRMTemplate.tsx
+        PatientManagementTemplate.tsx
+        ComplianceHIPAATemplate.tsx
+      construction/
+        ConstructionCRMTemplate.tsx
+        ProjectControlTemplate.tsx
+        SubcontractorTemplate.tsx
+      professional-services/
+        PSACRMTemplate.tsx
+        TimeAndBillingTemplate.tsx
+        MatterManagementTemplate.tsx
+```
+
+---
+
+## FASE 10: Unified Analytics Dashboard (Cross-Module)
+**Duracion estimada: 2-3 semanas**
+**Prioridad: ALTA - Q2 2026 Roadmap**
+
+### Componentes a Crear
+
+```text
+src/
+  components/
+    analytics/
+      unified/
+        UnifiedAnalyticsDashboard.tsx    # Dashboard unificado
+        CrossModuleKPIs.tsx              # KPIs cross-module
+        ExecutiveScorecard.tsx           # Scorecard ejecutivo
+        DataExplorer.tsx                 # Explorador datos
+        ReportBuilder.tsx                # Constructor reportes
+        AlertsConfigPanel.tsx            # Configuracion alertas
+        DrillDownViewer.tsx              # Drill-down interactivo
+        BenchmarkComparison.tsx          # Comparativa benchmarks
+        PredictiveInsights.tsx           # Insights predictivos
+        DataExportHub.tsx                # Hub exportacion
+```
+
+---
+
+## Cronograma Propuesto
+
+```text
+                          2026
+                          Q1              Q2              Q3              Q4
+                   |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+Fase 1 Marketing   |=====|=====|     |     |     |     |     |     |     |     |     |     |
+Fase 2 Workflows   |     |=====|=====|     |     |     |     |     |     |     |     |     |
+Fase 3 Gig Work    |     |     |=====|=====|     |     |     |     |     |     |     |     |
+Fase 4 Rewards     |     |     |     |=====|     |     |     |     |     |     |     |     |
+Fase 5 ESG Suite   |     |     |     |=====|=====|=====|     |     |     |     |     |     |
+Fase 6 Legal Spend |     |     |     |     |     |=====|=====|     |     |     |     |     |
+Fase 7 Partner     |     |     |     |     |     |     |=====|=====|     |     |     |     |
+Fase 8 Customer    |     |     |     |     |     |     |     |=====|=====|     |     |     |
+Fase 9 Industry    |     |     |     |     |     |     |     |     |=====|=====|=====|     |
+Fase 10 Analytics  |     |     |     |     |     |     |     |     |     |     |=====|=====|
+```
+
+---
+
+## Impacto en Valoracion Economica
+
+| Fase | Modulo | Valor Desarrollo | Valor Mercado | Prima IA |
+|------|--------|-----------------|---------------|----------|
+| 1 | Marketing Automation | €180.000 | €350.000 | €120.000 |
+| 2 | Workflow Builder | €120.000 | €250.000 | €80.000 |
+| 3 | Gig Workforce | €150.000 | €300.000 | €100.000 |
+| 4 | Total Rewards | €60.000 | €120.000 | €40.000 |
+| 5 | ESG Suite | €200.000 | €450.000 | €150.000 |
+| 6 | Legal Spend | €140.000 | €280.000 | €90.000 |
+| 7 | Partner Portal | €100.000 | €200.000 | €60.000 |
+| 8 | Customer Portal | €80.000 | €160.000 | €50.000 |
+| 9 | Industry Templates | €160.000 | €350.000 | €100.000 |
+| 10 | Unified Analytics | €130.000 | €280.000 | €90.000 |
+| **TOTAL** | | **€1.320.000** | **€2.740.000** | **€880.000** |
+
+### Nueva Valoracion Total Post-Implementacion
+
+- **Valor Actual:** €5.591.000
+- **Valor Mejoras:** €2.740.000
+- **Nuevo Valor Total:** €8.331.000
+- **Ventaja vs Competencia:** +38%
+
+---
+
+## Dependencias Tecnicas
+
+### Edge Functions Nuevas (15)
+1. crm-marketing-automation
+2. crm-email-sequencer
+3. crm-audience-segmentation
+4. crm-workflow-engine
+5. crm-workflow-executor
+6. erp-hr-gig-management
+7. erp-hr-contractor-compliance
+8. erp-hr-total-rewards
+9. erp-esg-data-collection
+10. erp-esg-csrd-generator
+11. erp-legal-matter-management
+12. erp-legal-spend-analytics
+13. portal-partner-gateway
+14. portal-customer-gateway
+15. analytics-unified-engine
+
+### Nuevas Tablas DB (18)
+- crm_marketing_campaigns
+- crm_email_sequences
+- crm_audience_segments
+- crm_email_templates
+- crm_workflows
+- crm_workflow_executions
+- erp_hr_contractors
+- erp_hr_gig_projects
+- erp_hr_contractor_payments
+- erp_esg_metrics
+- erp_esg_targets
+- erp_legal_matters
+- erp_legal_invoices
+- erp_legal_rate_cards
+- portal_partner_users
+- portal_customer_users
+- analytics_reports
+- analytics_dashboards
+
+---
+
+## Resumen Ejecutivo
+
+Este plan de 10 fases cerrara completamente los gaps identificados en el informe de auditoria, llevando a ObelixIA de **paridad funcional** a **superioridad demostrada** frente a SAP, Salesforce, Workday y Oracle.
+
+Las prioridades criticas son:
+1. **Marketing Automation** - Cierra gap mas visible vs. HubSpot
+2. **ESG Suite** - Compliance obligatorio CSRD 2025
+3. **Gig Workforce** - Tendencia mercado laboral
+
+Post-implementacion, ObelixIA sera la unica plataforma del mercado con:
+- CRM + ERP + Legal + ESG integrados nativamente
+- Marketing Automation con IA predictiva
+- Gestion fuerza laboral hibrida (empleados + contractors)
+- Compliance ESG automatizado CSRD/ESRS
+- Matter Management + Legal Spend integrado
+- Portales self-service Partner/Customer
+- Analytics unificado cross-module
