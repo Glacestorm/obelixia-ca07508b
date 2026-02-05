@@ -1,6 +1,7 @@
 /**
  * Unified Audit PDF Generator
  * Supports ERP, CRM, and Combined scopes
+ * Includes Economic Valuation and Commercial Proposals
  */
 
 import jsPDF from 'jspdf';
@@ -35,6 +36,21 @@ import {
   getCrossModuleStats,
   getIntegrationScore,
 } from './crossModuleData';
+import {
+  CRM_VALUATIONS,
+  HR_VALUATIONS,
+  FISCAL_VALUATIONS,
+  LEGAL_VALUATIONS,
+  CROSS_MODULE_VALUATIONS,
+  CRM_PRICING_TIERS,
+  ERP_PRICING_TIERS,
+  LICENSE_OPTIONS,
+  getCRMValuationSummary,
+  getERPValuationSummary,
+  getCombinedValuationSummary,
+  type FeatureValuation,
+  type PricingTier,
+} from './valuationData';
 
 // ============================================
 // PDF HELPERS
@@ -570,6 +586,286 @@ function generateRoadmap(doc: jsPDF, scope: AuditScope, pageCount: { value: numb
 }
 
 // ============================================
+// ECONOMIC VALUATION
+// ============================================
+
+function generateEconomicValuation(
+  doc: jsPDF,
+  scope: AuditScope,
+  pageCount: { value: number }
+): void {
+  doc.addPage();
+  pageCount.value++;
+  
+  const title = 'Valoracion Economica';
+  addHeader(doc, title, pageCount.value);
+  addFooter(doc);
+  
+  let y = 35;
+  y = addSectionTitle(doc, 'VALORACION ECONOMICA A MERCADO', y);
+  
+  y = addSubsectionTitle(doc, 'Metodologia de Valoracion', y + 5);
+  y = addParagraph(doc, 
+    'La valoracion se basa en: (1) Horas de desarrollo a tarifa senior EUR 85/hora, ' +
+    '(2) Valor de mercado equivalente de funcionalidades similares, ' +
+    '(3) Precio de referencia de competidores para funciones comparables, ' +
+    '(4) Prima adicional por capacidades de IA propietaria.',
+    y
+  );
+  
+  y = checkPageBreak(doc, y, 80, title, pageCount);
+  
+  // Valuation table based on scope
+  let valuationData: string[][] = [];
+  let totalMarket = 0;
+  let totalCompetitor = 0;
+  let totalDevCost = 0;
+  
+  if (scope === 'crm') {
+    const summary = getCRMValuationSummary();
+    totalMarket = summary.totalMarketValue;
+    totalCompetitor = summary.totalCompetitorPrice;
+    totalDevCost = summary.devCostAt85;
+    
+    // Group by category
+    const categories = [...new Set(CRM_VALUATIONS.map(v => v.category))];
+    for (const cat of categories) {
+      const catItems = CRM_VALUATIONS.filter(v => v.category === cat);
+      const catMarket = catItems.reduce((s, v) => s + v.marketValue, 0);
+      const catComp = catItems.reduce((s, v) => s + v.competitorPrice, 0);
+      const catAI = catItems.reduce((s, v) => s + v.aiPremium, 0);
+      valuationData.push([
+        sanitizeForPDF(cat),
+        `${catItems.length}`,
+        `EUR ${catMarket.toLocaleString('es-ES')}`,
+        `EUR ${catComp.toLocaleString('es-ES')}`,
+        `EUR ${catAI.toLocaleString('es-ES')}`,
+      ]);
+    }
+  } else if (scope === 'erp') {
+    const summary = getERPValuationSummary();
+    totalMarket = summary.total.totalMarketValue;
+    totalCompetitor = summary.total.totalCompetitorPrice;
+    totalDevCost = summary.total.devCostAt85;
+    
+    valuationData = [
+      ['RRHH (HCM)', `${HR_VALUATIONS.length}`, `EUR ${summary.hr.totalMarketValue.toLocaleString('es-ES')}`, `EUR ${summary.hr.totalCompetitorPrice.toLocaleString('es-ES')}`, `EUR ${summary.hr.totalAIPremium.toLocaleString('es-ES')}`],
+      ['Fiscal', `${FISCAL_VALUATIONS.length}`, `EUR ${summary.fiscal.totalMarketValue.toLocaleString('es-ES')}`, `EUR ${summary.fiscal.totalCompetitorPrice.toLocaleString('es-ES')}`, `EUR ${summary.fiscal.totalAIPremium.toLocaleString('es-ES')}`],
+      ['Juridico', `${LEGAL_VALUATIONS.length}`, `EUR ${summary.legal.totalMarketValue.toLocaleString('es-ES')}`, `EUR ${summary.legal.totalCompetitorPrice.toLocaleString('es-ES')}`, `EUR ${summary.legal.totalAIPremium.toLocaleString('es-ES')}`],
+    ];
+  } else {
+    const summary = getCombinedValuationSummary();
+    totalMarket = summary.grandTotal.totalMarketValue;
+    totalCompetitor = summary.grandTotal.totalCompetitorPrice;
+    totalDevCost = summary.grandTotal.devCostAt85;
+    
+    valuationData = [
+      ['CRM Universal', `${CRM_VALUATIONS.length}`, `EUR ${summary.crm.totalMarketValue.toLocaleString('es-ES')}`, `EUR ${summary.crm.totalCompetitorPrice.toLocaleString('es-ES')}`, `EUR ${summary.crm.totalAIPremium.toLocaleString('es-ES')}`],
+      ['ERP Enterprise', `${HR_VALUATIONS.length + FISCAL_VALUATIONS.length + LEGAL_VALUATIONS.length}`, `EUR ${summary.erp.totalMarketValue.toLocaleString('es-ES')}`, `EUR ${summary.erp.totalCompetitorPrice.toLocaleString('es-ES')}`, `EUR ${summary.erp.totalAIPremium.toLocaleString('es-ES')}`],
+      ['Cross-Module', `${CROSS_MODULE_VALUATIONS.length}`, `EUR ${summary.cross.totalMarketValue.toLocaleString('es-ES')}`, `EUR ${summary.cross.totalCompetitorPrice.toLocaleString('es-ES')}`, `EUR ${summary.cross.totalAIPremium.toLocaleString('es-ES')}`],
+    ];
+  }
+  
+  y = addSubsectionTitle(doc, 'Desglose por Modulo/Categoria', y + 5);
+  
+  autoTable(doc, {
+    startY: y,
+    head: [['Modulo/Categoria', 'Funciones', 'Valor Mercado', 'Precio Competencia', 'Prima IA']],
+    body: valuationData,
+    foot: [['TOTAL', '', `EUR ${totalMarket.toLocaleString('es-ES')}`, `EUR ${totalCompetitor.toLocaleString('es-ES')}`, '']],
+    theme: 'striped',
+    headStyles: { fillColor: [PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]], fontSize: 9 },
+    footStyles: { fillColor: [PDF_COLORS.primaryLight[0], PDF_COLORS.primaryLight[1], PDF_COLORS.primaryLight[2]], fontStyle: 'bold' },
+    styles: { fontSize: 8, cellPadding: 3 },
+    margin: { left: 15, right: 15 },
+  });
+  
+  y = (doc as any).lastAutoTable.finalY + 15;
+  
+  // Summary box
+  y = checkPageBreak(doc, y, 60, title, pageCount);
+  
+  doc.setFillColor(PDF_COLORS.backgrounds.success[0], PDF_COLORS.backgrounds.success[1], PDF_COLORS.backgrounds.success[2]);
+  doc.roundedRect(15, y, 180, 50, 3, 3, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]);
+  doc.text('RESUMEN VALORACION', 20, y + 10);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+  
+  const discount = Math.round(((totalCompetitor - totalMarket) / totalCompetitor) * 100);
+  
+  doc.text(`Coste Desarrollo (${Math.round(totalDevCost / 85).toLocaleString('es-ES')} horas x EUR 85): EUR ${totalDevCost.toLocaleString('es-ES')}`, 25, y + 22);
+  doc.text(`Valor de Mercado ObelixIA: EUR ${totalMarket.toLocaleString('es-ES')}`, 25, y + 30);
+  doc.text(`Precio Equivalente Competencia: EUR ${totalCompetitor.toLocaleString('es-ES')}`, 25, y + 38);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(34, 197, 94);
+  doc.text(`Ahorro vs. Competencia: ${discount}% (EUR ${(totalCompetitor - totalMarket).toLocaleString('es-ES')})`, 25, y + 46);
+}
+
+// ============================================
+// COMMERCIAL PROPOSAL
+// ============================================
+
+function generateCommercialProposal(
+  doc: jsPDF,
+  scope: AuditScope,
+  pageCount: { value: number }
+): void {
+  doc.addPage();
+  pageCount.value++;
+  
+  const title = 'Propuesta Comercial';
+  addHeader(doc, title, pageCount.value);
+  addFooter(doc);
+  
+  let y = 35;
+  y = addSectionTitle(doc, 'PROPUESTA COMERCIAL', y);
+  
+  // Pricing tiers
+  y = addSubsectionTitle(doc, 'Planes de Suscripcion', y + 5);
+  
+  const tiers = scope === 'crm' ? CRM_PRICING_TIERS : 
+                scope === 'erp' ? ERP_PRICING_TIERS :
+                [...CRM_PRICING_TIERS.slice(2), ...ERP_PRICING_TIERS.slice(2)];
+  
+  const tierData = tiers.map(t => [
+    sanitizeForPDF(t.name),
+    t.userRange,
+    `EUR ${t.monthlyPerUser}/mes`,
+    `EUR ${t.annualPerUser}/mes`,
+    `${Math.round((1 - t.annualPerUser / t.monthlyPerUser) * 100)}%`,
+    t.support,
+  ]);
+  
+  autoTable(doc, {
+    startY: y,
+    head: [['Plan', 'Usuarios', 'Precio Mensual', 'Precio Anual', 'Ahorro', 'Soporte']],
+    body: tierData,
+    theme: 'striped',
+    headStyles: { fillColor: [PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]], fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    margin: { left: 15, right: 15 },
+  });
+  
+  y = (doc as any).lastAutoTable.finalY + 10;
+  
+  // Features per tier
+  y = checkPageBreak(doc, y, 60, title, pageCount);
+  y = addSubsectionTitle(doc, 'Caracteristicas por Plan', y);
+  
+  for (const tier of tiers.slice(0, 4)) {
+    y = checkPageBreak(doc, y, 25, title, pageCount);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]);
+    doc.text(`${tier.name}:`, 15, y);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(PDF_COLORS.text.secondary[0], PDF_COLORS.text.secondary[1], PDF_COLORS.text.secondary[2]);
+    doc.text(tier.features.join(' | '), 50, y);
+    
+    y += 8;
+  }
+  
+  // License options
+  y = checkPageBreak(doc, y, 80, title, pageCount);
+  y = addSubsectionTitle(doc, 'Modalidades de Licenciamiento', y + 5);
+  
+  const licenseData = LICENSE_OPTIONS.map(l => [
+    sanitizeForPDF(l.name),
+    sanitizeForPDF(l.description),
+    sanitizeForPDF(l.pricing),
+    sanitizeForPDF(l.terms),
+  ]);
+  
+  autoTable(doc, {
+    startY: y,
+    head: [['Modalidad', 'Descripcion', 'Precio', 'Condiciones']],
+    body: licenseData,
+    theme: 'striped',
+    headStyles: { fillColor: [PDF_COLORS.primaryLight[0], PDF_COLORS.primaryLight[1], PDF_COLORS.primaryLight[2]], fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    columnStyles: { 1: { cellWidth: 45 }, 3: { cellWidth: 50 } },
+    margin: { left: 15, right: 15 },
+  });
+  
+  y = (doc as any).lastAutoTable.finalY + 15;
+  
+  // Enterprise offer box
+  y = checkPageBreak(doc, y, 70, title, pageCount);
+  
+  doc.setFillColor(PDF_COLORS.backgrounds.info[0], PDF_COLORS.backgrounds.info[1], PDF_COLORS.backgrounds.info[2]);
+  doc.roundedRect(15, y, 180, 60, 3, 3, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]);
+  doc.text('OFERTA ENTERPRISE - LICENCIA PERPETUA', 20, y + 12);
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+  
+  let perpetualPrice = 0;
+  let marketValue = 0;
+  
+  if (scope === 'crm') {
+    const s = getCRMValuationSummary();
+    perpetualPrice = 320000;
+    marketValue = s.totalMarketValue;
+  } else if (scope === 'erp') {
+    const s = getERPValuationSummary();
+    perpetualPrice = 580000;
+    marketValue = s.total.totalMarketValue;
+  } else {
+    const s = getCombinedValuationSummary();
+    perpetualPrice = 880000;
+    marketValue = s.grandTotal.totalMarketValue;
+  }
+  
+  const savingsPercent = Math.round(((marketValue - perpetualPrice) / marketValue) * 100);
+  
+  doc.text(`Precio Licencia Perpetua: EUR ${perpetualPrice.toLocaleString('es-ES')}`, 25, y + 25);
+  doc.text(`Valor de Mercado: EUR ${marketValue.toLocaleString('es-ES')}`, 25, y + 33);
+  doc.text(`Mantenimiento Anual (18%): EUR ${Math.round(perpetualPrice * 0.18).toLocaleString('es-ES')}/año`, 25, y + 41);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(34, 197, 94);
+  doc.text(`DESCUENTO OFERTADO: ${savingsPercent}% (Ahorro EUR ${(marketValue - perpetualPrice).toLocaleString('es-ES')})`, 25, y + 52);
+  
+  // Volume discounts
+  y += 70;
+  y = checkPageBreak(doc, y, 50, title, pageCount);
+  y = addSubsectionTitle(doc, 'Descuentos por Volumen', y);
+  
+  const volumeData = [
+    ['50-99 usuarios', '5%', '10%'],
+    ['100-249 usuarios', '10%', '15%'],
+    ['250-499 usuarios', '15%', '20%'],
+    ['500+ usuarios', '20%', '25%'],
+    ['Multi-filial (3+ entidades)', '10% adicional', '15% adicional'],
+  ];
+  
+  autoTable(doc, {
+    startY: y,
+    head: [['Tramo', 'Descuento SaaS', 'Descuento Perpetua']],
+    body: volumeData,
+    theme: 'striped',
+    headStyles: { fillColor: [PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]], fontSize: 9 },
+    styles: { fontSize: 9, cellPadding: 4 },
+    margin: { left: 15, right: 15 },
+  });
+}
+
+// ============================================
 // MAIN GENERATOR
 // ============================================
 
@@ -610,6 +906,12 @@ export async function generateAuditPDF(config: AuditConfig): Promise<void> {
       generateCompetitorAnalysis(doc, [...CRM_COMPETITORS.slice(0,2), ...ERP_COMPETITORS.slice(0,2)], COMBINED_COMPETITOR_FEATURES, 'Suite Integral', pageCount);
     }
   }
+  
+  // Economic Valuation - ALWAYS included
+  generateEconomicValuation(doc, config.scope, pageCount);
+  
+  // Commercial Proposal - ALWAYS included
+  generateCommercialProposal(doc, config.scope, pageCount);
   
   // Roadmap
   if (config.includeRoadmap) {
