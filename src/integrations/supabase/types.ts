@@ -18206,6 +18206,175 @@ export type Database = {
           },
         ]
       }
+      erp_hr_benefits_enrollments: {
+        Row: {
+          beneficiaries: Json | null
+          company_id: string | null
+          contribution_frequency: string | null
+          coverage_level: string | null
+          created_at: string | null
+          dependents: Json | null
+          effective_date: string
+          election_amount: number | null
+          election_reason: string | null
+          employee_contribution: number | null
+          employee_id: string
+          employer_contribution: number | null
+          enrolled_at: string
+          enrollment_status: string | null
+          id: string
+          metadata: Json | null
+          plan_id: string | null
+          termination_date: string | null
+          updated_at: string | null
+          waiver_reason: string | null
+        }
+        Insert: {
+          beneficiaries?: Json | null
+          company_id?: string | null
+          contribution_frequency?: string | null
+          coverage_level?: string | null
+          created_at?: string | null
+          dependents?: Json | null
+          effective_date: string
+          election_amount?: number | null
+          election_reason?: string | null
+          employee_contribution?: number | null
+          employee_id: string
+          employer_contribution?: number | null
+          enrolled_at?: string
+          enrollment_status?: string | null
+          id?: string
+          metadata?: Json | null
+          plan_id?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          waiver_reason?: string | null
+        }
+        Update: {
+          beneficiaries?: Json | null
+          company_id?: string | null
+          contribution_frequency?: string | null
+          coverage_level?: string | null
+          created_at?: string | null
+          dependents?: Json | null
+          effective_date?: string
+          election_amount?: number | null
+          election_reason?: string | null
+          employee_contribution?: number | null
+          employee_id?: string
+          employer_contribution?: number | null
+          enrolled_at?: string
+          enrollment_status?: string | null
+          id?: string
+          metadata?: Json | null
+          plan_id?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          waiver_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_benefits_enrollments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_benefits_plans: {
+        Row: {
+          annual_cost: number | null
+          company_id: string | null
+          coverage_type: string | null
+          created_at: string | null
+          effective_from: string
+          effective_to: string | null
+          eligibility_criteria: Json | null
+          employee_contribution: number | null
+          employer_contribution: number | null
+          employer_contribution_percent: number | null
+          enrollment_period: string | null
+          id: string
+          is_active: boolean | null
+          is_taxable: boolean | null
+          metadata: Json | null
+          plan_code: string
+          plan_document_url: string | null
+          plan_name: string
+          plan_type: string
+          provider_contact: string | null
+          provider_name: string | null
+          summary_document_url: string | null
+          tax_treatment: string | null
+          updated_at: string | null
+          waiting_period_days: number | null
+        }
+        Insert: {
+          annual_cost?: number | null
+          company_id?: string | null
+          coverage_type?: string | null
+          created_at?: string | null
+          effective_from: string
+          effective_to?: string | null
+          eligibility_criteria?: Json | null
+          employee_contribution?: number | null
+          employer_contribution?: number | null
+          employer_contribution_percent?: number | null
+          enrollment_period?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_taxable?: boolean | null
+          metadata?: Json | null
+          plan_code: string
+          plan_document_url?: string | null
+          plan_name: string
+          plan_type: string
+          provider_contact?: string | null
+          provider_name?: string | null
+          summary_document_url?: string | null
+          tax_treatment?: string | null
+          updated_at?: string | null
+          waiting_period_days?: number | null
+        }
+        Update: {
+          annual_cost?: number | null
+          company_id?: string | null
+          coverage_type?: string | null
+          created_at?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          eligibility_criteria?: Json | null
+          employee_contribution?: number | null
+          employer_contribution?: number | null
+          employer_contribution_percent?: number | null
+          enrollment_period?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_taxable?: boolean | null
+          metadata?: Json | null
+          plan_code?: string
+          plan_document_url?: string | null
+          plan_name?: string
+          plan_type?: string
+          provider_contact?: string | null
+          provider_name?: string | null
+          summary_document_url?: string | null
+          tax_treatment?: string | null
+          updated_at?: string | null
+          waiting_period_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_benefits_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_bonus_allocations: {
         Row: {
           adjusted_amount: number | null
@@ -18851,6 +19020,196 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_compensation: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          base_salary: number
+          bonus_actual: number | null
+          bonus_target_percent: number | null
+          change_percent: number | null
+          change_reason: string | null
+          change_type: string | null
+          commission_plan: string | null
+          commission_rate: number | null
+          compa_ratio: number | null
+          company_id: string | null
+          created_at: string | null
+          currency: string | null
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          equity_grant_value: number | null
+          equity_type: string | null
+          equity_vested_value: number | null
+          equity_vesting_schedule: string | null
+          id: string
+          metadata: Json | null
+          pay_frequency: string | null
+          range_penetration: number | null
+          salary_band_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_salary: number
+          bonus_actual?: number | null
+          bonus_target_percent?: number | null
+          change_percent?: number | null
+          change_reason?: string | null
+          change_type?: string | null
+          commission_plan?: string | null
+          commission_rate?: number | null
+          compa_ratio?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          effective_from: string
+          effective_to?: string | null
+          employee_id: string
+          equity_grant_value?: number | null
+          equity_type?: string | null
+          equity_vested_value?: number | null
+          equity_vesting_schedule?: string | null
+          id?: string
+          metadata?: Json | null
+          pay_frequency?: string | null
+          range_penetration?: number | null
+          salary_band_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          base_salary?: number
+          bonus_actual?: number | null
+          bonus_target_percent?: number | null
+          change_percent?: number | null
+          change_reason?: string | null
+          change_type?: string | null
+          commission_plan?: string | null
+          commission_rate?: number | null
+          compa_ratio?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          employee_id?: string
+          equity_grant_value?: number | null
+          equity_type?: string | null
+          equity_vested_value?: number | null
+          equity_vesting_schedule?: string | null
+          id?: string
+          metadata?: Json | null
+          pay_frequency?: string | null
+          range_penetration?: number | null
+          salary_band_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_compensation_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_compensation_analytics: {
+        Row: {
+          above_market_count: number | null
+          adjusted_pay_gap: number | null
+          ai_insights: Json | null
+          analysis_date: string
+          analysis_type: string
+          at_market_count: number | null
+          avg_salary: number | null
+          below_market_count: number | null
+          company_id: string | null
+          compression_issues: number | null
+          created_at: string | null
+          currency: string | null
+          equity_score: number | null
+          flight_risk_compensation: number | null
+          forecast_next_year: Json | null
+          gender_pay_gap: number | null
+          high_performers_below_market: number | null
+          id: string
+          market_position_index: number | null
+          median_salary: number | null
+          metadata: Json | null
+          recommendations: Json | null
+          salary_spread: number | null
+          total_headcount: number | null
+          total_payroll: number | null
+        }
+        Insert: {
+          above_market_count?: number | null
+          adjusted_pay_gap?: number | null
+          ai_insights?: Json | null
+          analysis_date?: string
+          analysis_type: string
+          at_market_count?: number | null
+          avg_salary?: number | null
+          below_market_count?: number | null
+          company_id?: string | null
+          compression_issues?: number | null
+          created_at?: string | null
+          currency?: string | null
+          equity_score?: number | null
+          flight_risk_compensation?: number | null
+          forecast_next_year?: Json | null
+          gender_pay_gap?: number | null
+          high_performers_below_market?: number | null
+          id?: string
+          market_position_index?: number | null
+          median_salary?: number | null
+          metadata?: Json | null
+          recommendations?: Json | null
+          salary_spread?: number | null
+          total_headcount?: number | null
+          total_payroll?: number | null
+        }
+        Update: {
+          above_market_count?: number | null
+          adjusted_pay_gap?: number | null
+          ai_insights?: Json | null
+          analysis_date?: string
+          analysis_type?: string
+          at_market_count?: number | null
+          avg_salary?: number | null
+          below_market_count?: number | null
+          company_id?: string | null
+          compression_issues?: number | null
+          created_at?: string | null
+          currency?: string | null
+          equity_score?: number | null
+          flight_risk_compensation?: number | null
+          forecast_next_year?: Json | null
+          gender_pay_gap?: number | null
+          high_performers_below_market?: number | null
+          id?: string
+          market_position_index?: number | null
+          median_salary?: number | null
+          metadata?: Json | null
+          recommendations?: Json | null
+          salary_spread?: number | null
+          total_headcount?: number | null
+          total_payroll?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_compensation_analytics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -23273,6 +23632,181 @@ export type Database = {
           },
         ]
       }
+      erp_hr_recognition: {
+        Row: {
+          approved_at: string | null
+          approver_id: string | null
+          award_date: string
+          category: string | null
+          celebration_type: string | null
+          company_id: string | null
+          created_at: string | null
+          currency: string | null
+          delivered_at: string | null
+          description: string | null
+          gift_details: string | null
+          gift_type: string | null
+          id: string
+          is_public: boolean | null
+          metadata: Json | null
+          monetary_value: number | null
+          nominator_id: string | null
+          points_awarded: number | null
+          recipient_id: string
+          recognition_type: string
+          shared_to_feed: boolean | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approver_id?: string | null
+          award_date?: string
+          category?: string | null
+          celebration_type?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          delivered_at?: string | null
+          description?: string | null
+          gift_details?: string | null
+          gift_type?: string | null
+          id?: string
+          is_public?: boolean | null
+          metadata?: Json | null
+          monetary_value?: number | null
+          nominator_id?: string | null
+          points_awarded?: number | null
+          recipient_id: string
+          recognition_type: string
+          shared_to_feed?: boolean | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approver_id?: string | null
+          award_date?: string
+          category?: string | null
+          celebration_type?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          delivered_at?: string | null
+          description?: string | null
+          gift_details?: string | null
+          gift_type?: string | null
+          id?: string
+          is_public?: boolean | null
+          metadata?: Json | null
+          monetary_value?: number | null
+          nominator_id?: string | null
+          points_awarded?: number | null
+          recipient_id?: string
+          recognition_type?: string
+          shared_to_feed?: boolean | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_recognition_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_recognition_programs: {
+        Row: {
+          annual_budget: number | null
+          approval_threshold: number | null
+          budget_per_employee: number | null
+          budget_per_manager: number | null
+          company_id: string | null
+          company_values: Json | null
+          created_at: string | null
+          currency: string | null
+          effective_from: string
+          effective_to: string | null
+          eligible_nominators: string | null
+          eligible_recipients: string | null
+          id: string
+          is_active: boolean | null
+          max_award_value: number | null
+          metadata: Json | null
+          min_award_value: number | null
+          points_per_currency: number | null
+          program_name: string
+          program_type: string
+          recognition_categories: Json | null
+          requires_approval: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          annual_budget?: number | null
+          approval_threshold?: number | null
+          budget_per_employee?: number | null
+          budget_per_manager?: number | null
+          company_id?: string | null
+          company_values?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          eligible_nominators?: string | null
+          eligible_recipients?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_award_value?: number | null
+          metadata?: Json | null
+          min_award_value?: number | null
+          points_per_currency?: number | null
+          program_name: string
+          program_type: string
+          recognition_categories?: Json | null
+          requires_approval?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          annual_budget?: number | null
+          approval_threshold?: number | null
+          budget_per_employee?: number | null
+          budget_per_manager?: number | null
+          company_id?: string | null
+          company_values?: Json | null
+          created_at?: string | null
+          currency?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          eligible_nominators?: string | null
+          eligible_recipients?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_award_value?: number | null
+          metadata?: Json | null
+          min_award_value?: number | null
+          points_per_currency?: number | null
+          program_name?: string
+          program_type?: string
+          recognition_categories?: Json | null
+          requires_approval?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_recognition_programs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_recruitment_metrics: {
         Row: {
           acceptance_date: string | null
@@ -23931,6 +24465,83 @@ export type Database = {
             columns: ["equality_plan_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_equality_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_salary_bands: {
+        Row: {
+          band_code: string
+          band_name: string
+          benchmark_source: string | null
+          company_id: string | null
+          country_code: string | null
+          created_at: string | null
+          currency: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_active: boolean | null
+          job_family: string | null
+          last_benchmarked_at: string | null
+          level: string | null
+          market_percentile: number | null
+          max_salary: number
+          metadata: Json | null
+          mid_salary: number
+          min_salary: number
+          updated_at: string | null
+        }
+        Insert: {
+          band_code: string
+          band_name: string
+          benchmark_source?: string | null
+          company_id?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          currency?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_family?: string | null
+          last_benchmarked_at?: string | null
+          level?: string | null
+          market_percentile?: number | null
+          max_salary: number
+          metadata?: Json | null
+          mid_salary: number
+          min_salary: number
+          updated_at?: string | null
+        }
+        Update: {
+          band_code?: string
+          band_name?: string
+          benchmark_source?: string | null
+          company_id?: string | null
+          country_code?: string | null
+          created_at?: string | null
+          currency?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_family?: string | null
+          last_benchmarked_at?: string | null
+          level?: string | null
+          market_percentile?: number | null
+          max_salary?: number
+          metadata?: Json | null
+          mid_salary?: number
+          min_salary?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_salary_bands_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
