@@ -1022,3 +1022,6 @@ verify_jwt = true
 
 [functions.erp-hr-total-rewards]
 verify_jwt = true
+
+[functions.erp-esg-reporting]
+verify_jwt = true

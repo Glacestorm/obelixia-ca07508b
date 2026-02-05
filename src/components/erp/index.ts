@@ -21,4 +21,5 @@ export * from './logistics';
 export * from './fiscal';
 export * from './hr';
 export * from './legal';
+export * from './esg';
 export type { Transaction, Invoice, Employee, ERPMetrics } from './ERPDashboard';
