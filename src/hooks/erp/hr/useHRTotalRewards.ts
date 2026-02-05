@@ -7,6 +7,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Json } from '@/integrations/supabase/types';
 
 // ============================================
 // INTERFACES
@@ -101,9 +102,10 @@ export interface BenefitsEnrollment {
   employee_contribution?: number;
   employer_contribution?: number;
   contribution_frequency?: string;
-  dependents?: unknown;
-  beneficiaries?: unknown;
+  dependents?: Json;
+  beneficiaries?: Json;
   election_amount?: number;
+  waiver_reason?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -190,8 +192,8 @@ export interface RewardsStatement {
   acknowledged_at?: string;
   currency?: string;
   created_at?: string;
-  breakdown?: unknown;
-  comparisons?: unknown;
+  breakdown?: Json;
+  comparisons?: Json;
 }
 
 export interface CompensationAnalytics {
@@ -214,9 +216,9 @@ export interface CompensationAnalytics {
   high_performers_below_market?: number;
   flight_risk_compensation?: number;
   compression_issues?: number;
-  ai_insights?: unknown;
-  recommendations?: unknown;
-  forecast_next_year?: unknown;
+  ai_insights?: Json;
+  recommendations?: Json;
+  forecast_next_year?: Json;
   currency?: string;
   created_at?: string;
 }
@@ -373,20 +375,23 @@ export function useHRTotalRewards() {
 
   const fetchStatements = useCallback(async (companyId: string, employeeId?: string) => {
     try {
-      let query = supabase
+      // Using explicit any to break TS2589 infinite type recursion
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const baseQuery = client
         .from('erp_hr_rewards_statements')
         .select('*')
         .eq('company_id', companyId)
         .order('statement_year', { ascending: false });
 
-      if (employeeId) {
-        query = query.eq('employee_id', employeeId);
-      }
+      const query = employeeId 
+        ? baseQuery.eq('employee_id', employeeId) 
+        : baseQuery;
 
       const { data, error: fetchError } = await query.limit(50);
       if (fetchError) throw fetchError;
       setStatements((data || []) as RewardsStatement[]);
-      return data;
+      return data as RewardsStatement[];
     } catch (err) {
       console.error('[useHRTotalRewards] fetchStatements error:', err);
       return null;
