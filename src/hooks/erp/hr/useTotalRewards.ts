@@ -148,14 +148,36 @@ export function useTotalRewards() {
   const fetchComponents = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('erp_hr_compensation_components')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const { data, error: fetchError } = await client
+        .from('erp_hr_benefits_plans')
         .select('*')
         .eq('is_active', true)
-        .order('display_order', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setComponents(data as CompensationComponent[]);
+      
+      // Map benefits plans to compensation components format
+      const mapped = (data || []).map((plan: Record<string, unknown>) => ({
+        id: plan.id as string,
+        company_id: plan.company_id as string | null,
+        name: plan.plan_name as string,
+        category: 'benefits' as const,
+        description: plan.description as string | null,
+        is_taxable: false,
+        is_cash_equivalent: false,
+        calculation_type: 'fixed' as const,
+        calculation_formula: null,
+        display_order: 0,
+        icon: null,
+        color: null,
+        is_active: plan.is_active as boolean,
+        created_at: plan.created_at as string,
+        updated_at: plan.updated_at as string
+      }));
+      
+      setComponents(mapped);
     } catch (err) {
       console.error('[useTotalRewards] fetchComponents error:', err);
       setError(err instanceof Error ? err.message : 'Error loading components');
@@ -170,17 +192,33 @@ export function useTotalRewards() {
     fiscalYear: number
   ): Promise<EmployeeCompensation[]> => {
     try {
-      const { data, error: fetchError } = await supabase
-        .from('erp_hr_employee_compensation')
-        .select(`
-          *,
-          component:erp_hr_compensation_components(*)
-        `)
-        .eq('employee_id', employeeId)
-        .eq('fiscal_year', fiscalYear);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const { data, error: fetchError } = await client
+        .from('erp_hr_compensation')
+        .select('*')
+        .eq('employee_id', employeeId);
 
       if (fetchError) throw fetchError;
-      return (data || []) as EmployeeCompensation[];
+      
+      // Map compensation records to expected format
+      const mapped = (data || []).map((comp: Record<string, unknown>) => ({
+        id: comp.id as string,
+        employee_id: comp.employee_id as string,
+        component_id: comp.id as string,
+        fiscal_year: fiscalYear,
+        amount: (comp.base_salary as number) || 0,
+        currency: comp.currency as string || 'EUR',
+        frequency: 'annual' as const,
+        effective_date: comp.effective_date as string | null,
+        end_date: null,
+        notes: comp.notes as string | null,
+        metadata: {},
+        created_at: comp.created_at as string,
+        updated_at: comp.updated_at as string
+      }));
+      
+      return mapped;
     } catch (err) {
       console.error('[useTotalRewards] fetchEmployeeCompensation error:', err);
       return [];
@@ -191,10 +229,12 @@ export function useTotalRewards() {
   const fetchStatements = useCallback(async (employeeId?: string) => {
     setLoading(true);
     try {
-      let query = supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      let query = client
         .from('erp_hr_rewards_statements')
         .select('*')
-        .order('fiscal_year', { ascending: false });
+        .order('statement_year', { ascending: false });
 
       if (employeeId) {
         query = query.eq('employee_id', employeeId);
@@ -202,7 +242,30 @@ export function useTotalRewards() {
 
       const { data, error: fetchError } = await query;
       if (fetchError) throw fetchError;
-      setStatements(data as RewardsStatement[]);
+      
+      // Map to expected format
+      const mapped = (data || []).map((s: Record<string, unknown>) => ({
+        id: s.id as string,
+        employee_id: s.employee_id as string,
+        fiscal_year: s.statement_year as number,
+        statement_date: (s.statement_date as string) || (s.created_at as string),
+        status: (s.status as RewardsStatement['status']) || 'draft',
+        total_compensation: s.total_value as number | null,
+        total_cash: s.cash_value as number | null,
+        total_benefits_value: s.benefits_value as number | null,
+        total_equity_value: s.equity_value as number | null,
+        currency: (s.currency as string) || 'EUR',
+        breakdown: s.breakdown as CategoryBreakdown || {},
+        comparisons: s.comparisons as MarketComparison || {},
+        pdf_url: s.pdf_url as string | null,
+        sent_at: s.sent_at as string | null,
+        viewed_at: s.viewed_at as string | null,
+        generated_by: s.generated_by as string | null,
+        created_at: s.created_at as string,
+        updated_at: s.updated_at as string
+      }));
+      
+      setStatements(mapped);
     } catch (err) {
       console.error('[useTotalRewards] fetchStatements error:', err);
       setError(err instanceof Error ? err.message : 'Error loading statements');
@@ -214,17 +277,38 @@ export function useTotalRewards() {
   // === FETCH BENCHMARKS ===
   const fetchBenchmarks = useCallback(async (jobLevel?: string, jobFamily?: string) => {
     try {
-      let query = supabase
-        .from('erp_hr_market_benchmarks')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      let query = client
+        .from('erp_hr_salary_bands')
         .select('*');
 
-      if (jobLevel) query = query.eq('job_level', jobLevel);
+      if (jobLevel) query = query.eq('level', jobLevel);
       if (jobFamily) query = query.eq('job_family', jobFamily);
 
       const { data, error: fetchError } = await query;
       if (fetchError) throw fetchError;
-      setBenchmarks(data as MarketBenchmark[]);
-      return data as MarketBenchmark[];
+      
+      // Map salary bands to market benchmark format
+      const mapped = (data || []).map((b: Record<string, unknown>) => ({
+        id: b.id as string,
+        company_id: b.company_id as string | null,
+        job_level: b.level as string | null,
+        job_family: b.job_family as string | null,
+        location: b.location as string | null,
+        percentile_25: b.min_salary as number | null,
+        percentile_50: b.mid_salary as number | null,
+        percentile_75: b.max_salary as number | null,
+        percentile_90: null,
+        currency: (b.currency as string) || 'EUR',
+        source: b.source as string | null,
+        survey_date: b.effective_date as string | null,
+        created_at: b.created_at as string,
+        updated_at: b.updated_at as string
+      }));
+      
+      setBenchmarks(mapped);
+      return mapped;
     } catch (err) {
       console.error('[useTotalRewards] fetchBenchmarks error:', err);
       return [];
@@ -327,21 +411,23 @@ export function useTotalRewards() {
 
       const statementData = {
         employee_id: employeeId,
-        fiscal_year: fiscalYear,
+        statement_year: fiscalYear,
         statement_date: new Date().toISOString().split('T')[0],
         status: 'generated',
-        total_compensation: summary.totalCompensation,
-        total_cash: summary.cashCompensation,
-        total_benefits_value: summary.benefitsValue,
-        total_equity_value: summary.equityValue,
+        total_value: summary.totalCompensation,
+        cash_value: summary.cashCompensation,
+        benefits_value: summary.benefitsValue,
+        equity_value: summary.equityValue,
         breakdown: JSON.parse(JSON.stringify(summary.byCategory)),
         comparisons: JSON.parse(JSON.stringify(summary.marketPosition || {})),
         generated_by: user.id
       };
 
-      const { data, error: insertError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const { data, error: insertError } = await client
         .from('erp_hr_rewards_statements')
-        .upsert([statementData], { onConflict: 'employee_id,fiscal_year' })
+        .upsert([statementData], { onConflict: 'employee_id,statement_year' })
         .select()
         .single();
 
@@ -349,7 +435,30 @@ export function useTotalRewards() {
 
       toast.success('Statement generado correctamente');
       await fetchStatements(employeeId);
-      return data as RewardsStatement;
+      
+      // Map returned data to expected format
+      const mapped: RewardsStatement = {
+        id: data.id,
+        employee_id: data.employee_id,
+        fiscal_year: data.statement_year,
+        statement_date: data.statement_date || data.created_at,
+        status: data.status || 'draft',
+        total_compensation: data.total_value,
+        total_cash: data.cash_value,
+        total_benefits_value: data.benefits_value,
+        total_equity_value: data.equity_value,
+        currency: data.currency || 'EUR',
+        breakdown: data.breakdown || {},
+        comparisons: data.comparisons || {},
+        pdf_url: data.pdf_url,
+        sent_at: data.sent_at,
+        viewed_at: data.viewed_at,
+        generated_by: data.generated_by,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+      
+      return mapped;
     } catch (err) {
       console.error('[useTotalRewards] generateStatement error:', err);
       toast.error('Error generando statement');
@@ -363,14 +472,17 @@ export function useTotalRewards() {
     updates: Partial<EmployeeCompensation>
   ): Promise<boolean> => {
     try {
-      // Serialize metadata for Supabase Json compatibility
-      const cleanUpdates = {
-        ...updates,
-        metadata: updates.metadata ? JSON.parse(JSON.stringify(updates.metadata)) : undefined
-      };
+      // Map to actual table columns
+      const cleanUpdates: Record<string, unknown> = {};
+      if (updates.amount !== undefined) cleanUpdates.base_salary = updates.amount;
+      if (updates.currency !== undefined) cleanUpdates.currency = updates.currency;
+      if (updates.effective_date !== undefined) cleanUpdates.effective_date = updates.effective_date;
+      if (updates.notes !== undefined) cleanUpdates.notes = updates.notes;
 
-      const { error: updateError } = await supabase
-        .from('erp_hr_employee_compensation')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const { error: updateError } = await client
+        .from('erp_hr_compensation')
         .update(cleanUpdates)
         .eq('id', compensationId);
 
@@ -390,22 +502,44 @@ export function useTotalRewards() {
     data: Omit<EmployeeCompensation, 'id' | 'created_at' | 'updated_at'>
   ): Promise<EmployeeCompensation | null> => {
     try {
-      // Serialize metadata for Supabase Json compatibility
-      const cleanData = {
-        ...data,
-        metadata: data.metadata ? JSON.parse(JSON.stringify(data.metadata)) : {}
+      // Map to actual table columns
+      const insertData = {
+        employee_id: data.employee_id,
+        base_salary: data.amount,
+        currency: data.currency || 'EUR',
+        effective_date: data.effective_date,
+        notes: data.notes
       };
 
-      const { data: inserted, error: insertError } = await supabase
-        .from('erp_hr_employee_compensation')
-        .insert([cleanData])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const { data: inserted, error: insertError } = await client
+        .from('erp_hr_compensation')
+        .insert([insertData])
         .select()
         .single();
 
       if (insertError) throw insertError;
 
+      // Map back to expected format
+      const mapped: EmployeeCompensation = {
+        id: inserted.id,
+        employee_id: inserted.employee_id,
+        component_id: inserted.id,
+        fiscal_year: new Date().getFullYear(),
+        amount: inserted.base_salary || 0,
+        currency: inserted.currency || 'EUR',
+        frequency: 'annual',
+        effective_date: inserted.effective_date,
+        end_date: null,
+        notes: inserted.notes,
+        metadata: {},
+        created_at: inserted.created_at,
+        updated_at: inserted.updated_at
+      };
+
       toast.success('Compensación añadida');
-      return inserted as EmployeeCompensation;
+      return mapped;
     } catch (err) {
       console.error('[useTotalRewards] addEmployeeCompensation error:', err);
       toast.error('Error añadiendo compensación');
@@ -416,7 +550,9 @@ export function useTotalRewards() {
   // === SEND STATEMENT ===
   const sendStatement = useCallback(async (statementId: string): Promise<boolean> => {
     try {
-      const { error: updateError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const { error: updateError } = await client
         .from('erp_hr_rewards_statements')
         .update({ 
           status: 'sent',
