@@ -7,4 +7,5 @@ export * from './erpModuleData';
 export * from './crmModuleData';
 export * from './crossModuleData';
 export * from './valuationData';
+export * from './competitiveIntelligence';
 export * from './pdfGenerator';

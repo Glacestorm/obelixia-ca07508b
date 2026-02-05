@@ -51,6 +51,19 @@ import {
   type FeatureValuation,
   type PricingTier,
 } from './valuationData';
+import {
+  CRM_COMPETITORS_DETAILED,
+  ERP_COMPETITORS_DETAILED,
+  DISRUPTIVE_FEATURES,
+  SECTOR_PENETRATION_ANALYSIS,
+  getTopPrioritySectors,
+  getDisruptiveAdvantages,
+  getCompetitorGaps,
+  getTotalDisruptiveValue,
+  type CompetitorDetailedProfile,
+  type DisruptiveFeature,
+  type SectorPenetrationAnalysis,
+} from './competitiveIntelligence';
 
 // ============================================
 // PDF HELPERS
@@ -866,6 +879,292 @@ function generateCommercialProposal(
 }
 
 // ============================================
+// DISRUPTIVE FEATURES ANALYSIS
+// ============================================
+
+function generateDisruptiveAnalysis(
+  doc: jsPDF,
+  scope: AuditScope,
+  pageCount: { value: number }
+): void {
+  doc.addPage();
+  pageCount.value++;
+  
+  const title = 'Analisis Disruptivo';
+  addHeader(doc, title, pageCount.value);
+  addFooter(doc);
+  
+  let y = 35;
+  y = addSectionTitle(doc, 'VENTAJAS DISRUPTIVAS vs COMPETENCIA', y);
+  
+  y = addParagraph(doc, 
+    'Las siguientes funcionalidades representan innovaciones unicas en el mercado que ningun competidor ' +
+    'ofrece actualmente. Estas ventajas constituyen el principal diferenciador competitivo de ObelixIA.',
+    y + 5
+  );
+  
+  const disruptive = getDisruptiveAdvantages();
+  const disruptiveValue = getTotalDisruptiveValue();
+  
+  // Summary box
+  doc.setFillColor(PDF_COLORS.backgrounds.success[0], PDF_COLORS.backgrounds.success[1], PDF_COLORS.backgrounds.success[2]);
+  doc.roundedRect(15, y, 180, 25, 2, 2, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(34, 197, 94);
+  doc.text(`${disruptive.length} INNOVACIONES DISRUPTIVAS`, 20, y + 10);
+  doc.text(`Valor Estimado: EUR ${disruptiveValue.toLocaleString('es-ES')}`, 20, y + 18);
+  
+  y += 32;
+  
+  // Filter by scope
+  const scopeDisruptive = disruptive.filter(d => {
+    if (scope === 'crm') return d.category.includes('IA') || d.category.includes('CRM');
+    if (scope === 'erp') return !d.category.includes('CRM');
+    return true;
+  });
+  
+  // Table
+  const disruptiveData = scopeDisruptive.slice(0, 12).map(d => [
+    sanitizeForPDF(d.name),
+    sanitizeForPDF(d.category),
+    d.disruptionLevel === 'game_changer' ? 'GAME CHANGER' : d.disruptionLevel === 'very_high' ? 'MUY ALTO' : 'ALTO',
+    `EUR ${d.estimatedValue.toLocaleString('es-ES')}`,
+  ]);
+  
+  autoTable(doc, {
+    startY: y,
+    head: [['Innovacion', 'Categoria', 'Nivel Disrupcion', 'Valor']],
+    body: disruptiveData,
+    theme: 'striped',
+    headStyles: { fillColor: [34, 197, 94], fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    columnStyles: { 2: { fontStyle: 'bold' } },
+    margin: { left: 15, right: 15 },
+    didParseCell: (data) => {
+      if (data.column.index === 2 && data.section === 'body') {
+        const text = data.cell.raw as string;
+        if (text === 'GAME CHANGER') {
+          data.cell.styles.textColor = [220, 38, 38];
+        } else if (text === 'MUY ALTO') {
+          data.cell.styles.textColor = [234, 88, 12];
+        }
+      }
+    },
+  });
+  
+  y = (doc as any).lastAutoTable.finalY + 15;
+  
+  // Competitor gaps
+  y = checkPageBreak(doc, y, 60, title, pageCount);
+  y = addSubsectionTitle(doc, 'Gaps de Competencia Identificados', y);
+  
+  const gaps = getCompetitorGaps(scope);
+  
+  gaps.slice(0, 8).forEach((gap, idx) => {
+    y = checkPageBreak(doc, y, 8, title, pageCount);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+    doc.text(`${idx + 1}. ${sanitizeForPDF(gap)}`, 20, y);
+    y += 6;
+  });
+}
+
+// ============================================
+// SECTOR PENETRATION ANALYSIS
+// ============================================
+
+function generateSectorAnalysis(
+  doc: jsPDF,
+  pageCount: { value: number }
+): void {
+  doc.addPage();
+  pageCount.value++;
+  
+  const title = 'Sectores Prioritarios';
+  addHeader(doc, title, pageCount.value);
+  addFooter(doc);
+  
+  let y = 35;
+  y = addSectionTitle(doc, 'ANALISIS SECTORIAL - PENETRACION MERCADO', y);
+  
+  y = addParagraph(doc, 
+    'Analisis de sectores economicos con mayor potencial de penetracion basado en: tamano de mercado, ' +
+    'complejidad regulatoria (donde ObelixIA destaca), nivel de competencia y ventajas competitivas especificas.',
+    y + 5
+  );
+  
+  const topSectors = getTopPrioritySectors(6);
+  
+  for (const sector of topSectors) {
+    y = checkPageBreak(doc, y, 70, title, pageCount);
+    
+    // Sector header
+    doc.setFillColor(PDF_COLORS.primaryLight[0], PDF_COLORS.primaryLight[1], PDF_COLORS.primaryLight[2]);
+    doc.roundedRect(15, y, 180, 12, 2, 2, 'F');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`${sector.sector} (${sector.sectorCode})`, 20, y + 8);
+    
+    doc.setFontSize(9);
+    doc.text(`Prioridad: ${sector.priorityScore}/100`, 160, y + 8);
+    
+    y += 16;
+    
+    // Details grid
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+    
+    doc.text(`Mercado: ${sector.marketSize}`, 20, y);
+    doc.text(`Crecimiento: ${sector.growthRate}`, 80, y);
+    doc.text(`Competencia: ${sector.competitionLevel}`, 140, y);
+    y += 5;
+    
+    doc.text(`Deals potenciales: ${sector.estimatedDeals}`, 20, y);
+    doc.text(`Ticket medio: ${sector.averageDealSize}`, 100, y);
+    y += 5;
+    
+    doc.text(`Ciclo venta: ${sector.salesCycleMonths} meses`, 20, y);
+    doc.text(`Regulacion: ${sector.regulatoryComplexity}`, 100, y);
+    y += 8;
+    
+    // Advantages
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(34, 197, 94);
+    doc.text('Ventajas ObelixIA:', 20, y);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.text.secondary[0], PDF_COLORS.text.secondary[1], PDF_COLORS.text.secondary[2]);
+    const advantagesText = sector.obelixiaAdvantage.slice(0, 3).join(' | ');
+    doc.text(sanitizeForPDF(advantagesText), 55, y);
+    y += 5;
+    
+    // Approach
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text(`Estrategia: ${sanitizeForPDF(sector.recommendedApproach)}`, 20, y);
+    
+    y += 12;
+  }
+  
+  // Summary table
+  y = checkPageBreak(doc, y, 60, title, pageCount);
+  y = addSubsectionTitle(doc, 'Ranking Sectores por Prioridad', y + 5);
+  
+  const sectorData = SECTOR_PENETRATION_ANALYSIS.slice(0, 10).map(s => [
+    sanitizeForPDF(s.sector),
+    `${s.priorityScore}`,
+    s.marketSize,
+    s.crmNeed === 'critical' ? 'Critico' : s.crmNeed === 'very_high' ? 'Muy Alto' : 'Alto',
+    s.erpNeed === 'critical' ? 'Critico' : s.erpNeed === 'very_high' ? 'Muy Alto' : 'Alto',
+  ]);
+  
+  autoTable(doc, {
+    startY: y,
+    head: [['Sector', 'Score', 'Mercado', 'Need CRM', 'Need ERP']],
+    body: sectorData,
+    theme: 'striped',
+    headStyles: { fillColor: [PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]], fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    margin: { left: 15, right: 15 },
+  });
+}
+
+// ============================================
+// DETAILED COMPETITOR PROFILES
+// ============================================
+
+function generateDetailedCompetitorProfiles(
+  doc: jsPDF,
+  scope: AuditScope,
+  pageCount: { value: number }
+): void {
+  doc.addPage();
+  pageCount.value++;
+  
+  const title = 'Perfiles Competidores';
+  addHeader(doc, title, pageCount.value);
+  addFooter(doc);
+  
+  let y = 35;
+  y = addSectionTitle(doc, 'PERFILES DETALLADOS DE COMPETIDORES 2025-2026', y);
+  
+  const competitors = scope === 'crm' ? CRM_COMPETITORS_DETAILED :
+                      scope === 'erp' ? ERP_COMPETITORS_DETAILED :
+                      [...CRM_COMPETITORS_DETAILED.slice(0, 2), ...ERP_COMPETITORS_DETAILED.slice(0, 2)];
+  
+  for (const comp of competitors) {
+    y = checkPageBreak(doc, y, 85, title, pageCount);
+    
+    // Header
+    doc.setFillColor(PDF_COLORS.gray[100][0], PDF_COLORS.gray[100][1], PDF_COLORS.gray[100][2]);
+    doc.roundedRect(15, y, 180, 75, 2, 2, 'F');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(PDF_COLORS.primary[0], PDF_COLORS.primary[1], PDF_COLORS.primary[2]);
+    doc.text(comp.fullName, 20, y + 8);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(PDF_COLORS.text.secondary[0], PDF_COLORS.text.secondary[1], PDF_COLORS.text.secondary[2]);
+    doc.text(`Market Cap: ${comp.marketCap} | Revenue: ${comp.annualRevenue} | Empleados: ${comp.employeeCount}`, 20, y + 15);
+    
+    // Pricing
+    doc.setFontSize(8);
+    doc.text(`Precios: Starter ${comp.pricing.starter} | Pro ${comp.pricing.professional} | Enterprise ${comp.pricing.enterprise}`, 20, y + 22);
+    
+    // Strengths
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(34, 197, 94);
+    doc.text('Fortalezas:', 20, y + 32);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+    doc.text(comp.coreStrengths.slice(0, 3).join(' | '), 50, y + 32);
+    
+    // Weaknesses
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(220, 38, 38);
+    doc.text('Debilidades:', 20, y + 40);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+    doc.text(comp.coreWeaknesses.slice(0, 3).join(' | '), 50, y + 40);
+    
+    // AI Capabilities
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(59, 130, 246);
+    doc.text('IA:', 20, y + 48);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+    doc.text(comp.aiCapabilities.slice(0, 3).join(' | '), 30, y + 48);
+    
+    // Missing vs ObelixIA
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(234, 88, 12);
+    doc.text('Carece de (ObelixIA tiene):', 20, y + 56);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(PDF_COLORS.text.primary[0], PDF_COLORS.text.primary[1], PDF_COLORS.text.primary[2]);
+    doc.text(comp.missingFeatures.slice(0, 3).join(' | '), 20, y + 63);
+    
+    // Position
+    doc.setFontSize(7);
+    doc.setTextColor(PDF_COLORS.text.secondary[0], PDF_COLORS.text.secondary[1], PDF_COLORS.text.secondary[2]);
+    doc.text(`Posicion: ${comp.marketPosition} | Target: ${comp.targetSegment}`, 20, y + 71);
+    
+    y += 82;
+  }
+}
+
+// ============================================
 // MAIN GENERATOR
 // ============================================
 
@@ -896,7 +1195,18 @@ export async function generateAuditPDF(config: AuditConfig): Promise<void> {
     generateFeatureInventory(doc, CROSS_MODULE_FEATURES, 'Cross-Module', pageCount);
   }
   
-  // Competitor Analysis
+  // Detailed Competitor Profiles - NEW
+  if (config.includeCompetitorAnalysis) {
+    generateDetailedCompetitorProfiles(doc, config.scope, pageCount);
+  }
+  
+  // Disruptive Analysis - NEW
+  generateDisruptiveAnalysis(doc, config.scope, pageCount);
+  
+  // Sector Penetration Analysis - NEW
+  generateSectorAnalysis(doc, pageCount);
+  
+  // Original Competitor Analysis (matrix)
   if (config.includeCompetitorAnalysis) {
     if (config.scope === 'crm') {
       generateCompetitorAnalysis(doc, CRM_COMPETITORS, CRM_COMPETITOR_FEATURES, 'CRM', pageCount);
