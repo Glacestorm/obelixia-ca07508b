@@ -15642,6 +15642,668 @@ export type Database = {
           },
         ]
       }
+      erp_esg_data_points: {
+        Row: {
+          auditor_notes: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          data_point_id: string
+          data_point_name: string
+          data_quality_score: number | null
+          disclosure_requirement: string | null
+          esrs_standard: string
+          fiscal_year: string
+          id: string
+          reporting_period_end: string | null
+          reporting_period_start: string | null
+          unit: string | null
+          updated_at: string | null
+          updated_by: string | null
+          value_json: Json | null
+          value_numeric: number | null
+          value_text: string | null
+          verification_status: string | null
+        }
+        Insert: {
+          auditor_notes?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_point_id: string
+          data_point_name: string
+          data_quality_score?: number | null
+          disclosure_requirement?: string | null
+          esrs_standard: string
+          fiscal_year: string
+          id?: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          value_json?: Json | null
+          value_numeric?: number | null
+          value_text?: string | null
+          verification_status?: string | null
+        }
+        Update: {
+          auditor_notes?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_point_id?: string
+          data_point_name?: string
+          data_quality_score?: number | null
+          disclosure_requirement?: string | null
+          esrs_standard?: string
+          fiscal_year?: string
+          id?: string
+          reporting_period_end?: string | null
+          reporting_period_start?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          value_json?: Json | null
+          value_numeric?: number | null
+          value_text?: string | null
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_esg_data_points_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_esg_emissions: {
+        Row: {
+          calculation_methodology: string | null
+          company_id: string | null
+          created_at: string | null
+          emission_factors_source: string | null
+          emissions_per_employee: number | null
+          emissions_per_million_revenue: number | null
+          employees_count: number | null
+          fiscal_year: string
+          id: string
+          reporting_month: number | null
+          revenue_million: number | null
+          scope1_fugitive_emissions: number | null
+          scope1_mobile_combustion: number | null
+          scope1_process_emissions: number | null
+          scope1_stationary_combustion: number | null
+          scope1_total: number | null
+          scope2_location_based: number | null
+          scope2_market_based: number | null
+          scope3_business_travel: number | null
+          scope3_capital_goods: number | null
+          scope3_downstream_leased: number | null
+          scope3_downstream_transport: number | null
+          scope3_employee_commuting: number | null
+          scope3_end_of_life: number | null
+          scope3_franchises: number | null
+          scope3_fuel_energy: number | null
+          scope3_investments: number | null
+          scope3_processing: number | null
+          scope3_purchased_goods: number | null
+          scope3_total: number | null
+          scope3_upstream_leased: number | null
+          scope3_upstream_transport: number | null
+          scope3_use_of_products: number | null
+          scope3_waste: number | null
+          total_emissions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          calculation_methodology?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          emission_factors_source?: string | null
+          emissions_per_employee?: number | null
+          emissions_per_million_revenue?: number | null
+          employees_count?: number | null
+          fiscal_year: string
+          id?: string
+          reporting_month?: number | null
+          revenue_million?: number | null
+          scope1_fugitive_emissions?: number | null
+          scope1_mobile_combustion?: number | null
+          scope1_process_emissions?: number | null
+          scope1_stationary_combustion?: number | null
+          scope1_total?: number | null
+          scope2_location_based?: number | null
+          scope2_market_based?: number | null
+          scope3_business_travel?: number | null
+          scope3_capital_goods?: number | null
+          scope3_downstream_leased?: number | null
+          scope3_downstream_transport?: number | null
+          scope3_employee_commuting?: number | null
+          scope3_end_of_life?: number | null
+          scope3_franchises?: number | null
+          scope3_fuel_energy?: number | null
+          scope3_investments?: number | null
+          scope3_processing?: number | null
+          scope3_purchased_goods?: number | null
+          scope3_total?: number | null
+          scope3_upstream_leased?: number | null
+          scope3_upstream_transport?: number | null
+          scope3_use_of_products?: number | null
+          scope3_waste?: number | null
+          total_emissions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          calculation_methodology?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          emission_factors_source?: string | null
+          emissions_per_employee?: number | null
+          emissions_per_million_revenue?: number | null
+          employees_count?: number | null
+          fiscal_year?: string
+          id?: string
+          reporting_month?: number | null
+          revenue_million?: number | null
+          scope1_fugitive_emissions?: number | null
+          scope1_mobile_combustion?: number | null
+          scope1_process_emissions?: number | null
+          scope1_stationary_combustion?: number | null
+          scope1_total?: number | null
+          scope2_location_based?: number | null
+          scope2_market_based?: number | null
+          scope3_business_travel?: number | null
+          scope3_capital_goods?: number | null
+          scope3_downstream_leased?: number | null
+          scope3_downstream_transport?: number | null
+          scope3_employee_commuting?: number | null
+          scope3_end_of_life?: number | null
+          scope3_franchises?: number | null
+          scope3_fuel_energy?: number | null
+          scope3_investments?: number | null
+          scope3_processing?: number | null
+          scope3_purchased_goods?: number | null
+          scope3_total?: number | null
+          scope3_upstream_leased?: number | null
+          scope3_upstream_transport?: number | null
+          scope3_use_of_products?: number | null
+          scope3_waste?: number | null
+          total_emissions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_esg_emissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_esg_governance_metrics: {
+        Row: {
+          anti_corruption_policy: boolean | null
+          average_board_tenure: number | null
+          board_diversity_percentage: number | null
+          board_meetings_per_year: number | null
+          board_size: number | null
+          company_id: string | null
+          confirmed_corruption_cases: number | null
+          created_at: string | null
+          effective_tax_rate: number | null
+          esg_compensation_percentage: number | null
+          esg_linked_executive_compensation: boolean | null
+          ethics_training_completion: number | null
+          fiscal_year: string
+          human_rights_policy: boolean | null
+          id: string
+          independent_directors: number | null
+          lobbying_expenditure: number | null
+          political_contributions: number | null
+          regulatory_fines_amount: number | null
+          regulatory_fines_count: number | null
+          sustainability_committee: boolean | null
+          tax_transparency_report: boolean | null
+          updated_at: string | null
+          whistleblower_reports: number | null
+          women_on_board: number | null
+        }
+        Insert: {
+          anti_corruption_policy?: boolean | null
+          average_board_tenure?: number | null
+          board_diversity_percentage?: number | null
+          board_meetings_per_year?: number | null
+          board_size?: number | null
+          company_id?: string | null
+          confirmed_corruption_cases?: number | null
+          created_at?: string | null
+          effective_tax_rate?: number | null
+          esg_compensation_percentage?: number | null
+          esg_linked_executive_compensation?: boolean | null
+          ethics_training_completion?: number | null
+          fiscal_year: string
+          human_rights_policy?: boolean | null
+          id?: string
+          independent_directors?: number | null
+          lobbying_expenditure?: number | null
+          political_contributions?: number | null
+          regulatory_fines_amount?: number | null
+          regulatory_fines_count?: number | null
+          sustainability_committee?: boolean | null
+          tax_transparency_report?: boolean | null
+          updated_at?: string | null
+          whistleblower_reports?: number | null
+          women_on_board?: number | null
+        }
+        Update: {
+          anti_corruption_policy?: boolean | null
+          average_board_tenure?: number | null
+          board_diversity_percentage?: number | null
+          board_meetings_per_year?: number | null
+          board_size?: number | null
+          company_id?: string | null
+          confirmed_corruption_cases?: number | null
+          created_at?: string | null
+          effective_tax_rate?: number | null
+          esg_compensation_percentage?: number | null
+          esg_linked_executive_compensation?: boolean | null
+          ethics_training_completion?: number | null
+          fiscal_year?: string
+          human_rights_policy?: boolean | null
+          id?: string
+          independent_directors?: number | null
+          lobbying_expenditure?: number | null
+          political_contributions?: number | null
+          regulatory_fines_amount?: number | null
+          regulatory_fines_count?: number | null
+          sustainability_committee?: boolean | null
+          tax_transparency_report?: boolean | null
+          updated_at?: string | null
+          whistleblower_reports?: number | null
+          women_on_board?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_esg_governance_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_esg_reduction_targets: {
+        Row: {
+          baseline_emissions: number
+          baseline_year: number
+          company_id: string | null
+          created_at: string | null
+          current_emissions: number | null
+          current_year: number | null
+          id: string
+          is_active: boolean | null
+          on_track: boolean | null
+          progress_percentage: number | null
+          reduction_pathway: Json | null
+          reduction_percentage: number | null
+          sbti_target_type: string | null
+          sbti_validated: boolean | null
+          sbti_validation_date: string | null
+          scope_covered: string
+          target_emissions: number | null
+          target_name: string
+          target_type: string
+          target_year: number
+          updated_at: string | null
+        }
+        Insert: {
+          baseline_emissions: number
+          baseline_year: number
+          company_id?: string | null
+          created_at?: string | null
+          current_emissions?: number | null
+          current_year?: number | null
+          id?: string
+          is_active?: boolean | null
+          on_track?: boolean | null
+          progress_percentage?: number | null
+          reduction_pathway?: Json | null
+          reduction_percentage?: number | null
+          sbti_target_type?: string | null
+          sbti_validated?: boolean | null
+          sbti_validation_date?: string | null
+          scope_covered: string
+          target_emissions?: number | null
+          target_name: string
+          target_type: string
+          target_year: number
+          updated_at?: string | null
+        }
+        Update: {
+          baseline_emissions?: number
+          baseline_year?: number
+          company_id?: string | null
+          created_at?: string | null
+          current_emissions?: number | null
+          current_year?: number | null
+          id?: string
+          is_active?: boolean | null
+          on_track?: boolean | null
+          progress_percentage?: number | null
+          reduction_pathway?: Json | null
+          reduction_percentage?: number | null
+          sbti_target_type?: string | null
+          sbti_validated?: boolean | null
+          sbti_validation_date?: string | null
+          scope_covered?: string
+          target_emissions?: number | null
+          target_name?: string
+          target_type?: string
+          target_year?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_esg_reduction_targets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_esg_reports: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string | null
+          compliance_score: number | null
+          created_at: string | null
+          created_by: string | null
+          data_quality_score: number | null
+          disclosure_completeness: number | null
+          double_materiality_matrix: Json | null
+          esrs_environmental: Json | null
+          esrs_general_disclosures: Json | null
+          esrs_governance: Json | null
+          esrs_social: Json | null
+          executive_summary: string | null
+          fiscal_year: string
+          governance_section: Json | null
+          id: string
+          materiality_assessment: Json | null
+          metrics_targets_section: Json | null
+          pdf_url: string | null
+          published_at: string | null
+          report_title: string
+          report_type: Database["public"]["Enums"]["esg_framework"]
+          risk_management_section: Json | null
+          status: string | null
+          strategy_section: Json | null
+          updated_at: string | null
+          xbrl_url: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          compliance_score?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          data_quality_score?: number | null
+          disclosure_completeness?: number | null
+          double_materiality_matrix?: Json | null
+          esrs_environmental?: Json | null
+          esrs_general_disclosures?: Json | null
+          esrs_governance?: Json | null
+          esrs_social?: Json | null
+          executive_summary?: string | null
+          fiscal_year: string
+          governance_section?: Json | null
+          id?: string
+          materiality_assessment?: Json | null
+          metrics_targets_section?: Json | null
+          pdf_url?: string | null
+          published_at?: string | null
+          report_title: string
+          report_type: Database["public"]["Enums"]["esg_framework"]
+          risk_management_section?: Json | null
+          status?: string | null
+          strategy_section?: Json | null
+          updated_at?: string | null
+          xbrl_url?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          compliance_score?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          data_quality_score?: number | null
+          disclosure_completeness?: number | null
+          double_materiality_matrix?: Json | null
+          esrs_environmental?: Json | null
+          esrs_general_disclosures?: Json | null
+          esrs_governance?: Json | null
+          esrs_social?: Json | null
+          executive_summary?: string | null
+          fiscal_year?: string
+          governance_section?: Json | null
+          id?: string
+          materiality_assessment?: Json | null
+          metrics_targets_section?: Json | null
+          pdf_url?: string | null
+          published_at?: string | null
+          report_title?: string
+          report_type?: Database["public"]["Enums"]["esg_framework"]
+          risk_management_section?: Json | null
+          status?: string | null
+          strategy_section?: Json | null
+          updated_at?: string | null
+          xbrl_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_esg_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_esg_social_metrics: {
+        Row: {
+          accessibility_compliance: boolean | null
+          child_labor_risk_suppliers: number | null
+          collective_bargaining_coverage: number | null
+          community_engagement_initiatives: number | null
+          community_investments: number | null
+          company_id: string | null
+          created_at: string | null
+          customer_satisfaction_score: number | null
+          data_privacy_breaches: number | null
+          employee_turnover_rate: number | null
+          fatalities: number | null
+          fiscal_year: string
+          forced_labor_risk_suppliers: number | null
+          full_time_employees: number | null
+          gender_diversity_percentage: number | null
+          gender_pay_gap_percentage: number | null
+          grievance_mechanisms_available: boolean | null
+          grievances_received: number | null
+          grievances_resolved: number | null
+          health_safety_incidents: number | null
+          id: string
+          lost_time_injury_rate: number | null
+          part_time_employees: number | null
+          permanent_employees: number | null
+          product_safety_incidents: number | null
+          suppliers_with_living_wage: number | null
+          suppliers_with_social_audits: number | null
+          temporary_employees: number | null
+          total_employees: number | null
+          training_hours_per_employee: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          accessibility_compliance?: boolean | null
+          child_labor_risk_suppliers?: number | null
+          collective_bargaining_coverage?: number | null
+          community_engagement_initiatives?: number | null
+          community_investments?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          customer_satisfaction_score?: number | null
+          data_privacy_breaches?: number | null
+          employee_turnover_rate?: number | null
+          fatalities?: number | null
+          fiscal_year: string
+          forced_labor_risk_suppliers?: number | null
+          full_time_employees?: number | null
+          gender_diversity_percentage?: number | null
+          gender_pay_gap_percentage?: number | null
+          grievance_mechanisms_available?: boolean | null
+          grievances_received?: number | null
+          grievances_resolved?: number | null
+          health_safety_incidents?: number | null
+          id?: string
+          lost_time_injury_rate?: number | null
+          part_time_employees?: number | null
+          permanent_employees?: number | null
+          product_safety_incidents?: number | null
+          suppliers_with_living_wage?: number | null
+          suppliers_with_social_audits?: number | null
+          temporary_employees?: number | null
+          total_employees?: number | null
+          training_hours_per_employee?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          accessibility_compliance?: boolean | null
+          child_labor_risk_suppliers?: number | null
+          collective_bargaining_coverage?: number | null
+          community_engagement_initiatives?: number | null
+          community_investments?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          customer_satisfaction_score?: number | null
+          data_privacy_breaches?: number | null
+          employee_turnover_rate?: number | null
+          fatalities?: number | null
+          fiscal_year?: string
+          forced_labor_risk_suppliers?: number | null
+          full_time_employees?: number | null
+          gender_diversity_percentage?: number | null
+          gender_pay_gap_percentage?: number | null
+          grievance_mechanisms_available?: boolean | null
+          grievances_received?: number | null
+          grievances_resolved?: number | null
+          health_safety_incidents?: number | null
+          id?: string
+          lost_time_injury_rate?: number | null
+          part_time_employees?: number | null
+          permanent_employees?: number | null
+          product_safety_incidents?: number | null
+          suppliers_with_living_wage?: number | null
+          suppliers_with_social_audits?: number | null
+          temporary_employees?: number | null
+          total_employees?: number | null
+          training_hours_per_employee?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_esg_social_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_esg_taxonomy_alignment: {
+        Row: {
+          alignment_notes: string | null
+          capex_amount: number | null
+          capex_percentage: number | null
+          company_id: string | null
+          created_at: string | null
+          dnsh_assessment: Json | null
+          economic_activity: string
+          environmental_objective: string
+          fiscal_year: string
+          id: string
+          is_aligned: boolean | null
+          is_eligible: boolean | null
+          minimum_safeguards: boolean | null
+          nace_code: string | null
+          opex_amount: number | null
+          opex_percentage: number | null
+          substantial_contribution: boolean | null
+          turnover_amount: number | null
+          turnover_percentage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          alignment_notes?: string | null
+          capex_amount?: number | null
+          capex_percentage?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          dnsh_assessment?: Json | null
+          economic_activity: string
+          environmental_objective: string
+          fiscal_year: string
+          id?: string
+          is_aligned?: boolean | null
+          is_eligible?: boolean | null
+          minimum_safeguards?: boolean | null
+          nace_code?: string | null
+          opex_amount?: number | null
+          opex_percentage?: number | null
+          substantial_contribution?: boolean | null
+          turnover_amount?: number | null
+          turnover_percentage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          alignment_notes?: string | null
+          capex_amount?: number | null
+          capex_percentage?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          dnsh_assessment?: Json | null
+          economic_activity?: string
+          environmental_objective?: string
+          fiscal_year?: string
+          id?: string
+          is_aligned?: boolean | null
+          is_eligible?: boolean | null
+          minimum_safeguards?: boolean | null
+          nace_code?: string | null
+          opex_amount?: number | null
+          opex_percentage?: number | null
+          substantial_contribution?: boolean | null
+          turnover_amount?: number | null
+          turnover_percentage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_esg_taxonomy_alignment_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_factoring_assignments: {
         Row: {
           advance_amount: number
@@ -55424,6 +56086,14 @@ export type Database = {
         | "auditor"
         | "readonly"
       erp_validation_severity: "info" | "warning" | "error" | "critical"
+      esg_framework:
+        | "CSRD"
+        | "GRI"
+        | "TCFD"
+        | "SASB"
+        | "CDP"
+        | "SFDR"
+        | "EU_TAXONOMY"
       financial_data_source: "manual" | "pdf_import"
       financial_statement_status: "draft" | "submitted" | "approved"
       financial_statement_type: "normal" | "abreujat" | "simplificat"
@@ -55676,6 +56346,15 @@ export const Constants = {
         "readonly",
       ],
       erp_validation_severity: ["info", "warning", "error", "critical"],
+      esg_framework: [
+        "CSRD",
+        "GRI",
+        "TCFD",
+        "SASB",
+        "CDP",
+        "SFDR",
+        "EU_TAXONOMY",
+      ],
       financial_data_source: ["manual", "pdf_import"],
       financial_statement_status: ["draft", "submitted", "approved"],
       financial_statement_type: ["normal", "abreujat", "simplificat"],
