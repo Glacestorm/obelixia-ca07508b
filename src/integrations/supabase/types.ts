@@ -8116,6 +8116,87 @@ export type Database = {
           },
         ]
       }
+      crm_ai_insights: {
+        Row: {
+          account_id: string | null
+          action_items: Json | null
+          actioned_at: string | null
+          actioned_by: string | null
+          category: string
+          confidence: number
+          contact_id: string | null
+          created_at: string | null
+          deal_id: string | null
+          description: string
+          estimated_impact: Json | null
+          expires_at: string | null
+          feedback: string | null
+          id: string
+          insight_type: string
+          lead_id: string | null
+          model_version: string | null
+          priority: string | null
+          reasoning: string | null
+          status: string | null
+          supporting_data: Json | null
+          title: string
+          updated_at: string | null
+          was_helpful: boolean | null
+        }
+        Insert: {
+          account_id?: string | null
+          action_items?: Json | null
+          actioned_at?: string | null
+          actioned_by?: string | null
+          category: string
+          confidence: number
+          contact_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description: string
+          estimated_impact?: Json | null
+          expires_at?: string | null
+          feedback?: string | null
+          id?: string
+          insight_type: string
+          lead_id?: string | null
+          model_version?: string | null
+          priority?: string | null
+          reasoning?: string | null
+          status?: string | null
+          supporting_data?: Json | null
+          title: string
+          updated_at?: string | null
+          was_helpful?: boolean | null
+        }
+        Update: {
+          account_id?: string | null
+          action_items?: Json | null
+          actioned_at?: string | null
+          actioned_by?: string | null
+          category?: string
+          confidence?: number
+          contact_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string
+          estimated_impact?: Json | null
+          expires_at?: string | null
+          feedback?: string | null
+          id?: string
+          insight_type?: string
+          lead_id?: string | null
+          model_version?: string | null
+          priority?: string | null
+          reasoning?: string | null
+          status?: string | null
+          supporting_data?: Json | null
+          title?: string
+          updated_at?: string | null
+          was_helpful?: boolean | null
+        }
+        Relationships: []
+      }
       crm_audience_segments: {
         Row: {
           company_id: string | null
@@ -8168,6 +8249,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_behavioral_events: {
+        Row: {
+          browser: string | null
+          contact_id: string | null
+          created_at: string | null
+          decay_rate: number | null
+          device_type: string | null
+          event_category: string
+          event_data: Json | null
+          event_name: string
+          event_type: string
+          id: string
+          ip_city: string | null
+          ip_country: string | null
+          lead_id: string
+          occurred_at: string | null
+          page_url: string | null
+          referrer: string | null
+          score_impact: number | null
+          session_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          browser?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          decay_rate?: number | null
+          device_type?: string | null
+          event_category: string
+          event_data?: Json | null
+          event_name: string
+          event_type: string
+          id?: string
+          ip_city?: string | null
+          ip_country?: string | null
+          lead_id: string
+          occurred_at?: string | null
+          page_url?: string | null
+          referrer?: string | null
+          score_impact?: number | null
+          session_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          browser?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          decay_rate?: number | null
+          device_type?: string | null
+          event_category?: string
+          event_data?: Json | null
+          event_name?: string
+          event_type?: string
+          id?: string
+          ip_city?: string | null
+          ip_country?: string | null
+          lead_id?: string
+          occurred_at?: string | null
+          page_url?: string | null
+          referrer?: string | null
+          score_impact?: number | null
+          session_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
       }
       crm_connectors: {
         Row: {
@@ -8726,6 +8879,89 @@ export type Database = {
           },
         ]
       }
+      crm_lead_scores: {
+        Row: {
+          calculated_at: string | null
+          churn_risk: number | null
+          contributing_factors: Json | null
+          conversion_probability: number | null
+          created_at: string | null
+          engagement_score: number | null
+          estimated_deal_size: number | null
+          expires_at: string | null
+          fit_score: number | null
+          id: string
+          intent_score: number | null
+          lead_id: string
+          model_id: string | null
+          predicted_close_date: string | null
+          readiness: string | null
+          score_breakdown: Json | null
+          score_trend: string | null
+          tier: string | null
+          total_score: number
+          trend_percentage: number | null
+          updated_at: string | null
+          velocity_score: number | null
+        }
+        Insert: {
+          calculated_at?: string | null
+          churn_risk?: number | null
+          contributing_factors?: Json | null
+          conversion_probability?: number | null
+          created_at?: string | null
+          engagement_score?: number | null
+          estimated_deal_size?: number | null
+          expires_at?: string | null
+          fit_score?: number | null
+          id?: string
+          intent_score?: number | null
+          lead_id: string
+          model_id?: string | null
+          predicted_close_date?: string | null
+          readiness?: string | null
+          score_breakdown?: Json | null
+          score_trend?: string | null
+          tier?: string | null
+          total_score?: number
+          trend_percentage?: number | null
+          updated_at?: string | null
+          velocity_score?: number | null
+        }
+        Update: {
+          calculated_at?: string | null
+          churn_risk?: number | null
+          contributing_factors?: Json | null
+          conversion_probability?: number | null
+          created_at?: string | null
+          engagement_score?: number | null
+          estimated_deal_size?: number | null
+          expires_at?: string | null
+          fit_score?: number | null
+          id?: string
+          intent_score?: number | null
+          lead_id?: string
+          model_id?: string | null
+          predicted_close_date?: string | null
+          readiness?: string | null
+          score_breakdown?: Json | null
+          score_trend?: string | null
+          tier?: string | null
+          total_score?: number
+          trend_percentage?: number | null
+          updated_at?: string | null
+          velocity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_lead_scores_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "crm_scoring_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_mapping_templates: {
         Row: {
           created_at: string | null
@@ -9027,6 +9263,51 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_predictive_signals: {
+        Row: {
+          created_at: string | null
+          detected_at: string | null
+          detected_from: string
+          evidence: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          lead_id: string
+          score_contribution: number | null
+          signal_strength: number
+          signal_type: string
+          source_events: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          detected_at?: string | null
+          detected_from: string
+          evidence?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id: string
+          score_contribution?: number | null
+          signal_strength: number
+          signal_type: string
+          source_events?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          detected_at?: string | null
+          detected_from?: string
+          evidence?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id?: string
+          score_contribution?: number | null
+          signal_strength?: number
+          signal_type?: string
+          source_events?: Json | null
+        }
+        Relationships: []
+      }
       crm_role_permissions: {
         Row: {
           created_at: string
@@ -9097,6 +9378,202 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_score_history: {
+        Row: {
+          engagement_score: number | null
+          fit_score: number | null
+          id: string
+          intent_score: number | null
+          lead_id: string
+          model_id: string | null
+          readiness: string | null
+          recorded_at: string | null
+          score_delta: number | null
+          snapshot: Json | null
+          tier: string | null
+          total_score: number
+          trigger_event: string | null
+        }
+        Insert: {
+          engagement_score?: number | null
+          fit_score?: number | null
+          id?: string
+          intent_score?: number | null
+          lead_id: string
+          model_id?: string | null
+          readiness?: string | null
+          recorded_at?: string | null
+          score_delta?: number | null
+          snapshot?: Json | null
+          tier?: string | null
+          total_score: number
+          trigger_event?: string | null
+        }
+        Update: {
+          engagement_score?: number | null
+          fit_score?: number | null
+          id?: string
+          intent_score?: number | null
+          lead_id?: string
+          model_id?: string | null
+          readiness?: string | null
+          recorded_at?: string | null
+          score_delta?: number | null
+          snapshot?: Json | null
+          tier?: string | null
+          total_score?: number
+          trigger_event?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_score_history_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "crm_scoring_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_scoring_models: {
+        Row: {
+          accuracy: number | null
+          auc_roc: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          f1_score: number | null
+          feature_importance: Json | null
+          id: string
+          is_default: boolean | null
+          last_trained_at: string | null
+          ml_config: Json | null
+          model_type: string
+          name: string
+          precision_score: number | null
+          recall_score: number | null
+          scoring_factors: Json | null
+          status: string
+          thresholds: Json | null
+          training_data_config: Json | null
+          training_samples: number | null
+          updated_at: string | null
+          version: number
+          weights: Json | null
+        }
+        Insert: {
+          accuracy?: number | null
+          auc_roc?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          f1_score?: number | null
+          feature_importance?: Json | null
+          id?: string
+          is_default?: boolean | null
+          last_trained_at?: string | null
+          ml_config?: Json | null
+          model_type?: string
+          name: string
+          precision_score?: number | null
+          recall_score?: number | null
+          scoring_factors?: Json | null
+          status?: string
+          thresholds?: Json | null
+          training_data_config?: Json | null
+          training_samples?: number | null
+          updated_at?: string | null
+          version?: number
+          weights?: Json | null
+        }
+        Update: {
+          accuracy?: number | null
+          auc_roc?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          f1_score?: number | null
+          feature_importance?: Json | null
+          id?: string
+          is_default?: boolean | null
+          last_trained_at?: string | null
+          ml_config?: Json | null
+          model_type?: string
+          name?: string
+          precision_score?: number | null
+          recall_score?: number | null
+          scoring_factors?: Json | null
+          status?: string
+          thresholds?: Json | null
+          training_data_config?: Json | null
+          training_samples?: number | null
+          updated_at?: string | null
+          version?: number
+          weights?: Json | null
+        }
+        Relationships: []
+      }
+      crm_scoring_rules: {
+        Row: {
+          conditions: Json
+          created_at: string | null
+          decay_days: number | null
+          description: string | null
+          id: string
+          impact_type: string | null
+          is_active: boolean | null
+          max_occurrences: number | null
+          model_id: string | null
+          name: string
+          operator: string | null
+          priority: number | null
+          rule_type: string
+          score_impact: number
+          updated_at: string | null
+        }
+        Insert: {
+          conditions?: Json
+          created_at?: string | null
+          decay_days?: number | null
+          description?: string | null
+          id?: string
+          impact_type?: string | null
+          is_active?: boolean | null
+          max_occurrences?: number | null
+          model_id?: string | null
+          name: string
+          operator?: string | null
+          priority?: number | null
+          rule_type: string
+          score_impact?: number
+          updated_at?: string | null
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string | null
+          decay_days?: number | null
+          description?: string | null
+          id?: string
+          impact_type?: string | null
+          is_active?: boolean | null
+          max_occurrences?: number | null
+          model_id?: string | null
+          name?: string
+          operator?: string | null
+          priority?: number | null
+          rule_type?: string
+          score_impact?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_scoring_rules_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "crm_scoring_models"
             referencedColumns: ["id"]
           },
         ]
