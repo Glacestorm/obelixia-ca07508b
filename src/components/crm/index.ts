@@ -12,3 +12,4 @@ export * from './activities';
 export * from './ai';
 export * from './agents';
 export * from './marketing';
+export * from './workflows';
