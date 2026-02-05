@@ -992,3 +992,15 @@ verify_jwt = true
 
 [functions.blockchain-credentials]
 verify_jwt = true
+
+[functions.legal-validation-gateway-enhanced]
+verify_jwt = true
+
+[functions.cross-module-orchestrator]
+verify_jwt = true
+
+[functions.smart-legal-contracts]
+verify_jwt = true
+
+[functions.advanced-clm-engine]
+verify_jwt = true
