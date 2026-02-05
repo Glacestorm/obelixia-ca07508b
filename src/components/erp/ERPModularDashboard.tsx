@@ -58,10 +58,11 @@ import { HRModule } from './hr';
 import { LegalModule } from './legal';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
+ import { EnterpriseModulesAuditGenerator } from '@/components/reports/EnterpriseModulesAuditGenerator';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft, Wrench } from 'lucide-react';
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
   const [activeTab, setActiveTab] = useState('overview');
@@ -70,7 +71,7 @@ function ERPModularDashboardContent() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
-  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'migration'];
+  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'migration', 'utilities'];
   
   // Detectar si estamos dentro de un módulo específico
   const isInsideModule = moduleTabIds.includes(activeTab);
@@ -259,6 +260,7 @@ function ERPModularDashboardContent() {
               {activeTab === 'hr' && <><UserCog className="h-4 w-4" /> RRHH</>}
               {activeTab === 'legal' && <><Scale className="h-4 w-4" /> Jurídico</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
+              {activeTab === 'utilities' && <><Wrench className="h-4 w-4" /> Utilidades</>}
             </Badge>
           )}
           
@@ -305,6 +307,12 @@ function ERPModularDashboardContent() {
             <TabsTrigger value="migration" className="gap-2">
               <ArrowRightLeft className="h-4 w-4" />
               Migración
+            </TabsTrigger>
+          )}
+          {hasPermission('admin.all') && (
+            <TabsTrigger value="utilities" className="gap-2">
+              <Wrench className="h-4 w-4" />
+              Utilidades
             </TabsTrigger>
           )}
         </TabsList>
@@ -536,6 +544,17 @@ function ERPModularDashboardContent() {
         {/* Migration Tab */}
         <TabsContent value="migration">
           <ERPMigrationDashboard />
+        </TabsContent>
+
+        {/* Utilities Tab */}
+        <TabsContent value="utilities">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
+            </div>
+            <EnterpriseModulesAuditGenerator />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
