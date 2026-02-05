@@ -9324,6 +9324,400 @@ export type Database = {
           },
         ]
       }
+      crm_workflow_connections: {
+        Row: {
+          condition_label: string | null
+          created_at: string | null
+          id: string
+          source_handle: string | null
+          source_node_id: string
+          target_handle: string | null
+          target_node_id: string
+          workflow_id: string
+        }
+        Insert: {
+          condition_label?: string | null
+          created_at?: string | null
+          id?: string
+          source_handle?: string | null
+          source_node_id: string
+          target_handle?: string | null
+          target_node_id: string
+          workflow_id: string
+        }
+        Update: {
+          condition_label?: string | null
+          created_at?: string | null
+          id?: string
+          source_handle?: string | null
+          source_node_id?: string
+          target_handle?: string | null
+          target_node_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_workflow_connections_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_workflow_connections_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_workflow_connections_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_workflow_execution_steps: {
+        Row: {
+          completed_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          execution_id: string
+          id: string
+          input_data: Json | null
+          node_id: string | null
+          output_data: Json | null
+          started_at: string | null
+          status: string
+          step_order: number
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id: string
+          id?: string
+          input_data?: Json | null
+          node_id?: string | null
+          output_data?: Json | null
+          started_at?: string | null
+          status?: string
+          step_order: number
+        }
+        Update: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id?: string
+          id?: string
+          input_data?: Json | null
+          node_id?: string | null
+          output_data?: Json | null
+          started_at?: string | null
+          status?: string
+          step_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_workflow_execution_steps_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflow_executions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_workflow_execution_steps_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflow_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_workflow_executions: {
+        Row: {
+          completed_at: string | null
+          context_data: Json | null
+          current_node_id: string | null
+          entity_id: string | null
+          entity_type: string | null
+          error_message: string | null
+          executed_by: string | null
+          id: string
+          started_at: string | null
+          status: string
+          trigger_data: Json | null
+          workflow_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          context_data?: Json | null
+          current_node_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          executed_by?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          trigger_data?: Json | null
+          workflow_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          context_data?: Json | null
+          current_node_id?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          executed_by?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          trigger_data?: Json | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_workflow_executions_current_node_id_fkey"
+            columns: ["current_node_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflow_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_workflow_executions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_workflow_nodes: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          id: string
+          name: string
+          node_subtype: string | null
+          node_type: string
+          order_index: number | null
+          position_x: number | null
+          position_y: number | null
+          updated_at: string | null
+          workflow_id: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          name: string
+          node_subtype?: string | null
+          node_type: string
+          order_index?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          updated_at?: string | null
+          workflow_id: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          node_subtype?: string | null
+          node_type?: string
+          order_index?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          updated_at?: string | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_workflow_nodes_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_workflow_templates: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_system: boolean | null
+          name: string
+          updated_at: string | null
+          use_count: number | null
+          workflow_data: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          name: string
+          updated_at?: string | null
+          use_count?: number | null
+          workflow_data: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_system?: boolean | null
+          name?: string
+          updated_at?: string | null
+          use_count?: number | null
+          workflow_data?: Json
+        }
+        Relationships: []
+      }
+      crm_workflow_triggers: {
+        Row: {
+          conditions: Json | null
+          created_at: string | null
+          entity_type: string | null
+          event_name: string | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          trigger_count: number | null
+          trigger_type: string
+          workflow_id: string
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string | null
+          entity_type?: string | null
+          event_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          trigger_count?: number | null
+          trigger_type: string
+          workflow_id: string
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string | null
+          entity_type?: string | null
+          event_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          trigger_count?: number | null
+          trigger_type?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_workflow_triggers_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_workflow_variables: {
+        Row: {
+          created_at: string | null
+          default_value: Json | null
+          description: string | null
+          id: string
+          is_required: boolean | null
+          name: string
+          variable_type: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          default_value?: Json | null
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          name: string
+          variable_type: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string | null
+          default_value?: Json | null
+          description?: string | null
+          id?: string
+          is_required?: boolean | null
+          name?: string
+          variable_type?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_workflow_variables_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_workflows: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_template: boolean | null
+          name: string
+          status: string
+          template_category: string | null
+          trigger_config: Json | null
+          trigger_type: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_template?: boolean | null
+          name: string
+          status?: string
+          template_category?: string | null
+          trigger_config?: Json | null
+          trigger_type: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_template?: boolean | null
+          name?: string
+          status?: string
+          template_category?: string | null
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       crm_workspaces: {
         Row: {
           address: string | null

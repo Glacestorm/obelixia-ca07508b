@@ -14,5 +14,8 @@ export type { CRMActivity, ActivityType } from './useCRMActivities';
 // Marketing Automation (Phase 1)
 export * from './marketing';
 
+// Workflow Builder (Phase 2)
+export * from './workflows';
+
 // Agents
 export * from './agents';
