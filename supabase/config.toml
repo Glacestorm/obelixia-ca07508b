@@ -1019,3 +1019,6 @@ verify_jwt = true
 
 [functions.crm-audience-segmentation]
 verify_jwt = true
+
+[functions.erp-hr-total-rewards]
+verify_jwt = true
