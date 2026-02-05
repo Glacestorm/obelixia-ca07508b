@@ -58,7 +58,7 @@ import { HRModule } from './hr';
 import { LegalModule } from './legal';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
- import { EnterpriseModulesAuditGenerator } from '@/components/reports/EnterpriseModulesAuditGenerator';
+import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -553,7 +553,11 @@ function ERPModularDashboardContent() {
               <Wrench className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
             </div>
-            <EnterpriseModulesAuditGenerator />
+            <p className="text-muted-foreground">
+              Generador unificado de informes de auditoria para ERP, CRM o Suite Integral.
+              Selecciona el alcance y nivel de detalle para generar PDFs profesionales.
+            </p>
+            <UnifiedAuditGenerator defaultScope="erp" />
           </div>
         </TabsContent>
       </Tabs>
