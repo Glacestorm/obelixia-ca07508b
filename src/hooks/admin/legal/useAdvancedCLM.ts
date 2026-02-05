@@ -509,8 +509,10 @@ export function useAdvancedCLM() {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [currentContract, setCurrentContract] = useState<Contract | null>(null);
   const [clauseLibrary, setClauseLibrary] = useState<ClauseLibrary | null>(null);
+   const [currentNegotiation, setCurrentNegotiation] = useState<NegotiationSession | null>(null);
   const [approvalWorkflow, setApprovalWorkflow] = useState<ApprovalWorkflow | null>(null);
   const [signaturePreparation, setSignaturePreparation] = useState<SignaturePreparation | null>(null);
+   const [versionComparison, setVersionComparison] = useState<VersionComparison | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
@@ -586,7 +588,9 @@ export function useAdvancedCLM() {
       if (fnError) throw fnError;
 
       if (data?.success && data?.data?.negotiation) {
-        return data.data.negotiation as NegotiationSession;
+         const negotiation = data.data.negotiation as NegotiationSession;
+         setCurrentNegotiation(negotiation);
+         return negotiation;
       }
 
       return null;
@@ -599,6 +603,90 @@ export function useAdvancedCLM() {
     }
   }, []);
 
+   // === INICIAR NEGOCIACIÓN ===
+   const startNegotiation = useCallback(async (
+     contractId: string,
+     clauseId: string
+   ): Promise<NegotiationSession | null> => {
+     setIsLoading(true);
+     setError(null);
+ 
+     try {
+       const { data, error: fnError } = await supabase.functions.invoke(
+         'advanced-clm-engine',
+         {
+           body: {
+             action: 'start_negotiation',
+             context: { contractId },
+             params: { clauseId }
+           }
+         }
+       );
+ 
+       if (fnError) throw fnError;
+ 
+       if (data?.success && data?.data?.negotiation) {
+         const negotiation = data.data.negotiation as NegotiationSession;
+         setCurrentNegotiation(negotiation);
+         toast.success('Negociación iniciada');
+         return negotiation;
+       }
+ 
+       return null;
+     } catch (err) {
+       const message = err instanceof Error ? err.message : 'Error al iniciar negociación';
+       setError(message);
+       console.error('[useAdvancedCLM] startNegotiation error:', err);
+       toast.error('Error al iniciar negociación');
+       return null;
+     } finally {
+       setIsLoading(false);
+     }
+   }, []);
+ 
+   // === ACEPTAR OPCIÓN DE NEGOCIACIÓN ===
+   const acceptNegotiationOption = useCallback(async (
+     optionNumber: number
+   ): Promise<boolean> => {
+     if (!currentNegotiation) {
+       toast.error('No hay negociación activa');
+       return false;
+     }
+ 
+     setIsLoading(true);
+ 
+     try {
+       const { data, error: fnError } = await supabase.functions.invoke(
+         'advanced-clm-engine',
+         {
+           body: {
+             action: 'accept_negotiation_option',
+             params: {
+               clauseId: currentNegotiation.clauseId,
+               optionNumber
+             }
+           }
+         }
+       );
+ 
+       if (fnError) throw fnError;
+ 
+       if (data?.success) {
+         toast.success(`Opción ${optionNumber} aceptada`);
+         setCurrentNegotiation(null);
+         return true;
+       }
+ 
+       return false;
+     } catch (err) {
+       console.error('[useAdvancedCLM] acceptNegotiationOption error:', err);
+       toast.error('Error al aceptar opción');
+       return false;
+     } finally {
+       setIsLoading(false);
+     }
+   }, [currentNegotiation]);
+ 
   // === OBTENER BIBLIOTECA DE CLÁUSULAS ===
   const fetchClauseLibrary = useCallback(async (
     filters?: {
@@ -740,6 +828,13 @@ export function useAdvancedCLM() {
     }
   }, []);
 
+   // === OBTENER WORKFLOW DE APROBACIÓN ===
+   const fetchApprovalWorkflow = useCallback(async (
+     contractId: string
+   ): Promise<ApprovalWorkflow | null> => {
+     return trackApproval(contractId);
+   }, []);
+ 
   // === PREPARAR FIRMA ===
   const prepareSignature = useCallback(async (
     contractId: string,
@@ -801,7 +896,9 @@ export function useAdvancedCLM() {
       if (fnError) throw fnError;
 
       if (data?.success && data?.data?.versionComparison) {
-        return data.data.versionComparison as VersionComparison;
+         const comparison = data.data.versionComparison as VersionComparison;
+         setVersionComparison(comparison);
+         return comparison;
       }
 
       return null;
@@ -905,25 +1002,31 @@ export function useAdvancedCLM() {
     contracts,
     currentContract,
     clauseLibrary,
+     currentNegotiation,
     approvalWorkflow,
     signaturePreparation,
+     versionComparison,
     error,
     lastRefresh,
 
     // Actions
     createContract,
     negotiateClause,
+     startNegotiation,
+     acceptNegotiationOption,
     fetchClauseLibrary,
     suggestClauses,
     createPlaybook,
     trackApproval,
+     fetchApprovalWorkflow,
     prepareSignature,
     compareVersions,
     extractObligations,
     analyzeRisks,
     startAutoRefresh,
     stopAutoRefresh,
-    setCurrentContract
+     setCurrentContract,
+     setCurrentNegotiation
   };
 }
 
