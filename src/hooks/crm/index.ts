@@ -19,3 +19,6 @@ export * from './workflows';
 
 // Agents
 export * from './agents';
+
+// Lead Scoring & AI Insights (Phase 3)
+export * from './scoring';

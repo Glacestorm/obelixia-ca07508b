@@ -13,3 +13,4 @@ export * from './ai';
 export * from './agents';
 export * from './marketing';
 export * from './workflows';
+export * from './scoring';
