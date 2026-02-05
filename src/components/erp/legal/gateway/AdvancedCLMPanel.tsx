@@ -53,21 +53,20 @@ export function AdvancedCLMPanel({
     currentNegotiation,
     approvalWorkflow,
     signaturePreparation,
-    versionComparison,
     lastRefresh,
     fetchClauseLibrary,
     startNegotiation,
     acceptNegotiationOption,
-    fetchApprovalWorkflow,
+     trackApproval,
     prepareSignature
   } = useAdvancedCLM();
 
   useEffect(() => {
-    fetchClauseLibrary();
+     fetchClauseLibrary({});
     if (contractId) {
-      fetchApprovalWorkflow(contractId);
+       trackApproval(contractId);
     }
-  }, [contractId, fetchClauseLibrary, fetchApprovalWorkflow]);
+   }, [contractId, fetchClauseLibrary, trackApproval]);
 
   const getApprovalStatusIcon = (status: string) => {
     switch (status) {
@@ -253,7 +252,7 @@ export function AdvancedCLMPanel({
               <div className="text-center py-8 text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>Sin negociación activa</p>
-                <Button className="mt-4" onClick={() => startNegotiation('', 'sample_clause')}>
+                 <Button className="mt-4" onClick={() => startNegotiation(contractId || '', 'sample_clause')}>
                   Iniciar Negociación
                 </Button>
               </div>
@@ -431,7 +430,7 @@ export function AdvancedCLMPanel({
               <div className="text-center py-8 text-muted-foreground">
                 <PenTool className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>Sin firma en preparación</p>
-                <Button className="mt-4" onClick={() => contractId && prepareSignature(contractId, 'qualified')}>
+                 <Button className="mt-4" onClick={() => contractId && prepareSignature(contractId, 'qualified', [])}>
                   Preparar Firma
                 </Button>
               </div>
