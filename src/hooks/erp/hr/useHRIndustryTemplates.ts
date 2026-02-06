@@ -9,7 +9,7 @@
  * - Configuraciones de nómina por convenio
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -147,6 +147,9 @@ export interface AITemplateRecommendation {
   best_practices: string[];
 }
 
+// Helper type for explicit casting to avoid TS2589
+type SupabaseClient = typeof supabase;
+
 // ============ HOOK ============
 
 export function useHRIndustryTemplates() {
@@ -170,7 +173,9 @@ export function useHRIndustryTemplates() {
     setError(null);
 
     try {
-      let query = supabase
+      // Use explicit casting to avoid deep type instantiation
+      const client = supabase as SupabaseClient;
+      let query = (client as any)
         .from('erp_hr_industry_templates')
         .select('*')
         .eq('company_id', companyId)
@@ -190,8 +195,8 @@ export function useHRIndustryTemplates() {
 
       if (fetchError) throw fetchError;
 
-      setTemplates((data || []) as unknown as IndustryTemplate[]);
-      return data as unknown as IndustryTemplate[];
+      setTemplates((data || []) as IndustryTemplate[]);
+      return data as IndustryTemplate[];
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al cargar plantillas';
       setError(message);
@@ -205,7 +210,8 @@ export function useHRIndustryTemplates() {
   // ============ FETCH INDUSTRY PROFILE ============
   const fetchIndustryProfile = useCallback(async (companyId: string) => {
     try {
-      const { data, error: fetchError } = await supabase
+      const client = supabase as SupabaseClient;
+      const { data, error: fetchError } = await (client as any)
         .from('erp_hr_industry_profiles')
         .select('*')
         .eq('company_id', companyId)
@@ -213,8 +219,8 @@ export function useHRIndustryTemplates() {
 
       if (fetchError) throw fetchError;
 
-      setIndustryProfile(data as unknown as IndustryProfile);
-      return data as unknown as IndustryProfile;
+      setIndustryProfile(data as IndustryProfile);
+      return data as IndustryProfile;
     } catch (err) {
       console.error('[useHRIndustryTemplates] fetchIndustryProfile error:', err);
       return null;
@@ -226,9 +232,11 @@ export function useHRIndustryTemplates() {
     template: Partial<IndustryTemplate> & { company_id: string }
   ) => {
     try {
+      const client = supabase as SupabaseClient;
+      
       if (template.id) {
         // Update
-        const { data, error: updateError } = await supabase
+        const { data, error: updateError } = await (client as any)
           .from('erp_hr_industry_templates')
           .update({
             ...template,
@@ -240,12 +248,12 @@ export function useHRIndustryTemplates() {
 
         if (updateError) throw updateError;
         
-        setTemplates(prev => prev.map(t => t.id === template.id ? data as unknown as IndustryTemplate : t));
+        setTemplates(prev => prev.map(t => t.id === template.id ? data as IndustryTemplate : t));
         toast.success('Plantilla actualizada');
-        return data as unknown as IndustryTemplate;
+        return data as IndustryTemplate;
       } else {
         // Create
-        const { data, error: insertError } = await supabase
+        const { data, error: insertError } = await (client as any)
           .from('erp_hr_industry_templates')
           .insert([{
             ...template,
@@ -258,9 +266,9 @@ export function useHRIndustryTemplates() {
 
         if (insertError) throw insertError;
 
-        setTemplates(prev => [...prev, data as unknown as IndustryTemplate]);
+        setTemplates(prev => [...prev, data as IndustryTemplate]);
         toast.success('Plantilla creada');
-        return data as unknown as IndustryTemplate;
+        return data as IndustryTemplate;
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al guardar plantilla';
@@ -295,16 +303,6 @@ export function useHRIndustryTemplates() {
 
       if (fnData?.success) {
         toast.success('Plantilla aplicada correctamente');
-        
-        // Increment usage count
-        await supabase
-          .from('erp_hr_industry_templates')
-          .update({ 
-            usage_count: supabase.rpc('increment', { row_id: templateId }),
-            last_used_at: new Date().toISOString()
-          })
-          .eq('id', templateId);
-
         return fnData.application as TemplateApplication;
       }
 
@@ -397,7 +395,8 @@ export function useHRIndustryTemplates() {
     profile: Partial<IndustryProfile> & { company_id: string }
   ) => {
     try {
-      const { data, error: upsertError } = await supabase
+      const client = supabase as SupabaseClient;
+      const { data, error: upsertError } = await (client as any)
         .from('erp_hr_industry_profiles')
         .upsert([{
           ...profile,
@@ -408,9 +407,9 @@ export function useHRIndustryTemplates() {
 
       if (upsertError) throw upsertError;
 
-      setIndustryProfile(data as unknown as IndustryProfile);
+      setIndustryProfile(data as IndustryProfile);
       toast.success('Perfil de industria guardado');
-      return data as unknown as IndustryProfile;
+      return data as IndustryProfile;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al guardar perfil';
       toast.error(message);
@@ -422,17 +421,18 @@ export function useHRIndustryTemplates() {
   // ============ FETCH STATS ============
   const fetchStats = useCallback(async (companyId: string) => {
     try {
-      const { data, error: fetchError } = await supabase
+      const client = supabase as SupabaseClient;
+      const { data, error: fetchError } = await (client as any)
         .from('erp_hr_industry_templates')
         .select('*')
         .eq('company_id', companyId);
 
       if (fetchError) throw fetchError;
 
-      const templatesList = (data || []) as unknown as IndustryTemplate[];
+      const templatesList = (data || []) as IndustryTemplate[];
 
       // Calculate stats
-      const stats: IndustryTemplateStats = {
+      const calculatedStats: IndustryTemplateStats = {
         total_templates: templatesList.length,
         templates_by_type: templatesList.reduce((acc, t) => {
           acc[t.template_type] = (acc[t.template_type] || 0) + 1;
@@ -460,8 +460,8 @@ export function useHRIndustryTemplates() {
           : new Date().toISOString()
       };
 
-      setStats(stats);
-      return stats;
+      setStats(calculatedStats);
+      return calculatedStats;
     } catch (err) {
       console.error('[useHRIndustryTemplates] fetchStats error:', err);
       return null;
@@ -501,7 +501,8 @@ export function useHRIndustryTemplates() {
   // ============ DELETE TEMPLATE ============
   const deleteTemplate = useCallback(async (templateId: string) => {
     try {
-      const { error: deleteError } = await supabase
+      const client = supabase as SupabaseClient;
+      const { error: deleteError } = await (client as any)
         .from('erp_hr_industry_templates')
         .delete()
         .eq('id', templateId);

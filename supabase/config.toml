@@ -1031,3 +1031,6 @@ verify_jwt = true
 
 [functions.erp-hr-contingent-workforce]
 verify_jwt = true
+
+[functions.erp-hr-industry-templates]
+verify_jwt = true

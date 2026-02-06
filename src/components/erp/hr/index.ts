@@ -136,3 +136,6 @@ export * from './rewards';
 
 // Fase 8: Gestión de Workforce Contingente (Gig Economy)
 export * from './contingent';
+
+// Fase 9: Industry Cloud Templates
+export * from './industry';

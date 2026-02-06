@@ -22071,6 +22071,123 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_industry_profiles: {
+        Row: {
+          auto_apply_templates: boolean | null
+          cnae_codes: string[] | null
+          collective_agreements: Json | null
+          company_id: string
+          compliance_level: string | null
+          created_at: string
+          custom_settings: Json | null
+          employee_count_range: string | null
+          id: string
+          jurisdictions: string[] | null
+          primary_industry: string
+          secondary_industries: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          auto_apply_templates?: boolean | null
+          cnae_codes?: string[] | null
+          collective_agreements?: Json | null
+          company_id: string
+          compliance_level?: string | null
+          created_at?: string
+          custom_settings?: Json | null
+          employee_count_range?: string | null
+          id?: string
+          jurisdictions?: string[] | null
+          primary_industry?: string
+          secondary_industries?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          auto_apply_templates?: boolean | null
+          cnae_codes?: string[] | null
+          collective_agreements?: Json | null
+          company_id?: string
+          compliance_level?: string | null
+          created_at?: string
+          custom_settings?: Json | null
+          employee_count_range?: string | null
+          id?: string
+          jurisdictions?: string[] | null
+          primary_industry?: string
+          secondary_industries?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      erp_hr_industry_templates: {
+        Row: {
+          applicable_jurisdictions: string[] | null
+          cnae_codes: string[] | null
+          collective_agreements: string[] | null
+          company_id: string
+          compliance_requirements: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          industry_category: string
+          is_default: boolean | null
+          last_used_at: string | null
+          status: string | null
+          template_content: Json
+          template_description: string | null
+          template_name: string
+          template_type: string
+          updated_at: string
+          usage_count: number | null
+          variables: Json | null
+          version: string | null
+        }
+        Insert: {
+          applicable_jurisdictions?: string[] | null
+          cnae_codes?: string[] | null
+          collective_agreements?: string[] | null
+          company_id: string
+          compliance_requirements?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          industry_category?: string
+          is_default?: boolean | null
+          last_used_at?: string | null
+          status?: string | null
+          template_content?: Json
+          template_description?: string | null
+          template_name: string
+          template_type: string
+          updated_at?: string
+          usage_count?: number | null
+          variables?: Json | null
+          version?: string | null
+        }
+        Update: {
+          applicable_jurisdictions?: string[] | null
+          cnae_codes?: string[] | null
+          collective_agreements?: string[] | null
+          company_id?: string
+          compliance_requirements?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          industry_category?: string
+          is_default?: boolean | null
+          last_used_at?: string | null
+          status?: string | null
+          template_content?: Json
+          template_description?: string | null
+          template_name?: string
+          template_type?: string
+          updated_at?: string
+          usage_count?: number | null
+          variables?: Json | null
+          version?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_innovation_features: {
         Row: {
           category: string | null
@@ -25818,6 +25935,56 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_template_applications: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          generated_content: Json | null
+          id: string
+          notes: string | null
+          status: string | null
+          template_id: string
+          variable_values: Json | null
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          generated_content?: Json | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          template_id: string
+          variable_values?: Json | null
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          generated_content?: Json | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          template_id?: string
+          variable_values?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_template_applications_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_industry_templates"
             referencedColumns: ["id"]
           },
         ]

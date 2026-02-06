@@ -1,6 +1,6 @@
 /**
  * ERP HR Hooks - Barrel Export
- * Fases 7-8: Total Rewards & Contingent Workforce
+ * Fases 7-9: Total Rewards, Contingent Workforce & Industry Templates
  */
 
 // Hook principal Total Rewards (admin)
@@ -41,3 +41,19 @@ export type {
   PaymentTerms,
   ComplianceRiskLevel
 } from './useHRContingentWorkforce';
+
+// Fase 9: Industry Cloud Templates
+export { useHRIndustryTemplates } from './useHRIndustryTemplates';
+export type {
+  IndustryCategory,
+  TemplateType,
+  TemplateStatus,
+  IndustryTemplate,
+  TemplateVariable,
+  ComplianceRequirement,
+  IndustryProfile,
+  CollectiveAgreement,
+  TemplateApplication,
+  IndustryTemplateStats,
+  AITemplateRecommendation
+} from './useHRIndustryTemplates';
