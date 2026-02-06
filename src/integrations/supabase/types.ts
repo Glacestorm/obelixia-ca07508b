@@ -19383,6 +19383,601 @@ export type Database = {
           },
         ]
       }
+      erp_hr_contingent_assignments: {
+        Row: {
+          actual_cost: number | null
+          actual_hours: number | null
+          assignment_name: string
+          budget: number | null
+          company_id: string
+          completion_percentage: number | null
+          contract_id: string | null
+          created_at: string | null
+          department_id: string | null
+          description: string | null
+          end_date: string | null
+          estimated_hours: number | null
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          start_date: string
+          status: string
+          supervisor_id: string | null
+          updated_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_hours?: number | null
+          assignment_name: string
+          budget?: number | null
+          company_id: string
+          completion_percentage?: number | null
+          contract_id?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          start_date: string
+          status?: string
+          supervisor_id?: string | null
+          updated_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_hours?: number | null
+          assignment_name?: string
+          budget?: number | null
+          company_id?: string
+          completion_percentage?: number | null
+          contract_id?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          start_date?: string
+          status?: string
+          supervisor_id?: string | null
+          updated_at?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_contingent_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contingent_assignments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contingent_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contingent_assignments_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contingent_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_contingent_compliance_checks: {
+        Row: {
+          action_required: boolean | null
+          autonomy_score: number | null
+          check_date: string
+          check_type: string
+          company_id: string
+          created_at: string | null
+          economic_dependence_score: number | null
+          factors_analyzed: Json | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          organizational_integration_score: number | null
+          overall_risk_score: number | null
+          recommendations: string[] | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          risk_level: string
+          status: string
+          tools_ownership_score: number | null
+          updated_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          action_required?: boolean | null
+          autonomy_score?: number | null
+          check_date?: string
+          check_type?: string
+          company_id: string
+          created_at?: string | null
+          economic_dependence_score?: number | null
+          factors_analyzed?: Json | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organizational_integration_score?: number | null
+          overall_risk_score?: number | null
+          recommendations?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string
+          status?: string
+          tools_ownership_score?: number | null
+          updated_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          action_required?: boolean | null
+          autonomy_score?: number | null
+          check_date?: string
+          check_type?: string
+          company_id?: string
+          created_at?: string | null
+          economic_dependence_score?: number | null
+          factors_analyzed?: Json | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organizational_integration_score?: number | null
+          overall_risk_score?: number | null
+          recommendations?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          risk_level?: string
+          status?: string
+          tools_ownership_score?: number | null
+          updated_at?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_contingent_compliance_checks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contingent_compliance_checks_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contingent_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_contingent_contracts: {
+        Row: {
+          company_id: string
+          compliance_notes: string | null
+          compliance_reviewed: boolean | null
+          confidentiality_clause: boolean | null
+          contract_number: string
+          contract_type: string
+          created_at: string | null
+          currency: string | null
+          deliverables: string[] | null
+          description: string | null
+          document_url: string | null
+          end_date: string | null
+          governing_law: string | null
+          id: string
+          ip_assignment: boolean | null
+          is_indefinite: boolean | null
+          metadata: Json | null
+          non_compete_clause: boolean | null
+          payment_terms: string | null
+          rate: number
+          rate_type: string
+          risk_assessment: string | null
+          scope_of_work: string | null
+          signed_by_company: string | null
+          signed_by_worker: string | null
+          signed_date: string | null
+          start_date: string
+          status: string
+          title: string
+          total_value: number | null
+          updated_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          company_id: string
+          compliance_notes?: string | null
+          compliance_reviewed?: boolean | null
+          confidentiality_clause?: boolean | null
+          contract_number: string
+          contract_type?: string
+          created_at?: string | null
+          currency?: string | null
+          deliverables?: string[] | null
+          description?: string | null
+          document_url?: string | null
+          end_date?: string | null
+          governing_law?: string | null
+          id?: string
+          ip_assignment?: boolean | null
+          is_indefinite?: boolean | null
+          metadata?: Json | null
+          non_compete_clause?: boolean | null
+          payment_terms?: string | null
+          rate: number
+          rate_type?: string
+          risk_assessment?: string | null
+          scope_of_work?: string | null
+          signed_by_company?: string | null
+          signed_by_worker?: string | null
+          signed_date?: string | null
+          start_date: string
+          status?: string
+          title: string
+          total_value?: number | null
+          updated_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          company_id?: string
+          compliance_notes?: string | null
+          compliance_reviewed?: boolean | null
+          confidentiality_clause?: boolean | null
+          contract_number?: string
+          contract_type?: string
+          created_at?: string | null
+          currency?: string | null
+          deliverables?: string[] | null
+          description?: string | null
+          document_url?: string | null
+          end_date?: string | null
+          governing_law?: string | null
+          id?: string
+          ip_assignment?: boolean | null
+          is_indefinite?: boolean | null
+          metadata?: Json | null
+          non_compete_clause?: boolean | null
+          payment_terms?: string | null
+          rate?: number
+          rate_type?: string
+          risk_assessment?: string | null
+          scope_of_work?: string | null
+          signed_by_company?: string | null
+          signed_by_worker?: string | null
+          signed_date?: string | null
+          start_date?: string
+          status?: string
+          title?: string
+          total_value?: number | null
+          updated_at?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_contingent_contracts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contingent_contracts_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contingent_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_contingent_invoices: {
+        Row: {
+          accounting_entry_id: string | null
+          company_id: string
+          created_at: string | null
+          currency: string | null
+          due_date: string
+          id: string
+          invoice_date: string
+          invoice_document_url: string | null
+          invoice_number: string
+          metadata: Json | null
+          notes: string | null
+          payment_date: string | null
+          payment_reference: string | null
+          period_end: string
+          period_start: string
+          status: string
+          subtotal: number
+          supporting_docs: string[] | null
+          tax_amount: number
+          tax_rate: number | null
+          total: number
+          treasury_payment_id: string | null
+          updated_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          accounting_entry_id?: string | null
+          company_id: string
+          created_at?: string | null
+          currency?: string | null
+          due_date: string
+          id?: string
+          invoice_date: string
+          invoice_document_url?: string | null
+          invoice_number: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          subtotal: number
+          supporting_docs?: string[] | null
+          tax_amount: number
+          tax_rate?: number | null
+          total: number
+          treasury_payment_id?: string | null
+          updated_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          accounting_entry_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          currency?: string | null
+          due_date?: string
+          id?: string
+          invoice_date?: string
+          invoice_document_url?: string | null
+          invoice_number?: string
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          subtotal?: number
+          supporting_docs?: string[] | null
+          tax_amount?: number
+          tax_rate?: number | null
+          total?: number
+          treasury_payment_id?: string | null
+          updated_at?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_contingent_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contingent_invoices_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contingent_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_contingent_time_entries: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assignment_id: string | null
+          billable: boolean | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          entry_date: string
+          hours: number
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          rate_applied: number
+          rejection_reason: string | null
+          status: string
+          total_amount: number
+          updated_at: string | null
+          worker_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assignment_id?: string | null
+          billable?: boolean | null
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          entry_date: string
+          hours: number
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          rate_applied: number
+          rejection_reason?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string | null
+          worker_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assignment_id?: string | null
+          billable?: boolean | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          entry_date?: string
+          hours?: number
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          rate_applied?: number
+          rejection_reason?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_contingent_time_entries_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contingent_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contingent_time_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contingent_time_entries_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contingent_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_contingent_workers: {
+        Row: {
+          address: string | null
+          autonomo_registration: string | null
+          bank_account: string | null
+          certifications: string[] | null
+          company_id: string
+          compliance_status: string
+          contact_name: string | null
+          country: string | null
+          created_at: string | null
+          currency: string | null
+          default_rate: number
+          email: string
+          has_liability_insurance: boolean | null
+          id: string
+          insurance_expiry: string | null
+          is_company: boolean | null
+          last_compliance_review: string | null
+          legal_name: string
+          linkedin_url: string | null
+          metadata: Json | null
+          notes: string | null
+          onboarding_date: string | null
+          payment_method: string | null
+          phone: string | null
+          portfolio_url: string | null
+          rate_type: string
+          skills: string[] | null
+          status: string
+          tax_id: string
+          termination_date: string | null
+          trade_name: string | null
+          updated_at: string | null
+          worker_type: string
+        }
+        Insert: {
+          address?: string | null
+          autonomo_registration?: string | null
+          bank_account?: string | null
+          certifications?: string[] | null
+          company_id: string
+          compliance_status?: string
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          default_rate?: number
+          email: string
+          has_liability_insurance?: boolean | null
+          id?: string
+          insurance_expiry?: string | null
+          is_company?: boolean | null
+          last_compliance_review?: string | null
+          legal_name: string
+          linkedin_url?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          onboarding_date?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          rate_type?: string
+          skills?: string[] | null
+          status?: string
+          tax_id: string
+          termination_date?: string | null
+          trade_name?: string | null
+          updated_at?: string | null
+          worker_type?: string
+        }
+        Update: {
+          address?: string | null
+          autonomo_registration?: string | null
+          bank_account?: string | null
+          certifications?: string[] | null
+          company_id?: string
+          compliance_status?: string
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          default_rate?: number
+          email?: string
+          has_liability_insurance?: boolean | null
+          id?: string
+          insurance_expiry?: string | null
+          is_company?: boolean | null
+          last_compliance_review?: string | null
+          legal_name?: string
+          linkedin_url?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          onboarding_date?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          portfolio_url?: string | null
+          rate_type?: string
+          skills?: string[] | null
+          status?: string
+          tax_id?: string
+          termination_date?: string | null
+          trade_name?: string | null
+          updated_at?: string | null
+          worker_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_contingent_workers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_contracts: {
         Row: {
           annual_salary: number | null
