@@ -139,3 +139,6 @@ export * from './contingent';
 
 // Fase 9: Industry Cloud Templates
 export * from './industry';
+
+// Fase 11: Gestión de Fuerza Laboral Gig/Contingent (Avanzado)
+export * from './gig';

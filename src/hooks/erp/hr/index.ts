@@ -57,3 +57,20 @@ export type {
   IndustryTemplateStats,
   AITemplateRecommendation
 } from './useHRIndustryTemplates';
+
+// Fase 11: Gestión de Fuerza Laboral Gig/Contingent
+export { useGigWorkforce } from './useGigWorkforce';
+export type {
+  ContractorType,
+  ContractorStatus,
+  PaymentType,
+  ComplianceStatus,
+  GigContractor,
+  GigProject,
+  GigTimeEntry,
+  GigInvoice,
+  GigComplianceDocument,
+  GigWorkforceAnalytics,
+  GigAIInsight,
+  GigWorkforceContext
+} from './useGigWorkforce';
