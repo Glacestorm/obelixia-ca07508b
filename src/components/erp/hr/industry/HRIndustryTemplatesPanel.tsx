@@ -65,7 +65,6 @@ import {
   Play
 } from 'lucide-react';
 import { useHRIndustryTemplates, type IndustryCategory, type TemplateType, type IndustryTemplate, type AITemplateRecommendation } from '@/hooks/erp/hr/useHRIndustryTemplates';
-import { useERPContext } from '@/contexts/ERPContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -122,10 +121,10 @@ const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
 
 interface HRIndustryTemplatesPanelProps {
   className?: string;
+  companyId?: string;
 }
 
-export function HRIndustryTemplatesPanel({ className }: HRIndustryTemplatesPanelProps) {
-  const { selectedCompany } = useERPContext();
+export function HRIndustryTemplatesPanel({ className, companyId }: HRIndustryTemplatesPanelProps) {
   const {
     templates,
     industryProfile,
@@ -166,12 +165,12 @@ export function HRIndustryTemplatesPanel({ className }: HRIndustryTemplatesPanel
 
   // Load data on mount
   useEffect(() => {
-    if (selectedCompany?.id) {
-      fetchTemplates(selectedCompany.id);
-      fetchIndustryProfile(selectedCompany.id);
-      fetchStats(selectedCompany.id);
+    if (companyId) {
+      fetchTemplates(companyId);
+      fetchIndustryProfile(companyId);
+      fetchStats(companyId);
     }
-  }, [selectedCompany?.id]);
+  }, [companyId, fetchTemplates, fetchIndustryProfile, fetchStats]);
 
   // Filter templates
   const filteredTemplates = templates.filter(t => {
@@ -185,19 +184,19 @@ export function HRIndustryTemplatesPanel({ className }: HRIndustryTemplatesPanel
 
   // Generate template with AI
   const handleGenerateTemplate = async () => {
-    if (!selectedCompany?.id) return;
+    if (!companyId) return;
     
     setIsGenerating(true);
     try {
-      const generated = await generateTemplateFromAI(selectedCompany.id, generateForm);
+      const generated = await generateTemplateFromAI(companyId, generateForm);
       if (generated) {
         // Save the generated template
         await saveTemplate({
-          company_id: selectedCompany.id,
+          company_id: companyId,
           ...generated as any
         });
         setShowGenerateDialog(false);
-        fetchTemplates(selectedCompany.id);
+        fetchTemplates(companyId);
       }
     } finally {
       setIsGenerating(false);
@@ -206,11 +205,11 @@ export function HRIndustryTemplatesPanel({ className }: HRIndustryTemplatesPanel
 
   // Load AI recommendations
   const loadRecommendations = async () => {
-    if (!selectedCompany?.id || !industryProfile) return;
+    if (!companyId || !industryProfile) return;
     
     setLoadingRecommendations(true);
     try {
-      const recs = await getAIRecommendations(selectedCompany.id, {
+      const recs = await getAIRecommendations(companyId, {
         industry: industryProfile.primary_industry,
         cnae_codes: industryProfile.cnae_codes,
         employee_count: 50, // TODO: Get from company profile
@@ -226,8 +225,8 @@ export function HRIndustryTemplatesPanel({ className }: HRIndustryTemplatesPanel
   const handleCloneTemplate = async (template: IndustryTemplate) => {
     const newName = `${template.template_name} (Copia)`;
     await cloneTemplate(template.id, newName);
-    if (selectedCompany?.id) {
-      fetchTemplates(selectedCompany.id);
+    if (companyId) {
+      fetchTemplates(companyId);
     }
   };
 
@@ -237,7 +236,7 @@ export function HRIndustryTemplatesPanel({ className }: HRIndustryTemplatesPanel
     }
   };
 
-  if (!selectedCompany) {
+  if (!companyId) {
     return (
       <Card className={cn("border-dashed opacity-50", className)}>
         <CardContent className="py-12 text-center">
