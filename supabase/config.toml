@@ -1028,3 +1028,6 @@ verify_jwt = true
 
 [functions.erp-legal-spend]
 verify_jwt = true
+
+[functions.erp-hr-contingent-workforce]
+verify_jwt = true

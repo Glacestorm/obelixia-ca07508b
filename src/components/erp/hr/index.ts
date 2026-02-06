@@ -133,3 +133,6 @@ export * from './analytics';
 
 // Fase 4 (Plan Mejoras): Total Rewards Statement
 export * from './rewards';
+
+// Fase 8: Gestión de Workforce Contingente (Gig Economy)
+export * from './contingent';

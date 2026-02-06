@@ -1,6 +1,6 @@
 /**
  * ERP HR Hooks - Barrel Export
- * Fase 7: Total Rewards Module
+ * Fases 7-8: Total Rewards & Contingent Workforce
  */
 
 // Hook principal Total Rewards (admin)
@@ -23,3 +23,21 @@ export type {
   CompensationComponent,
   TotalRewardsSummary
 } from './useTotalRewards';
+
+// Fase 8: Gestión de Workforce Contingente (Gig Economy)
+export { useHRContingentWorkforce } from './useHRContingentWorkforce';
+export type {
+  ContingentWorker,
+  ContingentContract,
+  ProjectAssignment,
+  TimeEntry,
+  ContingentInvoice,
+  ComplianceCheck,
+  ContingentWorkforceStats,
+  AIComplianceAnalysis,
+  ContingentWorkerType,
+  ContingentWorkerStatus,
+  ContractType,
+  PaymentTerms,
+  ComplianceRiskLevel
+} from './useHRContingentWorkforce';
