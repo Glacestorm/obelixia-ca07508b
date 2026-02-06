@@ -1034,3 +1034,6 @@ verify_jwt = true
 
 [functions.erp-hr-industry-templates]
 verify_jwt = true
+
+[functions.cross-module-analytics]
+verify_jwt = true
