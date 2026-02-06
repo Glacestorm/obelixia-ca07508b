@@ -40,21 +40,27 @@ serve(async (req) => {
 
     // Fetch relevant data based on action
     if (action === 'analyze_compensation' && employee_id && fiscal_year) {
+      // Use the actual tables from schema
       const { data: compensations } = await supabase
-        .from('erp_hr_employee_compensation')
+        .from('erp_hr_compensation')
+        .select('*')
+        .eq('employee_id', employee_id);
+
+      const { data: benefitsEnrollments } = await supabase
+        .from('erp_hr_benefits_enrollments')
         .select(`
           *,
-          component:erp_hr_compensation_components(*)
+          plan:erp_hr_benefits_plans(*)
         `)
         .eq('employee_id', employee_id)
-        .eq('fiscal_year', fiscal_year);
+        .eq('status', 'active');
 
       const { data: benchmarks } = await supabase
-        .from('erp_hr_market_benchmarks')
+        .from('erp_hr_salary_bands')
         .select('*')
         .limit(20);
 
-      contextData = { compensations, benchmarks };
+      contextData = { compensations, benefitsEnrollments, benchmarks };
 
       systemPrompt = `Eres un analista experto en compensación total y Total Rewards.
 Tu rol es analizar paquetes de compensación de empleados y proporcionar insights estratégicos.
@@ -112,9 +118,9 @@ Proporciona un análisis completo del paquete de compensación total, incluyendo
 
     else if (action === 'compare_market') {
       const { data: benchmarks } = await supabase
-        .from('erp_hr_market_benchmarks')
+        .from('erp_hr_salary_bands')
         .select('*')
-        .eq('job_level', job_level || 'mid')
+        .eq('level', job_level || 'mid')
         .eq('job_family', job_family || 'engineering');
 
       contextData = { benchmarks, job_level, job_family, location };
@@ -168,10 +174,10 @@ FORMATO DE RESPUESTA (JSON estricto):
 
     else if (action === 'forecast_total_package' && employee_id) {
       const { data: currentComp } = await supabase
-        .from('erp_hr_employee_compensation')
+        .from('erp_hr_compensation')
         .select('*')
         .eq('employee_id', employee_id)
-        .order('fiscal_year', { ascending: false })
+        .order('effective_from', { ascending: false })
         .limit(10);
 
       contextData = { currentComp };
