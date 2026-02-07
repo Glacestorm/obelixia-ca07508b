@@ -8,3 +8,4 @@ export { AIProvidersPanel } from './AIProvidersPanel';
 export { AICreditsPanel } from './AICreditsPanel';
 export { AIPrivacyPanel } from './AIPrivacyPanel';
 export { AIRoutingPanel } from './AIRoutingPanel';
+export { AIAnalyticsPanel } from './AIAnalyticsPanel';

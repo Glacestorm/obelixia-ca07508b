@@ -50,3 +50,20 @@ export type {
   AnalysisResult,
   BatchAnalysisResult,
 } from './useHybridAIIntegration';
+
+export { useAIAnalytics } from './useAIAnalytics';
+export type {
+  UsageMetric,
+  MetricsSummary,
+  UsageOverTime,
+  ProviderDistribution,
+  ModelRanking,
+  PrivacyStats,
+  SavingsEstimate,
+  AnalyticsDashboard,
+  ProviderStats,
+  ModelStats,
+  PrivacyIncident,
+  PrivacySummary,
+  AnalyticsPeriod,
+} from './useAIAnalytics';
