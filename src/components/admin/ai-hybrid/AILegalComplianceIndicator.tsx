@@ -14,13 +14,15 @@ interface AILegalComplianceIndicatorProps {
   regulations?: string[];
   className?: string;
   showDetails?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export function AILegalComplianceIndicator({
   riskLevel = 'low',
-  regulations = [],
+  regulations = ['GDPR', 'LOPDGDD'],
   className,
-  showDetails = true,
+  showDetails = false,
+  size = 'md',
 }: AILegalComplianceIndicatorProps) {
   const { getRiskLevelBadgeVariant, getRiskLevelColor } = useAILegalCompliance();
 
