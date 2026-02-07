@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.crm-agent-supervisor]
+verify_jwt = true
+
 [functions.crm-omnichannel]
 verify_jwt = true
 
