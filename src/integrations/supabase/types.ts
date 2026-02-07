@@ -8555,6 +8555,7 @@ export type Database = {
       }
       crm_api_keys: {
         Row: {
+          allowed_ips: string[] | null
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -8566,12 +8567,14 @@ export type Database = {
           last_used_at: string | null
           name: string
           permissions: string[] | null
-          rate_limit: number | null
+          rate_limit_per_day: number
+          rate_limit_per_minute: number
           updated_at: string | null
           usage_count: number | null
           workspace_id: string | null
         }
         Insert: {
+          allowed_ips?: string[] | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -8583,12 +8586,14 @@ export type Database = {
           last_used_at?: string | null
           name: string
           permissions?: string[] | null
-          rate_limit?: number | null
+          rate_limit_per_day?: number
+          rate_limit_per_minute?: number
           updated_at?: string | null
           usage_count?: number | null
           workspace_id?: string | null
         }
         Update: {
+          allowed_ips?: string[] | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -8600,7 +8605,8 @@ export type Database = {
           last_used_at?: string | null
           name?: string
           permissions?: string[] | null
-          rate_limit?: number | null
+          rate_limit_per_day?: number
+          rate_limit_per_minute?: number
           updated_at?: string | null
           usage_count?: number | null
           workspace_id?: string | null
@@ -9280,6 +9286,62 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_connector_instances: {
+        Row: {
+          config: Json
+          connector_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          last_error: string | null
+          last_sync_at: string | null
+          name: string
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          config?: Json
+          connector_type: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_sync_at?: string | null
+          name: string
+          status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          config?: Json
+          connector_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_sync_at?: string | null
+          name?: string
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_connector_instances_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -10180,11 +10242,13 @@ export type Database = {
           entity_id: string | null
           entity_type: string
           error_message: string | null
+          event_source: string
           event_type: string
           id: string
           payload: Json | null
           processed: boolean | null
           processed_at: string | null
+          processing_results: Json | null
           source: string | null
           workspace_id: string | null
         }
@@ -10193,11 +10257,13 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           error_message?: string | null
+          event_source?: string
           event_type: string
           id?: string
           payload?: Json | null
           processed?: boolean | null
           processed_at?: string | null
+          processing_results?: Json | null
           source?: string | null
           workspace_id?: string | null
         }
@@ -10206,11 +10272,13 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           error_message?: string | null
+          event_source?: string
           event_type?: string
           id?: string
           payload?: Json | null
           processed?: boolean | null
           processed_at?: string | null
+          processing_results?: Json | null
           source?: string | null
           workspace_id?: string | null
         }
@@ -11681,7 +11749,9 @@ export type Database = {
         Row: {
           completed_at: string | null
           connector_id: string | null
+          created_at: string
           created_by: string | null
+          direction: string
           error_details: Json | null
           id: string
           records_created: number | null
@@ -11696,7 +11766,9 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           connector_id?: string | null
+          created_at?: string
           created_by?: string | null
+          direction?: string
           error_details?: Json | null
           id?: string
           records_created?: number | null
@@ -11711,7 +11783,9 @@ export type Database = {
         Update: {
           completed_at?: string | null
           connector_id?: string | null
+          created_at?: string
           created_by?: string | null
+          direction?: string
           error_details?: Json | null
           id?: string
           records_created?: number | null
@@ -12093,41 +12167,41 @@ export type Database = {
       }
       crm_webhook_logs: {
         Row: {
-          attempt_number: number | null
           created_at: string | null
           error_message: string | null
           event_type: string
           execution_time_ms: number | null
           id: string
-          payload: Json | null
-          response_body: string | null
+          request_payload: Json | null
+          response_payload: Json | null
           response_status: number | null
+          retry_attempt: number | null
           status: string | null
           webhook_id: string | null
         }
         Insert: {
-          attempt_number?: number | null
           created_at?: string | null
           error_message?: string | null
           event_type: string
           execution_time_ms?: number | null
           id?: string
-          payload?: Json | null
-          response_body?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
           response_status?: number | null
+          retry_attempt?: number | null
           status?: string | null
           webhook_id?: string | null
         }
         Update: {
-          attempt_number?: number | null
           created_at?: string | null
           error_message?: string | null
           event_type?: string
           execution_time_ms?: number | null
           id?: string
-          payload?: Json | null
-          response_body?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
           response_status?: number | null
+          retry_attempt?: number | null
           status?: string | null
           webhook_id?: string | null
         }
@@ -12153,11 +12227,16 @@ export type Database = {
           is_active: boolean | null
           last_triggered_at: string | null
           name: string
+          payload_template: Json | null
           retry_config: Json | null
+          retry_count: number
+          retry_delay_seconds: number
           secret: string | null
+          secret_key: string | null
           success_count: number | null
           updated_at: string | null
-          url: string
+          url: string | null
+          webhook_type: string
           workspace_id: string | null
         }
         Insert: {
@@ -12171,11 +12250,16 @@ export type Database = {
           is_active?: boolean | null
           last_triggered_at?: string | null
           name: string
+          payload_template?: Json | null
           retry_config?: Json | null
+          retry_count?: number
+          retry_delay_seconds?: number
           secret?: string | null
+          secret_key?: string | null
           success_count?: number | null
           updated_at?: string | null
-          url: string
+          url?: string | null
+          webhook_type?: string
           workspace_id?: string | null
         }
         Update: {
@@ -12189,11 +12273,16 @@ export type Database = {
           is_active?: boolean | null
           last_triggered_at?: string | null
           name?: string
+          payload_template?: Json | null
           retry_config?: Json | null
+          retry_count?: number
+          retry_delay_seconds?: number
           secret?: string | null
+          secret_key?: string | null
           success_count?: number | null
           updated_at?: string | null
-          url?: string
+          url?: string | null
+          webhook_type?: string
           workspace_id?: string | null
         }
         Relationships: [
