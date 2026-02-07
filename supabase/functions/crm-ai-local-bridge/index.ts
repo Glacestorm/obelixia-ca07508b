@@ -13,6 +13,9 @@ interface LocalAIRequest {
   messages?: Array<{ role: string; content: string }>;
   ollamaUrl?: string;
   stream?: boolean;
+  temperature?: number;
+  maxTokens?: number;
+  timeout?: number;
 }
 
 interface OllamaResponse {
@@ -21,6 +24,8 @@ interface OllamaResponse {
   message?: { role: string; content: string };
   response?: string;
   done: boolean;
+  eval_count?: number;
+  prompt_eval_count?: number;
 }
 
 serve(async (req) => {
@@ -36,7 +41,10 @@ serve(async (req) => {
       context, 
       messages,
       ollamaUrl = 'http://localhost:11434',
-      stream = false
+      stream = false,
+      temperature = 0.7,
+      maxTokens = 2000,
+      timeout = 60000,
     } = await req.json() as LocalAIRequest;
 
     console.log(`[crm-ai-local-bridge] Action: ${action}, Model: ${model}`);
@@ -153,11 +161,11 @@ FORMATO DE RESPUESTA:
           messages: ollamaMessages,
           stream: false,
           options: {
-            temperature: 0.7,
-            num_predict: 2000,
+            temperature,
+            num_predict: maxTokens,
           }
         }),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(timeout),
       });
 
       if (ollamaResponse.ok) {
