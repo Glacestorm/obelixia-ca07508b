@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.crm-advanced-analytics]
+verify_jwt = true
+
 [functions.crm-workflow-executor]
 verify_jwt = true
 

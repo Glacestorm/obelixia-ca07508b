@@ -8197,6 +8197,255 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_alert_history: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_id: string | null
+          id: string
+          metadata: Json | null
+          metric_value: number | null
+          notification_channels: string[] | null
+          notification_sent: boolean | null
+          resolution_notes: string | null
+          severity: string | null
+          threshold_value: number | null
+          triggered_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_value?: number | null
+          notification_channels?: string[] | null
+          notification_sent?: boolean | null
+          resolution_notes?: string | null
+          severity?: string | null
+          threshold_value?: number | null
+          triggered_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_value?: number | null
+          notification_channels?: string[] | null
+          notification_sent?: boolean | null
+          resolution_notes?: string | null
+          severity?: string | null
+          threshold_value?: number | null
+          triggered_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_alert_history_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "crm_analytics_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_analytics_alerts: {
+        Row: {
+          alert_name: string
+          alert_type: string
+          company_id: string | null
+          condition_operator: string
+          cooldown_minutes: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          metric_id: string | null
+          notification_channels: string[] | null
+          recipients: Json | null
+          severity: string | null
+          threshold_value: number | null
+          trigger_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          alert_name: string
+          alert_type: string
+          company_id?: string | null
+          condition_operator: string
+          cooldown_minutes?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          metric_id?: string | null
+          notification_channels?: string[] | null
+          recipients?: Json | null
+          severity?: string | null
+          threshold_value?: number | null
+          trigger_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          alert_name?: string
+          alert_type?: string
+          company_id?: string | null
+          condition_operator?: string
+          cooldown_minutes?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          metric_id?: string | null
+          notification_channels?: string[] | null
+          recipients?: Json | null
+          severity?: string | null
+          threshold_value?: number | null
+          trigger_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_analytics_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_analytics_alerts_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "crm_calculated_metrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_analytics_dashboards: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          dashboard_type: string
+          description: string | null
+          filters: Json | null
+          id: string
+          is_default: boolean | null
+          is_shared: boolean | null
+          layout_config: Json | null
+          name: string
+          refresh_interval_seconds: number | null
+          shared_with_roles: string[] | null
+          updated_at: string
+          widgets: Json | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dashboard_type?: string
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          layout_config?: Json | null
+          name: string
+          refresh_interval_seconds?: number | null
+          shared_with_roles?: string[] | null
+          updated_at?: string
+          widgets?: Json | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          dashboard_type?: string
+          description?: string | null
+          filters?: Json | null
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          layout_config?: Json | null
+          name?: string
+          refresh_interval_seconds?: number | null
+          shared_with_roles?: string[] | null
+          updated_at?: string
+          widgets?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_analytics_dashboards_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_analytics_widgets: {
+        Row: {
+          cache_duration_seconds: number | null
+          created_at: string
+          dashboard_id: string | null
+          data_source: string
+          description: string | null
+          id: string
+          position: Json | null
+          query_config: Json
+          refresh_independently: boolean | null
+          title: string
+          updated_at: string
+          visualization_config: Json | null
+          widget_type: string
+        }
+        Insert: {
+          cache_duration_seconds?: number | null
+          created_at?: string
+          dashboard_id?: string | null
+          data_source: string
+          description?: string | null
+          id?: string
+          position?: Json | null
+          query_config?: Json
+          refresh_independently?: boolean | null
+          title: string
+          updated_at?: string
+          visualization_config?: Json | null
+          widget_type: string
+        }
+        Update: {
+          cache_duration_seconds?: number | null
+          created_at?: string
+          dashboard_id?: string | null
+          data_source?: string
+          description?: string | null
+          id?: string
+          position?: Json | null
+          query_config?: Json
+          refresh_independently?: boolean | null
+          title?: string
+          updated_at?: string
+          visualization_config?: Json | null
+          widget_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_analytics_widgets_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "crm_analytics_dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_audience_segments: {
         Row: {
           company_id: string | null
@@ -8321,6 +8570,86 @@ export type Database = {
           utm_source?: string | null
         }
         Relationships: []
+      }
+      crm_calculated_metrics: {
+        Row: {
+          aggregation_type: string | null
+          breakdown_data: Json | null
+          calculated_at: string | null
+          calculation_formula: string | null
+          category: string
+          company_id: string | null
+          created_at: string
+          current_value: number | null
+          data_sources: string[] | null
+          description: string | null
+          id: string
+          metric_key: string
+          metric_name: string
+          period_type: string | null
+          previous_value: number | null
+          sparkline_data: Json | null
+          target_value: number | null
+          trend: string | null
+          trend_percentage: number | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          aggregation_type?: string | null
+          breakdown_data?: Json | null
+          calculated_at?: string | null
+          calculation_formula?: string | null
+          category: string
+          company_id?: string | null
+          created_at?: string
+          current_value?: number | null
+          data_sources?: string[] | null
+          description?: string | null
+          id?: string
+          metric_key: string
+          metric_name: string
+          period_type?: string | null
+          previous_value?: number | null
+          sparkline_data?: Json | null
+          target_value?: number | null
+          trend?: string | null
+          trend_percentage?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aggregation_type?: string | null
+          breakdown_data?: Json | null
+          calculated_at?: string | null
+          calculation_formula?: string | null
+          category?: string
+          company_id?: string | null
+          created_at?: string
+          current_value?: number | null
+          data_sources?: string[] | null
+          description?: string | null
+          id?: string
+          metric_key?: string
+          metric_name?: string
+          period_type?: string | null
+          previous_value?: number | null
+          sparkline_data?: Json | null
+          target_value?: number | null
+          trend?: string | null
+          trend_percentage?: number | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_calculated_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_campaign_analytics: {
         Row: {
@@ -8529,6 +8858,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "crm_cdp_segments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_cohort_analysis: {
+        Row: {
+          active_entities: number | null
+          calculated_at: string | null
+          cohort_date: string
+          cohort_period: string
+          cohort_type: string
+          company_id: string | null
+          created_at: string
+          cumulative_value: number | null
+          id: string
+          metric_value: number | null
+          period_index: number
+          retention_rate: number | null
+          segmentation: Json | null
+          total_entities: number | null
+        }
+        Insert: {
+          active_entities?: number | null
+          calculated_at?: string | null
+          cohort_date: string
+          cohort_period: string
+          cohort_type: string
+          company_id?: string | null
+          created_at?: string
+          cumulative_value?: number | null
+          id?: string
+          metric_value?: number | null
+          period_index: number
+          retention_rate?: number | null
+          segmentation?: Json | null
+          total_entities?: number | null
+        }
+        Update: {
+          active_entities?: number | null
+          calculated_at?: string | null
+          cohort_date?: string
+          cohort_period?: string
+          cohort_type?: string
+          company_id?: string | null
+          created_at?: string
+          cumulative_value?: number | null
+          id?: string
+          metric_value?: number | null
+          period_index?: number
+          retention_rate?: number | null
+          segmentation?: Json | null
+          total_entities?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_cohort_analysis_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -9285,6 +9673,74 @@ export type Database = {
           },
         ]
       }
+      crm_funnel_analysis: {
+        Row: {
+          analysis_period_end: string | null
+          analysis_period_start: string | null
+          average_time_to_convert: unknown
+          bottleneck_stage: string | null
+          calculated_at: string | null
+          company_id: string | null
+          compared_to_previous: Json | null
+          created_at: string
+          drop_off_analysis: Json | null
+          funnel_name: string
+          funnel_type: string
+          id: string
+          overall_conversion_rate: number | null
+          recommendations: Json | null
+          stages: Json
+          total_converted: number | null
+          total_entered: number | null
+        }
+        Insert: {
+          analysis_period_end?: string | null
+          analysis_period_start?: string | null
+          average_time_to_convert?: unknown
+          bottleneck_stage?: string | null
+          calculated_at?: string | null
+          company_id?: string | null
+          compared_to_previous?: Json | null
+          created_at?: string
+          drop_off_analysis?: Json | null
+          funnel_name: string
+          funnel_type: string
+          id?: string
+          overall_conversion_rate?: number | null
+          recommendations?: Json | null
+          stages: Json
+          total_converted?: number | null
+          total_entered?: number | null
+        }
+        Update: {
+          analysis_period_end?: string | null
+          analysis_period_start?: string | null
+          average_time_to_convert?: unknown
+          bottleneck_stage?: string | null
+          calculated_at?: string | null
+          company_id?: string | null
+          compared_to_previous?: Json | null
+          created_at?: string
+          drop_off_analysis?: Json | null
+          funnel_name?: string
+          funnel_type?: string
+          id?: string
+          overall_conversion_rate?: number | null
+          recommendations?: Json | null
+          stages?: Json
+          total_converted?: number | null
+          total_entered?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_funnel_analysis_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_identity_graph: {
         Row: {
           company_id: string | null
@@ -9786,6 +10242,80 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_predictive_analytics: {
+        Row: {
+          actual_outcome: Json | null
+          analysis_type: string
+          analyzed_at: string | null
+          company_id: string | null
+          confidence_level: number | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          expires_at: string | null
+          id: string
+          model_version: string | null
+          opportunity_factors: Json | null
+          predicted_date: string | null
+          predicted_outcome: Json | null
+          predicted_value: number | null
+          prediction_score: number | null
+          recommended_actions: Json | null
+          risk_factors: Json | null
+          was_accurate: boolean | null
+        }
+        Insert: {
+          actual_outcome?: Json | null
+          analysis_type: string
+          analyzed_at?: string | null
+          company_id?: string | null
+          confidence_level?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          expires_at?: string | null
+          id?: string
+          model_version?: string | null
+          opportunity_factors?: Json | null
+          predicted_date?: string | null
+          predicted_outcome?: Json | null
+          predicted_value?: number | null
+          prediction_score?: number | null
+          recommended_actions?: Json | null
+          risk_factors?: Json | null
+          was_accurate?: boolean | null
+        }
+        Update: {
+          actual_outcome?: Json | null
+          analysis_type?: string
+          analyzed_at?: string | null
+          company_id?: string | null
+          confidence_level?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          expires_at?: string | null
+          id?: string
+          model_version?: string | null
+          opportunity_factors?: Json | null
+          predicted_date?: string | null
+          predicted_outcome?: Json | null
+          predicted_value?: number | null
+          prediction_score?: number | null
+          recommended_actions?: Json | null
+          risk_factors?: Json | null
+          was_accurate?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_predictive_analytics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_predictive_signals: {
         Row: {
           created_at: string | null
@@ -9830,6 +10360,56 @@ export type Database = {
           source_events?: Json | null
         }
         Relationships: []
+      }
+      crm_report_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          output_size_bytes: number | null
+          output_url: string | null
+          report_id: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          output_size_bytes?: number | null
+          output_url?: string | null
+          report_id?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          output_size_bytes?: number | null
+          output_url?: string | null
+          report_id?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_report_executions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "crm_scheduled_reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_role_permissions: {
         Row: {
@@ -9901,6 +10481,77 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_scheduled_reports: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          delivery_channels: string[] | null
+          description: string | null
+          export_format: string | null
+          filters: Json | null
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          recipients: Json | null
+          report_type: string
+          schedule_cron: string | null
+          sections: Json | null
+          template_config: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_channels?: string[] | null
+          description?: string | null
+          export_format?: string | null
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          recipients?: Json | null
+          report_type: string
+          schedule_cron?: string | null
+          sections?: Json | null
+          template_config?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_channels?: string[] | null
+          description?: string | null
+          export_format?: string | null
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          recipients?: Json | null
+          report_type?: string
+          schedule_cron?: string | null
+          sections?: Json | null
+          template_config?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_scheduled_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
