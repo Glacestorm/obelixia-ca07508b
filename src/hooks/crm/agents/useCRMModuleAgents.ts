@@ -139,13 +139,13 @@ export function useCRMModuleAgents() {
         a.id === agentId ? { ...a, status: 'analyzing' as const } : a
       ));
 
-      // Llamar a edge function
-      const { data, error } = await supabase.functions.invoke('crm-module-agent', {
+      // Llamar a edge function del supervisor
+      const { data, error } = await supabase.functions.invoke('crm-agent-supervisor', {
         body: {
-          action: 'execute',
+          action: 'execute_agent',
           agentType: targetAgent.type,
           context,
-          capabilities: targetAgent.capabilities
+          confidenceThreshold: targetAgent.confidenceThreshold / 100
         }
       });
 
@@ -153,21 +153,35 @@ export function useCRMModuleAgents() {
 
       if (!isMountedRef.current) return null;
 
+      const result = data as Record<string, unknown>;
+
       // Actualizar estado y métricas
       setAgents(prev => prev.map(a =>
         a.id === agentId ? {
           ...a,
-          status: 'active' as const,
+          status: result?.success ? 'active' as const : 'error' as const,
           lastActivity: new Date().toISOString(),
           metrics: {
             ...a.metrics,
-            ...(data as Record<string, unknown>)?.metrics as Record<string, number> || {}
+            actionsGenerated: (a.metrics.actionsGenerated || 0) + ((result?.actionsGenerated as number) || 0),
+            avgResponseTime: (result?.executionTimeMs as number) || a.metrics.avgResponseTime || 0
           }
         } : a
       ));
 
+      // Añadir insights generados
+      if (Array.isArray(result?.insights)) {
+        const newInsights = result.insights as CRMAgentInsight[];
+        setInsights(prev => [...newInsights, ...prev].slice(0, 100));
+        setSupervisorStatus(prev => prev ? {
+          ...prev,
+          insights: [...newInsights, ...(prev.insights || [])].slice(0, 50),
+          insightsGenerated: (prev.insightsGenerated || 0) + newInsights.length
+        } : prev);
+      }
+
       toast.success(`${targetAgent.name} ejecutado correctamente`);
-      return data as Record<string, unknown>;
+      return result;
     } catch (error) {
       console.error('[useCRMModuleAgents] executeAgent error:', error);
 
@@ -194,17 +208,15 @@ export function useCRMModuleAgents() {
     try {
       setSupervisorStatus(prev => prev ? { ...prev, status: 'coordinating' } : prev);
 
-      const { data, error } = await supabase.functions.invoke('crm-module-agent', {
+      const { data, error } = await supabase.functions.invoke('crm-agent-supervisor', {
         body: {
-          action: 'supervisor_orchestrate',
-          objective,
-          priority: priority || 'medium',
+          action: 'run_cycle',
+          context: { objective },
           agents: agents.map(a => ({
-            id: a.id,
             type: a.type,
-            status: a.status,
-            capabilities: a.capabilities,
-            metrics: a.metrics
+            priority: a.priority,
+            executionMode: a.executionMode,
+            confidenceThreshold: a.confidenceThreshold / 100
           }))
         }
       });
@@ -222,23 +234,48 @@ export function useCRMModuleAgents() {
 
       const nextInsights = payload?.insights as CRMAgentInsight[] | undefined;
 
+      // Actualizar supervisor status
+      setSupervisorStatus(prev => prev ? {
+        ...prev,
+        status: 'running',
+        activeAgents: (payload?.activeAgents as number) || prev.activeAgents,
+        insightsGenerated: (prev.insightsGenerated || 0) + (payload?.totalInsights as number || 0),
+        systemHealth: (payload?.systemHealth as number) || prev.systemHealth,
+        predictiveAccuracy: (payload?.predictiveAccuracy as number) || prev.predictiveAccuracy,
+        lastOptimization: new Date().toISOString(),
+        pipelineHealth: (payload?.pipelineHealth as typeof prev.pipelineHealth) || prev.pipelineHealth,
+        insights: Array.isArray(nextInsights) 
+          ? [...nextInsights, ...(prev.insights || [])].slice(0, 100)
+          : prev.insights
+      } : prev);
+
+      // Actualizar insights globales
       if (Array.isArray(nextInsights)) {
-        setInsights(nextInsights);
-        setSupervisorStatus(prev => prev ? {
-          ...prev,
-          status: 'running',
-          insights: nextInsights,
-          insightsGenerated: (prev.insightsGenerated || 0) + nextInsights.length,
-          lastOptimization: new Date().toISOString()
-        } : prev);
-      } else {
-        setSupervisorStatus(prev => prev ? { ...prev, status: 'running' } : prev);
+        setInsights(prev => [...nextInsights, ...prev].slice(0, 100));
       }
 
-      toast.success('Orquestación CRM completada');
+      // Actualizar métricas de agentes
+      const agentResults = payload?.agentResults as Array<{ agentType: string; success: boolean; metrics?: Record<string, number> }>;
+      if (Array.isArray(agentResults)) {
+        setAgents(prev => prev.map(agent => {
+          const result = agentResults.find(r => r.agentType === agent.type);
+          if (result) {
+            return {
+              ...agent,
+              status: result.success ? 'active' as const : 'error' as const,
+              lastActivity: new Date().toISOString(),
+              metrics: { ...agent.metrics, ...result.metrics }
+            };
+          }
+          return agent;
+        }));
+      }
+
+      toast.success(`Ciclo completado: ${payload?.totalInsights || 0} insights generados`);
       return payload;
     } catch (error) {
       console.error('[useCRMModuleAgents] supervisorOrchestrate error:', error);
+      setSupervisorStatus(prev => prev ? { ...prev, status: 'idle' } : prev);
       toast.error('Error en orquestación CRM');
       return null;
     } finally {
