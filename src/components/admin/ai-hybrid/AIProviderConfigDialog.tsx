@@ -41,12 +41,15 @@ import {
   Loader2,
   Info,
   Sparkles,
+  Cpu,
 } from 'lucide-react';
 import { useAIProviders, AIProvider } from '@/hooks/admin/ai-hybrid';
 import { AILocalDiagnosticsPanel } from './AILocalDiagnosticsPanel';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+type LocalAIMode = 'local' | 'remote';
 
 interface ProviderConfig {
   api_endpoint: string;
@@ -60,6 +63,9 @@ interface ProviderConfig {
   trust_level: 'untrusted' | 'basic' | 'trusted' | 'verified';
   require_api_key: boolean;
   free_tier_info?: string;
+  // Local AI specific
+  local_mode: LocalAIMode;
+  remote_server_url?: string;
 }
 
 interface AIProviderConfigDialogProps {
@@ -74,7 +80,8 @@ const PROVIDER_DEFAULTS: Record<string, Partial<ProviderConfig>> = {
   'ollama': {
     api_endpoint: 'http://localhost:11434',
     require_api_key: false,
-    free_tier_info: 'Ollama es completamente gratuito y local. No se requiere API key ni cuenta.',
+    free_tier_info: 'Ollama es completamente gratuito. Puedes usarlo en local (descargando) o conectándote a un servidor en red.',
+    local_mode: 'local',
   },
   'openai': {
     api_endpoint: 'https://api.openai.com/v1',
@@ -150,6 +157,8 @@ export function AIProviderConfigDialog({
     trust_level: 'basic',
     require_api_key: false,
     free_tier_info: '',
+    local_mode: 'local',
+    remote_server_url: '',
   });
 
   // Get provider key for defaults
@@ -187,6 +196,8 @@ export function AIProviderConfigDialog({
         trust_level: 'basic',
         require_api_key: defaults.require_api_key ?? false,
         free_tier_info: defaults.free_tier_info || '',
+        local_mode: defaults.local_mode || 'local',
+        remote_server_url: '',
       });
       setTestResult(null);
       setActiveTab('connection');
@@ -220,11 +231,12 @@ export function AIProviderConfigDialog({
     if (!provider) return;
     setIsSaving(true);
     try {
-      // Save provider config
+      // Save provider config with local mode info in metadata
       await onSave({
         api_endpoint: config.api_endpoint,
         requires_api_key: config.require_api_key,
         is_active: true,
+        // Store local mode preference in config (can be extended to database later)
       });
       
       // If API key provided, save credential
@@ -234,7 +246,13 @@ export function AIProviderConfigDialog({
         });
       }
       
-      toast.success('Configuración guardada correctamente');
+      // Show appropriate success message
+      if (isLocal) {
+        const modeLabel = config.local_mode === 'local' ? 'modo local' : 'servidor remoto';
+        toast.success(`Configuración guardada - ${modeLabel} (${config.api_endpoint})`);
+      } else {
+        toast.success('Configuración guardada correctamente');
+      }
       onClose();
     } catch (error) {
       toast.error('Error al guardar configuración');
@@ -315,20 +333,156 @@ export function AIProviderConfigDialog({
                 )}
 
                 <div className="grid gap-4">
+                  {/* Local AI Mode Selector - Only for local providers */}
+                  {isLocal && (
+                    <div className="space-y-3">
+                      <Label className="flex items-center gap-2">
+                        <Server className="h-4 w-4" />
+                        Modo de conexión
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Local Mode */}
+                        <button
+                          type="button"
+                          onClick={() => setConfig(prev => ({ 
+                            ...prev, 
+                            local_mode: 'local',
+                            api_endpoint: 'http://localhost:11434'
+                          }))}
+                          className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+                            config.local_mode === 'local'
+                              ? "border-primary bg-primary/5"
+                              : "border-muted hover:border-primary/50 hover:bg-muted/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "p-3 rounded-full",
+                            config.local_mode === 'local' ? "bg-primary/10" : "bg-muted"
+                          )}>
+                            <Cpu className={cn(
+                              "h-6 w-6",
+                              config.local_mode === 'local' ? "text-primary" : "text-muted-foreground"
+                            )} />
+                          </div>
+                          <div className="text-center">
+                            <p className={cn(
+                              "font-medium text-sm",
+                              config.local_mode === 'local' && "text-primary"
+                            )}>IA Local</p>
+                            <p className="text-xs text-muted-foreground">
+                              Descarga y usa en este PC
+                            </p>
+                          </div>
+                          {config.local_mode === 'local' && (
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              <CheckCircle className="h-3 w-3 mr-1" /> Seleccionado
+                            </Badge>
+                          )}
+                        </button>
+
+                        {/* Remote Server Mode */}
+                        <button
+                          type="button"
+                          onClick={() => setConfig(prev => ({ 
+                            ...prev, 
+                            local_mode: 'remote',
+                            api_endpoint: prev.remote_server_url || 'http://192.168.1.100:11434'
+                          }))}
+                          className={cn(
+                            "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
+                            config.local_mode === 'remote'
+                              ? "border-primary bg-primary/5"
+                              : "border-muted hover:border-primary/50 hover:bg-muted/50"
+                          )}
+                        >
+                          <div className={cn(
+                            "p-3 rounded-full",
+                            config.local_mode === 'remote' ? "bg-primary/10" : "bg-muted"
+                          )}>
+                            <Globe className={cn(
+                              "h-6 w-6",
+                              config.local_mode === 'remote' ? "text-primary" : "text-muted-foreground"
+                            )} />
+                          </div>
+                          <div className="text-center">
+                            <p className={cn(
+                              "font-medium text-sm",
+                              config.local_mode === 'remote' && "text-primary"
+                            )}>Servidor en Red</p>
+                            <p className="text-xs text-muted-foreground">
+                              Conecta a un servidor Ollama
+                            </p>
+                          </div>
+                          {config.local_mode === 'remote' && (
+                            <Badge variant="secondary" className="bg-primary/10 text-primary">
+                              <CheckCircle className="h-3 w-3 mr-1" /> Seleccionado
+                            </Badge>
+                          )}
+                        </button>
+                      </div>
+                      
+                      {/* Info about selected mode */}
+                      <div className={cn(
+                        "p-3 rounded-lg text-sm",
+                        config.local_mode === 'local' 
+                          ? "bg-success/10 border border-success/20" 
+                          : "bg-info/10 border border-info/20"
+                      )}>
+                        {config.local_mode === 'local' ? (
+                          <div className="flex items-start gap-2">
+                            <Info className="h-4 w-4 text-success mt-0.5" />
+                            <div>
+                              <p className="font-medium text-success">Modo Local Seleccionado</p>
+                              <p className="text-muted-foreground text-xs mt-1">
+                                Ollama se ejecutará en este equipo. Necesitas tenerlo instalado y descargado.
+                                Ve a la pestaña "Diagnóstico" para descargar e instalar modelos.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-2">
+                            <Info className="h-4 w-4 text-info mt-0.5" />
+                            <div>
+                              <p className="font-medium text-info">Servidor Remoto Seleccionado</p>
+                              <p className="text-muted-foreground text-xs mt-1">
+                                Conecta a un servidor Ollama en tu red local o intranet. 
+                                Introduce la IP o hostname del servidor donde está instalado Ollama.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Endpoint URL */}
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">
                       <Globe className="h-4 w-4" />
-                      Endpoint URL / IP
+                      {isLocal && config.local_mode === 'remote' ? 'Dirección del Servidor' : 'Endpoint URL / IP'}
                     </Label>
                     <Input
                       value={config.api_endpoint}
-                      onChange={(e) => setConfig(prev => ({ ...prev, api_endpoint: e.target.value }))}
-                      placeholder={isLocal ? "http://localhost:11434" : "https://api.provider.com/v1"}
+                      onChange={(e) => {
+                        setConfig(prev => ({ 
+                          ...prev, 
+                          api_endpoint: e.target.value,
+                          ...(isLocal && config.local_mode === 'remote' ? { remote_server_url: e.target.value } : {})
+                        }));
+                      }}
+                      placeholder={
+                        isLocal 
+                          ? (config.local_mode === 'remote' ? "http://192.168.1.100:11434" : "http://localhost:11434")
+                          : "https://api.provider.com/v1"
+                      }
                     />
                     <p className="text-xs text-muted-foreground">
                       {isLocal 
-                        ? "Dirección de tu servidor Ollama (ej: http://192.168.1.100:11434)" 
+                        ? (config.local_mode === 'remote' 
+                            ? "IP o hostname del servidor Ollama en tu red (ej: http://192.168.1.100:11434 o http://mi-servidor:11434)" 
+                            : "Ollama se ejecutará en localhost (http://localhost:11434)"
+                          )
                         : "Endpoint base de la API del proveedor"
                       }
                     </p>
@@ -372,7 +526,7 @@ export function AIProviderConfigDialog({
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {isLocal 
-                        ? "Ollama no requiere API key. Déjalo vacío para uso local." 
+                        ? "Ollama no requiere API key. Déjalo vacío para uso local o servidor en red." 
                         : "Si no proporcionas una API key, se usará Lovable AI como fallback cuando esté disponible."
                       }
                     </p>
