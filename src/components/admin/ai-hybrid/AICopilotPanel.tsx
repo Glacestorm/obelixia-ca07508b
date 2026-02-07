@@ -371,29 +371,71 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
               </Badge>
             )}
 
-            {/* Model selector */}
-            <Select
-              value={settings.model}
-              onValueChange={(v) => updateSettings({ model: v })}
-            >
-              <SelectTrigger className="w-[180px] h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableModels.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    <div className="flex items-center gap-2">
-                      {model.type === 'local' ? (
-                        <Server className="h-3 w-3 text-emerald-500" />
-                      ) : (
-                        <Cloud className="h-3 w-3 text-blue-500" />
-                      )}
-                      <span className="truncate">{model.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Model selector - filtered by provider type */}
+            {(() => {
+              // Filter models based on selected provider type
+              const filteredModels = settings.providerType === 'local' 
+                ? availableModels.filter(m => m.type === 'local')
+                : settings.providerType === 'external'
+                  ? availableModels.filter(m => m.type === 'external' || m.id === 'auto')
+                  : availableModels; // 'auto' shows all
+
+              // Check if current model is valid for the filter
+              const currentModelValid = filteredModels.some(m => m.id === settings.model);
+              const displayModel = currentModelValid ? settings.model : (filteredModels[0]?.id || 'auto');
+              
+              // Auto-update model if current is not valid for provider type
+              if (!currentModelValid && filteredModels.length > 0 && settings.model !== displayModel) {
+                // Defer the update to avoid render loop
+                setTimeout(() => updateSettings({ model: filteredModels[0]?.id || 'auto' }), 0);
+              }
+
+              return (
+                <Select
+                  value={displayModel}
+                  onValueChange={(v) => updateSettings({ model: v })}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <SelectValue placeholder="Seleccionar modelo">
+                      {(() => {
+                        const currentModel = filteredModels.find(m => m.id === displayModel);
+                        if (!currentModel) return 'Seleccionar modelo';
+                        return (
+                          <div className="flex items-center gap-2">
+                            {currentModel.type === 'local' ? (
+                              <Server className="h-3 w-3 text-emerald-500" />
+                            ) : (
+                              <Cloud className="h-3 w-3 text-blue-500" />
+                            )}
+                            <span className="truncate">{currentModel.name}</span>
+                          </div>
+                        );
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredModels.length === 0 ? (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                        No hay modelos locales disponibles
+                      </div>
+                    ) : (
+                      filteredModels.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <div className="flex items-center gap-2">
+                            {model.type === 'local' ? (
+                              <Server className="h-3 w-3 text-emerald-500" />
+                            ) : (
+                              <Cloud className="h-3 w-3 text-blue-500" />
+                            )}
+                            <span className="truncate">{model.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              );
+            })()}
 
             {/* Provider type */}
             <Select
