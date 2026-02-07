@@ -31,3 +31,6 @@ export * from './analytics';
 
 // Omnichannel Communication Hub (Phase 6)
 export * from './omnichannel';
+
+// Advanced Generative AI (Phase 7)
+export * from './ai';

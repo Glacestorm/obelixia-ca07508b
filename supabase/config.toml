@@ -3,7 +3,14 @@ project_id = "avaugfnqvvqcilhiudlf"
 [functions.crm-omnichannel]
 verify_jwt = true
 
+[functions.crm-voice-assistant]
+verify_jwt = true
+
+[functions.crm-predictive-pipeline]
+verify_jwt = true
+
 [functions.crm-advanced-analytics]
+verify_jwt = true
 verify_jwt = true
 
 [functions.crm-workflow-executor]

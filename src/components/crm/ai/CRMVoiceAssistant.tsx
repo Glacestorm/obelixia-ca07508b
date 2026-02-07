@@ -1,6 +1,6 @@
 /**
- * CRM Voice Assistant - 2026 Trend
- * Asistente de voz conversacional para CRM
+ * CRM Voice Assistant - Phase 7: Advanced AI
+ * Integrated with useCRMVoiceAssistant hook
  */
 
 import React, { useState, useCallback } from 'react';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import {
   Mic,
   MicOff,
@@ -23,21 +24,16 @@ import {
   TrendingUp,
   Bot,
   Loader2,
-  Wand2
+  Wand2,
+  Send,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useCRMVoiceAssistant, VoiceCommand, CRMContext } from '@/hooks/crm/ai';
 
-interface VoiceCommand {
-  id: string;
-  text: string;
-  timestamp: Date;
-  type: 'user' | 'assistant';
-  action?: {
-    type: string;
-    data?: Record<string, unknown>;
-    executed?: boolean;
-  };
+interface CRMVoiceAssistantProps {
+  context?: CRMContext;
+  className?: string;
 }
 
 const SUGGESTED_COMMANDS = [
@@ -48,119 +44,60 @@ const SUGGESTED_COMMANDS = [
   { icon: Phone, text: 'Dame un resumen de mis llamadas de hoy', category: 'calls' },
 ];
 
-export function CRMVoiceAssistant() {
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [commands, setCommands] = useState<VoiceCommand[]>([
-    {
-      id: '1',
-      text: '¡Hola! Soy tu asistente CRM con IA. Puedo ayudarte a gestionar leads, agendar reuniones, analizar tu pipeline y más. ¿Qué necesitas?',
-      timestamp: new Date(),
-      type: 'assistant'
-    }
-  ]);
-  const [audioLevel, setAudioLevel] = useState(0);
+export function CRMVoiceAssistant({ context, className }: CRMVoiceAssistantProps) {
+  const [textInput, setTextInput] = useState('');
+  
+  const {
+    commands,
+    isRecording,
+    isProcessing,
+    isSpeaking,
+    isMuted,
+    audioLevel,
+    duration,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    processTextCommand,
+    executeAction,
+    toggleMute,
+    stopSpeaking,
+    clearConversation,
+  } = useCRMVoiceAssistant(context);
 
-  // Simulate voice listening
   const handleToggleListen = useCallback(() => {
-    if (isListening) {
-      setIsListening(false);
-      setAudioLevel(0);
+    if (isRecording) {
+      stopRecording();
     } else {
-      setIsListening(true);
-      // Simulate audio levels
-      const interval = setInterval(() => {
-        setAudioLevel(Math.random() * 100);
-      }, 100);
-      
-      // Simulate command after 3 seconds
-      setTimeout(() => {
-        clearInterval(interval);
-        setIsListening(false);
-        setAudioLevel(0);
-        processVoiceCommand('Muéstrame los leads de esta semana');
-      }, 3000);
+      startRecording();
     }
-  }, [isListening]);
-
-  const processVoiceCommand = useCallback(async (text: string) => {
-    // Add user command
-    const userCommand: VoiceCommand = {
-      id: `user-${Date.now()}`,
-      text,
-      timestamp: new Date(),
-      type: 'user'
-    };
-    setCommands(prev => [...prev, userCommand]);
-    setIsProcessing(true);
-
-    // Simulate AI processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Generate response based on command
-    let response = '';
-    let action: VoiceCommand['action'];
-
-    if (text.toLowerCase().includes('lead')) {
-      response = 'Tienes 12 leads activos esta semana. 3 son de alta prioridad: Acme Corp ($45K), TechStart ($28K) y Global Industries ($85K). ¿Quieres que te muestre detalles de alguno?';
-      action = { type: 'show_leads', data: { filter: 'this_week', priority: 'high' } };
-    } else if (text.toLowerCase().includes('pipeline')) {
-      response = 'Tu pipeline muestra $225K en oportunidades activas. La tasa de conversión está en 23%, un 5% mejor que el mes pasado. Tienes 2 deals que podrían cerrarse esta semana.';
-      action = { type: 'show_pipeline', data: { view: 'summary' } };
-    } else if (text.toLowerCase().includes('agenda') || text.toLowerCase().includes('llamada')) {
-      response = '¿Para cuándo quieres agendar la llamada? Tienes disponibilidad mañana a las 10:00, 14:00 y 16:30.';
-      action = { type: 'schedule_call', data: { status: 'pending_time' } };
-    } else if (text.toLowerCase().includes('follow-up') || text.toLowerCase().includes('seguimiento')) {
-      response = 'Encontré 5 leads sin actividad en los últimos 7 días. ¿Quieres que prepare emails de seguimiento personalizados para cada uno?';
-      action = { type: 'create_followups', data: { count: 5, days_inactive: 7 } };
-    } else {
-      response = 'Entendido. ¿Puedes darme más detalles sobre lo que necesitas?';
-    }
-
-    const assistantResponse: VoiceCommand = {
-      id: `assistant-${Date.now()}`,
-      text: response,
-      timestamp: new Date(),
-      type: 'assistant',
-      action
-    };
-
-    setCommands(prev => [...prev, assistantResponse]);
-    setIsProcessing(false);
-
-    // Simulate text-to-speech
-    if (!isMuted) {
-      setIsSpeaking(true);
-      setTimeout(() => setIsSpeaking(false), 3000);
-    }
-  }, [isMuted]);
+  }, [isRecording, startRecording, stopRecording]);
 
   const handleSuggestedCommand = (text: string) => {
-    processVoiceCommand(text);
+    processTextCommand(text);
   };
 
-  const handleExecuteAction = useCallback((commandId: string) => {
-    setCommands(prev => prev.map(cmd => {
-      if (cmd.id === commandId && cmd.action) {
-        toast.success('Acción ejecutada', {
-          description: `${cmd.action.type} completado`
-        });
-        return { ...cmd, action: { ...cmd.action, executed: true } };
-      }
-      return cmd;
-    }));
-  }, []);
+  const handleSendText = () => {
+    if (textInput.trim()) {
+      processTextCommand(textInput);
+      setTextInput('');
+    }
+  };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendText();
+    }
+  };
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={cn("h-full flex flex-col", className)}>
       <CardHeader className="pb-3 bg-gradient-to-r from-primary/10 via-accent/5 to-transparent">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={cn(
               "p-2 rounded-lg transition-colors",
-              isListening 
+              isRecording 
                 ? "bg-red-500 animate-pulse" 
                 : isSpeaking 
                   ? "bg-green-500"
@@ -176,18 +113,29 @@ export function CRMVoiceAssistant() {
               </Badge>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMuted(!isMuted)}
-            className="h-8 w-8"
-          >
-            {isMuted ? (
-              <VolumeX className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <Volume2 className="h-4 w-4" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={clearConversation}
+              className="h-8 w-8"
+              title="Limpiar conversación"
+            >
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMute}
+              className="h-8 w-8"
+            >
+              {isMuted ? (
+                <VolumeX className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
 
@@ -217,7 +165,7 @@ export function CRMVoiceAssistant() {
                       variant="secondary"
                       size="sm"
                       className="mt-2 h-7 text-xs gap-1"
-                      onClick={() => handleExecuteAction(cmd.id)}
+                      onClick={() => executeAction(cmd.id)}
                     >
                       <Wand2 className="h-3 w-3" />
                       Ejecutar
@@ -264,37 +212,58 @@ export function CRMVoiceAssistant() {
           </div>
         </div>
 
-        {/* Voice input area */}
-        <div className="pt-2 border-t">
-          {isListening && (
-            <div className="mb-3">
+        {/* Text and Voice input area */}
+        <div className="pt-2 border-t space-y-3">
+          {isRecording && (
+            <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-xs text-muted-foreground">Escuchando...</span>
+                <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                <span className="text-xs text-muted-foreground">Escuchando... ({duration}s)</span>
               </div>
               <Progress value={audioLevel} className="h-1" />
             </div>
           )}
           
-          <div className="flex items-center justify-center gap-3">
+          {/* Text input */}
+          <div className="flex gap-2">
+            <Input
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Escribe un comando..."
+              className="flex-1"
+              disabled={isRecording || isProcessing}
+            />
             <Button
-              variant={isListening ? "destructive" : "default"}
+              size="icon"
+              onClick={handleSendText}
+              disabled={!textInput.trim() || isProcessing}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Voice button */}
+          <div className="flex items-center justify-center">
+            <Button
+              variant={isRecording ? "destructive" : "default"}
               size="lg"
               className={cn(
                 "h-14 w-14 rounded-full p-0 transition-transform",
-                isListening && "scale-110"
+                isRecording && "scale-110"
               )}
               onClick={handleToggleListen}
+              disabled={isProcessing}
             >
-              {isListening ? (
+              {isRecording ? (
                 <MicOff className="h-6 w-6" />
               ) : (
                 <Mic className="h-6 w-6" />
               )}
             </Button>
           </div>
-          <p className="text-center text-xs text-muted-foreground mt-2">
-            {isListening ? 'Toca para detener' : 'Toca para hablar'}
+          <p className="text-center text-xs text-muted-foreground">
+            {isRecording ? 'Toca para detener' : 'Toca para hablar'}
           </p>
         </div>
       </CardContent>
