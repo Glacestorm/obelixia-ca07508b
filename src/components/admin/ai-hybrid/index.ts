@@ -14,3 +14,9 @@ export { AIAnalyticsPanel } from './AIAnalyticsPanel';
 export { AIProviderSelector } from './AIProviderSelector';
 export { AIPrivacyIndicator, AIPrivacyBadge } from './AIPrivacyIndicator';
 export { AICreditsBadge } from './AICreditsBadge';
+
+// === FASE 2: COMPONENTES AVANZADOS ===
+export { AIProviderConfigDialog } from './AIProviderConfigDialog';
+export { AILocalDiagnosticsPanel } from './AILocalDiagnosticsPanel';
+export { AISmartRouterPanel } from './AISmartRouterPanel';
+export { AILegalComplianceIndicator } from './AILegalComplianceIndicator';

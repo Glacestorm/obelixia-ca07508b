@@ -48,6 +48,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { useAIProviders, AIProvider, ProviderCredential } from '@/hooks/admin/ai-hybrid';
+import { AIProviderConfigDialog } from './AIProviderConfigDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -71,6 +72,8 @@ export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
 
   const [selectedProvider, setSelectedProvider] = useState<AIProvider | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
+  const [configProvider, setConfigProvider] = useState<AIProvider | null>(null);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
@@ -148,7 +151,10 @@ export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
             ? 'border-primary bg-primary/5 shadow-md'
             : 'border-border hover:border-primary/50'
         )}
-        onClick={() => setSelectedProvider(provider)}
+        onClick={() => {
+          setConfigProvider(provider);
+          setIsConfigDialogOpen(true);
+        }}
       >
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
