@@ -17534,6 +17534,403 @@ export type Database = {
           },
         ]
       }
+      erp_gig_compliance_documents: {
+        Row: {
+          contractor_id: string
+          created_at: string
+          document_name: string
+          document_type: string
+          expiry_date: string | null
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          contractor_id: string
+          created_at?: string
+          document_name: string
+          document_type: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          contractor_id?: string
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_gig_compliance_documents_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "erp_gig_contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_gig_contractors: {
+        Row: {
+          address: string | null
+          agency_id: string | null
+          background_check_status: string | null
+          company_id: string
+          compliance_status: string
+          contractor_type: string
+          country: string
+          created_at: string
+          currency: string
+          daily_rate: number | null
+          email: string
+          has_ip_agreement: boolean
+          has_liability_insurance: boolean
+          has_nda_signed: boolean
+          hourly_rate: number | null
+          id: string
+          insurance_expiry: string | null
+          legal_name: string
+          manager_user_id: string | null
+          metadata: Json | null
+          nda_signed_at: string | null
+          notes: string | null
+          payment_terms_days: number
+          payment_type: string
+          performance_rating: number | null
+          phone: string | null
+          primary_skill_category: string
+          skills: string[]
+          status: string
+          tags: string[] | null
+          tax_id: string
+          total_hours_logged: number
+          total_invoiced: number
+          total_projects: number
+          trade_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          agency_id?: string | null
+          background_check_status?: string | null
+          company_id: string
+          compliance_status?: string
+          contractor_type: string
+          country?: string
+          created_at?: string
+          currency?: string
+          daily_rate?: number | null
+          email: string
+          has_ip_agreement?: boolean
+          has_liability_insurance?: boolean
+          has_nda_signed?: boolean
+          hourly_rate?: number | null
+          id?: string
+          insurance_expiry?: string | null
+          legal_name: string
+          manager_user_id?: string | null
+          metadata?: Json | null
+          nda_signed_at?: string | null
+          notes?: string | null
+          payment_terms_days?: number
+          payment_type?: string
+          performance_rating?: number | null
+          phone?: string | null
+          primary_skill_category: string
+          skills?: string[]
+          status?: string
+          tags?: string[] | null
+          tax_id: string
+          total_hours_logged?: number
+          total_invoiced?: number
+          total_projects?: number
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          agency_id?: string | null
+          background_check_status?: string | null
+          company_id?: string
+          compliance_status?: string
+          contractor_type?: string
+          country?: string
+          created_at?: string
+          currency?: string
+          daily_rate?: number | null
+          email?: string
+          has_ip_agreement?: boolean
+          has_liability_insurance?: boolean
+          has_nda_signed?: boolean
+          hourly_rate?: number | null
+          id?: string
+          insurance_expiry?: string | null
+          legal_name?: string
+          manager_user_id?: string | null
+          metadata?: Json | null
+          nda_signed_at?: string | null
+          notes?: string | null
+          payment_terms_days?: number
+          payment_type?: string
+          performance_rating?: number | null
+          phone?: string | null
+          primary_skill_category?: string
+          skills?: string[]
+          status?: string
+          tags?: string[] | null
+          tax_id?: string
+          total_hours_logged?: number
+          total_invoiced?: number
+          total_projects?: number
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      erp_gig_invoices: {
+        Row: {
+          company_id: string
+          contractor_id: string
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_date: string
+          invoice_number: string
+          line_items: Json
+          notes: string | null
+          payment_date: string | null
+          payment_reference: string | null
+          project_id: string | null
+          status: string
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          contractor_id: string
+          created_at?: string
+          currency?: string
+          due_date: string
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          line_items?: Json
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          project_id?: string | null
+          status?: string
+          subtotal: number
+          tax_amount: number
+          tax_rate?: number
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          contractor_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          line_items?: Json
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          project_id?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_gig_invoices_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "erp_gig_contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_gig_invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "erp_gig_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_gig_projects: {
+        Row: {
+          actual_hours: number
+          budget_amount: number | null
+          company_id: string
+          completion_percentage: number
+          contractor_id: string
+          created_at: string
+          deadline: string | null
+          deliverables: Json | null
+          description: string | null
+          end_date: string | null
+          estimated_hours: number | null
+          id: string
+          invoiced_amount: number
+          milestones: Json | null
+          pending_amount: number
+          project_code: string
+          scope_type: string
+          spent_amount: number
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number
+          budget_amount?: number | null
+          company_id: string
+          completion_percentage?: number
+          contractor_id: string
+          created_at?: string
+          deadline?: string | null
+          deliverables?: Json | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          invoiced_amount?: number
+          milestones?: Json | null
+          pending_amount?: number
+          project_code: string
+          scope_type?: string
+          spent_amount?: number
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number
+          budget_amount?: number | null
+          company_id?: string
+          completion_percentage?: number
+          contractor_id?: string
+          created_at?: string
+          deadline?: string | null
+          deliverables?: Json | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          invoiced_amount?: number
+          milestones?: Json | null
+          pending_amount?: number
+          project_code?: string
+          scope_type?: string
+          spent_amount?: number
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_gig_projects_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "erp_gig_contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_gig_time_entries: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          billable: boolean
+          contractor_id: string
+          created_at: string
+          date: string
+          description: string
+          hours: number
+          id: string
+          project_id: string
+          rate_applied: number
+          status: string
+          total_amount: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          billable?: boolean
+          contractor_id: string
+          created_at?: string
+          date: string
+          description: string
+          hours: number
+          id?: string
+          project_id: string
+          rate_applied: number
+          status?: string
+          total_amount: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          billable?: boolean
+          contractor_id?: string
+          created_at?: string
+          date?: string
+          description?: string
+          hours?: number
+          id?: string
+          project_id?: string
+          rate_applied?: number
+          status?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_gig_time_entries_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "erp_gig_contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_gig_time_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "erp_gig_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_goods_receipt_lines: {
         Row: {
           created_at: string | null
