@@ -41,3 +41,12 @@ export type {
   RoutingDecision,
   HybridAIOptions,
 } from './useHybridAI';
+
+export { useHybridAIIntegration } from './useHybridAIIntegration';
+export type {
+  EntityType,
+  AnalysisType,
+  AnalysisRequest,
+  AnalysisResult,
+  BatchAnalysisResult,
+} from './useHybridAIIntegration';
