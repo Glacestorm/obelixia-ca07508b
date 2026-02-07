@@ -229,13 +229,14 @@ CONTEXTO DEL SISTEMA:
         ...messages
       ];
 
-      let response: string;
+      let response: string | undefined;
       let tokensUsed = { prompt: 0, completion: 0 };
       let actualModel = model;
       let source: 'local' | 'external' = 'external';
 
-      // Try local first if requested
-      if (provider_type === 'local' || provider_type === 'auto') {
+      // Try local first ONLY if explicitly requested (not in edge environment for 'auto')
+      // Edge functions cannot reach localhost, so skip local for 'auto' mode
+      if (provider_type === 'local') {
         try {
           const ollamaResponse = await fetch(`${ollama_url}/api/chat`, {
             method: 'POST',
@@ -246,7 +247,7 @@ CONTEXTO DEL SISTEMA:
               stream: false,
               options: { temperature, num_predict: max_tokens }
             }),
-            signal: AbortSignal.timeout(60000),
+            signal: AbortSignal.timeout(10000),
           });
 
           if (ollamaResponse.ok) {
@@ -259,11 +260,8 @@ CONTEXTO DEL SISTEMA:
             throw new Error('Ollama not available');
           }
         } catch (localError) {
-          console.log(`[ai-copilot-chat] Local AI failed, trying external:`, localError);
-          
-          if (provider_type === 'local') {
-            throw new Error('IA local no disponible. Configure Ollama o cambie a IA externa.');
-          }
+          console.log(`[ai-copilot-chat] Local AI failed:`, localError);
+          throw new Error('IA local no disponible. Las funciones de backend no pueden acceder a servicios locales. Use IA externa (Cloud).');
         }
       }
 
