@@ -237,35 +237,13 @@ CONTEXTO DEL SISTEMA:
       let actualModel = model;
       let source: 'local' | 'external' = 'external';
 
-      // Try local first ONLY if explicitly requested (not in edge environment for 'auto')
-      // Edge functions cannot reach localhost, so skip local for 'auto' mode
+      // NOTE: Edge functions cannot reach localhost (Ollama runs on user's machine).
+      // 'local' provider only makes sense when called from the browser directly.
+      // In this cloud environment, we always use external providers.
+      // If user explicitly requested 'local', log a warning but fall back gracefully.
       if (provider_type === 'local') {
-        try {
-          const ollamaResponse = await fetch(`${ollama_url}/api/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: model.includes('/') ? 'llama3.2' : model,
-              messages: aiMessages,
-              stream: false,
-              options: { temperature, num_predict: max_tokens }
-            }),
-            signal: AbortSignal.timeout(10000),
-          });
-
-          if (ollamaResponse.ok) {
-            const ollamaData = await ollamaResponse.json();
-            response = ollamaData.message?.content || ollamaData.response;
-            actualModel = ollamaData.model;
-            source = 'local';
-            console.log(`[ai-copilot-chat] Local AI response received`);
-          } else {
-            throw new Error('Ollama not available');
-          }
-        } catch (localError) {
-          console.log(`[ai-copilot-chat] Local AI failed:`, localError);
-          throw new Error('IA local no disponible. Las funciones de backend no pueden acceder a servicios locales. Use IA externa (Cloud).');
-        }
+        console.log(`[ai-copilot-chat] Local AI requested but not available in cloud environment. Falling back to external.`);
+        // Don't throw - just continue to external provider
       }
 
       // Use external if local failed or external requested
