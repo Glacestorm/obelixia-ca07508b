@@ -375,8 +375,8 @@ export function AIProviderConfigDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className={cn(
               "p-3 rounded-xl",
@@ -403,29 +403,28 @@ export function AIProviderConfigDialog({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden py-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className={cn("grid w-full mb-4", isLocal ? "grid-cols-5" : "grid-cols-4")}>
-              <TabsTrigger value="connection" className="gap-2">
-                <Activity className="h-4 w-4" /> Conexión
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className={cn("grid w-full mb-4 flex-shrink-0", isLocal ? "grid-cols-5" : "grid-cols-4")}>
+            <TabsTrigger value="connection" className="gap-2">
+              <Activity className="h-4 w-4" /> Conexión
+            </TabsTrigger>
+            <TabsTrigger value="models" className="gap-2">
+              <Zap className="h-4 w-4" /> Modelos
+            </TabsTrigger>
+            <TabsTrigger value="security" className="gap-2">
+              <Shield className="h-4 w-4" /> Seguridad
+            </TabsTrigger>
+            <TabsTrigger value="limits" className="gap-2">
+              <DollarSign className="h-4 w-4" /> Límites
+            </TabsTrigger>
+            {isLocal && (
+              <TabsTrigger value="diagnostics" className="gap-2">
+                <RotateCw className="h-4 w-4" /> Diagnóstico
               </TabsTrigger>
-              <TabsTrigger value="models" className="gap-2">
-                <Zap className="h-4 w-4" /> Modelos
-              </TabsTrigger>
-              <TabsTrigger value="security" className="gap-2">
-                <Shield className="h-4 w-4" /> Seguridad
-              </TabsTrigger>
-              <TabsTrigger value="limits" className="gap-2">
-                <DollarSign className="h-4 w-4" /> Límites
-              </TabsTrigger>
-              {isLocal && (
-                <TabsTrigger value="diagnostics" className="gap-2">
-                  <RotateCw className="h-4 w-4" /> Diagnóstico
-                </TabsTrigger>
-              )}
-            </TabsList>
+            )}
+          </TabsList>
 
-            <ScrollArea className="flex-1 pr-4">
+          <ScrollArea className="flex-1 min-h-0 pr-4" style={{ maxHeight: 'calc(85vh - 220px)' }}>
               {/* === TAB: CONNECTION === */}
               <TabsContent value="connection" className="space-y-6">
                 {/* Free tier info banner */}
@@ -977,7 +976,6 @@ export function AIProviderConfigDialog({
               )}
             </ScrollArea>
           </Tabs>
-        </div>
 
         <DialogFooter className="pt-4 border-t">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
