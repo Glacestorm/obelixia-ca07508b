@@ -2593,6 +2593,140 @@ export type Database = {
           },
         ]
       }
+      ai_legal_validations: {
+        Row: {
+          applicable_regulations: string[] | null
+          blocking_issues: string[] | null
+          consent_type: string | null
+          created_at: string
+          cross_border_transfer: boolean | null
+          data_classification: string
+          data_retention_days: number | null
+          destination_countries: string[] | null
+          id: string
+          is_approved: boolean
+          legal_basis: string[] | null
+          metadata: Json | null
+          operation_type: string
+          processing_time_ms: number | null
+          request_id: string
+          requires_consent: boolean | null
+          user_id: string | null
+          validated_by: string | null
+          warnings: string[] | null
+        }
+        Insert: {
+          applicable_regulations?: string[] | null
+          blocking_issues?: string[] | null
+          consent_type?: string | null
+          created_at?: string
+          cross_border_transfer?: boolean | null
+          data_classification: string
+          data_retention_days?: number | null
+          destination_countries?: string[] | null
+          id?: string
+          is_approved: boolean
+          legal_basis?: string[] | null
+          metadata?: Json | null
+          operation_type: string
+          processing_time_ms?: number | null
+          request_id: string
+          requires_consent?: boolean | null
+          user_id?: string | null
+          validated_by?: string | null
+          warnings?: string[] | null
+        }
+        Update: {
+          applicable_regulations?: string[] | null
+          blocking_issues?: string[] | null
+          consent_type?: string | null
+          created_at?: string
+          cross_border_transfer?: boolean | null
+          data_classification?: string
+          data_retention_days?: number | null
+          destination_countries?: string[] | null
+          id?: string
+          is_approved?: boolean
+          legal_basis?: string[] | null
+          metadata?: Json | null
+          operation_type?: string
+          processing_time_ms?: number | null
+          request_id?: string
+          requires_consent?: boolean | null
+          user_id?: string | null
+          validated_by?: string | null
+          warnings?: string[] | null
+        }
+        Relationships: []
+      }
+      ai_provider_benchmarks: {
+        Row: {
+          benchmark_type: string
+          created_at: string
+          error_message: string | null
+          gpu_memory_mb: number | null
+          gpu_used: boolean | null
+          id: string
+          memory_used_mb: number | null
+          metadata: Json | null
+          model_id: string
+          provider_id: string | null
+          quality_score: number | null
+          response_tokens: number | null
+          test_prompt_hash: string | null
+          test_prompt_tokens: number | null
+          time_to_first_token_ms: number | null
+          tokens_per_second: number | null
+          total_time_ms: number | null
+        }
+        Insert: {
+          benchmark_type: string
+          created_at?: string
+          error_message?: string | null
+          gpu_memory_mb?: number | null
+          gpu_used?: boolean | null
+          id?: string
+          memory_used_mb?: number | null
+          metadata?: Json | null
+          model_id: string
+          provider_id?: string | null
+          quality_score?: number | null
+          response_tokens?: number | null
+          test_prompt_hash?: string | null
+          test_prompt_tokens?: number | null
+          time_to_first_token_ms?: number | null
+          tokens_per_second?: number | null
+          total_time_ms?: number | null
+        }
+        Update: {
+          benchmark_type?: string
+          created_at?: string
+          error_message?: string | null
+          gpu_memory_mb?: number | null
+          gpu_used?: boolean | null
+          id?: string
+          memory_used_mb?: number | null
+          metadata?: Json | null
+          model_id?: string
+          provider_id?: string | null
+          quality_score?: number | null
+          response_tokens?: number | null
+          test_prompt_hash?: string | null
+          test_prompt_tokens?: number | null
+          time_to_first_token_ms?: number | null
+          tokens_per_second?: number | null
+          total_time_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_provider_benchmarks_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_provider_credentials: {
         Row: {
           additional_config: Json | null
@@ -2680,63 +2814,205 @@ export type Database = {
       }
       ai_providers: {
         Row: {
+          allowed_data_levels: string[] | null
           api_endpoint: string | null
+          benchmark_results: Json | null
           billing_url: string | null
           capabilities: Json | null
+          connection_timeout_ms: number | null
           created_at: string
+          current_daily_cost: number | null
+          daily_cost_reset_at: string | null
+          detected_capabilities: Json | null
           documentation_url: string | null
+          endpoint_url: string | null
           icon_name: string | null
           id: string
           is_active: boolean
           is_default: boolean
+          last_benchmark_at: string | null
+          max_daily_cost: number | null
+          max_retries: number | null
+          max_tokens_per_request: number | null
           name: string
           order_index: number | null
+          organization_id: string | null
           pricing_info: Json | null
+          priority: number | null
           provider_key: string
           provider_type: Database["public"]["Enums"]["ai_provider_type"]
           requires_api_key: boolean
           supported_models: Json | null
+          trust_level: string | null
           updated_at: string
         }
         Insert: {
+          allowed_data_levels?: string[] | null
           api_endpoint?: string | null
+          benchmark_results?: Json | null
           billing_url?: string | null
           capabilities?: Json | null
+          connection_timeout_ms?: number | null
           created_at?: string
+          current_daily_cost?: number | null
+          daily_cost_reset_at?: string | null
+          detected_capabilities?: Json | null
           documentation_url?: string | null
+          endpoint_url?: string | null
           icon_name?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
+          last_benchmark_at?: string | null
+          max_daily_cost?: number | null
+          max_retries?: number | null
+          max_tokens_per_request?: number | null
           name: string
           order_index?: number | null
+          organization_id?: string | null
           pricing_info?: Json | null
+          priority?: number | null
           provider_key: string
           provider_type?: Database["public"]["Enums"]["ai_provider_type"]
           requires_api_key?: boolean
           supported_models?: Json | null
+          trust_level?: string | null
           updated_at?: string
         }
         Update: {
+          allowed_data_levels?: string[] | null
           api_endpoint?: string | null
+          benchmark_results?: Json | null
           billing_url?: string | null
           capabilities?: Json | null
+          connection_timeout_ms?: number | null
           created_at?: string
+          current_daily_cost?: number | null
+          daily_cost_reset_at?: string | null
+          detected_capabilities?: Json | null
           documentation_url?: string | null
+          endpoint_url?: string | null
           icon_name?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
+          last_benchmark_at?: string | null
+          max_daily_cost?: number | null
+          max_retries?: number | null
+          max_tokens_per_request?: number | null
           name?: string
           order_index?: number | null
+          organization_id?: string | null
           pricing_info?: Json | null
+          priority?: number | null
           provider_key?: string
           provider_type?: Database["public"]["Enums"]["ai_provider_type"]
           requires_api_key?: boolean
           supported_models?: Json | null
+          trust_level?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      ai_routing_decisions: {
+        Row: {
+          actual_cost: number | null
+          actual_tokens: number | null
+          block_reason: string | null
+          capability_score: number | null
+          cost_score: number | null
+          created_at: string
+          data_classification: string
+          estimated_cost: number | null
+          estimated_tokens: number | null
+          fallback_provider_id: string | null
+          fallback_used: boolean | null
+          id: string
+          latency_ms: number | null
+          latency_score: number | null
+          legal_validation_id: string | null
+          metadata: Json | null
+          request_id: string
+          security_score: number | null
+          selected_model: string | null
+          selected_provider_id: string | null
+          total_score: number | null
+          user_id: string | null
+          was_blocked: boolean | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_tokens?: number | null
+          block_reason?: string | null
+          capability_score?: number | null
+          cost_score?: number | null
+          created_at?: string
+          data_classification: string
+          estimated_cost?: number | null
+          estimated_tokens?: number | null
+          fallback_provider_id?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          latency_ms?: number | null
+          latency_score?: number | null
+          legal_validation_id?: string | null
+          metadata?: Json | null
+          request_id: string
+          security_score?: number | null
+          selected_model?: string | null
+          selected_provider_id?: string | null
+          total_score?: number | null
+          user_id?: string | null
+          was_blocked?: boolean | null
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_tokens?: number | null
+          block_reason?: string | null
+          capability_score?: number | null
+          cost_score?: number | null
+          created_at?: string
+          data_classification?: string
+          estimated_cost?: number | null
+          estimated_tokens?: number | null
+          fallback_provider_id?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          latency_ms?: number | null
+          latency_score?: number | null
+          legal_validation_id?: string | null
+          metadata?: Json | null
+          request_id?: string
+          security_score?: number | null
+          selected_model?: string | null
+          selected_provider_id?: string | null
+          total_score?: number | null
+          user_id?: string | null
+          was_blocked?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_routing_decisions_fallback_provider_id_fkey"
+            columns: ["fallback_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_routing_decisions_legal_validation_id_fkey"
+            columns: ["legal_validation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_legal_validations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_routing_decisions_selected_provider_id_fkey"
+            columns: ["selected_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_routing_policies: {
         Row: {
@@ -62360,6 +62636,17 @@ export type Database = {
           total_events: number
         }[]
       }
+      get_ai_provider_routing_stats: {
+        Args: { p_provider_id: string }
+        Returns: {
+          avg_cost_per_request: number
+          avg_latency_ms: number
+          last_24h_avg_latency: number
+          last_24h_requests: number
+          success_rate: number
+          total_requests: number
+        }[]
+      }
       get_communication_compliance_status: {
         Args: { p_company_id: string }
         Returns: {
@@ -62554,6 +62841,47 @@ export type Database = {
         }
         Returns: string
       }
+      log_ai_legal_validation: {
+        Args: {
+          p_applicable_regulations?: string[]
+          p_blocking_issues?: string[]
+          p_consent_type?: string
+          p_cross_border_transfer?: boolean
+          p_data_classification: string
+          p_destination_countries?: string[]
+          p_is_approved: boolean
+          p_legal_basis?: string[]
+          p_metadata?: Json
+          p_operation_type: string
+          p_processing_time_ms?: number
+          p_request_id: string
+          p_requires_consent?: boolean
+          p_user_id: string
+          p_warnings?: string[]
+        }
+        Returns: string
+      }
+      log_ai_routing_decision: {
+        Args: {
+          p_block_reason?: string
+          p_capability_score: number
+          p_cost_score: number
+          p_data_classification: string
+          p_estimated_cost?: number
+          p_estimated_tokens?: number
+          p_latency_score: number
+          p_legal_validation_id?: string
+          p_metadata?: Json
+          p_request_id: string
+          p_security_score: number
+          p_selected_model: string
+          p_selected_provider_id: string
+          p_total_score: number
+          p_user_id: string
+          p_was_blocked?: boolean
+        }
+        Returns: string
+      }
       log_audit_event: {
         Args: {
           p_action: string
@@ -62606,6 +62934,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      reset_ai_provider_daily_costs: { Args: never; Returns: undefined }
       run_daily_compliance_check: { Args: never; Returns: undefined }
       search_employee_documents: {
         Args: {

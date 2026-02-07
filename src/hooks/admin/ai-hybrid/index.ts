@@ -83,3 +83,13 @@ export type { AuditEventType, ComplianceFramework, AuditEvent, AuditFilter, Comp
 
 export { useAIProactiveAlerts } from './useAIProactiveAlerts';
 export type { AlertType, AlertChannel, ProactiveAlert, BudgetConfig, UsageThreshold, AlertConfig } from './useAIProactiveAlerts';
+
+// === FASE 2: GESTIÓN AVANZADA ===
+export { useLocalAIDiagnostics } from './useLocalAIDiagnostics';
+export type { LocalAIEndpoint, OllamaModel, BenchmarkResult, HealthStatus } from './useLocalAIDiagnostics';
+
+export { useAILegalCompliance } from './useAILegalCompliance';
+export type { LegalValidation, LegalValidationContext, ApplicableRegulations } from './useAILegalCompliance';
+
+export { useAISmartRouter } from './useAISmartRouter';
+export type { ProviderScore, RoutingContext, RoutingStats } from './useAISmartRouter';
