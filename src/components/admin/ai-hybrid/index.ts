@@ -20,3 +20,4 @@ export { AIProviderConfigDialog } from './AIProviderConfigDialog';
 export { AILocalDiagnosticsPanel } from './AILocalDiagnosticsPanel';
 export { AISmartRouterPanel } from './AISmartRouterPanel';
 export { AILegalComplianceIndicator } from './AILegalComplianceIndicator';
+export { AICopilotPanel } from './AICopilotPanel';

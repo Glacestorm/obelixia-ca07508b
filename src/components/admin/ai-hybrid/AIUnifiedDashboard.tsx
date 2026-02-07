@@ -33,6 +33,7 @@ import { AIAnalyticsPanel } from './AIAnalyticsPanel';
 import { AISmartRouterPanel } from './AISmartRouterPanel';
 import { AILocalDiagnosticsPanel } from './AILocalDiagnosticsPanel';
 import { AILegalComplianceIndicator } from './AILegalComplianceIndicator';
+import { AICopilotPanel } from './AICopilotPanel';
 import { useAIProviders } from '@/hooks/admin/ai-hybrid';
 import { useAICredits } from '@/hooks/admin/ai-hybrid';
 import { useHybridAI } from '@/hooks/admin/ai-hybrid';
@@ -169,6 +170,10 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="flex flex-wrap gap-1 h-auto p-1 lg:inline-flex">
+          <TabsTrigger value="copilot" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">AI Copilot</span>
+          </TabsTrigger>
           <TabsTrigger value="overview" className="gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">{t('aiHybrid.tabs.overview')}</span>
@@ -207,6 +212,12 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
           </TabsTrigger>
         </TabsList>
 
+        {/* AI Copilot Tab */}
+        <TabsContent value="copilot" className="h-[calc(100vh-400px)] min-h-[500px]">
+          <Card className="h-full">
+            <AICopilotPanel embedded className="h-full" />
+          </Card>
+        </TabsContent>
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
