@@ -8553,6 +8553,68 @@ export type Database = {
           },
         ]
       }
+      crm_api_keys: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          permissions: string[] | null
+          rate_limit: number | null
+          updated_at: string | null
+          usage_count: number | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          permissions?: string[] | null
+          rate_limit?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: string[] | null
+          rate_limit?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_api_keys_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_audience_segments: {
         Row: {
           company_id: string | null
@@ -9878,77 +9940,57 @@ export type Database = {
       }
       crm_field_mappings: {
         Row: {
-          ai_confidence: number | null
+          connector_id: string | null
           created_at: string | null
           default_value: string | null
-          error_count: number | null
+          entity_type: string
           id: string
-          is_auto_mapped: boolean | null
-          is_primary_key: boolean | null
           is_required: boolean | null
-          mapped_count: number | null
-          migration_id: string | null
-          sample_values: Json | null
           source_field: string
-          source_field_type: string | null
           target_field: string
-          target_field_type: string | null
-          target_table: string
-          transform_function: string | null
-          transform_params: Json | null
+          transformation: Json | null
           updated_at: string | null
-          validation_rules: Json | null
+          workspace_id: string | null
         }
         Insert: {
-          ai_confidence?: number | null
+          connector_id?: string | null
           created_at?: string | null
           default_value?: string | null
-          error_count?: number | null
+          entity_type: string
           id?: string
-          is_auto_mapped?: boolean | null
-          is_primary_key?: boolean | null
           is_required?: boolean | null
-          mapped_count?: number | null
-          migration_id?: string | null
-          sample_values?: Json | null
           source_field: string
-          source_field_type?: string | null
           target_field: string
-          target_field_type?: string | null
-          target_table: string
-          transform_function?: string | null
-          transform_params?: Json | null
+          transformation?: Json | null
           updated_at?: string | null
-          validation_rules?: Json | null
+          workspace_id?: string | null
         }
         Update: {
-          ai_confidence?: number | null
+          connector_id?: string | null
           created_at?: string | null
           default_value?: string | null
-          error_count?: number | null
+          entity_type?: string
           id?: string
-          is_auto_mapped?: boolean | null
-          is_primary_key?: boolean | null
           is_required?: boolean | null
-          mapped_count?: number | null
-          migration_id?: string | null
-          sample_values?: Json | null
           source_field?: string
-          source_field_type?: string | null
           target_field?: string
-          target_field_type?: string | null
-          target_table?: string
-          transform_function?: string | null
-          transform_params?: Json | null
+          transformation?: Json | null
           updated_at?: string | null
-          validation_rules?: Json | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "crm_field_mappings_migration_id_fkey"
-            columns: ["migration_id"]
+            foreignKeyName: "crm_field_mappings_connector_id_fkey"
+            columns: ["connector_id"]
             isOneToOne: false
-            referencedRelation: "crm_migrations"
+            referencedRelation: "crm_connectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_field_mappings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -10128,6 +10170,56 @@ export type Database = {
             columns: ["master_profile_id"]
             isOneToOne: false
             referencedRelation: "crm_unified_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_integration_events: {
+        Row: {
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed: boolean | null
+          processed_at: string | null
+          source: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean | null
+          processed_at?: string | null
+          source?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean | null
+          processed_at?: string | null
+          source?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_integration_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -11585,6 +11677,69 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_sync_history: {
+        Row: {
+          completed_at: string | null
+          connector_id: string | null
+          created_by: string | null
+          error_details: Json | null
+          id: string
+          records_created: number | null
+          records_failed: number | null
+          records_processed: number | null
+          records_updated: number | null
+          started_at: string | null
+          status: string | null
+          sync_type: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          connector_id?: string | null
+          created_by?: string | null
+          error_details?: Json | null
+          id?: string
+          records_created?: number | null
+          records_failed?: number | null
+          records_processed?: number | null
+          records_updated?: number | null
+          started_at?: string | null
+          status?: string | null
+          sync_type?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          connector_id?: string | null
+          created_by?: string | null
+          error_details?: Json | null
+          id?: string
+          records_created?: number | null
+          records_failed?: number | null
+          records_processed?: number | null
+          records_updated?: number | null
+          started_at?: string | null
+          status?: string | null
+          sync_type?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_sync_history_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "crm_connectors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sync_history_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_team_members: {
         Row: {
           created_at: string
@@ -11929,6 +12084,121 @@ export type Database = {
           },
           {
             foreignKeyName: "crm_user_workspaces_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_webhook_logs: {
+        Row: {
+          attempt_number: number | null
+          created_at: string | null
+          error_message: string | null
+          event_type: string
+          execution_time_ms: number | null
+          id: string
+          payload: Json | null
+          response_body: string | null
+          response_status: number | null
+          status: string | null
+          webhook_id: string | null
+        }
+        Insert: {
+          attempt_number?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          event_type: string
+          execution_time_ms?: number | null
+          id?: string
+          payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          status?: string | null
+          webhook_id?: string | null
+        }
+        Update: {
+          attempt_number?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          execution_time_ms?: number | null
+          id?: string
+          payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          status?: string | null
+          webhook_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "crm_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_webhooks: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          events: string[]
+          failure_count: number | null
+          headers: Json | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          retry_config: Json | null
+          secret: string | null
+          success_count: number | null
+          updated_at: string | null
+          url: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          events?: string[]
+          failure_count?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          retry_config?: Json | null
+          secret?: string | null
+          success_count?: number | null
+          updated_at?: string | null
+          url: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          events?: string[]
+          failure_count?: number | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          retry_config?: Json | null
+          secret?: string | null
+          success_count?: number | null
+          updated_at?: string | null
+          url?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_webhooks_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
