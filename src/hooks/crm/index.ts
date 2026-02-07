@@ -22,3 +22,9 @@ export * from './agents';
 
 // Lead Scoring & AI Insights (Phase 3)
 export * from './scoring';
+
+// Customer 360 & CDP (Phase 4)
+export * from './customer360';
+
+// Advanced Analytics & Reporting (Phase 5)
+export * from './analytics';
