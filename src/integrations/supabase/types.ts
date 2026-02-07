@@ -2122,6 +2122,358 @@ export type Database = {
           },
         ]
       }
+      ai_hybrid_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          description: string | null
+          id: string
+          is_sensitive: boolean | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: Json
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      ai_hybrid_credentials: {
+        Row: {
+          created_at: string
+          credential_name: string
+          credential_type: string
+          encrypted_value: string | null
+          expires_at: string | null
+          id: string
+          is_valid: boolean | null
+          last_validated_at: string | null
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credential_name: string
+          credential_type: string
+          encrypted_value?: string | null
+          expires_at?: string | null
+          id?: string
+          is_valid?: boolean | null
+          last_validated_at?: string | null
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credential_name?: string
+          credential_type?: string
+          encrypted_value?: string | null
+          expires_at?: string | null
+          id?: string
+          is_valid?: boolean | null
+          last_validated_at?: string | null
+          provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_hybrid_credentials_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_hybrid_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_hybrid_credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          credit_id: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          model_name: string | null
+          provider_name: string | null
+          request_id: string | null
+          tokens_used: number | null
+          transaction_type: string
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          credit_id: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          model_name?: string | null
+          provider_name?: string | null
+          request_id?: string | null
+          tokens_used?: number | null
+          transaction_type: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          credit_id?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          model_name?: string | null
+          provider_name?: string | null
+          request_id?: string | null
+          tokens_used?: number | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_hybrid_credit_transactions_credit_id_fkey"
+            columns: ["credit_id"]
+            isOneToOne: false
+            referencedRelation: "ai_hybrid_credits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_hybrid_credits: {
+        Row: {
+          alert_threshold: number | null
+          auto_recharge: boolean | null
+          auto_recharge_amount: number | null
+          balance_credits: number | null
+          company_id: string | null
+          created_at: string
+          id: string
+          last_purchase_at: string | null
+          total_purchased: number | null
+          total_used: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          alert_threshold?: number | null
+          auto_recharge?: boolean | null
+          auto_recharge_amount?: number | null
+          balance_credits?: number | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          last_purchase_at?: string | null
+          total_purchased?: number | null
+          total_used?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          alert_threshold?: number | null
+          auto_recharge?: boolean | null
+          auto_recharge_amount?: number | null
+          balance_credits?: number | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          last_purchase_at?: string | null
+          total_purchased?: number | null
+          total_used?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_hybrid_privacy_rules: {
+        Row: {
+          action: string | null
+          classification_level: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          field_names: string[] | null
+          id: string
+          is_active: boolean | null
+          pattern: string | null
+          priority: number | null
+          rule_name: string
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          action?: string | null
+          classification_level: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          field_names?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          pattern?: string | null
+          priority?: number | null
+          rule_name: string
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string | null
+          classification_level?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          field_names?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          pattern?: string | null
+          priority?: number | null
+          rule_name?: string
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_hybrid_providers: {
+        Row: {
+          base_url: string | null
+          config: Json | null
+          created_at: string
+          created_by: string | null
+          display_name: string | null
+          health_status: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          last_health_check: string | null
+          models: Json | null
+          priority: number | null
+          provider_name: string
+          provider_type: string
+          updated_at: string
+        }
+        Insert: {
+          base_url?: string | null
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          health_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_health_check?: string | null
+          models?: Json | null
+          priority?: number | null
+          provider_name: string
+          provider_type: string
+          updated_at?: string
+        }
+        Update: {
+          base_url?: string | null
+          config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          health_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_health_check?: string | null
+          models?: Json | null
+          priority?: number | null
+          provider_name?: string
+          provider_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_hybrid_routing_logs: {
+        Row: {
+          actual_model: string
+          actual_provider: string
+          context_entity_id: string | null
+          context_type: string | null
+          created_at: string
+          error_message: string | null
+          estimated_cost: number | null
+          fallback_reason: string | null
+          fallback_used: boolean | null
+          id: string
+          latency_ms: number | null
+          privacy_level: string
+          prompt_length: number | null
+          requested_provider: string | null
+          response_length: number | null
+          routing_mode: string
+          session_id: string | null
+          success: boolean | null
+          tokens_input: number | null
+          tokens_output: number | null
+          user_id: string | null
+          was_anonymized: boolean | null
+        }
+        Insert: {
+          actual_model: string
+          actual_provider: string
+          context_entity_id?: string | null
+          context_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_cost?: number | null
+          fallback_reason?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          latency_ms?: number | null
+          privacy_level: string
+          prompt_length?: number | null
+          requested_provider?: string | null
+          response_length?: number | null
+          routing_mode: string
+          session_id?: string | null
+          success?: boolean | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          user_id?: string | null
+          was_anonymized?: boolean | null
+        }
+        Update: {
+          actual_model?: string
+          actual_provider?: string
+          context_entity_id?: string | null
+          context_type?: string | null
+          created_at?: string
+          error_message?: string | null
+          estimated_cost?: number | null
+          fallback_reason?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          latency_ms?: number | null
+          privacy_level?: string
+          prompt_length?: number | null
+          requested_provider?: string | null
+          response_length?: number | null
+          routing_mode?: string
+          session_id?: string | null
+          success?: boolean | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          user_id?: string | null
+          was_anonymized?: boolean | null
+        }
+        Relationships: []
+      }
       ai_interventions: {
         Row: {
           ai_analysis: string
