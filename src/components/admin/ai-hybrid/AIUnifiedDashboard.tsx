@@ -3,7 +3,7 @@
  * Dashboard principal del sistema de IA Híbrida Universal
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,12 +22,17 @@ import {
   Lock,
   CheckCircle,
   BarChart3,
+  Scale,
+  Gauge,
 } from 'lucide-react';
 import { AIProvidersPanel } from './AIProvidersPanel';
 import { AICreditsPanel } from './AICreditsPanel';
 import { AIPrivacyPanel } from './AIPrivacyPanel';
 import { AIRoutingPanel } from './AIRoutingPanel';
 import { AIAnalyticsPanel } from './AIAnalyticsPanel';
+import { AISmartRouterPanel } from './AISmartRouterPanel';
+import { AILocalDiagnosticsPanel } from './AILocalDiagnosticsPanel';
+import { AILegalComplianceIndicator } from './AILegalComplianceIndicator';
 import { useAIProviders } from '@/hooks/admin/ai-hybrid';
 import { useAICredits } from '@/hooks/admin/ai-hybrid';
 import { useHybridAI } from '@/hooks/admin/ai-hybrid';
@@ -97,7 +102,8 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <AILegalComplianceIndicator size="sm" />
           <Badge 
             variant="outline" 
             className="gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
@@ -162,7 +168,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1 lg:inline-flex">
           <TabsTrigger value="overview" className="gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">{t('aiHybrid.tabs.overview')}</span>
@@ -171,6 +177,14 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
             <Cpu className="h-4 w-4" />
             <span className="hidden sm:inline">{t('aiHybrid.tabs.providers')}</span>
           </TabsTrigger>
+          <TabsTrigger value="smart-router" className="gap-2">
+            <Gauge className="h-4 w-4" />
+            <span className="hidden sm:inline">Smart Router</span>
+          </TabsTrigger>
+          <TabsTrigger value="diagnostics" className="gap-2">
+            <Server className="h-4 w-4" />
+            <span className="hidden sm:inline">Diagnóstico</span>
+          </TabsTrigger>
           <TabsTrigger value="credits" className="gap-2">
             <Coins className="h-4 w-4" />
             <span className="hidden sm:inline">{t('aiHybrid.tabs.credits')}</span>
@@ -178,6 +192,10 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
           <TabsTrigger value="privacy" className="gap-2">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">{t('aiHybrid.tabs.privacy')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="legal" className="gap-2">
+            <Scale className="h-4 w-4" />
+            <span className="hidden sm:inline">Legal</span>
           </TabsTrigger>
           <TabsTrigger value="routing" className="gap-2">
             <Route className="h-4 w-4" />
@@ -338,12 +356,55 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
           <AIProvidersPanel />
         </TabsContent>
 
+        <TabsContent value="smart-router">
+          <AISmartRouterPanel />
+        </TabsContent>
+
+        <TabsContent value="diagnostics">
+          <AILocalDiagnosticsPanel />
+        </TabsContent>
+
         <TabsContent value="credits">
           <AICreditsPanel />
         </TabsContent>
 
         <TabsContent value="privacy">
           <AIPrivacyPanel />
+        </TabsContent>
+
+        <TabsContent value="legal">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Scale className="h-5 w-5 text-violet-500" />
+                Cumplimiento Legal IA
+              </CardTitle>
+              <CardDescription>
+                Validación automática GDPR/LOPDGDD para operaciones de IA
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="p-4 rounded-lg border bg-muted/50">
+                  <h4 className="font-semibold mb-2">Regulaciones Activas</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">GDPR</Badge>
+                    <Badge variant="outline">LOPDGDD</Badge>
+                    <Badge variant="outline">APDA (Andorra)</Badge>
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/50">
+                  <h4 className="font-semibold mb-2">Protecciones</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Datos RESTRICTED nunca salen al exterior</li>
+                    <li>• Validación pre-operación automática</li>
+                    <li>• Registro completo para auditorías</li>
+                  </ul>
+                </div>
+              </div>
+              <AILegalComplianceIndicator size="lg" showDetails />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="routing">

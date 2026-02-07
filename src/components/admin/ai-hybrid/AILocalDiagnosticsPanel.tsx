@@ -19,10 +19,14 @@ import { useLocalAIDiagnostics } from '@/hooks/admin/ai-hybrid/useLocalAIDiagnos
 import { cn } from '@/lib/utils';
 
 interface AILocalDiagnosticsPanelProps {
-  endpointUrl: string;
+  endpointUrl?: string;
 }
 
+const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
+
 export function AILocalDiagnosticsPanel({ endpointUrl }: AILocalDiagnosticsPanelProps) {
+  const effectiveUrl = endpointUrl || DEFAULT_OLLAMA_URL;
+  
   const {
     endpoint,
     models,
@@ -40,11 +44,9 @@ export function AILocalDiagnosticsPanel({ endpointUrl }: AILocalDiagnosticsPanel
   } = useLocalAIDiagnostics();
 
   useEffect(() => {
-    if (endpointUrl) {
-      discoverEndpoint(endpointUrl);
-      monitorHealth();
-    }
-  }, [endpointUrl]);
+    discoverEndpoint(effectiveUrl);
+    monitorHealth();
+  }, [effectiveUrl]);
 
   const recommendedModels = getRecommendedModels();
 
@@ -80,7 +82,7 @@ export function AILocalDiagnosticsPanel({ endpointUrl }: AILocalDiagnosticsPanel
             </div>
             <div className="text-2xl font-bold">{models.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Detectados en {endpointUrl}
+              Detectados en {effectiveUrl}
             </p>
           </CardContent>
         </Card>
@@ -112,7 +114,7 @@ export function AILocalDiagnosticsPanel({ endpointUrl }: AILocalDiagnosticsPanel
                 <CardTitle className="text-base">Modelos Instalados</CardTitle>
                 <CardDescription>Modelos disponibles para inferencia local</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => listAvailableModels(endpointUrl)}>
+              <Button variant="ghost" size="sm" onClick={() => listAvailableModels(effectiveUrl)}>
                 <RotateCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
               </Button>
             </div>
