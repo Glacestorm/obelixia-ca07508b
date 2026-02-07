@@ -110,6 +110,7 @@ const categories: NavCategory[] = [
       { id: 'api', label: 'API', icon: Code },
       { id: 'security', label: 'Seguridad', icon: Shield },
       { id: 'ai-local', label: 'IA Local', icon: Cpu },
+      { id: 'ai-hybrid', label: 'IA Híbrida Universal', icon: Network },
       { id: 'system-health', label: 'System Health', icon: Activity },
       { id: 'error-dashboard', label: 'Errors Dashboard', icon: AlertTriangle },
     ]
