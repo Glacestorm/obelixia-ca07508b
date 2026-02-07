@@ -177,16 +177,23 @@ export function useAIProviders() {
   // === TEST CONNECTION ===
   const testConnection = useCallback(async (
     providerId: string,
+    endpointOrApiKey?: string,
     apiKey?: string
   ): Promise<ConnectionTestResult> => {
     try {
       const startTime = Date.now();
+      
+      // Detect if second param is URL or API key
+      const isUrl = endpointOrApiKey?.startsWith('http');
+      const endpoint = isUrl ? endpointOrApiKey : undefined;
+      const key = isUrl ? apiKey : endpointOrApiKey;
 
       const { data, error: fnError } = await supabase.functions.invoke('ai-provider-manager', {
         body: {
           action: 'test_connection',
           provider_id: providerId,
-          api_key: apiKey,
+          api_endpoint: endpoint,
+          api_key: key,
         },
       });
 
@@ -335,6 +342,37 @@ export function useAIProviders() {
     }
   }, []);
 
+  // === UPDATE PROVIDER ===
+  const updateProvider = useCallback(async (
+    providerId: string,
+    updates: Partial<AIProvider>
+  ): Promise<boolean> => {
+    try {
+      const client = supabase as any;
+      const { error: updateError } = await client
+        .from('ai_providers')
+        .update({
+          api_endpoint: updates.api_endpoint,
+          requires_api_key: updates.requires_api_key,
+          is_active: updates.is_active,
+        })
+        .eq('id', providerId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setProviders(prev => prev.map(p => 
+        p.id === providerId ? { ...p, ...updates } : p
+      ));
+      
+      return true;
+    } catch (err) {
+      console.error('[useAIProviders] updateProvider error:', err);
+      toast.error('Error al actualizar proveedor');
+      return false;
+    }
+  }, []);
+
   // === GET PROVIDER BY TYPE ===
   const getProvidersByType = useCallback((type: 'local' | 'external' | 'hybrid') => {
     return providers.filter(p => p.provider_type === type);
@@ -367,6 +405,7 @@ export function useAIProviders() {
     testConnection,
     getProviderModels,
     addCredential,
+    updateProvider,
     setDefaultProvider,
     deleteCredential,
 
