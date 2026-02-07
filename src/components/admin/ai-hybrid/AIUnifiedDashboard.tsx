@@ -21,11 +21,13 @@ import {
   Zap,
   Lock,
   CheckCircle,
+  BarChart3,
 } from 'lucide-react';
 import { AIProvidersPanel } from './AIProvidersPanel';
 import { AICreditsPanel } from './AICreditsPanel';
 import { AIPrivacyPanel } from './AIPrivacyPanel';
 import { AIRoutingPanel } from './AIRoutingPanel';
+import { AIAnalyticsPanel } from './AIAnalyticsPanel';
 import { useAIProviders } from '@/hooks/admin/ai-hybrid';
 import { useAICredits } from '@/hooks/admin/ai-hybrid';
 import { useHybridAI } from '@/hooks/admin/ai-hybrid';
@@ -160,7 +162,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">{t('aiHybrid.tabs.overview')}</span>
@@ -180,6 +182,10 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
           <TabsTrigger value="routing" className="gap-2">
             <Route className="h-4 w-4" />
             <span className="hidden sm:inline">{t('aiHybrid.tabs.routing')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('aiHybrid.tabs.analytics') || 'Analytics'}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -342,6 +348,10 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
 
         <TabsContent value="routing">
           <AIRoutingPanel />
+        </TabsContent>
+
+        <TabsContent value="analytics">
+          <AIAnalyticsPanel />
         </TabsContent>
       </Tabs>
     </div>

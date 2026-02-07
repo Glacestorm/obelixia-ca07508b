@@ -34,7 +34,9 @@ import {
   PieChart,
   Activity,
   Settings,
-  Link2
+  Link2,
+  Wrench,
+  Brain
 } from 'lucide-react';
 
 // CRM Module Components
@@ -54,6 +56,7 @@ import { CRMVoiceAssistant, PredictivePipelinePanel, RealtimeCollaborationPanel 
 import { IntegrationHubDashboard } from '@/components/crm/integrations';
 import { CRMAnalyticsDashboard } from '@/components/crm/analytics';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
+import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { useCRMContext } from '@/hooks/crm/useCRMContext';
 import { cn } from '@/lib/utils';
 import { Sparkles } from 'lucide-react';
@@ -184,6 +187,10 @@ export function CRMModularDashboard() {
           <TabsTrigger value="supervisor" className="gap-2">
             <Sparkles className="h-4 w-4" />
             Supervisor
+          </TabsTrigger>
+          <TabsTrigger value="utilities" className="gap-2">
+            <Wrench className="h-4 w-4" />
+            Utilidades
           </TabsTrigger>
         </TabsList>
 
@@ -431,6 +438,29 @@ export function CRMModularDashboard() {
         {/* Supervisor Dashboard Tab */}
         <TabsContent value="supervisor">
           <SupervisorAgentsDashboard />
+        </TabsContent>
+
+        {/* Utilities Tab - AI Hybrid */}
+        <TabsContent value="utilities">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
+            </div>
+            
+            <Tabs defaultValue="ai-hybrid" className="space-y-4">
+              <TabsList className="grid w-full max-w-md grid-cols-1">
+                <TabsTrigger value="ai-hybrid" className="gap-2">
+                  <Brain className="h-4 w-4" />
+                  IA Híbrida Universal
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="ai-hybrid">
+                <AIUnifiedDashboard />
+              </TabsContent>
+            </Tabs>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
