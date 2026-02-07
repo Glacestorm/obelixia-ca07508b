@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { useHybridAI, RoutingMode } from '@/hooks/admin/ai-hybrid';
 import { useAIProviders } from '@/hooks/admin/ai-hybrid';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 interface AIRoutingPanelProps {
@@ -66,6 +67,7 @@ const ROUTING_MODE_INFO: Record<RoutingMode, {
 };
 
 export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
+  const { t } = useLanguage();
   const { routingMode, setRoutingMode } = useHybridAI();
   const { providers, getProvidersByType } = useAIProviders();
 
@@ -87,10 +89,10 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Route className="h-5 w-5 text-primary" />
-            Enrutador Inteligente
+            {t('aiHybrid.routing.title')}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Configura cómo se enrutan las solicitudes entre IA local y nube
+            {t('aiHybrid.routing.subtitle')}
           </p>
         </div>
       </div>
@@ -98,9 +100,9 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
       {/* Current Mode Selection */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Modo de Enrutamiento</CardTitle>
+          <CardTitle className="text-base">{t('aiHybrid.routing.mode')}</CardTitle>
           <CardDescription>
-            Selecciona la estrategia principal para distribuir solicitudes
+            {t('aiHybrid.routing.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -154,14 +156,14 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Server className="h-4 w-4 text-emerald-500" />
-              Proveedores Locales
+              {t('aiHybrid.providers.local')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {configuredLocalProviders.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground">
                 <Server className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay proveedores locales configurados</p>
+                <p className="text-sm">{t('aiHybrid.providers.notConfigured')}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -175,7 +177,7 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
                       <span className="text-sm font-medium">{p.name}</span>
                     </div>
                     <Badge variant="secondary" className="text-xs">
-                      {p.is_active ? 'Activo' : 'Inactivo'}
+                      {p.is_active ? t('aiHybrid.providers.active') : t('aiHybrid.providers.inactive')}
                     </Badge>
                   </div>
                 ))}
@@ -188,14 +190,14 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Cloud className="h-4 w-4 text-blue-500" />
-              Proveedores Cloud
+              {t('aiHybrid.providers.external')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {configuredExternalProviders.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground">
                 <Cloud className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay proveedores cloud configurados</p>
+                <p className="text-sm">{t('aiHybrid.providers.notConfigured')}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -209,7 +211,7 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
                       <span className="text-sm font-medium">{p.name}</span>
                     </div>
                     <Badge variant="secondary" className="text-xs">
-                      {p.is_active ? 'Activo' : 'Inactivo'}
+                      {p.is_active ? t('aiHybrid.providers.active') : t('aiHybrid.providers.inactive')}
                     </Badge>
                   </div>
                 ))}
@@ -224,15 +226,15 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Configuración Avanzada
+            {t('aiHybrid.routing.advanced')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <Label className="text-sm font-medium">Habilitar Fallback</Label>
+              <Label className="text-sm font-medium">{t('aiHybrid.routing.fallbackEnabled')}</Label>
               <p className="text-xs text-muted-foreground">
-                Si falla el proveedor principal, usar alternativo
+                {t('aiHybrid.routing.mode.localFirstDesc')}
               </p>
             </div>
             <Switch
@@ -243,7 +245,7 @@ export function AIRoutingPanel({ className }: AIRoutingPanelProps) {
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Latencia Máxima</Label>
+              <Label className="text-sm font-medium">{t('aiHybrid.routing.maxLatency')}</Label>
               <span className="text-sm text-muted-foreground">{settings.maxLatencyMs}ms</span>
             </div>
             <Slider
