@@ -450,41 +450,88 @@ export function useAICopilot() {
     ollamaUrl: string,
     temperature: number
   ): Promise<{ response: string; tokensUsed: number } | null> => {
+    const timeoutSec = Math.max(5, Number(settings.requestTimeout || 60));
+    const timeoutMs = timeoutSec * 1000;
+
     try {
       console.log(`[useAICopilot] Calling local Ollama at ${ollamaUrl} with model ${model}`);
-      
-      const response = await fetch(`${ollamaUrl}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          messages: ollamaMessages,
-          stream: false,
-          options: {
-            temperature,
-            num_predict: settings.maxTokens,
-          }
-        }),
-      });
+
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+      let response: Response;
+      try {
+        response = await fetch(`${ollamaUrl}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model,
+            messages: ollamaMessages,
+            stream: false,
+            options: {
+              temperature,
+              num_predict: settings.maxTokens,
+            },
+          }),
+        });
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
-        throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
+        let details = '';
+        try {
+          const j = await response.clone().json();
+          details = (j?.error as string) || JSON.stringify(j);
+        } catch {
+          try {
+            details = (await response.text())?.slice(0, 500) || '';
+          } catch {
+            details = '';
+          }
+        }
+        throw new Error(`Ollama (${response.status}): ${details || response.statusText || 'Error'}`);
       }
 
       const data = await response.json();
       const content = data.message?.content || data.response || '';
-      
+
+      if (!content) {
+        throw new Error('Ollama devolvió una respuesta vacía');
+      }
+
       console.log(`[useAICopilot] Local Ollama response received (${content.length} chars)`);
-      
+
       return {
         response: content,
         tokensUsed: data.eval_count || 0,
       };
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+
+      // Common cases with clearer hints
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        throw new Error(`Timeout conectando a Ollama (${timeoutSec}s) en ${ollamaUrl}`);
+      }
+
+      // "TypeError: Failed to fetch" is common for CORS / Mixed Content / PNA
+      if (msg.toLowerCase().includes('failed to fetch')) {
+        const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+        const isHttp = ollamaUrl.startsWith('http://');
+
+        const hint =
+          isHttps && isHttp
+            ? 'Posible bloqueo del navegador (Mixed Content / Private Network Access) al llamar a una URL http:// desde una página https://.'
+            : 'Posible CORS o servidor Ollama no accesible.';
+
+        throw new Error(`No se pudo conectar a Ollama en ${ollamaUrl}. ${hint}`);
+      }
+
       console.error('[useAICopilot] Local Ollama error:', err);
-      throw err;
+      throw new Error(msg);
     }
-  }, [settings.maxTokens]);
+  }, [settings.maxTokens, settings.requestTimeout]);
 
   // === SEND MESSAGE ===
   const sendMessage = useCallback(async (content: string): Promise<string | null> => {
@@ -492,26 +539,53 @@ export function useAICopilot() {
 
     // Analyze question for smart routing
     const analysis = analyzeQuestion(content);
+
+    // Defaults
     let selectedModel = settings.model;
     let routingDecision: RoutingInfo | null = null;
     let useLocalProvider = settings.providerType === 'local';
 
-    // Smart routing if enabled and model is 'auto'
-    if (settings.enableSmartRouting && (settings.model === 'auto' || settings.providerType === 'auto')) {
+    // If providerType is explicitly "local", treat it as a HARD constraint.
+    // Smart routing must NOT override this.
+    if (settings.providerType === 'local') {
+      const defaultLocalModel =
+        providers.find(
+          (p: any) =>
+            p?.provider_type === 'local' &&
+            p?.is_active &&
+            Array.isArray(p?.supported_models) &&
+            p.supported_models.length > 0
+        )?.supported_models?.[0]?.id || 'llama3.2';
+
+      const requested = settings.model;
+      const requestedIsCloudLike = requested === 'auto' || requested.includes('/');
+
+      selectedModel = requestedIsCloudLike ? defaultLocalModel : requested;
+      useLocalProvider = true;
+
+      routingDecision = {
+        selectedProvider: 'Ollama Local',
+        selectedModel,
+        providerType: 'local',
+        securityScore: 100,
+        costScore: 100,
+        latencyScore: 70,
+        capabilityScore: 75,
+        totalScore: 90,
+        reason: 'Forzado por selección de proveedor: Local',
+      };
+      setLastRoutingDecision(routingDecision);
+    }
+
+    // Smart routing if enabled and model/provider are "auto" (only when not forced local)
+    if (settings.providerType !== 'local' && settings.enableSmartRouting && (settings.model === 'auto' || settings.providerType === 'auto')) {
       const routing = selectBestModel(analysis, settings);
       selectedModel = routing.model;
       routingDecision = routing.scores;
       useLocalProvider = routing.type === 'local';
       setLastRoutingDecision(routingDecision);
-      
-      console.log(`[useAICopilot] Smart Routing: ${routing.model} (${routing.type}) - Score: ${Math.round(routing.scores.totalScore)}%`);
-    }
 
-    // If providerType is explicitly 'local', use a local model
-    if (settings.providerType === 'local' && !selectedModel.includes('/')) {
-      // Ensure we use a local model name (not a cloud model like google/...)
-      selectedModel = settings.model !== 'auto' ? settings.model : 'llama3.2';
-      useLocalProvider = true;
+      console.log(`[useAICopilot] Smart Routing: ${routing.model} (${routing.type}) - Score: ${Math.round(routing.scores.totalScore)}%`);
     }
 
     // Optimistic update
@@ -595,16 +669,20 @@ Responde de forma profesional y concisa en español.`;
         } catch (localErr) {
           console.error('[useAICopilot] Local Ollama failed:', localErr);
           
-          // If local fails and fallback is allowed, try external
-          if (settings.enableSmartRouting) {
+          // If local fails and fallback is allowed (ONLY when providerType is Auto), try external
+          if (settings.providerType === 'auto' && settings.enableSmartRouting) {
             console.log('[useAICopilot] Falling back to external provider...');
             toast.warning('IA local no disponible, usando proveedor externo...');
-            
+
             // Fall through to external provider
             useLocalProvider = false;
             selectedModel = 'google/gemini-2.5-flash';
           } else {
-            throw new Error(`IA local no disponible: ${localErr instanceof Error ? localErr.message : 'Error de conexión'}. Verifica que Ollama esté ejecutándose en ${settings.ollamaUrl}`);
+            // Respect explicit user intent: do NOT silently switch to cloud when user selected "Local"
+            throw new Error(
+              `IA local no disponible: ${localErr instanceof Error ? localErr.message : 'Error de conexión'}. ` +
+              `Verifica que Ollama esté ejecutándose y que el navegador pueda acceder a ${settings.ollamaUrl}`
+            );
           }
         }
       }
@@ -690,8 +768,8 @@ Responde de forma profesional y concisa en español.`;
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       console.error('[useAICopilot] sendMessage error:', errorMessage);
       
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+      // Keep the user's message visible; we only report the error via toast.
+      // (Previously we removed the optimistic user message, which hid the real failure context.)
       
       if (errorMessage.includes('Rate limit') || errorMessage.includes('429')) {
         toast.error('Límite de solicitudes excedido. Intenta más tarde.');
@@ -705,7 +783,7 @@ Responde de forma profesional y concisa en español.`;
     } finally {
       setIsLoading(false);
     }
-  }, [messages, currentConversation, entityContext, settings, fetchConversations, analyzeQuestion, selectBestModel, callLocalOllama]);
+  }, [messages, currentConversation, entityContext, settings, providers, fetchConversations, analyzeQuestion, selectBestModel, callLocalOllama]);
 
   // === NEW CONVERSATION ===
   const newConversation = useCallback(() => {
@@ -786,7 +864,17 @@ Responde de forma profesional y concisa en español.`;
 
   // === UPDATE SETTINGS (without saving) ===
   const updateSettings = useCallback((updates: Partial<CopilotSettings>) => {
-    setSettings(prev => ({ ...prev, ...updates }));
+    setSettings(prev => {
+      const next = { ...prev, ...updates };
+
+      // UX guardrail: if user selects Local provider, ensure a local model is selected
+      if (updates.providerType === 'local') {
+        const cloudLike = next.model === 'auto' || next.model.includes('/');
+        if (cloudLike) next.model = 'llama3.2';
+      }
+
+      return next;
+    });
     setSettingsModified(true);
   }, []);
 
