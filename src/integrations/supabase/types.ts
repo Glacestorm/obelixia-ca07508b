@@ -1887,6 +1887,63 @@ export type Database = {
           },
         ]
       }
+      ai_audit_logs: {
+        Row: {
+          action: string
+          compliance_flags: string[] | null
+          created_at: string
+          data_classification: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          risk_level: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          was_blocked: boolean | null
+        }
+        Insert: {
+          action: string
+          compliance_flags?: string[] | null
+          created_at?: string
+          data_classification?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          risk_level?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          was_blocked?: boolean | null
+        }
+        Update: {
+          action?: string
+          compliance_flags?: string[] | null
+          created_at?: string
+          data_classification?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          risk_level?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          was_blocked?: boolean | null
+        }
+        Relationships: []
+      }
       ai_autonomous_agents: {
         Row: {
           agent_name: string
@@ -61916,6 +61973,10 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_training_data: { Args: never; Returns: number }
+      cleanup_old_ai_audit_logs: {
+        Args: { p_retention_days?: number }
+        Returns: number
+      }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       cleanup_tpp_rate_limits: { Args: never; Returns: undefined }
       crm_get_user_workspaces: { Args: { _user_id: string }; Returns: string[] }
@@ -62289,6 +62350,16 @@ export type Database = {
         }
         Returns: string
       }
+      get_ai_audit_stats: {
+        Args: { p_days?: number; p_user_id?: string }
+        Returns: {
+          blocked_events: number
+          events_by_classification: Json
+          events_by_type: Json
+          high_risk_events: number
+          total_events: number
+        }[]
+      }
       get_communication_compliance_status: {
         Args: { p_company_id: string }
         Returns: {
@@ -62463,6 +62534,25 @@ export type Database = {
       load_sector_compliance: {
         Args: { p_organization_id: string; p_sector: string }
         Returns: number
+      }
+      log_ai_audit_event: {
+        Args: {
+          p_action: string
+          p_compliance_flags?: string[]
+          p_data_classification?: string
+          p_details?: Json
+          p_entity_id?: string
+          p_entity_type?: string
+          p_event_type: string
+          p_ip_address?: unknown
+          p_metadata?: Json
+          p_risk_level?: string
+          p_user_agent?: string
+          p_user_email?: string
+          p_user_id?: string
+          p_was_blocked?: boolean
+        }
+        Returns: string
       }
       log_audit_event: {
         Args: {

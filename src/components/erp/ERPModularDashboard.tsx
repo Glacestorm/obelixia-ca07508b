@@ -60,9 +60,10 @@ import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/ad
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
+import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench } from 'lucide-react';
+import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain } from 'lucide-react';
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
   const [activeTab, setActiveTab] = useState('overview');
@@ -546,18 +547,38 @@ function ERPModularDashboardContent() {
           <ERPMigrationDashboard />
         </TabsContent>
 
-        {/* Utilities Tab */}
+        {/* Utilities Tab - With Sub-navigation for Audit + AI Hybrid */}
         <TabsContent value="utilities">
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               <Wrench className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
             </div>
-            <p className="text-muted-foreground">
-              Generador unificado de informes de auditoria para ERP, CRM o Suite Integral.
-              Selecciona el alcance y nivel de detalle para generar PDFs profesionales.
-            </p>
-            <UnifiedAuditGenerator defaultScope="erp" />
+            
+            <Tabs defaultValue="audit" className="space-y-4">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="audit" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Auditorías
+                </TabsTrigger>
+                <TabsTrigger value="ai-hybrid" className="gap-2">
+                  <Brain className="h-4 w-4" />
+                  IA Híbrida
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="audit" className="space-y-4">
+                <p className="text-muted-foreground">
+                  Generador unificado de informes de auditoría para ERP, CRM o Suite Integral.
+                  Selecciona el alcance y nivel de detalle para generar PDFs profesionales.
+                </p>
+                <UnifiedAuditGenerator defaultScope="erp" />
+              </TabsContent>
+              
+              <TabsContent value="ai-hybrid">
+                <AIUnifiedDashboard />
+              </TabsContent>
+            </Tabs>
           </div>
         </TabsContent>
       </Tabs>
