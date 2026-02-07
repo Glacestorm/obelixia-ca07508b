@@ -197,7 +197,7 @@ serve(async (req) => {
         if (!connectorId) throw new Error('connectorId required');
 
         const { data: connector } = await supabase
-          .from('crm_connectors')
+          .from('crm_connector_instances')
           .select('*')
           .eq('id', connectorId)
           .single();
@@ -226,7 +226,7 @@ serve(async (req) => {
             connectionValid = Object.keys(connector.credentials || {}).length > 0;
         }
 
-        await supabase.from('crm_connectors').update({
+        await supabase.from('crm_connector_instances').update({
           status: connectionValid ? 'connected' : 'error',
           last_error: connectionValid ? null : connectionMessage,
           last_sync_at: connectionValid ? new Date().toISOString() : null
@@ -244,7 +244,7 @@ serve(async (req) => {
       case 'disconnect_connector': {
         if (!connectorId) throw new Error('connectorId required');
 
-        await supabase.from('crm_connectors').update({
+        await supabase.from('crm_connector_instances').update({
           status: 'disconnected',
           oauth_tokens: null
         }).eq('id', connectorId);
@@ -259,7 +259,7 @@ serve(async (req) => {
         if (!connectorId) throw new Error('connectorId required');
 
         const { data: connector } = await supabase
-          .from('crm_connectors')
+          .from('crm_connector_instances')
           .select('*')
           .eq('id', connectorId)
           .eq('status', 'connected')
@@ -280,7 +280,7 @@ serve(async (req) => {
           .single();
 
         // Update connector status
-        await supabase.from('crm_connectors').update({
+        await supabase.from('crm_connector_instances').update({
           status: 'syncing'
         }).eq('id', connectorId);
 
@@ -299,7 +299,7 @@ serve(async (req) => {
           records_failed: 0
         }).eq('id', syncRecord?.id);
 
-        await supabase.from('crm_connectors').update({
+        await supabase.from('crm_connector_instances').update({
           status: 'connected',
           last_sync_at: new Date().toISOString()
         }).eq('id', connectorId);

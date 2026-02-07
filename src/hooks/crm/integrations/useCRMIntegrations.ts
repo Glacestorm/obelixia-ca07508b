@@ -348,7 +348,7 @@ export function useCRMIntegrations() {
   const fetchConnectors = useCallback(async () => {
     try {
       const { data, error: fetchError } = await (supabase as any)
-        .from('crm_connectors')
+        .from('crm_connector_instances')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -366,7 +366,7 @@ export function useCRMIntegrations() {
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error: createError } = await (supabase as any)
-        .from('crm_connectors')
+        .from('crm_connector_instances')
         .insert([{
           ...connector,
           created_by: user?.id,
@@ -495,7 +495,7 @@ export function useCRMIntegrations() {
       const [webhooksData, apiKeysData, connectorsData] = await Promise.all([
         (supabase as any).from('crm_webhooks').select('id, is_active, success_count, failure_count'),
         (supabase as any).from('crm_api_keys').select('id, is_active'),
-        (supabase as any).from('crm_connectors').select('id, status')
+        (supabase as any).from('crm_connector_instances').select('id, status')
       ]);
 
       const webhooksList = webhooksData.data || [];
