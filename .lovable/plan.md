@@ -1,704 +1,473 @@
 
-# Plan de Implementacion por Fases: Mejoras Sugeridas en Informe de Auditoria
+# Plan de Implementacion: Sistema de IA Hibrido Universal (Local + Externa)
 
-## Resumen del Alcance
+## Vision General
 
-El informe de auditoria identifica las siguientes **areas de mejora pendientes** que deben implementarse para alcanzar paridad completa con los lideres del mercado (SAP, Salesforce, Workday, Oracle, Icertis):
-
-### Mejoras Identificadas por Modulo
-
-**CRM (2 pendientes):**
-- Marketing Automation Suite (Campanas multicanal automatizadas)
-- Advanced Workflow Builder Visual
-
-**RRHH (3 pendientes):**
-- Gig/Contingent Workforce Management
-- Total Rewards Statement
-- ESG Reporting Social (CSRD/ESRS S1-S4)
-
-**Juridico (2 pendientes):**
-- Matter Management Dedicado
-- Legal Spend Management (LEDES)
-
-**Roadmap 2026-2027 (8 adicionales):**
-- Marketing-Sales Fusion
-- Unified Analytics Dashboard
-- ESG Suite Completa
-- Advanced Cross-Module AI
-- Partner/Vendor Portal
-- Customer Self-Service Portal
-- Industry Cloud Templates
-- Global Expansion Pack
+Implementar un sistema completo de gestion de Inteligencia Artificial que permita trabajar simultaneamente con IA local (Ollama) e IA externa (multiples proveedores), con control granular de privacidad de datos, gestion de creditos y configuracion unificada para CRM y ERP.
 
 ---
 
-## FASE 1: Marketing Automation Suite (CRM)
-**Duracion estimada: 2-3 semanas**
-**Prioridad: CRITICA - Gap competitivo vs. HubSpot/Salesforce**
-
-### Componentes a Crear
+## Arquitectura del Sistema
 
 ```text
-src/
-  components/
-    crm/
-      marketing/
-        MarketingDashboard.tsx           # Panel principal
-        CampaignBuilder.tsx              # Constructor visual de campanas
-        CampaignList.tsx                 # Listado de campanas
-        EmailTemplateEditor.tsx          # Editor plantillas email
-        EmailSequenceBuilder.tsx         # Secuencias automatizadas
-        AudienceSegmentBuilder.tsx       # Constructor de segmentos
-        CampaignAnalytics.tsx            # Metricas de campanas
-        ABTestingPanel.tsx               # Tests A/B
-        LeadNurturingFlows.tsx           # Flujos de nurturing
-        MarketingCalendar.tsx            # Calendario de campanas
-        LandingPageBuilder.tsx           # Constructor landing pages
-        FormBuilder.tsx                  # Constructor de formularios
-        SocialMediaScheduler.tsx         # Programador redes sociales
-        UTMManager.tsx                   # Gestion parametros UTM
-        ROITracker.tsx                   # Seguimiento ROI
-  hooks/
-    crm/
-      useMarketingCampaigns.ts           # Hook gestion campanas
-      useEmailSequences.ts               # Hook secuencias email
-      useAudienceSegments.ts             # Hook segmentos
-      useMarketingAnalytics.ts           # Hook analiticas
-
-supabase/
-  functions/
-    crm-marketing-automation/index.ts    # Orquestador campanas
-    crm-email-sequencer/index.ts         # Ejecutor secuencias
-    crm-audience-segmentation/index.ts   # Segmentacion IA
++------------------------------------------------------------------+
+|                    AI GATEWAY UNIVERSAL                           |
++------------------------------------------------------------------+
+|                                                                   |
+|  +-------------------+        +-------------------+               |
+|  |   IA LOCAL        |        |   IA EXTERNA      |               |
+|  |   (Ollama)        |        |   (Multi-Provider)|               |
+|  |                   |        |                   |               |
+|  | - Llama 3.x       |        | - OpenAI GPT-5    |               |
+|  | - Mistral         |        | - Anthropic Claude|               |
+|  | - Phi-3           |        | - Google Gemini   |               |
+|  | - CodeLlama       |        | - Mistral AI      |               |
+|  | - DeepSeek        |        | - Cohere          |               |
+|  +-------------------+        | - Groq            |               |
+|           |                   | - Together AI     |               |
+|           |                   | - DeepSeek Cloud  |               |
+|           v                   | - Lovable AI      |               |
+|  +-------------------+        +-------------------+               |
+|  |  DATA PRIVACY     |                 |                          |
+|  |  GATEWAY          |<----------------+                          |
+|  |                   |                                            |
+|  | - Clasificacion   |                                            |
+|  | - Filtrado        |                                            |
+|  | - Anonimizacion   |                                            |
+|  +-------------------+                                            |
+|           |                                                       |
+|           v                                                       |
+|  +-------------------+        +-------------------+               |
+|  |  CREDITS MANAGER  |        |  USAGE ANALYTICS  |               |
+|  |                   |        |                   |               |
+|  | - Saldo actual    |        | - Consumo/hora    |               |
+|  | - Alertas limite  |        | - Coste/modelo    |               |
+|  | - Compra creditos |        | - Historial uso   |               |
+|  +-------------------+        +-------------------+               |
++------------------------------------------------------------------+
 ```
 
-### Tablas de Base de Datos
+---
+
+## FASE 1: Infraestructura de Base de Datos
+
+### Duracion estimada: 1 sesion
+
+### 1.1 Nuevas Tablas
+
+**ai_providers** - Registro de proveedores de IA disponibles:
+- id, name, provider_type (local/external)
+- api_endpoint, requires_api_key
+- supported_models (JSONB)
+- pricing_info (JSONB con coste por token)
+- is_active, created_at
+
+**ai_provider_credentials** - Credenciales por empresa/workspace:
+- id, company_id (ERP), workspace_id (CRM)
+- provider_id, api_key_encrypted
+- organization_id (para OpenAI/Anthropic)
+- is_default, is_active
+- credits_balance, credits_alert_threshold
+- last_usage_check, created_at
+
+**ai_data_classification_rules** - Reglas de clasificacion de datos:
+- id, company_id, workspace_id
+- rule_name, data_category
+- classification_level (public/internal/confidential/restricted)
+- can_send_external (boolean)
+- anonymization_required (boolean)
+- field_patterns (JSONB - regex para detectar campos sensibles)
+- entity_types (array - tablas/entidades afectadas)
+
+**ai_usage_logs** - Registro de consumo:
+- id, provider_id, credential_id
+- request_timestamp, model_used
+- prompt_tokens, completion_tokens, total_cost
+- data_classification_applied
+- source_module (crm/erp/admin)
+- user_id, success, error_message
+
+**ai_credits_transactions** - Historial de creditos:
+- id, credential_id, transaction_type
+- amount, balance_after
+- payment_reference, invoice_url
+- created_at, created_by
+
+**ai_routing_policies** - Politicas de enrutamiento IA:
+- id, company_id, workspace_id
+- policy_name, priority
+- conditions (JSONB - cuando aplicar)
+- preferred_provider_id
+- fallback_provider_id
+- data_classification_override
+
+### 1.2 Enums Necesarios
 
 ```sql
--- Campanas de marketing
-CREATE TABLE crm_marketing_campaigns (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  name VARCHAR(255) NOT NULL,
-  type VARCHAR(50), -- email, social, multichannel
-  status VARCHAR(50) DEFAULT 'draft',
-  start_date TIMESTAMPTZ,
-  end_date TIMESTAMPTZ,
-  audience_segment_id UUID,
-  budget DECIMAL(12,2),
-  spent DECIMAL(12,2) DEFAULT 0,
-  goals JSONB,
-  metrics JSONB,
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Secuencias de email
-CREATE TABLE crm_email_sequences (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  campaign_id UUID REFERENCES crm_marketing_campaigns(id),
-  name VARCHAR(255) NOT NULL,
-  trigger_type VARCHAR(50), -- form_submit, tag_added, deal_stage
-  steps JSONB NOT NULL, -- Array de pasos con delays y templates
-  is_active BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Segmentos de audiencia
-CREATE TABLE crm_audience_segments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  name VARCHAR(255) NOT NULL,
-  conditions JSONB NOT NULL, -- Reglas de segmentacion
-  contact_count INTEGER DEFAULT 0,
-  is_dynamic BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Templates de email
-CREATE TABLE crm_email_templates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  name VARCHAR(255) NOT NULL,
-  subject VARCHAR(500),
-  html_content TEXT,
-  plain_content TEXT,
-  variables JSONB, -- Variables disponibles
-  category VARCHAR(100),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+CREATE TYPE ai_provider_type AS ENUM ('local', 'external', 'hybrid');
+CREATE TYPE ai_data_classification AS ENUM ('public', 'internal', 'confidential', 'restricted');
+CREATE TYPE ai_credit_transaction_type AS ENUM ('purchase', 'usage', 'refund', 'bonus', 'adjustment');
 ```
-
-### Funcionalidades Clave
-1. Constructor visual de campanas multicanal
-2. Secuencias de email con delays configurables
-3. Segmentacion de audiencia con reglas dinamicas
-4. Editor de templates drag-and-drop
-5. Tests A/B automaticos
-6. Tracking de conversiones y ROI
-7. Integracion con pipeline CRM
 
 ---
 
-## FASE 2: Advanced Workflow Builder (CRM)
-**Duracion estimada: 2-3 semanas**
-**Prioridad: ALTA - Automatizacion empresarial**
+## FASE 2: Sistema de Gestion de Proveedores IA
 
-### Componentes a Crear
+### Duracion estimada: 1 sesion
+
+### 2.1 Hook useAIProviders
+
+Funcionalidades:
+- fetchProviders() - Lista todos los proveedores configurados
+- testProviderConnection(providerId) - Verifica conectividad
+- getProviderModels(providerId) - Obtiene modelos disponibles
+- setDefaultProvider(providerId, scope) - Establece proveedor por defecto
+- getProviderPricing(providerId) - Informacion de costes
+
+### 2.2 Proveedores Externos Soportados
+
+| Proveedor | Modelos Principales | Caracteristicas |
+|-----------|---------------------|-----------------|
+| **OpenAI** | GPT-4o, GPT-4 Turbo, GPT-3.5 | Vision, Function Calling, JSON Mode |
+| **Anthropic** | Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku | 200K contexto, Vision |
+| **Google** | Gemini 2.5 Pro, Gemini 2.5 Flash | Multimodal, Largo contexto |
+| **Mistral AI** | Mistral Large, Mixtral, Mistral 7B | Open weights, EU hosting |
+| **Cohere** | Command R+, Command R, Embed | RAG optimizado, Rerank |
+| **Groq** | Llama 3.1, Mixtral | Ultra-rapido (inference) |
+| **Together AI** | 100+ modelos open source | Fine-tuning, economico |
+| **DeepSeek** | DeepSeek V2.5, Coder | Codigo, razonamiento |
+| **Lovable AI** | Gemini, GPT-5 (via gateway) | Pre-integrado, sin config |
+
+### 2.3 Edge Function: ai-provider-manager
+
+Acciones:
+- list_providers: Lista proveedores disponibles
+- validate_credentials: Valida API key con proveedor
+- fetch_models: Obtiene modelos del proveedor
+- check_credits: Verifica saldo de creditos (OpenAI, Anthropic, etc.)
+- get_usage_stats: Estadisticas de uso por proveedor
+
+---
+
+## FASE 3: Sistema de Clasificacion y Privacidad de Datos
+
+### Duracion estimada: 1-2 sesiones
+
+### 3.1 Clasificaciones de Datos
+
+| Nivel | Descripcion | Puede salir al exterior? |
+|-------|-------------|--------------------------|
+| **Public** | Informacion publica | Si |
+| **Internal** | Uso interno general | Si (con precaucion) |
+| **Confidential** | Datos sensibles de negocio | Solo con anonimizacion |
+| **Restricted** | Datos criticos/regulados | NUNCA |
+
+### 3.2 Campos Automaticamente Clasificados como RESTRICTED
+
+- Numeros de identificacion fiscal (NIF, CIF, NIE)
+- Numeros de cuenta bancaria (IBAN)
+- Tarjetas de credito
+- Contrasenas y tokens
+- Datos medicos/salud
+- Salarios y datos financieros personales
+- Direcciones completas de clientes
+
+### 3.3 Hook useDataPrivacyGateway
+
+Funcionalidades:
+- classifyData(data, context) - Clasifica datos automaticamente
+- sanitizeForExternal(data, rules) - Limpia datos antes de enviar
+- canSendExternal(data, classificationLevel) - Verifica si puede salir
+- anonymizeFields(data, fieldsToAnonymize) - Anonimiza campos especificos
+- getClassificationRules(companyId) - Obtiene reglas de empresa
+- createClassificationRule(rule) - Crea nueva regla
+
+### 3.4 Panel de Configuracion de Privacidad
+
+Componente AIDataPrivacyPanel:
+- Lista de reglas activas
+- Creacion/edicion de reglas
+- Patrones regex para detectar datos sensibles
+- Preview de anonimizacion
+- Logs de datos bloqueados/anonimizados
+
+---
+
+## FASE 4: Sistema de Creditos y Facturacion
+
+### Duracion estimada: 1 sesion
+
+### 4.1 Hook useAICredits
+
+Funcionalidades:
+- getBalance(credentialId) - Saldo actual
+- checkLowBalance() - Alertas de saldo bajo
+- recordUsage(tokens, cost, providerId) - Registra consumo
+- getUsageHistory(dateRange) - Historial de uso
+- estimateCost(prompt, model) - Estima coste antes de enviar
+
+### 4.2 Alertas de Creditos
+
+Sistema de notificaciones:
+- Alerta amarilla: 20% de creditos restantes
+- Alerta roja: 5% de creditos restantes
+- Alerta critica: Creditos agotados
+
+Acciones disponibles:
+- Cambiar a IA local automaticamente
+- Pausar solicitudes no criticas
+- Notificar administradores
+- Enlace a compra de creditos
+
+### 4.3 Panel de Gestion de Creditos
+
+Componente AICreditsDashboard:
+- Saldo actual por proveedor
+- Grafico de consumo ultimos 30 dias
+- Coste por modelo/tipo de solicitud
+- Comparativa coste local vs externo
+- Botones de compra/recarga
+- Historial de transacciones
+
+### 4.4 Integracion con Proveedores para Compra
+
+Enlaces directos a:
+- OpenAI: platform.openai.com/account/billing
+- Anthropic: console.anthropic.com/settings/billing
+- Google Cloud: console.cloud.google.com/billing
+- Otros: URLs de billing correspondientes
+
+---
+
+## FASE 5: Router Inteligente de IA Hibrida
+
+### Duracion estimada: 1-2 sesiones
+
+### 5.1 Edge Function: ai-hybrid-router
+
+Logica de enrutamiento inteligente:
 
 ```text
-src/
-  components/
-    crm/
-      workflows/
-        WorkflowBuilderCanvas.tsx        # Canvas visual principal
-        WorkflowNodePalette.tsx          # Paleta de nodos
-        WorkflowNode.tsx                 # Componente nodo base
-        WorkflowConnection.tsx           # Conexiones entre nodos
-        WorkflowTriggerNodes.tsx         # Nodos de trigger
-        WorkflowActionNodes.tsx          # Nodos de accion
-        WorkflowConditionNodes.tsx       # Nodos de condicion
-        WorkflowDelayNodes.tsx           # Nodos de espera
-        WorkflowTestRunner.tsx           # Ejecutor de pruebas
-        WorkflowHistory.tsx              # Historial de ejecuciones
-        WorkflowTemplates.tsx            # Templates predefinidos
+1. Recibe solicitud con contexto
+2. Clasifica datos (sensitivos/no sensitivos)
+3. Verifica politicas de routing
+4. Si datos RESTRICTED -> Solo IA Local
+5. Si datos CONFIDENTIAL -> IA Local o Externa con anonimizacion
+6. Si datos PUBLIC/INTERNAL -> Segun preferencia usuario
+7. Verifica creditos disponibles
+8. Ejecuta fallback si necesario
+9. Registra uso y metricas
 ```
 
-### Tipos de Nodos
+### 5.2 Modos de Operacion
 
-**Triggers:**
-- Form Submitted
-- Deal Stage Changed
-- Contact Created/Updated
-- Tag Added/Removed
-- Scheduled (Cron)
-- Webhook Received
-- Email Opened/Clicked
+| Modo | Descripcion | Uso de Datos |
+|------|-------------|--------------|
+| **Solo Local** | Unicamente Ollama | Todo local |
+| **Solo Externo** | Solo proveedores cloud | Requiere clasificacion |
+| **Hibrido Automatico** | Sistema decide segun datos | Optimo |
+| **Hibrido Manual** | Usuario elige cada vez | Control total |
 
-**Actions:**
-- Send Email
-- Send SMS/WhatsApp
-- Create/Update Record
-- Add Tag
-- Assign to User
-- Create Task
-- Call Webhook
-- Wait/Delay
-- Update Deal Stage
-- Send Notification
+### 5.3 Hook useHybridAI
 
-**Conditions:**
-- If/Else Branch
-- A/B Split
-- Filter by Property
-- Time-based Condition
+Funcionalidades:
+- sendMessage(prompt, options) - Envia con routing automatico
+- setRoutingMode(mode) - Cambia modo de operacion
+- forceProvider(providerId) - Fuerza proveedor especifico
+- getRoutingDecision(prompt, context) - Preview de decision de routing
+- switchProvider() - Cambia en mitad de conversacion
 
 ---
 
-## FASE 3: Gig/Contingent Workforce Management (RRHH)
-**Duracion estimada: 2-3 semanas**
-**Prioridad: ALTA - Gap vs. SAP/Workday**
+## FASE 6: Componentes de UI Unificados
 
-### Componentes a Crear
+### Duracion estimada: 1-2 sesiones
 
-```text
-src/
-  components/
-    erp/
-      hr/
-        gig/
-          GigWorkforceDashboard.tsx      # Dashboard principal
-          ContractorList.tsx             # Listado contractors
-          ContractorProfile.tsx          # Perfil contractor
-          GigProjectsPanel.tsx           # Proyectos/Gigs
-          GigMatchingEngine.tsx          # Motor matching IA
-          ContractorOnboarding.tsx       # Onboarding simplificado
-          GigPaymentsPanel.tsx           # Gestion pagos
-          ContractorCompliancePanel.tsx  # Compliance IR35/TRADE
-          FreelancerMarketplace.tsx      # Marketplace interno
-          GigAnalyticsPanel.tsx          # Analiticas
-          SOWBuilder.tsx                 # Constructor SOW
-          TimeTrackingExternal.tsx       # Control horario externos
-```
+### 6.1 AIUnifiedDashboard
 
-### Tablas de Base de Datos
+Panel central de gestion IA con tabs:
+- **Proveedores**: Lista y configuracion
+- **Privacidad**: Reglas de clasificacion
+- **Creditos**: Saldos y consumo
+- **Routing**: Politicas de enrutamiento
+- **Logs**: Historial de solicitudes
+- **Configuracion**: Preferencias globales
 
-```sql
--- Contractors/Freelancers
-CREATE TABLE erp_hr_contractors (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  type VARCHAR(50), -- freelancer, agency, contractor
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255),
-  phone VARCHAR(50),
-  tax_id VARCHAR(50),
-  skills JSONB,
-  rate_hourly DECIMAL(10,2),
-  rate_daily DECIMAL(10,2),
-  currency VARCHAR(3) DEFAULT 'EUR',
-  status VARCHAR(50) DEFAULT 'active',
-  compliance_status VARCHAR(50), -- ir35_inside, ir35_outside, trade_ok
-  documents JSONB,
-  rating DECIMAL(3,2),
-  total_projects INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+### 6.2 AIProviderSelector
 
--- Proyectos/Gigs
-CREATE TABLE erp_hr_gig_projects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  contractor_id UUID REFERENCES erp_hr_contractors(id),
-  project_name VARCHAR(255) NOT NULL,
-  description TEXT,
-  start_date DATE,
-  end_date DATE,
-  budget DECIMAL(12,2),
-  spent DECIMAL(12,2) DEFAULT 0,
-  status VARCHAR(50) DEFAULT 'draft',
-  sow_document_id UUID,
-  milestones JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+Componente reutilizable para seleccionar proveedor:
+- Dropdown con proveedores disponibles
+- Indicador de estado (conectado/offline)
+- Badge de creditos restantes
+- Indicador de clasificacion de datos actual
 
--- Pagos a contractors
-CREATE TABLE erp_hr_contractor_payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  contractor_id UUID REFERENCES erp_hr_contractors(id),
-  project_id UUID REFERENCES erp_hr_gig_projects(id),
-  amount DECIMAL(12,2) NOT NULL,
-  currency VARCHAR(3) DEFAULT 'EUR',
-  invoice_number VARCHAR(100),
-  invoice_date DATE,
-  due_date DATE,
-  status VARCHAR(50) DEFAULT 'pending',
-  payment_date DATE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+### 6.3 AIPrivacyIndicator
 
-### Funcionalidades Clave
-1. Gestion de contractors/freelancers
-2. Compliance IR35 (UK) / TRADE (ES)
-3. SOW (Statement of Work) Builder
-4. Matching IA por skills
-5. Time tracking para externos
-6. Gestion de pagos y facturas
-7. Rating y feedback
-8. Integracion con Contabilidad
+Badge visual que muestra:
+- Nivel de clasificacion actual
+- Si datos salen al exterior
+- Proveedor activo (local/externo)
+- Alertas de privacidad
+
+### 6.4 AICreditsBadge
+
+Widget compacto mostrando:
+- Creditos restantes
+- Color segun nivel (verde/amarillo/rojo)
+- Click para ver detalle/recargar
 
 ---
 
-## FASE 4: Total Rewards Statement (RRHH)
-**Duracion estimada: 1-2 semanas**
-**Prioridad: MEDIA - Diferenciador employee experience**
+## FASE 7: Integracion en CRM
 
-### Componentes a Crear
+### Duracion estimada: 1 sesion
 
-```text
-src/
-  components/
-    erp/
-      hr/
-        rewards/
-          TotalRewardsPanel.tsx          # Panel principal
-          RewardsStatementGenerator.tsx  # Generador statements
-          RewardsCategoryBreakdown.tsx   # Desglose categorias
-          RewardsVisualization.tsx       # Graficos visuales
-          RewardsComparison.tsx          # Comparativa mercado
-          RewardsExportPDF.tsx           # Exportar PDF
-          BenefitsValueCalculator.tsx    # Calculadora valor
-```
+### 7.1 Modificaciones a CRMModularDashboard
 
-### Categorias de Compensacion Total
-1. Salario base
-2. Bonus y variable
-3. Beneficios sociales (seguro medico, vida, pension)
-4. Stock options / RSUs
-5. Retribucion flexible
-6. Formacion patrocinada
-7. Dias adicionales vacaciones
-8. Otros beneficios (coche, parking, comedor)
+Nueva tab "IA Settings" con:
+- AIUnifiedDashboard integrado
+- Configuracion especifica CRM
+- Reglas de privacidad para datos de clientes/leads/deals
+
+### 7.2 Actualizacion de Componentes CRM Existentes
+
+Modificar para usar sistema hibrido:
+- CRMVoiceAssistant
+- PredictivePipelinePanel
+- CRMAgentControlPanel
+- useCRMAdvancedAnalytics
+
+### 7.3 Reglas de Privacidad Predefinidas CRM
+
+- Emails de clientes: CONFIDENTIAL
+- Telefonos: CONFIDENTIAL
+- Valores de deals: INTERNAL
+- Notas privadas: RESTRICTED
+- Nombres de empresa: PUBLIC
 
 ---
 
-## FASE 5: ESG Reporting Suite (RRHH + Cross-Module)
-**Duracion estimada: 3-4 semanas**
-**Prioridad: CRITICA - Regulacion CSRD obligatoria 2025**
+## FASE 8: Integracion en ERP
 
-### Componentes a Crear
+### Duracion estimada: 1 sesion
 
-```text
-src/
-  components/
-    erp/
-      esg/
-        ESGDashboard.tsx                 # Dashboard ESG principal
-        ESGDataCollection.tsx            # Recoleccion datos
-        ESGSocialMetrics.tsx             # Metricas sociales (ESRS S1-S4)
-        ESGEnvironmentalMetrics.tsx      # Metricas ambientales
-        ESGGovernanceMetrics.tsx         # Metricas gobernanza
-        CSRDReportGenerator.tsx          # Generador informes CSRD
-        ESRSComplianceMatrix.tsx         # Matriz compliance ESRS
-        CarbonFootprintCalculator.tsx    # Calculadora huella carbono
-        DEIMetricsPanel.tsx              # Diversidad e Inclusion
-        SupplyChainESG.tsx               # ESG cadena suministro
-        ESGRatingsTracker.tsx            # Seguimiento ratings
-        GRIReportExporter.tsx            # Export formato GRI
-        MaterialityAssessment.tsx        # Analisis materialidad
-```
+### 8.1 Modificaciones a ERPModularDashboard
 
-### Tablas de Base de Datos
+Nueva tab "IA Settings" con configuracion ERP-especifica
 
-```sql
--- Metricas ESG
-CREATE TABLE erp_esg_metrics (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  fiscal_year_id UUID REFERENCES erp_fiscal_years(id),
-  category VARCHAR(50), -- environmental, social, governance
-  metric_code VARCHAR(50), -- ESRS code
-  metric_name VARCHAR(255),
-  value DECIMAL(15,4),
-  unit VARCHAR(50),
-  period_start DATE,
-  period_end DATE,
-  verified BOOLEAN DEFAULT false,
-  verifier VARCHAR(255),
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+### 8.2 Actualizacion de Modulos ERP
 
--- Objetivos ESG
-CREATE TABLE erp_esg_targets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  metric_code VARCHAR(50),
-  target_value DECIMAL(15,4),
-  target_year INTEGER,
-  baseline_value DECIMAL(15,4),
-  baseline_year INTEGER,
-  progress_percent DECIMAL(5,2),
-  status VARCHAR(50),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+Modificar edge functions existentes:
+- erp-ai-journal-entries
+- erp-financial-forecasting
+- erp-hr-ai-agent
+- erp-accounting-chatbot
+- Todos los agentes autonomos
 
-### Metricas ESRS Sociales (S1-S4)
-- **S1 - Propia Fuerza Laboral:** Headcount, rotacion, brecha salarial, formacion
-- **S2 - Trabajadores Cadena Valor:** Due diligence proveedores
-- **S3 - Comunidades Afectadas:** Impacto local
-- **S4 - Consumidores/Usuarios:** Privacidad, seguridad producto
+### 8.3 Reglas de Privacidad Predefinidas ERP
+
+- Datos fiscales: RESTRICTED
+- Salarios empleados: RESTRICTED
+- Cuentas bancarias: RESTRICTED
+- Movimientos contables: CONFIDENTIAL
+- Nombres proveedores: INTERNAL
+- Catalogos productos: PUBLIC
 
 ---
 
-## FASE 6: Matter Management & Legal Spend (Juridico)
-**Duracion estimada: 2-3 semanas**
-**Prioridad: ALTA - Paridad con Icertis/LegalTracker**
+## FASE 9: Sistema de Monitoreo y Analytics
 
-### Componentes a Crear
+### Duracion estimada: 1 sesion
 
-```text
-src/
-  components/
-    erp/
-      legal/
-        matters/
-          MattersDashboard.tsx           # Dashboard asuntos
-          MatterList.tsx                 # Listado asuntos
-          MatterDetail.tsx               # Detalle asunto
-          MatterTimeline.tsx             # Timeline del asunto
-          MatterDocuments.tsx            # Documentos asociados
-          MatterParties.tsx              # Partes involucradas
-          MatterTasks.tsx                # Tareas del asunto
-          LitigationTracker.tsx          # Seguimiento litigios
-        spend/
-          LegalSpendDashboard.tsx        # Dashboard gastos legales
-          BudgetManager.tsx              # Gestion presupuestos
-          InvoiceReview.tsx              # Revision facturas
-          LEDESImporter.tsx              # Importador LEDES
-          VendorManagement.tsx           # Gestion despachos externos
-          RateCardManager.tsx            # Tarificadores
-          SpendAnalytics.tsx             # Analiticas gastos
-          AccrualManagement.tsx          # Gestion provisiones
-```
+### 9.1 Edge Function: ai-analytics
 
-### Tablas de Base de Datos
+Metricas recopiladas:
+- Solicitudes por proveedor/hora/dia
+- Tokens consumidos
+- Costes acumulados
+- Latencia promedio
+- Tasa de exito/error
+- Datos bloqueados por privacidad
 
-```sql
--- Asuntos legales
-CREATE TABLE erp_legal_matters (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  matter_number VARCHAR(50) UNIQUE,
-  title VARCHAR(500) NOT NULL,
-  type VARCHAR(100), -- litigation, contract, regulatory, ip, employment
-  status VARCHAR(50) DEFAULT 'open',
-  priority VARCHAR(20),
-  practice_area VARCHAR(100),
-  jurisdiction VARCHAR(100),
-  description TEXT,
-  open_date DATE,
-  close_date DATE,
-  lead_attorney VARCHAR(255),
-  external_counsel JSONB,
-  parties JSONB,
-  budget DECIMAL(12,2),
-  spent DECIMAL(12,2) DEFAULT 0,
-  outcome VARCHAR(100),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+### 9.2 Panel de Analytics IA
 
--- Gastos legales
-CREATE TABLE erp_legal_invoices (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  matter_id UUID REFERENCES erp_legal_matters(id),
-  vendor_id UUID,
-  invoice_number VARCHAR(100),
-  invoice_date DATE,
-  due_date DATE,
-  total_amount DECIMAL(12,2),
-  currency VARCHAR(3) DEFAULT 'EUR',
-  status VARCHAR(50) DEFAULT 'pending',
-  ledes_data JSONB, -- Datos LEDES parseados
-  line_items JSONB,
-  approved_by UUID,
-  approved_at TIMESTAMPTZ,
-  paid_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Rate cards
-CREATE TABLE erp_legal_rate_cards (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID REFERENCES erp_companies(id),
-  vendor_id UUID,
-  effective_date DATE,
-  expiry_date DATE,
-  rates JSONB, -- Por timekeeper level
-  caps JSONB, -- Limites por tipo
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+Visualizaciones:
+- Grafico de uso temporal
+- Distribucion local vs externo
+- Top modelos usados
+- Ahorro por uso de IA local
+- Incidentes de privacidad
 
 ---
 
-## FASE 7: Partner/Vendor Portal (Cross-Module)
-**Duracion estimada: 2-3 semanas**
-**Prioridad: MEDIA - Q3 2026 Roadmap**
+## FASE 10: Testing y Optimizacion
 
-### Componentes a Crear
+### Duracion estimada: 1 sesion
 
-```text
-src/
-  components/
-    portals/
-      partner/
-        PartnerPortalDashboard.tsx       # Dashboard partner
-        PartnerRegistration.tsx          # Registro partners
-        PartnerOnboarding.tsx            # Onboarding partners
-        DealRegistration.tsx             # Registro oportunidades
-        PartnerPerformance.tsx           # Performance/KPIs
-        CommissionTracker.tsx            # Comisiones
-        PartnerResources.tsx             # Centro recursos
-        PartnerCertifications.tsx        # Certificaciones
-      vendor/
-        VendorPortalDashboard.tsx        # Dashboard proveedor
-        VendorOnboarding.tsx             # Onboarding proveedores
-        RFQResponder.tsx                 # Responder RFQs
-        POTracker.tsx                    # Seguimiento pedidos
-        InvoiceSubmission.tsx            # Envio facturas
-        VendorPerformance.tsx            # Scorecard proveedor
-```
+### 10.1 Tests End-to-End
+
+Verificar:
+- Conexion a cada proveedor externo
+- Fallback automatico funciona
+- Clasificacion de datos correcta
+- Alertas de creditos se disparan
+- Datos RESTRICTED nunca salen
+
+### 10.2 Documentacion
+
+Crear guias para:
+- Configuracion inicial
+- Anadir nuevo proveedor
+- Crear reglas de privacidad
+- Gestion de creditos
+- Troubleshooting
 
 ---
 
-## FASE 8: Customer Self-Service Portal (CRM)
-**Duracion estimada: 2 semanas**
-**Prioridad: MEDIA - Q3 2026 Roadmap**
+## Resumen de Archivos a Crear
 
-### Componentes a Crear
+### Base de Datos
+- Migration: ai_providers_system.sql
 
-```text
-src/
-  components/
-    portals/
-      customer/
-        CustomerPortalDashboard.tsx      # Dashboard cliente
-        CustomerLogin.tsx                # Login portal
-        TicketCenter.tsx                 # Centro de tickets
-        KnowledgeBase.tsx                # Base conocimiento
-        CustomerInvoices.tsx             # Mis facturas
-        CustomerContracts.tsx            # Mis contratos
-        CustomerQuotes.tsx               # Mis presupuestos
-        CustomerOrders.tsx               # Mis pedidos
-        CustomerPreferences.tsx          # Preferencias
-        CustomerChatWidget.tsx           # Chat soporte
-```
+### Hooks
+- src/hooks/admin/ai-hybrid/useAIProviders.ts
+- src/hooks/admin/ai-hybrid/useDataPrivacyGateway.ts
+- src/hooks/admin/ai-hybrid/useAICredits.ts
+- src/hooks/admin/ai-hybrid/useHybridAI.ts
+- src/hooks/admin/ai-hybrid/useAIAnalytics.ts
+- src/hooks/admin/ai-hybrid/index.ts
 
----
+### Componentes
+- src/components/admin/ai-hybrid/AIUnifiedDashboard.tsx
+- src/components/admin/ai-hybrid/AIProvidersPanel.tsx
+- src/components/admin/ai-hybrid/AIDataPrivacyPanel.tsx
+- src/components/admin/ai-hybrid/AICreditsDashboard.tsx
+- src/components/admin/ai-hybrid/AIRoutingPoliciesPanel.tsx
+- src/components/admin/ai-hybrid/AIUsageAnalyticsPanel.tsx
+- src/components/admin/ai-hybrid/AIProviderSelector.tsx
+- src/components/admin/ai-hybrid/AIPrivacyIndicator.tsx
+- src/components/admin/ai-hybrid/AICreditsBadge.tsx
+- src/components/admin/ai-hybrid/index.ts
 
-## FASE 9: Industry Cloud Templates
-**Duracion estimada: 3-4 semanas**
-**Prioridad: MEDIA - Verticalizacion sectorial**
+### Edge Functions
+- supabase/functions/ai-provider-manager/index.ts
+- supabase/functions/ai-hybrid-router/index.ts
+- supabase/functions/ai-data-classifier/index.ts
+- supabase/functions/ai-credits-manager/index.ts
+- supabase/functions/ai-analytics/index.ts
 
-### Templates por Sector
-
-```text
-src/
-  templates/
-    industries/
-      banking/
-        BankingCRMTemplate.tsx
-        BankingComplianceTemplate.tsx
-        BankingReportingTemplate.tsx
-      insurance/
-        InsuranceCRMTemplate.tsx
-        ClaimsManagementTemplate.tsx
-        PolicyManagementTemplate.tsx
-      healthcare/
-        HealthcareCRMTemplate.tsx
-        PatientManagementTemplate.tsx
-        ComplianceHIPAATemplate.tsx
-      construction/
-        ConstructionCRMTemplate.tsx
-        ProjectControlTemplate.tsx
-        SubcontractorTemplate.tsx
-      professional-services/
-        PSACRMTemplate.tsx
-        TimeAndBillingTemplate.tsx
-        MatterManagementTemplate.tsx
-```
+### Paginas
+- src/pages/admin/AIHybridPage.tsx
 
 ---
 
-## FASE 10: Unified Analytics Dashboard (Cross-Module)
-**Duracion estimada: 2-3 semanas**
-**Prioridad: ALTA - Q2 2026 Roadmap**
+## Mejoras Adicionales Sugeridas
 
-### Componentes a Crear
-
-```text
-src/
-  components/
-    analytics/
-      unified/
-        UnifiedAnalyticsDashboard.tsx    # Dashboard unificado
-        CrossModuleKPIs.tsx              # KPIs cross-module
-        ExecutiveScorecard.tsx           # Scorecard ejecutivo
-        DataExplorer.tsx                 # Explorador datos
-        ReportBuilder.tsx                # Constructor reportes
-        AlertsConfigPanel.tsx            # Configuracion alertas
-        DrillDownViewer.tsx              # Drill-down interactivo
-        BenchmarkComparison.tsx          # Comparativa benchmarks
-        PredictiveInsights.tsx           # Insights predictivos
-        DataExportHub.tsx                # Hub exportacion
-```
-
----
-
-## Cronograma Propuesto
-
-```text
-                          2026
-                          Q1              Q2              Q3              Q4
-                   |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-Fase 1 Marketing   |=====|=====|     |     |     |     |     |     |     |     |     |     |
-Fase 2 Workflows   |     |=====|=====|     |     |     |     |     |     |     |     |     |
-Fase 3 Gig Work    |     |     |=====|=====|     |     |     |     |     |     |     |     |
-Fase 4 Rewards     |     |     |     |=====|     |     |     |     |     |     |     |     |
-Fase 5 ESG Suite   |     |     |     |=====|=====|=====|     |     |     |     |     |     |
-Fase 6 Legal Spend |     |     |     |     |     |=====|=====|     |     |     |     |     |
-Fase 7 Partner     |     |     |     |     |     |     |=====|=====|     |     |     |     |
-Fase 8 Customer    |     |     |     |     |     |     |     |=====|=====|     |     |     |
-Fase 9 Industry    |     |     |     |     |     |     |     |     |=====|=====|=====|     |
-Fase 10 Analytics  |     |     |     |     |     |     |     |     |     |     |=====|=====|
-```
-
----
-
-## Impacto en Valoracion Economica
-
-| Fase | Modulo | Valor Desarrollo | Valor Mercado | Prima IA |
-|------|--------|-----------------|---------------|----------|
-| 1 | Marketing Automation | €180.000 | €350.000 | €120.000 |
-| 2 | Workflow Builder | €120.000 | €250.000 | €80.000 |
-| 3 | Gig Workforce | €150.000 | €300.000 | €100.000 |
-| 4 | Total Rewards | €60.000 | €120.000 | €40.000 |
-| 5 | ESG Suite | €200.000 | €450.000 | €150.000 |
-| 6 | Legal Spend | €140.000 | €280.000 | €90.000 |
-| 7 | Partner Portal | €100.000 | €200.000 | €60.000 |
-| 8 | Customer Portal | €80.000 | €160.000 | €50.000 |
-| 9 | Industry Templates | €160.000 | €350.000 | €100.000 |
-| 10 | Unified Analytics | €130.000 | €280.000 | €90.000 |
-| **TOTAL** | | **€1.320.000** | **€2.740.000** | **€880.000** |
-
-### Nueva Valoracion Total Post-Implementacion
-
-- **Valor Actual:** €5.591.000
-- **Valor Mejoras:** €2.740.000
-- **Nuevo Valor Total:** €8.331.000
-- **Ventaja vs Competencia:** +38%
-
----
-
-## Dependencias Tecnicas
-
-### Edge Functions Nuevas (15)
-1. crm-marketing-automation
-2. crm-email-sequencer
-3. crm-audience-segmentation
-4. crm-workflow-engine
-5. crm-workflow-executor
-6. erp-hr-gig-management
-7. erp-hr-contractor-compliance
-8. erp-hr-total-rewards
-9. erp-esg-data-collection
-10. erp-esg-csrd-generator
-11. erp-legal-matter-management
-12. erp-legal-spend-analytics
-13. portal-partner-gateway
-14. portal-customer-gateway
-15. analytics-unified-engine
-
-### Nuevas Tablas DB (18)
-- crm_marketing_campaigns
-- crm_email_sequences
-- crm_audience_segments
-- crm_email_templates
-- crm_workflows
-- crm_workflow_executions
-- erp_hr_contractors
-- erp_hr_gig_projects
-- erp_hr_contractor_payments
-- erp_esg_metrics
-- erp_esg_targets
-- erp_legal_matters
-- erp_legal_invoices
-- erp_legal_rate_cards
-- portal_partner_users
-- portal_customer_users
-- analytics_reports
-- analytics_dashboards
-
----
-
-## Resumen Ejecutivo
-
-Este plan de 10 fases cerrara completamente los gaps identificados en el informe de auditoria, llevando a ObelixIA de **paridad funcional** a **superioridad demostrada** frente a SAP, Salesforce, Workday y Oracle.
-
-Las prioridades criticas son:
-1. **Marketing Automation** - Cierra gap mas visible vs. HubSpot
-2. **ESG Suite** - Compliance obligatorio CSRD 2025
-3. **Gig Workforce** - Tendencia mercado laboral
-
-Post-implementacion, ObelixIA sera la unica plataforma del mercado con:
-- CRM + ERP + Legal + ESG integrados nativamente
-- Marketing Automation con IA predictiva
-- Gestion fuerza laboral hibrida (empleados + contractors)
-- Compliance ESG automatizado CSRD/ESRS
-- Matter Management + Legal Spend integrado
-- Portales self-service Partner/Customer
-- Analytics unificado cross-module
+1. **Cache Inteligente**: Almacenar respuestas frecuentes para reducir costes
+2. **Batch Processing**: Agrupar solicitudes para optimizar uso de tokens
+3. **A/B Testing de Modelos**: Comparar calidad de respuestas entre proveedores
+4. **Fine-tuning Local**: Soporte para modelos personalizados en Ollama
+5. **Alertas Proactivas**: Notificar antes de superar presupuesto mensual
+6. **Modo Offline**: Funcionalidad basica cuando no hay conectividad
+7. **Auditoria Compliance**: Logs detallados para GDPR/regulaciones
+8. **Multi-idioma**: Routing por idioma (modelos especializados)
