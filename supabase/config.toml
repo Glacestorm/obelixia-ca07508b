@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.crm-integration-hub]
+verify_jwt = true
+
 [functions.crm-agent-supervisor]
 verify_jwt = true
 

@@ -14,3 +14,4 @@ export * from './agents';
 export * from './marketing';
 export * from './workflows';
 export * from './scoring';
+export * from './integrations';
