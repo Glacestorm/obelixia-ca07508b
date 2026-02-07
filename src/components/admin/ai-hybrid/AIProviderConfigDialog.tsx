@@ -140,7 +140,11 @@ export function AIProviderConfigDialog({
   const [activeTab, setActiveTab] = useState('connection');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isTestingLocal, setIsTestingLocal] = useState(false);
+  const [isTestingRemote, setIsTestingRemote] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
+  const [localTestResult, setLocalTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
+  const [remoteTestResult, setRemoteTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const { testConnection, addCredential } = useAIProviders();
 
@@ -179,13 +183,30 @@ export function AIProviderConfigDialog({
   }, []);
 
   // Reset form when provider changes
+  // Detect mode from endpoint URL
+  const detectModeFromEndpoint = useCallback((endpoint: string): LocalAIMode => {
+    if (!endpoint) return 'local';
+    const url = endpoint.toLowerCase();
+    // If it's localhost or 127.0.0.1, it's local mode
+    if (url.includes('localhost') || url.includes('127.0.0.1')) {
+      return 'local';
+    }
+    // Otherwise it's a remote server
+    return 'remote';
+  }, []);
+
+  // Reset form when provider changes - LOAD PERSISTED MODE
   useEffect(() => {
     if (provider) {
       const providerKey = getProviderKey(provider);
       const defaults = PROVIDER_DEFAULTS[providerKey] || {};
       
+      // Detect mode from saved endpoint
+      const savedEndpoint = provider.api_endpoint || defaults.api_endpoint || '';
+      const detectedMode = providerKey === 'ollama' ? detectModeFromEndpoint(savedEndpoint) : 'local';
+      
       setConfig({
-        api_endpoint: provider.api_endpoint || defaults.api_endpoint || '',
+        api_endpoint: savedEndpoint,
         api_key: '',
         organization_id: '',
         timeout_seconds: 30,
@@ -196,34 +217,120 @@ export function AIProviderConfigDialog({
         trust_level: 'basic',
         require_api_key: defaults.require_api_key ?? false,
         free_tier_info: defaults.free_tier_info || '',
-        local_mode: defaults.local_mode || 'local',
-        remote_server_url: '',
+        // Load mode from saved endpoint
+        local_mode: detectedMode,
+        // If remote mode, save the URL as remote_server_url
+        remote_server_url: detectedMode === 'remote' ? savedEndpoint : '',
       });
       setTestResult(null);
+      setLocalTestResult(null);
+      setRemoteTestResult(null);
       setActiveTab('connection');
     }
-  }, [provider, getProviderKey]);
+  }, [provider, getProviderKey, detectModeFromEndpoint]);
 
-  const handleTestConnection = async () => {
+  // Test connection for a specific endpoint
+  const handleTestConnection = async (endpointToTest?: string) => {
     if (!provider) return;
+    
+    const endpoint = endpointToTest || config.api_endpoint;
     
     setIsTesting(true);
     setTestResult(null);
     
     try {
-      const result = await testConnection(provider.id, config.api_endpoint);
+      const result = await testConnection(provider.id, endpoint);
       setTestResult({
         success: result?.success || false,
-        message: result?.success ? `Conexión exitosa` : (result?.error || 'Error de conexión'),
+        message: result?.success 
+          ? `Conexión exitosa a ${endpoint}` 
+          : (result?.error || 'Error de conexión'),
         latency: result?.latency_ms,
       });
+      
+      if (result?.success) {
+        toast.success(`Test exitoso: ${endpoint} (${result.latency_ms}ms)`);
+      } else {
+        toast.error(`Test fallido: ${result?.error || 'Sin respuesta'}`);
+      }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
       setTestResult({
+        success: false,
+        message: errorMsg,
+      });
+      toast.error(`Error: ${errorMsg}`);
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  // Test local connection (localhost)
+  const handleTestLocalConnection = async () => {
+    if (!provider) return;
+    
+    const localEndpoint = 'http://localhost:11434';
+    setIsTestingLocal(true);
+    setLocalTestResult(null);
+    
+    try {
+      const result = await testConnection(provider.id, localEndpoint);
+      setLocalTestResult({
+        success: result?.success || false,
+        message: result?.success 
+          ? `Conexión local exitosa` 
+          : (result?.error || 'Ollama no detectado en localhost'),
+        latency: result?.latency_ms,
+      });
+      
+      if (result?.success) {
+        toast.success(`IA Local conectada (${result.latency_ms}ms)`);
+      }
+    } catch (error) {
+      setLocalTestResult({
         success: false,
         message: error instanceof Error ? error.message : 'Error desconocido',
       });
     } finally {
-      setIsTesting(false);
+      setIsTestingLocal(false);
+    }
+  };
+
+  // Test remote server connection
+  const handleTestRemoteConnection = async () => {
+    if (!provider) return;
+    
+    const remoteEndpoint = config.remote_server_url || config.api_endpoint;
+    if (!remoteEndpoint || remoteEndpoint.includes('localhost')) {
+      toast.error('Introduce una IP/URL de servidor remoto válida');
+      return;
+    }
+    
+    setIsTestingRemote(true);
+    setRemoteTestResult(null);
+    
+    try {
+      const result = await testConnection(provider.id, remoteEndpoint);
+      setRemoteTestResult({
+        success: result?.success || false,
+        message: result?.success 
+          ? `Servidor remoto conectado` 
+          : (result?.error || 'No se pudo conectar al servidor'),
+        latency: result?.latency_ms,
+      });
+      
+      if (result?.success) {
+        toast.success(`Servidor remoto conectado (${result.latency_ms}ms)`);
+      } else {
+        toast.error(`No se pudo conectar: ${result?.error || 'Sin respuesta'}`);
+      }
+    } catch (error) {
+      setRemoteTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Error desconocido',
+      });
+    } finally {
+      setIsTestingRemote(false);
     }
   };
 
@@ -342,84 +449,173 @@ export function AIProviderConfigDialog({
                       </Label>
                       <div className="grid grid-cols-2 gap-3">
                         {/* Local Mode */}
-                        <button
-                          type="button"
-                          onClick={() => setConfig(prev => ({ 
-                            ...prev, 
-                            local_mode: 'local',
-                            api_endpoint: 'http://localhost:11434'
-                          }))}
-                          className={cn(
-                            "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
-                            config.local_mode === 'local'
-                              ? "border-primary bg-primary/5"
-                              : "border-muted hover:border-primary/50 hover:bg-muted/50"
+                        <div className={cn(
+                          "flex flex-col rounded-lg border-2 transition-all overflow-hidden",
+                          config.local_mode === 'local'
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        )}>
+                          <button
+                            type="button"
+                            onClick={() => setConfig(prev => ({ 
+                              ...prev, 
+                              local_mode: 'local',
+                              api_endpoint: 'http://localhost:11434'
+                            }))}
+                            className="flex flex-col items-center gap-2 p-4"
+                          >
+                            <div className={cn(
+                              "p-3 rounded-full",
+                              config.local_mode === 'local' ? "bg-primary/10" : "bg-muted"
+                            )}>
+                              <Cpu className={cn(
+                                "h-6 w-6",
+                                config.local_mode === 'local' ? "text-primary" : "text-muted-foreground"
+                              )} />
+                            </div>
+                            <div className="text-center">
+                              <p className={cn(
+                                "font-medium text-sm",
+                                config.local_mode === 'local' && "text-primary"
+                              )}>IA Local</p>
+                              <p className="text-xs text-muted-foreground">
+                                Descarga y usa en este PC
+                              </p>
+                            </div>
+                            {config.local_mode === 'local' && (
+                              <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                <CheckCircle className="h-3 w-3 mr-1" /> Seleccionado
+                              </Badge>
+                            )}
+                          </button>
+                          
+                          {/* Test result for local */}
+                          {localTestResult && (
+                            <div className={cn(
+                              "px-3 py-2 text-xs border-t",
+                              localTestResult.success 
+                                ? "bg-success/10 text-success border-success/20" 
+                                : "bg-destructive/10 text-destructive border-destructive/20"
+                            )}>
+                              {localTestResult.success 
+                                ? `✓ Conectado (${localTestResult.latency}ms)` 
+                                : `✗ ${localTestResult.message}`
+                              }
+                            </div>
                           )}
-                        >
-                          <div className={cn(
-                            "p-3 rounded-full",
-                            config.local_mode === 'local' ? "bg-primary/10" : "bg-muted"
-                          )}>
-                            <Cpu className={cn(
-                              "h-6 w-6",
-                              config.local_mode === 'local' ? "text-primary" : "text-muted-foreground"
-                            )} />
-                          </div>
-                          <div className="text-center">
-                            <p className={cn(
-                              "font-medium text-sm",
-                              config.local_mode === 'local' && "text-primary"
-                            )}>IA Local</p>
-                            <p className="text-xs text-muted-foreground">
-                              Descarga y usa en este PC
-                            </p>
-                          </div>
-                          {config.local_mode === 'local' && (
-                            <Badge variant="secondary" className="bg-primary/10 text-primary">
-                              <CheckCircle className="h-3 w-3 mr-1" /> Seleccionado
-                            </Badge>
-                          )}
-                        </button>
+                          
+                          {/* Test button for local */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-none border-t text-xs h-9"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTestLocalConnection();
+                            }}
+                            disabled={isTestingLocal}
+                          >
+                            {isTestingLocal ? (
+                              <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Probando...</>
+                            ) : (
+                              <><Activity className="h-3 w-3 mr-1" /> Test Local</>
+                            )}
+                          </Button>
+                        </div>
 
                         {/* Remote Server Mode */}
-                        <button
-                          type="button"
-                          onClick={() => setConfig(prev => ({ 
-                            ...prev, 
-                            local_mode: 'remote',
-                            api_endpoint: prev.remote_server_url || 'http://192.168.1.100:11434'
-                          }))}
-                          className={cn(
-                            "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
-                            config.local_mode === 'remote'
-                              ? "border-primary bg-primary/5"
-                              : "border-muted hover:border-primary/50 hover:bg-muted/50"
-                          )}
-                        >
-                          <div className={cn(
-                            "p-3 rounded-full",
-                            config.local_mode === 'remote' ? "bg-primary/10" : "bg-muted"
-                          )}>
-                            <Globe className={cn(
-                              "h-6 w-6",
-                              config.local_mode === 'remote' ? "text-primary" : "text-muted-foreground"
-                            )} />
-                          </div>
-                          <div className="text-center">
-                            <p className={cn(
-                              "font-medium text-sm",
-                              config.local_mode === 'remote' && "text-primary"
-                            )}>Servidor en Red</p>
-                            <p className="text-xs text-muted-foreground">
-                              Conecta a un servidor Ollama
-                            </p>
-                          </div>
+                        <div className={cn(
+                          "flex flex-col rounded-lg border-2 transition-all overflow-hidden",
+                          config.local_mode === 'remote'
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        )}>
+                          <button
+                            type="button"
+                            onClick={() => setConfig(prev => ({ 
+                              ...prev, 
+                              local_mode: 'remote',
+                              api_endpoint: prev.remote_server_url || 'http://192.168.1.100:11434'
+                            }))}
+                            className="flex flex-col items-center gap-2 p-4"
+                          >
+                            <div className={cn(
+                              "p-3 rounded-full",
+                              config.local_mode === 'remote' ? "bg-primary/10" : "bg-muted"
+                            )}>
+                              <Globe className={cn(
+                                "h-6 w-6",
+                                config.local_mode === 'remote' ? "text-primary" : "text-muted-foreground"
+                              )} />
+                            </div>
+                            <div className="text-center">
+                              <p className={cn(
+                                "font-medium text-sm",
+                                config.local_mode === 'remote' && "text-primary"
+                              )}>Servidor en Red</p>
+                              <p className="text-xs text-muted-foreground">
+                                Conecta a un servidor Ollama
+                              </p>
+                            </div>
+                            {config.local_mode === 'remote' && (
+                              <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                <CheckCircle className="h-3 w-3 mr-1" /> Seleccionado
+                              </Badge>
+                            )}
+                          </button>
+                          
+                          {/* Remote server URL input when remote selected */}
                           {config.local_mode === 'remote' && (
-                            <Badge variant="secondary" className="bg-primary/10 text-primary">
-                              <CheckCircle className="h-3 w-3 mr-1" /> Seleccionado
-                            </Badge>
+                            <div className="px-3 py-2 border-t bg-muted/30">
+                              <Input
+                                value={config.remote_server_url || config.api_endpoint}
+                                onChange={(e) => setConfig(prev => ({ 
+                                  ...prev, 
+                                  remote_server_url: e.target.value,
+                                  api_endpoint: e.target.value
+                                }))}
+                                placeholder="http://192.168.1.100:11434"
+                                className="h-8 text-xs"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
                           )}
-                        </button>
+                          
+                          {/* Test result for remote */}
+                          {remoteTestResult && (
+                            <div className={cn(
+                              "px-3 py-2 text-xs border-t",
+                              remoteTestResult.success 
+                                ? "bg-success/10 text-success border-success/20" 
+                                : "bg-destructive/10 text-destructive border-destructive/20"
+                            )}>
+                              {remoteTestResult.success 
+                                ? `✓ Conectado (${remoteTestResult.latency}ms)` 
+                                : `✗ ${remoteTestResult.message}`
+                              }
+                            </div>
+                          )}
+                          
+                          {/* Test button for remote */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-none border-t text-xs h-9"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTestRemoteConnection();
+                            }}
+                            disabled={isTestingRemote || config.local_mode !== 'remote'}
+                          >
+                            {isTestingRemote ? (
+                              <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Probando...</>
+                            ) : (
+                              <><Globe className="h-3 w-3 mr-1" /> Test Servidor</>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                       
                       {/* Info about selected mode */}
@@ -600,7 +796,7 @@ export function AIProviderConfigDialog({
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={handleTestConnection}
+                      onClick={() => handleTestConnection()}
                       disabled={isTesting || !config.api_endpoint}
                     >
                       {isTesting ? (
@@ -623,7 +819,7 @@ export function AIProviderConfigDialog({
                         Selecciona los modelos que deseas habilitar
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleTestConnection}>
+                    <Button variant="outline" size="sm" onClick={() => handleTestConnection()}>
                       <RotateCw className="h-4 w-4 mr-1" /> Actualizar lista
                     </Button>
                   </div>
