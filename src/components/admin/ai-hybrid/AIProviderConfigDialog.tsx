@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -30,12 +32,35 @@ import {
   CheckCircle,
   AlertTriangle,
   RotateCw,
+  Eye,
+  EyeOff,
+  Key,
+  Globe,
+  Clock,
+  DollarSign,
+  Loader2,
+  Info,
+  Sparkles,
 } from 'lucide-react';
 import { useAIProviders, AIProvider } from '@/hooks/admin/ai-hybrid';
-import { useLocalAIDiagnostics } from '@/hooks/admin/ai-hybrid/useLocalAIDiagnostics';
 import { AILocalDiagnosticsPanel } from './AILocalDiagnosticsPanel';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+interface ProviderConfig {
+  api_endpoint: string;
+  api_key?: string;
+  organization_id?: string;
+  timeout_seconds: number;
+  max_retries: number;
+  priority: number;
+  daily_cost_limit?: number;
+  enabled_models: string[];
+  trust_level: 'untrusted' | 'basic' | 'trusted' | 'verified';
+  require_api_key: boolean;
+  free_tier_info?: string;
+}
 
 interface AIProviderConfigDialogProps {
   provider: AIProvider | null;
@@ -43,6 +68,60 @@ interface AIProviderConfigDialogProps {
   onClose: () => void;
   onSave: (updates: Partial<AIProvider>) => Promise<void>;
 }
+
+// Provider-specific default configurations
+const PROVIDER_DEFAULTS: Record<string, Partial<ProviderConfig>> = {
+  'ollama': {
+    api_endpoint: 'http://localhost:11434',
+    require_api_key: false,
+    free_tier_info: 'Ollama es completamente gratuito y local. No se requiere API key ni cuenta.',
+  },
+  'openai': {
+    api_endpoint: 'https://api.openai.com/v1',
+    require_api_key: false,
+    free_tier_info: 'OpenAI ofrece $5 de crédito gratuito para nuevas cuentas. Puedes probar sin API key usando Lovable AI.',
+  },
+  'anthropic': {
+    api_endpoint: 'https://api.anthropic.com/v1',
+    require_api_key: false,
+    free_tier_info: 'Anthropic ofrece créditos gratuitos de prueba. También disponible a través de Lovable AI sin API key.',
+  },
+  'google': {
+    api_endpoint: 'https://generativelanguage.googleapis.com/v1',
+    require_api_key: false,
+    free_tier_info: 'Google Gemini tiene un tier gratuito generoso. Accesible también vía Lovable AI.',
+  },
+  'deepseek': {
+    api_endpoint: 'https://api.deepseek.com/v1',
+    require_api_key: false,
+    free_tier_info: 'DeepSeek ofrece créditos gratuitos y es muy económico para producción.',
+  },
+  'lovable': {
+    api_endpoint: 'https://ai.gateway.lovable.dev/v1',
+    require_api_key: false,
+    free_tier_info: 'Lovable AI está incluido con tu proyecto. Sin necesidad de API key adicional.',
+  },
+  'groq': {
+    api_endpoint: 'https://api.groq.com/openai/v1',
+    require_api_key: false,
+    free_tier_info: 'Groq ofrece un tier gratuito muy generoso con alta velocidad.',
+  },
+  'mistral': {
+    api_endpoint: 'https://api.mistral.ai/v1',
+    require_api_key: false,
+    free_tier_info: 'Mistral AI ofrece modelos gratuitos como "mistral-small" con límites razonables.',
+  },
+  'cohere': {
+    api_endpoint: 'https://api.cohere.ai/v1',
+    require_api_key: false,
+    free_tier_info: 'Cohere tiene un tier gratuito para desarrollo con 1000 llamadas/mes.',
+  },
+  'huggingface': {
+    api_endpoint: 'https://api-inference.huggingface.co',
+    require_api_key: false,
+    free_tier_info: 'HuggingFace ofrece inferencia gratuita para modelos públicos.',
+  },
+};
 
 export function AIProviderConfigDialog({
   provider,
@@ -52,27 +131,110 @@ export function AIProviderConfigDialog({
 }: AIProviderConfigDialogProps) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('connection');
-  const [formData, setFormData] = useState<Partial<AIProvider>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const { testConnection } = useAIProviders();
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const { testConnection, addCredential } = useAIProviders();
+
+  // Form state
+  const [config, setConfig] = useState<ProviderConfig>({
+    api_endpoint: '',
+    api_key: '',
+    organization_id: '',
+    timeout_seconds: 30,
+    max_retries: 3,
+    priority: 5,
+    daily_cost_limit: undefined,
+    enabled_models: [],
+    trust_level: 'basic',
+    require_api_key: false,
+    free_tier_info: '',
+  });
+
+  // Get provider key for defaults
+  const getProviderKey = useCallback((p: AIProvider | null): string => {
+    if (!p) return '';
+    const name = p.name.toLowerCase();
+    if (name.includes('ollama')) return 'ollama';
+    if (name.includes('openai') || name.includes('gpt')) return 'openai';
+    if (name.includes('anthropic') || name.includes('claude')) return 'anthropic';
+    if (name.includes('google') || name.includes('gemini')) return 'google';
+    if (name.includes('deepseek')) return 'deepseek';
+    if (name.includes('lovable')) return 'lovable';
+    if (name.includes('groq')) return 'groq';
+    if (name.includes('mistral')) return 'mistral';
+    if (name.includes('cohere')) return 'cohere';
+    if (name.includes('huggingface') || name.includes('hf')) return 'huggingface';
+    return '';
+  }, []);
 
   // Reset form when provider changes
   useEffect(() => {
     if (provider) {
-      setFormData({
-        api_endpoint: provider.api_endpoint,
-        requires_api_key: provider.requires_api_key,
-        // Other fields would be mapped here
+      const providerKey = getProviderKey(provider);
+      const defaults = PROVIDER_DEFAULTS[providerKey] || {};
+      
+      setConfig({
+        api_endpoint: provider.api_endpoint || defaults.api_endpoint || '',
+        api_key: '',
+        organization_id: '',
+        timeout_seconds: 30,
+        max_retries: 3,
+        priority: 5,
+        daily_cost_limit: undefined,
+        enabled_models: provider.supported_models?.map(m => m.name || m.id) || [],
+        trust_level: 'basic',
+        require_api_key: defaults.require_api_key ?? false,
+        free_tier_info: defaults.free_tier_info || '',
       });
+      setTestResult(null);
+      setActiveTab('connection');
     }
-  }, [provider]);
+  }, [provider, getProviderKey]);
+
+  const handleTestConnection = async () => {
+    if (!provider) return;
+    
+    setIsTesting(true);
+    setTestResult(null);
+    
+    try {
+      const result = await testConnection(provider.id, config.api_endpoint);
+      setTestResult({
+        success: result?.success || false,
+        message: result?.success ? `Conexión exitosa` : (result?.error || 'Error de conexión'),
+        latency: result?.latency_ms,
+      });
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Error desconocido',
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!provider) return;
     setIsSaving(true);
     try {
-      await onSave(formData);
-      toast.success('Configuración guardada');
+      // Save provider config
+      await onSave({
+        api_endpoint: config.api_endpoint,
+        requires_api_key: config.require_api_key,
+        is_active: true,
+      });
+      
+      // If API key provided, save credential
+      if (config.api_key && config.api_key.trim()) {
+        await addCredential(provider.id, config.api_key, {
+          isDefault: true,
+        });
+      }
+      
+      toast.success('Configuración guardada correctamente');
       onClose();
     } catch (error) {
       toast.error('Error al guardar configuración');
@@ -84,21 +246,32 @@ export function AIProviderConfigDialog({
   if (!provider) return null;
 
   const isLocal = provider.provider_type === 'local';
+  const providerKey = getProviderKey(provider);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <div className={cn(
+              "p-3 rounded-xl",
+              isLocal 
+                ? "bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-600" 
+                : "bg-gradient-to-br from-blue-500/20 to-violet-500/20 text-blue-600"
+            )}>
               {isLocal ? <Server className="h-6 w-6" /> : <Cloud className="h-6 w-6" />}
             </div>
             <div>
-              <DialogTitle className="text-xl">Configuración: {provider.name}</DialogTitle>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                {provider.name}
+                <Badge variant={isLocal ? "secondary" : "outline"} className="text-xs">
+                  {isLocal ? 'Local' : 'Cloud'}
+                </Badge>
+              </DialogTitle>
               <DialogDescription>
                 {isLocal 
-                  ? 'Gestiona tu instancia local de Ollama y modelos instalados'
-                  : 'Configura claves API, límites y parámetros de seguridad'
+                  ? 'Configura tu servidor Ollama local para procesamiento privado'
+                  : 'Configura el proveedor de IA en la nube'
                 }
               </DialogDescription>
             </div>
@@ -107,7 +280,7 @@ export function AIProviderConfigDialog({
 
         <div className="flex-1 overflow-hidden py-4">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsList className={cn("grid w-full mb-4", isLocal ? "grid-cols-5" : "grid-cols-4")}>
               <TabsTrigger value="connection" className="gap-2">
                 <Activity className="h-4 w-4" /> Conexión
               </TabsTrigger>
@@ -118,7 +291,7 @@ export function AIProviderConfigDialog({
                 <Shield className="h-4 w-4" /> Seguridad
               </TabsTrigger>
               <TabsTrigger value="limits" className="gap-2">
-                <AlertTriangle className="h-4 w-4" /> Límites
+                <DollarSign className="h-4 w-4" /> Límites
               </TabsTrigger>
               {isLocal && (
                 <TabsTrigger value="diagnostics" className="gap-2">
@@ -130,58 +303,316 @@ export function AIProviderConfigDialog({
             <ScrollArea className="flex-1 pr-4">
               {/* === TAB: CONNECTION === */}
               <TabsContent value="connection" className="space-y-6">
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Endpoint URL / IP</Label>
-                      <Input
-                        value={formData.api_endpoint || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, api_endpoint: e.target.value }))}
-                        placeholder={isLocal ? "http://localhost:11434" : "https://api.openai.com/v1"}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {isLocal 
-                          ? "Dirección de tu servidor Ollama (asegúrate que permite CORS)" 
-                          : "Endpoint base de la API del proveedor"
-                        }
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Timeout (segundos)</Label>
-                      <Input 
-                        type="number" 
-                        defaultValue={30}
-                        onChange={(e) => setFormData(prev => ({ ...prev, connection_timeout_ms: parseInt(e.target.value) * 1000 }))}
-                      />
+                {/* Free tier info banner */}
+                {config.free_tier_info && (
+                  <div className="flex items-start gap-3 p-4 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+                    <Sparkles className="h-5 w-5 text-primary mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-primary">Opciones gratuitas disponibles</p>
+                      <p className="text-sm text-muted-foreground">{config.free_tier_info}</p>
                     </div>
                   </div>
+                )}
 
+                <div className="grid gap-4">
+                  {/* Endpoint URL */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Endpoint URL / IP
+                    </Label>
+                    <Input
+                      value={config.api_endpoint}
+                      onChange={(e) => setConfig(prev => ({ ...prev, api_endpoint: e.target.value }))}
+                      placeholder={isLocal ? "http://localhost:11434" : "https://api.provider.com/v1"}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {isLocal 
+                        ? "Dirección de tu servidor Ollama (ej: http://192.168.1.100:11434)" 
+                        : "Endpoint base de la API del proveedor"
+                      }
+                    </p>
+                  </div>
+
+                  {/* API Key - Optional */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <Key className="h-4 w-4" />
+                        API Key
+                        <Badge variant="outline" className="text-xs ml-2">
+                          {config.require_api_key ? 'Requerido' : 'Opcional'}
+                        </Badge>
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={config.require_api_key}
+                          onCheckedChange={(c) => setConfig(prev => ({ ...prev, require_api_key: c }))}
+                        />
+                        <span className="text-xs text-muted-foreground">Requiere API Key</span>
+                      </div>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        value={config.api_key}
+                        onChange={(e) => setConfig(prev => ({ ...prev, api_key: e.target.value }))}
+                        placeholder={config.require_api_key ? "sk-..." : "(Opcional) sk-..."}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isLocal 
+                        ? "Ollama no requiere API key. Déjalo vacío para uso local." 
+                        : "Si no proporcionas una API key, se usará Lovable AI como fallback cuando esté disponible."
+                      }
+                    </p>
+                  </div>
+
+                  {/* Organization ID - Cloud only */}
                   {!isLocal && (
                     <div className="space-y-2">
                       <Label>Organization ID (Opcional)</Label>
                       <Input 
+                        value={config.organization_id}
+                        onChange={(e) => setConfig(prev => ({ ...prev, organization_id: e.target.value }))}
                         placeholder="org-..."
-                        onChange={(e) => setFormData(prev => ({ ...prev, organization_id: e.target.value }))}
                       />
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                  {/* Connection settings */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Timeout (segundos)
+                      </Label>
+                      <Input 
+                        type="number"
+                        min={5}
+                        max={300}
+                        value={config.timeout_seconds}
+                        onChange={(e) => setConfig(prev => ({ ...prev, timeout_seconds: parseInt(e.target.value) || 30 }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Reintentos máximos</Label>
+                      <Input 
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={config.max_retries}
+                        onChange={(e) => setConfig(prev => ({ ...prev, max_retries: parseInt(e.target.value) || 3 }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Connection test */}
+                  <div className={cn(
+                    "flex items-center justify-between p-4 rounded-lg border",
+                    testResult?.success ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30" :
+                    testResult === null ? "bg-muted/30" :
+                    "bg-destructive/10 border-destructive/30"
+                  )}>
                     <div className="space-y-1">
                       <div className="font-medium flex items-center gap-2">
                         Estado de conexión
-                        <Badge variant="outline" className="text-emerald-500 border-emerald-200">
-                          Activo
-                        </Badge>
+                        {testResult?.success && (
+                          <Badge variant="outline" className="text-emerald-600 border-emerald-300">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Conectado {testResult.latency && `(${testResult.latency}ms)`}
+                          </Badge>
+                        )}
+                        {testResult && !testResult.success && (
+                          <Badge variant="destructive" className="text-xs">
+                            Error
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Última verificación: Hace 2 minutos
+                        {testResult?.message || 'Prueba la conexión para verificar la configuración'}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => testConnection(provider.id)}>
-                      Probar conexión
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleTestConnection}
+                      disabled={isTesting || !config.api_endpoint}
+                    >
+                      {isTesting ? (
+                        <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Probando...</>
+                      ) : (
+                        <><RotateCw className="h-4 w-4 mr-1" /> Probar conexión</>
+                      )}
                     </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* === TAB: MODELS === */}
+              <TabsContent value="models" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">Modelos disponibles</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Selecciona los modelos que deseas habilitar
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleTestConnection}>
+                      <RotateCw className="h-4 w-4 mr-1" /> Actualizar lista
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-2">
+                    {provider.supported_models && provider.supported_models.length > 0 ? (
+                      provider.supported_models.map((model, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <Switch
+                              checked={config.enabled_models.includes(model.name || model.id || '')}
+                              onCheckedChange={(c) => {
+                                const modelName = model.name || model.id || '';
+                                setConfig(prev => ({
+                                  ...prev,
+                                  enabled_models: c 
+                                    ? [...prev.enabled_models, modelName]
+                                    : prev.enabled_models.filter(m => m !== modelName)
+                                }));
+                              }}
+                            />
+                            <div>
+                              <p className="font-medium text-sm">{model.name || model.id}</p>
+                              <p className="text-xs text-muted-foreground">{model.context_window || 'N/A'} tokens contexto</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {model.cost_per_1k_input ? `$${model.cost_per_1k_input}/1K` : 'Gratuito'}
+                          </Badge>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                        <Zap className="h-10 w-10 mb-2 opacity-20" />
+                        <p>Conecta primero para ver los modelos disponibles</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* === TAB: SECURITY === */}
+              <TabsContent value="security" className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Nivel de confianza</Label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Define qué tipo de datos se pueden enviar a este proveedor
+                    </p>
+                    <Select 
+                      value={config.trust_level} 
+                      onValueChange={(v) => setConfig(prev => ({ ...prev, trust_level: v as ProviderConfig['trust_level'] }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="untrusted">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-destructive" />
+                            No confiable - Solo datos públicos
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="basic">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-amber-500" />
+                            Básico - Datos internos anonimizados
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="trusted">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            Confiable - Datos confidenciales permitidos
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="verified">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-primary" />
+                            Verificado - Acceso completo
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Prioridad de enrutamiento (1-10)</Label>
+                    <Slider
+                      value={[config.priority]}
+                      onValueChange={([v]) => setConfig(prev => ({ ...prev, priority: v }))}
+                      min={1}
+                      max={10}
+                      step={1}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Menor prioridad</span>
+                      <span className="font-medium">{config.priority}</span>
+                      <span>Mayor prioridad</span>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* === TAB: LIMITS === */}
+              <TabsContent value="limits" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Límite de coste diario (USD)
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.5}
+                      value={config.daily_cost_limit || ''}
+                      onChange={(e) => setConfig(prev => ({ ...prev, daily_cost_limit: parseFloat(e.target.value) || undefined }))}
+                      placeholder="Sin límite"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Déjalo vacío para sin límite. El sistema pausará las solicitudes al alcanzar el límite.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-muted/30 border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Info className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-sm">Uso estimado</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Hoy</p>
+                        <p className="font-medium">$0.00</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Esta semana</p>
+                        <p className="font-medium">$0.00</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Este mes</p>
+                        <p className="font-medium">$0.00</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
@@ -190,32 +621,10 @@ export function AIProviderConfigDialog({
               {isLocal && (
                 <TabsContent value="diagnostics">
                   <AILocalDiagnosticsPanel 
-                    endpointUrl={formData.api_endpoint || 'http://localhost:11434'} 
+                    endpointUrl={config.api_endpoint || 'http://localhost:11434'} 
                   />
                 </TabsContent>
               )}
-
-              {/* Other tabs placeholders */}
-              <TabsContent value="models">
-                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                  <Zap className="h-10 w-10 mb-2 opacity-20" />
-                  <p>Configuración de modelos disponible próximamente</p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="security">
-                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                  <Shield className="h-10 w-10 mb-2 opacity-20" />
-                  <p>Configuración de seguridad disponible próximamente</p>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="limits">
-                <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-                  <AlertTriangle className="h-10 w-10 mb-2 opacity-20" />
-                  <p>Configuración de límites disponible próximamente</p>
-                </div>
-              </TabsContent>
             </ScrollArea>
           </Tabs>
         </div>
@@ -223,7 +632,11 @@ export function AIProviderConfigDialog({
         <DialogFooter className="pt-4 border-t">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'Guardando...' : 'Guardar configuración'}
+            {isSaving ? (
+              <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Guardando...</>
+            ) : (
+              'Guardar configuración'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

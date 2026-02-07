@@ -68,6 +68,7 @@ export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
     addCredential,
     deleteCredential,
     testConnection,
+    updateProvider,
   } = useAIProviders();
 
   const [selectedProvider, setSelectedProvider] = useState<AIProvider | null>(null);
@@ -482,6 +483,21 @@ export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Provider Configuration Dialog */}
+      <AIProviderConfigDialog
+        provider={configProvider}
+        isOpen={isConfigDialogOpen}
+        onClose={() => {
+          setIsConfigDialogOpen(false);
+          setConfigProvider(null);
+        }}
+        onSave={async (updates) => {
+          if (configProvider) {
+            await updateProvider(configProvider.id, updates);
+          }
+        }}
+      />
     </div>
   );
 }
