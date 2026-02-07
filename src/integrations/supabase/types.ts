@@ -3060,6 +3060,69 @@ export type Database = {
           },
         ]
       }
+      ai_usage_metrics: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          data_classification: string
+          error_type: string | null
+          id: string
+          latency_ms: number
+          metadata: Json | null
+          model: string
+          provider: string
+          routing_mode: string
+          session_id: string | null
+          success: boolean
+          timestamp: string
+          tokens_input: number
+          tokens_output: number
+          total_tokens: number
+          user_id: string | null
+          was_anonymized: boolean
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          data_classification?: string
+          error_type?: string | null
+          id?: string
+          latency_ms?: number
+          metadata?: Json | null
+          model?: string
+          provider?: string
+          routing_mode?: string
+          session_id?: string | null
+          success?: boolean
+          timestamp?: string
+          tokens_input?: number
+          tokens_output?: number
+          total_tokens?: number
+          user_id?: string | null
+          was_anonymized?: boolean
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          data_classification?: string
+          error_type?: string | null
+          id?: string
+          latency_ms?: number
+          metadata?: Json | null
+          model?: string
+          provider?: string
+          routing_mode?: string
+          session_id?: string | null
+          success?: boolean
+          timestamp?: string
+          tokens_input?: number
+          tokens_output?: number
+          total_tokens?: number
+          user_id?: string | null
+          was_anonymized?: boolean
+        }
+        Relationships: []
+      }
       alert_history: {
         Row: {
           alert_id: string
