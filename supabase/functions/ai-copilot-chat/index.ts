@@ -179,6 +179,9 @@ serve(async (req) => {
         const firstUserMessage = messages.find(m => m.role === 'user')?.content || 'Nueva conversación';
         const title = firstUserMessage.slice(0, 100);
 
+        // Normalize provider_type: 'auto' is not a valid DB value, default to 'external'
+        const dbProviderType = provider_type === 'auto' ? 'external' : provider_type;
+
         const { data: newConv, error: createError } = await supabase
           .from('ai_copilot_conversations')
           .insert({
@@ -188,7 +191,7 @@ serve(async (req) => {
             entity_id: entity_context?.id,
             entity_name: entity_context?.name,
             model_used: model,
-            provider_type,
+            provider_type: dbProviderType,
           })
           .select()
           .single();
