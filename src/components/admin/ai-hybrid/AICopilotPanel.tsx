@@ -65,13 +65,23 @@ import {
   Link,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { useAICopilot, type CopilotConversation, type CopilotMessage, type EntityContext } from '@/hooks/admin/ai-hybrid/useAICopilot';
+import { useAICopilot, type CopilotConversation, type CopilotMessage, type EntityContext, type RoutingInfo } from '@/hooks/admin/ai-hybrid/useAICopilot';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import type { Locale } from 'date-fns';
 import { es, ca, fr, enUS } from 'date-fns/locale';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Shield, Zap, DollarSign, Brain } from 'lucide-react';
 
 interface AICopilotPanelProps {
   className?: string;
@@ -96,6 +106,7 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
     isLoading,
     entityContext,
     settings,
+    lastRoutingDecision,
     fetchConversations,
     loadConversation,
     sendMessage,
@@ -377,49 +388,128 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
                   <Settings className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Configuración del Copilot</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">URL Ollama (Local)</label>
-                    <Input
-                      value={settings.ollamaUrl}
-                      onChange={(e) => updateSettings({ ollamaUrl: e.target.value })}
-                      placeholder="http://localhost:11434"
-                    />
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="space-y-6 py-4 pr-4">
+                    {/* Smart Routing Section */}
+                    <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-violet-500" />
+                          <Label className="font-medium">Smart Routing (Auto)</Label>
+                        </div>
+                        <Switch
+                          checked={settings.enableSmartRouting}
+                          onCheckedChange={(v) => updateSettings({ enableSmartRouting: v })}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Selecciona automáticamente el mejor modelo según el tipo de pregunta y nivel de sensibilidad.
+                      </p>
+
+                      {settings.enableSmartRouting && (
+                        <div className="space-y-3 pt-2">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4 text-emerald-500" />
+                              <Label className="text-xs">Priorizar Seguridad</Label>
+                              <Switch
+                                checked={settings.prioritizeSecurity}
+                                onCheckedChange={(v) => updateSettings({ prioritizeSecurity: v, prioritizeCost: false, prioritizeSpeed: false })}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-amber-500" />
+                              <Label className="text-xs">Priorizar Coste</Label>
+                              <Switch
+                                checked={settings.prioritizeCost}
+                                onCheckedChange={(v) => updateSettings({ prioritizeCost: v, prioritizeSecurity: false, prioritizeSpeed: false })}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Zap className="h-4 w-4 text-blue-500" />
+                              <Label className="text-xs">Priorizar Velocidad</Label>
+                              <Switch
+                                checked={settings.prioritizeSpeed}
+                                onCheckedChange={(v) => updateSettings({ prioritizeSpeed: v, prioritizeSecurity: false, prioritizeCost: false })}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-xs">Clasificación de Datos por Defecto</Label>
+                            <Select
+                              value={settings.dataClassification}
+                              onValueChange={(v: 'public' | 'internal' | 'confidential' | 'restricted') => updateSettings({ dataClassification: v })}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="public">Público</SelectItem>
+                                <SelectItem value="internal">Interno</SelectItem>
+                                <SelectItem value="confidential">Confidencial</SelectItem>
+                                <SelectItem value="restricted">Restringido</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">Permitir IA externa para datos sensibles</Label>
+                            <Switch
+                              checked={settings.allowExternalForSensitive}
+                              onCheckedChange={(v) => updateSettings({ allowExternalForSensitive: v })}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <Separator />
+
+                    {/* Standard Settings */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">URL Ollama (Local)</label>
+                      <Input
+                        value={settings.ollamaUrl}
+                        onChange={(e) => updateSettings({ ollamaUrl: e.target.value })}
+                        placeholder="http://localhost:11434"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Temperatura: {settings.temperature}</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={settings.temperature}
+                        onChange={(e) => updateSettings({ temperature: parseFloat(e.target.value) })}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Máximo de tokens</label>
+                      <Input
+                        type="number"
+                        value={settings.maxTokens}
+                        onChange={(e) => updateSettings({ maxTokens: parseInt(e.target.value) || 4000 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Prompt del sistema (opcional)</label>
+                      <Textarea
+                        value={settings.systemPrompt || ''}
+                        onChange={(e) => updateSettings({ systemPrompt: e.target.value })}
+                        placeholder="Instrucciones personalizadas para el asistente..."
+                        rows={4}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Temperatura: {settings.temperature}</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={settings.temperature}
-                      onChange={(e) => updateSettings({ temperature: parseFloat(e.target.value) })}
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Máximo de tokens</label>
-                    <Input
-                      type="number"
-                      value={settings.maxTokens}
-                      onChange={(e) => updateSettings({ maxTokens: parseInt(e.target.value) || 4000 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Prompt del sistema (opcional)</label>
-                    <Textarea
-                      value={settings.systemPrompt || ''}
-                      onChange={(e) => updateSettings({ systemPrompt: e.target.value })}
-                      placeholder="Instrucciones personalizadas para el asistente..."
-                      rows={4}
-                    />
-                  </div>
-                </div>
+                </ScrollArea>
               </DialogContent>
             </Dialog>
 
@@ -531,7 +621,7 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
                       )}
                       
                       {msg.role === 'assistant' && (
-                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
+                        <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-border/50">
                           <Badge variant="outline" className="text-xs gap-1">
                             {msg.provider_type === 'local' ? (
                               <Server className="h-3 w-3" />
@@ -544,6 +634,45 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
                             <span className="text-xs text-muted-foreground">
                               {msg.tokens_used} tokens
                             </span>
+                          )}
+                          {/* Smart Routing Indicator */}
+                          {msg.routing_decision && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="secondary" className="text-xs gap-1 cursor-help">
+                                    <Brain className="h-3 w-3 text-violet-500" />
+                                    {Math.round(msg.routing_decision.totalScore)}%
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <div className="space-y-2 text-xs">
+                                    <p className="font-medium">Smart Routing</p>
+                                    <div className="grid grid-cols-2 gap-1">
+                                      <div className="flex items-center gap-1">
+                                        <Shield className="h-3 w-3 text-emerald-500" />
+                                        Seguridad: {Math.round(msg.routing_decision.securityScore)}%
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <DollarSign className="h-3 w-3 text-amber-500" />
+                                        Coste: {Math.round(msg.routing_decision.costScore)}%
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Zap className="h-3 w-3 text-blue-500" />
+                                        Latencia: {Math.round(msg.routing_decision.latencyScore)}%
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Sparkles className="h-3 w-3 text-violet-500" />
+                                        Capacidad: {Math.round(msg.routing_decision.capabilityScore)}%
+                                      </div>
+                                    </div>
+                                    {msg.routing_decision.reason && (
+                                      <p className="text-muted-foreground">{msg.routing_decision.reason}</p>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           )}
                           <Button
                             variant="ghost"

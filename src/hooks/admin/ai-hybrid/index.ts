@@ -95,4 +95,4 @@ export { useAISmartRouter } from './useAISmartRouter';
 export type { ProviderScore, RoutingContext, RoutingStats } from './useAISmartRouter';
 
 export { useAICopilot } from './useAICopilot';
-export type { CopilotMessage, CopilotConversation, EntityContext, CopilotSettings } from './useAICopilot';
+export type { CopilotMessage, CopilotConversation, EntityContext, CopilotSettings, RoutingInfo } from './useAICopilot';
