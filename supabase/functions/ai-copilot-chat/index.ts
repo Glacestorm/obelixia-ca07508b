@@ -187,6 +187,87 @@ serve(async (req) => {
       });
     }
 
+    // === SAVE LOCAL MESSAGE (when client calls Ollama directly) ===
+    if (action === 'save_local_message') {
+      const { 
+        user_message, 
+        assistant_message, 
+        model: localModel, 
+        tokens_used 
+      } = body as ChatRequest & { 
+        user_message?: string; 
+        assistant_message?: string; 
+        tokens_used?: number 
+      };
+
+      let convId = conversation_id;
+
+      // Create conversation if needed
+      if (!convId && user_message) {
+        const title = user_message.slice(0, 100);
+
+        const { data: newConv, error: createError } = await supabase
+          .from('ai_copilot_conversations')
+          .insert({
+            user_id: userId,
+            title,
+            entity_type: entity_context?.type,
+            entity_id: entity_context?.id,
+            entity_name: entity_context?.name,
+            model_used: localModel || 'llama3.2',
+            provider_type: 'local',
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        convId = newConv.id;
+      }
+
+      // Save user message
+      if (user_message && convId) {
+        await supabase
+          .from('ai_copilot_messages')
+          .insert({
+            conversation_id: convId,
+            role: 'user',
+            content: user_message,
+          });
+      }
+
+      // Save assistant message
+      if (assistant_message && convId) {
+        await supabase
+          .from('ai_copilot_messages')
+          .insert({
+            conversation_id: convId,
+            role: 'assistant',
+            content: assistant_message,
+            model: localModel || 'llama3.2',
+            provider_type: 'local',
+            tokens_used: tokens_used || 0,
+          });
+      }
+
+      // Update conversation timestamp
+      if (convId) {
+        await supabase
+          .from('ai_copilot_conversations')
+          .update({
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', convId);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        conversation_id: convId,
+        message: 'Local message saved'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // === CHAT ===
     if (action === 'chat' && messages && messages.length > 0) {
       let convId = conversation_id;

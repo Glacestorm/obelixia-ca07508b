@@ -443,6 +443,49 @@ export function useAICopilot() {
     }
   }, []);
 
+  // === CALL LOCAL OLLAMA DIRECTLY FROM BROWSER ===
+  const callLocalOllama = useCallback(async (
+    ollamaMessages: Array<{ role: string; content: string }>,
+    model: string,
+    ollamaUrl: string,
+    temperature: number
+  ): Promise<{ response: string; tokensUsed: number } | null> => {
+    try {
+      console.log(`[useAICopilot] Calling local Ollama at ${ollamaUrl} with model ${model}`);
+      
+      const response = await fetch(`${ollamaUrl}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          messages: ollamaMessages,
+          stream: false,
+          options: {
+            temperature,
+            num_predict: settings.maxTokens,
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const content = data.message?.content || data.response || '';
+      
+      console.log(`[useAICopilot] Local Ollama response received (${content.length} chars)`);
+      
+      return {
+        response: content,
+        tokensUsed: data.eval_count || 0,
+      };
+    } catch (err) {
+      console.error('[useAICopilot] Local Ollama error:', err);
+      throw err;
+    }
+  }, [settings.maxTokens]);
+
   // === SEND MESSAGE ===
   const sendMessage = useCallback(async (content: string): Promise<string | null> => {
     if (!content.trim()) return null;
@@ -451,15 +494,24 @@ export function useAICopilot() {
     const analysis = analyzeQuestion(content);
     let selectedModel = settings.model;
     let routingDecision: RoutingInfo | null = null;
+    let useLocalProvider = settings.providerType === 'local';
 
     // Smart routing if enabled and model is 'auto'
     if (settings.enableSmartRouting && (settings.model === 'auto' || settings.providerType === 'auto')) {
       const routing = selectBestModel(analysis, settings);
       selectedModel = routing.model;
       routingDecision = routing.scores;
+      useLocalProvider = routing.type === 'local';
       setLastRoutingDecision(routingDecision);
       
       console.log(`[useAICopilot] Smart Routing: ${routing.model} (${routing.type}) - Score: ${Math.round(routing.scores.totalScore)}%`);
+    }
+
+    // If providerType is explicitly 'local', use a local model
+    if (settings.providerType === 'local' && !selectedModel.includes('/')) {
+      // Ensure we use a local model name (not a cloud model like google/...)
+      selectedModel = settings.model !== 'auto' ? settings.model : 'llama3.2';
+      useLocalProvider = true;
     }
 
     // Optimistic update
@@ -478,53 +530,154 @@ export function useAICopilot() {
         { role: 'user', content }
       ];
 
-      const { data, error } = await supabase.functions.invoke('ai-copilot-chat', {
-        body: {
-          action: 'chat',
-          conversation_id: currentConversation?.id,
-          messages: allMessages,
-          model: selectedModel === 'auto' ? 'google/gemini-3-flash-preview' : selectedModel,
-          provider_type: routingDecision?.providerType || settings.providerType,
-          entity_context: entityContext,
-          system_prompt: settings.systemPrompt,
-          temperature: settings.temperature,
-          max_tokens: settings.maxTokens,
-          ollama_url: settings.ollamaUrl,
-          routing_info: routingDecision,
-          question_analysis: analysis,
+      // Build system prompt
+      const systemPrompt = settings.systemPrompt || `Eres un asistente de IA empresarial avanzado integrado en un sistema CRM/ERP.
+Responde de forma profesional y concisa en español.`;
+
+      const messagesWithSystem = [
+        { role: 'system', content: systemPrompt },
+        ...allMessages
+      ];
+
+      let responseData: {
+        response: string;
+        model: string;
+        source: 'local' | 'external';
+        tokens?: { prompt: number; completion: number };
+        conversation_id?: string;
+      };
+
+      // === LOCAL PROVIDER: Call Ollama directly from browser ===
+      if (useLocalProvider) {
+        console.log(`[useAICopilot] Using LOCAL provider: ${selectedModel} at ${settings.ollamaUrl}`);
+        
+        try {
+          const localResult = await callLocalOllama(
+            messagesWithSystem,
+            selectedModel,
+            settings.ollamaUrl,
+            settings.temperature
+          );
+
+          if (!localResult) {
+            throw new Error('No response from local Ollama');
+          }
+
+          responseData = {
+            response: localResult.response,
+            model: selectedModel,
+            source: 'local',
+            tokens: { prompt: 0, completion: localResult.tokensUsed },
+          };
+
+          // Save to database via edge function (without AI call)
+          try {
+            const { data: saveData } = await supabase.functions.invoke('ai-copilot-chat', {
+              body: {
+                action: 'save_local_message',
+                conversation_id: currentConversation?.id,
+                user_message: content,
+                assistant_message: localResult.response,
+                model: selectedModel,
+                provider_type: 'local',
+                tokens_used: localResult.tokensUsed,
+                entity_context: entityContext,
+              }
+            });
+            
+            if (saveData?.conversation_id) {
+              responseData.conversation_id = saveData.conversation_id;
+            }
+          } catch (saveErr) {
+            console.warn('[useAICopilot] Failed to save local message to DB:', saveErr);
+            // Continue anyway - the message was already processed
+          }
+        } catch (localErr) {
+          console.error('[useAICopilot] Local Ollama failed:', localErr);
+          
+          // If local fails and fallback is allowed, try external
+          if (settings.enableSmartRouting) {
+            console.log('[useAICopilot] Falling back to external provider...');
+            toast.warning('IA local no disponible, usando proveedor externo...');
+            
+            // Fall through to external provider
+            useLocalProvider = false;
+            selectedModel = 'google/gemini-2.5-flash';
+          } else {
+            throw new Error(`IA local no disponible: ${localErr instanceof Error ? localErr.message : 'Error de conexión'}. Verifica que Ollama esté ejecutándose en ${settings.ollamaUrl}`);
+          }
         }
-      });
+      }
 
-      if (error) throw error;
+      // === EXTERNAL PROVIDER: Use Edge Function ===
+      if (!useLocalProvider || !responseData!) {
+        console.log(`[useAICopilot] Using EXTERNAL provider: ${selectedModel}`);
+        
+        const { data, error } = await supabase.functions.invoke('ai-copilot-chat', {
+          body: {
+            action: 'chat',
+            conversation_id: currentConversation?.id,
+            messages: allMessages,
+            model: selectedModel === 'auto' ? 'google/gemini-2.5-flash' : selectedModel,
+            provider_type: 'external',
+            entity_context: entityContext,
+            system_prompt: settings.systemPrompt,
+            temperature: settings.temperature,
+            max_tokens: settings.maxTokens,
+            routing_info: routingDecision,
+            question_analysis: analysis,
+          }
+        });
 
-      if (!data?.success) {
-        throw new Error(data?.error || 'Error en la respuesta');
+        if (error) throw error;
+
+        if (!data?.success) {
+          throw new Error(data?.error || 'Error en la respuesta');
+        }
+
+        responseData = {
+          response: data.response,
+          model: data.model,
+          source: 'external',
+          tokens: data.tokens,
+          conversation_id: data.conversation_id,
+        };
       }
 
       // Add assistant message with routing info
       const assistantMessage: CopilotMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: data.response,
+        content: responseData.response,
         created_at: new Date().toISOString(),
-        model: data.model,
-        provider_type: data.source,
-        tokens_used: data.tokens?.prompt + data.tokens?.completion,
-        routing_decision: routingDecision || undefined,
+        model: responseData.model,
+        provider_type: responseData.source,
+        tokens_used: (responseData.tokens?.prompt || 0) + (responseData.tokens?.completion || 0),
+        routing_decision: routingDecision || {
+          selectedProvider: responseData.source === 'local' ? 'Ollama Local' : 'Lovable AI',
+          selectedModel: responseData.model,
+          providerType: responseData.source,
+          securityScore: responseData.source === 'local' ? 100 : 80,
+          costScore: responseData.source === 'local' ? 100 : 70,
+          latencyScore: 80,
+          capabilityScore: 85,
+          totalScore: responseData.source === 'local' ? 90 : 78,
+          reason: responseData.source === 'local' ? 'Procesado localmente' : 'Proveedor externo',
+        },
       };
       setMessages(prev => [...prev, assistantMessage]);
 
       // Update conversation if new
-      if (!currentConversation && data.conversation_id) {
+      if (!currentConversation && responseData.conversation_id) {
         setCurrentConversation({
-          id: data.conversation_id,
+          id: responseData.conversation_id,
           user_id: '',
           title: content.slice(0, 100),
           message_count: 2,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          model_used: data.model,
-          provider_type: data.source,
+          model_used: responseData.model,
+          provider_type: responseData.source,
           entity_type: entityContext?.type,
           entity_id: entityContext?.id,
           entity_name: entityContext?.name,
@@ -532,7 +685,7 @@ export function useAICopilot() {
         fetchConversations();
       }
 
-      return data.response;
+      return responseData.response;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
       console.error('[useAICopilot] sendMessage error:', errorMessage);
@@ -552,7 +705,7 @@ export function useAICopilot() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, currentConversation, entityContext, settings, fetchConversations, analyzeQuestion, selectBestModel]);
+  }, [messages, currentConversation, entityContext, settings, fetchConversations, analyzeQuestion, selectBestModel, callLocalOllama]);
 
   // === NEW CONVERSATION ===
   const newConversation = useCallback(() => {
