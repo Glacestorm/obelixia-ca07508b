@@ -1,8 +1,17 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { DashboardLayout } from '@/layouts';
-import { OmnichannelInbox, Conversation, Message } from '@/components/crm/omnichannel';
+import { 
+  OmnichannelInbox, 
+  Conversation, 
+  Message, 
+  AgentStatusPanel,
+  AISuggestionPanel,
+  QuickRepliesPanel 
+} from '@/components/crm/omnichannel';
 import { useOmnichannelHub, OmniConversation, OmniMessage } from '@/hooks/crm/omnichannel';
-import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Loader2, Sparkles, Settings } from 'lucide-react';
 
 /**
  * Adapter functions to convert between hook types and UI component types
@@ -53,10 +62,16 @@ function mapOmniMessageToUI(msg: OmniMessage): Message {
 }
 
 const OmnichannelPage = () => {
+  const { user } = useAuth();
+  const [showAISuggestion, setShowAISuggestion] = useState(false);
+  const [showAgentPanel, setShowAgentPanel] = useState(true);
+
   const {
     conversations,
     currentConversation,
     messages,
+    agentStatus,
+    quickReplies,
     isLoading,
     isSending,
     selectConversation,
@@ -64,6 +79,8 @@ const OmnichannelPage = () => {
     assignConversation,
     changeStatus,
     addTag,
+    updateAgentStatus,
+    suggestResponse,
   } = useOmnichannelHub();
 
   // Map hook data to UI format
@@ -80,6 +97,19 @@ const OmnichannelPage = () => {
   const uiCurrentConversation = useMemo(() => 
     currentConversation ? mapOmniConversationToUI(currentConversation) : undefined,
     [currentConversation]
+  );
+
+  // Map quick replies to simple format
+  const mappedQuickReplies = useMemo(() => 
+    quickReplies.map(qr => ({
+      id: qr.id,
+      shortcut: qr.shortcut,
+      title: qr.title,
+      content: qr.content,
+      category: qr.category,
+      channels: qr.channels,
+    })),
+    [quickReplies]
   );
 
   // Handlers
@@ -107,26 +137,102 @@ const OmnichannelPage = () => {
     addTag(conversationId, tag);
   }, [addTag]);
 
+  const handleAgentStatusChange = useCallback((status: 'online' | 'away' | 'busy' | 'offline', message?: string) => {
+    updateAgentStatus(status, message);
+  }, [updateAgentStatus]);
+
+  const handleSuggestResponse = useCallback(async () => {
+    if (!currentConversation) return null;
+    return suggestResponse(currentConversation.id);
+  }, [currentConversation, suggestResponse]);
+
+  const handleApplySuggestion = useCallback((suggestion: string) => {
+    if (currentConversation) {
+      sendMessage(currentConversation.id, suggestion);
+    }
+  }, [currentConversation, sendMessage]);
+
   return (
     <DashboardLayout title="Inbox Omnicanal">
-      <div className="p-4 h-[calc(100vh-4rem)]">
-        {isLoading && conversations.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="p-4 h-[calc(100vh-4rem)] flex gap-4">
+        {/* Main Inbox */}
+        <div className="flex-1 min-w-0">
+          {isLoading && conversations.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="relative h-full">
+              <OmnichannelInbox 
+                conversations={uiConversations}
+                messages={uiMessages}
+                currentConversation={uiCurrentConversation}
+                onSelectConversation={handleSelectConversation}
+                onSendMessage={handleSendMessage}
+                onAssign={handleAssign}
+                onUpdateStatus={handleUpdateStatus}
+                onAddTag={handleAddTag}
+                isLoading={isSending}
+              />
+
+              {/* Floating AI Button */}
+              {currentConversation && (
+                <div className="absolute bottom-20 right-8">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 shadow-lg bg-background"
+                    onClick={() => setShowAISuggestion(!showAISuggestion)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Sugerencia IA
+                  </Button>
+                </div>
+              )}
+
+              {/* AI Suggestion Panel */}
+              {currentConversation && (
+                <div className="absolute bottom-24 right-8 w-96">
+                  <AISuggestionPanel
+                    conversationId={currentConversation.id}
+                    isVisible={showAISuggestion}
+                    onSuggest={handleSuggestResponse}
+                    onApplySuggestion={handleApplySuggestion}
+                    onClose={() => setShowAISuggestion(false)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Agent Status Panel (collapsible) */}
+        {showAgentPanel && (
+          <div className="flex-shrink-0">
+            <AgentStatusPanel
+              agentName={user?.email?.split('@')[0] || 'Agente'}
+              currentStatus={agentStatus?.status || 'online'}
+              statusMessage={agentStatus?.status_message}
+              currentChatCount={agentStatus?.current_chat_count || conversations.filter(c => c.status === 'open').length}
+              maxChats={agentStatus?.max_chats || 10}
+              totalHandledToday={agentStatus?.total_handled_today || 0}
+              avgResponseTime={agentStatus?.avg_response_time_today}
+              skills={agentStatus?.skills || []}
+              channels={agentStatus?.channels || ['whatsapp', 'webchat', 'email']}
+              onStatusChange={handleAgentStatusChange}
+            />
           </div>
-        ) : (
-          <OmnichannelInbox 
-            conversations={uiConversations}
-            messages={uiMessages}
-            currentConversation={uiCurrentConversation}
-            onSelectConversation={handleSelectConversation}
-            onSendMessage={handleSendMessage}
-            onAssign={handleAssign}
-            onUpdateStatus={handleUpdateStatus}
-            onAddTag={handleAddTag}
-            isLoading={isSending}
-          />
         )}
+
+        {/* Toggle Agent Panel Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-20 right-4 h-8 w-8"
+          onClick={() => setShowAgentPanel(!showAgentPanel)}
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
       </div>
     </DashboardLayout>
   );
