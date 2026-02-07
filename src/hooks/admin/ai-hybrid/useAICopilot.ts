@@ -453,6 +453,16 @@ export function useAICopilot() {
     const timeoutSec = Math.max(5, Number(settings.requestTimeout || 60));
     const timeoutMs = timeoutSec * 1000;
 
+    // Guardrail: browsers block insecure (http) requests from secure (https) pages.
+    const isHttpsContext = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    const isHttpTarget = ollamaUrl.trim().toLowerCase().startsWith('http://');
+    if (isHttpsContext && isHttpTarget) {
+      throw new Error(
+        `Bloqueo del navegador (HTTPS → HTTP): estás usando el Copilot en una página HTTPS pero Ollama está en HTTP (${ollamaUrl}). ` +
+          `Solución: expón Ollama por HTTPS (proxy TLS) y usa una URL https://..., o prueba el Copilot en un entorno http://localhost.`
+      );
+    }
+
     try {
       console.log(`[useAICopilot] Calling local Ollama at ${ollamaUrl} with model ${model}`);
 
@@ -510,20 +520,24 @@ export function useAICopilot() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
 
-      // Common cases with clearer hints
+      // Common case: timeout
       if (err instanceof DOMException && err.name === 'AbortError') {
         throw new Error(`Timeout conectando a Ollama (${timeoutSec}s) en ${ollamaUrl}`);
       }
 
-      // "TypeError: Failed to fetch" is common for CORS / Mixed Content / PNA
-      if (msg.toLowerCase().includes('failed to fetch')) {
-        const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-        const isHttp = ollamaUrl.startsWith('http://');
+      // Network-level failures commonly surface as TypeError / 'Failed to fetch'
+      const lower = msg.toLowerCase();
+      const looksLikeFetchFailure =
+        err instanceof TypeError ||
+        lower.includes('failed to fetch') ||
+        lower.includes('fetch failed') ||
+        lower.includes('networkerror') ||
+        lower.includes('load failed');
 
+      if (looksLikeFetchFailure) {
         const hint =
-          isHttps && isHttp
-            ? 'Posible bloqueo del navegador (Mixed Content / Private Network Access) al llamar a una URL http:// desde una página https://.'
-            : 'Posible CORS o servidor Ollama no accesible.';
+          'Posibles causas: (1) CORS no permitido en Ollama; (2) Chrome/Edge bloqueando acceso a red privada (PNA); (3) servidor no accesible.' +
+          ' En el servidor Ollama, revisa OLLAMA_HOST=0.0.0.0 y configura OLLAMA_ORIGINS para permitir el dominio donde abres el Copilot.';
 
         throw new Error(`No se pudo conectar a Ollama en ${ollamaUrl}. ${hint}`);
       }

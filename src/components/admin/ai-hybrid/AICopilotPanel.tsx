@@ -530,9 +530,15 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
                           onChange={(e) => updateSettings({ ollamaUrl: e.target.value })}
                           placeholder="http://localhost:11434 o http://192.168.1.100:11434"
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Introduce la URL de tu servidor Ollama local o remoto.
-                        </p>
+                        {typeof window !== 'undefined' && window.location.protocol === 'https:' && settings.ollamaUrl.trim().toLowerCase().startsWith('http://') ? (
+                          <p className="text-xs text-muted-foreground">
+                            Estás abriendo el Copilot en HTTPS, pero esta URL es HTTP: el navegador la bloqueará. Usa un endpoint HTTPS (proxy TLS) para Ollama.
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Introduce la URL de tu servidor Ollama local o remoto.
+                          </p>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
