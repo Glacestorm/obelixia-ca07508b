@@ -1932,6 +1932,196 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_credit_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          credential_id: string
+          current_balance: number | null
+          dismissed_at: string | null
+          id: string
+          is_dismissed: boolean
+          is_read: boolean
+          message: string | null
+          notified_users: string[] | null
+          read_at: string | null
+          threshold_percentage: number | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          credential_id: string
+          current_balance?: number | null
+          dismissed_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          message?: string | null
+          notified_users?: string[] | null
+          read_at?: string | null
+          threshold_percentage?: number | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          credential_id?: string
+          current_balance?: number | null
+          dismissed_at?: string | null
+          id?: string
+          is_dismissed?: boolean
+          is_read?: boolean
+          message?: string | null
+          notified_users?: string[] | null
+          read_at?: string | null
+          threshold_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credit_alerts_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "ai_provider_credentials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_credits_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at: string
+          created_by: string | null
+          credential_id: string
+          description: string | null
+          external_transaction_id: string | null
+          id: string
+          invoice_url: string | null
+          metadata: Json | null
+          payment_reference: string | null
+          transaction_type: Database["public"]["Enums"]["ai_credit_transaction_type"]
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          balance_before: number
+          created_at?: string
+          created_by?: string | null
+          credential_id: string
+          description?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          invoice_url?: string | null
+          metadata?: Json | null
+          payment_reference?: string | null
+          transaction_type: Database["public"]["Enums"]["ai_credit_transaction_type"]
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          created_by?: string | null
+          credential_id?: string
+          description?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          invoice_url?: string | null
+          metadata?: Json | null
+          payment_reference?: string | null
+          transaction_type?: Database["public"]["Enums"]["ai_credit_transaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_credits_transactions_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "ai_provider_credentials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_data_classification_rules: {
+        Row: {
+          anonymization_method: string | null
+          anonymization_required: boolean
+          can_send_external: boolean
+          classification_level: Database["public"]["Enums"]["ai_data_classification"]
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          data_category: string
+          description: string | null
+          entity_types: string[] | null
+          field_patterns: Json | null
+          id: string
+          is_active: boolean
+          is_system_rule: boolean
+          keywords: string[] | null
+          priority: number | null
+          rule_name: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          anonymization_method?: string | null
+          anonymization_required?: boolean
+          can_send_external?: boolean
+          classification_level?: Database["public"]["Enums"]["ai_data_classification"]
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_category: string
+          description?: string | null
+          entity_types?: string[] | null
+          field_patterns?: Json | null
+          id?: string
+          is_active?: boolean
+          is_system_rule?: boolean
+          keywords?: string[] | null
+          priority?: number | null
+          rule_name: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          anonymization_method?: string | null
+          anonymization_required?: boolean
+          can_send_external?: boolean
+          classification_level?: Database["public"]["Enums"]["ai_data_classification"]
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_category?: string
+          description?: string | null
+          entity_types?: string[] | null
+          field_patterns?: Json | null
+          id?: string
+          is_active?: boolean
+          is_system_rule?: boolean
+          keywords?: string[] | null
+          priority?: number | null
+          rule_name?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_data_classification_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_data_classification_rules_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_interventions: {
         Row: {
           ai_analysis: string
@@ -1990,6 +2180,339 @@ export type Database = {
             columns: ["diagnostic_log_id"]
             isOneToOne: false
             referencedRelation: "system_diagnostic_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_provider_credentials: {
+        Row: {
+          additional_config: Json | null
+          api_key_encrypted: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          credits_alert_threshold: number | null
+          credits_balance: number | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          last_balance_sync: string | null
+          last_usage_check: string | null
+          monthly_budget_limit: number | null
+          organization_id: string | null
+          project_id: string | null
+          provider_id: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          additional_config?: Json | null
+          api_key_encrypted?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          credits_alert_threshold?: number | null
+          credits_balance?: number | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last_balance_sync?: string | null
+          last_usage_check?: string | null
+          monthly_budget_limit?: number | null
+          organization_id?: string | null
+          project_id?: string | null
+          provider_id: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          additional_config?: Json | null
+          api_key_encrypted?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          credits_alert_threshold?: number | null
+          credits_balance?: number | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last_balance_sync?: string | null
+          last_usage_check?: string | null
+          monthly_budget_limit?: number | null
+          organization_id?: string | null
+          project_id?: string | null
+          provider_id?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_provider_credentials_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_provider_credentials_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_provider_credentials_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_providers: {
+        Row: {
+          api_endpoint: string | null
+          billing_url: string | null
+          capabilities: Json | null
+          created_at: string
+          documentation_url: string | null
+          icon_name: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          order_index: number | null
+          pricing_info: Json | null
+          provider_key: string
+          provider_type: Database["public"]["Enums"]["ai_provider_type"]
+          requires_api_key: boolean
+          supported_models: Json | null
+          updated_at: string
+        }
+        Insert: {
+          api_endpoint?: string | null
+          billing_url?: string | null
+          capabilities?: Json | null
+          created_at?: string
+          documentation_url?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          order_index?: number | null
+          pricing_info?: Json | null
+          provider_key: string
+          provider_type?: Database["public"]["Enums"]["ai_provider_type"]
+          requires_api_key?: boolean
+          supported_models?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          api_endpoint?: string | null
+          billing_url?: string | null
+          capabilities?: Json | null
+          created_at?: string
+          documentation_url?: string | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          order_index?: number | null
+          pricing_info?: Json | null
+          provider_key?: string
+          provider_type?: Database["public"]["Enums"]["ai_provider_type"]
+          requires_api_key?: boolean
+          supported_models?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_routing_policies: {
+        Row: {
+          auto_fallback_on_error: boolean
+          auto_fallback_on_low_credits: boolean
+          company_id: string | null
+          conditions: Json | null
+          created_at: string
+          created_by: string | null
+          data_classification_override:
+            | Database["public"]["Enums"]["ai_data_classification"]
+            | null
+          description: string | null
+          fallback_provider_id: string | null
+          id: string
+          is_active: boolean
+          local_provider_url: string | null
+          max_tokens_per_request: number | null
+          policy_name: string
+          preferred_provider_id: string | null
+          priority: number | null
+          routing_mode: Database["public"]["Enums"]["ai_routing_mode"]
+          temperature: number | null
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          auto_fallback_on_error?: boolean
+          auto_fallback_on_low_credits?: boolean
+          company_id?: string | null
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          data_classification_override?:
+            | Database["public"]["Enums"]["ai_data_classification"]
+            | null
+          description?: string | null
+          fallback_provider_id?: string | null
+          id?: string
+          is_active?: boolean
+          local_provider_url?: string | null
+          max_tokens_per_request?: number | null
+          policy_name: string
+          preferred_provider_id?: string | null
+          priority?: number | null
+          routing_mode?: Database["public"]["Enums"]["ai_routing_mode"]
+          temperature?: number | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          auto_fallback_on_error?: boolean
+          auto_fallback_on_low_credits?: boolean
+          company_id?: string | null
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          data_classification_override?:
+            | Database["public"]["Enums"]["ai_data_classification"]
+            | null
+          description?: string | null
+          fallback_provider_id?: string | null
+          id?: string
+          is_active?: boolean
+          local_provider_url?: string | null
+          max_tokens_per_request?: number | null
+          policy_name?: string
+          preferred_provider_id?: string | null
+          priority?: number | null
+          routing_mode?: Database["public"]["Enums"]["ai_routing_mode"]
+          temperature?: number | null
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_routing_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_routing_policies_fallback_provider_id_fkey"
+            columns: ["fallback_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_routing_policies_preferred_provider_id_fkey"
+            columns: ["preferred_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_routing_policies_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_settings: {
+        Row: {
+          auto_anonymize_confidential: boolean
+          block_restricted_external: boolean
+          cache_responses: boolean
+          cache_ttl_seconds: number | null
+          company_id: string | null
+          created_at: string
+          default_local_model: string | null
+          default_local_provider_url: string | null
+          default_routing_mode: Database["public"]["Enums"]["ai_routing_mode"]
+          enable_cost_tracking: boolean
+          enable_privacy_gateway: boolean
+          enable_usage_logging: boolean
+          id: string
+          low_credits_threshold_critical: number | null
+          low_credits_threshold_warning: number | null
+          metadata: Json | null
+          monthly_budget_alert_threshold: number | null
+          strict_privacy_mode: boolean
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          auto_anonymize_confidential?: boolean
+          block_restricted_external?: boolean
+          cache_responses?: boolean
+          cache_ttl_seconds?: number | null
+          company_id?: string | null
+          created_at?: string
+          default_local_model?: string | null
+          default_local_provider_url?: string | null
+          default_routing_mode?: Database["public"]["Enums"]["ai_routing_mode"]
+          enable_cost_tracking?: boolean
+          enable_privacy_gateway?: boolean
+          enable_usage_logging?: boolean
+          id?: string
+          low_credits_threshold_critical?: number | null
+          low_credits_threshold_warning?: number | null
+          metadata?: Json | null
+          monthly_budget_alert_threshold?: number | null
+          strict_privacy_mode?: boolean
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          auto_anonymize_confidential?: boolean
+          block_restricted_external?: boolean
+          cache_responses?: boolean
+          cache_ttl_seconds?: number | null
+          company_id?: string | null
+          created_at?: string
+          default_local_model?: string | null
+          default_local_provider_url?: string | null
+          default_routing_mode?: Database["public"]["Enums"]["ai_routing_mode"]
+          enable_cost_tracking?: boolean
+          enable_privacy_gateway?: boolean
+          enable_usage_logging?: boolean
+          id?: string
+          low_credits_threshold_critical?: number | null
+          low_credits_threshold_warning?: number | null
+          metadata?: Json | null
+          monthly_budget_alert_threshold?: number | null
+          strict_privacy_mode?: boolean
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "crm_workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2068,6 +2591,119 @@ export type Database = {
             columns: ["target_gestor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage_logs: {
+        Row: {
+          company_id: string | null
+          completion_tokens: number | null
+          created_at: string
+          credential_id: string | null
+          data_classification_applied:
+            | Database["public"]["Enums"]["ai_data_classification"]
+            | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          model_used: string | null
+          prompt_tokens: number | null
+          provider_id: string | null
+          request_timestamp: string
+          request_type: string | null
+          response_time_ms: number | null
+          source_action: string | null
+          source_module: string | null
+          success: boolean
+          total_cost: number | null
+          total_tokens: number | null
+          user_id: string | null
+          was_anonymized: boolean | null
+          workspace_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          completion_tokens?: number | null
+          created_at?: string
+          credential_id?: string | null
+          data_classification_applied?:
+            | Database["public"]["Enums"]["ai_data_classification"]
+            | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          model_used?: string | null
+          prompt_tokens?: number | null
+          provider_id?: string | null
+          request_timestamp?: string
+          request_type?: string | null
+          response_time_ms?: number | null
+          source_action?: string | null
+          source_module?: string | null
+          success?: boolean
+          total_cost?: number | null
+          total_tokens?: number | null
+          user_id?: string | null
+          was_anonymized?: boolean | null
+          workspace_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          completion_tokens?: number | null
+          created_at?: string
+          credential_id?: string | null
+          data_classification_applied?:
+            | Database["public"]["Enums"]["ai_data_classification"]
+            | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          model_used?: string | null
+          prompt_tokens?: number | null
+          provider_id?: string | null
+          request_timestamp?: string
+          request_type?: string | null
+          response_time_ms?: number | null
+          source_action?: string | null
+          source_module?: string | null
+          success?: boolean
+          total_cost?: number | null
+          total_tokens?: number | null
+          user_id?: string | null
+          was_anonymized?: boolean | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_logs_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "ai_provider_credentials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_logs_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_usage_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "crm_workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -61550,6 +62186,10 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      user_has_crm_workspace_access: {
+        Args: { p_workspace_id: string }
+        Returns: boolean
+      }
       user_has_erp_company_access: {
         Args: { p_company_id: string }
         Returns: boolean
@@ -61568,6 +62208,23 @@ export type Database = {
       }
     }
     Enums: {
+      ai_credit_transaction_type:
+        | "purchase"
+        | "usage"
+        | "refund"
+        | "bonus"
+        | "adjustment"
+      ai_data_classification:
+        | "public"
+        | "internal"
+        | "confidential"
+        | "restricted"
+      ai_provider_type: "local" | "external" | "hybrid"
+      ai_routing_mode:
+        | "local_only"
+        | "external_only"
+        | "hybrid_auto"
+        | "hybrid_manual"
       app_role:
         | "superadmin"
         | "admin"
@@ -61832,6 +62489,26 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_credit_transaction_type: [
+        "purchase",
+        "usage",
+        "refund",
+        "bonus",
+        "adjustment",
+      ],
+      ai_data_classification: [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+      ],
+      ai_provider_type: ["local", "external", "hybrid"],
+      ai_routing_mode: [
+        "local_only",
+        "external_only",
+        "hybrid_auto",
+        "hybrid_manual",
+      ],
       app_role: [
         "superadmin",
         "admin",
