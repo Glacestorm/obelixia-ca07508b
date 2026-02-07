@@ -8420,6 +8420,122 @@ export type Database = {
           },
         ]
       }
+      crm_cdp_segment_members: {
+        Row: {
+          added_at: string | null
+          id: string
+          match_score: number | null
+          matching_conditions: Json | null
+          profile_id: string
+          removed_at: string | null
+          segment_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          id?: string
+          match_score?: number | null
+          matching_conditions?: Json | null
+          profile_id: string
+          removed_at?: string | null
+          segment_id: string
+        }
+        Update: {
+          added_at?: string | null
+          id?: string
+          match_score?: number | null
+          matching_conditions?: Json | null
+          profile_id?: string
+          removed_at?: string | null
+          segment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_cdp_segment_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "crm_unified_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_cdp_segment_members_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cdp_segments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_cdp_segments: {
+        Row: {
+          auto_refresh: boolean | null
+          category: string | null
+          company_id: string | null
+          computation_duration_ms: number | null
+          condition_logic: string | null
+          conditions: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_computed_at: string | null
+          member_count: number | null
+          name: string
+          refresh_interval_hours: number | null
+          segment_type: string | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_refresh?: boolean | null
+          category?: string | null
+          company_id?: string | null
+          computation_duration_ms?: number | null
+          condition_logic?: string | null
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_computed_at?: string | null
+          member_count?: number | null
+          name: string
+          refresh_interval_hours?: number | null
+          segment_type?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_refresh?: boolean | null
+          category?: string | null
+          company_id?: string | null
+          computation_duration_ms?: number | null
+          condition_logic?: string | null
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_computed_at?: string | null
+          member_count?: number | null
+          name?: string
+          refresh_interval_hours?: number | null
+          segment_type?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_cdp_segments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_connectors: {
         Row: {
           connector_key: string
@@ -8574,6 +8690,147 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_customer_journeys: {
+        Row: {
+          company_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          current_stage: string
+          current_stage_entered_at: string | null
+          dropped_reason: string | null
+          engagement_trend: string | null
+          id: string
+          journey_name: string
+          journey_type: string | null
+          previous_stage: string | null
+          profile_id: string
+          progress_percentage: number | null
+          stages_completed: string[] | null
+          stages_history: Json | null
+          status: string | null
+          time_in_journey_days: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          current_stage: string
+          current_stage_entered_at?: string | null
+          dropped_reason?: string | null
+          engagement_trend?: string | null
+          id?: string
+          journey_name: string
+          journey_type?: string | null
+          previous_stage?: string | null
+          profile_id: string
+          progress_percentage?: number | null
+          stages_completed?: string[] | null
+          stages_history?: Json | null
+          status?: string | null
+          time_in_journey_days?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          current_stage?: string
+          current_stage_entered_at?: string | null
+          dropped_reason?: string | null
+          engagement_trend?: string | null
+          id?: string
+          journey_name?: string
+          journey_type?: string | null
+          previous_stage?: string | null
+          profile_id?: string
+          progress_percentage?: number | null
+          stages_completed?: string[] | null
+          stages_history?: Json | null
+          status?: string | null
+          time_in_journey_days?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_customer_journeys_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_customer_journeys_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "crm_unified_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_data_enrichment_queue: {
+        Row: {
+          company_id: string | null
+          confidence_score: number | null
+          enriched_data: Json | null
+          enrichment_source: string
+          enrichment_type: string | null
+          error_message: string | null
+          fields_updated: string[] | null
+          id: string
+          processed_at: string | null
+          profile_id: string
+          requested_at: string | null
+          requested_by: string | null
+          status: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          confidence_score?: number | null
+          enriched_data?: Json | null
+          enrichment_source: string
+          enrichment_type?: string | null
+          error_message?: string | null
+          fields_updated?: string[] | null
+          id?: string
+          processed_at?: string | null
+          profile_id: string
+          requested_at?: string | null
+          requested_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          confidence_score?: number | null
+          enriched_data?: Json | null
+          enrichment_source?: string
+          enrichment_type?: string | null
+          error_message?: string | null
+          fields_updated?: string[] | null
+          id?: string
+          processed_at?: string | null
+          profile_id?: string
+          requested_at?: string | null
+          requested_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_data_enrichment_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_data_enrichment_queue_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "crm_unified_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -9024,6 +9281,66 @@ export type Database = {
             columns: ["form_id"]
             isOneToOne: false
             referencedRelation: "crm_marketing_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_identity_graph: {
+        Row: {
+          company_id: string | null
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          identifier_hash: string | null
+          identifier_type: string
+          identifier_value: string
+          is_primary: boolean | null
+          is_verified: boolean | null
+          master_profile_id: string
+          match_source: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          identifier_hash?: string | null
+          identifier_type: string
+          identifier_value: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          master_profile_id: string
+          match_source?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          identifier_hash?: string | null
+          identifier_type?: string
+          identifier_value?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          master_profile_id?: string
+          match_source?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_identity_graph_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_identity_graph_master_profile_id_fkey"
+            columns: ["master_profile_id"]
+            isOneToOne: false
+            referencedRelation: "crm_unified_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -9955,6 +10272,230 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_touchpoints: {
+        Row: {
+          campaign_id: string | null
+          channel: string
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          engagement_value: number | null
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          performed_by: string | null
+          profile_id: string
+          reference_id: string | null
+          reference_type: string | null
+          sentiment: string | null
+          source: string | null
+          title: string
+          touchpoint_type: string
+          utm_params: Json | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          channel: string
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          engagement_value?: number | null
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          performed_by?: string | null
+          profile_id: string
+          reference_id?: string | null
+          reference_type?: string | null
+          sentiment?: string | null
+          source?: string | null
+          title: string
+          touchpoint_type: string
+          utm_params?: Json | null
+        }
+        Update: {
+          campaign_id?: string | null
+          channel?: string
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          engagement_value?: number | null
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          performed_by?: string | null
+          profile_id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          sentiment?: string | null
+          source?: string | null
+          title?: string
+          touchpoint_type?: string
+          utm_params?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_touchpoints_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_touchpoints_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "crm_unified_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_unified_profiles: {
+        Row: {
+          account_tier: string | null
+          annual_revenue: number | null
+          company_id: string | null
+          company_name: string | null
+          company_size: string | null
+          contact_id: string | null
+          created_at: string | null
+          custom_attributes: Json | null
+          customer_segment: string | null
+          data_quality_score: number | null
+          deal_id: string | null
+          display_name: string
+          employee_count: number | null
+          engagement_score: number | null
+          first_touch_at: string | null
+          fit_score: number | null
+          headquarters_location: Json | null
+          health_score: number | null
+          id: string
+          industry: string | null
+          intent_score: number | null
+          is_merged: boolean | null
+          job_title: string | null
+          last_activity_at: string | null
+          last_touch_at: string | null
+          lifecycle_stage: string | null
+          lifetime_value: number | null
+          merge_source_ids: string[] | null
+          persona_type: string | null
+          preferred_channel: string | null
+          preferred_language: string | null
+          primary_email: string | null
+          primary_phone: string | null
+          requires_enrichment: boolean | null
+          secondary_emails: string[] | null
+          secondary_phones: string[] | null
+          tags: string[] | null
+          timezone: string | null
+          total_interactions: number | null
+          total_score: number | null
+          total_touchpoints: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_tier?: string | null
+          annual_revenue?: number | null
+          company_id?: string | null
+          company_name?: string | null
+          company_size?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          custom_attributes?: Json | null
+          customer_segment?: string | null
+          data_quality_score?: number | null
+          deal_id?: string | null
+          display_name: string
+          employee_count?: number | null
+          engagement_score?: number | null
+          first_touch_at?: string | null
+          fit_score?: number | null
+          headquarters_location?: Json | null
+          health_score?: number | null
+          id?: string
+          industry?: string | null
+          intent_score?: number | null
+          is_merged?: boolean | null
+          job_title?: string | null
+          last_activity_at?: string | null
+          last_touch_at?: string | null
+          lifecycle_stage?: string | null
+          lifetime_value?: number | null
+          merge_source_ids?: string[] | null
+          persona_type?: string | null
+          preferred_channel?: string | null
+          preferred_language?: string | null
+          primary_email?: string | null
+          primary_phone?: string | null
+          requires_enrichment?: boolean | null
+          secondary_emails?: string[] | null
+          secondary_phones?: string[] | null
+          tags?: string[] | null
+          timezone?: string | null
+          total_interactions?: number | null
+          total_score?: number | null
+          total_touchpoints?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_tier?: string | null
+          annual_revenue?: number | null
+          company_id?: string | null
+          company_name?: string | null
+          company_size?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          custom_attributes?: Json | null
+          customer_segment?: string | null
+          data_quality_score?: number | null
+          deal_id?: string | null
+          display_name?: string
+          employee_count?: number | null
+          engagement_score?: number | null
+          first_touch_at?: string | null
+          fit_score?: number | null
+          headquarters_location?: Json | null
+          health_score?: number | null
+          id?: string
+          industry?: string | null
+          intent_score?: number | null
+          is_merged?: boolean | null
+          job_title?: string | null
+          last_activity_at?: string | null
+          last_touch_at?: string | null
+          lifecycle_stage?: string | null
+          lifetime_value?: number | null
+          merge_source_ids?: string[] | null
+          persona_type?: string | null
+          preferred_channel?: string | null
+          preferred_language?: string | null
+          primary_email?: string | null
+          primary_phone?: string | null
+          requires_enrichment?: boolean | null
+          secondary_emails?: string[] | null
+          secondary_phones?: string[] | null
+          tags?: string[] | null
+          timezone?: string | null
+          total_interactions?: number | null
+          total_score?: number | null
+          total_touchpoints?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_unified_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
