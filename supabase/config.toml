@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.ai-copilot-chat]
+verify_jwt = true
+
 [functions.ai-provider-manager]
 verify_jwt = true
 

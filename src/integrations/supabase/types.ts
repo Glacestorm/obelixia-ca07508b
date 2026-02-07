@@ -1989,6 +1989,95 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_copilot_conversations: {
+        Row: {
+          created_at: string
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string | null
+          id: string
+          message_count: number | null
+          metadata: Json | null
+          model_used: string | null
+          provider_type: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          id?: string
+          message_count?: number | null
+          metadata?: Json | null
+          model_used?: string | null
+          provider_type?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          id?: string
+          message_count?: number | null
+          metadata?: Json | null
+          model_used?: string | null
+          provider_type?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      ai_copilot_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          model: string | null
+          provider_type: string | null
+          role: string
+          tokens_used: number | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          model?: string | null
+          provider_type?: string | null
+          role: string
+          tokens_used?: number | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          model?: string | null
+          provider_type?: string | null
+          role?: string
+          tokens_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_copilot_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_copilot_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_credit_alerts: {
         Row: {
           alert_type: string

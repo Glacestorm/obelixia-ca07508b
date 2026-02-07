@@ -93,3 +93,6 @@ export type { LegalValidation, LegalValidationContext, ApplicableRegulations } f
 
 export { useAISmartRouter } from './useAISmartRouter';
 export type { ProviderScore, RoutingContext, RoutingStats } from './useAISmartRouter';
+
+export { useAICopilot } from './useAICopilot';
+export type { CopilotMessage, CopilotConversation, EntityContext, CopilotSettings } from './useAICopilot';
