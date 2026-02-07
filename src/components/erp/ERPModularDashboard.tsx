@@ -1,5 +1,6 @@
 /**
  * Dashboard Principal del ERP Modular
+ * @version 2.1.0
  */
 
 import React, { useState, useEffect } from 'react';
