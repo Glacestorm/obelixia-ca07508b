@@ -25,6 +25,9 @@ export * from './agriculture';
 // Administración Pública / Gobierno
 export * from './government';
 
+// GALIA - Gestión de Ayudas LEADER con IA
+export * from './galia';
+
 // Inmobiliaria
 export * from './realestate';
 
