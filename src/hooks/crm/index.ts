@@ -28,3 +28,6 @@ export * from './customer360';
 
 // Advanced Analytics & Reporting (Phase 5)
 export * from './analytics';
+
+// Omnichannel Communication Hub (Phase 6)
+export * from './omnichannel';

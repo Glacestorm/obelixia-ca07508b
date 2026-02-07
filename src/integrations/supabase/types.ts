@@ -8116,6 +8116,113 @@ export type Database = {
           },
         ]
       }
+      crm_agent_status: {
+        Row: {
+          agent_id: string
+          agent_name: string | null
+          avg_response_time_today: number | null
+          channels: string[] | null
+          created_at: string
+          current_chat_count: number | null
+          id: string
+          last_activity_at: string | null
+          max_chats: number | null
+          session_started_at: string | null
+          skills: string[] | null
+          status: string
+          status_message: string | null
+          team_id: string | null
+          total_handled_today: number | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          agent_name?: string | null
+          avg_response_time_today?: number | null
+          channels?: string[] | null
+          created_at?: string
+          current_chat_count?: number | null
+          id?: string
+          last_activity_at?: string | null
+          max_chats?: number | null
+          session_started_at?: string | null
+          skills?: string[] | null
+          status?: string
+          status_message?: string | null
+          team_id?: string | null
+          total_handled_today?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          agent_name?: string | null
+          avg_response_time_today?: number | null
+          channels?: string[] | null
+          created_at?: string
+          current_chat_count?: number | null
+          id?: string
+          last_activity_at?: string | null
+          max_chats?: number | null
+          session_started_at?: string | null
+          skills?: string[] | null
+          status?: string
+          status_message?: string | null
+          team_id?: string | null
+          total_handled_today?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_agent_status_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "crm_agent_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_agent_teams: {
+        Row: {
+          assignment_method: string | null
+          auto_assign_enabled: boolean | null
+          channels: string[] | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_concurrent_chats: number | null
+          name: string
+          updated_at: string
+          working_hours: Json | null
+        }
+        Insert: {
+          assignment_method?: string | null
+          auto_assign_enabled?: boolean | null
+          channels?: string[] | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_concurrent_chats?: number | null
+          name: string
+          updated_at?: string
+          working_hours?: Json | null
+        }
+        Update: {
+          assignment_method?: string | null
+          auto_assign_enabled?: boolean | null
+          channels?: string[] | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_concurrent_chats?: number | null
+          name?: string
+          updated_at?: string
+          working_hours?: Json | null
+        }
+        Relationships: []
+      }
       crm_ai_insights: {
         Row: {
           account_id: string | null
@@ -8571,6 +8678,80 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_broadcast_campaigns: {
+        Row: {
+          channel: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          delivered_count: number | null
+          failed_count: number | null
+          id: string
+          name: string
+          read_count: number | null
+          replied_count: number | null
+          scheduled_at: string | null
+          segment_id: string | null
+          sent_count: number | null
+          started_at: string | null
+          status: string
+          template_id: string | null
+          total_recipients: number | null
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          channel: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          id?: string
+          name: string
+          read_count?: number | null
+          replied_count?: number | null
+          scheduled_at?: string | null
+          segment_id?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          template_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          id?: string
+          name?: string
+          read_count?: number | null
+          replied_count?: number | null
+          scheduled_at?: string | null
+          segment_id?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          template_id?: string | null
+          total_recipients?: number | null
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_broadcast_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "crm_omni_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_calculated_metrics: {
         Row: {
           aggregation_type: string | null
@@ -8865,6 +9046,123 @@ export type Database = {
           },
         ]
       }
+      crm_channel_configs: {
+        Row: {
+          auto_response_enabled: boolean | null
+          auto_response_message: string | null
+          business_hours: Json | null
+          channel: string
+          created_at: string
+          credentials: Json | null
+          current_daily_usage: number | null
+          current_monthly_usage: number | null
+          daily_limit: number | null
+          display_name: string | null
+          id: string
+          is_enabled: boolean | null
+          last_sync_at: string | null
+          monthly_limit: number | null
+          settings: Json | null
+          sync_status: string | null
+          updated_at: string
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          auto_response_enabled?: boolean | null
+          auto_response_message?: string | null
+          business_hours?: Json | null
+          channel: string
+          created_at?: string
+          credentials?: Json | null
+          current_daily_usage?: number | null
+          current_monthly_usage?: number | null
+          daily_limit?: number | null
+          display_name?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_sync_at?: string | null
+          monthly_limit?: number | null
+          settings?: Json | null
+          sync_status?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          auto_response_enabled?: boolean | null
+          auto_response_message?: string | null
+          business_hours?: Json | null
+          channel?: string
+          created_at?: string
+          credentials?: Json | null
+          current_daily_usage?: number | null
+          current_monthly_usage?: number | null
+          daily_limit?: number | null
+          display_name?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_sync_at?: string | null
+          monthly_limit?: number | null
+          settings?: Json | null
+          sync_status?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      crm_chatbot_flows: {
+        Row: {
+          channels: string[] | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          flow_data: Json
+          id: string
+          is_active: boolean | null
+          name: string
+          published_at: string | null
+          stats: Json | null
+          trigger_type: string
+          trigger_value: string | null
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          channels?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          flow_data?: Json
+          id?: string
+          is_active?: boolean | null
+          name: string
+          published_at?: string | null
+          stats?: Json | null
+          trigger_type: string
+          trigger_value?: string | null
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          channels?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          flow_data?: Json
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          published_at?: string | null
+          stats?: Json | null
+          trigger_type?: string
+          trigger_value?: string | null
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
       crm_cohort_analysis: {
         Row: {
           active_entities: number | null
@@ -9081,6 +9379,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_conversation_tags: {
+        Row: {
+          auto_apply_conditions: Json | null
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          usage_count: number | null
+        }
+        Insert: {
+          auto_apply_conditions?: Json | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          usage_count?: number | null
+        }
+        Update: {
+          auto_apply_conditions?: Json | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          usage_count?: number | null
+        }
+        Relationships: []
       }
       crm_customer_journeys: {
         Row: {
@@ -10215,6 +10546,257 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_omni_conversations: {
+        Row: {
+          assigned_agent_id: string | null
+          assigned_team_id: string | null
+          bot_handoff_at: string | null
+          channel: string
+          company_id: string | null
+          contact_email: string | null
+          contact_id: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          external_id: string | null
+          first_response_at: string | null
+          id: string
+          is_bot_active: boolean | null
+          last_message_at: string | null
+          last_message_direction: string | null
+          last_message_preview: string | null
+          metadata: Json | null
+          priority: string
+          resolved_at: string | null
+          sentiment: string | null
+          sentiment_score: number | null
+          sla_breached: boolean | null
+          sla_deadline: string | null
+          status: string
+          subject: string | null
+          tags: string[] | null
+          unread_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_agent_id?: string | null
+          assigned_team_id?: string | null
+          bot_handoff_at?: string | null
+          channel: string
+          company_id?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          external_id?: string | null
+          first_response_at?: string | null
+          id?: string
+          is_bot_active?: boolean | null
+          last_message_at?: string | null
+          last_message_direction?: string | null
+          last_message_preview?: string | null
+          metadata?: Json | null
+          priority?: string
+          resolved_at?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          status?: string
+          subject?: string | null
+          tags?: string[] | null
+          unread_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_agent_id?: string | null
+          assigned_team_id?: string | null
+          bot_handoff_at?: string | null
+          channel?: string
+          company_id?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          external_id?: string | null
+          first_response_at?: string | null
+          id?: string
+          is_bot_active?: boolean | null
+          last_message_at?: string | null
+          last_message_direction?: string | null
+          last_message_preview?: string | null
+          metadata?: Json | null
+          priority?: string
+          resolved_at?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          status?: string
+          subject?: string | null
+          tags?: string[] | null
+          unread_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_omni_conversations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_omni_messages: {
+        Row: {
+          ai_confidence: number | null
+          ai_generated: boolean | null
+          attachments: Json | null
+          content: string
+          content_type: string
+          conversation_id: string
+          created_at: string
+          direction: string
+          error_message: string | null
+          external_id: string | null
+          id: string
+          is_internal_note: boolean | null
+          metadata: Json | null
+          reply_to_message_id: string | null
+          sender_id: string | null
+          sender_name: string | null
+          sender_type: string
+          status: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_generated?: boolean | null
+          attachments?: Json | null
+          content: string
+          content_type?: string
+          conversation_id: string
+          created_at?: string
+          direction: string
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          is_internal_note?: boolean | null
+          metadata?: Json | null
+          reply_to_message_id?: string | null
+          sender_id?: string | null
+          sender_name?: string | null
+          sender_type: string
+          status?: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_generated?: boolean | null
+          attachments?: Json | null
+          content?: string
+          content_type?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          external_id?: string | null
+          id?: string
+          is_internal_note?: boolean | null
+          metadata?: Json | null
+          reply_to_message_id?: string | null
+          sender_id?: string | null
+          sender_name?: string | null
+          sender_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_omni_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "crm_omni_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_omni_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "crm_omni_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_omni_templates: {
+        Row: {
+          approval_status: string | null
+          buttons: Json | null
+          category: string
+          channel: string
+          content: string
+          created_at: string
+          created_by: string | null
+          external_id: string | null
+          footer_text: string | null
+          header_content: string | null
+          header_type: string | null
+          id: string
+          is_active: boolean | null
+          language: string
+          last_used_at: string | null
+          name: string
+          rejection_reason: string | null
+          updated_at: string
+          usage_count: number | null
+          variables: string[] | null
+        }
+        Insert: {
+          approval_status?: string | null
+          buttons?: Json | null
+          category: string
+          channel: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          external_id?: string | null
+          footer_text?: string | null
+          header_content?: string | null
+          header_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string
+          last_used_at?: string | null
+          name: string
+          rejection_reason?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          variables?: string[] | null
+        }
+        Update: {
+          approval_status?: string | null
+          buttons?: Json | null
+          category?: string
+          channel?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          external_id?: string | null
+          footer_text?: string | null
+          header_content?: string | null
+          header_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string
+          last_used_at?: string | null
+          name?: string
+          rejection_reason?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          variables?: string[] | null
+        }
+        Relationships: []
+      }
       crm_permissions: {
         Row: {
           created_at: string
@@ -10361,6 +10943,54 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_quick_replies: {
+        Row: {
+          category: string | null
+          channels: string[] | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          is_global: boolean | null
+          shortcut: string
+          title: string
+          updated_at: string
+          usage_count: number | null
+          variables: string[] | null
+        }
+        Insert: {
+          category?: string | null
+          channels?: string[] | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          shortcut: string
+          title: string
+          updated_at?: string
+          usage_count?: number | null
+          variables?: string[] | null
+        }
+        Update: {
+          category?: string | null
+          channels?: string[] | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_global?: boolean | null
+          shortcut?: string
+          title?: string
+          updated_at?: string
+          usage_count?: number | null
+          variables?: string[] | null
+        }
+        Relationships: []
+      }
       crm_report_executions: {
         Row: {
           completed_at: string | null
@@ -10481,6 +11111,62 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "crm_workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_routing_rules: {
+        Row: {
+          actions: Json
+          add_tags: string[] | null
+          assign_to_agent_id: string | null
+          assign_to_team_id: string | null
+          conditions: Json
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          priority: number | null
+          set_priority: string | null
+          trigger_bot: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          add_tags?: string[] | null
+          assign_to_agent_id?: string | null
+          assign_to_team_id?: string | null
+          conditions?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          priority?: number | null
+          set_priority?: string | null
+          trigger_bot?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          add_tags?: string[] | null
+          assign_to_agent_id?: string | null
+          assign_to_team_id?: string | null
+          conditions?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          priority?: number | null
+          set_priority?: string | null
+          trigger_bot?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_routing_rules_assign_to_team_id_fkey"
+            columns: ["assign_to_team_id"]
+            isOneToOne: false
+            referencedRelation: "crm_agent_teams"
             referencedColumns: ["id"]
           },
         ]
@@ -10847,6 +11533,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_sla_policies: {
+        Row: {
+          business_hours_only: boolean | null
+          channel: string | null
+          conditions: Json | null
+          created_at: string
+          description: string | null
+          escalation_after: number | null
+          escalation_to: string | null
+          first_response_time: number
+          id: string
+          is_active: boolean | null
+          name: string
+          priority: string
+          resolution_time: number
+          updated_at: string
+        }
+        Insert: {
+          business_hours_only?: boolean | null
+          channel?: string | null
+          conditions?: Json | null
+          created_at?: string
+          description?: string | null
+          escalation_after?: number | null
+          escalation_to?: string | null
+          first_response_time: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          priority: string
+          resolution_time: number
+          updated_at?: string
+        }
+        Update: {
+          business_hours_only?: boolean | null
+          channel?: string | null
+          conditions?: Json | null
+          created_at?: string
+          description?: string | null
+          escalation_after?: number | null
+          escalation_to?: string | null
+          first_response_time?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          priority?: string
+          resolution_time?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       crm_team_members: {
         Row: {
