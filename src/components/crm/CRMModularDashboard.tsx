@@ -33,7 +33,8 @@ import {
   DollarSign,
   PieChart,
   Activity,
-  Settings
+  Settings,
+  Link2
 } from 'lucide-react';
 
 // CRM Module Components
@@ -50,6 +51,7 @@ import { ContactsManager } from '@/components/crm/contacts';
 import { DealsKanban } from '@/components/crm/deals';
 import { ActivitiesManager } from '@/components/crm/activities';
 import { CRMVoiceAssistant, PredictivePipelinePanel, RealtimeCollaborationPanel } from '@/components/crm/ai';
+import { IntegrationHubDashboard } from '@/components/crm/integrations';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { useCRMContext } from '@/hooks/crm/useCRMContext';
 import { cn } from '@/lib/utils';
@@ -107,6 +109,7 @@ export function CRMModularDashboard() {
     { id: 'automation', name: 'Automatización', icon: Zap, color: 'bg-purple-500', installed: true },
     { id: 'reports', name: 'Reportes', icon: BarChart3, color: 'bg-orange-500', installed: true },
     { id: 'agents', name: 'Agentes IA', icon: Bot, color: 'bg-cyan-500', installed: true },
+    { id: 'integrations', name: 'Integraciones', icon: Link2, color: 'bg-teal-500', installed: true },
     { id: 'config', name: 'Configuración', icon: Settings, color: 'bg-slate-500', installed: true },
   ];
 
@@ -168,6 +171,10 @@ export function CRMModularDashboard() {
           <TabsTrigger value="agents" className="gap-2">
             <Bot className="h-4 w-4" />
             Agentes IA
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="gap-2">
+            <Link2 className="h-4 w-4" />
+            Integraciones
           </TabsTrigger>
           <TabsTrigger value="config" className="gap-2">
             <Settings className="h-4 w-4" />
@@ -413,6 +420,11 @@ export function CRMModularDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Integrations Hub Tab */}
+        <TabsContent value="integrations">
+          <IntegrationHubDashboard />
         </TabsContent>
 
         {/* Supervisor Dashboard Tab */}
