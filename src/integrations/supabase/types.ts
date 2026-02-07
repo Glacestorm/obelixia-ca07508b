@@ -8322,6 +8322,104 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_campaign_analytics: {
+        Row: {
+          campaign_id: string | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number | null
+          recorded_at: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value?: number | null
+          recorded_at?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number | null
+          recorded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaign_analytics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_campaign_contacts: {
+        Row: {
+          bounced_at: string | null
+          campaign_id: string | null
+          click_count: number | null
+          clicked_at: string | null
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          open_count: number | null
+          opened_at: string | null
+          sent_at: string | null
+          status: string | null
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          bounced_at?: string | null
+          campaign_id?: string | null
+          click_count?: number | null
+          clicked_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          bounced_at?: string | null
+          campaign_id?: string | null
+          click_count?: number | null
+          clicked_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          open_count?: number | null
+          opened_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          unsubscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaign_contacts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_contacts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_connectors: {
         Row: {
           connector_key: string
@@ -8879,6 +8977,57 @@ export type Database = {
           },
         ]
       }
+      crm_form_submissions: {
+        Row: {
+          contact_id: string | null
+          data: Json
+          form_id: string | null
+          id: string
+          ip_address: string | null
+          source_url: string | null
+          submitted_at: string | null
+          user_agent: string | null
+          utm_params: Json | null
+        }
+        Insert: {
+          contact_id?: string | null
+          data?: Json
+          form_id?: string | null
+          id?: string
+          ip_address?: string | null
+          source_url?: string | null
+          submitted_at?: string | null
+          user_agent?: string | null
+          utm_params?: Json | null
+        }
+        Update: {
+          contact_id?: string | null
+          data?: Json
+          form_id?: string | null
+          id?: string
+          ip_address?: string | null
+          source_url?: string | null
+          submitted_at?: string | null
+          user_agent?: string | null
+          utm_params?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_form_submissions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "crm_marketing_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_lead_scores: {
         Row: {
           calculated_at: string | null
@@ -9080,6 +9229,63 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_marketing_forms: {
+        Row: {
+          campaign_id: string | null
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          fields: Json
+          id: string
+          is_active: boolean | null
+          name: string
+          settings: Json | null
+          submission_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean | null
+          name: string
+          settings?: Json | null
+          submission_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          settings?: Json | null
+          submission_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_marketing_forms_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_marketing_forms_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
