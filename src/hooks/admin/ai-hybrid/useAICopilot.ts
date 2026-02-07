@@ -443,106 +443,52 @@ export function useAICopilot() {
     }
   }, []);
 
-  // === CALL LOCAL OLLAMA DIRECTLY FROM BROWSER ===
-  const callLocalOllama = useCallback(async (
+  // === CALL LOCAL OLLAMA VIA EDGE FUNCTION (bypasses browser CSP/CORS restrictions) ===
+  const callLocalViaEdgeFunction = useCallback(async (
     ollamaMessages: Array<{ role: string; content: string }>,
     model: string,
     ollamaUrl: string,
     temperature: number
   ): Promise<{ response: string; tokensUsed: number } | null> => {
-    const timeoutSec = Math.max(5, Number(settings.requestTimeout || 60));
-    const timeoutMs = timeoutSec * 1000;
-
-    // Guardrail: browsers block insecure (http) requests from secure (https) pages.
-    const isHttpsContext = typeof window !== 'undefined' && window.location.protocol === 'https:';
-    const isHttpTarget = ollamaUrl.trim().toLowerCase().startsWith('http://');
-    if (isHttpsContext && isHttpTarget) {
-      throw new Error(
-        `Bloqueo del navegador (HTTPS → HTTP): estás usando el Copilot en una página HTTPS pero Ollama está en HTTP (${ollamaUrl}). ` +
-          `Solución: expón Ollama por HTTPS (proxy TLS) y usa una URL https://..., o prueba el Copilot en un entorno http://localhost.`
-      );
-    }
+    console.log(`[useAICopilot] Calling local Ollama via Edge Function: ${ollamaUrl} with model ${model}`);
 
     try {
-      console.log(`[useAICopilot] Calling local Ollama at ${ollamaUrl} with model ${model}`);
+      const { data, error } = await supabase.functions.invoke('crm-ai-local-bridge', {
+        body: {
+          action: 'chat',
+          model,
+          messages: ollamaMessages,
+          ollamaUrl,
+          temperature,
+          maxTokens: settings.maxTokens,
+          timeout: settings.requestTimeout * 1000,
+        },
+      });
 
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-
-      let response: Response;
-      try {
-        response = await fetch(`${ollamaUrl}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            model,
-            messages: ollamaMessages,
-            stream: false,
-            options: {
-              temperature,
-              num_predict: settings.maxTokens,
-            },
-          }),
-        });
-      } finally {
-        window.clearTimeout(timeoutId);
+      if (error) {
+        console.error('[useAICopilot] Edge function invoke error:', error);
+        throw new Error(`Error de red al contactar el backend: ${error.message}`);
       }
 
-      if (!response.ok) {
-        let details = '';
-        try {
-          const j = await response.clone().json();
-          details = (j?.error as string) || JSON.stringify(j);
-        } catch {
-          try {
-            details = (await response.text())?.slice(0, 500) || '';
-          } catch {
-            details = '';
-          }
-        }
-        throw new Error(`Ollama (${response.status}): ${details || response.statusText || 'Error'}`);
+      if (!data?.success) {
+        const errMsg = data?.error || 'Error desconocido del backend';
+        throw new Error(errMsg);
       }
 
-      const data = await response.json();
-      const content = data.message?.content || data.response || '';
-
+      const content = data.response || '';
       if (!content) {
         throw new Error('Ollama devolvió una respuesta vacía');
       }
 
-      console.log(`[useAICopilot] Local Ollama response received (${content.length} chars)`);
+      console.log(`[useAICopilot] Local Ollama response via Edge Function received (${content.length} chars)`);
 
       return {
         response: content,
-        tokensUsed: data.eval_count || 0,
+        tokensUsed: data.usage?.total_tokens || 0,
       };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-
-      // Common case: timeout
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        throw new Error(`Timeout conectando a Ollama (${timeoutSec}s) en ${ollamaUrl}`);
-      }
-
-      // Network-level failures commonly surface as TypeError / 'Failed to fetch'
-      const lower = msg.toLowerCase();
-      const looksLikeFetchFailure =
-        err instanceof TypeError ||
-        lower.includes('failed to fetch') ||
-        lower.includes('fetch failed') ||
-        lower.includes('networkerror') ||
-        lower.includes('load failed');
-
-      if (looksLikeFetchFailure) {
-        const hint =
-          'Posibles causas: (1) CORS no permitido en Ollama; (2) Chrome/Edge bloqueando acceso a red privada (PNA); (3) servidor no accesible.' +
-          ' En el servidor Ollama, revisa OLLAMA_HOST=0.0.0.0 y configura OLLAMA_ORIGINS para permitir el dominio donde abres el Copilot.';
-
-        throw new Error(`No se pudo conectar a Ollama en ${ollamaUrl}. ${hint}`);
-      }
-
-      console.error('[useAICopilot] Local Ollama error:', err);
+      console.error('[useAICopilot] Local via Edge Function error:', err);
       throw new Error(msg);
     }
   }, [settings.maxTokens, settings.requestTimeout]);
@@ -635,12 +581,12 @@ Responde de forma profesional y concisa en español.`;
         conversation_id?: string;
       };
 
-      // === LOCAL PROVIDER: Call Ollama directly from browser ===
+      // === LOCAL PROVIDER: Call Ollama via Edge Function (bypasses CSP) ===
       if (useLocalProvider) {
-        console.log(`[useAICopilot] Using LOCAL provider: ${selectedModel} at ${settings.ollamaUrl}`);
+        console.log(`[useAICopilot] Using LOCAL provider via backend: ${selectedModel} at ${settings.ollamaUrl}`);
         
         try {
-          const localResult = await callLocalOllama(
+          const localResult = await callLocalViaEdgeFunction(
             messagesWithSystem,
             selectedModel,
             settings.ollamaUrl,
@@ -797,7 +743,7 @@ Responde de forma profesional y concisa en español.`;
     } finally {
       setIsLoading(false);
     }
-  }, [messages, currentConversation, entityContext, settings, providers, fetchConversations, analyzeQuestion, selectBestModel, callLocalOllama]);
+  }, [messages, currentConversation, entityContext, settings, providers, fetchConversations, analyzeQuestion, selectBestModel, callLocalViaEdgeFunction]);
 
   // === NEW CONVERSATION ===
   const newConversation = useCallback(() => {
