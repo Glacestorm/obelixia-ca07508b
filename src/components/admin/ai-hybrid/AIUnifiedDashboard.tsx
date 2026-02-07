@@ -29,6 +29,7 @@ import { AIRoutingPanel } from './AIRoutingPanel';
 import { useAIProviders } from '@/hooks/admin/ai-hybrid';
 import { useAICredits } from '@/hooks/admin/ai-hybrid';
 import { useHybridAI } from '@/hooks/admin/ai-hybrid';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
 interface AIUnifiedDashboardProps {
@@ -40,6 +41,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
   const { providers, isLoading: providersLoading, getProvidersByType } = useAIProviders();
   const { balances, isLoading: creditsLoading } = useAICredits();
   const { routingMode } = useHybridAI();
+  const { t } = useLanguage();
 
   const localProviders = getProvidersByType('local');
   const externalProviders = getProvidersByType('external');
@@ -47,28 +49,28 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
 
   const stats = [
     {
-      label: 'Proveedores Activos',
+      label: t('aiHybrid.stats.activeProviders'),
       value: providers.filter(p => p.is_active).length,
       total: providers.length,
       icon: <Cpu className="h-5 w-5" />,
       color: 'from-violet-500 to-purple-600',
     },
     {
-      label: 'IA Local',
+      label: t('aiHybrid.stats.localAI'),
       value: localProviders.filter(p => p.is_active).length,
       total: localProviders.length,
       icon: <Server className="h-5 w-5" />,
       color: 'from-emerald-500 to-teal-600',
     },
     {
-      label: 'IA Cloud',
+      label: t('aiHybrid.stats.cloudAI'),
       value: externalProviders.filter(p => p.is_active).length,
       total: externalProviders.length,
       icon: <Cloud className="h-5 w-5" />,
       color: 'from-blue-500 to-cyan-600',
     },
     {
-      label: 'Créditos Totales',
+      label: t('aiHybrid.stats.totalCredits'),
       value: totalBalance.toFixed(0),
       icon: <Coins className="h-5 w-5" />,
       color: 'from-amber-500 to-orange-600',
@@ -85,11 +87,11 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
               <Sparkles className="h-6 w-6" />
             </div>
             <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-              IA Híbrida Universal
+              {t('aiHybrid.title')}
             </span>
           </h2>
           <p className="text-muted-foreground mt-1">
-            Sistema unificado de inteligencia artificial local y en la nube
+            {t('aiHybrid.subtitle')}
           </p>
         </div>
 
@@ -99,14 +101,14 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
             className="gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
           >
             <Activity className="h-3.5 w-3.5" />
-            Sistema Activo
+            {t('aiHybrid.systemOnline')}
           </Badge>
           <Badge 
             variant="outline" 
             className="gap-1.5 px-3 py-1.5"
           >
             <Route className="h-3.5 w-3.5" />
-            {routingMode.replace('_', ' ')}
+            {t('aiHybrid.routingMode')}: {routingMode.replace('_', ' ')}
           </Badge>
         </div>
       </div>
@@ -161,23 +163,23 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
         <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="overview" className="gap-2">
             <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">Resumen</span>
+            <span className="hidden sm:inline">{t('aiHybrid.tabs.overview')}</span>
           </TabsTrigger>
           <TabsTrigger value="providers" className="gap-2">
             <Cpu className="h-4 w-4" />
-            <span className="hidden sm:inline">Proveedores</span>
+            <span className="hidden sm:inline">{t('aiHybrid.tabs.providers')}</span>
           </TabsTrigger>
           <TabsTrigger value="credits" className="gap-2">
             <Coins className="h-4 w-4" />
-            <span className="hidden sm:inline">Créditos</span>
+            <span className="hidden sm:inline">{t('aiHybrid.tabs.credits')}</span>
           </TabsTrigger>
           <TabsTrigger value="privacy" className="gap-2">
             <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Privacidad</span>
+            <span className="hidden sm:inline">{t('aiHybrid.tabs.privacy')}</span>
           </TabsTrigger>
           <TabsTrigger value="routing" className="gap-2">
             <Route className="h-4 w-4" />
-            <span className="hidden sm:inline">Enrutamiento</span>
+            <span className="hidden sm:inline">{t('aiHybrid.tabs.routing')}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -189,17 +191,17 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Activity className="h-4 w-4 text-emerald-500" />
-                  Estado del Sistema
+                  {t('aiHybrid.overview.title')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   {[
-                    { label: 'Gateway de Privacidad', status: 'active', icon: <Shield className="h-4 w-4" /> },
-                    { label: 'Enrutador Inteligente', status: 'active', icon: <Route className="h-4 w-4" /> },
-                    { label: 'Sistema de Créditos', status: 'active', icon: <Coins className="h-4 w-4" /> },
-                    { label: 'IA Local (Ollama)', status: localProviders.some(p => p.is_active) ? 'active' : 'inactive', icon: <Server className="h-4 w-4" /> },
-                    { label: 'IA Cloud', status: externalProviders.some(p => p.is_active) ? 'active' : 'inactive', icon: <Cloud className="h-4 w-4" /> },
+                    { label: t('aiHybrid.privacy.title'), status: 'active', icon: <Shield className="h-4 w-4" /> },
+                    { label: t('aiHybrid.overview.intelligentRouter'), status: 'active', icon: <Route className="h-4 w-4" /> },
+                    { label: t('aiHybrid.credits.title'), status: 'active', icon: <Coins className="h-4 w-4" /> },
+                    { label: t('aiHybrid.stats.localAI') + ' (Ollama)', status: localProviders.some(p => p.is_active) ? 'active' : 'inactive', icon: <Server className="h-4 w-4" /> },
+                    { label: t('aiHybrid.stats.cloudAI'), status: externalProviders.some(p => p.is_active) ? 'active' : 'inactive', icon: <Cloud className="h-4 w-4" /> },
                   ].map((item) => (
                     <div key={item.label} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                       <div className="flex items-center gap-2">
@@ -214,9 +216,9 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
                         )}
                       >
                         {item.status === 'active' ? (
-                          <><CheckCircle className="h-3 w-3 mr-1" /> Activo</>
+                          <><CheckCircle className="h-3 w-3 mr-1" /> {t('aiHybrid.providers.active')}</>
                         ) : (
-                          'Inactivo'
+                          t('aiHybrid.providers.inactive')
                         )}
                       </Badge>
                     </div>
@@ -230,7 +232,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-500" />
-                  Acciones Rápidas
+                  {t('aiHybrid.routing.advanced')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -240,7 +242,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
                   onClick={() => setActiveTab('providers')}
                 >
                   <Server className="h-4 w-4" />
-                  Configurar IA Local (Ollama)
+                  {t('aiHybrid.providers.ollamaTitle')}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -248,7 +250,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
                   onClick={() => setActiveTab('providers')}
                 >
                   <Cloud className="h-4 w-4" />
-                  Añadir Proveedor Cloud
+                  {t('aiHybrid.providers.addCredentials')}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -256,7 +258,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
                   onClick={() => setActiveTab('privacy')}
                 >
                   <Shield className="h-4 w-4" />
-                  Probar Clasificación de Datos
+                  {t('aiHybrid.privacy.analyze')}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -264,7 +266,7 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
                   onClick={() => setActiveTab('routing')}
                 >
                   <Route className="h-4 w-4" />
-                  Cambiar Modo de Enrutamiento
+                  {t('aiHybrid.routing.mode')}
                 </Button>
               </CardContent>
             </Card>
@@ -273,35 +275,35 @@ export function AIUnifiedDashboard({ className }: AIUnifiedDashboardProps) {
           {/* Features Overview */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Características del Sistema</CardTitle>
+              <CardTitle className="text-base">{t('aiHybrid.overview.title')}</CardTitle>
               <CardDescription>
-                Capacidades principales de la IA Híbrida Universal
+                {t('aiHybrid.overview.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   {
-                    title: 'IA Local',
-                    description: 'Ollama, LM Studio y más - datos nunca salen de tu servidor',
+                    title: t('aiHybrid.overview.localProcessing'),
+                    description: t('aiHybrid.overview.localDesc'),
                     icon: <Server className="h-6 w-6" />,
                     color: 'from-emerald-500 to-teal-600',
                   },
                   {
-                    title: 'IA en la Nube',
-                    description: 'OpenAI, Anthropic, Google, Mistral y más proveedores',
+                    title: t('aiHybrid.overview.cloudProcessing'),
+                    description: t('aiHybrid.overview.cloudDesc'),
                     icon: <Cloud className="h-6 w-6" />,
                     color: 'from-blue-500 to-cyan-600',
                   },
                   {
-                    title: 'Privacidad Automática',
-                    description: 'Clasificación y anonimización de datos sensibles',
+                    title: t('aiHybrid.overview.privacyFirst'),
+                    description: t('aiHybrid.overview.privacyDesc'),
                     icon: <Lock className="h-6 w-6" />,
                     color: 'from-violet-500 to-purple-600',
                   },
                   {
-                    title: 'Enrutamiento Inteligente',
-                    description: 'Decisiones automáticas basadas en contexto y costo',
+                    title: t('aiHybrid.overview.intelligentRouter'),
+                    description: t('aiHybrid.overview.routerDesc'),
                     icon: <Route className="h-6 w-6" />,
                     color: 'from-amber-500 to-orange-600',
                   },

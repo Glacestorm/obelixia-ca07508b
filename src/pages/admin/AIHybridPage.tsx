@@ -7,12 +7,15 @@
 import React from 'react';
 import { DashboardLayout } from '@/layouts';
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AIHybridPage() {
+  const { t } = useLanguage();
+  
   return (
     <DashboardLayout
-      title="IA Híbrida Universal"
-      subtitle="Sistema de gestión de IA Local + Externa"
+      title={t('aiHybrid.title')}
+      subtitle={t('aiHybrid.subtitle')}
       contentPadding="md"
     >
       <AIUnifiedDashboard />
