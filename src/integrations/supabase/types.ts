@@ -10797,6 +10797,86 @@ export type Database = {
           },
         ]
       }
+      customer_portal_accounts: {
+        Row: {
+          billing_info: Json | null
+          company_id: string | null
+          company_name: string
+          contact_email: string
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string | null
+          current_usage: Json | null
+          health_score: number | null
+          id: string
+          last_login_at: string | null
+          modules_enabled: string[] | null
+          nps_score: number | null
+          onboarded_at: string | null
+          portal_settings: Json | null
+          subscription_expires_at: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+          usage_limits: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          billing_info?: Json | null
+          company_id?: string | null
+          company_name: string
+          contact_email: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          current_usage?: Json | null
+          health_score?: number | null
+          id?: string
+          last_login_at?: string | null
+          modules_enabled?: string[] | null
+          nps_score?: number | null
+          onboarded_at?: string | null
+          portal_settings?: Json | null
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          usage_limits?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          billing_info?: Json | null
+          company_id?: string | null
+          company_name?: string
+          contact_email?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          current_usage?: Json | null
+          health_score?: number | null
+          id?: string
+          last_login_at?: string | null
+          modules_enabled?: string[] | null
+          nps_score?: number | null
+          onboarded_at?: string | null
+          portal_settings?: Json | null
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+          usage_limits?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_portal_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_quote_items: {
         Row: {
           created_at: string
@@ -45546,6 +45626,143 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_portal_accounts: {
+        Row: {
+          avg_client_satisfaction: number | null
+          certifications: Json | null
+          commission_rate: number | null
+          company_website: string | null
+          contact_email: string
+          contact_phone: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_login_at: string | null
+          logo_url: string | null
+          onboarded_at: string | null
+          partner_name: string
+          partner_tax_id: string | null
+          portal_settings: Json | null
+          specializations: string[] | null
+          tier: Database["public"]["Enums"]["partner_tier"] | null
+          total_clients_referred: number | null
+          total_revenue_generated: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avg_client_satisfaction?: number | null
+          certifications?: Json | null
+          commission_rate?: number | null
+          company_website?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          logo_url?: string | null
+          onboarded_at?: string | null
+          partner_name: string
+          partner_tax_id?: string | null
+          portal_settings?: Json | null
+          specializations?: string[] | null
+          tier?: Database["public"]["Enums"]["partner_tier"] | null
+          total_clients_referred?: number | null
+          total_revenue_generated?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avg_client_satisfaction?: number | null
+          certifications?: Json | null
+          commission_rate?: number | null
+          company_website?: string | null
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          logo_url?: string | null
+          onboarded_at?: string | null
+          partner_name?: string
+          partner_tax_id?: string | null
+          portal_settings?: Json | null
+          specializations?: string[] | null
+          tier?: Database["public"]["Enums"]["partner_tier"] | null
+          total_clients_referred?: number | null
+          total_revenue_generated?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      partner_referred_clients: {
+        Row: {
+          client_company_name: string
+          client_contact_name: string | null
+          client_email: string
+          client_phone: string | null
+          commission_earned: number | null
+          commission_paid: boolean | null
+          commission_paid_at: string | null
+          created_at: string | null
+          deal_value: number | null
+          id: string
+          notes: string | null
+          partner_id: string | null
+          referral_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_company_name: string
+          client_contact_name?: string | null
+          client_email: string
+          client_phone?: string | null
+          commission_earned?: number | null
+          commission_paid?: boolean | null
+          commission_paid_at?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          id?: string
+          notes?: string | null
+          partner_id?: string | null
+          referral_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_company_name?: string
+          client_contact_name?: string | null
+          client_email?: string
+          client_phone?: string | null
+          commission_earned?: number | null
+          commission_paid?: boolean | null
+          commission_paid_at?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          id?: string
+          notes?: string | null
+          partner_id?: string | null
+          referral_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_referred_clients_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_portal_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_revenue_transactions: {
         Row: {
           application_id: string | null
@@ -46384,6 +46601,356 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "partner_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_activity_log: {
+        Row: {
+          action_description: string | null
+          action_type: string
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          portal_account_id: string
+          portal_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_description?: string | null
+          action_type: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          portal_account_id: string
+          portal_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_description?: string | null
+          action_type?: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          portal_account_id?: string
+          portal_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      portal_knowledge_base: {
+        Row: {
+          author_id: string | null
+          category: string
+          content: string
+          content_html: string | null
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          is_featured: boolean | null
+          is_published: boolean | null
+          last_reviewed_at: string | null
+          not_helpful_count: number | null
+          portal_visibility: string[] | null
+          related_articles: string[] | null
+          slug: string
+          subcategory: string | null
+          tags: string[] | null
+          tier_visibility: string[] | null
+          title: string
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          author_id?: string | null
+          category: string
+          content: string
+          content_html?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          last_reviewed_at?: string | null
+          not_helpful_count?: number | null
+          portal_visibility?: string[] | null
+          related_articles?: string[] | null
+          slug: string
+          subcategory?: string | null
+          tags?: string[] | null
+          tier_visibility?: string[] | null
+          title: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          author_id?: string | null
+          category?: string
+          content?: string
+          content_html?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          last_reviewed_at?: string | null
+          not_helpful_count?: number | null
+          portal_visibility?: string[] | null
+          related_articles?: string[] | null
+          slug?: string
+          subcategory?: string | null
+          tags?: string[] | null
+          tier_visibility?: string[] | null
+          title?: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      portal_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          link: string | null
+          message: string
+          metadata: Json | null
+          notification_type: string
+          portal_account_id: string
+          portal_type: string
+          read_at: string | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          portal_account_id: string
+          portal_type: string
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          portal_account_id?: string
+          portal_type?: string
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      portal_resources: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          download_count: number | null
+          file_size_bytes: number | null
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          mime_type: string | null
+          portal_visibility: string[] | null
+          resource_type: string
+          tags: string[] | null
+          tier_visibility: string[] | null
+          title: string
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          mime_type?: string | null
+          portal_visibility?: string[] | null
+          resource_type: string
+          tags?: string[] | null
+          tier_visibility?: string[] | null
+          title: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          mime_type?: string | null
+          portal_visibility?: string[] | null
+          resource_type?: string
+          tags?: string[] | null
+          tier_visibility?: string[] | null
+          title?: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      portal_support_tickets: {
+        Row: {
+          ai_category_prediction: string | null
+          ai_suggested_resolution: string | null
+          assigned_to: string | null
+          attachments: Json | null
+          category: string | null
+          closed_at: string | null
+          created_at: string | null
+          description: string
+          first_response_at: string | null
+          id: string
+          metadata: Json | null
+          portal_account_id: string
+          portal_type: string
+          priority: Database["public"]["Enums"]["ticket_priority"] | null
+          requester_user_id: string | null
+          resolution: string | null
+          resolution_time_hours: number | null
+          resolved_at: string | null
+          satisfaction_feedback: string | null
+          satisfaction_rating: number | null
+          sla_breached: boolean | null
+          sla_deadline: string | null
+          status: Database["public"]["Enums"]["ticket_status"] | null
+          subject: string
+          tags: string[] | null
+          ticket_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_category_prediction?: string | null
+          ai_suggested_resolution?: string | null
+          assigned_to?: string | null
+          attachments?: Json | null
+          category?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          description: string
+          first_response_at?: string | null
+          id?: string
+          metadata?: Json | null
+          portal_account_id: string
+          portal_type: string
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          requester_user_id?: string | null
+          resolution?: string | null
+          resolution_time_hours?: number | null
+          resolved_at?: string | null
+          satisfaction_feedback?: string | null
+          satisfaction_rating?: number | null
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"] | null
+          subject: string
+          tags?: string[] | null
+          ticket_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_category_prediction?: string | null
+          ai_suggested_resolution?: string | null
+          assigned_to?: string | null
+          attachments?: Json | null
+          category?: string | null
+          closed_at?: string | null
+          created_at?: string | null
+          description?: string
+          first_response_at?: string | null
+          id?: string
+          metadata?: Json | null
+          portal_account_id?: string
+          portal_type?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          requester_user_id?: string | null
+          resolution?: string | null
+          resolution_time_hours?: number | null
+          resolved_at?: string | null
+          satisfaction_feedback?: string | null
+          satisfaction_rating?: number | null
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"] | null
+          subject?: string
+          tags?: string[] | null
+          ticket_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      portal_ticket_comments: {
+        Row: {
+          attachments: Json | null
+          comment_type: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_resolution: boolean | null
+          ticket_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          comment_type?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_resolution?: boolean | null
+          ticket_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          comment_type?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_resolution?: boolean | null
+          ticket_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_ticket_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "portal_support_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -58586,6 +59153,7 @@ export type Database = {
       license_type: "perpetual" | "subscription" | "trial" | "free"
       module_category: "core" | "horizontal" | "vertical" | "addon"
       notification_channel: "email" | "whatsapp" | "push" | "sms" | "in_app"
+      partner_tier: "bronze" | "silver" | "gold" | "platinum" | "strategic"
       provisional_period_type: "quarterly" | "semiannual" | "annual"
       regulation_status:
         | "active"
@@ -58617,6 +59185,14 @@ export type Database = {
         | "periodic"
         | "post_onboarding"
       survey_type: "nps" | "csat" | "ces"
+      ticket_priority: "low" | "medium" | "high" | "critical"
+      ticket_status:
+        | "open"
+        | "in_progress"
+        | "waiting_customer"
+        | "waiting_partner"
+        | "resolved"
+        | "closed"
       whistleblower_category:
         | "fraud"
         | "corruption"
@@ -58849,6 +59425,7 @@ export const Constants = {
       license_type: ["perpetual", "subscription", "trial", "free"],
       module_category: ["core", "horizontal", "vertical", "addon"],
       notification_channel: ["email", "whatsapp", "push", "sms", "in_app"],
+      partner_tier: ["bronze", "silver", "gold", "platinum", "strategic"],
       provisional_period_type: ["quarterly", "semiannual", "annual"],
       regulation_status: [
         "active",
@@ -58883,6 +59460,15 @@ export const Constants = {
         "post_onboarding",
       ],
       survey_type: ["nps", "csat", "ces"],
+      ticket_priority: ["low", "medium", "high", "critical"],
+      ticket_status: [
+        "open",
+        "in_progress",
+        "waiting_customer",
+        "waiting_partner",
+        "resolved",
+        "closed",
+      ],
       whistleblower_category: [
         "fraud",
         "corruption",

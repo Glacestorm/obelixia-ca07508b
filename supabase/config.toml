@@ -1040,3 +1040,6 @@ verify_jwt = true
 
 [functions.gig-workforce-ai]
 verify_jwt = true
+
+[functions.portal-ai-assistant]
+verify_jwt = true
