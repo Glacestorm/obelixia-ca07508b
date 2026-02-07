@@ -9,6 +9,7 @@ interface ProviderManagerRequest {
   action: 'test_connection' | 'list_models' | 'validate_credentials' | 'get_provider_info';
   provider_id?: string;
   api_key?: string;
+  api_endpoint?: string;
   provider_name?: string;
 }
 
@@ -66,7 +67,7 @@ serve(async (req) => {
   }
 
   try {
-    const { action, provider_id, api_key, provider_name } = await req.json() as ProviderManagerRequest;
+    const { action, provider_id, api_key, api_endpoint, provider_name } = await req.json() as ProviderManagerRequest;
 
     console.log(`[ai-provider-manager] Action: ${action}, Provider: ${provider_id || provider_name}`);
 
@@ -297,13 +298,14 @@ serve(async (req) => {
         });
       }
 
-      // For Ollama
+      // For Ollama - use api_endpoint if provided, then api_key as fallback, then localhost
       if (providerKey === 'ollama') {
         try {
-          const ollamaUrl = api_key || 'http://localhost:11434';
+          const ollamaUrl = api_endpoint || api_key || 'http://localhost:11434';
+          console.log(`[ai-provider-manager] Fetching Ollama models from: ${ollamaUrl}`);
           const response = await fetch(`${ollamaUrl}/api/tags`, {
             method: 'GET',
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(10000),
           });
 
           if (response.ok) {

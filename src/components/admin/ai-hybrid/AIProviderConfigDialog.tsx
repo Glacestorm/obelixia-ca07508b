@@ -142,11 +142,13 @@ export function AIProviderConfigDialog({
   const [isTesting, setIsTesting] = useState(false);
   const [isTestingLocal, setIsTestingLocal] = useState(false);
   const [isTestingRemote, setIsTestingRemote] = useState(false);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
   const [localTestResult, setLocalTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
   const [remoteTestResult, setRemoteTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
-  const { testConnection, addCredential } = useAIProviders();
+  const [dynamicModels, setDynamicModels] = useState<Array<{ id: string; name: string; size?: number; modified_at?: string }>>([]);
+  const { testConnection, addCredential, getProviderModels } = useAIProviders();
 
   // Form state
   const [config, setConfig] = useState<ProviderConfig>({
@@ -333,6 +335,29 @@ export function AIProviderConfigDialog({
       setIsTestingRemote(false);
     }
   };
+
+  // === REFRESH MODELS FROM SERVER ===
+  const handleRefreshModels = useCallback(async () => {
+    if (!provider) return;
+    
+    setIsLoadingModels(true);
+    try {
+      const providerKey = getProviderKey(provider);
+      const models = await getProviderModels(providerKey, config.api_endpoint);
+      
+      if (models && models.length > 0) {
+        setDynamicModels(models);
+        toast.success(`${models.length} modelos encontrados en el servidor`);
+      } else {
+        toast.warning('No se encontraron modelos. Verifica que Ollama esté ejecutándose.');
+      }
+    } catch (error) {
+      console.error('[AIProviderConfigDialog] Error refreshing models:', error);
+      toast.error('Error al obtener modelos del servidor');
+    } finally {
+      setIsLoadingModels(false);
+    }
+  }, [provider, config.api_endpoint, getProviderKey, getProviderModels]);
 
   const handleSave = async () => {
     if (!provider) return;
@@ -815,16 +840,57 @@ export function AIProviderConfigDialog({
                     <div>
                       <h4 className="font-medium">Modelos disponibles</h4>
                       <p className="text-sm text-muted-foreground">
-                        Selecciona los modelos que deseas habilitar
+                        {isLocal 
+                          ? 'Modelos instalados en tu servidor Ollama' 
+                          : 'Selecciona los modelos que deseas habilitar'
+                        }
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleTestConnection()}>
-                      <RotateCw className="h-4 w-4 mr-1" /> Actualizar lista
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleRefreshModels}
+                      disabled={isLoadingModels}
+                    >
+                      {isLoadingModels ? (
+                        <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Cargando...</>
+                      ) : (
+                        <><RotateCw className="h-4 w-4 mr-1" /> Actualizar lista</>
+                      )}
                     </Button>
                   </div>
 
+                  {/* Show dynamic models for local providers */}
                   <div className="grid gap-2">
-                    {provider.supported_models && provider.supported_models.length > 0 ? (
+                    {isLocal && dynamicModels.length > 0 ? (
+                      dynamicModels.map((model, i) => (
+                        <div key={model.id || i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <Switch
+                              checked={config.enabled_models.includes(model.name || model.id || '')}
+                              onCheckedChange={(c) => {
+                                const modelName = model.name || model.id || '';
+                                setConfig(prev => ({
+                                  ...prev,
+                                  enabled_models: c 
+                                    ? [...prev.enabled_models, modelName]
+                                    : prev.enabled_models.filter(m => m !== modelName)
+                                }));
+                              }}
+                            />
+                            <div>
+                              <p className="font-medium text-sm">{model.name || model.id}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {model.size ? `${(model.size / 1e9).toFixed(1)} GB` : 'Modelo local'}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            Gratuito
+                          </Badge>
+                        </div>
+                      ))
+                    ) : provider.supported_models && provider.supported_models.length > 0 ? (
                       provider.supported_models.map((model, i) => (
                         <div key={i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                           <div className="flex items-center gap-3">
@@ -853,7 +919,12 @@ export function AIProviderConfigDialog({
                     ) : (
                       <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
                         <Zap className="h-10 w-10 mb-2 opacity-20" />
-                        <p>Conecta primero para ver los modelos disponibles</p>
+                        <p className="text-center">
+                          {isLocal 
+                            ? 'Haz clic en "Actualizar lista" para obtener los modelos del servidor'
+                            : 'Conecta primero para ver los modelos disponibles'
+                          }
+                        </p>
                       </div>
                     )}
                   </div>
