@@ -67,7 +67,53 @@ export interface CopilotSettings {
   prioritizeSpeed: boolean;
   dataClassification: 'public' | 'internal' | 'confidential' | 'restricted';
   allowExternalForSensitive: boolean;
+  // Advanced Settings
+  requestTimeout: number;           // Timeout en segundos
+  maxRetries: number;               // Intentos de reintento
+  enableHistory: boolean;           // Guardar historial
+  maxHistoryConversations: number;  // Máximo de conversaciones en historial
+  enableContextMemory: boolean;     // Recordar contexto entre mensajes
+  contextWindowSize: number;        // Número de mensajes a recordar
+  enableQuickActions: boolean;      // Mostrar acciones rápidas
+  streamingEnabled: boolean;        // Respuestas en streaming
+  autoSaveInterval: number;         // Intervalo de autoguardado (segundos)
+  notifyOnComplete: boolean;        // Notificar cuando termine
+  defaultLanguage: 'es' | 'en' | 'ca' | 'fr';  // Idioma por defecto
+  showRoutingInfo: boolean;         // Mostrar info de enrutamiento
+  compactMode: boolean;             // Modo compacto UI
 }
+
+// === STORAGE KEY ===
+const COPILOT_SETTINGS_KEY = 'ai_copilot_settings';
+
+// === DEFAULT SETTINGS ===
+const DEFAULT_SETTINGS: CopilotSettings = {
+  model: 'auto',
+  providerType: 'auto',
+  temperature: 0.7,
+  maxTokens: 4000,
+  ollamaUrl: 'http://localhost:11434',
+  enableSmartRouting: true,
+  prioritizeSecurity: true,
+  prioritizeCost: false,
+  prioritizeSpeed: false,
+  dataClassification: 'internal',
+  allowExternalForSensitive: false,
+  // Advanced defaults
+  requestTimeout: 60,
+  maxRetries: 2,
+  enableHistory: true,
+  maxHistoryConversations: 50,
+  enableContextMemory: true,
+  contextWindowSize: 10,
+  enableQuickActions: true,
+  streamingEnabled: false,
+  autoSaveInterval: 30,
+  notifyOnComplete: true,
+  defaultLanguage: 'es',
+  showRoutingInfo: true,
+  compactMode: false,
+};
 
 // === QUESTION ANALYSIS ===
 interface QuestionAnalysis {
@@ -87,6 +133,20 @@ const DEFAULT_WEIGHTS = {
   capability: 0.15,
 };
 
+// === LOAD SETTINGS FROM STORAGE ===
+const loadStoredSettings = (): CopilotSettings => {
+  if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+  try {
+    const stored = localStorage.getItem(COPILOT_SETTINGS_KEY);
+    if (stored) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+    }
+  } catch (err) {
+    console.warn('[useAICopilot] Error loading settings:', err);
+  }
+  return DEFAULT_SETTINGS;
+};
+
 // === HOOK ===
 export function useAICopilot() {
   // State
@@ -97,20 +157,8 @@ export function useAICopilot() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [entityContext, setEntityContext] = useState<EntityContext | null>(null);
   const [lastRoutingDecision, setLastRoutingDecision] = useState<RoutingInfo | null>(null);
-  const [settings, setSettings] = useState<CopilotSettings>({
-    model: 'auto', // Changed to auto by default
-    providerType: 'auto',
-    temperature: 0.7,
-    maxTokens: 4000,
-    ollamaUrl: 'http://localhost:11434',
-    // Smart Routing defaults
-    enableSmartRouting: true,
-    prioritizeSecurity: true,
-    prioritizeCost: false,
-    prioritizeSpeed: false,
-    dataClassification: 'internal',
-    allowExternalForSensitive: false,
-  });
+  const [settingsModified, setSettingsModified] = useState(false);
+  const [settings, setSettings] = useState<CopilotSettings>(loadStoredSettings);
 
   const abortRef = useRef<AbortController | null>(null);
   const { providers, getProviderModels } = useAIProviders();
@@ -583,9 +631,28 @@ export function useAICopilot() {
     }
   }, []);
 
-  // === UPDATE SETTINGS ===
+  // === UPDATE SETTINGS (without saving) ===
   const updateSettings = useCallback((updates: Partial<CopilotSettings>) => {
     setSettings(prev => ({ ...prev, ...updates }));
+    setSettingsModified(true);
+  }, []);
+
+  // === SAVE SETTINGS TO STORAGE ===
+  const saveSettings = useCallback(() => {
+    try {
+      localStorage.setItem(COPILOT_SETTINGS_KEY, JSON.stringify(settings));
+      setSettingsModified(false);
+      return true;
+    } catch (err) {
+      console.error('[useAICopilot] Error saving settings:', err);
+      return false;
+    }
+  }, [settings]);
+
+  // === RESET SETTINGS TO DEFAULTS ===
+  const resetSettings = useCallback(() => {
+    setSettings(DEFAULT_SETTINGS);
+    setSettingsModified(true);
   }, []);
 
   // === SET ENTITY CONTEXT ===
@@ -640,6 +707,7 @@ export function useAICopilot() {
     entityContext,
     settings,
     lastRoutingDecision,
+    settingsModified,
 
     // Actions
     fetchConversations,
@@ -650,6 +718,8 @@ export function useAICopilot() {
     exportConversation,
     cancelRequest,
     updateSettings,
+    saveSettings,
+    resetSettings,
     setContext,
     getAvailableModels,
     analyzeQuestion,

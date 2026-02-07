@@ -63,6 +63,16 @@ import {
   FileBarChart,
   Briefcase,
   Link,
+  Save,
+  RotateCcw,
+  Clock,
+  History,
+  Bell,
+  Languages,
+  Eye,
+  EyeOff,
+  Gauge,
+  RefreshCw,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAICopilot, type CopilotConversation, type CopilotMessage, type EntityContext, type RoutingInfo } from '@/hooks/admin/ai-hybrid/useAICopilot';
@@ -107,6 +117,7 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
     entityContext,
     settings,
     lastRoutingDecision,
+    settingsModified,
     fetchConversations,
     loadConversation,
     sendMessage,
@@ -114,9 +125,27 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
     deleteConversation,
     exportConversation,
     updateSettings,
+    saveSettings,
+    resetSettings,
     setContext,
     getAvailableModels,
   } = useAICopilot();
+
+  // Handle save settings
+  const handleSaveSettings = () => {
+    if (saveSettings()) {
+      toast.success('Configuración guardada correctamente');
+      setSettingsOpen(false);
+    } else {
+      toast.error('Error al guardar la configuración');
+    }
+  };
+
+  // Handle reset settings
+  const handleResetSettings = () => {
+    resetSettings();
+    toast.info('Configuración restablecida a valores por defecto');
+  };
 
   const dateLocales: Record<string, Locale> = { es, ca, fr, en: enUS };
 
@@ -388,12 +417,21 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
                   <Settings className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent className="max-w-2xl max-h-[85vh]">
                 <DialogHeader>
-                  <DialogTitle>Configuración del Copilot</DialogTitle>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Configuración del Copilot
+                    {settingsModified && (
+                      <Badge variant="outline" className="ml-2 text-amber-500 border-amber-500">
+                        Sin guardar
+                      </Badge>
+                    )}
+                  </DialogTitle>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-6 py-4 pr-4">
+                <ScrollArea className="max-h-[60vh] pr-4">
+                  <div className="space-y-6 py-4">
+                    
                     {/* Smart Routing Section */}
                     <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
                       <div className="flex items-center justify-between">
@@ -437,6 +475,14 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
                                 onCheckedChange={(v) => updateSettings({ prioritizeSpeed: v, prioritizeSecurity: false, prioritizeCost: false })}
                               />
                             </div>
+                            <div className="flex items-center gap-2">
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                              <Label className="text-xs">Mostrar Info Routing</Label>
+                              <Switch
+                                checked={settings.showRoutingInfo}
+                                onCheckedChange={(v) => updateSettings({ showRoutingInfo: v })}
+                              />
+                            </div>
                           </div>
 
                           <div className="space-y-2">
@@ -470,46 +516,250 @@ export function AICopilotPanel({ className, initialContext, embedded = false }: 
 
                     <Separator />
 
-                    {/* Standard Settings */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">URL Ollama (Local)</label>
-                      <Input
-                        value={settings.ollamaUrl}
-                        onChange={(e) => updateSettings({ ollamaUrl: e.target.value })}
-                        placeholder="http://localhost:11434"
-                      />
+                    {/* Connection Settings */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Server className="h-4 w-4 text-emerald-500" />
+                        <Label className="font-medium">Conexión IA Local</Label>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">URL Ollama (Local o Servidor en Red)</Label>
+                        <Input
+                          value={settings.ollamaUrl}
+                          onChange={(e) => updateSettings({ ollamaUrl: e.target.value })}
+                          placeholder="http://localhost:11434 o http://192.168.1.100:11434"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Introduce la URL de tu servidor Ollama local o remoto.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Timeout (segundos)</Label>
+                          <Input
+                            type="number"
+                            min={10}
+                            max={300}
+                            value={settings.requestTimeout}
+                            onChange={(e) => updateSettings({ requestTimeout: parseInt(e.target.value) || 60 })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Reintentos máximos</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={5}
+                            value={settings.maxRetries}
+                            onChange={(e) => updateSettings({ maxRetries: parseInt(e.target.value) || 2 })}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Temperatura: {settings.temperature}</label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.1"
-                        value={settings.temperature}
-                        onChange={(e) => updateSettings({ temperature: parseFloat(e.target.value) })}
-                        className="w-full"
-                      />
+
+                    <Separator />
+
+                    {/* Model Parameters */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Gauge className="h-4 w-4 text-blue-500" />
+                        <Label className="font-medium">Parámetros del Modelo</Label>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Temperatura</Label>
+                          <span className="text-xs text-muted-foreground">{settings.temperature}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.1"
+                          value={settings.temperature}
+                          onChange={(e) => updateSettings({ temperature: parseFloat(e.target.value) })}
+                          className="w-full accent-primary"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Valores bajos = respuestas más precisas. Valores altos = respuestas más creativas.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Máximo de tokens</Label>
+                        <Input
+                          type="number"
+                          min={256}
+                          max={32000}
+                          value={settings.maxTokens}
+                          onChange={(e) => updateSettings({ maxTokens: parseInt(e.target.value) || 4000 })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Prompt del sistema (opcional)</Label>
+                        <Textarea
+                          value={settings.systemPrompt || ''}
+                          onChange={(e) => updateSettings({ systemPrompt: e.target.value })}
+                          placeholder="Instrucciones personalizadas para el asistente..."
+                          rows={3}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Máximo de tokens</label>
-                      <Input
-                        type="number"
-                        value={settings.maxTokens}
-                        onChange={(e) => updateSettings({ maxTokens: parseInt(e.target.value) || 4000 })}
-                      />
+
+                    <Separator />
+
+                    {/* History & Memory */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <History className="h-4 w-4 text-orange-500" />
+                        <Label className="font-medium">Historial y Memoria</Label>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label className="text-xs">Guardar historial</Label>
+                            <p className="text-xs text-muted-foreground">Conservar conversaciones</p>
+                          </div>
+                          <Switch
+                            checked={settings.enableHistory}
+                            onCheckedChange={(v) => updateSettings({ enableHistory: v })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label className="text-xs">Memoria de contexto</Label>
+                            <p className="text-xs text-muted-foreground">Recordar mensajes previos</p>
+                          </div>
+                          <Switch
+                            checked={settings.enableContextMemory}
+                            onCheckedChange={(v) => updateSettings({ enableContextMemory: v })}
+                          />
+                        </div>
+                      </div>
+
+                      {settings.enableHistory && (
+                        <div className="space-y-2">
+                          <Label className="text-xs">Máximo de conversaciones en historial</Label>
+                          <Input
+                            type="number"
+                            min={10}
+                            max={500}
+                            value={settings.maxHistoryConversations}
+                            onChange={(e) => updateSettings({ maxHistoryConversations: parseInt(e.target.value) || 50 })}
+                          />
+                        </div>
+                      )}
+
+                      {settings.enableContextMemory && (
+                        <div className="space-y-2">
+                          <Label className="text-xs">Mensajes a recordar (ventana de contexto)</Label>
+                          <Input
+                            type="number"
+                            min={2}
+                            max={50}
+                            value={settings.contextWindowSize}
+                            onChange={(e) => updateSettings({ contextWindowSize: parseInt(e.target.value) || 10 })}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Prompt del sistema (opcional)</label>
-                      <Textarea
-                        value={settings.systemPrompt || ''}
-                        onChange={(e) => updateSettings({ systemPrompt: e.target.value })}
-                        placeholder="Instrucciones personalizadas para el asistente..."
-                        rows={4}
-                      />
+
+                    <Separator />
+
+                    {/* UI & Behavior */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Bell className="h-4 w-4 text-pink-500" />
+                        <Label className="font-medium">Interfaz y Comportamiento</Label>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Acciones rápidas</Label>
+                          <Switch
+                            checked={settings.enableQuickActions}
+                            onCheckedChange={(v) => updateSettings({ enableQuickActions: v })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Notificar al completar</Label>
+                          <Switch
+                            checked={settings.notifyOnComplete}
+                            onCheckedChange={(v) => updateSettings({ notifyOnComplete: v })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Modo compacto</Label>
+                          <Switch
+                            checked={settings.compactMode}
+                            onCheckedChange={(v) => updateSettings({ compactMode: v })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Streaming</Label>
+                          <Switch
+                            checked={settings.streamingEnabled}
+                            onCheckedChange={(v) => updateSettings({ streamingEnabled: v })}
+                            disabled // TODO: implement streaming
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Idioma por defecto</Label>
+                        <Select
+                          value={settings.defaultLanguage}
+                          onValueChange={(v: 'es' | 'en' | 'ca' | 'fr') => updateSettings({ defaultLanguage: v })}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="es">Español</SelectItem>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="ca">Català</SelectItem>
+                            <SelectItem value="fr">Français</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
                 </ScrollArea>
+
+                {/* Footer with Save/Reset buttons */}
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetSettings}
+                    className="gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Restablecer
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSettingsOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveSettings}
+                      className="gap-2"
+                      disabled={!settingsModified}
+                    >
+                      <Save className="h-4 w-4" />
+                      Guardar
+                    </Button>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
 
