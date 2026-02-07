@@ -1218,3 +1218,6 @@ verify_jwt = true
 
 [functions.realtime-insights]
 verify_jwt = true
+
+[functions.galia-moderador-costes]
+verify_jwt = true
