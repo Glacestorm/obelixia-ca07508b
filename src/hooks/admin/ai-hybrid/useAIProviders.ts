@@ -218,17 +218,23 @@ export function useAIProviders() {
   }, []);
 
   // === GET PROVIDER MODELS ===
-  const getProviderModels = useCallback(async (providerId: string): Promise<AIModel[]> => {
+  const getProviderModels = useCallback(async (
+    providerId: string, 
+    endpoint?: string
+  ): Promise<AIModel[]> => {
     try {
+      console.log(`[useAIProviders] Fetching models for ${providerId}, endpoint: ${endpoint}`);
       const { data, error: fnError } = await supabase.functions.invoke('ai-provider-manager', {
         body: {
           action: 'list_models',
           provider_id: providerId,
+          api_endpoint: endpoint,
         },
       });
 
       if (fnError) throw fnError;
 
+      console.log(`[useAIProviders] Models received:`, data?.models);
       return data?.models || [];
     } catch (err) {
       console.error('[useAIProviders] getProviderModels error:', err);
