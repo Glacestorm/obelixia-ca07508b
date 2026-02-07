@@ -1,111 +1,132 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { DashboardLayout } from '@/layouts';
 import { OmnichannelInbox, Conversation, Message } from '@/components/crm/omnichannel';
+import { useOmnichannelHub, OmniConversation, OmniMessage } from '@/hooks/crm/omnichannel';
+import { Loader2 } from 'lucide-react';
 
-const demoConversations: Conversation[] = [
-  {
-    id: '1',
-    contact: { id: 'c1', name: 'María García', phone: '+34 612 345 678' },
-    channel: 'whatsapp',
-    status: 'open',
-    priority: 'high',
-    assignee: { id: 'a1', name: 'Juan Pérez' },
-    lastMessage: { content: 'Hola, necesito ayuda con mi pedido', timestamp: new Date().toISOString(), isFromContact: true },
-    unreadCount: 2,
-    slaDeadline: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-    tags: ['Soporte', 'Urgente'],
-    companyName: 'Acme Corp'
-  },
-  {
-    id: '2',
-    contact: { id: 'c2', name: 'Carlos López', phone: '+34 698 765 432' },
-    channel: 'instagram',
-    status: 'open',
-    priority: 'normal',
-    lastMessage: { content: '¿Tienen este producto en stock?', timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(), isFromContact: true },
-    unreadCount: 1,
-    tags: ['Ventas']
-  },
-  {
-    id: '3',
-    contact: { id: 'c3', name: 'Ana Martínez' },
-    channel: 'facebook',
-    status: 'pending',
-    priority: 'urgent',
-    assignee: { id: 'a2', name: 'Laura Sánchez' },
-    lastMessage: { content: 'Gracias por la información', timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), isFromContact: false },
-    unreadCount: 0,
-    slaDeadline: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    companyName: 'TechStart SL'
-  },
-  {
-    id: '4',
-    contact: { id: 'c4', name: 'Pedro Ruiz', email: 'pedro@empresa.com' },
-    channel: 'web',
-    status: 'open',
-    priority: 'low',
-    lastMessage: { content: 'Me gustaría solicitar una demo', timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), isFromContact: true },
-    unreadCount: 1,
-    tags: ['Demo', 'Lead']
-  }
-];
+/**
+ * Adapter functions to convert between hook types and UI component types
+ */
+function mapOmniConversationToUI(conv: OmniConversation): Conversation {
+  return {
+    id: conv.id,
+    contact: {
+      id: conv.contact_id || conv.id,
+      name: conv.contact_name || 'Sin nombre',
+      phone: conv.contact_phone,
+      email: conv.contact_email,
+    },
+    channel: conv.channel === 'webchat' ? 'web' : 
+             conv.channel === 'telegram' ? 'web' : 
+             conv.channel as Conversation['channel'],
+    status: conv.status === 'closed' ? 'resolved' : 
+            conv.status === 'spam' ? 'archived' : 
+            conv.status as Conversation['status'],
+    priority: conv.priority,
+    assignee: conv.assigned_agent_id ? { 
+      id: conv.assigned_agent_id, 
+      name: 'Agente' 
+    } : undefined,
+    lastMessage: conv.last_message_preview ? {
+      content: conv.last_message_preview,
+      timestamp: conv.last_message_at || conv.updated_at,
+      isFromContact: conv.last_message_direction === 'inbound'
+    } : undefined,
+    unreadCount: conv.unread_count || 0,
+    slaDeadline: conv.sla_deadline,
+    tags: conv.tags || [],
+    companyId: conv.company_id,
+    sentimentScore: conv.sentiment_score,
+  };
+}
 
-const demoMessages: Record<string, Message[]> = {
-  '1': [
-    { id: 'm1', conversationId: '1', content: '¡Hola! Bienvenido a ObelixIA. ¿En qué puedo ayudarte?', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), isFromContact: false, status: 'read', isAutomated: true },
-    { id: 'm2', conversationId: '1', content: 'Hola, necesito ayuda con mi pedido #12345', timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(), isFromContact: true, status: 'read' },
-    { id: 'm3', conversationId: '1', content: 'Claro, déjame revisar el estado de tu pedido...', timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), isFromContact: false, status: 'delivered' },
-    { id: 'm4', conversationId: '1', content: 'Hola, necesito ayuda con mi pedido', timestamp: new Date().toISOString(), isFromContact: true, status: 'read' },
-  ]
-};
+function mapOmniMessageToUI(msg: OmniMessage): Message {
+  return {
+    id: msg.id,
+    conversationId: msg.conversation_id,
+    content: msg.content,
+    timestamp: msg.created_at,
+    isFromContact: msg.direction === 'inbound',
+    status: msg.status === 'pending' ? 'sent' : msg.status as Message['status'],
+    isAutomated: msg.ai_generated || msg.sender_type === 'bot',
+  };
+}
 
 const OmnichannelPage = () => {
-  const [conversations] = useState<Conversation[]>(demoConversations);
-  const [currentConversation, setCurrentConversation] = useState<Conversation | undefined>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const {
+    conversations,
+    currentConversation,
+    messages,
+    isLoading,
+    isSending,
+    selectConversation,
+    sendMessage,
+    assignConversation,
+    changeStatus,
+    addTag,
+  } = useOmnichannelHub();
 
-  const handleSelectConversation = (conversation: Conversation) => {
-    setCurrentConversation(conversation);
-    setMessages(demoMessages[conversation.id] || []);
-  };
+  // Map hook data to UI format
+  const uiConversations = useMemo(() => 
+    conversations.map(mapOmniConversationToUI),
+    [conversations]
+  );
 
-  const handleSendMessage = (conversationId: string, content: string) => {
-    const newMessage: Message = {
-      id: `m${Date.now()}`,
-      conversationId,
-      content,
-      timestamp: new Date().toISOString(),
-      isFromContact: false,
-      status: 'sent'
-    };
-    setMessages(prev => [...prev, newMessage]);
-  };
+  const uiMessages = useMemo(() => 
+    messages.map(mapOmniMessageToUI),
+    [messages]
+  );
 
-  const handleAssign = (conversationId: string, assigneeId: string) => {
-    console.log('Assign', conversationId, 'to', assigneeId);
-  };
+  const uiCurrentConversation = useMemo(() => 
+    currentConversation ? mapOmniConversationToUI(currentConversation) : undefined,
+    [currentConversation]
+  );
 
-  const handleUpdateStatus = (conversationId: string, status: Conversation['status']) => {
-    console.log('Update status', conversationId, status);
-  };
+  // Handlers
+  const handleSelectConversation = useCallback((conversation: Conversation) => {
+    const omniConv = conversations.find(c => c.id === conversation.id);
+    if (omniConv) {
+      selectConversation(omniConv);
+    }
+  }, [conversations, selectConversation]);
 
-  const handleAddTag = (conversationId: string, tag: string) => {
-    console.log('Add tag', tag, 'to', conversationId);
-  };
+  const handleSendMessage = useCallback((conversationId: string, content: string) => {
+    sendMessage(conversationId, content);
+  }, [sendMessage]);
+
+  const handleAssign = useCallback((conversationId: string, assigneeId: string) => {
+    assignConversation(conversationId, assigneeId);
+  }, [assignConversation]);
+
+  const handleUpdateStatus = useCallback((conversationId: string, status: Conversation['status']) => {
+    const omniStatus = status === 'archived' ? 'closed' : status as OmniConversation['status'];
+    changeStatus(conversationId, omniStatus);
+  }, [changeStatus]);
+
+  const handleAddTag = useCallback((conversationId: string, tag: string) => {
+    addTag(conversationId, tag);
+  }, [addTag]);
 
   return (
     <DashboardLayout title="Inbox Omnicanal">
       <div className="p-4 h-[calc(100vh-4rem)]">
-        <OmnichannelInbox 
-          conversations={conversations}
-          messages={messages}
-          currentConversation={currentConversation}
-          onSelectConversation={handleSelectConversation}
-          onSendMessage={handleSendMessage}
-          onAssign={handleAssign}
-          onUpdateStatus={handleUpdateStatus}
-          onAddTag={handleAddTag}
-        />
+        {isLoading && conversations.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <OmnichannelInbox 
+            conversations={uiConversations}
+            messages={uiMessages}
+            currentConversation={uiCurrentConversation}
+            onSelectConversation={handleSelectConversation}
+            onSendMessage={handleSendMessage}
+            onAssign={handleAssign}
+            onUpdateStatus={handleUpdateStatus}
+            onAddTag={handleAddTag}
+            isLoading={isSending}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
