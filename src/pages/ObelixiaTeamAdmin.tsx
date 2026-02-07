@@ -124,6 +124,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
       navigate('/obelixia-admin/ai-local');
       return;
     }
+    if (tab === 'ai-hybrid') {
+      navigate('/obelixia-admin/ai-hybrid');
+      return;
+    }
     if (tab === 'automation-engine') {
       navigate('/obelixia-admin/automation-engine');
       return;

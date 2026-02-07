@@ -18,7 +18,7 @@ import {
   Newspaper, HelpCircle, Package, Layers, Rocket, Eye,
   Bell, Database, Trophy, ClipboardCheck, Building2, Zap,
   ShoppingCart, Headphones, MessageSquare, Bot, Map,
-  Leaf, Globe, HeartPulse
+  Leaf, Globe, HeartPulse, Network
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +51,7 @@ const searchItems: SearchItem[] = [
   { id: 'news', label: 'Noticias', description: 'Gestión de noticias', panel: 'obelixia', path: '/obelixia-admin?tab=news', icon: Newspaper, keywords: ['noticia', 'news', 'anuncio'] },
   { id: 'faq', label: 'FAQ', description: 'Preguntas frecuentes', panel: 'obelixia', path: '/obelixia-admin?tab=faq', icon: HelpCircle, keywords: ['faq', 'pregunta', 'ayuda', 'soporte'] },
   { id: 'security', label: 'Seguridad', description: 'Configuración de seguridad', panel: 'obelixia', path: '/obelixia-admin?tab=security', icon: Shield, keywords: ['seguridad', 'security', 'acceso', 'permisos'] },
+  { id: 'ai-hybrid', label: 'IA Híbrida Universal', description: 'Sistema IA Local + Externa', panel: 'obelixia', path: '/obelixia-admin/ai-hybrid', icon: Network, keywords: ['ia', 'ai', 'hibrida', 'local', 'ollama', 'llm', 'privacidad', 'creditos'] },
   // Estrategia & Datos - Nuevos módulos
   { id: 'esg', label: 'ESG & Sostenibilidad', description: 'Métricas ESG y sostenibilidad', panel: 'obelixia', path: '/obelixia-admin?tab=esg', icon: Leaf, keywords: ['esg', 'sostenibilidad', 'carbono', 'ambiental', 'social', 'governance'] },
   { id: 'market-intel', label: 'Market Intelligence', description: 'Análisis de mercado y competencia', panel: 'obelixia', path: '/obelixia-admin?tab=market-intelligence', icon: Globe, keywords: ['market', 'mercado', 'competencia', 'tendencias', 'intelligence'] },
