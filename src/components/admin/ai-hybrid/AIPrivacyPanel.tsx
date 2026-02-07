@@ -39,6 +39,7 @@ import {
   ClassificationRule,
   ClassificationResult,
 } from '@/hooks/admin/ai-hybrid';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -61,6 +62,7 @@ const CLASSIFICATION_ICONS: Record<DataClassification, React.ReactNode> = {
 };
 
 export function AIPrivacyPanel({ className }: AIPrivacyPanelProps) {
+  const { t } = useLanguage();
   const {
     rules,
     isLoading,
@@ -120,29 +122,29 @@ export function AIPrivacyPanel({ className }: AIPrivacyPanelProps) {
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Gateway de Privacidad
+            {t('aiHybrid.privacy.title')}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Clasificación y protección automática de datos sensibles
+            {t('aiHybrid.privacy.subtitle')}
           </p>
         </div>
         <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
               <FileSearch className="h-4 w-4" />
-              Probar Clasificación
+              {t('aiHybrid.privacy.analyze')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Probar Clasificación de Datos</DialogTitle>
+              <DialogTitle>{t('aiHybrid.privacy.testInput')}</DialogTitle>
               <DialogDescription>
-                Ingresa texto o JSON para ver cómo se clasifica y anonimiza
+                {t('aiHybrid.privacy.testPlaceholder')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Texto de prueba (texto plano o JSON)</Label>
+                <Label>{t('aiHybrid.privacy.testInput')}</Label>
                 <Textarea
                   placeholder='{"nif": "12345678A", "email": "test@ejemplo.com", "iban": "ES12 1234..."}'
                   value={testInput}

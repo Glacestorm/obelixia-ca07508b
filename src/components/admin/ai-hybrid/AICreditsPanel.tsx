@@ -30,6 +30,7 @@ import {
   Cloud,
 } from 'lucide-react';
 import { useAICredits, CreditBalance, CreditTransaction } from '@/hooks/admin/ai-hybrid';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -39,6 +40,7 @@ interface AICreditsPanelProps {
 }
 
 export function AICreditsPanel({ className }: AICreditsPanelProps) {
+  const { t } = useLanguage();
   const {
     balances,
     transactions,
@@ -106,12 +108,12 @@ export function AICreditsPanel({ className }: AICreditsPanelProps) {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Coins className="h-5 w-5 text-amber-500" />
-                Balance de Créditos
+                {t('aiHybrid.credits.balance')}
               </CardTitle>
               {balances.length > 1 && (
                 <Select value={selectedCredentialId || ''} onValueChange={setSelectedCredentialId}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Seleccionar cuenta" />
+                    <SelectValue placeholder={t('aiHybrid.tabs.providers')} />
                   </SelectTrigger>
                   <SelectContent>
                     {balances.map(b => (
@@ -129,7 +131,7 @@ export function AICreditsPanel({ className }: AICreditsPanelProps) {
               <span className="text-4xl font-bold">
                 {currentBalance ? formatCredits(currentBalance.balance) : '0.00'}
               </span>
-              <span className="text-muted-foreground">créditos disponibles</span>
+              <span className="text-muted-foreground">{t('aiHybrid.credits.available')}</span>
             </div>
 
             <div className="space-y-2">

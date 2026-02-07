@@ -48,6 +48,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { useAIProviders, AIProvider, ProviderCredential } from '@/hooks/admin/ai-hybrid';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -56,6 +57,7 @@ interface AIProvidersPanelProps {
 }
 
 export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
+  const { t } = useLanguage();
   const {
     providers,
     credentials,
@@ -212,34 +214,34 @@ export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Proveedores de IA</h3>
+          <h3 className="text-lg font-semibold">{t('aiHybrid.providers.title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Gestiona proveedores locales y en la nube
+            {t('aiHybrid.providers.subtitle')}
           </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
-              Añadir Credencial
+              {t('aiHybrid.providers.addCredentials')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nueva Credencial</DialogTitle>
+              <DialogTitle>{t('aiHybrid.providers.addCredentials')}</DialogTitle>
               <DialogDescription>
-                Configura las credenciales para un proveedor de IA
+                {t('aiHybrid.providers.subtitle')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>Proveedor</Label>
+                <Label>{t('aiHybrid.tabs.providers')}</Label>
                 <Select
                   value={newCredential.providerId}
                   onValueChange={(v) => setNewCredential(prev => ({ ...prev, providerId: v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un proveedor" />
+                    <SelectValue placeholder={t('aiHybrid.tabs.providers')} />
                   </SelectTrigger>
                   <SelectContent>
                     {providers.map(p => (
@@ -255,7 +257,7 @@ export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
               </div>
 
               <div className="space-y-2">
-                <Label>API Key (opcional para locales)</Label>
+                <Label>{t('aiHybrid.providers.apiKey')}</Label>
                 <div className="relative">
                   <Input
                     type={showSecrets['new'] ? 'text' : 'password'}
@@ -280,15 +282,15 @@ export function AIProvidersPanel({ className }: AIProvidersPanelProps) {
                   checked={newCredential.isDefault}
                   onCheckedChange={(c) => setNewCredential(prev => ({ ...prev, isDefault: c }))}
                 />
-                <Label>Establecer como predeterminado</Label>
+                <Label>{t('aiHybrid.providers.configured')}</Label>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancelar
+                {t('aiHybrid.providers.cancel')}
               </Button>
               <Button onClick={handleAddCredential}>
-                Guardar
+                {t('aiHybrid.providers.save')}
               </Button>
             </DialogFooter>
           </DialogContent>
