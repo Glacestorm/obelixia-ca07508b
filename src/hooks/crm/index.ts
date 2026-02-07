@@ -34,3 +34,6 @@ export * from './omnichannel';
 
 // Advanced Generative AI (Phase 7)
 export * from './ai';
+
+// Integration Hub (Phase 9)
+export * from './integrations';
