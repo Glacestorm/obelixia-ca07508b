@@ -97,6 +97,61 @@ interface BatchTranslateRequest {
   saveToDb?: boolean;
 }
 
+// Sleep helper for exponential backoff
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Retry with exponential backoff for transient errors
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  let lastResponse: Response | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // Retry on rate limit (429) or server errors (5xx)
+      const shouldRetry = response.status === 429 || response.status >= 500;
+      
+      if (shouldRetry && attempt < maxRetries - 1) {
+        const retryAfter = response.headers.get('Retry-After');
+        const delay = retryAfter 
+          ? parseInt(retryAfter) * 1000 
+          : baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+        
+        console.log(`Request failed with ${response.status}, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await sleep(delay);
+        lastResponse = response;
+        continue;
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`Network error on attempt ${attempt + 1}:`, error);
+      
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 500;
+        console.log(`Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await sleep(delay);
+      }
+    }
+  }
+  
+  // Return last response if we got one, otherwise throw
+  if (lastResponse) {
+    return lastResponse;
+  }
+  
+  throw lastError || new Error('Max retries exceeded');
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -149,23 +204,28 @@ ${textsToTranslate}
 Return format (JSON only, no markdown):
 [{"index": 0, "translation": "translated text"}, ...]`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
+    const response = await fetchWithRetry(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content: "You are a professional translator specialized in UI/UX texts for enterprise software. Provide accurate, natural-sounding translations while preserving the original meaning, tone, and any placeholders. Always respond with valid JSON only, no markdown formatting.",
+            },
+            { role: "user", content: prompt },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional translator specialized in UI/UX texts for enterprise software. Provide accurate, natural-sounding translations while preserving the original meaning, tone, and any placeholders. Always respond with valid JSON only, no markdown formatting.",
-          },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+      3,
+      2000
+    );
 
     if (!response.ok) {
       const bodyText = await response.text();
