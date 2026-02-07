@@ -67,3 +67,19 @@ export type {
   PrivacySummary,
   AnalyticsPeriod,
 } from './useAIAnalytics';
+
+// === MEJORAS ADICIONALES ===
+export { useAICache } from './useAICache';
+export type { CacheEntry, CacheConfig, CacheStats } from './useAICache';
+
+export { useAIBatchProcessor } from './useAIBatchProcessor';
+export type { BatchRequest, BatchResult, BatchConfig, BatchStats } from './useAIBatchProcessor';
+
+export { useAIOfflineMode } from './useAIOfflineMode';
+export type { ConnectionState, OfflineConfig, QueuedRequest, OfflineStats } from './useAIOfflineMode';
+
+export { useAIComplianceAudit } from './useAIComplianceAudit';
+export type { AuditEventType, ComplianceFramework, AuditEvent, AuditFilter, ComplianceReport, AuditConfig } from './useAIComplianceAudit';
+
+export { useAIProactiveAlerts } from './useAIProactiveAlerts';
+export type { AlertType, AlertChannel, ProactiveAlert, BudgetConfig, UsageThreshold, AlertConfig } from './useAIProactiveAlerts';
