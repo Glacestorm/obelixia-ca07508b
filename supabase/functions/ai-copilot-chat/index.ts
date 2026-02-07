@@ -52,7 +52,7 @@ serve(async (req) => {
       action, 
       conversation_id, 
       messages, 
-      model = 'google/gemini-3-flash-preview',
+      model: requestedModel,
       provider_type = 'auto',
       entity_context,
       system_prompt,
@@ -60,6 +60,23 @@ serve(async (req) => {
       max_tokens = 4000,
       ollama_url = 'http://localhost:11434'
     } = body;
+
+    // Normalize model - use a stable, supported model as default
+    const supportedModels = [
+      'google/gemini-2.5-flash',
+      'google/gemini-2.5-pro',
+      'google/gemini-2.5-flash-lite',
+      'openai/gpt-5',
+      'openai/gpt-5-mini',
+      'openai/gpt-5-nano'
+    ];
+    
+    // Default to a known stable model if none provided or if invalid
+    let model = requestedModel || 'google/gemini-2.5-flash';
+    if (!supportedModels.includes(model)) {
+      console.log(`[ai-copilot-chat] Model "${model}" not in supported list, falling back to google/gemini-2.5-flash`);
+      model = 'google/gemini-2.5-flash';
+    }
 
     console.log(`[ai-copilot-chat] Action: ${action}, Provider: ${provider_type}, Model: ${model}`);
 
