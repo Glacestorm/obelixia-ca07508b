@@ -40353,6 +40353,1137 @@ export type Database = {
           },
         ]
       }
+      galia_alertas: {
+        Row: {
+          asignada_a: string | null
+          created_at: string | null
+          descripcion: string | null
+          expediente_id: string | null
+          fecha_vencimiento: string | null
+          gal_id: string
+          id: string
+          metadata: Json | null
+          nivel: string
+          resuelta: boolean | null
+          resuelta_at: string | null
+          resuelta_por: string | null
+          solicitud_id: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          asignada_a?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          expediente_id?: string | null
+          fecha_vencimiento?: string | null
+          gal_id: string
+          id?: string
+          metadata?: Json | null
+          nivel?: string
+          resuelta?: boolean | null
+          resuelta_at?: string | null
+          resuelta_por?: string | null
+          solicitud_id?: string | null
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          asignada_a?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          expediente_id?: string | null
+          fecha_vencimiento?: string | null
+          gal_id?: string
+          id?: string
+          metadata?: Json | null
+          nivel?: string
+          resuelta?: boolean | null
+          resuelta_at?: string | null
+          resuelta_por?: string | null
+          solicitud_id?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_alertas_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "galia_expedientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_alertas_gal_id_fkey"
+            columns: ["gal_id"]
+            isOneToOne: false
+            referencedRelation: "galia_gal_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_alertas_solicitud_id_fkey"
+            columns: ["solicitud_id"]
+            isOneToOne: false
+            referencedRelation: "galia_solicitudes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_base_conocimiento: {
+        Row: {
+          categoria: string
+          contenido: string
+          created_at: string | null
+          created_by: string | null
+          embedding: string | null
+          fecha_publicacion: string | null
+          fuente: string | null
+          gal_id: string | null
+          id: string
+          metadata: Json | null
+          subcategoria: string | null
+          tags: string[] | null
+          titulo: string
+          updated_at: string | null
+          url_fuente: string | null
+          vigente: boolean | null
+        }
+        Insert: {
+          categoria: string
+          contenido: string
+          created_at?: string | null
+          created_by?: string | null
+          embedding?: string | null
+          fecha_publicacion?: string | null
+          fuente?: string | null
+          gal_id?: string | null
+          id?: string
+          metadata?: Json | null
+          subcategoria?: string | null
+          tags?: string[] | null
+          titulo: string
+          updated_at?: string | null
+          url_fuente?: string | null
+          vigente?: boolean | null
+        }
+        Update: {
+          categoria?: string
+          contenido?: string
+          created_at?: string | null
+          created_by?: string | null
+          embedding?: string | null
+          fecha_publicacion?: string | null
+          fuente?: string | null
+          gal_id?: string | null
+          id?: string
+          metadata?: Json | null
+          subcategoria?: string | null
+          tags?: string[] | null
+          titulo?: string
+          updated_at?: string | null
+          url_fuente?: string | null
+          vigente?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_base_conocimiento_gal_id_fkey"
+            columns: ["gal_id"]
+            isOneToOne: false
+            referencedRelation: "galia_gal_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_beneficiarios: {
+        Row: {
+          actividad_principal: string | null
+          codigo_postal: string | null
+          created_at: string | null
+          cuenta_bancaria: string | null
+          direccion: string | null
+          documentos_identidad: Json | null
+          email: string
+          facturacion_anual: number | null
+          fecha_constitucion: string | null
+          gal_id: string
+          id: string
+          metadata: Json | null
+          municipio: string | null
+          nif: string
+          nombre: string
+          notas_internas: string | null
+          numero_empleados: number | null
+          provincia: string | null
+          razon_social: string | null
+          representante_cargo: string | null
+          representante_nif: string | null
+          representante_nombre: string | null
+          sector_cnae: string | null
+          telefono: string | null
+          tipo: Database["public"]["Enums"]["galia_beneficiario_tipo"]
+          updated_at: string | null
+          user_id: string | null
+          verificado: boolean | null
+          verificado_at: string | null
+          verificado_by: string | null
+        }
+        Insert: {
+          actividad_principal?: string | null
+          codigo_postal?: string | null
+          created_at?: string | null
+          cuenta_bancaria?: string | null
+          direccion?: string | null
+          documentos_identidad?: Json | null
+          email: string
+          facturacion_anual?: number | null
+          fecha_constitucion?: string | null
+          gal_id: string
+          id?: string
+          metadata?: Json | null
+          municipio?: string | null
+          nif: string
+          nombre: string
+          notas_internas?: string | null
+          numero_empleados?: number | null
+          provincia?: string | null
+          razon_social?: string | null
+          representante_cargo?: string | null
+          representante_nif?: string | null
+          representante_nombre?: string | null
+          sector_cnae?: string | null
+          telefono?: string | null
+          tipo: Database["public"]["Enums"]["galia_beneficiario_tipo"]
+          updated_at?: string | null
+          user_id?: string | null
+          verificado?: boolean | null
+          verificado_at?: string | null
+          verificado_by?: string | null
+        }
+        Update: {
+          actividad_principal?: string | null
+          codigo_postal?: string | null
+          created_at?: string | null
+          cuenta_bancaria?: string | null
+          direccion?: string | null
+          documentos_identidad?: Json | null
+          email?: string
+          facturacion_anual?: number | null
+          fecha_constitucion?: string | null
+          gal_id?: string
+          id?: string
+          metadata?: Json | null
+          municipio?: string | null
+          nif?: string
+          nombre?: string
+          notas_internas?: string | null
+          numero_empleados?: number | null
+          provincia?: string | null
+          razon_social?: string | null
+          representante_cargo?: string | null
+          representante_nif?: string | null
+          representante_nombre?: string | null
+          sector_cnae?: string | null
+          telefono?: string | null
+          tipo?: Database["public"]["Enums"]["galia_beneficiario_tipo"]
+          updated_at?: string | null
+          user_id?: string | null
+          verificado?: boolean | null
+          verificado_at?: string | null
+          verificado_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_beneficiarios_gal_id_fkey"
+            columns: ["gal_id"]
+            isOneToOne: false
+            referencedRelation: "galia_gal_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_convocatorias: {
+        Row: {
+          bases_url: string | null
+          codigo: string
+          created_at: string | null
+          created_by: string | null
+          criterios_valoracion: Json | null
+          descripcion: string | null
+          documentacion_requerida: Json | null
+          estado:
+            | Database["public"]["Enums"]["galia_convocatoria_estado"]
+            | null
+          fecha_fin: string
+          fecha_inicio: string
+          fecha_publicacion: string | null
+          fecha_resolucion: string | null
+          gal_id: string
+          id: string
+          importe_maximo: number | null
+          importe_minimo: number | null
+          metadata: Json | null
+          nombre: string
+          porcentaje_ayuda_max: number | null
+          presupuesto_comprometido: number | null
+          presupuesto_ejecutado: number | null
+          presupuesto_total: number
+          publicado_boe: boolean | null
+          publicado_bopa: boolean | null
+          requisitos: Json | null
+          tipos_beneficiario:
+            | Database["public"]["Enums"]["galia_beneficiario_tipo"][]
+            | null
+          updated_at: string | null
+        }
+        Insert: {
+          bases_url?: string | null
+          codigo: string
+          created_at?: string | null
+          created_by?: string | null
+          criterios_valoracion?: Json | null
+          descripcion?: string | null
+          documentacion_requerida?: Json | null
+          estado?:
+            | Database["public"]["Enums"]["galia_convocatoria_estado"]
+            | null
+          fecha_fin: string
+          fecha_inicio: string
+          fecha_publicacion?: string | null
+          fecha_resolucion?: string | null
+          gal_id: string
+          id?: string
+          importe_maximo?: number | null
+          importe_minimo?: number | null
+          metadata?: Json | null
+          nombre: string
+          porcentaje_ayuda_max?: number | null
+          presupuesto_comprometido?: number | null
+          presupuesto_ejecutado?: number | null
+          presupuesto_total: number
+          publicado_boe?: boolean | null
+          publicado_bopa?: boolean | null
+          requisitos?: Json | null
+          tipos_beneficiario?:
+            | Database["public"]["Enums"]["galia_beneficiario_tipo"][]
+            | null
+          updated_at?: string | null
+        }
+        Update: {
+          bases_url?: string | null
+          codigo?: string
+          created_at?: string | null
+          created_by?: string | null
+          criterios_valoracion?: Json | null
+          descripcion?: string | null
+          documentacion_requerida?: Json | null
+          estado?:
+            | Database["public"]["Enums"]["galia_convocatoria_estado"]
+            | null
+          fecha_fin?: string
+          fecha_inicio?: string
+          fecha_publicacion?: string | null
+          fecha_resolucion?: string | null
+          gal_id?: string
+          id?: string
+          importe_maximo?: number | null
+          importe_minimo?: number | null
+          metadata?: Json | null
+          nombre?: string
+          porcentaje_ayuda_max?: number | null
+          presupuesto_comprometido?: number | null
+          presupuesto_ejecutado?: number | null
+          presupuesto_total?: number
+          publicado_boe?: boolean | null
+          publicado_bopa?: boolean | null
+          requisitos?: Json | null
+          tipos_beneficiario?:
+            | Database["public"]["Enums"]["galia_beneficiario_tipo"][]
+            | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_convocatorias_gal_id_fkey"
+            columns: ["gal_id"]
+            isOneToOne: false
+            referencedRelation: "galia_gal_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_costes_referencia: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          descripcion: string
+          fecha_actualizacion: string | null
+          fuente: string | null
+          id: string
+          metadata: Json | null
+          notas: string | null
+          precio_maximo: number | null
+          precio_medio: number
+          precio_minimo: number | null
+          region: string | null
+          subcategoria: string | null
+          unidad: string
+          updated_at: string | null
+          vigente_desde: string | null
+          vigente_hasta: string | null
+        }
+        Insert: {
+          categoria: string
+          created_at?: string | null
+          descripcion: string
+          fecha_actualizacion?: string | null
+          fuente?: string | null
+          id?: string
+          metadata?: Json | null
+          notas?: string | null
+          precio_maximo?: number | null
+          precio_medio: number
+          precio_minimo?: number | null
+          region?: string | null
+          subcategoria?: string | null
+          unidad: string
+          updated_at?: string | null
+          vigente_desde?: string | null
+          vigente_hasta?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          descripcion?: string
+          fecha_actualizacion?: string | null
+          fuente?: string | null
+          id?: string
+          metadata?: Json | null
+          notas?: string | null
+          precio_maximo?: number | null
+          precio_medio?: number
+          precio_minimo?: number | null
+          region?: string | null
+          subcategoria?: string | null
+          unidad?: string
+          updated_at?: string | null
+          vigente_desde?: string | null
+          vigente_hasta?: string | null
+        }
+        Relationships: []
+      }
+      galia_documentos: {
+        Row: {
+          beneficiario_id: string | null
+          confianza_extraccion: number | null
+          created_at: string | null
+          datos_extraidos: Json | null
+          documento_padre_id: string | null
+          es_obligatorio: boolean | null
+          expediente_id: string | null
+          fecha_documento: string | null
+          fecha_subida: string | null
+          hash_sha256: string | null
+          id: string
+          metadata: Json | null
+          mime_type: string | null
+          motivo_rechazo: string | null
+          nombre_archivo: string
+          nombre_original: string | null
+          requiere_revision: boolean | null
+          resultado_ia: Json | null
+          solicitud_id: string | null
+          storage_path: string
+          subido_por: string | null
+          subtipo: string | null
+          tamano_bytes: number | null
+          tipo: string
+          updated_at: string | null
+          validado: boolean | null
+          validado_at: string | null
+          validado_por: string | null
+          version: number | null
+        }
+        Insert: {
+          beneficiario_id?: string | null
+          confianza_extraccion?: number | null
+          created_at?: string | null
+          datos_extraidos?: Json | null
+          documento_padre_id?: string | null
+          es_obligatorio?: boolean | null
+          expediente_id?: string | null
+          fecha_documento?: string | null
+          fecha_subida?: string | null
+          hash_sha256?: string | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          motivo_rechazo?: string | null
+          nombre_archivo: string
+          nombre_original?: string | null
+          requiere_revision?: boolean | null
+          resultado_ia?: Json | null
+          solicitud_id?: string | null
+          storage_path: string
+          subido_por?: string | null
+          subtipo?: string | null
+          tamano_bytes?: number | null
+          tipo: string
+          updated_at?: string | null
+          validado?: boolean | null
+          validado_at?: string | null
+          validado_por?: string | null
+          version?: number | null
+        }
+        Update: {
+          beneficiario_id?: string | null
+          confianza_extraccion?: number | null
+          created_at?: string | null
+          datos_extraidos?: Json | null
+          documento_padre_id?: string | null
+          es_obligatorio?: boolean | null
+          expediente_id?: string | null
+          fecha_documento?: string | null
+          fecha_subida?: string | null
+          hash_sha256?: string | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          motivo_rechazo?: string | null
+          nombre_archivo?: string
+          nombre_original?: string | null
+          requiere_revision?: boolean | null
+          resultado_ia?: Json | null
+          solicitud_id?: string | null
+          storage_path?: string
+          subido_por?: string | null
+          subtipo?: string | null
+          tamano_bytes?: number | null
+          tipo?: string
+          updated_at?: string | null
+          validado?: boolean | null
+          validado_at?: string | null
+          validado_por?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_documentos_beneficiario_id_fkey"
+            columns: ["beneficiario_id"]
+            isOneToOne: false
+            referencedRelation: "galia_beneficiarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_documentos_documento_padre_id_fkey"
+            columns: ["documento_padre_id"]
+            isOneToOne: false
+            referencedRelation: "galia_documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_documentos_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "galia_expedientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_documentos_solicitud_id_fkey"
+            columns: ["solicitud_id"]
+            isOneToOne: false
+            referencedRelation: "galia_solicitudes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_expedientes: {
+        Row: {
+          alertas: Json | null
+          analisis_ia: Json | null
+          condiciones_especiales: Json | null
+          created_at: string | null
+          estado: Database["public"]["Enums"]["galia_expediente_estado"] | null
+          fecha_apertura: string | null
+          fecha_cierre: string | null
+          fecha_resolucion: string | null
+          hitos: Json | null
+          id: string
+          importe_concedido: number | null
+          importe_justificado: number | null
+          importe_pagado: number | null
+          informe_tecnico: string | null
+          informe_tecnico_fecha: string | null
+          metadata: Json | null
+          motivo_denegacion: string | null
+          numero_expediente: string
+          porcentaje_ayuda_final: number | null
+          propuesta_fecha: string | null
+          propuesta_resolucion: string | null
+          recurso_detalle: Json | null
+          recurso_presentado: boolean | null
+          resolucion_fecha: string | null
+          resolucion_publicacion_url: string | null
+          resolucion_referencia: string | null
+          resolucion_tipo: string | null
+          riesgo_detalle: Json | null
+          scoring_riesgo: number | null
+          solicitud_id: string
+          tecnico_evaluador_id: string | null
+          tecnico_instructor_id: string | null
+          updated_at: string | null
+          verificacion_fecha: string | null
+          verificacion_resultado: Json | null
+          verificacion_terreno: boolean | null
+        }
+        Insert: {
+          alertas?: Json | null
+          analisis_ia?: Json | null
+          condiciones_especiales?: Json | null
+          created_at?: string | null
+          estado?: Database["public"]["Enums"]["galia_expediente_estado"] | null
+          fecha_apertura?: string | null
+          fecha_cierre?: string | null
+          fecha_resolucion?: string | null
+          hitos?: Json | null
+          id?: string
+          importe_concedido?: number | null
+          importe_justificado?: number | null
+          importe_pagado?: number | null
+          informe_tecnico?: string | null
+          informe_tecnico_fecha?: string | null
+          metadata?: Json | null
+          motivo_denegacion?: string | null
+          numero_expediente: string
+          porcentaje_ayuda_final?: number | null
+          propuesta_fecha?: string | null
+          propuesta_resolucion?: string | null
+          recurso_detalle?: Json | null
+          recurso_presentado?: boolean | null
+          resolucion_fecha?: string | null
+          resolucion_publicacion_url?: string | null
+          resolucion_referencia?: string | null
+          resolucion_tipo?: string | null
+          riesgo_detalle?: Json | null
+          scoring_riesgo?: number | null
+          solicitud_id: string
+          tecnico_evaluador_id?: string | null
+          tecnico_instructor_id?: string | null
+          updated_at?: string | null
+          verificacion_fecha?: string | null
+          verificacion_resultado?: Json | null
+          verificacion_terreno?: boolean | null
+        }
+        Update: {
+          alertas?: Json | null
+          analisis_ia?: Json | null
+          condiciones_especiales?: Json | null
+          created_at?: string | null
+          estado?: Database["public"]["Enums"]["galia_expediente_estado"] | null
+          fecha_apertura?: string | null
+          fecha_cierre?: string | null
+          fecha_resolucion?: string | null
+          hitos?: Json | null
+          id?: string
+          importe_concedido?: number | null
+          importe_justificado?: number | null
+          importe_pagado?: number | null
+          informe_tecnico?: string | null
+          informe_tecnico_fecha?: string | null
+          metadata?: Json | null
+          motivo_denegacion?: string | null
+          numero_expediente?: string
+          porcentaje_ayuda_final?: number | null
+          propuesta_fecha?: string | null
+          propuesta_resolucion?: string | null
+          recurso_detalle?: Json | null
+          recurso_presentado?: boolean | null
+          resolucion_fecha?: string | null
+          resolucion_publicacion_url?: string | null
+          resolucion_referencia?: string | null
+          resolucion_tipo?: string | null
+          riesgo_detalle?: Json | null
+          scoring_riesgo?: number | null
+          solicitud_id?: string
+          tecnico_evaluador_id?: string | null
+          tecnico_instructor_id?: string | null
+          updated_at?: string | null
+          verificacion_fecha?: string | null
+          verificacion_resultado?: Json | null
+          verificacion_terreno?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_expedientes_solicitud_id_fkey"
+            columns: ["solicitud_id"]
+            isOneToOne: false
+            referencedRelation: "galia_solicitudes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_gal_config: {
+        Row: {
+          codigo_leader: string
+          comarcas: string[] | null
+          configuracion: Json | null
+          created_at: string | null
+          direccion: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          nombre: string
+          presupuesto_disponible: number | null
+          presupuesto_total: number | null
+          provincia: string | null
+          region: string
+          representante_cargo: string | null
+          representante_nombre: string | null
+          telefono: string | null
+          updated_at: string | null
+          web: string | null
+        }
+        Insert: {
+          codigo_leader: string
+          comarcas?: string[] | null
+          configuracion?: Json | null
+          created_at?: string | null
+          direccion?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          nombre: string
+          presupuesto_disponible?: number | null
+          presupuesto_total?: number | null
+          provincia?: string | null
+          region: string
+          representante_cargo?: string | null
+          representante_nombre?: string | null
+          telefono?: string | null
+          updated_at?: string | null
+          web?: string | null
+        }
+        Update: {
+          codigo_leader?: string
+          comarcas?: string[] | null
+          configuracion?: Json | null
+          created_at?: string | null
+          direccion?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          nombre?: string
+          presupuesto_disponible?: number | null
+          presupuesto_total?: number | null
+          provincia?: string | null
+          region?: string
+          representante_cargo?: string | null
+          representante_nombre?: string | null
+          telefono?: string | null
+          updated_at?: string | null
+          web?: string | null
+        }
+        Relationships: []
+      }
+      galia_interacciones_ia: {
+        Row: {
+          confianza: number | null
+          contexto: Json | null
+          created_at: string | null
+          derivado_tecnico: boolean | null
+          entidades_extraidas: Json | null
+          es_resolucion: boolean | null
+          expediente_id: string | null
+          feedback_comentario: string | null
+          feedback_usuario: number | null
+          gal_id: string | null
+          id: string
+          intencion_detectada: string | null
+          metadata: Json | null
+          modelo_usado: string | null
+          pregunta: string
+          respuesta: string | null
+          session_id: string
+          solicitud_id: string | null
+          tiempo_respuesta_ms: number | null
+          tipo: string
+          tokens_entrada: number | null
+          tokens_salida: number | null
+          user_id: string | null
+        }
+        Insert: {
+          confianza?: number | null
+          contexto?: Json | null
+          created_at?: string | null
+          derivado_tecnico?: boolean | null
+          entidades_extraidas?: Json | null
+          es_resolucion?: boolean | null
+          expediente_id?: string | null
+          feedback_comentario?: string | null
+          feedback_usuario?: number | null
+          gal_id?: string | null
+          id?: string
+          intencion_detectada?: string | null
+          metadata?: Json | null
+          modelo_usado?: string | null
+          pregunta: string
+          respuesta?: string | null
+          session_id: string
+          solicitud_id?: string | null
+          tiempo_respuesta_ms?: number | null
+          tipo: string
+          tokens_entrada?: number | null
+          tokens_salida?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          confianza?: number | null
+          contexto?: Json | null
+          created_at?: string | null
+          derivado_tecnico?: boolean | null
+          entidades_extraidas?: Json | null
+          es_resolucion?: boolean | null
+          expediente_id?: string | null
+          feedback_comentario?: string | null
+          feedback_usuario?: number | null
+          gal_id?: string | null
+          id?: string
+          intencion_detectada?: string | null
+          metadata?: Json | null
+          modelo_usado?: string | null
+          pregunta?: string
+          respuesta?: string | null
+          session_id?: string
+          solicitud_id?: string | null
+          tiempo_respuesta_ms?: number | null
+          tipo?: string
+          tokens_entrada?: number | null
+          tokens_salida?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_interacciones_ia_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "galia_expedientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_interacciones_ia_gal_id_fkey"
+            columns: ["gal_id"]
+            isOneToOne: false
+            referencedRelation: "galia_gal_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_interacciones_ia_solicitud_id_fkey"
+            columns: ["solicitud_id"]
+            isOneToOne: false
+            referencedRelation: "galia_solicitudes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_justificaciones: {
+        Row: {
+          alerta_anomalia: boolean | null
+          analisis_ia: Json | null
+          anomalia_detalle: string | null
+          anomalia_tipo: string | null
+          concepto: string
+          coste_referencia_id: string | null
+          created_at: string | null
+          descripcion: string | null
+          desviacion_coste_ref: number | null
+          documento_factura_id: string | null
+          documento_pago_id: string | null
+          expediente_id: string
+          fecha_factura: string
+          fecha_pago: string | null
+          forma_pago: string | null
+          id: string
+          importe_elegible: number | null
+          importe_factura: number
+          importe_iva: number | null
+          importe_subvencion: number | null
+          iva_incluido: boolean | null
+          justificacion_oferta_elegida: string | null
+          metadata: Json | null
+          motivo_rechazo: string | null
+          numero_factura: string | null
+          ofertas_presentadas: number | null
+          proveedor_nif: string | null
+          proveedor_nombre: string
+          requiere_tres_ofertas: boolean | null
+          tipo_gasto: string
+          updated_at: string | null
+          validado: boolean | null
+          validado_at: string | null
+          validado_por: string | null
+        }
+        Insert: {
+          alerta_anomalia?: boolean | null
+          analisis_ia?: Json | null
+          anomalia_detalle?: string | null
+          anomalia_tipo?: string | null
+          concepto: string
+          coste_referencia_id?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          desviacion_coste_ref?: number | null
+          documento_factura_id?: string | null
+          documento_pago_id?: string | null
+          expediente_id: string
+          fecha_factura: string
+          fecha_pago?: string | null
+          forma_pago?: string | null
+          id?: string
+          importe_elegible?: number | null
+          importe_factura: number
+          importe_iva?: number | null
+          importe_subvencion?: number | null
+          iva_incluido?: boolean | null
+          justificacion_oferta_elegida?: string | null
+          metadata?: Json | null
+          motivo_rechazo?: string | null
+          numero_factura?: string | null
+          ofertas_presentadas?: number | null
+          proveedor_nif?: string | null
+          proveedor_nombre: string
+          requiere_tres_ofertas?: boolean | null
+          tipo_gasto: string
+          updated_at?: string | null
+          validado?: boolean | null
+          validado_at?: string | null
+          validado_por?: string | null
+        }
+        Update: {
+          alerta_anomalia?: boolean | null
+          analisis_ia?: Json | null
+          anomalia_detalle?: string | null
+          anomalia_tipo?: string | null
+          concepto?: string
+          coste_referencia_id?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          desviacion_coste_ref?: number | null
+          documento_factura_id?: string | null
+          documento_pago_id?: string | null
+          expediente_id?: string
+          fecha_factura?: string
+          fecha_pago?: string | null
+          forma_pago?: string | null
+          id?: string
+          importe_elegible?: number | null
+          importe_factura?: number
+          importe_iva?: number | null
+          importe_subvencion?: number | null
+          iva_incluido?: boolean | null
+          justificacion_oferta_elegida?: string | null
+          metadata?: Json | null
+          motivo_rechazo?: string | null
+          numero_factura?: string | null
+          ofertas_presentadas?: number | null
+          proveedor_nif?: string | null
+          proveedor_nombre?: string
+          requiere_tres_ofertas?: boolean | null
+          tipo_gasto?: string
+          updated_at?: string | null
+          validado?: boolean | null
+          validado_at?: string | null
+          validado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_justificaciones_documento_factura_id_fkey"
+            columns: ["documento_factura_id"]
+            isOneToOne: false
+            referencedRelation: "galia_documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_justificaciones_documento_pago_id_fkey"
+            columns: ["documento_pago_id"]
+            isOneToOne: false
+            referencedRelation: "galia_documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_justificaciones_expediente_id_fkey"
+            columns: ["expediente_id"]
+            isOneToOne: false
+            referencedRelation: "galia_expedientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_solicitudes: {
+        Row: {
+          analisis_ia: Json | null
+          asignado_tecnico_id: string | null
+          beneficiario_id: string
+          convocatoria_id: string
+          created_at: string | null
+          descripcion_proyecto: string | null
+          documentacion_completa: boolean | null
+          elegibilidad_detalle: Json | null
+          empleos_crear: number | null
+          empleos_mantener: number | null
+          estado: Database["public"]["Enums"]["galia_solicitud_estado"] | null
+          fecha_fin_prevista: string | null
+          fecha_inicio_prevista: string | null
+          fecha_presentacion: string | null
+          id: string
+          importe_solicitado: number
+          metadata: Json | null
+          motivo_no_admision: string | null
+          municipio_proyecto: string | null
+          notas_tecnico: string | null
+          numero_registro: string | null
+          objetivos: Json | null
+          plazo_ejecucion_meses: number | null
+          porcentaje_ayuda: number | null
+          presupuesto_total: number
+          puntuacion_elegibilidad: number | null
+          puntuacion_valoracion: number | null
+          requiere_subsanacion: boolean | null
+          subsanacion_detalle: string | null
+          subsanacion_fecha_limite: string | null
+          titulo_proyecto: string
+          ubicacion_proyecto: string | null
+          updated_at: string | null
+          valoracion_detalle: Json | null
+        }
+        Insert: {
+          analisis_ia?: Json | null
+          asignado_tecnico_id?: string | null
+          beneficiario_id: string
+          convocatoria_id: string
+          created_at?: string | null
+          descripcion_proyecto?: string | null
+          documentacion_completa?: boolean | null
+          elegibilidad_detalle?: Json | null
+          empleos_crear?: number | null
+          empleos_mantener?: number | null
+          estado?: Database["public"]["Enums"]["galia_solicitud_estado"] | null
+          fecha_fin_prevista?: string | null
+          fecha_inicio_prevista?: string | null
+          fecha_presentacion?: string | null
+          id?: string
+          importe_solicitado: number
+          metadata?: Json | null
+          motivo_no_admision?: string | null
+          municipio_proyecto?: string | null
+          notas_tecnico?: string | null
+          numero_registro?: string | null
+          objetivos?: Json | null
+          plazo_ejecucion_meses?: number | null
+          porcentaje_ayuda?: number | null
+          presupuesto_total: number
+          puntuacion_elegibilidad?: number | null
+          puntuacion_valoracion?: number | null
+          requiere_subsanacion?: boolean | null
+          subsanacion_detalle?: string | null
+          subsanacion_fecha_limite?: string | null
+          titulo_proyecto: string
+          ubicacion_proyecto?: string | null
+          updated_at?: string | null
+          valoracion_detalle?: Json | null
+        }
+        Update: {
+          analisis_ia?: Json | null
+          asignado_tecnico_id?: string | null
+          beneficiario_id?: string
+          convocatoria_id?: string
+          created_at?: string | null
+          descripcion_proyecto?: string | null
+          documentacion_completa?: boolean | null
+          elegibilidad_detalle?: Json | null
+          empleos_crear?: number | null
+          empleos_mantener?: number | null
+          estado?: Database["public"]["Enums"]["galia_solicitud_estado"] | null
+          fecha_fin_prevista?: string | null
+          fecha_inicio_prevista?: string | null
+          fecha_presentacion?: string | null
+          id?: string
+          importe_solicitado?: number
+          metadata?: Json | null
+          motivo_no_admision?: string | null
+          municipio_proyecto?: string | null
+          notas_tecnico?: string | null
+          numero_registro?: string | null
+          objetivos?: Json | null
+          plazo_ejecucion_meses?: number | null
+          porcentaje_ayuda?: number | null
+          presupuesto_total?: number
+          puntuacion_elegibilidad?: number | null
+          puntuacion_valoracion?: number | null
+          requiere_subsanacion?: boolean | null
+          subsanacion_detalle?: string | null
+          subsanacion_fecha_limite?: string | null
+          titulo_proyecto?: string
+          ubicacion_proyecto?: string | null
+          updated_at?: string | null
+          valoracion_detalle?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_solicitudes_beneficiario_id_fkey"
+            columns: ["beneficiario_id"]
+            isOneToOne: false
+            referencedRelation: "galia_beneficiarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "galia_solicitudes_convocatoria_id_fkey"
+            columns: ["convocatoria_id"]
+            isOneToOne: false
+            referencedRelation: "galia_convocatorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_user_roles: {
+        Row: {
+          created_at: string | null
+          gal_id: string
+          id: string
+          is_active: boolean | null
+          role: Database["public"]["Enums"]["galia_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          gal_id: string
+          id?: string
+          is_active?: boolean | null
+          role?: Database["public"]["Enums"]["galia_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          gal_id?: string
+          id?: string
+          is_active?: boolean | null
+          role?: Database["public"]["Enums"]["galia_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_user_roles_gal_id_fkey"
+            columns: ["gal_id"]
+            isOneToOne: false
+            referencedRelation: "galia_gal_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       generated_modules: {
         Row: {
           accounting_ratios: Json | null
@@ -62697,6 +63828,26 @@ export type Database = {
         }[]
       }
       fn_validate_double_entry: { Args: { p_lines: Json }; Returns: boolean }
+      galia_get_beneficiario_gal: {
+        Args: { _beneficiario_id: string }
+        Returns: string
+      }
+      galia_has_role: {
+        Args: {
+          _gal_id: string
+          _role: Database["public"]["Enums"]["galia_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      galia_is_tecnico_or_above: {
+        Args: { _gal_id: string; _user_id: string }
+        Returns: boolean
+      }
+      galia_user_has_gal_access: {
+        Args: { _gal_id: string; _user_id: string }
+        Returns: boolean
+      }
       generate_compliance_alerts: { Args: never; Returns: undefined }
       generate_hr_alerts: { Args: never; Returns: undefined }
       generate_invoice_number: {
@@ -63203,6 +64354,38 @@ export type Database = {
       financial_data_source: "manual" | "pdf_import"
       financial_statement_status: "draft" | "submitted" | "approved"
       financial_statement_type: "normal" | "abreujat" | "simplificat"
+      galia_beneficiario_tipo:
+        | "empresa"
+        | "ayuntamiento"
+        | "asociacion"
+        | "autonomo"
+        | "cooperativa"
+      galia_convocatoria_estado:
+        | "borrador"
+        | "publicada"
+        | "abierta"
+        | "cerrada"
+        | "resuelta"
+        | "archivada"
+      galia_expediente_estado:
+        | "instruccion"
+        | "evaluacion"
+        | "propuesta"
+        | "resolucion"
+        | "concedido"
+        | "denegado"
+        | "renunciado"
+        | "justificacion"
+        | "cerrado"
+      galia_role: "admin" | "tecnico" | "gestor" | "auditor" | "beneficiario"
+      galia_solicitud_estado:
+        | "borrador"
+        | "presentada"
+        | "en_revision"
+        | "subsanacion"
+        | "admitida"
+        | "no_admitida"
+        | "desistida"
       hr_alert_type:
         | "contract_expiry"
         | "accident"
@@ -63493,6 +64676,42 @@ export const Constants = {
       financial_data_source: ["manual", "pdf_import"],
       financial_statement_status: ["draft", "submitted", "approved"],
       financial_statement_type: ["normal", "abreujat", "simplificat"],
+      galia_beneficiario_tipo: [
+        "empresa",
+        "ayuntamiento",
+        "asociacion",
+        "autonomo",
+        "cooperativa",
+      ],
+      galia_convocatoria_estado: [
+        "borrador",
+        "publicada",
+        "abierta",
+        "cerrada",
+        "resuelta",
+        "archivada",
+      ],
+      galia_expediente_estado: [
+        "instruccion",
+        "evaluacion",
+        "propuesta",
+        "resolucion",
+        "concedido",
+        "denegado",
+        "renunciado",
+        "justificacion",
+        "cerrado",
+      ],
+      galia_role: ["admin", "tecnico", "gestor", "auditor", "beneficiario"],
+      galia_solicitud_estado: [
+        "borrador",
+        "presentada",
+        "en_revision",
+        "subsanacion",
+        "admitida",
+        "no_admitida",
+        "desistida",
+      ],
       hr_alert_type: [
         "contract_expiry",
         "accident",
