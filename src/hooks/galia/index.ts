@@ -71,7 +71,13 @@ export { useGaliaProactiveAssistant } from './useGaliaProactiveAssistant';
 export type { 
   Deadline,
   Alert,
-  DigestResult
+  DigestResult,
+  RegulatoryChange,
+  DeadlinesResult,
+  MissingDocsResult,
+  RegulatoryChangesResult,
+  AlertsResult,
+  MissingDocument
 } from './useGaliaProactiveAssistant';
 
 export { useGaliaBDNS } from './useGaliaBDNS';
