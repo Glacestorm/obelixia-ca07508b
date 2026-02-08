@@ -51,7 +51,7 @@ export const GaliaRegionalView = memo(function GaliaRegionalView({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -30 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={cn("h-full flex flex-col", className)}
+      className={cn("h-full min-h-[500px] flex flex-col overflow-auto", className)}
     >
       <AnimatePresence mode="wait">
         {selectedProvince ? (
@@ -63,6 +63,7 @@ export const GaliaRegionalView = memo(function GaliaRegionalView({
             ccaaName={ccaaInfo.name}
             onBack={handleBackFromProvince}
             isLoading={isLoading}
+            className="flex-1"
           />
         ) : (
           /* Province List */
