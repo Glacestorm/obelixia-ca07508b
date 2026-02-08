@@ -186,6 +186,46 @@ Sin embargo, integrará capacidades del ERP (contabilidad, tesorería, documenta
 - Manifest y meta tags PWA en index.html
 - Configuración vite-plugin-pwa
 
+### FASE 5: Expansión 🚧 EN PROGRESO
+
+**5.1 Integración Cl@ve/DNIe** ✅
+- Autenticación ciudadana con sistema Cl@ve del gobierno español
+- Soporte para DNI electrónico, Cl@ve PIN, Cl@ve Permanente y Certificado Digital
+- Niveles de aseguramiento (bajo, sustancial, alto)
+- Edge Function: `galia-clave-auth`
+- Hook: `useGaliaClaveAuth.ts`
+
+**5.2 Portal Nacional Federado** ✅
+- Dashboard agregado multi-GAL a nivel regional/nacional
+- Comparación de rendimiento entre GALs con análisis IA
+- Agregación de KPIs y benchmarking
+- Informes regionales y mapa de calor
+- Edge Function: `galia-federation`
+- Hook: `useGaliaFederation.ts`
+
+**5.3 Sistema de Gamificación** ✅
+- Puntos por actividades (expediente resuelto, documento verificado, etc.)
+- Logros desbloqueables (Velocista, Mentor, Maestro LEADER, etc.)
+- Tabla de clasificación semanal/mensual
+- Desafíos diarios y semanales
+- Niveles y títulos (Aprendiz → Gran Maestro LEADER)
+- Edge Function: `galia-gamification`
+- Hook: `useGaliaGamification.ts`
+
+**5.4 Optimización de Rendimiento** ✅
+- Caché inteligente con stale-while-revalidate
+- Lazy loading con Intersection Observer
+- Métricas de rendimiento (hit rate, load time)
+- Batch fetching y prefetch
+- Limpieza automática de caché expirado
+- Hook: `useGaliaPerformance.ts`
+
+**5.5 Componentes UI Fase 5** ✅
+- Panel de autenticación Cl@ve: `GaliaClaveAuthPanel.tsx`
+- Dashboard federación nacional: `GaliaFederationDashboard.tsx`
+- Panel de gamificación para técnicos: `GaliaGamificationPanel.tsx`
+- Ubicación: `src/components/galia/phase5/`
+
 ## Estructura de Archivos Propuesta
 
 ```text

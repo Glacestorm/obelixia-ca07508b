@@ -1251,3 +1251,12 @@ verify_jwt = false
 
 [functions.galia-document-ocr]
 verify_jwt = false
+
+[functions.galia-clave-auth]
+verify_jwt = false
+
+[functions.galia-federation]
+verify_jwt = true
+
+[functions.galia-gamification]
+verify_jwt = true
