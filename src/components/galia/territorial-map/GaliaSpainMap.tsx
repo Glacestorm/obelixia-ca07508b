@@ -1,11 +1,11 @@
 /**
  * GaliaSpainMap - Interactive SVG Map of Spain
- * Accurate geographic representation with data overlays
+ * Uses accurate geographic coordinates for realistic representation
  */
 
 import { memo, useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { spainCCAAData, formatCompactCurrency } from './spain-paths';
+import { spainCCAAPathData, formatCompactCurrencyValue, type CCAAPathData } from './spain-ccaa-paths';
 import { CCAAMapData } from '@/hooks/galia/useGaliaTerritorialMap';
 import { GaliaMapTooltip } from './GaliaMapTooltip';
 import { cn } from '@/lib/utils';
@@ -44,18 +44,18 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   // Get fill color based on data
   const getFillColor = useCallback((ccaaId: string): string => {
     const ccaaData = dataMap.get(ccaaId);
-    if (!ccaaData) return 'hsl(var(--muted))';
+    if (!ccaaData) return 'hsl(220, 30%, 92%)';
     
     const intensity = ccaaData.totalGrants / maxGrants;
-    const opacity = 0.3 + (intensity * 0.6);
+    const lightness = 80 - (intensity * 45);
     
     if (ccaaData.status === 'critical') {
-      return `hsl(var(--destructive) / ${opacity})`;
+      return `hsl(0, 65%, ${lightness}%)`;
     }
     if (ccaaData.status === 'warning') {
-      return `hsl(45 100% 50% / ${opacity})`;
+      return `hsl(45, 80%, ${lightness}%)`;
     }
-    return `hsl(var(--primary) / ${opacity})`;
+    return `hsl(220, 70%, ${lightness}%)`;
   }, [dataMap, maxGrants]);
 
   // Handle mouse move for tooltip positioning
@@ -71,7 +71,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
 
   // Handle CCAA click
   const handleCCAAClick = useCallback((ccaaId: string) => {
-    const ccaaInfo = spainCCAAData.find(c => c.id === ccaaId);
+    const ccaaInfo = spainCCAAPathData.find(c => c.id === ccaaId);
     if (ccaaInfo) {
       onSelectCCAA(ccaaId, ccaaInfo.name);
     }
@@ -85,196 +85,255 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
 
   return (
     <div className={cn("relative w-full", className)}>
-      {/* SVG Map - Updated viewBox for accurate Spain representation */}
+      {/* SVG Map - ViewBox optimized for Spain's geographic bounds */}
       <svg
         ref={svgRef}
-        viewBox="0 0 1000 900"
+        viewBox="0 0 1000 950"
         className="w-full h-auto"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoveredCCAA(null)}
         style={{ maxHeight: '70vh' }}
+        aria-label="Mapa interactivo de España por comunidades autónomas"
       >
-        {/* Sea background */}
+        {/* Definitions */}
         <defs>
+          {/* Sea gradient */}
           <linearGradient id="seaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--muted) / 0.3)" />
-            <stop offset="100%" stopColor="hsl(var(--muted) / 0.1)" />
+            <stop offset="0%" stopColor="#e8f4fc" />
+            <stop offset="100%" stopColor="#d1e9f8" />
           </linearGradient>
+          
+          {/* Land shadow */}
+          <filter id="landShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.15" />
+          </filter>
+          
+          {/* Hover glow */}
+          <filter id="hoverGlow">
+            <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="hsl(220, 70%, 50%)" floodOpacity="0.5" />
+          </filter>
         </defs>
-        <rect 
-          x="0" 
-          y="0" 
-          width="1000" 
-          height="900" 
-          fill="url(#seaGradient)"
-        />
 
-        {/* Portugal outline (decorative) */}
+        {/* Sea background */}
+        <rect x="0" y="0" width="1000" height="950" fill="url(#seaGradient)" />
+
+        {/* Portugal (decorative neighbor) */}
         <path
-          d="M50,280 L100,260 L120,300 L130,380 L120,450 L100,520 L80,580 L60,620 L40,580 L35,500 L40,400 L45,320 Z"
-          fill="hsl(var(--muted) / 0.4)"
-          stroke="hsl(var(--border))"
+          d="M25,250 L75,235 L98,275 L108,355 L105,435 L90,505 L70,565 L50,615 L30,570 L22,485 L25,385 L28,295 Z"
+          fill="#e5e7eb"
+          stroke="#9ca3af"
           strokeWidth="1"
+          opacity="0.8"
         />
         <text
-          x="75"
-          y="430"
+          x="60"
+          y="420"
           textAnchor="middle"
-          className="text-[10px] fill-muted-foreground/60"
+          className="text-[11px] fill-gray-400"
           style={{ fontStyle: 'italic' }}
         >
           Portugal
         </text>
 
-        {/* France outline (decorative) */}
+        {/* France (decorative neighbor) */}
         <path
-          d="M650,80 L750,60 L850,70 L920,90 L950,120 L940,150 L900,170 L850,155 L790,145 L730,160 L680,170 L650,150 L640,120 Z"
-          fill="hsl(var(--muted) / 0.4)"
-          stroke="hsl(var(--border))"
+          d="M620,50 L720,35 L830,45 L910,68 L945,98 L935,135 L890,155 L835,142 L770,132 L710,148 L660,158 L628,138 L618,102 Z"
+          fill="#e5e7eb"
+          stroke="#9ca3af"
           strokeWidth="1"
+          opacity="0.8"
         />
         <text
-          x="800"
-          y="110"
+          x="780"
+          y="92"
           textAnchor="middle"
-          className="text-[10px] fill-muted-foreground/60"
+          className="text-[11px] fill-gray-400"
           style={{ fontStyle: 'italic' }}
         >
           Francia
         </text>
 
-        {/* CCAA Paths */}
-        <g>
-          {spainCCAAData.map((ccaa) => {
+        {/* Andorra marker */}
+        <circle cx="688" cy="138" r="6" fill="#e5e7eb" stroke="#9ca3af" strokeWidth="1" />
+        <text
+          x="705"
+          y="142"
+          className="text-[8px] fill-gray-400"
+          style={{ fontStyle: 'italic' }}
+        >
+          Andorra
+        </text>
+
+        {/* Main Spain landmass group with shadow */}
+        <g filter="url(#landShadow)">
+          {/* CCAA Paths - rendered in order for proper layering */}
+          {spainCCAAPathData.map((ccaa) => {
             const ccaaData = dataMap.get(ccaa.id);
             const isHovered = hoveredCCAA === ccaa.id;
             const isSelected = selectedCCAA === ccaa.id;
             
             return (
-              <motion.g
-                key={ccaa.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: Math.random() * 0.2 }}
-              >
+              <motion.g key={ccaa.id}>
                 {/* Region path */}
                 <motion.path
                   d={ccaa.path}
                   fill={getFillColor(ccaa.id)}
-                  stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
-                  strokeWidth={isHovered || isSelected ? 2.5 : 1.5}
-                  className="cursor-pointer transition-colors"
+                  stroke={isHovered || isSelected ? '#3b82f6' : '#6b7280'}
+                  strokeWidth={isHovered || isSelected ? 2.5 : 1}
+                  strokeLinejoin="round"
+                  className="cursor-pointer"
                   onMouseEnter={() => setHoveredCCAA(ccaa.id)}
                   onClick={() => handleCCAAClick(ccaa.id)}
+                  initial={{ opacity: 0 }}
+                  animate={{ 
+                    opacity: 1,
+                    filter: isHovered ? 'url(#hoverGlow)' : 'none'
+                  }}
+                  transition={{ duration: 0.2 }}
                   whileHover={{ scale: 1.01 }}
                   style={{ 
-                    filter: isHovered ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' : 'none',
                     transformOrigin: `${ccaa.labelPosition.x}px ${ccaa.labelPosition.y}px`
                   }}
                 />
-
-                {/* CCAA short name */}
-                <text
-                  x={ccaa.labelPosition.x}
-                  y={ccaa.labelPosition.y - 12}
-                  textAnchor="middle"
-                  className="text-[9px] font-medium fill-foreground/70 pointer-events-none"
-                >
-                  {ccaa.shortName}
-                </text>
-
-                {/* Data label */}
-                {ccaaData && (
-                  <g 
-                    className="pointer-events-none"
-                    style={{ opacity: isLoading ? 0.3 : 1 }}
-                  >
-                    {/* Background pill */}
-                    <rect
-                      x={ccaa.labelPosition.x - 24}
-                      y={ccaa.labelPosition.y - 2}
-                      width="48"
-                      height="18"
-                      rx="9"
-                      fill="hsl(var(--background) / 0.95)"
-                      stroke="hsl(var(--border))"
-                      strokeWidth="0.5"
-                    />
-                    {/* Grant count */}
-                    <text
-                      x={ccaa.labelPosition.x}
-                      y={ccaa.labelPosition.y + 11}
-                      textAnchor="middle"
-                      className="text-[10px] font-bold fill-foreground"
-                    >
-                      {ccaaData.totalGrants}
-                    </text>
-                  </g>
-                )}
               </motion.g>
             );
           })}
         </g>
 
-        {/* Mediterranean Sea label */}
-        <text
-          x="900"
-          y="600"
-          textAnchor="middle"
-          className="text-[11px] fill-muted-foreground/50"
-          style={{ fontStyle: 'italic' }}
-        >
-          Mar Mediterráneo
-        </text>
+        {/* Labels layer (on top of paths) */}
+        <g className="pointer-events-none">
+          {spainCCAAPathData.map((ccaa) => {
+            const ccaaData = dataMap.get(ccaa.id);
+            
+            // Skip labels for very small regions (Ceuta, Melilla)
+            const isSmallRegion = ccaa.id === 'ceuta' || ccaa.id === 'melilla';
+            
+            return (
+              <g key={`label-${ccaa.id}`} opacity={isLoading ? 0.4 : 1}>
+                {/* Short name label */}
+                <text
+                  x={ccaa.labelPosition.x}
+                  y={ccaa.labelPosition.y - (isSmallRegion ? 5 : 14)}
+                  textAnchor="middle"
+                  className="text-[10px] font-semibold"
+                  fill="#374151"
+                >
+                  {ccaa.shortName}
+                </text>
 
-        {/* Atlantic Ocean label */}
-        <text
-          x="60"
-          y="180"
-          textAnchor="middle"
-          className="text-[11px] fill-muted-foreground/50"
-          style={{ fontStyle: 'italic' }}
-          transform="rotate(-45, 60, 180)"
-        >
-          Océano Atlántico
-        </text>
+                {/* Data badge */}
+                {ccaaData && !isSmallRegion && (
+                  <g>
+                    {/* Background pill */}
+                    <rect
+                      x={ccaa.labelPosition.x - 22}
+                      y={ccaa.labelPosition.y - 4}
+                      width="44"
+                      height="20"
+                      rx="10"
+                      fill="rgba(255, 255, 255, 0.95)"
+                      stroke="#d1d5db"
+                      strokeWidth="1"
+                    />
+                    {/* Grant count */}
+                    <text
+                      x={ccaa.labelPosition.x}
+                      y={ccaa.labelPosition.y + 10}
+                      textAnchor="middle"
+                      className="text-[11px] font-bold"
+                      fill="#1f2937"
+                    >
+                      {ccaaData.totalGrants}
+                    </text>
+                  </g>
+                )}
+              </g>
+            );
+          })}
+        </g>
 
-        {/* Cantabrian Sea label */}
-        <text
-          x="350"
-          y="85"
-          textAnchor="middle"
-          className="text-[11px] fill-muted-foreground/50"
-          style={{ fontStyle: 'italic' }}
-        >
-          Mar Cantábrico
-        </text>
+        {/* Sea labels */}
+        <g className="pointer-events-none">
+          {/* Cantabrian Sea */}
+          <text
+            x="300"
+            y="55"
+            textAnchor="middle"
+            className="text-[12px]"
+            fill="#6b7280"
+            style={{ fontStyle: 'italic' }}
+          >
+            Mar Cantábrico
+          </text>
 
-        {/* Canary Islands separator */}
-        <line
-          x1="40"
-          y1="790"
-          x2="320"
-          y2="790"
-          stroke="hsl(var(--border))"
-          strokeWidth="1"
-          strokeDasharray="6 3"
-        />
-        <text
-          x="180"
-          y="778"
-          textAnchor="middle"
-          className="text-[10px] fill-muted-foreground"
-        >
-          Islas Canarias (África)
-        </text>
+          {/* Atlantic Ocean */}
+          <text
+            x="28"
+            y="160"
+            textAnchor="start"
+            className="text-[11px]"
+            fill="#6b7280"
+            style={{ fontStyle: 'italic' }}
+            transform="rotate(-75, 28, 160)"
+          >
+            Océano Atlántico
+          </text>
 
-        {/* Ceuta & Melilla label */}
+          {/* Mediterranean Sea */}
+          <text
+            x="920"
+            y="580"
+            textAnchor="middle"
+            className="text-[12px]"
+            fill="#6b7280"
+            style={{ fontStyle: 'italic' }}
+            transform="rotate(-30, 920, 580)"
+          >
+            Mar Mediterráneo
+          </text>
+
+          {/* Gulf of Cadiz */}
+          <text
+            x="180"
+            y="860"
+            textAnchor="middle"
+            className="text-[10px]"
+            fill="#6b7280"
+            style={{ fontStyle: 'italic' }}
+          >
+            Golfo de Cádiz
+          </text>
+        </g>
+
+        {/* Canary Islands separator and label */}
+        <g>
+          <line
+            x1="30"
+            y1="720"
+            x2="340"
+            y2="720"
+            stroke="#9ca3af"
+            strokeWidth="1"
+            strokeDasharray="5 3"
+          />
+          <text
+            x="185"
+            y="710"
+            textAnchor="middle"
+            className="text-[10px]"
+            fill="#6b7280"
+          >
+            Islas Canarias (Océano Atlántico)
+          </text>
+        </g>
+
+        {/* North Africa label for Ceuta & Melilla */}
         <text
           x="400"
-          y="862"
+          y="905"
           textAnchor="middle"
-          className="text-[9px] fill-muted-foreground"
+          className="text-[9px]"
+          fill="#9ca3af"
         >
           Ceuta y Melilla (Norte de África)
         </text>
