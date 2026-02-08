@@ -317,8 +317,24 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
             // Skip Gibraltar
             if (id === '20') return null;
 
+            // Check if it's a small region (Ceuta or Melilla) that needs a larger hit area
+            const isSmallRegion = id === '18' || id === '19';
+
             return (
               <g key={id}>
+                {/* Larger invisible hit area for small regions (Ceuta/Melilla) */}
+                {isSmallRegion && centroid.x > 0 && (
+                  <circle
+                    cx={centroid.x}
+                    cy={centroid.y}
+                    r={20}
+                    fill="transparent"
+                    className="cursor-pointer"
+                    onMouseEnter={() => setHoveredCCAA(id)}
+                    onClick={() => handleCCAAClick(id)}
+                  />
+                )}
+                
                 <path
                   d={path}
                   fill={getFillColor(id)}
