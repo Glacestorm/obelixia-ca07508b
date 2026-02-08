@@ -223,7 +223,7 @@ export const GaliaProvinceDetailPanel = memo(function GaliaProvinceDetailPanel({
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
         transition={{ duration: 0.3 }}
-        className={cn("h-full flex flex-col", className)}
+        className={cn("h-full min-h-[400px] flex flex-col overflow-hidden", className)}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -306,8 +306,8 @@ export const GaliaProvinceDetailPanel = memo(function GaliaProvinceDetailPanel({
               </div>
 
               {/* Localities List */}
-              <ScrollArea className="flex-1">
-                <div className="space-y-2 pr-2">
+              <ScrollArea className="flex-1 min-h-[200px] max-h-[calc(100vh-350px)]">
+                <div className="space-y-2 pr-2 pb-4">
                   {filteredLocalidades.map((loc, idx) => (
                     <motion.div
                       key={loc.id}
