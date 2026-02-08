@@ -11,5 +11,7 @@ export { GaliaModeradorCostes } from './GaliaModeradorCostes';
 export { GaliaReportGenerator } from './GaliaReportGenerator';
 export { GaliaDocumentAnalyzer } from './GaliaDocumentAnalyzer';
 export { GaliaNotificacionesPanel } from './GaliaNotificacionesPanel';
+export { GaliaGuiasPasoAPaso } from './GaliaGuiasPasoAPaso';
+export { GaliaPlantillasJustificacion } from './GaliaPlantillasJustificacion';
 export { GaliaKPICards } from './shared/GaliaKPICards';
 export { GaliaStatusBadge } from './shared/GaliaStatusBadge';

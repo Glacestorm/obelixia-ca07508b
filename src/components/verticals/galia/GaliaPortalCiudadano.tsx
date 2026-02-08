@@ -37,6 +37,8 @@ import {
 } from 'lucide-react';
 import { GaliaAsistenteVirtualMejorado } from './GaliaAsistenteVirtualMejorado';
 import { GaliaNotificacionesPanel } from './GaliaNotificacionesPanel';
+import { GaliaGuiasPasoAPaso } from './GaliaGuiasPasoAPaso';
+import { GaliaPlantillasJustificacion } from './GaliaPlantillasJustificacion';
 import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
 import { useGaliaNotificaciones } from '@/hooks/galia/useGaliaNotificaciones';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,6 +103,7 @@ export function GaliaPortalCiudadano() {
   const [expedienteConsultado, setExpedienteConsultado] = useState<ExpedientePublico | null>(null);
   const [isConsultando, setIsConsultando] = useState(false);
   const [consultaError, setConsultaError] = useState<string | null>(null);
+  const [docSubTab, setDocSubTab] = useState<'formularios' | 'guias' | 'justificacion'>('formularios');
 
   // Hook real para convocatorias
   const { 
@@ -562,10 +565,19 @@ export function GaliaPortalCiudadano() {
             </Card>
           </TabsContent>
 
-          {/* Documentación Tab - Mejorada con categorías */}
+          {/* Documentación Tab - Con sub-navegación interactiva */}
           <TabsContent value="documentacion" className="space-y-6">
+            {/* Sub-navegación por categorías */}
             <div className="grid md:grid-cols-3 gap-4 mb-6">
-              <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+              <Card 
+                className={cn(
+                  "cursor-pointer transition-all hover:shadow-md",
+                  docSubTab === 'formularios' 
+                    ? "bg-gradient-to-br from-primary/10 to-primary/20 border-primary ring-2 ring-primary/20" 
+                    : "bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20"
+                )}
+                onClick={() => setDocSubTab('formularios')}
+              >
                 <CardContent className="p-6 text-center">
                   <div className="p-4 bg-primary/20 rounded-xl w-fit mx-auto mb-3">
                     <FileText className="h-8 w-8 text-primary" />
@@ -576,18 +588,35 @@ export function GaliaPortalCiudadano() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
+              <Card 
+                className={cn(
+                  "cursor-pointer transition-all hover:shadow-md",
+                  docSubTab === 'guias' 
+                    ? "bg-gradient-to-br from-emerald-500/10 to-emerald-500/20 border-emerald-500 ring-2 ring-emerald-500/20" 
+                    : "bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 border-emerald-500/20"
+                )}
+                onClick={() => setDocSubTab('guias')}
+              >
                 <CardContent className="p-6 text-center">
-                  <div className="p-4 bg-green-500/20 rounded-xl w-fit mx-auto mb-3">
-                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  <div className="p-4 bg-emerald-500/20 rounded-xl w-fit mx-auto mb-3">
+                    <CheckCircle className="h-8 w-8 text-emerald-600" />
                   </div>
-                  <h3 className="font-semibold text-lg">Guías</h3>
+                  <h3 className="font-semibold text-lg">Guías Paso a Paso</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Manuales paso a paso
+                    Manuales interactivos
                   </p>
+                  <Badge className="mt-2 bg-emerald-500/20 text-emerald-700 border-emerald-500/30">Nuevo</Badge>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-500/20">
+              <Card 
+                className={cn(
+                  "cursor-pointer transition-all hover:shadow-md",
+                  docSubTab === 'justificacion' 
+                    ? "bg-gradient-to-br from-amber-500/10 to-amber-500/20 border-amber-500 ring-2 ring-amber-500/20" 
+                    : "bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-500/20"
+                )}
+                onClick={() => setDocSubTab('justificacion')}
+              >
                 <CardContent className="p-6 text-center">
                   <div className="p-4 bg-amber-500/20 rounded-xl w-fit mx-auto mb-3">
                     <Euro className="h-8 w-8 text-amber-600" />
@@ -596,142 +625,158 @@ export function GaliaPortalCiudadano() {
                   <p className="text-sm text-muted-foreground mt-1">
                     Plantillas de gastos
                   </p>
+                  <Badge className="mt-2 bg-amber-500/20 text-amber-700 border-amber-500/30">Interactivo</Badge>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                    <FileText className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">Guía del solicitante</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Pasos para solicitar ayudas LEADER - Actualizado 2024
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline" className="text-xs">PDF</Badge>
-                      <Badge variant="secondary" className="text-xs">2.4 MB</Badge>
+            {/* Contenido según sub-pestaña seleccionada */}
+            {docSubTab === 'formularios' && (
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <FileText className="h-6 w-6 text-primary" />
                     </div>
-                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
-                      <Download className="h-3 w-3" />
-                      Descargar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Formulario de solicitud</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Documento oficial para presentar tu solicitud
+                      </p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="outline" className="text-xs">PDF</Badge>
+                        <Badge variant="secondary" className="text-xs">1.2 MB</Badge>
+                      </div>
+                      <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                        <Download className="h-3 w-3" />
+                        Descargar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">Checklist de documentación</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Documentos necesarios según tipo de proyecto
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline" className="text-xs">Interactivo</Badge>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <Users className="h-6 w-6 text-primary" />
                     </div>
-                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
-                      <ExternalLink className="h-3 w-3" />
-                      Ver checklist
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Directorio de GALs de Asturias</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Encuentra tu Grupo de Acción Local por municipio
+                      </p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="outline" className="text-xs">Mapa</Badge>
+                        <Badge className="text-xs bg-emerald-500/20 text-emerald-700">11 GALs</Badge>
+                      </div>
+                      <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                        <MapPin className="h-3 w-3" />
+                        Ver directorio
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-amber-500/10 rounded-lg group-hover:bg-amber-500/20 transition-colors">
-                    <Euro className="h-6 w-6 text-amber-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">Guía de justificación económica</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Cómo justificar los gastos de tu proyecto según normativa FEADER
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline" className="text-xs">PDF</Badge>
-                      <Badge variant="secondary" className="text-xs">1.8 MB</Badge>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <FileText className="h-6 w-6 text-primary" />
                     </div>
-                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
-                      <Download className="h-3 w-3" />
-                      Descargar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Modelo de memoria técnica</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Plantilla para describir tu proyecto y objetivos
+                      </p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="outline" className="text-xs">DOCX</Badge>
+                        <Badge variant="secondary" className="text-xs">156 KB</Badge>
+                      </div>
+                      <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                        <Download className="h-3 w-3" />
+                        Descargar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
-                    <Users className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">Directorio de GALs de Asturias</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Encuentra tu Grupo de Acción Local por municipio
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline" className="text-xs">Mapa</Badge>
-                      <Badge className="text-xs bg-green-500/20 text-green-700">11 GALs</Badge>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <Sparkles className="h-6 w-6 text-primary" />
                     </div>
-                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
-                      <MapPin className="h-3 w-3" />
-                      Ver directorio
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Modelo de presupuesto</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Excel con desglose por partidas y cálculo automático de ayuda
+                      </p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="outline" className="text-xs">XLSX</Badge>
+                        <Badge variant="secondary" className="text-xs">89 KB</Badge>
+                      </div>
+                      <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                        <Download className="h-3 w-3" />
+                        Descargar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
-                    <FileText className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">Modelo de memoria técnica</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Plantilla para describir tu proyecto y objetivos
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline" className="text-xs">DOCX</Badge>
-                      <Badge variant="secondary" className="text-xs">156 KB</Badge>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="p-3 bg-emerald-500/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
+                      <CheckCircle className="h-6 w-6 text-emerald-600" />
                     </div>
-                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
-                      <Download className="h-3 w-3" />
-                      Descargar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Checklist de documentación</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Documentos necesarios según tipo de proyecto
+                      </p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="outline" className="text-xs">Interactivo</Badge>
+                      </div>
+                      <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                        <ExternalLink className="h-3 w-3" />
+                        Ver checklist
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-cyan-500/10 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
-                    <Sparkles className="h-6 w-6 text-cyan-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">Modelo de presupuesto</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Excel con desglose por partidas y cálculo automático de ayuda
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <Badge variant="outline" className="text-xs">XLSX</Badge>
-                      <Badge variant="secondary" className="text-xs">89 KB</Badge>
+                <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <FileText className="h-6 w-6 text-primary" />
                     </div>
-                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
-                      <Download className="h-3 w-3" />
-                      Descargar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">Declaraciones responsables</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Modelos de declaraciones exigidas por normativa
+                      </p>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Badge variant="outline" className="text-xs">PDF</Badge>
+                        <Badge variant="secondary" className="text-xs">320 KB</Badge>
+                      </div>
+                      <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                        <Download className="h-3 w-3" />
+                        Descargar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {docSubTab === 'guias' && (
+              <GaliaGuiasPasoAPaso />
+            )}
+
+            {docSubTab === 'justificacion' && (
+              <GaliaPlantillasJustificacion 
+                codigoExpediente={expedienteConsultado?.codigo}
+                presupuestoAprobado={expedienteConsultado?.importeSolicitado || 50000}
+                porcentajeAyuda={50}
+              />
+            )}
           </TabsContent>
 
           {/* Ayuda Tab */}
