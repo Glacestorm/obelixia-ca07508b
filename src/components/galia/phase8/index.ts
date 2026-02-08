@@ -14,5 +14,9 @@ export const GaliaGeoIntelligencePanel = lazy(() => import('./GaliaGeoIntelligen
 // 8C - Simulador de Convocatorias
 export const GaliaConvocatoriaSimulatorPanel = lazy(() => import('./GaliaConvocatoriaSimulatorPanel').then(m => ({ default: m.GaliaConvocatoriaSimulatorPanel })));
 
+// 8D - Portal Beneficiario 360°
+export const GaliaBeneficiario360Panel = lazy(() => import('./GaliaBeneficiario360Panel').then(m => ({ default: m.GaliaBeneficiario360Panel })));
+
 // Próximos componentes Phase 8:
-// export const GaliaBeneficiario360Panel = lazy(() => import('./GaliaBeneficiario360Panel').then(m => ({ default: m.GaliaBeneficiario360Panel })));
+// 8E - Flujos No-Code (BPMN)
+// 8F - Integraciones Administrativas (AEAT, TGSS, etc.)

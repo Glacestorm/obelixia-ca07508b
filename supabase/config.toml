@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-beneficiario-360]
+verify_jwt = true
+
 [functions.galia-convocatoria-simulator]
 verify_jwt = true
 
