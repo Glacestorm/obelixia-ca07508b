@@ -1,5 +1,17 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-smart-audit]
+verify_jwt = true
+
+[functions.galia-compliance-predictor]
+verify_jwt = true
+
+[functions.galia-early-warning]
+verify_jwt = true
+
+[functions.galia-executive-dashboard]
+verify_jwt = true
+
 [functions.galia-eudi-wallet]
 verify_jwt = false
 
