@@ -15554,6 +15554,428 @@ export type Database = {
           },
         ]
       }
+      demo_banking_operaciones: {
+        Row: {
+          cliente_nombre: string
+          cliente_tipo: string | null
+          created_at: string | null
+          estado: string | null
+          fecha_formalizacion: string | null
+          fecha_solicitud: string | null
+          fecha_vencimiento: string | null
+          garantias: string[] | null
+          gestor: string | null
+          id: string
+          importe: number | null
+          metadata: Json | null
+          oficina: string | null
+          plazo_meses: number | null
+          producto: string | null
+          riesgo_nivel: string | null
+          scoring_crediticio: number | null
+          tae: number | null
+          tipo_operacion: string | null
+        }
+        Insert: {
+          cliente_nombre: string
+          cliente_tipo?: string | null
+          created_at?: string | null
+          estado?: string | null
+          fecha_formalizacion?: string | null
+          fecha_solicitud?: string | null
+          fecha_vencimiento?: string | null
+          garantias?: string[] | null
+          gestor?: string | null
+          id?: string
+          importe?: number | null
+          metadata?: Json | null
+          oficina?: string | null
+          plazo_meses?: number | null
+          producto?: string | null
+          riesgo_nivel?: string | null
+          scoring_crediticio?: number | null
+          tae?: number | null
+          tipo_operacion?: string | null
+        }
+        Update: {
+          cliente_nombre?: string
+          cliente_tipo?: string | null
+          created_at?: string | null
+          estado?: string | null
+          fecha_formalizacion?: string | null
+          fecha_solicitud?: string | null
+          fecha_vencimiento?: string | null
+          garantias?: string[] | null
+          gestor?: string | null
+          id?: string
+          importe?: number | null
+          metadata?: Json | null
+          oficina?: string | null
+          plazo_meses?: number | null
+          producto?: string | null
+          riesgo_nivel?: string | null
+          scoring_crediticio?: number | null
+          tae?: number | null
+          tipo_operacion?: string | null
+        }
+        Relationships: []
+      }
+      demo_crm_clientes: {
+        Row: {
+          cif: string | null
+          cnae: string | null
+          created_at: string | null
+          direccion: string | null
+          email: string | null
+          empleados: number | null
+          estado: string | null
+          facturacion_anual: number | null
+          fecha_alta: string | null
+          fecha_ultima_interaccion: string | null
+          gestor_asignado: string | null
+          id: string
+          metadata: Json | null
+          municipio: string | null
+          nombre_comercial: string
+          pais: string | null
+          productos_contratados: string[] | null
+          provincia: string | null
+          razon_social: string | null
+          scoring: number | null
+          sector: string | null
+          segmento: string | null
+          tags: string[] | null
+          telefono: string | null
+          tipo_cliente: string | null
+          valor_lifetime: number | null
+          web: string | null
+        }
+        Insert: {
+          cif?: string | null
+          cnae?: string | null
+          created_at?: string | null
+          direccion?: string | null
+          email?: string | null
+          empleados?: number | null
+          estado?: string | null
+          facturacion_anual?: number | null
+          fecha_alta?: string | null
+          fecha_ultima_interaccion?: string | null
+          gestor_asignado?: string | null
+          id?: string
+          metadata?: Json | null
+          municipio?: string | null
+          nombre_comercial: string
+          pais?: string | null
+          productos_contratados?: string[] | null
+          provincia?: string | null
+          razon_social?: string | null
+          scoring?: number | null
+          sector?: string | null
+          segmento?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          tipo_cliente?: string | null
+          valor_lifetime?: number | null
+          web?: string | null
+        }
+        Update: {
+          cif?: string | null
+          cnae?: string | null
+          created_at?: string | null
+          direccion?: string | null
+          email?: string | null
+          empleados?: number | null
+          estado?: string | null
+          facturacion_anual?: number | null
+          fecha_alta?: string | null
+          fecha_ultima_interaccion?: string | null
+          gestor_asignado?: string | null
+          id?: string
+          metadata?: Json | null
+          municipio?: string | null
+          nombre_comercial?: string
+          pais?: string | null
+          productos_contratados?: string[] | null
+          provincia?: string | null
+          razon_social?: string | null
+          scoring?: number | null
+          sector?: string | null
+          segmento?: string | null
+          tags?: string[] | null
+          telefono?: string | null
+          tipo_cliente?: string | null
+          valor_lifetime?: number | null
+          web?: string | null
+        }
+        Relationships: []
+      }
+      demo_crm_oportunidades: {
+        Row: {
+          cliente_id: string | null
+          competidor: string | null
+          created_at: string | null
+          descripcion: string | null
+          etapa: string | null
+          fecha_cierre_esperado: string | null
+          fecha_cierre_real: string | null
+          fecha_creacion: string | null
+          gestor: string | null
+          id: string
+          metadata: Json | null
+          motivo_perdida: string | null
+          nombre: string
+          probabilidad: number | null
+          producto: string | null
+          valor: number | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          competidor?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          etapa?: string | null
+          fecha_cierre_esperado?: string | null
+          fecha_cierre_real?: string | null
+          fecha_creacion?: string | null
+          gestor?: string | null
+          id?: string
+          metadata?: Json | null
+          motivo_perdida?: string | null
+          nombre: string
+          probabilidad?: number | null
+          producto?: string | null
+          valor?: number | null
+        }
+        Update: {
+          cliente_id?: string | null
+          competidor?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          etapa?: string | null
+          fecha_cierre_esperado?: string | null
+          fecha_cierre_real?: string | null
+          fecha_creacion?: string | null
+          gestor?: string | null
+          id?: string
+          metadata?: Json | null
+          motivo_perdida?: string | null
+          nombre?: string
+          probabilidad?: number | null
+          producto?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_crm_oportunidades_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "demo_crm_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      demo_erp_facturas: {
+        Row: {
+          base_imponible: number | null
+          centro_coste: string | null
+          cliente_cif: string | null
+          cliente_nombre: string
+          concepto: string | null
+          created_at: string | null
+          cuenta_contable: string | null
+          estado: string | null
+          fecha_cobro: string | null
+          fecha_emision: string | null
+          fecha_vencimiento: string | null
+          forma_pago: string | null
+          id: string
+          irpf_importe: number | null
+          irpf_porcentaje: number | null
+          iva_importe: number | null
+          iva_porcentaje: number | null
+          metadata: Json | null
+          numero_factura: string
+          proyecto: string | null
+          tipo: string | null
+          total: number | null
+        }
+        Insert: {
+          base_imponible?: number | null
+          centro_coste?: string | null
+          cliente_cif?: string | null
+          cliente_nombre: string
+          concepto?: string | null
+          created_at?: string | null
+          cuenta_contable?: string | null
+          estado?: string | null
+          fecha_cobro?: string | null
+          fecha_emision?: string | null
+          fecha_vencimiento?: string | null
+          forma_pago?: string | null
+          id?: string
+          irpf_importe?: number | null
+          irpf_porcentaje?: number | null
+          iva_importe?: number | null
+          iva_porcentaje?: number | null
+          metadata?: Json | null
+          numero_factura: string
+          proyecto?: string | null
+          tipo?: string | null
+          total?: number | null
+        }
+        Update: {
+          base_imponible?: number | null
+          centro_coste?: string | null
+          cliente_cif?: string | null
+          cliente_nombre?: string
+          concepto?: string | null
+          created_at?: string | null
+          cuenta_contable?: string | null
+          estado?: string | null
+          fecha_cobro?: string | null
+          fecha_emision?: string | null
+          fecha_vencimiento?: string | null
+          forma_pago?: string | null
+          id?: string
+          irpf_importe?: number | null
+          irpf_porcentaje?: number | null
+          iva_importe?: number | null
+          iva_porcentaje?: number | null
+          metadata?: Json | null
+          numero_factura?: string
+          proyecto?: string | null
+          tipo?: string | null
+          total?: number | null
+        }
+        Relationships: []
+      }
+      demo_galia_expedientes: {
+        Row: {
+          beneficiario_cif: string | null
+          beneficiario_nombre: string
+          beneficiario_tipo: string | null
+          ccaa: string
+          convocatoria: string | null
+          created_at: string | null
+          descripcion_proyecto: string | null
+          documentos_pendientes: number | null
+          empleos_creados: number | null
+          empleos_mantenidos: number | null
+          estado: string | null
+          fecha_fin_ejecucion: string | null
+          fecha_resolucion: string | null
+          fecha_solicitud: string | null
+          id: string
+          importe_aprobado: number | null
+          importe_justificado: number | null
+          importe_solicitado: number | null
+          metadata: Json | null
+          municipio: string
+          numero_expediente: string
+          porcentaje_ayuda: number | null
+          programa: string | null
+          provincia: string
+          puntuacion_riesgo: number | null
+          sector_cnae: string | null
+          tecnico_asignado: string | null
+          titulo: string
+        }
+        Insert: {
+          beneficiario_cif?: string | null
+          beneficiario_nombre: string
+          beneficiario_tipo?: string | null
+          ccaa: string
+          convocatoria?: string | null
+          created_at?: string | null
+          descripcion_proyecto?: string | null
+          documentos_pendientes?: number | null
+          empleos_creados?: number | null
+          empleos_mantenidos?: number | null
+          estado?: string | null
+          fecha_fin_ejecucion?: string | null
+          fecha_resolucion?: string | null
+          fecha_solicitud?: string | null
+          id?: string
+          importe_aprobado?: number | null
+          importe_justificado?: number | null
+          importe_solicitado?: number | null
+          metadata?: Json | null
+          municipio: string
+          numero_expediente: string
+          porcentaje_ayuda?: number | null
+          programa?: string | null
+          provincia: string
+          puntuacion_riesgo?: number | null
+          sector_cnae?: string | null
+          tecnico_asignado?: string | null
+          titulo: string
+        }
+        Update: {
+          beneficiario_cif?: string | null
+          beneficiario_nombre?: string
+          beneficiario_tipo?: string | null
+          ccaa?: string
+          convocatoria?: string | null
+          created_at?: string | null
+          descripcion_proyecto?: string | null
+          documentos_pendientes?: number | null
+          empleos_creados?: number | null
+          empleos_mantenidos?: number | null
+          estado?: string | null
+          fecha_fin_ejecucion?: string | null
+          fecha_resolucion?: string | null
+          fecha_solicitud?: string | null
+          id?: string
+          importe_aprobado?: number | null
+          importe_justificado?: number | null
+          importe_solicitado?: number | null
+          metadata?: Json | null
+          municipio?: string
+          numero_expediente?: string
+          porcentaje_ayuda?: number | null
+          programa?: string | null
+          provincia?: string
+          puntuacion_riesgo?: number | null
+          sector_cnae?: string | null
+          tecnico_asignado?: string | null
+          titulo?: string
+        }
+        Relationships: []
+      }
+      demo_mode_config: {
+        Row: {
+          activated_at: string | null
+          created_at: string | null
+          demo_dataset: string | null
+          expires_at: string | null
+          id: string
+          is_demo_mode_active: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string | null
+          demo_dataset?: string | null
+          expires_at?: string | null
+          id?: string
+          is_demo_mode_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string | null
+          demo_dataset?: string | null
+          expires_at?: string | null
+          id?: string
+          is_demo_mode_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       demo_requests: {
         Row: {
           assigned_to: string | null
