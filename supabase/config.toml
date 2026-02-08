@@ -1329,3 +1329,6 @@ verify_jwt = true
 
 [functions.galia-gamification]
 verify_jwt = true
+
+[functions.galia-territorial-map]
+verify_jwt = true

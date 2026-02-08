@@ -10,6 +10,7 @@ export { GaliaMapTooltip } from './GaliaMapTooltip';
 export { GaliaMapLegend } from './GaliaMapLegend';
 export { GaliaRegionalView } from './GaliaRegionalView';
 export { GaliaRegionInfoPanel } from './GaliaRegionInfoPanel';
+export { GaliaProvinceDetailPanel } from './GaliaProvinceDetailPanel';
 export { 
   spainCCAAData, 
   spainProvincesData,

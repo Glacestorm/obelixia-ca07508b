@@ -31,7 +31,8 @@ import SecurityOnboardingGuide from '@/components/obelixia-admin/SecurityOnboard
 import { NewsAdminDashboard } from '@/components/obelixia-admin/news';
 import { FAQAdminDashboard } from '@/components/obelixia-admin/faq';
 import { TranslationsDashboard } from '@/components/admin/translations/TranslationsDashboard';
-import { EnterpriseTrends2026Dashboard } from '@/components/admin/verticals';
+// EnterpriseTrends2026Dashboard - lazy loaded to avoid chunking conflicts
+const EnterpriseTrends2026Dashboard = lazy(() => import('@/components/admin/verticals/EnterpriseTrends2026Dashboard').then(m => ({ default: m.EnterpriseTrends2026Dashboard })));
 import AcademiaAdminPage from '@/pages/admin/AcademiaAdminPage';
 import DemoRequestsPage from '@/pages/admin/DemoRequestsPage';
 import { 
