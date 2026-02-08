@@ -176,94 +176,92 @@ export default defineConfig(({ mode }) => ({
   },
   // Core Web Vitals Optimizations - Vite 6 enhancements
   build: {
-    // Code splitting for better caching
+    // MEMORY OPTIMIZATION: Limit parallel file operations
     rollupOptions: {
+      maxParallelFileOps: 2,
       output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
-          'vendor-query': ['@tanstack/react-query'],
-          'vendor-charts': ['recharts'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-map': ['maplibre-gl'],
+        manualChunks: (id) => {
+          // React core
+          if (id.includes('node_modules/react-dom')) return 'vendor-react-dom';
+          if (id.includes('node_modules/react-router')) return 'vendor-router';
+          if (id.includes('node_modules/react/') || id.includes('node_modules/scheduler')) return 'vendor-react';
+          
+          // Heavy UI libraries - split granularly
+          if (id.includes('node_modules/@radix-ui')) return 'vendor-radix';
+          if (id.includes('node_modules/framer-motion')) return 'vendor-motion';
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) return 'vendor-charts';
+          
+          // Data/State
+          if (id.includes('node_modules/@tanstack')) return 'vendor-query';
+          if (id.includes('node_modules/@supabase')) return 'vendor-supabase';
+          
+          // Map libraries
+          if (id.includes('node_modules/maplibre-gl') || id.includes('node_modules/mapbox-gl')) return 'vendor-map';
+          
+          // Utilities
+          if (id.includes('node_modules/date-fns')) return 'vendor-date';
+          if (id.includes('node_modules/lucide-react')) return 'vendor-icons';
+          if (id.includes('node_modules/zod')) return 'vendor-zod';
+          
+          // App code splitting by domain
+          if (id.includes('/components/galia/')) return 'app-galia';
+          if (id.includes('/components/admin/')) return 'app-admin';
+          if (id.includes('/components/verticals/')) return 'app-verticals';
+          if (id.includes('/components/academia/')) return 'app-academia';
+          
+          // Remaining node_modules
+          if (id.includes('node_modules')) return 'vendor-misc';
         },
-        // Aggressive tree-shaking configuration (Priority 5)
+        // Aggressive tree-shaking configuration
         compact: true,
         generatedCode: {
           arrowFunctions: true,
           constBindings: true,
           objectShorthand: true,
         },
-        // Optimize chunk names for better caching
-        chunkFileNames: (chunkInfo) => {
-          const facadeModuleId = chunkInfo.facadeModuleId ?? '';
-          if (facadeModuleId.includes('node_modules')) {
-            return 'vendor/[name]-[hash].js';
-          }
-          return 'chunks/[name]-[hash].js';
-        },
-        assetFileNames: (assetInfo) => {
-          const ext = assetInfo.name?.split('.').pop() ?? '';
-          if (/png|jpe?g|svg|gif|tiff|bmp|ico|webp|avif/i.test(ext)) {
-            return 'images/[name]-[hash][extname]';
-          }
-          if (/woff2?|eot|ttf|otf/i.test(ext)) {
-            return 'fonts/[name]-[hash][extname]';
-          }
-          return 'assets/[name]-[hash][extname]';
-        },
+        // Simplified chunk naming to reduce memory
+        chunkFileNames: 'chunks/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
       },
-      // Tree-shaking optimization
+      // Tree-shaking optimization - less aggressive to reduce memory
       treeshake: {
-        moduleSideEffects: 'no-external',
+        moduleSideEffects: false,
         propertyReadSideEffects: false,
-        tryCatchDeoptimization: false,
-        unknownGlobalSideEffects: false,
       },
     },
     // Minification for smaller bundle sizes
     minify: 'esbuild',
-    // Enable source maps for debugging in development
-    sourcemap: mode !== 'production',
-    // Chunk size warning
-    chunkSizeWarningLimit: 500,
+    // MEMORY: Disable source maps during build
+    sourcemap: false,
+    // Increase chunk warning limit
+    chunkSizeWarningLimit: 1000,
     // CSS code splitting
     cssCodeSplit: true,
-    // Target modern browsers for smaller bundles (ESNext for Vite 6)
+    // Target modern browsers for smaller bundles
     target: 'esnext',
-    // Vite 6: Improved asset handling
-    assetsInlineLimit: 4096,
-    // Module preload polyfill disabled (not needed for modern browsers)
+    // Smaller inline limit
+    assetsInlineLimit: 2048,
+    // Module preload polyfill disabled
     modulePreload: {
       polyfill: false,
     },
-    // Report compressed sizes
-    reportCompressedSize: true,
+    // MEMORY: Disable compressed size reporting
+    reportCompressedSize: false,
   },
-  // Optimize dependencies - Vite 6 improvements
+  // Optimize dependencies - reduced set for memory
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
       'react-router-dom',
-      '@tanstack/react-query',
-      '@supabase/supabase-js',
-      'lucide-react',
     ],
-    // Exclude large dependencies from pre-bundling for tree-shaking
-    exclude: [],
-    // Vite 6: Better dependency discovery
+    // Exclude heavy deps from pre-bundling
+    exclude: ['maplibre-gl', 'mapbox-gl'],
     esbuildOptions: {
       target: 'esnext',
-      // Tree-shaking for esbuild
       treeShaking: true,
-      // Drop console in production
+      // Only drop console in production
       drop: mode === 'production' ? ['console', 'debugger'] : [],
-      // Minify identifiers
-      minifyIdentifiers: mode === 'production',
-      minifySyntax: mode === 'production',
-      minifyWhitespace: mode === 'production',
     },
   },
   // Enable CSS optimization
@@ -283,9 +281,9 @@ export default defineConfig(({ mode }) => ({
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   },
-  // Vite 6: JSON handling
+  // MEMORY: Disable JSON stringify (reduces memory during build)
   json: {
-    stringify: true,
+    stringify: false,
   },
   // Vite 6: Environment handling
   envPrefix: 'VITE_',
