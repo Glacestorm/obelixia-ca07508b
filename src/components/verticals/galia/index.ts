@@ -1,15 +1,14 @@
 /**
  * GALIA Module Components - Barrel Export
  * Gestión de Ayudas LEADER con Inteligencia Artificial
+ * 
+ * NOTA: Los componentes pesados se importan dinámicamente en GaliaMainTabs.tsx
+ * para optimizar el chunking y evitar errores de memoria en el build.
+ * NO añadir aquí: GaliaPortalCiudadano, GaliaModeradorCostes, GaliaReportGenerator,
+ * GaliaDocumentAnalyzer, GaliaAsistenteVirtual
  */
 
 export { GaliaDashboard } from './GaliaDashboard';
-export { GaliaAsistenteVirtual } from './GaliaAsistenteVirtual';
-export { GaliaAsistenteVirtualMejorado } from './GaliaAsistenteVirtualMejorado';
-export { GaliaPortalCiudadano } from './GaliaPortalCiudadano';
-export { GaliaModeradorCostes } from './GaliaModeradorCostes';
-export { GaliaReportGenerator } from './GaliaReportGenerator';
-export { GaliaDocumentAnalyzer } from './GaliaDocumentAnalyzer';
 export { GaliaNotificacionesPanel } from './GaliaNotificacionesPanel';
 export { GaliaGuiasPasoAPaso } from './GaliaGuiasPasoAPaso';
 export { GaliaPlantillasJustificacion } from './GaliaPlantillasJustificacion';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,12 +16,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Plus, CalendarIcon, Edit, Trash2, Eye, Building2, Search, Filter, X, ChevronLeft, ChevronRight, Save, Package, FileText, MapPin, Calendar as CalendarViewIcon } from 'lucide-react';
-import { SharedVisitsCalendar } from '@/components/admin/SharedVisitsCalendar';
+import { Plus, CalendarIcon, Edit, Trash2, Eye, Building2, Search, Filter, X, ChevronLeft, ChevronRight, Save, Package, FileText, MapPin, Calendar as CalendarViewIcon, Loader2 } from 'lucide-react';
 import CompanySearchBar from '@/components/admin/accounting/CompanySearchBar';
 import { format } from 'date-fns';
 import { ca, es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+
+// Lazy load SharedVisitsCalendar para evitar conflictos de chunking
+const SharedVisitsCalendar = lazy(() => 
+  import('@/components/admin/SharedVisitsCalendar').then(m => ({ default: m.SharedVisitsCalendar }))
+);
 
 interface Company {
   id: string;
@@ -360,7 +364,9 @@ export function QuickVisitManager({ gestorId, onVisitCreated }: QuickVisitManage
       )}
 
       {showCalendar ? (
-        <SharedVisitsCalendar />
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+          <SharedVisitsCalendar />
+        </Suspense>
       ) : showRecentVisits ? (
         <Card>
           <CardHeader>
