@@ -23,6 +23,9 @@ import {
   FolderOpen,
   FileCheck,
   Settings,
+  Globe,
+  Calculator,
+  FileBarChart,
 } from 'lucide-react';
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
 import { useGaliaExpedientes } from '@/hooks/galia/useGaliaExpedientes';
@@ -30,6 +33,9 @@ import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
 import { GaliaKPICards } from './shared/GaliaKPICards';
 import { GaliaStatusBadge } from './shared/GaliaStatusBadge';
 import { GaliaAsistenteVirtual } from './GaliaAsistenteVirtual';
+import { GaliaPortalCiudadano } from './GaliaPortalCiudadano';
+import { GaliaModeradorCostes } from './GaliaModeradorCostes';
+import { GaliaReportGenerator } from './GaliaReportGenerator';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -95,7 +101,7 @@ export function GaliaDashboard() {
         {/* Left Column - Main Tabs */}
         <div className={cn("lg:col-span-2", showAssistant && "lg:col-span-1")}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="resumen" className="text-xs">
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Resumen
@@ -107,6 +113,18 @@ export function GaliaDashboard() {
               <TabsTrigger value="convocatorias" className="text-xs">
                 <FileText className="h-4 w-4 mr-1" />
                 Convocatorias
+              </TabsTrigger>
+              <TabsTrigger value="portal" className="text-xs">
+                <Globe className="h-4 w-4 mr-1" />
+                Portal
+              </TabsTrigger>
+              <TabsTrigger value="costes" className="text-xs">
+                <Calculator className="h-4 w-4 mr-1" />
+                Costes IA
+              </TabsTrigger>
+              <TabsTrigger value="informes" className="text-xs">
+                <FileBarChart className="h-4 w-4 mr-1" />
+                Informes
               </TabsTrigger>
               <TabsTrigger value="alertas" className="text-xs">
                 <AlertTriangle className="h-4 w-4 mr-1" />
@@ -302,6 +320,21 @@ export function GaliaDashboard() {
                   </ScrollArea>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Portal Ciudadano Tab */}
+            <TabsContent value="portal" className="mt-4">
+              <GaliaPortalCiudadano />
+            </TabsContent>
+
+            {/* Moderador de Costes Tab */}
+            <TabsContent value="costes" className="mt-4">
+              <GaliaModeradorCostes />
+            </TabsContent>
+
+            {/* Generador de Informes Tab */}
+            <TabsContent value="informes" className="mt-4">
+              <GaliaReportGenerator />
             </TabsContent>
 
             <TabsContent value="alertas" className="mt-4">
