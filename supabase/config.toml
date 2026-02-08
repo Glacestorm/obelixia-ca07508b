@@ -54,6 +54,9 @@ verify_jwt = false
 [functions.galia-public-api]
 verify_jwt = false
 
+[functions.galia-decision-support]
+verify_jwt = true
+
 [functions.galia-auto-approval]
 verify_jwt = true
 

@@ -8,3 +8,4 @@ export { GaliaEUFundingAlerts } from './GaliaEUFundingAlerts';
 export { GaliaSolicitudWizard } from './GaliaSolicitudWizard';
 export { GaliaPortalCiudadanoAvanzado } from './GaliaPortalCiudadanoAvanzado';
 export { GaliaPublicDashboard } from './GaliaPublicDashboard';
+export { GaliaDecisionSupportPanel } from './GaliaDecisionSupportPanel';

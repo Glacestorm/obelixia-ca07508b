@@ -255,3 +255,16 @@ export type {
   DocumentAnalysis as KGDocumentAnalysis,
   KnowledgeCategory 
 } from './useGaliaKnowledgeGraph';
+
+// === PHASE 6 (GALIA 2.0) - DECISION SUPPORT ===
+export { useGaliaDecisionSupport } from './useGaliaDecisionSupport';
+export type { 
+  EvaluationResult, 
+  ScoringResult, 
+  ComplianceResult, 
+  CrossModuleSyncResult, 
+  RecommendationResult,
+  ApplicationData,
+  EvaluationCriteria,
+  ModuleType
+} from './useGaliaDecisionSupport';
