@@ -1,7 +1,7 @@
 /**
  * GaliaSpainMap - Interactive SVG Map of Spain
- * Lightweight implementation with labels inside regions
- * Memory-optimized for build efficiency
+ * Simplified implementation without zoom (fixed 1:4 scale)
+ * Memory-optimized with Canary Islands repositioned
  */
 
 import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
@@ -19,11 +19,6 @@ interface GaliaSpainMapProps {
   className?: string;
 }
 
-// Zoom constraints
-const MIN_ZOOM = 0.8;
-const MAX_ZOOM = 4;
-const ZOOM_SENSITIVITY = 0.002;
-
 interface GeoFeature {
   id: string;
   geometry: {
@@ -33,25 +28,51 @@ interface GeoFeature {
   properties?: Record<string, unknown>;
 }
 
-// Projection function (outside component for memory efficiency)
-const projectPoint = (lon: number, lat: number, width: number, height: number): [number, number] => {
+// Fixed scale (no zoom)
+const FIXED_SCALE = 4;
+
+// Map dimensions
+const WIDTH = 800;
+const HEIGHT = 650;
+
+// Projection function - projects lon/lat to SVG coordinates
+const projectPoint = (lon: number, lat: number): [number, number] => {
   const centerLon = -3.7;
-  const centerLat = 40.4;
-  const scale = 2200;
-  const x = (lon - centerLon) * (scale / 100) + width / 2;
-  const y = (centerLat - lat) * (scale / 80) + height / 2;
+  const centerLat = 40.0;
+  const scale = 2800;
+  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2;
+  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 30;
   return [x, y];
 };
 
-// Calculate centroid from coordinates
-const calculateCentroid = (coords: number[][][], width: number, height: number): { x: number; y: number } => {
+// Offset for Canary Islands repositioning (move them closer to mainland)
+const CANARIAS_OFFSET = { x: 550, y: -280 };
+
+// Project point with optional offset for Canarias
+const projectPointWithOffset = (
+  lon: number, 
+  lat: number, 
+  isCanarias: boolean
+): [number, number] => {
+  const [x, y] = projectPoint(lon, lat);
+  if (isCanarias) {
+    return [x + CANARIAS_OFFSET.x, y + CANARIAS_OFFSET.y];
+  }
+  return [x, y];
+};
+
+// Calculate centroid from polygon coordinates
+const calculateCentroid = (
+  coords: number[][][], 
+  isCanarias: boolean
+): { x: number; y: number } => {
   let sumX = 0;
   let sumY = 0;
   let count = 0;
   
   coords.forEach(ring => {
     ring.forEach(point => {
-      const [x, y] = projectPoint(point[0], point[1], width, height);
+      const [x, y] = projectPointWithOffset(point[0], point[1], isCanarias);
       sumX += x;
       sumY += y;
       count++;
@@ -65,7 +86,10 @@ const calculateCentroid = (coords: number[][][], width: number, height: number):
 };
 
 // Calculate centroid for MultiPolygon
-const calculateMultiPolygonCentroid = (coords: number[][][][], width: number, height: number): { x: number; y: number } => {
+const calculateMultiPolygonCentroid = (
+  coords: number[][][][], 
+  isCanarias: boolean
+): { x: number; y: number } => {
   let sumX = 0;
   let sumY = 0;
   let count = 0;
@@ -73,7 +97,7 @@ const calculateMultiPolygonCentroid = (coords: number[][][][], width: number, he
   coords.forEach(polygon => {
     polygon.forEach(ring => {
       ring.forEach(point => {
-        const [x, y] = projectPoint(point[0], point[1], width, height);
+        const [x, y] = projectPointWithOffset(point[0], point[1], isCanarias);
         sumX += x;
         sumY += y;
         count++;
@@ -98,19 +122,12 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   className
 }: GaliaSpainMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCCAA, setHoveredCCAA] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const dimensions = useMemo(() => ({ width: 700, height: 600 }), []);
   
   // Geo data state
   const [ccaaFeatures, setCcaaFeatures] = useState<GeoFeature[]>(cachedCCAAData || []);
   const [geoLoading, setGeoLoading] = useState(!cachedCCAAData);
-  
-  // Zoom and pan state
-  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
   // Load geo data dynamically
   useEffect(() => {
@@ -168,16 +185,14 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   const pathData = useMemo(() => {
     if (ccaaFeatures.length === 0) return [];
 
-    const width = dimensions.width;
-    const height = dimensions.height;
-
-    const pathFromCoords = (coords: number[][]): string => {
+    const pathFromCoords = (coords: number[][], isCanarias: boolean): string => {
       if (coords.length === 0) return '';
-      const points = coords.map(c => projectPoint(c[0], c[1], width, height));
+      const points = coords.map(c => projectPointWithOffset(c[0], c[1], isCanarias));
       return 'M' + points.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
     };
 
     return ccaaFeatures.map(feature => {
+      const isCanarias = feature.id === '05';
       let d = '';
       const geom = feature.geometry;
       let centroid = { x: 0, y: 0 };
@@ -185,26 +200,27 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
       if (geom.type === 'Polygon') {
         const coords = geom.coordinates as number[][][];
         coords.forEach(ring => {
-          d += pathFromCoords(ring);
+          d += pathFromCoords(ring, isCanarias);
         });
-        centroid = calculateCentroid(coords, width, height);
+        centroid = calculateCentroid(coords, isCanarias);
       } else if (geom.type === 'MultiPolygon') {
         const coords = geom.coordinates as number[][][][];
         coords.forEach(polygon => {
           polygon.forEach(ring => {
-            d += pathFromCoords(ring);
+            d += pathFromCoords(ring, isCanarias);
           });
         });
-        centroid = calculateMultiPolygonCentroid(coords, width, height);
+        centroid = calculateMultiPolygonCentroid(coords, isCanarias);
       }
 
       return {
         id: String(feature.id),
         path: d,
-        centroid
+        centroid,
+        isCanarias
       };
     });
-  }, [ccaaFeatures, dimensions]);
+  }, [ccaaFeatures]);
 
   // Get fill color based on data
   const getFillColor = useCallback((topoId: string): string => {
@@ -226,50 +242,6 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     return `hsl(var(--primary) / ${opacity})`;
   }, [dataMap, maxGrants]);
 
-  // Handle mouse wheel zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const delta = -e.deltaY * ZOOM_SENSITIVITY;
-    const newScale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, transform.scale * (1 + delta)));
-    
-    if (newScale === transform.scale) return;
-
-    const scaleFactor = newScale / transform.scale;
-    const newX = mouseX - (mouseX - transform.x) * scaleFactor;
-    const newY = mouseY - (mouseY - transform.y) * scaleFactor;
-
-    setTransform({ x: newX, y: newY, scale: newScale });
-  }, [transform]);
-
-  // Handle pan
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 0) {
-      setIsPanning(true);
-      setPanStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
-    }
-  }, [transform]);
-
-  const handleMouseMoveForPan = useCallback((e: React.MouseEvent) => {
-    if (isPanning) {
-      setTransform(prev => ({
-        ...prev,
-        x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y
-      }));
-    }
-  }, [isPanning, panStart]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-  }, []);
-
   // Handle mouse move for tooltip
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (svgRef.current) {
@@ -288,11 +260,6 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
       onSelectCCAA(ccaaInfo.id, ccaaInfo.name);
     }
   }, [onSelectCCAA]);
-
-  // Reset zoom
-  const resetZoom = useCallback(() => {
-    setTransform({ x: 0, y: 0, scale: 1 });
-  }, []);
 
   // Get tooltip data
   const tooltipData = useMemo(() => {
@@ -315,81 +282,33 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className={cn("relative w-full overflow-hidden", className)}
-    >
-      {/* Zoom controls */}
-      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
-        <button
-          onClick={() => setTransform(prev => ({ 
-            ...prev, 
-            scale: Math.min(MAX_ZOOM, prev.scale * 1.3) 
-          }))}
-          className="h-8 w-8 rounded bg-background/90 border border-border hover:bg-muted flex items-center justify-center text-sm font-bold"
-          title="Acercar"
-        >
-          +
-        </button>
-        <button
-          onClick={() => setTransform(prev => ({ 
-            ...prev, 
-            scale: Math.max(MIN_ZOOM, prev.scale / 1.3) 
-          }))}
-          className="h-8 w-8 rounded bg-background/90 border border-border hover:bg-muted flex items-center justify-center text-sm font-bold"
-          title="Alejar"
-        >
-          −
-        </button>
-        <button
-          onClick={resetZoom}
-          className="h-8 w-8 rounded bg-background/90 border border-border hover:bg-muted flex items-center justify-center text-[10px]"
-          title="Restablecer zoom"
-        >
-          1:1
-        </button>
+    <div className={cn("relative w-full", className)}>
+      {/* Scale indicator */}
+      <div className="absolute top-2 right-2 z-10 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded border border-border">
+        Escala 1:{FIXED_SCALE}
       </div>
-
-      {/* Zoom level indicator */}
-      {transform.scale !== 1 && (
-        <div className="absolute bottom-2 left-2 z-10 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-          {Math.round(transform.scale * 100)}%
-        </div>
-      )}
 
       {/* SVG Map */}
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
-        className={cn(
-          "w-full h-auto",
-          isPanning ? "cursor-grabbing" : "cursor-grab"
-        )}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={(e) => {
-          handleMouseMove(e);
-          handleMouseMoveForPan(e);
-        }}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          setHoveredCCAA(null);
-          setIsPanning(false);
-        }}
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        className="w-full h-auto"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredCCAA(null)}
       >
         {/* Background */}
         <rect 
           x="0" 
           y="0" 
-          width={dimensions.width} 
-          height={dimensions.height} 
+          width={WIDTH} 
+          height={HEIGHT} 
           fill="transparent"
         />
         
-        {/* Zoomable/Pannable group */}
-        <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
+        {/* Main map group */}
+        <g>
           {/* CCAA Paths */}
-          {pathData.map(({ id, path, centroid }) => {
+          {pathData.map(({ id, path, centroid, isCanarias }) => {
             const ccaaInfo = getCCAAByTopoId(id);
             const ccaaData = ccaaInfo ? dataMap.get(ccaaInfo.id) : null;
             const isHovered = hoveredCCAA === id;
@@ -404,22 +323,21 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
                   d={path}
                   fill={getFillColor(id)}
                   stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
-                  strokeWidth={(isHovered || isSelected ? 2 : 0.5) / transform.scale}
+                  strokeWidth={isHovered || isSelected ? 2 : 0.5}
                   className="cursor-pointer transition-colors"
                   onMouseEnter={() => setHoveredCCAA(id)}
                   onClick={() => handleCCAAClick(id)}
                 />
 
-                {/* Labels inside the region - scaled inversely to maintain size */}
+                {/* Labels inside the region */}
                 {ccaaInfo && centroid.x > 0 && (
                   <g 
-                    transform={`translate(${centroid.x}, ${centroid.y}) scale(${1 / transform.scale})`}
                     className="pointer-events-none"
                   >
                     {/* CCAA Name */}
                     <text
-                      x={0}
-                      y={-4}
+                      x={centroid.x}
+                      y={centroid.y - 4}
                       textAnchor="middle"
                       className="text-[10px] font-bold"
                       fill="hsl(var(--foreground))"
@@ -433,8 +351,8 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
                     {/* Grant count */}
                     {ccaaData && (
                       <text
-                        x={0}
-                        y={10}
+                        x={centroid.x}
+                        y={centroid.y + 10}
                         textAnchor="middle"
                         className="text-[11px] font-semibold"
                         fill="hsl(var(--foreground))"
@@ -452,23 +370,24 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
             );
           })}
 
-          {/* Canary Islands separator */}
-          <g transform="translate(50, 480)">
-            <line
-              x1="0"
-              y1="0"
-              x2="150"
-              y2="0"
+          {/* Canary Islands separator box */}
+          <g>
+            <rect
+              x="60"
+              y="505"
+              width="180"
+              height="120"
+              fill="none"
               stroke="hsl(var(--border))"
-              strokeWidth={1 / transform.scale}
+              strokeWidth={1}
               strokeDasharray="4 2"
+              rx={4}
             />
             <text
-              x="75"
-              y="-8"
+              x="150"
+              y="520"
               textAnchor="middle"
-              className="text-[8px] fill-muted-foreground"
-              style={{ transform: `scale(${1 / transform.scale})`, transformOrigin: '75px -8px' }}
+              className="text-[9px] fill-muted-foreground"
             >
               Islas Canarias
             </text>
