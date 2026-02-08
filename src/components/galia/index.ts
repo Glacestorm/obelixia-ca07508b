@@ -14,3 +14,6 @@ export * from './phase6';
 
 // Phase 7 - Excelencia Operacional
 export * from './phase7';
+
+// Phase 8 - Productividad Avanzada
+export * from './phase8';

@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-document-generator]
+verify_jwt = true
+
 [functions.galia-smart-audit]
 verify_jwt = true
 

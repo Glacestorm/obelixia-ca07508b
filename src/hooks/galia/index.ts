@@ -160,3 +160,12 @@ export type {
   ExecutiveReport, 
   DashboardConfig 
 } from './useGaliaExecutiveDashboard';
+
+// === PHASE 8 - PRODUCTIVIDAD AVANZADA ===
+export { useGaliaDocumentGenerator } from './useGaliaDocumentGenerator';
+export type { 
+  DocumentType,
+  DocumentTemplate,
+  GeneratedDocument,
+  GenerationContext
+} from './useGaliaDocumentGenerator';
