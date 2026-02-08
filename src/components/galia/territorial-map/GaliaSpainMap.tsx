@@ -370,28 +370,15 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
             );
           })}
 
-          {/* Canary Islands separator box - positioned to contain islands */}
-          <g>
-            <rect
-              x="25"
-              y="420"
-              width="170"
-              height="120"
-              fill="hsl(var(--background) / 0.5)"
-              stroke="hsl(var(--border))"
-              strokeWidth={1}
-              strokeDasharray="4 2"
-              rx={4}
-            />
-            <text
-              x="110"
-              y="438"
-              textAnchor="middle"
-              className="text-[9px] fill-muted-foreground"
-            >
-              Islas Canarias
-            </text>
-          </g>
+          {/* Canary Islands label */}
+          <text
+            x="110"
+            y="430"
+            textAnchor="middle"
+            className="text-[10px] fill-muted-foreground font-medium"
+          >
+            Islas Canarias
+          </text>
         </g>
       </svg>
 
