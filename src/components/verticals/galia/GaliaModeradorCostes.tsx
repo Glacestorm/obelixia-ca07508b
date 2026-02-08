@@ -1,9 +1,10 @@
 /**
  * GALIA - Moderador de Costes IA
  * Análisis automático de presupuestos y detección de anomalías
+ * Integrado con useGaliaAnalisisCostes hook
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +19,6 @@ import {
   AlertTriangle, 
   CheckCircle, 
   TrendingUp,
-  TrendingDown,
   FileSpreadsheet,
   Sparkles,
   RefreshCw,
@@ -27,11 +27,17 @@ import {
   BarChart3,
   Target,
   Lightbulb,
-  Scale
+  Scale,
+  Save
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useGaliaAnalisisCostes, GaliaAnalisisCoste } from '@/hooks/galia/useGaliaAnalisisCostes';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+interface GaliaModeradorCostesProps {
+  expedienteId?: string;
+  onAnalisisComplete?: (items: GaliaAnalisisCoste[]) => void;
+}
 
 interface CostItem {
   id: string;
@@ -58,12 +64,25 @@ interface AnalisisResult {
   confianza: number;
 }
 
-export function GaliaModeradorCostes() {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+export function GaliaModeradorCostes({ expedienteId, onAnalisisComplete }: GaliaModeradorCostesProps) {
   const [presupuestoInput, setPresupuestoInput] = useState('');
   const [tipoProyecto, setTipoProyecto] = useState('');
   const [resultado, setResultado] = useState<AnalisisResult | null>(null);
   const [activeTab, setActiveTab] = useState('input');
+
+  // Hook integrado para análisis de costes
+  const {
+    analisis,
+    isLoading: isAnalyzing,
+    analizarCostes,
+    guardarEnExpediente,
+    getResumen,
+    actualizarEstadoRevision,
+    limpiarAnalisis
+  } = useGaliaAnalisisCostes(expedienteId);
+
+  // Resumen calculado del hook
+  const resumenHook = useMemo(() => getResumen(), [analisis, getResumen]);
 
   const analizarPresupuesto = useCallback(async () => {
     if (!presupuestoInput.trim()) {
@@ -71,86 +90,58 @@ export function GaliaModeradorCostes() {
       return;
     }
 
-    setIsAnalyzing(true);
+    // Usar el hook para analizar
+    const items = await analizarCostes(presupuestoInput);
     
-    try {
-      const { data, error } = await supabase.functions.invoke('galia-moderador-costes', {
-        body: {
-          action: 'analyze',
-          presupuesto: presupuestoInput,
-          tipoProyecto: tipoProyecto || 'general',
-        }
-      });
+    if (items && items.length > 0) {
+      // Convertir a formato del componente
+      const convertedItems: CostItem[] = items.map(item => ({
+        id: item.id,
+        concepto: item.concepto,
+        descripcion: item.categoria,
+        importeSolicitado: item.importe_declarado,
+        importeReferencia: item.importe_referencia || 0,
+        desviacion: item.desviacion_porcentaje || 0,
+        estado: item.clasificacion,
+        comentarioIA: item.justificacion_ia || undefined,
+        necesitaOfertas: item.requiere_ofertas
+      }));
 
-      if (error) throw error;
+      const totalSolicitado = items.reduce((sum, i) => sum + i.importe_declarado, 0);
+      const totalModerado = items.reduce((sum, i) => sum + (i.importe_referencia || i.importe_declarado), 0);
 
-      if (data?.success && data?.resultado) {
-        setResultado(data.resultado);
-        setActiveTab('resultado');
-        toast.success('Análisis completado');
-      } else {
-        throw new Error('Respuesta inválida del servidor');
-      }
-    } catch (err) {
-      console.error('[GaliaModeradorCostes] Error:', err);
-      toast.error('Error al analizar el presupuesto');
-      
-      // Demo fallback
       setResultado({
-        items: [
-          {
-            id: '1',
-            concepto: 'Maquinaria agrícola',
-            descripcion: 'Tractor 120CV con aperos',
-            importeSolicitado: 85000,
-            importeReferencia: 72000,
-            desviacion: 18.1,
-            estado: 'alerta',
-            comentarioIA: 'El importe supera un 18% el valor de referencia. Se recomienda aportar 3 ofertas comparativas.',
-            necesitaOfertas: true
-          },
-          {
-            id: '2',
-            concepto: 'Obra civil',
-            descripcion: 'Nave almacén 200m²',
-            importeSolicitado: 120000,
-            importeReferencia: 115000,
-            desviacion: 4.3,
-            estado: 'ok',
-            comentarioIA: 'Importe dentro del rango de mercado.',
-            necesitaOfertas: false
-          },
-          {
-            id: '3',
-            concepto: 'Instalación fotovoltaica',
-            descripcion: 'Sistema 50kWp autoconsumo',
-            importeSolicitado: 65000,
-            importeReferencia: 45000,
-            desviacion: 44.4,
-            estado: 'critico',
-            comentarioIA: 'Desviación muy alta respecto al catálogo de referencia. Verificar especificaciones técnicas y aportar justificación detallada.',
-            necesitaOfertas: true
-          }
-        ],
+        items: convertedItems,
         resumen: {
-          totalSolicitado: 270000,
-          totalModerado: 232000,
-          ahorroPotencial: 38000,
-          alertas: 1,
-          criticos: 1
+          totalSolicitado,
+          totalModerado,
+          ahorroPotencial: totalSolicitado - totalModerado,
+          alertas: items.filter(i => i.clasificacion === 'alerta').length,
+          criticos: items.filter(i => i.clasificacion === 'critico').length
         },
-        recomendacionesGenerales: [
-          'Se detectan 2 partidas que requieren ofertas comparativas',
-          'La instalación fotovoltaica presenta una desviación significativa',
-          'Considerar desglosar la partida de maquinaria en componentes'
-        ],
-        confianza: 0.82
+        recomendacionesGenerales: items
+          .filter(i => i.recomendaciones.length > 0)
+          .flatMap(i => i.recomendaciones),
+        confianza: 0.85
       });
+
       setActiveTab('resultado');
-    } finally {
-      setIsAnalyzing(false);
+      onAnalisisComplete?.(items);
+      toast.success('Análisis completado');
     }
-  }, [presupuestoInput, tipoProyecto]);
+  }, [presupuestoInput, analizarCostes, onAnalisisComplete]);
+
+  const handleGuardarEnExpediente = useCallback(async () => {
+    if (!expedienteId || analisis.length === 0) {
+      toast.error('No hay análisis para guardar o falta el expediente');
+      return;
+    }
+
+    const success = await guardarEnExpediente(expedienteId, analisis);
+    if (success) {
+      toast.success('Análisis guardado en el expediente');
+    }
+  }, [expedienteId, analisis, guardarEnExpediente]);
 
   const getEstadoBadge = (estado: CostItem['estado']) => {
     switch (estado) {
@@ -455,7 +446,17 @@ Instalación | Fotovoltaica 50kWp | 65.000€`}
 
               {/* Actions */}
               <div className="flex gap-4">
-                <Button className="gap-2">
+                {expedienteId && (
+                  <Button 
+                    className="gap-2" 
+                    onClick={handleGuardarEnExpediente}
+                    disabled={analisis.length === 0}
+                  >
+                    <Save className="h-4 w-4" />
+                    Guardar en Expediente
+                  </Button>
+                )}
+                <Button variant="outline" className="gap-2">
                   <Download className="h-4 w-4" />
                   Exportar informe
                 </Button>
