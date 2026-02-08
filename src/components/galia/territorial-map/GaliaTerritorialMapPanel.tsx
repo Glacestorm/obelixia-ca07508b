@@ -151,14 +151,14 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
       </CardHeader>
 
       <CardContent className={cn(
-        "pt-4",
-        isFullscreen ? "h-[calc(100%-120px)]" : "min-h-[500px]"
+        "pt-3",
+        isFullscreen ? "h-[calc(100%-120px)]" : "min-h-[380px]"
       )}>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 h-full">
           {/* Main map area */}
           <div className={cn(
             "lg:col-span-3 relative",
-            isFullscreen ? "h-full" : "min-h-[400px]"
+            isFullscreen ? "h-full" : "min-h-[320px]"
           )}>
             <AnimatePresence mode="wait">
               {navigation.level === 'national' && (
