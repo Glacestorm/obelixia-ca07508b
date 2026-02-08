@@ -233,9 +233,9 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
               )}
             </AnimatePresence>
 
-            {/* Legend overlay */}
+            {/* Legend overlay - top left */}
             <GaliaMapLegend 
-              className="absolute bottom-4 left-4 w-40"
+              className="absolute top-4 left-4 w-44"
               compact={!isFullscreen}
             />
           </div>
