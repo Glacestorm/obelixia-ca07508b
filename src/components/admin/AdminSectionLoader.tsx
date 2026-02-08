@@ -162,10 +162,10 @@ export const CoreWebVitalsDashboard = lazy(() => import('@/components/admin/Core
 export const TranslationsDashboard = lazy(() => import('@/components/admin/translations').then(m => ({ default: m.TranslationsDashboard })));
 
 // Advanced AI - FASE 12
-export const AdvancedCopilotPanel = lazy(() => import('@/components/admin/advanced-ai').then(m => ({ default: m.AdvancedCopilotPanel })));
-export const AIOrchestorPanel = lazy(() => import('@/components/admin/advanced-ai').then(m => ({ default: m.AIOrchestorPanel })));
-export const SmartAnalyticsPanel = lazy(() => import('@/components/admin/advanced-ai').then(m => ({ default: m.SmartAnalyticsPanel })));
-export const RealTimeInsightsPanel = lazy(() => import('@/components/admin/advanced-ai').then(m => ({ default: m.RealTimeInsightsPanel })));
+export const AdvancedCopilotPanel = lazy(() => import('@/components/admin/advanced-ai/AdvancedCopilotPanel').then(m => ({ default: m.AdvancedCopilotPanel })));
+export const AIOrchestorPanel = lazy(() => import('@/components/admin/advanced-ai/AIOrchestorPanel').then(m => ({ default: m.AIOrchestorPanel })));
+export const SmartAnalyticsPanel = lazy(() => import('@/components/admin/advanced-ai/SmartAnalyticsPanel').then(m => ({ default: m.SmartAnalyticsPanel })));
+export const RealTimeInsightsPanel = lazy(() => import('@/components/admin/advanced-ai/RealTimeInsightsPanel').then(m => ({ default: m.RealTimeInsightsPanel })));
 
 // Config & Docs
 export const WhiteLabelConfig = lazy(() => import('@/components/admin/WhiteLabelConfig'));
@@ -183,7 +183,7 @@ export const SessionActionsTimeline = lazy(() => import('@/components/admin/serv
 export const RemoteSupportAIDashboard = lazy(() => import('@/components/admin/remote-support/RemoteSupportAIDashboard').then(m => ({ default: m.RemoteSupportAIDashboard })));
 
 // ESG & Sustainability
-export const ESGSustainabilityDashboard = lazy(() => import('@/components/admin/esg').then(m => ({ default: m.ESGDashboard })));
+export const ESGSustainabilityDashboard = lazy(() => import('@/components/admin/esg/ESGDashboard').then(m => ({ default: m.ESGDashboard })));
 
 // Knowledge Base 4.5
 export const KnowledgeBase45Dashboard = lazy(() => import('@/components/admin/ai-modules').then(m => ({ default: m.KnowledgeBaseRAGPanel })));

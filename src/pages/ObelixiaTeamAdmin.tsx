@@ -21,21 +21,17 @@ import { DynamicTechnicalDocGenerator } from '@/components/reports/DynamicTechni
 import { CompetitorGapAnalysisGenerator } from '@/components/reports/CompetitorGapAnalysisGenerator';
 import { AppDetailedStatusGenerator } from '@/components/reports/AppDetailedStatusGenerator';
 import { CodebaseIndexGenerator } from '@/components/reports/CodebaseIndexGenerator';
-import { ApplicationStateAnalyzer } from '@/components/admin/ApplicationStateAnalyzer';
+// Estos componentes se cargan estáticamente pero también tienen lazy versions en AdminSectionLoader
+// Para evitar conflictos de chunking, los importamos directamente aquí
 import { AuditImprovementsTracker } from '@/components/admin/AuditImprovementsTracker';
-import { AppStoreManager } from '@/components/admin/appstore/AppStoreManager';
 import { CNAEPricingAdmin } from '@/components/cnae/CNAEPricingAdmin';
 import { CNAEDashboard } from '@/components/cnae/CNAEDashboard';
-import WhiteLabelConfig from '@/components/admin/WhiteLabelConfig';
-import APIDocumentation from '@/components/admin/APIDocumentation';
 import { CMSDashboard } from '@/components/cms-admin';
 import SecurityOnboardingGuide from '@/components/obelixia-admin/SecurityOnboardingGuide';
 import { NewsAdminDashboard } from '@/components/obelixia-admin/news';
 import { FAQAdminDashboard } from '@/components/obelixia-admin/faq';
 import { TranslationsDashboard } from '@/components/admin/translations/TranslationsDashboard';
-import { VerticalPacksManager, EnterpriseTrends2026Dashboard } from '@/components/admin/verticals';
-import { SectorsManager } from '@/components/admin/SectorsManager';
-import { CoreWebVitalsDashboard } from '@/components/admin/CoreWebVitalsDashboard';
+import { EnterpriseTrends2026Dashboard } from '@/components/admin/verticals';
 import AcademiaAdminPage from '@/pages/admin/AcademiaAdminPage';
 import DemoRequestsPage from '@/pages/admin/DemoRequestsPage';
 import { 
@@ -59,7 +55,15 @@ const SystemHelpPanel = lazy(() => import('@/components/obelixia-admin/SystemHel
 const AdvancedFeatureFlagsManager = lazy(() => import('@/components/admin/feature-flags/AdvancedFeatureFlagsManager').then(m => ({ default: m.AdvancedFeatureFlagsManager })));
 const VerticalAccountingDashboard = lazy(() => import('@/components/erp/accounting/vertical/VerticalAccountingDashboard').then(m => ({ default: m.VerticalAccountingDashboard })));
 
-// IA & Agentes - Lazy loaded
+// Componentes conflictivos - Ahora lazy para evitar conflictos de chunking
+const ApplicationStateAnalyzer = lazy(() => import('@/components/admin/ApplicationStateAnalyzer').then(m => ({ default: m.ApplicationStateAnalyzer })));
+const AppStoreManager = lazy(() => import('@/components/admin/appstore/AppStoreManager').then(m => ({ default: m.AppStoreManager })));
+const WhiteLabelConfig = lazy(() => import('@/components/admin/WhiteLabelConfig'));
+const APIDocumentation = lazy(() => import('@/components/admin/APIDocumentation'));
+const VerticalPacksManager = lazy(() => import('@/components/admin/verticals').then(m => ({ default: m.VerticalPacksManager })));
+const SectorsManager = lazy(() => import('@/components/admin/SectorsManager').then(m => ({ default: m.SectorsManager })));
+const CoreWebVitalsDashboard = lazy(() => import('@/components/admin/CoreWebVitalsDashboard').then(m => ({ default: m.CoreWebVitalsDashboard })));
+
 const UltraCRMAgentsDashboard = lazy(() => import('@/components/admin/agents/UltraCRMAgentsDashboard').then(m => ({ default: m.UltraCRMAgentsDashboard })));
 const DynamicModuleRegistryPanel = lazy(() => import('@/components/admin/agents/DynamicModuleRegistryPanel').then(m => ({ default: m.DynamicModuleRegistryPanel })));
 const ERPModuleAgentsPanel = lazy(() => import('@/components/admin/agents/ERPModuleAgentsPanel').then(m => ({ default: m.ERPModuleAgentsPanel })));

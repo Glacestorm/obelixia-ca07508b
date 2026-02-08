@@ -70,13 +70,11 @@ import {
   VerticalAccountingPredictiveCashflow
 } from '@/components/admin/obelixia-accounting/verticals';
 
-// Phase 12: Advanced AI & Automation
-import {
-  AdvancedCopilotPanel,
-  AIOrchestorPanel,
-  SmartAnalyticsPanel,
-  RealTimeInsightsPanel
-} from '@/components/admin/advanced-ai';
+// Phase 12: Advanced AI & Automation - Import directo para evitar conflictos de chunking
+import { AdvancedCopilotPanel } from '@/components/admin/advanced-ai/AdvancedCopilotPanel';
+import { AIOrchestorPanel } from '@/components/admin/advanced-ai/AIOrchestorPanel';
+import { SmartAnalyticsPanel } from '@/components/admin/advanced-ai/SmartAnalyticsPanel';
+import { RealTimeInsightsPanel } from '@/components/admin/advanced-ai/RealTimeInsightsPanel';
 
 export default function ObelixiaAccountingPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
