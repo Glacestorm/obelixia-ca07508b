@@ -41021,6 +41021,56 @@ export type Database = {
           },
         ]
       }
+      galia_faq: {
+        Row: {
+          categoria: string
+          created_at: string
+          created_by: string | null
+          gal_id: string | null
+          id: string
+          is_active: boolean | null
+          pregunta: string
+          respuesta: string
+          tags: string[] | null
+          updated_at: string
+          veces_consultada: number | null
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          gal_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          pregunta: string
+          respuesta: string
+          tags?: string[] | null
+          updated_at?: string
+          veces_consultada?: number | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          gal_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          pregunta?: string
+          respuesta?: string
+          tags?: string[] | null
+          updated_at?: string
+          veces_consultada?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_faq_gal_id_fkey"
+            columns: ["gal_id"]
+            isOneToOne: false
+            referencedRelation: "galia_gal_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       galia_gal_config: {
         Row: {
           codigo_leader: string
