@@ -8,6 +8,8 @@ export { GaliaSpainMap } from './GaliaSpainMap';
 export { GaliaMapBreadcrumb } from './GaliaMapBreadcrumb';
 export { GaliaMapTooltip } from './GaliaMapTooltip';
 export { GaliaMapLegend } from './GaliaMapLegend';
+export { GaliaRegionalView } from './GaliaRegionalView';
+export { GaliaRegionInfoPanel } from './GaliaRegionInfoPanel';
 export { 
   spainCCAAData, 
   spainProvincesData,
