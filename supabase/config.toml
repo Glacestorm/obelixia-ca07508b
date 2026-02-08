@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.galia-eu-funding-monitor]
 verify_jwt = true
 
+[functions.galia-knowledge-graph]
+verify_jwt = true
+
 [functions.galia-expert-agent]
 verify_jwt = true
 
