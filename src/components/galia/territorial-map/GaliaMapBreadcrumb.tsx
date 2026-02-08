@@ -62,36 +62,36 @@ export const GaliaMapBreadcrumb = memo(function GaliaMapBreadcrumb({
         )} />
       </Button>
 
-      {/* Breadcrumb trail */}
-      <Breadcrumb>
-        <BreadcrumbList>
+      {/* Breadcrumb trail - using nav with custom structure to avoid li nesting issues */}
+      <nav aria-label="Navegación territorial" className="flex items-center">
+        <ol className="flex items-center gap-1.5 text-sm">
           {breadcrumb.map((item, index) => {
             const isLast = index === breadcrumb.length - 1;
             
             return (
-              <BreadcrumbItem key={`${item.level}-${item.id || 'root'}`}>
+              <li key={`${item.level}-${item.id || 'root'}`} className="flex items-center gap-1.5">
+                {index > 0 && (
+                  <span className="text-muted-foreground">/</span>
+                )}
                 {!isLast ? (
-                  <>
-                    <BreadcrumbLink
-                      onClick={() => onNavigate(index)}
-                      className="flex items-center gap-1.5 cursor-pointer hover:text-primary transition-colors"
-                    >
-                      {levelIcons[item.level]}
-                      <span className="max-w-[100px] truncate">{item.label}</span>
-                    </BreadcrumbLink>
-                    <BreadcrumbSeparator />
-                  </>
+                  <button
+                    onClick={() => onNavigate(index)}
+                    className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {levelIcons[item.level]}
+                    <span className="max-w-[100px] truncate">{item.label}</span>
+                  </button>
                 ) : (
-                  <BreadcrumbPage className="flex items-center gap-1.5 font-medium">
+                  <span className="flex items-center gap-1 font-medium text-foreground">
                     {levelIcons[item.level]}
                     <span className="max-w-[150px] truncate">{item.label}</span>
-                  </BreadcrumbPage>
+                  </span>
                 )}
-              </BreadcrumbItem>
+              </li>
             );
           })}
-        </BreadcrumbList>
-      </Breadcrumb>
+        </ol>
+      </nav>
 
       {/* Keyboard hint */}
       {canGoBack && (
