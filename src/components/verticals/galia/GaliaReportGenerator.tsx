@@ -3,24 +3,22 @@
  * Módulo GALIA - Gestión de Ayudas LEADER con IA
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   FileBarChart,
   Download,
   FileText,
   Printer,
-  Calendar,
   Clock,
-  CheckCircle2,
   Loader2,
   Sparkles,
   TrendingUp,
@@ -29,9 +27,12 @@ import {
   AlertTriangle,
   Building2,
   FileCheck,
+  Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import ReactMarkdown from 'react-markdown';
 
 interface ReportType {
   id: string;
@@ -107,6 +108,15 @@ const FORMATS = [
   { value: 'word', label: 'Word' },
 ];
 
+interface GeneratedReport {
+  id: string;
+  name: string;
+  type: string;
+  generatedAt: Date;
+  format: string;
+  data?: any;
+}
+
 export function GaliaReportGenerator() {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [period, setPeriod] = useState('trimestre');
@@ -114,16 +124,9 @@ export function GaliaReportGenerator() {
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [recentReports, setRecentReports] = useState<Array<{
-    id: string;
-    name: string;
-    type: string;
-    generatedAt: Date;
-    format: string;
-  }>>([
-    { id: '1', name: 'Seguimiento Q4 2025', type: 'seguimiento', generatedAt: new Date(Date.now() - 86400000), format: 'pdf' },
-    { id: '2', name: 'Riesgos Dic 2025', type: 'riesgos', generatedAt: new Date(Date.now() - 172800000), format: 'pdf' },
-  ]);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [recentReports, setRecentReports] = useState<GeneratedReport[]>([]);
 
   const currentReport = REPORT_TYPES.find(r => r.id === selectedReport);
 
@@ -143,37 +146,67 @@ export function GaliaReportGenerator() {
     );
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!selectedReport || selectedSections.length === 0) {
       toast.error('Selecciona un tipo de informe y al menos una sección');
       return;
     }
 
     setIsGenerating(true);
-    setProgress(0);
+    setProgress(10);
 
-    // Simulate report generation with progress
-    const steps = selectedSections.length + 2;
-    for (let i = 0; i <= steps; i++) {
-      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
-      setProgress((i / steps) * 100);
+    try {
+      // Call Edge Function
+      const { data, error } = await supabase.functions.invoke('galia-report-generator', {
+        body: {
+          action: 'generate',
+          reportType: selectedReport,
+          sections: selectedSections,
+          period,
+          format,
+        }
+      });
+
+      setProgress(80);
+
+      if (error) throw error;
+
+      if (data?.success && data?.data) {
+        setProgress(100);
+        
+        const newReport: GeneratedReport = {
+          id: crypto.randomUUID(),
+          name: data.data.titulo || `${currentReport?.name} - ${new Date().toLocaleDateString('es-ES')}`,
+          type: selectedReport,
+          generatedAt: new Date(),
+          format,
+          data: data.data,
+        };
+
+        setRecentReports(prev => [newReport, ...prev].slice(0, 10));
+        setPreviewData(data.data);
+        setPreviewOpen(true);
+
+        toast.success('Informe generado correctamente', {
+          description: `Generado en ${data.tiempoGeneracion}ms`,
+        });
+      } else {
+        throw new Error('No se pudo generar el informe');
+      }
+    } catch (err) {
+      console.error('[GaliaReportGenerator] Error:', err);
+      toast.error('Error al generar el informe');
+    } finally {
+      setIsGenerating(false);
+      setProgress(0);
     }
+  }, [selectedReport, selectedSections, period, format, currentReport]);
 
-    const newReport = {
-      id: crypto.randomUUID(),
-      name: `${currentReport?.name} - ${new Date().toLocaleDateString('es-ES')}`,
-      type: selectedReport,
-      generatedAt: new Date(),
-      format,
-    };
-
-    setRecentReports(prev => [newReport, ...prev].slice(0, 10));
-    setIsGenerating(false);
-    setProgress(100);
-
-    toast.success('Informe generado correctamente', {
-      description: 'El documento está listo para descargar',
-    });
+  const handlePreview = (report: GeneratedReport) => {
+    if (report.data) {
+      setPreviewData(report.data);
+      setPreviewOpen(true);
+    }
   };
 
   const formatSectionName = (section: string) => {
@@ -379,6 +412,16 @@ export function GaliaReportGenerator() {
                             </p>
                           </div>
                           <div className="flex gap-1">
+                            {report.data && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => handlePreview(report)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <Download className="h-4 w-4" />
                             </Button>
@@ -397,7 +440,7 @@ export function GaliaReportGenerator() {
                   {recentReports.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       <FileBarChart className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No hay informes recientes</p>
+                      <p className="text-sm">Genera tu primer informe</p>
                     </div>
                   )}
                 </div>
@@ -406,6 +449,58 @@ export function GaliaReportGenerator() {
           </Card>
         </div>
       </div>
+
+      {/* Report Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileBarChart className="h-5 w-5 text-primary" />
+              {previewData?.titulo || 'Vista Previa del Informe'}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-6 pb-4">
+              {/* Report header */}
+              <div className="p-4 rounded-lg bg-muted/50">
+                <p className="text-sm text-muted-foreground">
+                  Fecha: {previewData?.fecha_generacion || new Date().toLocaleDateString('es-ES')}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Período: {previewData?.periodo || period}
+                </p>
+              </div>
+
+              {/* Sections */}
+              {previewData?.secciones?.map((seccion: any, idx: number) => (
+                <div key={idx} className="space-y-2">
+                  <h3 className="text-lg font-semibold border-b pb-2">
+                    {seccion.titulo}
+                  </h3>
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown>{seccion.contenido}</ReactMarkdown>
+                  </div>
+                </div>
+              ))}
+
+              {/* Conclusions */}
+              {previewData?.conclusiones && (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <h3 className="font-semibold mb-2">Conclusiones</h3>
+                  <p className="text-sm">{previewData.conclusiones}</p>
+                </div>
+              )}
+
+              {/* Raw content fallback */}
+              {previewData?.rawContent && (
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{previewData.rawContent}</ReactMarkdown>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
