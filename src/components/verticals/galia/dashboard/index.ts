@@ -1,5 +1,6 @@
 /**
  * GALIA Dashboard Components - Barrel Export
+ * Note: GaliaAIInsightsPanel is NOT exported here - it should be lazy loaded
  */
 
 export { GaliaExpedienteDetailPanel } from './GaliaExpedienteDetailPanel';
@@ -11,4 +12,3 @@ export { GaliaExpedientesTab } from './GaliaExpedientesTab';
 export { GaliaConvocatoriasTab } from './GaliaConvocatoriasTab';
 export { GaliaAlertasTab } from './GaliaAlertasTab';
 export { GaliaSidebarPanel } from './GaliaSidebarPanel';
-export { GaliaAIInsightsPanel } from './GaliaAIInsightsPanel';

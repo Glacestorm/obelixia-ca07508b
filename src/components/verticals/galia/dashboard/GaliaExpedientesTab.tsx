@@ -3,20 +3,35 @@
  * Lista de expedientes con búsqueda, panel de detalle e insights IA
  */
 
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Search, AlertTriangle, Brain } from 'lucide-react';
 import { GaliaStatusBadge } from '../shared/GaliaStatusBadge';
 import { GaliaExpedienteDetailPanel } from './GaliaExpedienteDetailPanel';
-import { GaliaAIInsightsPanel } from './GaliaAIInsightsPanel';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import type { GaliaExpediente } from '@/hooks/galia/useGaliaExpedientes';
+
+// Lazy load AI panel
+const GaliaAIInsightsPanel = lazy(() => import('./GaliaAIInsightsPanel'));
+
+const AIPanelSkeleton = () => (
+  <Card>
+    <CardContent className="py-6">
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+      </div>
+    </CardContent>
+  </Card>
+);
 
 interface GaliaExpedientesTabProps {
   expedientes: GaliaExpediente[];
@@ -160,10 +175,12 @@ export function GaliaExpedientesTab({
 
       {/* Panel de Insights IA */}
       {selectedExpediente && showAIPanel && (
-        <GaliaAIInsightsPanel
-          expediente={selectedExpediente}
-          onClose={() => setShowAIPanel(false)}
-        />
+        <Suspense fallback={<AIPanelSkeleton />}>
+          <GaliaAIInsightsPanel
+            expediente={selectedExpediente}
+            onClose={() => setShowAIPanel(false)}
+          />
+        </Suspense>
       )}
     </div>
   );
