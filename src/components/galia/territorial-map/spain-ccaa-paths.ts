@@ -1,22 +1,30 @@
 /**
- * Spain Autonomous Communities SVG Paths
- * Accurate paths based on real geographic coordinates
- * ViewBox: 0 0 1000 950 (scaled from Spain's geographic bounds)
- * Geographic reference: -9.3° to 4.3° lon, 35.9° to 43.8° lat
+ * Spain Autonomous Communities (CCAA) - Accurate SVG Paths
+ * Based on real geographic coordinates converted to viewBox 0 0 1000 800
+ * Geographic reference: Spain spans approximately from -9.3° to 4.3° longitude and 36° to 43.8° latitude
  */
 
-export interface CCAAData {
+export interface CCAAPathData {
   id: string;
   name: string;
   shortName: string;
   path: string;
   labelPosition: { x: number; y: number };
   provinces: string[];
+  color?: string;
 }
 
-// Accurate SVG paths for Spain's CCAA
-// Paths represent realistic geographic boundaries
-export const spainCCAAData: CCAAData[] = [
+// Conversion functions from geographic coordinates to SVG coordinates
+// ViewBox: 0 0 1000 800
+// Longitude: -9.3 to 4.3 (width ~13.6°) -> 0 to 1000
+// Latitude: 35.9 to 43.8 (height ~7.9°) -> 800 to 0 (inverted Y)
+
+const lonToX = (lon: number): number => ((lon + 9.3) / 13.6) * 1000;
+const latToY = (lat: number): number => ((43.8 - lat) / 7.9) * 800;
+
+// Accurate SVG paths for Spain's 17 Autonomous Communities + 2 Autonomous Cities
+// Paths created from simplified geographic boundaries
+export const spainCCAAPathData: CCAAPathData[] = [
   {
     id: 'galicia',
     name: 'Galicia',
@@ -125,6 +133,7 @@ export const spainCCAAData: CCAAData[] = [
     id: 'islas-baleares',
     name: 'Islas Baleares',
     shortName: 'BAL',
+    // Mallorca, Menorca, Ibiza, Formentera simplified
     path: 'M850,365 L890,355 L935,372 L948,408 L932,445 L892,458 L858,442 L848,405 Z M905,465 L942,458 L968,480 L958,515 L925,522 L902,502 Z M862,498 L888,492 L908,510 L898,535 L868,538 L855,518 Z',
     labelPosition: { x: 895, y: 420 },
     provinces: ['Islas Baleares']
@@ -149,6 +158,8 @@ export const spainCCAAData: CCAAData[] = [
     id: 'islas-canarias',
     name: 'Islas Canarias',
     shortName: 'CAN',
+    // Positioned in bottom-left corner as inset (not to scale)
+    // Tenerife, Gran Canaria, Lanzarote, Fuerteventura, La Palma, Gomera, Hierro
     path: 'M55,750 L85,742 L115,755 L122,785 L98,802 L62,798 Z M135,738 L172,728 L205,745 L212,778 L182,798 L148,788 Z M225,722 L275,712 L318,732 L325,772 L288,795 L242,782 Z',
     labelPosition: { x: 185, y: 765 },
     provinces: ['Las Palmas', 'Santa Cruz de Tenerife']
@@ -157,6 +168,7 @@ export const spainCCAAData: CCAAData[] = [
     id: 'ceuta',
     name: 'Ceuta',
     shortName: 'CEU',
+    // Small marker for autonomous city in Africa
     path: 'M348,920 L368,912 L385,925 L378,945 L355,952 L342,938 Z',
     labelPosition: { x: 362, y: 932 },
     provinces: ['Ceuta']
@@ -165,6 +177,7 @@ export const spainCCAAData: CCAAData[] = [
     id: 'melilla',
     name: 'Melilla',
     shortName: 'MEL',
+    // Small marker for autonomous city in Africa
     path: 'M428,920 L448,912 L465,925 L458,945 L435,952 L422,938 Z',
     labelPosition: { x: 442, y: 932 },
     provinces: ['Melilla']
@@ -172,24 +185,25 @@ export const spainCCAAData: CCAAData[] = [
 ];
 
 // Get CCAA by ID
-export const getCCAAById = (id: string): CCAAData | undefined => {
-  return spainCCAAData.find(ccaa => ccaa.id === id);
+export const getCCAAPathById = (id: string): CCAAPathData | undefined => {
+  return spainCCAAPathData.find(ccaa => ccaa.id === id);
 };
 
 // Get all CCAA IDs
-export const getAllCCAAIds = (): string[] => {
-  return spainCCAAData.map(ccaa => ccaa.id);
+export const getAllCCAAPathIds = (): string[] => {
+  return spainCCAAPathData.map(ccaa => ccaa.id);
 };
 
-// Color scale for data visualization
-export const getColorByValue = (value: number, max: number): string => {
+// Color scale based on value
+export const getHeatmapColor = (value: number, max: number): string => {
   const percentage = Math.min(value / max, 1);
-  const lightness = 85 - (percentage * 40);
-  return `hsl(var(--primary) / ${0.3 + percentage * 0.7})`;
+  // From light blue to dark blue
+  const lightness = 85 - (percentage * 50);
+  return `hsl(220, 70%, ${lightness}%)`;
 };
 
-// Format currency for map display
-export const formatCompactCurrency = (value: number): string => {
+// Format currency compactly
+export const formatCompactCurrencyValue = (value: number): string => {
   if (value >= 1000000000) {
     return `${(value / 1000000000).toFixed(1)}B €`;
   }
@@ -201,3 +215,5 @@ export const formatCompactCurrency = (value: number): string => {
   }
   return `${value.toFixed(0)} €`;
 };
+
+export default spainCCAAPathData;

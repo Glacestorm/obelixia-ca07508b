@@ -24,7 +24,7 @@ import { GaliaSpainMap } from './GaliaSpainMap';
 import { GaliaRegionMap, ProvinceMapData } from './GaliaRegionMap';
 import { GaliaMapBreadcrumb } from './GaliaMapBreadcrumb';
 import { GaliaMapLegend } from './GaliaMapLegend';
-import { formatCompactCurrency } from './spain-paths';
+import { formatCompactCurrencyValue } from './spain-ccaa-paths';
 import { getProvincesByCCAA } from './province-paths';
 import { cn } from '@/lib/utils';
 
@@ -227,7 +227,7 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
                         <Euro className="h-3.5 w-3.5" />
                         Presupuesto
                       </span>
-                      <span className="font-semibold">{formatCompactCurrency(nationalTotals.budget)}</span>
+                      <span className="font-semibold">{formatCompactCurrencyValue(nationalTotals.budget)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground flex items-center gap-1.5">
