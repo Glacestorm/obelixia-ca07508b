@@ -20,6 +20,7 @@ import {
   FileSearch,
   LayoutDashboard,
   AlertTriangle,
+  Shield,
 } from 'lucide-react';
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
 import { useGaliaExpedientes, GaliaExpediente } from '@/hooks/galia/useGaliaExpedientes';
@@ -43,6 +44,7 @@ const GaliaPortalCiudadano = lazy(() => import('./GaliaPortalCiudadano'));
 const GaliaModeradorCostes = lazy(() => import('./GaliaModeradorCostes'));
 const GaliaReportGenerator = lazy(() => import('./GaliaReportGenerator'));
 const GaliaDocumentAnalyzer = lazy(() => import('./GaliaDocumentAnalyzer'));
+const GaliaTransparencyPortal = lazy(() => import('./transparency/GaliaTransparencyPortal'));
 
 const TabSkeleton = () => (
   <div className="space-y-4">
@@ -164,6 +166,10 @@ export function GaliaDashboard() {
                   <AlertTriangle className="h-4 w-4 mr-1" />
                   Alertas
                 </TabsTrigger>
+                <TabsTrigger value="transparencia" className="text-xs whitespace-nowrap">
+                  <Shield className="h-4 w-4 mr-1" />
+                  Transparencia
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -252,6 +258,13 @@ export function GaliaDashboard() {
 
             <TabsContent value="alertas" className="mt-4">
               <GaliaAlertasTab expedientesRiesgo={expedientesRiesgo} />
+            </TabsContent>
+
+            {/* Portal de Transparencia Tab */}
+            <TabsContent value="transparencia" className="mt-4">
+              <Suspense fallback={<TabSkeleton />}>
+                <GaliaTransparencyPortal />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </div>
