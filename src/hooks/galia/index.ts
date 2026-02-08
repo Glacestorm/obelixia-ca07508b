@@ -281,3 +281,12 @@ export type {
   ExportResult,
   PrintPreviewOptions
 } from './useGaliaExportPrint';
+
+// === PHASE 8 (GALIA 2.0) - COMPLIANCE AUDITOR ===
+export { useGaliaComplianceAuditor } from './useGaliaComplianceAuditor';
+export type { 
+  ComplianceRequirement,
+  ComplianceCategory,
+  ComplianceReport,
+  ComplianceContext
+} from './useGaliaComplianceAuditor';
