@@ -29,24 +29,24 @@ interface GeoFeature {
 }
 
 // Fixed scale (no zoom)
-const FIXED_SCALE = 2;
+const FIXED_SCALE = 1.5;
 
-// Map dimensions
-const WIDTH = 800;
-const HEIGHT = 550;
+// Map dimensions (reduced for compact display)
+const WIDTH = 600;
+const HEIGHT = 420;
 
-// Projection function - projects lon/lat to SVG coordinates (larger map)
+// Projection function - projects lon/lat to SVG coordinates (compact map)
 const projectPoint = (lon: number, lat: number): [number, number] => {
   const centerLon = -3.7;
   const centerLat = 40.0;
-  const scale = 3000; // Adjusted scale
-  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 70;
-  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 50;
+  const scale = 2200; // Reduced scale for compact display
+  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 50;
+  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 35;
   return [x, y];
 };
 
 // Offset for Canary Islands repositioning (next to Melilla)
-const CANARIAS_OFFSET = { x: 0, y: -200 };
+const CANARIAS_OFFSET = { x: 0, y: -150 };
 
 // Project point with optional offset for Canarias
 const projectPointWithOffset = (
@@ -272,7 +272,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   // Loading state
   if (geoLoading || pathData.length === 0) {
     return (
-      <div className={cn("relative w-full flex items-center justify-center h-[500px]", className)}>
+      <div className={cn("relative w-full flex items-center justify-center h-[350px]", className)}>
         <div className="flex flex-col items-center gap-2">
           <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-muted-foreground">Cargando mapa...</span>
@@ -388,10 +388,10 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
 
           {/* Canary Islands label */}
           <text
-            x="110"
-            y="430"
+            x="85"
+            y="340"
             textAnchor="middle"
-            className="text-[10px] fill-muted-foreground font-medium"
+            className="text-[9px] fill-muted-foreground font-medium"
           >
             Islas Canarias
           </text>
