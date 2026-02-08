@@ -34,3 +34,20 @@ export type {
   FullAnalysisResult,
   TecnicoData 
 } from './useGaliaAIAnalysis';
+
+export { useGaliaImpactPredictor } from './useGaliaImpactPredictor';
+export type { 
+  ProjectData,
+  ImpactPrediction,
+  ViabilityAnalysis,
+  EmploymentEstimate
+} from './useGaliaImpactPredictor';
+
+export { useGaliaReporting } from './useGaliaReporting';
+export type { 
+  ReportPeriodo,
+  MemoriaAnual,
+  InformeFEDER,
+  CuadroMando,
+  InformeSeguimiento
+} from './useGaliaReporting';
