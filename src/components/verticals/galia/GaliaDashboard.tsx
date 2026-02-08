@@ -124,44 +124,46 @@ export function GaliaDashboard() {
         {/* Left Column - Main Tabs */}
         <div className={cn("lg:col-span-2", showAssistant && "lg:col-span-1")}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-9">
-              <TabsTrigger value="resumen" className="text-xs">
-                <BarChart3 className="h-4 w-4 mr-1" />
-                Resumen
-              </TabsTrigger>
-              <TabsTrigger value="gestion" className="text-xs">
-                <LayoutDashboard className="h-4 w-4 mr-1" />
-                Gestión
-              </TabsTrigger>
-              <TabsTrigger value="expedientes" className="text-xs">
-                <FolderOpen className="h-4 w-4 mr-1" />
-                Expedientes
-              </TabsTrigger>
-              <TabsTrigger value="convocatorias" className="text-xs">
-                <FileText className="h-4 w-4 mr-1" />
-                Convocatorias
-              </TabsTrigger>
-              <TabsTrigger value="portal" className="text-xs">
-                <Globe className="h-4 w-4 mr-1" />
-                Portal
-              </TabsTrigger>
-              <TabsTrigger value="costes" className="text-xs">
-                <Calculator className="h-4 w-4 mr-1" />
-                Costes IA
-              </TabsTrigger>
-              <TabsTrigger value="documentos" className="text-xs">
-                <FileSearch className="h-4 w-4 mr-1" />
-                OCR IA
-              </TabsTrigger>
-              <TabsTrigger value="informes" className="text-xs">
-                <FileBarChart className="h-4 w-4 mr-1" />
-                Informes
-              </TabsTrigger>
-              <TabsTrigger value="alertas" className="text-xs">
-                <AlertTriangle className="h-4 w-4 mr-1" />
-                Alertas
-              </TabsTrigger>
-            </TabsList>
+            <div className="w-full overflow-x-auto pb-2">
+              <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max min-w-full">
+                <TabsTrigger value="resumen" className="text-xs whitespace-nowrap">
+                  <BarChart3 className="h-4 w-4 mr-1" />
+                  Resumen
+                </TabsTrigger>
+                <TabsTrigger value="gestion" className="text-xs whitespace-nowrap">
+                  <LayoutDashboard className="h-4 w-4 mr-1" />
+                  Gestión
+                </TabsTrigger>
+                <TabsTrigger value="expedientes" className="text-xs whitespace-nowrap">
+                  <FolderOpen className="h-4 w-4 mr-1" />
+                  Expedientes
+                </TabsTrigger>
+                <TabsTrigger value="convocatorias" className="text-xs whitespace-nowrap">
+                  <FileText className="h-4 w-4 mr-1" />
+                  Convocatorias
+                </TabsTrigger>
+                <TabsTrigger value="portal" className="text-xs whitespace-nowrap">
+                  <Globe className="h-4 w-4 mr-1" />
+                  Portal
+                </TabsTrigger>
+                <TabsTrigger value="costes" className="text-xs whitespace-nowrap">
+                  <Calculator className="h-4 w-4 mr-1" />
+                  Costes IA
+                </TabsTrigger>
+                <TabsTrigger value="documentos" className="text-xs whitespace-nowrap">
+                  <FileSearch className="h-4 w-4 mr-1" />
+                  OCR IA
+                </TabsTrigger>
+                <TabsTrigger value="informes" className="text-xs whitespace-nowrap">
+                  <FileBarChart className="h-4 w-4 mr-1" />
+                  Informes
+                </TabsTrigger>
+                <TabsTrigger value="alertas" className="text-xs whitespace-nowrap">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Alertas
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="resumen" className="mt-4 space-y-4">
               {/* Presupuesto Overview */}
