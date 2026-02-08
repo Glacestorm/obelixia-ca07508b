@@ -9,3 +9,7 @@ export { GaliaSolicitudWizard } from './GaliaSolicitudWizard';
 export { GaliaPortalCiudadanoAvanzado } from './GaliaPortalCiudadanoAvanzado';
 export { GaliaPublicDashboard } from './GaliaPublicDashboard';
 export { GaliaDecisionSupportPanel } from './GaliaDecisionSupportPanel';
+
+// Phase 7 - Export & Print
+export { GaliaExportToolbar } from './GaliaExportToolbar';
+export { GaliaExpedientePrint } from './GaliaExpedientePrint';

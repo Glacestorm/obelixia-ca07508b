@@ -268,3 +268,16 @@ export type {
   EvaluationCriteria,
   ModuleType
 } from './useGaliaDecisionSupport';
+
+// === PHASE 7 (GALIA 2.0) - EXPORT & PRINT ===
+export { useGaliaExportPrint } from './useGaliaExportPrint';
+export type { 
+  ExportFormat,
+  DocumentType as PrintDocumentType,
+  PrintSection,
+  DocumentoGenerado,
+  ResolucionGenerada,
+  RequerimientoGenerado,
+  ExportResult,
+  PrintPreviewOptions
+} from './useGaliaExportPrint';
