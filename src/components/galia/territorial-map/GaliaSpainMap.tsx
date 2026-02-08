@@ -35,18 +35,18 @@ const FIXED_SCALE = 2;
 const WIDTH = 800;
 const HEIGHT = 550;
 
-// Projection function - projects lon/lat to SVG coordinates
+// Projection function - projects lon/lat to SVG coordinates (larger map)
 const projectPoint = (lon: number, lat: number): [number, number] => {
   const centerLon = -3.7;
   const centerLat = 40.0;
-  const scale = 2800;
-  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 50;
-  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 20;
+  const scale = 3400; // Increased for larger map
+  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 60;
+  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 40;
   return [x, y];
 };
 
-// Offset for Canary Islands repositioning (left side, closer to peninsula)
-const CANARIAS_OFFSET = { x: 530, y: -350 };
+// Offset for Canary Islands repositioning (inside the box on left)
+const CANARIAS_OFFSET = { x: 540, y: -280 };
 
 // Project point with optional offset for Canarias
 const projectPointWithOffset = (
@@ -370,22 +370,22 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
             );
           })}
 
-          {/* Canary Islands separator box - left side closer to peninsula */}
+          {/* Canary Islands separator box - positioned to contain islands */}
           <g>
             <rect
-              x="40"
-              y="380"
-              width="150"
-              height="110"
-              fill="none"
+              x="25"
+              y="420"
+              width="170"
+              height="120"
+              fill="hsl(var(--background) / 0.5)"
               stroke="hsl(var(--border))"
               strokeWidth={1}
               strokeDasharray="4 2"
               rx={4}
             />
             <text
-              x="115"
-              y="395"
+              x="110"
+              y="438"
               textAnchor="middle"
               className="text-[9px] fill-muted-foreground"
             >
