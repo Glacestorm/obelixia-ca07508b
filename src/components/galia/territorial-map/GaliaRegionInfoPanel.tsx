@@ -95,13 +95,14 @@ export const GaliaRegionInfoPanel = memo(function GaliaRegionInfoPanel({
   if (!stats) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.3, delay: 0.1 }}
-      className={cn("space-y-4", className)}
-    >
+    <ScrollArea className={cn("h-full max-h-[calc(100vh-200px)]", className)}>
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="space-y-4 pr-2 pb-4"
+      >
       {/* Main KPIs Card */}
       <Card className="bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5 border-primary/20">
         <CardHeader className="pb-2">
@@ -274,7 +275,8 @@ export const GaliaRegionInfoPanel = memo(function GaliaRegionInfoPanel({
           </CardContent>
         </Card>
       )}
-    </motion.div>
+      </motion.div>
+    </ScrollArea>
   );
 });
 
