@@ -4,8 +4,6 @@
  */
 
 export { GaliaTerritorialMapPanel } from './GaliaTerritorialMapPanel';
-export { GaliaSpainMap } from './GaliaSpainMap';
-export { GaliaSpainMapReal } from './GaliaSpainMapReal';
 export { GaliaSpainMapSVG } from './GaliaSpainMapSVG';
 export { GaliaRegionMap } from './GaliaRegionMap';
 export { GaliaMapBreadcrumb } from './GaliaMapBreadcrumb';
