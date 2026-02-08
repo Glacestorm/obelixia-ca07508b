@@ -243,3 +243,15 @@ export type {
   OpportunityAnalysis, 
   Subscription 
 } from './useGaliaEUFundingMonitor';
+
+export { useGaliaKnowledgeGraph } from './useGaliaKnowledgeGraph';
+export type { 
+  KnowledgeNode, 
+  KnowledgeEdge, 
+  KnowledgeCluster, 
+  GraphData, 
+  SearchResult as KGSearchResult, 
+  ExtractedEntity, 
+  DocumentAnalysis as KGDocumentAnalysis,
+  KnowledgeCategory 
+} from './useGaliaKnowledgeGraph';
