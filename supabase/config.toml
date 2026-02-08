@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-admin-integrations]
+verify_jwt = true
+
 [functions.galia-bpmn-workflows]
 verify_jwt = true
 
