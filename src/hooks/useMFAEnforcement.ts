@@ -42,9 +42,6 @@ interface UseMFAEnforcementReturn {
 // Admin roles that require MFA
 const ADMIN_ROLES = ['superadmin', 'admin', 'director_comercial', 'responsable_comercial'];
 
-// Lazy import to avoid circular dependency issues
-let useAuthHook: (() => any) | null = null;
-
 export function useMFAEnforcement(): UseMFAEnforcementReturn | null {
   const [mfaStatus, setMFAStatus] = useState<MFAStatus | null>(null);
   const [showMFASetup, setShowMFASetup] = useState(false);
@@ -69,21 +66,6 @@ export function useMFAEnforcement(): UseMFAEnforcementReturn | null {
     setError(null);
     if (status === 'error') setStatus('idle');
   }, [status]);
-  
-  // Safely get auth context
-  useEffect(() => {
-    const loadAuth = async () => {
-      try {
-        if (!useAuthHook) {
-          const authModule = await import('./useAuth');
-          useAuthHook = authModule.useAuth;
-        }
-      } catch (e) {
-        console.warn('Could not load auth hook:', e);
-      }
-    };
-    loadAuth();
-  }, []);
 
   // Get current session directly from Supabase
   useEffect(() => {
