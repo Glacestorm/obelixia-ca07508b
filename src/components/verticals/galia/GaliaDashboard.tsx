@@ -1,53 +1,55 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+/**
+ * GALIA Dashboard - Main Component
+ * Gestión de Ayudas LEADER con Inteligencia Artificial
+ */
+
+import { useState, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  FileText,
-  Users,
-  Euro,
-  AlertTriangle,
-  MessageSquare,
-  TrendingUp,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Search,
   Plus,
   RefreshCw,
   Bot,
   BarChart3,
   FolderOpen,
-  FileCheck,
-  Settings,
+  FileText,
   Globe,
   Calculator,
   FileBarChart,
   FileSearch,
   LayoutDashboard,
+  AlertTriangle,
 } from 'lucide-react';
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
 import { useGaliaExpedientes, GaliaExpediente } from '@/hooks/galia/useGaliaExpedientes';
 import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
 import { GaliaKPICards } from './shared/GaliaKPICards';
-import { GaliaStatusBadge } from './shared/GaliaStatusBadge';
-import { GaliaAsistenteVirtual } from './GaliaAsistenteVirtual';
-import { GaliaPortalCiudadano } from './GaliaPortalCiudadano';
-import { GaliaModeradorCostes } from './GaliaModeradorCostes';
-import { GaliaReportGenerator } from './GaliaReportGenerator';
-import { GaliaDocumentAnalyzer } from './GaliaDocumentAnalyzer';
 import { 
-  GaliaExpedienteDetailPanel, 
+  GaliaResumenTab,
+  GaliaExpedientesTab,
+  GaliaConvocatoriasTab,
+  GaliaAlertasTab,
+  GaliaSidebarPanel,
   GaliaWorkflowManager, 
   GaliaAlertsList, 
   GaliaTecnicosPanel 
 } from './dashboard';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+
+// Lazy load heavy components
+const GaliaAsistenteVirtual = lazy(() => import('./GaliaAsistenteVirtual'));
+const GaliaPortalCiudadano = lazy(() => import('./GaliaPortalCiudadano'));
+const GaliaModeradorCostes = lazy(() => import('./GaliaModeradorCostes'));
+const GaliaReportGenerator = lazy(() => import('./GaliaReportGenerator'));
+const GaliaDocumentAnalyzer = lazy(() => import('./GaliaDocumentAnalyzer'));
+
+const TabSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-32 w-full" />
+    <Skeleton className="h-48 w-full" />
+  </div>
+);
 
 export function GaliaDashboard() {
   const [activeTab, setActiveTab] = useState('resumen');
@@ -165,112 +167,31 @@ export function GaliaDashboard() {
               </TabsList>
             </div>
 
-            <TabsContent value="resumen" className="mt-4 space-y-4">
-              {/* Presupuesto Overview */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Euro className="h-5 w-5 text-primary" />
-                    Estado del Presupuesto
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">Total</p>
-                      <p className="text-lg font-bold">{formatCurrency(presupuestoStats.total)}</p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-amber-500/10">
-                      <p className="text-xs text-muted-foreground">Comprometido</p>
-                      <p className="text-lg font-bold text-amber-600">
-                        {formatCurrency(presupuestoStats.comprometido)}
-                      </p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-green-500/10">
-                      <p className="text-xs text-muted-foreground">Disponible</p>
-                      <p className="text-lg font-bold text-green-600">
-                        {formatCurrency(presupuestoStats.disponible)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-amber-500 to-green-500"
-                      style={{ 
-                        width: `${presupuestoStats.total ? (presupuestoStats.comprometido / presupuestoStats.total) * 100 : 0}%` 
-                      }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Expedientes por estado */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FolderOpen className="h-5 w-5 text-primary" />
-                    Expedientes por Estado
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {Object.entries(analyticsData?.expedientesPorEstado || {}).map(([estado, count]) => (
-                      <div key={estado} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                        <GaliaStatusBadge estado={estado as any} size="sm" />
-                        <span className="font-bold">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Métricas de IA */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Bot className="h-5 w-5 text-primary" />
-                    Rendimiento IA
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                      <p className="text-xs text-muted-foreground">Interacciones (30d)</p>
-                      <p className="text-2xl font-bold">{kpis?.interaccionesIA || 0}</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-green-500/10">
-                      <p className="text-xs text-muted-foreground">Tasa Automatización</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {analyticsData?.tasaAutomatizacion || 0}%
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="resumen" className="mt-4">
+              <GaliaResumenTab
+                presupuestoStats={presupuestoStats}
+                analyticsData={analyticsData}
+                kpis={kpis}
+                formatCurrency={formatCurrency}
+              />
             </TabsContent>
 
             {/* Panel de Gestión Técnica */}
             <TabsContent value="gestion" className="mt-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Workflow Manager */}
                 <GaliaWorkflowManager 
                   selectedEstado={workflowEstadoFilter}
                   onSelectEstado={(estado) => setWorkflowEstadoFilter(
                     estado === workflowEstadoFilter ? undefined : estado
                   )}
                 />
-                
-                {/* Panel de Técnicos */}
                 <GaliaTecnicosPanel 
                   expedienteSeleccionado={selectedExpediente?.numero_expediente}
                   onAsignarExpediente={(tecnicoId) => {
                     console.log('Asignar expediente a técnico:', tecnicoId);
-                    // TODO: Implementar asignación
                   }}
                 />
               </div>
-
-              {/* Lista de Alertas */}
               <div className="mt-4">
                 <GaliaAlertsList 
                   onSelectExpediente={(expId) => {
@@ -282,263 +203,68 @@ export function GaliaDashboard() {
             </TabsContent>
 
             <TabsContent value="expedientes" className="mt-4">
-              <div className={cn("grid gap-4", selectedExpediente ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">
-                        Expedientes {workflowEstadoFilter && <Badge variant="secondary" className="ml-2">{workflowEstadoFilter}</Badge>}
-                      </CardTitle>
-                      <div className="relative w-64">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Buscar expediente..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-8 h-9"
-                        />
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[400px]">
-                      <div className="space-y-2">
-                        {expedientes
-                          .filter(e => 
-                            !searchTerm || 
-                            e.numero_expediente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            e.solicitud?.titulo_proyecto?.toLowerCase().includes(searchTerm.toLowerCase())
-                          )
-                          .slice(0, 20)
-                          .map((expediente) => (
-                            <div 
-                              key={expediente.id}
-                              onClick={() => setSelectedExpediente(
-                                selectedExpediente?.id === expediente.id ? null : expediente
-                              )}
-                              className={cn(
-                                "p-3 rounded-lg border cursor-pointer transition-colors",
-                                selectedExpediente?.id === expediente.id 
-                                  ? "ring-2 ring-primary bg-primary/5" 
-                                  : "hover:bg-muted/50"
-                              )}
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono text-sm font-medium">
-                                      {expediente.numero_expediente}
-                                    </span>
-                                    <GaliaStatusBadge estado={expediente.estado} size="sm" />
-                                    {expediente.scoring_riesgo && expediente.scoring_riesgo >= 70 && (
-                                      <AlertTriangle className="h-3 w-3 text-destructive" />
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-muted-foreground truncate mt-1">
-                                    {expediente.solicitud?.titulo_proyecto || 'Sin título'}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {expediente.solicitud?.beneficiario?.nombre} · {expediente.solicitud?.beneficiario?.nif}
-                                  </p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  {expediente.importe_concedido && (
-                                    <p className="font-semibold text-green-600">
-                                      {formatCurrency(expediente.importe_concedido)}
-                                    </p>
-                                  )}
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(new Date(expediente.fecha_apertura), { 
-                                      addSuffix: true, 
-                                      locale: es 
-                                    })}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-
-                {/* Panel de detalle */}
-                {selectedExpediente && (
-                  <GaliaExpedienteDetailPanel
-                    expediente={selectedExpediente}
-                    onClose={() => setSelectedExpediente(null)}
-                    onCambiarEstado={handleCambiarEstado}
-                  />
-                )}
-              </div>
+              <GaliaExpedientesTab
+                expedientes={expedientes}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                selectedExpediente={selectedExpediente}
+                onSelectExpediente={setSelectedExpediente}
+                onCambiarEstado={handleCambiarEstado}
+                workflowEstadoFilter={workflowEstadoFilter}
+                formatCurrency={formatCurrency}
+              />
             </TabsContent>
 
             <TabsContent value="convocatorias" className="mt-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Convocatorias</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-2">
-                      {convocatorias.map((conv) => (
-                        <div 
-                          key={conv.id}
-                          className="p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{conv.nombre}</span>
-                                <GaliaStatusBadge estado={conv.estado} size="sm" />
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {conv.codigo} · {new Date(conv.fecha_inicio).toLocaleDateString('es-ES')} - {new Date(conv.fecha_fin).toLocaleDateString('es-ES')}
-                              </p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="font-semibold">{formatCurrency(conv.presupuesto_total)}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {formatCurrency(conv.presupuesto_total - conv.presupuesto_comprometido)} disponible
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+              <GaliaConvocatoriasTab
+                convocatorias={convocatorias}
+                formatCurrency={formatCurrency}
+              />
             </TabsContent>
 
             {/* Portal Ciudadano Tab */}
             <TabsContent value="portal" className="mt-4">
-              <GaliaPortalCiudadano />
+              <Suspense fallback={<TabSkeleton />}>
+                <GaliaPortalCiudadano />
+              </Suspense>
             </TabsContent>
 
             {/* Moderador de Costes Tab */}
             <TabsContent value="costes" className="mt-4">
-              <GaliaModeradorCostes />
+              <Suspense fallback={<TabSkeleton />}>
+                <GaliaModeradorCostes />
+              </Suspense>
             </TabsContent>
 
             {/* Generador de Informes Tab */}
             <TabsContent value="informes" className="mt-4">
-              <GaliaReportGenerator />
+              <Suspense fallback={<TabSkeleton />}>
+                <GaliaReportGenerator />
+              </Suspense>
             </TabsContent>
 
             {/* Analizador de Documentos OCR Tab */}
             <TabsContent value="documentos" className="mt-4">
-              <GaliaDocumentAnalyzer />
+              <Suspense fallback={<TabSkeleton />}>
+                <GaliaDocumentAnalyzer />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="alertas" className="mt-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-500" />
-                    Alertas y Expedientes de Riesgo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-2">
-                      {expedientesRiesgo.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                          <p>No hay expedientes con riesgo elevado</p>
-                        </div>
-                      ) : (
-                        expedientesRiesgo.map((exp) => (
-                          <div 
-                            key={exp.id}
-                            className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/5"
-                          >
-                            <div className="flex items-start gap-3">
-                              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                              <div className="flex-1">
-                                <p className="font-medium">{exp.numero_expediente}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {exp.solicitud?.titulo_proyecto}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge variant="destructive" className="text-xs">
-                                    Riesgo: {exp.scoring_riesgo}%
-                                  </Badge>
-                                  <GaliaStatusBadge estado={exp.estado} size="sm" />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+              <GaliaAlertasTab expedientesRiesgo={expedientesRiesgo} />
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* Right Column - Assistant */}
-        {showAssistant && (
+        {/* Right Column - Assistant or Sidebar */}
+        {showAssistant ? (
           <div className="lg:col-span-1">
-            <GaliaAsistenteVirtual modo="tecnico" />
+            <Suspense fallback={<TabSkeleton />}>
+              <GaliaAsistenteVirtual modo="tecnico" />
+            </Suspense>
           </div>
-        )}
-
-        {/* If assistant not shown, show quick stats */}
-        {!showAssistant && (
-          <div className="space-y-4">
-            {/* Actividad Reciente */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Actividad Reciente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[200px]">
-                  <div className="space-y-2">
-                    {expedientes.slice(0, 5).map((exp) => (
-                      <div key={exp.id} className="flex items-center gap-2 text-sm">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                        <span className="text-muted-foreground">
-                          {exp.numero_expediente}
-                        </span>
-                        <GaliaStatusBadge estado={exp.estado} size="sm" />
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Acciones Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Revisar solicitudes pendientes
-                </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <FileCheck className="h-4 w-4 mr-2" />
-                  Validar justificaciones
-                </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Users className="h-4 w-4 mr-2" />
-                  Ver beneficiarios
-                </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configuración GAL
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+        ) : (
+          <GaliaSidebarPanel expedientes={expedientes} />
         )}
       </div>
     </div>
