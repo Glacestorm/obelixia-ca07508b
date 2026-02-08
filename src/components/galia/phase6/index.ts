@@ -1,14 +1,11 @@
 /**
  * GALIA Phase 6 Components - Innovation
- * 
- * Advanced capabilities:
- * - eIDAS 2.0 / EUDI Wallet verification
- * - Multimodal AI (Voice + Documents)
- * - Blockchain Audit Trail
- * - Public API for third-party integrations
+ * Lazy-loaded exports for build optimization
  */
 
-export { GaliaEUDIWalletPanel } from './GaliaEUDIWalletPanel';
-export { GaliaMultimodalAIPanel } from './GaliaMultimodalAIPanel';
-export { GaliaBlockchainAuditPanel } from './GaliaBlockchainAuditPanel';
-export { GaliaPublicAPIPanel } from './GaliaPublicAPIPanel';
+import { lazy } from 'react';
+
+export const GaliaEUDIWalletPanel = lazy(() => import('./GaliaEUDIWalletPanel').then(m => ({ default: m.GaliaEUDIWalletPanel })));
+export const GaliaMultimodalAIPanel = lazy(() => import('./GaliaMultimodalAIPanel').then(m => ({ default: m.GaliaMultimodalAIPanel })));
+export const GaliaBlockchainAuditPanel = lazy(() => import('./GaliaBlockchainAuditPanel').then(m => ({ default: m.GaliaBlockchainAuditPanel })));
+export const GaliaPublicAPIPanel = lazy(() => import('./GaliaPublicAPIPanel').then(m => ({ default: m.GaliaPublicAPIPanel })));
