@@ -27,9 +27,10 @@ import {
   Calculator,
   FileBarChart,
   FileSearch,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
-import { useGaliaExpedientes } from '@/hooks/galia/useGaliaExpedientes';
+import { useGaliaExpedientes, GaliaExpediente } from '@/hooks/galia/useGaliaExpedientes';
 import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
 import { GaliaKPICards } from './shared/GaliaKPICards';
 import { GaliaStatusBadge } from './shared/GaliaStatusBadge';
@@ -38,6 +39,12 @@ import { GaliaPortalCiudadano } from './GaliaPortalCiudadano';
 import { GaliaModeradorCostes } from './GaliaModeradorCostes';
 import { GaliaReportGenerator } from './GaliaReportGenerator';
 import { GaliaDocumentAnalyzer } from './GaliaDocumentAnalyzer';
+import { 
+  GaliaExpedienteDetailPanel, 
+  GaliaWorkflowManager, 
+  GaliaAlertsList, 
+  GaliaTecnicosPanel 
+} from './dashboard';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -46,13 +53,27 @@ export function GaliaDashboard() {
   const [activeTab, setActiveTab] = useState('resumen');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAssistant, setShowAssistant] = useState(false);
+  const [selectedExpediente, setSelectedExpediente] = useState<GaliaExpediente | null>(null);
+  const [workflowEstadoFilter, setWorkflowEstadoFilter] = useState<string | undefined>(undefined);
 
   const { kpis, analyticsData, isLoading: loadingAnalytics, refresh } = useGaliaAnalytics();
-  const { expedientes, isLoading: loadingExpedientes, getExpedientesConRiesgo } = useGaliaExpedientes();
+  const { 
+    expedientes, 
+    isLoading: loadingExpedientes, 
+    getExpedientesConRiesgo,
+    updateExpedienteEstado 
+  } = useGaliaExpedientes({ estado: workflowEstadoFilter as GaliaExpediente['estado'] | undefined });
   const { convocatorias, isLoading: loadingConvocatorias, getPresupuestoStats } = useGaliaConvocatorias();
 
   const presupuestoStats = getPresupuestoStats();
   const expedientesRiesgo = getExpedientesConRiesgo(70);
+
+  const handleCambiarEstado = async (nuevoEstado: GaliaExpediente['estado']) => {
+    if (selectedExpediente) {
+      await updateExpedienteEstado(selectedExpediente.id, nuevoEstado);
+      setSelectedExpediente(null);
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-ES', {
@@ -103,10 +124,14 @@ export function GaliaDashboard() {
         {/* Left Column - Main Tabs */}
         <div className={cn("lg:col-span-2", showAssistant && "lg:col-span-1")}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="resumen" className="text-xs">
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Resumen
+              </TabsTrigger>
+              <TabsTrigger value="gestion" className="text-xs">
+                <LayoutDashboard className="h-4 w-4 mr-1" />
+                Gestión
               </TabsTrigger>
               <TabsTrigger value="expedientes" className="text-xs">
                 <FolderOpen className="h-4 w-4 mr-1" />
@@ -222,72 +247,128 @@ export function GaliaDashboard() {
               </Card>
             </TabsContent>
 
+            {/* Panel de Gestión Técnica */}
+            <TabsContent value="gestion" className="mt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Workflow Manager */}
+                <GaliaWorkflowManager 
+                  selectedEstado={workflowEstadoFilter}
+                  onSelectEstado={(estado) => setWorkflowEstadoFilter(
+                    estado === workflowEstadoFilter ? undefined : estado
+                  )}
+                />
+                
+                {/* Panel de Técnicos */}
+                <GaliaTecnicosPanel 
+                  expedienteSeleccionado={selectedExpediente?.numero_expediente}
+                  onAsignarExpediente={(tecnicoId) => {
+                    console.log('Asignar expediente a técnico:', tecnicoId);
+                    // TODO: Implementar asignación
+                  }}
+                />
+              </div>
+
+              {/* Lista de Alertas */}
+              <div className="mt-4">
+                <GaliaAlertsList 
+                  onSelectExpediente={(expId) => {
+                    const exp = expedientes.find(e => e.numero_expediente === expId);
+                    if (exp) setSelectedExpediente(exp);
+                  }}
+                />
+              </div>
+            </TabsContent>
+
             <TabsContent value="expedientes" className="mt-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Expedientes Activos</CardTitle>
-                    <div className="relative w-64">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Buscar expediente..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-8 h-9"
-                      />
+              <div className={cn("grid gap-4", selectedExpediente ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">
+                        Expedientes {workflowEstadoFilter && <Badge variant="secondary" className="ml-2">{workflowEstadoFilter}</Badge>}
+                      </CardTitle>
+                      <div className="relative w-64">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar expediente..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-8 h-9"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px]">
-                    <div className="space-y-2">
-                      {expedientes
-                        .filter(e => 
-                          !searchTerm || 
-                          e.numero_expediente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          e.solicitud?.titulo_proyecto?.toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                        .slice(0, 20)
-                        .map((expediente) => (
-                          <div 
-                            key={expediente.id}
-                            className="p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono text-sm font-medium">
-                                    {expediente.numero_expediente}
-                                  </span>
-                                  <GaliaStatusBadge estado={expediente.estado} size="sm" />
-                                </div>
-                                <p className="text-sm text-muted-foreground truncate mt-1">
-                                  {expediente.solicitud?.titulo_proyecto || 'Sin título'}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {expediente.solicitud?.beneficiario?.nombre} · {expediente.solicitud?.beneficiario?.nif}
-                                </p>
-                              </div>
-                              <div className="text-right shrink-0">
-                                {expediente.importe_concedido && (
-                                  <p className="font-semibold text-green-600">
-                                    {formatCurrency(expediente.importe_concedido)}
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[400px]">
+                      <div className="space-y-2">
+                        {expedientes
+                          .filter(e => 
+                            !searchTerm || 
+                            e.numero_expediente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            e.solicitud?.titulo_proyecto?.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
+                          .slice(0, 20)
+                          .map((expediente) => (
+                            <div 
+                              key={expediente.id}
+                              onClick={() => setSelectedExpediente(
+                                selectedExpediente?.id === expediente.id ? null : expediente
+                              )}
+                              className={cn(
+                                "p-3 rounded-lg border cursor-pointer transition-colors",
+                                selectedExpediente?.id === expediente.id 
+                                  ? "ring-2 ring-primary bg-primary/5" 
+                                  : "hover:bg-muted/50"
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-sm font-medium">
+                                      {expediente.numero_expediente}
+                                    </span>
+                                    <GaliaStatusBadge estado={expediente.estado} size="sm" />
+                                    {expediente.scoring_riesgo && expediente.scoring_riesgo >= 70 && (
+                                      <AlertTriangle className="h-3 w-3 text-destructive" />
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground truncate mt-1">
+                                    {expediente.solicitud?.titulo_proyecto || 'Sin título'}
                                   </p>
-                                )}
-                                <p className="text-xs text-muted-foreground">
-                                  {formatDistanceToNow(new Date(expediente.fecha_apertura), { 
-                                    addSuffix: true, 
-                                    locale: es 
-                                  })}
-                                </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {expediente.solicitud?.beneficiario?.nombre} · {expediente.solicitud?.beneficiario?.nif}
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  {expediente.importe_concedido && (
+                                    <p className="font-semibold text-green-600">
+                                      {formatCurrency(expediente.importe_concedido)}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatDistanceToNow(new Date(expediente.fecha_apertura), { 
+                                      addSuffix: true, 
+                                      locale: es 
+                                    })}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+                          ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                {/* Panel de detalle */}
+                {selectedExpediente && (
+                  <GaliaExpedienteDetailPanel
+                    expediente={selectedExpediente}
+                    onClose={() => setSelectedExpediente(null)}
+                    onCambiarEstado={handleCambiarEstado}
+                  />
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="convocatorias" className="mt-4">
