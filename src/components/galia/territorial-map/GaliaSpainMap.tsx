@@ -45,8 +45,8 @@ const projectPoint = (lon: number, lat: number): [number, number] => {
   return [x, y];
 };
 
-// Offset for Canary Islands repositioning (next to Melilla)
-const CANARIAS_OFFSET = { x: 620, y: -180 };
+// Offset for Canary Islands repositioning
+const CANARIAS_OFFSET = { x: 520, y: -180 };
 
 // Project point with optional offset for Canarias
 const projectPointWithOffset = (
