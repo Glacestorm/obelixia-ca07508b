@@ -60,4 +60,25 @@ export type {
   PublicReport
 } from './useGaliaTransparency';
 
+export { useGaliaAutoApproval } from './useGaliaAutoApproval';
+export type { 
+  EligibilityResult,
+  PreApprovalResult,
+  PendingApproval
+} from './useGaliaAutoApproval';
+
+export { useGaliaProactiveAssistant } from './useGaliaProactiveAssistant';
+export type { 
+  Deadline,
+  Alert,
+  DigestResult
+} from './useGaliaProactiveAssistant';
+
+export { useGaliaBDNS } from './useGaliaBDNS';
+export type { 
+  BDNSConvocatoria,
+  BDNSSyncResult,
+  BDNSBeneficiarioValidation
+} from './useGaliaBDNS';
+
 export { useGaliaTranslations, GALIA_TRANSLATIONS } from './useGaliaTranslations';

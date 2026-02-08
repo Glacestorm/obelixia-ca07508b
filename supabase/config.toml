@@ -1,5 +1,14 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-auto-approval]
+verify_jwt = true
+
+[functions.galia-proactive-assistant]
+verify_jwt = true
+
+[functions.galia-bdns-sync]
+verify_jwt = true
+
 [functions.galia-transparency]
 verify_jwt = false
 
