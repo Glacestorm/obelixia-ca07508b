@@ -1,6 +1,6 @@
 /**
  * GALIA Dashboard Components - Barrel Export
- * Note: GaliaAIInsightsPanel is NOT exported here - it should be lazy loaded
+ * Note: Heavy components are lazy loaded via GaliaMainTabs.tsx
  */
 
 export { GaliaExpedienteDetailPanel } from './GaliaExpedienteDetailPanel';
@@ -12,3 +12,4 @@ export { GaliaExpedientesTab } from './GaliaExpedientesTab';
 export { GaliaConvocatoriasTab } from './GaliaConvocatoriasTab';
 export { GaliaAlertasTab } from './GaliaAlertasTab';
 export { GaliaSidebarPanel } from './GaliaSidebarPanel';
+export { GaliaNavigation, GaliaNavigationDesktop, GaliaNavigationMobile, galiaNavCategories, getAllTabIds, findNavItem } from './GaliaNavigation';
