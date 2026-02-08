@@ -180,7 +180,7 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
                 </motion.div>
               )}
 
-              {navigation.level === 'regional' && selectedCCAAInfo && (
+              {(navigation.level === 'regional' || navigation.level === 'provincial') && selectedCCAAInfo && (
                 <GaliaRegionalView
                   ccaaInfo={selectedCCAAInfo}
                   provinceData={provinceData}
