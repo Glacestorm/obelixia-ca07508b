@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-report-generator]
+verify_jwt = false
+
 [functions.ai-copilot-chat]
 verify_jwt = true
 
