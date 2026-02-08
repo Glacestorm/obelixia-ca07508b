@@ -290,3 +290,25 @@ export type {
   ComplianceReport,
   ComplianceContext
 } from './useGaliaComplianceAuditor';
+
+// === PHASE 9-10 (GALIA 2.0) - IA HÍBRIDA Y FEDERACIÓN NACIONAL ===
+export { useGaliaHybridAI } from './useGaliaHybridAI';
+export type { 
+  AIProvider,
+  DataSensitivity,
+  TaskComplexity,
+  HybridAIConfig,
+  AIRoutingDecision,
+  HybridAIResponse,
+  AutomationTask,
+  AutomationResult
+} from './useGaliaHybridAI';
+
+export { useGaliaNationalFederation } from './useGaliaNationalFederation';
+export type { 
+  NationalKPIs,
+  BenchmarkResult,
+  RegionalAnalysis,
+  TrendPrediction,
+  EUInteropStatus
+} from './useGaliaNationalFederation';
