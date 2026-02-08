@@ -269,23 +269,23 @@ export function GaliaKnowledgeExplorer({
                 </Button>
               </div>
               <div className="flex gap-2">
-                <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
+                <Select value={selectedCategoria || '_all'} onValueChange={(v) => setSelectedCategoria(v === '_all' ? '' : v)}>
                   <SelectTrigger className="text-xs h-8">
                     <SelectValue placeholder="Categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="_all">Todas</SelectItem>
                     {CATEGORIAS.map(cat => (
                       <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={selectedTipo} onValueChange={setSelectedTipo}>
+                <Select value={selectedTipo || '_all'} onValueChange={(v) => setSelectedTipo(v === '_all' ? '' : v)}>
                   <SelectTrigger className="text-xs h-8">
                     <SelectValue placeholder="Tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="_all">Todos</SelectItem>
                     {TIPOS.map(tipo => (
                       <SelectItem key={tipo.value} value={tipo.value}>{tipo.label}</SelectItem>
                     ))}
