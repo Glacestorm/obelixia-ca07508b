@@ -125,3 +125,38 @@ export type { AuditBlock, AuditTrailResult, ProofResult, AnchorResult, DecisionT
 
 export { useGaliaPublicAPI } from './useGaliaPublicAPI';
 export type { Convocatoria, ExpedienteStatus, EligibilityCheck, GlobalStats } from './useGaliaPublicAPI';
+
+// === PHASE 7 - EXCELENCIA OPERACIONAL ===
+export { useGaliaSmartAudit } from './useGaliaSmartAudit';
+export type { 
+  AuditFinding, 
+  AuditReport, 
+  AnomalyPattern, 
+  SmartAuditStats 
+} from './useGaliaSmartAudit';
+
+export { useGaliaCompliancePredictor } from './useGaliaCompliancePredictor';
+export type { 
+  ComplianceRisk, 
+  ComplianceForecast, 
+  PreventiveAction, 
+  ComplianceTrend 
+} from './useGaliaCompliancePredictor';
+
+export { useGaliaEarlyWarning } from './useGaliaEarlyWarning';
+export type { 
+  EarlyWarning, 
+  WarningThreshold, 
+  WarningStats, 
+  SignalPattern 
+} from './useGaliaEarlyWarning';
+
+export { useGaliaExecutiveDashboard } from './useGaliaExecutiveDashboard';
+export type { 
+  ExecutiveKPI, 
+  StrategicInsight, 
+  PerformanceMetrics, 
+  ComparativeAnalysis, 
+  ExecutiveReport, 
+  DashboardConfig 
+} from './useGaliaExecutiveDashboard';

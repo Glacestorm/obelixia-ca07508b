@@ -11,3 +11,6 @@ export * from './phase5';
 
 // Phase 6 - Innovation
 export * from './phase6';
+
+// Phase 7 - Excelencia Operacional
+export * from './phase7';
