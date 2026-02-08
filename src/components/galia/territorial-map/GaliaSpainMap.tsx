@@ -29,7 +29,7 @@ interface GeoFeature {
 }
 
 // Fixed scale (no zoom)
-const FIXED_SCALE = 4;
+const FIXED_SCALE = 8;
 
 // Map dimensions
 const WIDTH = 800;
