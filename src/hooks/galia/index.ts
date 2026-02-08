@@ -178,3 +178,15 @@ export type {
   InvestmentOptimization,
   GeoAnalysisContext
 } from './useGaliaGeoIntelligence';
+
+export { useGaliaConvocatoriaSimulator } from './useGaliaConvocatoriaSimulator';
+export type { 
+  ProjectProfile,
+  EligibilityResult as ConvocatoriaEligibilityResult,
+  EligibilityCriterion,
+  GrantEstimate,
+  ScoringPrediction,
+  ImprovementSuggestion,
+  SimulationResult,
+  MatchingCall
+} from './useGaliaConvocatoriaSimulator';
