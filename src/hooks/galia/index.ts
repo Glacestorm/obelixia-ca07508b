@@ -169,3 +169,12 @@ export type {
   GeneratedDocument,
   GenerationContext
 } from './useGaliaDocumentGenerator';
+
+export { useGaliaGeoIntelligence } from './useGaliaGeoIntelligence';
+export type { 
+  MunicipalityData,
+  TerritorialImpact,
+  DepopulationZone,
+  InvestmentOptimization,
+  GeoAnalysisContext
+} from './useGaliaGeoIntelligence';
