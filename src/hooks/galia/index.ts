@@ -106,3 +106,16 @@ export type {
 } from './useGaliaGamification';
 
 export { useGaliaPerformance, useGaliaLazyLoad } from './useGaliaPerformance';
+
+// === PHASE 6 - INNOVATION ===
+export { useGaliaEUDIWallet } from './useGaliaEUDIWallet';
+export type { PresentationRequest, VerificationResult, RevocationStatus, CredentialType } from './useGaliaEUDIWallet';
+
+export { useGaliaMultimodalAI } from './useGaliaMultimodalAI';
+export type { DocumentAnalysisResult, TranscriptionResult, VoiceAssistantResponse, StructuredData } from './useGaliaMultimodalAI';
+
+export { useGaliaBlockchainAudit } from './useGaliaBlockchainAudit';
+export type { AuditBlock, AuditTrailResult, ProofResult, AnchorResult, DecisionType } from './useGaliaBlockchainAudit';
+
+export { useGaliaPublicAPI } from './useGaliaPublicAPI';
+export type { Convocatoria, ExpedienteStatus, EligibilityCheck, GlobalStats } from './useGaliaPublicAPI';

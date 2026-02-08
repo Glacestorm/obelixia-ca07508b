@@ -1,5 +1,17 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-eudi-wallet]
+verify_jwt = false
+
+[functions.galia-multimodal-ai]
+verify_jwt = false
+
+[functions.galia-blockchain-audit]
+verify_jwt = false
+
+[functions.galia-public-api]
+verify_jwt = false
+
 [functions.galia-auto-approval]
 verify_jwt = true
 
