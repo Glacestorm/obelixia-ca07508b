@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { GlobalNavHeader } from '@/components/GlobalNavHeader';
 import { useAuth } from '@/hooks/useAuth';
+import { DemoModeToggle } from '@/components/demo/DemoModeToggle';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -99,6 +100,9 @@ export function DashboardLayout({
       >
         {children}
       </motion.main>
+      
+      {/* Demo Mode Toggle - Only for authorized users (controlled by internal logic) */}
+      <DemoModeToggle />
     </div>
   );
 }
