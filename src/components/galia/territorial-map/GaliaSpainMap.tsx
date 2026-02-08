@@ -46,7 +46,7 @@ const projectPoint = (lon: number, lat: number): [number, number] => {
 };
 
 // Offset for Canary Islands repositioning (inside the box on left)
-const CANARIAS_OFFSET = { x: 540, y: -280 };
+const CANARIAS_OFFSET = { x: 320, y: -200 };
 
 // Project point with optional offset for Canarias
 const projectPointWithOffset = (
