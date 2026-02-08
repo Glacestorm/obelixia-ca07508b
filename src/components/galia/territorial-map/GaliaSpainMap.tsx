@@ -1,12 +1,12 @@
 /**
  * GaliaSpainMap - Interactive SVG Map of Spain
- * Lightweight implementation with labels inside regions
- * Memory-optimized for build efficiency
+ * Ultra-lightweight with pre-defined static paths
+ * Build-optimized: no dynamic imports, minimal dependencies
  */
 
-import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { memo, useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCCAAByTopoId } from './spain-paths';
+import { getCCAAByTopoId, spainCCAAData } from './spain-paths';
 import { CCAAMapData } from '@/hooks/galia/useGaliaTerritorialMap';
 import { GaliaMapTooltip } from './GaliaMapTooltip';
 import { cn } from '@/lib/utils';
@@ -24,71 +24,51 @@ const MIN_ZOOM = 0.8;
 const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.002;
 
-interface GeoFeature {
-  id: string;
-  geometry: {
-    type: string;
-    coordinates: number[][][] | number[][][][];
-  };
-  properties?: Record<string, unknown>;
-}
-
-// Projection function (outside component for memory efficiency)
-const projectPoint = (lon: number, lat: number, width: number, height: number): [number, number] => {
-  const centerLon = -3.7;
-  const centerLat = 40.4;
-  const scale = 2200;
-  const x = (lon - centerLon) * (scale / 100) + width / 2;
-  const y = (centerLat - lat) * (scale / 80) + height / 2;
-  return [x, y];
+// Pre-calculated centroids for each CCAA (stable positions)
+const CCAA_CENTROIDS: Record<string, { x: number; y: number }> = {
+  '01': { x: 380, y: 450 },  // Andalucía
+  '02': { x: 480, y: 220 },  // Aragón
+  '03': { x: 300, y: 90 },   // Asturias
+  '04': { x: 620, y: 290 },  // Baleares
+  '05': { x: 120, y: 540 },  // Canarias
+  '06': { x: 320, y: 110 },  // Cantabria
+  '07': { x: 300, y: 170 },  // Castilla y León
+  '08': { x: 370, y: 310 },  // Castilla-La Mancha
+  '09': { x: 560, y: 180 },  // Cataluña
+  '10': { x: 510, y: 320 },  // C. Valenciana
+  '11': { x: 260, y: 360 },  // Extremadura
+  '12': { x: 180, y: 120 },  // Galicia
+  '13': { x: 360, y: 265 },  // Madrid
+  '14': { x: 460, y: 400 },  // Murcia
+  '15': { x: 420, y: 145 },  // Navarra
+  '16': { x: 380, y: 100 },  // País Vasco
+  '17': { x: 390, y: 170 },  // La Rioja
+  '18': { x: 320, y: 525 },  // Ceuta
+  '19': { x: 380, y: 525 },  // Melilla
 };
 
-// Calculate centroid from coordinates
-const calculateCentroid = (coords: number[][][], width: number, height: number): { x: number; y: number } => {
-  let sumX = 0;
-  let sumY = 0;
-  let count = 0;
-  
-  coords.forEach(ring => {
-    ring.forEach(point => {
-      const [x, y] = projectPoint(point[0], point[1], width, height);
-      sumX += x;
-      sumY += y;
-      count++;
-    });
-  });
-  
-  return {
-    x: count > 0 ? sumX / count : 0,
-    y: count > 0 ? sumY / count : 0
-  };
+// Simplified SVG paths for each CCAA (approximate shapes)
+const CCAA_PATHS: Record<string, string> = {
+  '01': 'M230,380 L280,360 L330,370 L380,360 L430,380 L490,390 L530,420 L510,470 L470,490 L400,500 L330,490 L270,470 L230,430 Z', // Andalucía
+  '02': 'M440,160 L480,150 L530,170 L540,220 L520,270 L480,280 L440,260 L420,210 Z', // Aragón
+  '03': 'M250,70 L290,60 L340,70 L350,100 L320,120 L270,110 L240,90 Z', // Asturias
+  '04': 'M590,270 L620,260 L650,280 L640,310 L610,320 L580,300 Z', // Baleares
+  '05': 'M60,510 L100,500 L150,510 L170,540 L150,570 L100,580 L60,560 Z', // Canarias
+  '06': 'M300,90 L340,80 L360,100 L350,130 L310,140 L280,120 Z', // Cantabria
+  '07': 'M200,120 L260,100 L340,120 L400,140 L420,180 L400,230 L340,250 L280,230 L220,200 L200,160 Z', // Castilla y León
+  '08': 'M280,260 L340,250 L420,260 L470,290 L480,350 L440,380 L380,380 L310,360 L270,320 Z', // Castilla-La Mancha
+  '09': 'M520,140 L560,130 L610,150 L620,200 L590,240 L540,250 L500,220 L510,170 Z', // Cataluña
+  '10': 'M480,280 L530,270 L560,310 L550,370 L510,400 L470,390 L460,340 Z', // C. Valenciana
+  '11': 'M200,310 L260,290 L320,320 L330,380 L290,420 L230,420 L180,380 Z', // Extremadura
+  '12': 'M120,80 L180,60 L240,80 L250,130 L220,180 L160,190 L110,160 L100,110 Z', // Galicia
+  '13': 'M330,240 L370,230 L400,250 L400,290 L370,310 L330,290 Z', // Madrid
+  '14': 'M430,380 L480,370 L510,400 L490,440 L440,450 L420,420 Z', // Murcia
+  '15': 'M390,120 L430,110 L470,130 L460,170 L420,180 L380,160 Z', // Navarra
+  '16': 'M340,80 L390,70 L430,90 L420,120 L380,130 L340,110 Z', // País Vasco
+  '17': 'M370,150 L410,140 L440,160 L430,190 L390,200 L360,180 Z', // La Rioja
+  '18': 'M300,510 L330,500 L350,520 L340,545 L310,550 L290,530 Z', // Ceuta
+  '19': 'M360,510 L390,500 L410,520 L400,545 L370,550 L350,530 Z', // Melilla
 };
-
-// Calculate centroid for MultiPolygon
-const calculateMultiPolygonCentroid = (coords: number[][][][], width: number, height: number): { x: number; y: number } => {
-  let sumX = 0;
-  let sumY = 0;
-  let count = 0;
-  
-  coords.forEach(polygon => {
-    polygon.forEach(ring => {
-      ring.forEach(point => {
-        const [x, y] = projectPoint(point[0], point[1], width, height);
-        sumX += x;
-        sumY += y;
-        count++;
-      });
-    });
-  });
-  
-  return {
-    x: count > 0 ? sumX / count : 0,
-    y: count > 0 ? sumY / count : 0
-  };
-};
-
-// Cache for loaded geo data
-let cachedCCAAData: GeoFeature[] | null = null;
 
 export const GaliaSpainMap = memo(function GaliaSpainMap({
   data,
@@ -98,59 +78,14 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   className
 }: GaliaSpainMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCCAA, setHoveredCCAA] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const dimensions = useMemo(() => ({ width: 700, height: 600 }), []);
-  
-  // Geo data state
-  const [ccaaFeatures, setCcaaFeatures] = useState<GeoFeature[]>(cachedCCAAData || []);
-  const [geoLoading, setGeoLoading] = useState(!cachedCCAAData);
   
   // Zoom and pan state
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-
-  // Load geo data dynamically
-  useEffect(() => {
-    if (cachedCCAAData && cachedCCAAData.length > 0) {
-      setCcaaFeatures(cachedCCAAData);
-      setGeoLoading(false);
-      return;
-    }
-
-    const loadGeoData = async () => {
-      try {
-        setGeoLoading(true);
-        const response = await fetch('/geo/spain-ccaa.json');
-        
-        if (!response.ok) {
-          throw new Error('Failed to load geo data');
-        }
-        
-        const topoData = await response.json();
-        
-        // Dynamically import topojson only when needed
-        const topojson = await import('topojson-client');
-        
-        let features: GeoFeature[] = [];
-        if (topoData?.objects?.autonomous_regions) {
-          const geoJson = topojson.feature(topoData, topoData.objects.autonomous_regions);
-          features = (geoJson as any).features || [];
-        }
-        
-        cachedCCAAData = features;
-        setCcaaFeatures(features);
-      } catch (error) {
-        console.error('Error loading geo data:', error);
-      } finally {
-        setGeoLoading(false);
-      }
-    };
-
-    loadGeoData();
-  }, []);
 
   // Map data by CCAA ID for quick lookup
   const dataMap = useMemo(() => {
@@ -163,48 +98,6 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   const maxGrants = useMemo(() => {
     return Math.max(...data.map(d => d.totalGrants), 1);
   }, [data]);
-
-  // Create paths and centroids from features
-  const pathData = useMemo(() => {
-    if (ccaaFeatures.length === 0) return [];
-
-    const width = dimensions.width;
-    const height = dimensions.height;
-
-    const pathFromCoords = (coords: number[][]): string => {
-      if (coords.length === 0) return '';
-      const points = coords.map(c => projectPoint(c[0], c[1], width, height));
-      return 'M' + points.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
-    };
-
-    return ccaaFeatures.map(feature => {
-      let d = '';
-      const geom = feature.geometry;
-      let centroid = { x: 0, y: 0 };
-      
-      if (geom.type === 'Polygon') {
-        const coords = geom.coordinates as number[][][];
-        coords.forEach(ring => {
-          d += pathFromCoords(ring);
-        });
-        centroid = calculateCentroid(coords, width, height);
-      } else if (geom.type === 'MultiPolygon') {
-        const coords = geom.coordinates as number[][][][];
-        coords.forEach(polygon => {
-          polygon.forEach(ring => {
-            d += pathFromCoords(ring);
-          });
-        });
-        centroid = calculateMultiPolygonCentroid(coords, width, height);
-      }
-
-      return {
-        id: String(feature.id),
-        path: d,
-        centroid
-      };
-    });
-  }, [ccaaFeatures, dimensions]);
 
   // Get fill color based on data
   const getFillColor = useCallback((topoId: string): string => {
@@ -302,23 +195,8 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     return dataMap.get(ccaaInfo.id) || null;
   }, [hoveredCCAA, dataMap]);
 
-  // Loading state
-  if (geoLoading || pathData.length === 0) {
-    return (
-      <div className={cn("relative w-full flex items-center justify-center h-[500px]", className)}>
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-muted-foreground">Cargando mapa...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div 
-      ref={containerRef}
-      className={cn("relative w-full overflow-hidden", className)}
-    >
+    <div className={cn("relative w-full overflow-hidden", className)}>
       {/* Zoom controls */}
       <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
         <button
@@ -389,65 +267,64 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
         {/* Zoomable/Pannable group */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* CCAA Paths */}
-          {pathData.map(({ id, path, centroid }) => {
-            const ccaaInfo = getCCAAByTopoId(id);
-            const ccaaData = ccaaInfo ? dataMap.get(ccaaInfo.id) : null;
-            const isHovered = hoveredCCAA === id;
-            const isSelected = ccaaInfo && selectedCCAA === ccaaInfo.id;
+          {spainCCAAData.map(ccaa => {
+            const topoId = ccaa.topoId;
+            const path = CCAA_PATHS[topoId];
+            const centroid = CCAA_CENTROIDS[topoId];
+            const ccaaData = dataMap.get(ccaa.id);
+            const isHovered = hoveredCCAA === topoId;
+            const isSelected = selectedCCAA === ccaa.id;
 
-            // Skip Gibraltar
-            if (id === '20') return null;
+            if (!path || !centroid) return null;
 
             return (
-              <g key={id}>
+              <g key={topoId}>
                 <path
                   d={path}
-                  fill={getFillColor(id)}
+                  fill={getFillColor(topoId)}
                   stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
                   strokeWidth={(isHovered || isSelected ? 2 : 0.5) / transform.scale}
                   className="cursor-pointer transition-colors"
-                  onMouseEnter={() => setHoveredCCAA(id)}
-                  onClick={() => handleCCAAClick(id)}
+                  onMouseEnter={() => setHoveredCCAA(topoId)}
+                  onClick={() => handleCCAAClick(topoId)}
                 />
 
                 {/* Labels inside the region - scaled inversely to maintain size */}
-                {ccaaInfo && centroid.x > 0 && (
-                  <g 
-                    transform={`translate(${centroid.x}, ${centroid.y}) scale(${1 / transform.scale})`}
-                    className="pointer-events-none"
+                <g 
+                  transform={`translate(${centroid.x}, ${centroid.y}) scale(${1 / transform.scale})`}
+                  className="pointer-events-none"
+                >
+                  {/* CCAA Name */}
+                  <text
+                    x={0}
+                    y={-4}
+                    textAnchor="middle"
+                    className="text-[10px] font-bold"
+                    fill="hsl(var(--foreground))"
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
+                    paintOrder="stroke"
                   >
-                    {/* CCAA Name */}
+                    {ccaa.shortName}
+                  </text>
+                  
+                  {/* Grant count */}
+                  {ccaaData && (
                     <text
                       x={0}
-                      y={-4}
+                      y={10}
                       textAnchor="middle"
-                      className="text-[10px] font-bold"
+                      className="text-[11px] font-semibold"
                       fill="hsl(var(--foreground))"
                       stroke="hsl(var(--background))"
                       strokeWidth={2}
                       paintOrder="stroke"
+                      style={{ opacity: isLoading ? 0.3 : 1 }}
                     >
-                      {ccaaInfo.shortName}
+                      {ccaaData.totalGrants}
                     </text>
-                    
-                    {/* Grant count */}
-                    {ccaaData && (
-                      <text
-                        x={0}
-                        y={10}
-                        textAnchor="middle"
-                        className="text-[11px] font-semibold"
-                        fill="hsl(var(--foreground))"
-                        stroke="hsl(var(--background))"
-                        strokeWidth={2}
-                        paintOrder="stroke"
-                        style={{ opacity: isLoading ? 0.3 : 1 }}
-                      >
-                        {ccaaData.totalGrants}
-                      </text>
-                    )}
-                  </g>
-                )}
+                  )}
+                </g>
               </g>
             );
           })}
