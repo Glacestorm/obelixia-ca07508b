@@ -49,6 +49,23 @@ export function useGaliaPerformance<T = unknown>(config?: Partial<CacheConfig>) 
 
   const [metrics, setMetrics] = useState<PerformanceMetrics>(metricsRef.current);
 
+  // === ACTUALIZAR MÉTRICAS (declarado primero para evitar referencia circular) ===
+  const updateMetrics = useCallback((loadTime: number, _wasHit: boolean) => {
+    const m = metricsRef.current;
+    
+    // Calcular promedio móvil de tiempo de carga
+    m.averageLoadTime = m.totalRequests === 1 
+      ? loadTime 
+      : (m.averageLoadTime * (m.totalRequests - 1) + loadTime) / m.totalRequests;
+
+    // Calcular hit rate
+    m.cacheHitRate = m.totalRequests > 0 
+      ? (m.cacheHits / m.totalRequests) * 100 
+      : 0;
+
+    setMetrics({ ...m });
+  }, []);
+
   // === GENERAR CLAVE DE CACHÉ ===
   const generateCacheKey = useCallback((
     table: string,
@@ -176,22 +193,7 @@ export function useGaliaPerformance<T = unknown>(config?: Partial<CacheConfig>) 
     return fetchPromise;
   }, [getFromCache, setInCache, cacheConfig.staleWhileRevalidate, updateMetrics]);
 
-  // === ACTUALIZAR MÉTRICAS ===
-  const updateMetrics = useCallback((loadTime: number, wasHit: boolean) => {
-    const m = metricsRef.current;
-    
-    // Calcular promedio móvil de tiempo de carga
-    m.averageLoadTime = m.totalRequests === 1 
-      ? loadTime 
-      : (m.averageLoadTime * (m.totalRequests - 1) + loadTime) / m.totalRequests;
-
-    // Calcular hit rate
-    m.cacheHitRate = m.totalRequests > 0 
-      ? (m.cacheHits / m.totalRequests) * 100 
-      : 0;
-
-    setMetrics({ ...m });
-  }, []);
+  // (updateMetrics movido arriba para evitar uso antes de declaración)
 
   // === INVALIDAR CACHÉ ===
   const invalidateCache = useCallback((pattern?: string | RegExp) => {

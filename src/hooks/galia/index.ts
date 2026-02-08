@@ -82,3 +82,27 @@ export type {
 } from './useGaliaBDNS';
 
 export { useGaliaTranslations, GALIA_TRANSLATIONS } from './useGaliaTranslations';
+
+// === PHASE 5 - EXPANSION ===
+export { useGaliaClaveAuth } from './useGaliaClaveAuth';
+export type { ClaveUserData, ClaveSession } from './useGaliaClaveAuth';
+
+export { useGaliaFederation } from './useGaliaFederation';
+export type { 
+  FederationKPIs, 
+  RegionalData, 
+  NationalDashboard, 
+  ComparisonResult 
+} from './useGaliaFederation';
+
+export { useGaliaGamification } from './useGaliaGamification';
+export type { 
+  Achievement,
+  UserStats, 
+  LeaderboardEntry, 
+  Challenge,
+  PointsResult,
+  ActivityType
+} from './useGaliaGamification';
+
+export { useGaliaPerformance, useGaliaLazyLoad } from './useGaliaPerformance';
