@@ -1,15 +1,15 @@
 /**
  * GaliaTerritorialMapPanel - Main Container for Territorial Map
  * Manages drill-down navigation between Spain -> CCAA -> Province -> Expediente
+ * Phase 3: Regional drill-down with fade+slide transitions
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   MapPin, 
   RefreshCw, 
@@ -28,9 +28,37 @@ import { GaliaMapLegend } from './GaliaMapLegend';
 import { formatCompactCurrency } from './spain-paths';
 import { cn } from '@/lib/utils';
 
+// Lazy load heavy regional components
+const GaliaRegionMap = lazy(() => import('./GaliaRegionMap'));
+const GaliaRegionInfoPanel = lazy(() => import('./GaliaRegionInfoPanel'));
+
 interface GaliaTerritorialMapPanelProps {
   className?: string;
 }
+
+// Animation variants for fade+slide transitions
+const fadeSlideVariants = {
+  national: {
+    initial: { opacity: 0, x: -50 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -100 }
+  },
+  regional: {
+    initial: { opacity: 0, x: 100 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 100 }
+  }
+};
+
+// Loading fallback for lazy components
+const MapLoadingFallback = () => (
+  <div className="flex items-center justify-center h-[400px]">
+    <div className="flex flex-col items-center gap-2">
+      <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <span className="text-sm text-muted-foreground">Cargando vista regional...</span>
+    </div>
+  </div>
+);
 
 export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
   className
@@ -53,6 +81,11 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
   // Handle CCAA selection
   const handleSelectCCAA = useCallback((ccaaId: string, ccaaName: string) => {
     drillDown('regional', ccaaId, ccaaName);
+  }, [drillDown]);
+
+  // Handle province selection
+  const handleSelectProvince = useCallback((provinceId: string, provinceName: string) => {
+    drillDown('provincial', provinceId, provinceName);
   }, [drillDown]);
 
   // Calculate totals for national level
@@ -129,17 +162,19 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
           {/* Main map area */}
           <div className={cn(
-            "lg:col-span-3 relative",
+            "lg:col-span-3 relative overflow-hidden",
             isFullscreen ? "h-full" : "min-h-[400px]"
           )}>
             <AnimatePresence mode="wait">
+              {/* NATIONAL LEVEL - Spain Map */}
               {navigation.level === 'national' && (
                 <motion.div
                   key="national"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.05 }}
-                  transition={{ duration: 0.3 }}
+                  variants={fadeSlideVariants.national}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
                   className="h-full"
                 >
                   <GaliaSpainMap
@@ -152,197 +187,188 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
                 </motion.div>
               )}
 
+              {/* REGIONAL LEVEL - Province Map */}
               {navigation.level === 'regional' && selectedCCAAInfo && (
                 <motion.div
                   key="regional"
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  className="h-full flex flex-col"
+                  variants={fadeSlideVariants.regional}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  className="h-full"
                 >
-                  {/* Regional header */}
-                  <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-4 mb-4">
-                    <h3 className="text-xl font-bold mb-2">{selectedCCAAInfo.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedCCAAInfo.provinces.length} provincias • {provinceData.reduce((s, p) => s + p.gals, 0)} GALs activos
-                    </p>
-                  </div>
-
-                  {/* Province list */}
-                  <ScrollArea className="flex-1">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {isLoading ? (
-                        Array(4).fill(0).map((_, i) => (
-                          <Skeleton key={i} className="h-24 rounded-lg" />
-                        ))
-                      ) : (
-                        provinceData.map((province) => (
-                          <motion.div
-                            key={province.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            whileHover={{ scale: 1.02 }}
-                            className="bg-card border border-border/50 rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-all"
-                            onClick={() => drillDown('provincial', province.id, province.name)}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium">{province.name}</h4>
-                              <Badge variant="secondary" className="text-[10px]">
-                                {province.gals} GALs
-                              </Badge>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <FileText className="h-3 w-3" />
-                                {province.totalGrants} ayudas
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Euro className="h-3 w-3" />
-                                {formatCompactCurrency(province.totalBudget)}
-                              </div>
-                            </div>
-                            <div className="mt-2">
-                              <div className="flex justify-between text-[10px] mb-1">
-                                <span>Ejecución</span>
-                                <span className={cn(
-                                  "font-medium",
-                                  province.executionRate >= 75 ? "text-green-600" :
-                                  province.executionRate >= 50 ? "text-yellow-600" : "text-red-600"
-                                )}>
-                                  {province.executionRate.toFixed(0)}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div 
-                                  className={cn(
-                                    "h-full rounded-full transition-all",
-                                    province.executionRate >= 75 ? "bg-green-500" :
-                                    province.executionRate >= 50 ? "bg-yellow-500" : "bg-red-500"
-                                  )}
-                                  style={{ width: `${province.executionRate}%` }}
-                                />
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
+                  <Suspense fallback={<MapLoadingFallback />}>
+                    <GaliaRegionMap
+                      ccaaId={selectedCCAAInfo.id}
+                      ccaaName={selectedCCAAInfo.name}
+                      data={provinceData}
+                      onSelectProvince={handleSelectProvince}
+                      selectedProvince={navigation.selectedProvince}
+                      isLoading={isLoading}
+                      className="h-full"
+                    />
+                  </Suspense>
                 </motion.div>
               )}
-          </AnimatePresence>
-        </div>
+
+              {/* PROVINCIAL LEVEL - placeholder for Phase 4 */}
+              {navigation.level === 'provincial' && (
+                <motion.div
+                  key="provincial"
+                  variants={fadeSlideVariants.regional}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  className="h-full flex items-center justify-center"
+                >
+                  <div className="text-center p-8 bg-muted/30 rounded-lg">
+                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <h3 className="text-lg font-medium mb-1">Vista Municipal</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Próximamente: Mapa con markers de expedientes por municipio
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Side panel - Summary stats */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Level summary */}
-            <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-lg p-4 space-y-4">
-              <h4 className="font-medium text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                {navigation.level === 'national' ? 'Resumen Nacional' : 'Resumen Regional'}
-              </h4>
-
-              {navigation.level === 'national' ? (
-                <>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Building className="h-3.5 w-3.5" />
-                        CC.AA. activas
-                      </span>
-                      <span className="font-semibold">{ccaaData.length}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <FileText className="h-3.5 w-3.5" />
-                        Total ayudas
-                      </span>
-                      <span className="font-semibold">{nationalTotals.grants.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Euro className="h-3.5 w-3.5" />
-                        Presupuesto
-                      </span>
-                      <span className="font-semibold">{formatCompactCurrency(nationalTotals.budget)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <TrendingUp className="h-3.5 w-3.5" />
-                        Ejecución media
-                      </span>
-                      <span className={cn(
-                        "font-semibold",
-                        nationalTotals.avgExecution >= 75 ? "text-green-600" :
-                        nationalTotals.avgExecution >= 50 ? "text-yellow-600" : "text-red-600"
-                      )}>
-                        {nationalTotals.avgExecution.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </>
-              ) : currentLevelData && (
-                <>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Total ayudas</span>
-                      <span className="font-semibold">{currentLevelData.totalGrants}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Presupuesto</span>
-                      <span className="font-semibold">{formatCompactCurrency(currentLevelData.totalBudget)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">Ejecución</span>
-                      <span className={cn(
-                        "font-semibold",
-                        currentLevelData.executionRate >= 75 ? "text-green-600" :
-                        currentLevelData.executionRate >= 50 ? "text-yellow-600" : "text-red-600"
-                      )}>
-                        {currentLevelData.executionRate.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Top regions */}
-            {navigation.level === 'national' && ccaaData.length > 0 && (
-              <div className="bg-card border border-border/50 rounded-lg p-4">
-                <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-accent" />
-                  Top 5 por volumen
-                </h4>
-                <div className="space-y-2">
-                  {[...ccaaData]
-                    .sort((a, b) => b.totalGrants - a.totalGrants)
-                    .slice(0, 5)
-                    .map((ccaa, idx) => (
-                      <div 
-                        key={ccaa.id}
-                        className="flex items-center justify-between text-xs cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 transition-colors"
-                        onClick={() => handleSelectCCAA(ccaa.id, ccaa.name)}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[10px] flex items-center justify-center font-medium">
-                            {idx + 1}
-                          </span>
-                          <span className="truncate max-w-[100px]">{ccaa.shortName}</span>
+            <AnimatePresence mode="wait">
+              {/* NATIONAL STATS */}
+              {navigation.level === 'national' && (
+                <motion.div
+                  key="national-stats"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  {/* Level summary */}
+                  <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-lg p-4 space-y-4">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      Resumen Nacional
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Building className="h-3.5 w-3.5" />
+                          CC.AA. activas
                         </span>
-                        <span className="font-medium">{ccaa.totalGrants}</span>
+                        <span className="font-semibold">{ccaaData.length}</span>
                       </div>
-                    ))}
-                </div>
-              </div>
-            )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5" />
+                          Total ayudas
+                        </span>
+                        <span className="font-semibold">{nationalTotals.grants.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <Euro className="h-3.5 w-3.5" />
+                          Presupuesto
+                        </span>
+                        <span className="font-semibold">{formatCompactCurrency(nationalTotals.budget)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          Ejecución media
+                        </span>
+                        <span className={cn(
+                          "font-semibold",
+                          nationalTotals.avgExecution >= 75 ? "text-green-600" :
+                          nationalTotals.avgExecution >= 50 ? "text-yellow-600" : "text-red-600"
+                        )}>
+                          {nationalTotals.avgExecution.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Legend - positioned under Top 5 */}
-            <GaliaMapLegend 
-              className="w-full"
-              compact={false}
-            />
+                  {/* Top regions */}
+                  {ccaaData.length > 0 && (
+                    <div className="bg-card border border-border/50 rounded-lg p-4">
+                      <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+                        <Users className="h-4 w-4 text-accent" />
+                        Top 5 por volumen
+                      </h4>
+                      <div className="space-y-2">
+                        {[...ccaaData]
+                          .sort((a, b) => b.totalGrants - a.totalGrants)
+                          .slice(0, 5)
+                          .map((ccaa, idx) => (
+                            <div 
+                              key={ccaa.id}
+                              className="flex items-center justify-between text-xs cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 transition-colors"
+                              onClick={() => handleSelectCCAA(ccaa.id, ccaa.name)}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[10px] flex items-center justify-center font-medium">
+                                  {idx + 1}
+                                </span>
+                                <span className="truncate max-w-[100px]">{ccaa.shortName}</span>
+                              </span>
+                              <span className="font-medium">{ccaa.totalGrants}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Legend */}
+                  <GaliaMapLegend className="w-full" compact={false} />
+                </motion.div>
+              )}
+
+              {/* REGIONAL STATS - Full info panel */}
+              {navigation.level === 'regional' && selectedCCAAInfo && (
+                <motion.div
+                  key="regional-stats"
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Suspense fallback={
+                    <div className="space-y-4">
+                      <Skeleton className="h-48 rounded-lg" />
+                      <Skeleton className="h-32 rounded-lg" />
+                      <Skeleton className="h-40 rounded-lg" />
+                    </div>
+                  }>
+                    <GaliaRegionInfoPanel
+                      ccaaInfo={selectedCCAAInfo}
+                      ccaaData={currentLevelData as any}
+                      provinceData={provinceData}
+                    />
+                  </Suspense>
+                </motion.div>
+              )}
+
+              {/* PROVINCIAL STATS - placeholder */}
+              {navigation.level === 'provincial' && (
+                <motion.div
+                  key="provincial-stats"
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ duration: 0.4 }}
+                  className="bg-muted/30 rounded-lg p-4"
+                >
+                  <h4 className="font-medium text-sm mb-2">Detalle Provincial</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Fase 4: Lista de expedientes con filtros y búsqueda
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </CardContent>

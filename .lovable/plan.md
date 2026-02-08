@@ -70,25 +70,25 @@ Implementar un mapa SVG interactivo de España que permita navegar desde el nive
 
 ---
 
-## FASE 3: Mapa Regional (Nivel 2 - CCAA)
+## FASE 3: Mapa Regional (Nivel 2 - CCAA) ✅ COMPLETADA
 **Objetivo:** Mostrar detalle provincial cuando se hace click en una CCAA.
 
-### Componentes:
-- `GaliaRegionMap.tsx` - Mapa de la CCAA seleccionada
-- Transición animada desde el mapa nacional
-- Breadcrumb de navegación (España > [CCAA])
+### Componentes creados:
+- `GaliaRegionMap.tsx` - Mapa SVG de provincias con TopoJSON del IGN (es-atlas)
+- `GaliaRegionInfoPanel.tsx` - Panel lateral con KPIs completos + alertas
+- Transiciones fade+slide con Framer Motion
+- Lazy loading para optimización de memoria
 
-### Funcionalidades:
-- Provincias coloreadas según actividad de subvenciones
-- Lista lateral de GALs en la región
-- KPIs regionales expandidos
-- Click en provincia para zoom adicional
+### Funcionalidades implementadas:
+- Provincias coloreadas según tasa de ejecución
+- Panel lateral con: KPIs agregados, estado por provincia, Top 5 sectores, Alertas
+- Transición fade+slide entre niveles nacional y regional
+- Click en provincia prepara drill-down a nivel municipal (Fase 4)
 
-### Datos mostrados:
-- Desglose por provincia
-- Top 5 sectores por inversión
-- Tendencias interanuales
-- Alertas y expedientes prioritarios
+### Archivos:
+- `public/geo/spain-provinces.json` - TopoJSON de provincias (unpkg/es-atlas)
+- `src/components/galia/territorial-map/GaliaRegionMap.tsx`
+- `src/components/galia/territorial-map/GaliaRegionInfoPanel.tsx`
 
 ---
 
