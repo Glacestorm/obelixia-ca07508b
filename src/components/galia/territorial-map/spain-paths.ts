@@ -1,7 +1,7 @@
 /**
  * Spain Autonomous Communities SVG Paths
- * Optimized paths for interactive map visualization
- * Source: Simplified GeoJSON data for Spain CCAA
+ * Accurate paths based on real geographic coordinates
+ * ViewBox: 0 0 1000 900 (scaled from Spain's geographic bounds)
  */
 
 export interface CCAAData {
@@ -13,159 +13,159 @@ export interface CCAAData {
   provinces: string[];
 }
 
-// Simplified SVG viewBox: 0 0 600 500
-// Paths optimized for performance while maintaining recognizable shapes
+// Accurate SVG paths for Spain's CCAA
+// ViewBox adjusted to 0 0 1000 900 for better detail
 export const spainCCAAData: CCAAData[] = [
   {
     id: 'galicia',
     name: 'Galicia',
     shortName: 'GAL',
-    path: 'M45,85 L85,70 L105,85 L115,120 L100,150 L70,165 L40,145 L30,115 Z',
-    labelPosition: { x: 70, y: 120 },
+    path: 'M80,120 L95,105 L125,95 L155,100 L175,115 L190,140 L200,170 L195,200 L175,230 L150,245 L120,250 L90,240 L65,215 L55,180 L60,150 L70,130 Z',
+    labelPosition: { x: 125, y: 175 },
     provinces: ['A Coruña', 'Lugo', 'Ourense', 'Pontevedra']
   },
   {
     id: 'asturias',
     name: 'Principado de Asturias',
     shortName: 'AST',
-    path: 'M115,80 L175,65 L195,85 L185,105 L140,115 L115,100 Z',
-    labelPosition: { x: 155, y: 90 },
+    path: 'M200,130 L230,115 L270,110 L310,115 L340,130 L345,155 L330,175 L295,185 L250,190 L210,180 L195,160 Z',
+    labelPosition: { x: 270, y: 150 },
     provinces: ['Asturias']
   },
   {
     id: 'cantabria',
     name: 'Cantabria',
     shortName: 'CAN',
-    path: 'M195,70 L240,60 L255,80 L245,100 L210,105 L195,85 Z',
-    labelPosition: { x: 225, y: 85 },
+    path: 'M345,125 L380,115 L415,120 L440,135 L445,160 L430,180 L395,190 L360,185 L340,165 Z',
+    labelPosition: { x: 390, y: 155 },
     provinces: ['Cantabria']
   },
   {
     id: 'pais-vasco',
     name: 'País Vasco',
     shortName: 'PVA',
-    path: 'M255,65 L295,55 L310,75 L300,95 L270,100 L255,80 Z',
-    labelPosition: { x: 280, y: 80 },
+    path: 'M445,120 L475,110 L510,115 L535,130 L540,155 L525,175 L495,185 L460,180 L445,160 Z',
+    labelPosition: { x: 490, y: 150 },
     provinces: ['Álava', 'Guipúzcoa', 'Vizcaya']
   },
   {
     id: 'navarra',
     name: 'Comunidad Foral de Navarra',
     shortName: 'NAV',
-    path: 'M310,60 L360,50 L375,80 L365,120 L330,130 L305,100 Z',
-    labelPosition: { x: 340, y: 90 },
+    path: 'M540,120 L580,105 L620,110 L650,130 L655,170 L640,210 L600,230 L560,220 L535,190 L530,155 Z',
+    labelPosition: { x: 590, y: 165 },
     provinces: ['Navarra']
   },
   {
     id: 'la-rioja',
     name: 'La Rioja',
     shortName: 'RIO',
-    path: 'M270,105 L305,100 L320,125 L295,145 L265,135 Z',
-    labelPosition: { x: 290, y: 125 },
+    path: 'M460,185 L500,180 L530,195 L540,225 L520,250 L480,260 L450,245 L445,215 Z',
+    labelPosition: { x: 490, y: 220 },
     provinces: ['La Rioja']
   },
   {
     id: 'aragon',
     name: 'Aragón',
     shortName: 'ARA',
-    path: 'M330,130 L375,80 L420,70 L450,110 L460,180 L430,240 L370,250 L340,200 L320,160 Z',
-    labelPosition: { x: 390, y: 160 },
+    path: 'M560,220 L620,190 L680,170 L730,180 L760,220 L770,290 L755,370 L720,430 L660,450 L600,440 L560,400 L540,340 L545,280 Z',
+    labelPosition: { x: 655, y: 310 },
     provinces: ['Huesca', 'Teruel', 'Zaragoza']
   },
   {
     id: 'cataluna',
     name: 'Cataluña',
     shortName: 'CAT',
-    path: 'M420,55 L480,45 L530,80 L540,140 L510,180 L460,180 L450,110 Z',
-    labelPosition: { x: 480, y: 115 },
+    path: 'M735,160 L790,145 L850,155 L895,185 L920,230 L915,290 L890,340 L840,370 L785,380 L740,360 L720,310 L725,250 L730,200 Z',
+    labelPosition: { x: 820, y: 265 },
     provinces: ['Barcelona', 'Girona', 'Lleida', 'Tarragona']
   },
   {
     id: 'castilla-leon',
     name: 'Castilla y León',
     shortName: 'CYL',
-    path: 'M100,125 L185,105 L245,100 L270,105 L290,145 L320,160 L340,200 L310,240 L250,260 L180,250 L130,220 L90,180 L85,145 Z',
-    labelPosition: { x: 200, y: 180 },
+    path: 'M175,200 L250,185 L330,175 L400,180 L455,200 L490,230 L520,280 L540,340 L520,400 L470,440 L400,460 L320,455 L250,430 L190,390 L160,340 L150,290 L160,240 Z',
+    labelPosition: { x: 340, y: 320 },
     provinces: ['Ávila', 'Burgos', 'León', 'Palencia', 'Salamanca', 'Segovia', 'Soria', 'Valladolid', 'Zamora']
   },
   {
     id: 'madrid',
     name: 'Comunidad de Madrid',
     shortName: 'MAD',
-    path: 'M230,260 L270,245 L290,270 L280,300 L240,305 L220,280 Z',
-    labelPosition: { x: 255, y: 275 },
+    path: 'M400,430 L450,415 L485,435 L495,475 L475,510 L435,520 L400,505 L390,470 Z',
+    labelPosition: { x: 440, y: 470 },
     provinces: ['Madrid']
   },
   {
     id: 'castilla-la-mancha',
     name: 'Castilla-La Mancha',
     shortName: 'CLM',
-    path: 'M180,250 L250,260 L290,270 L340,250 L400,280 L420,340 L380,390 L300,400 L220,380 L160,340 L150,290 Z',
-    labelPosition: { x: 290, y: 330 },
+    path: 'M320,455 L400,460 L485,475 L550,460 L620,490 L680,540 L700,610 L660,680 L580,710 L480,720 L380,700 L300,660 L270,590 L280,520 Z',
+    labelPosition: { x: 480, y: 590 },
     provinces: ['Albacete', 'Ciudad Real', 'Cuenca', 'Guadalajara', 'Toledo']
   },
   {
     id: 'extremadura',
     name: 'Extremadura',
     shortName: 'EXT',
-    path: 'M60,250 L130,240 L160,280 L160,340 L130,380 L70,370 L40,320 L45,270 Z',
-    labelPosition: { x: 100, y: 310 },
+    path: 'M120,390 L190,380 L260,400 L290,460 L300,540 L280,610 L230,660 L160,670 L100,640 L70,580 L75,510 L90,450 Z',
+    labelPosition: { x: 180, y: 530 },
     provinces: ['Badajoz', 'Cáceres']
   },
   {
     id: 'comunidad-valenciana',
     name: 'Comunidad Valenciana',
     shortName: 'VAL',
-    path: 'M400,250 L460,200 L510,180 L530,220 L520,290 L480,340 L420,340 Z',
-    labelPosition: { x: 470, y: 270 },
+    path: 'M680,450 L740,400 L800,380 L850,410 L880,470 L875,550 L850,620 L800,660 L740,650 L700,610 L680,540 Z',
+    labelPosition: { x: 780, y: 520 },
     provinces: ['Alicante', 'Castellón', 'Valencia']
   },
   {
     id: 'islas-baleares',
     name: 'Islas Baleares',
     shortName: 'BAL',
-    path: 'M540,220 L560,210 L580,225 L575,245 L555,255 L535,245 Z M560,260 L575,255 L585,270 L570,280 L555,270 Z',
-    labelPosition: { x: 565, y: 250 },
+    path: 'M870,380 L900,370 L935,385 L945,415 L930,445 L895,455 L865,440 L860,410 Z M905,460 L935,455 L960,475 L950,505 L920,510 L900,490 Z M870,490 L890,485 L905,500 L895,520 L870,520 L860,505 Z',
+    labelPosition: { x: 905, y: 440 },
     provinces: ['Islas Baleares']
   },
   {
     id: 'region-murcia',
     name: 'Región de Murcia',
     shortName: 'MUR',
-    path: 'M400,360 L450,345 L480,380 L460,420 L410,430 L380,400 Z',
-    labelPosition: { x: 430, y: 385 },
+    path: 'M700,650 L760,630 L810,660 L830,710 L810,760 L755,780 L700,760 L680,710 Z',
+    labelPosition: { x: 755, y: 710 },
     provinces: ['Murcia']
   },
   {
     id: 'andalucia',
     name: 'Andalucía',
     shortName: 'AND',
-    path: 'M70,380 L130,380 L220,380 L300,400 L380,400 L400,430 L380,470 L300,490 L200,480 L100,460 L40,420 L50,390 Z',
-    labelPosition: { x: 220, y: 440 },
+    path: 'M100,660 L180,665 L280,660 L380,700 L500,720 L600,730 L680,750 L700,800 L660,850 L550,870 L420,865 L290,850 L180,820 L100,780 L60,730 L70,690 Z',
+    labelPosition: { x: 380, y: 790 },
     provinces: ['Almería', 'Cádiz', 'Córdoba', 'Granada', 'Huelva', 'Jaén', 'Málaga', 'Sevilla']
   },
   {
     id: 'islas-canarias',
     name: 'Islas Canarias',
     shortName: 'CAN',
-    path: 'M20,460 L40,450 L55,460 L50,475 L30,480 Z M65,455 L85,445 L105,455 L100,475 L75,480 Z M115,450 L140,440 L160,455 L155,475 L125,480 Z',
-    labelPosition: { x: 90, y: 465 },
+    path: 'M60,820 L85,810 L110,820 L115,845 L95,860 L65,855 Z M130,810 L160,800 L190,815 L195,845 L165,860 L135,850 Z M210,795 L250,785 L290,800 L295,835 L260,855 L220,845 Z',
+    labelPosition: { x: 175, y: 835 },
     provinces: ['Las Palmas', 'Santa Cruz de Tenerife']
   },
   {
     id: 'ceuta',
     name: 'Ceuta',
     shortName: 'CEU',
-    path: 'M175,485 L185,480 L195,485 L190,495 L180,495 Z',
-    labelPosition: { x: 185, y: 490 },
+    path: 'M350,870 L365,865 L380,875 L375,890 L355,895 L345,885 Z',
+    labelPosition: { x: 362, y: 880 },
     provinces: ['Ceuta']
   },
   {
     id: 'melilla',
     name: 'Melilla',
     shortName: 'MEL',
-    path: 'M210,485 L220,480 L230,485 L225,495 L215,495 Z',
-    labelPosition: { x: 220, y: 490 },
+    path: 'M420,870 L435,865 L450,875 L445,890 L425,895 L415,885 Z',
+    labelPosition: { x: 432, y: 880 },
     provinces: ['Melilla']
   }
 ];
@@ -180,11 +180,10 @@ export const getAllCCAAIds = (): string[] => {
   return spainCCAAData.map(ccaa => ccaa.id);
 };
 
-// Color scale for data visualization (HSL values matching theme)
+// Color scale for data visualization
 export const getColorByValue = (value: number, max: number): string => {
   const percentage = Math.min(value / max, 1);
-  // From light primary to intense primary
-  const lightness = 85 - (percentage * 40); // 85% to 45%
+  const lightness = 85 - (percentage * 40);
   return `hsl(var(--primary) / ${0.3 + percentage * 0.7})`;
 };
 

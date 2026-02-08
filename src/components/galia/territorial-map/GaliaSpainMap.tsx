@@ -1,6 +1,6 @@
 /**
  * GaliaSpainMap - Interactive SVG Map of Spain
- * Displays all CCAA with data overlays and click to drill-down
+ * Accurate geographic representation with data overlays
  */
 
 import { memo, useState, useCallback, useRef, useMemo } from 'react';
@@ -49,7 +49,6 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     const intensity = ccaaData.totalGrants / maxGrants;
     const opacity = 0.3 + (intensity * 0.6);
     
-    // Color based on status
     if (ccaaData.status === 'critical') {
       return `hsl(var(--destructive) / ${opacity})`;
     }
@@ -86,22 +85,63 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
 
   return (
     <div className={cn("relative w-full", className)}>
-      {/* SVG Map */}
+      {/* SVG Map - Updated viewBox for accurate Spain representation */}
       <svg
         ref={svgRef}
-        viewBox="0 0 600 500"
+        viewBox="0 0 1000 900"
         className="w-full h-auto"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoveredCCAA(null)}
+        style={{ maxHeight: '70vh' }}
       >
-        {/* Background */}
+        {/* Sea background */}
+        <defs>
+          <linearGradient id="seaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="hsl(var(--muted) / 0.3)" />
+            <stop offset="100%" stopColor="hsl(var(--muted) / 0.1)" />
+          </linearGradient>
+        </defs>
         <rect 
           x="0" 
           y="0" 
-          width="600" 
-          height="500" 
-          fill="transparent"
+          width="1000" 
+          height="900" 
+          fill="url(#seaGradient)"
         />
+
+        {/* Portugal outline (decorative) */}
+        <path
+          d="M50,280 L100,260 L120,300 L130,380 L120,450 L100,520 L80,580 L60,620 L40,580 L35,500 L40,400 L45,320 Z"
+          fill="hsl(var(--muted) / 0.4)"
+          stroke="hsl(var(--border))"
+          strokeWidth="1"
+        />
+        <text
+          x="75"
+          y="430"
+          textAnchor="middle"
+          className="text-[10px] fill-muted-foreground/60"
+          style={{ fontStyle: 'italic' }}
+        >
+          Portugal
+        </text>
+
+        {/* France outline (decorative) */}
+        <path
+          d="M650,80 L750,60 L850,70 L920,90 L950,120 L940,150 L900,170 L850,155 L790,145 L730,160 L680,170 L650,150 L640,120 Z"
+          fill="hsl(var(--muted) / 0.4)"
+          stroke="hsl(var(--border))"
+          strokeWidth="1"
+        />
+        <text
+          x="800"
+          y="110"
+          textAnchor="middle"
+          className="text-[10px] fill-muted-foreground/60"
+          style={{ fontStyle: 'italic' }}
+        >
+          Francia
+        </text>
 
         {/* CCAA Paths */}
         <g>
@@ -122,13 +162,26 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
                   d={ccaa.path}
                   fill={getFillColor(ccaa.id)}
                   stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
-                  strokeWidth={isHovered || isSelected ? 2.5 : 1}
+                  strokeWidth={isHovered || isSelected ? 2.5 : 1.5}
                   className="cursor-pointer transition-colors"
                   onMouseEnter={() => setHoveredCCAA(ccaa.id)}
                   onClick={() => handleCCAAClick(ccaa.id)}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
+                  whileHover={{ scale: 1.01 }}
+                  style={{ 
+                    filter: isHovered ? 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' : 'none',
+                    transformOrigin: `${ccaa.labelPosition.x}px ${ccaa.labelPosition.y}px`
+                  }}
                 />
+
+                {/* CCAA short name */}
+                <text
+                  x={ccaa.labelPosition.x}
+                  y={ccaa.labelPosition.y - 12}
+                  textAnchor="middle"
+                  className="text-[9px] font-medium fill-foreground/70 pointer-events-none"
+                >
+                  {ccaa.shortName}
+                </text>
 
                 {/* Data label */}
                 {ccaaData && (
@@ -138,21 +191,21 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
                   >
                     {/* Background pill */}
                     <rect
-                      x={ccaa.labelPosition.x - 22}
-                      y={ccaa.labelPosition.y - 8}
-                      width="44"
-                      height="16"
-                      rx="8"
-                      fill="hsl(var(--background) / 0.9)"
+                      x={ccaa.labelPosition.x - 24}
+                      y={ccaa.labelPosition.y - 2}
+                      width="48"
+                      height="18"
+                      rx="9"
+                      fill="hsl(var(--background) / 0.95)"
                       stroke="hsl(var(--border))"
                       strokeWidth="0.5"
                     />
                     {/* Grant count */}
                     <text
                       x={ccaa.labelPosition.x}
-                      y={ccaa.labelPosition.y + 4}
+                      y={ccaa.labelPosition.y + 11}
                       textAnchor="middle"
-                      className="text-[9px] font-semibold fill-foreground"
+                      className="text-[10px] font-bold fill-foreground"
                     >
                       {ccaaData.totalGrants}
                     </text>
@@ -163,33 +216,67 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
           })}
         </g>
 
-        {/* Canary Islands separator line */}
+        {/* Mediterranean Sea label */}
+        <text
+          x="900"
+          y="600"
+          textAnchor="middle"
+          className="text-[11px] fill-muted-foreground/50"
+          style={{ fontStyle: 'italic' }}
+        >
+          Mar Mediterráneo
+        </text>
+
+        {/* Atlantic Ocean label */}
+        <text
+          x="60"
+          y="180"
+          textAnchor="middle"
+          className="text-[11px] fill-muted-foreground/50"
+          style={{ fontStyle: 'italic' }}
+          transform="rotate(-45, 60, 180)"
+        >
+          Océano Atlántico
+        </text>
+
+        {/* Cantabrian Sea label */}
+        <text
+          x="350"
+          y="85"
+          textAnchor="middle"
+          className="text-[11px] fill-muted-foreground/50"
+          style={{ fontStyle: 'italic' }}
+        >
+          Mar Cantábrico
+        </text>
+
+        {/* Canary Islands separator */}
         <line
-          x1="0"
-          y1="445"
-          x2="170"
-          y2="445"
+          x1="40"
+          y1="790"
+          x2="320"
+          y2="790"
           stroke="hsl(var(--border))"
           strokeWidth="1"
-          strokeDasharray="4 2"
+          strokeDasharray="6 3"
         />
         <text
-          x="85"
-          y="438"
+          x="180"
+          y="778"
           textAnchor="middle"
-          className="text-[8px] fill-muted-foreground"
+          className="text-[10px] fill-muted-foreground"
         >
-          Islas Canarias
+          Islas Canarias (África)
         </text>
 
         {/* Ceuta & Melilla label */}
         <text
-          x="200"
-          y="505"
+          x="400"
+          y="862"
           textAnchor="middle"
-          className="text-[8px] fill-muted-foreground"
+          className="text-[9px] fill-muted-foreground"
         >
-          Ceuta y Melilla
+          Ceuta y Melilla (Norte de África)
         </text>
       </svg>
 
@@ -211,7 +298,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
           >
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              Cargando datos...
+              Cargando datos territoriales...
             </div>
           </motion.div>
         )}
