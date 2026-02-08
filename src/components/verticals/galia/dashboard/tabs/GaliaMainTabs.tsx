@@ -30,3 +30,6 @@ export const GaliaProjectStatusDashboard = lazy(() => import('@/components/galia
 // Phase 9-10 Components - lazy loaded (IA Híbrida y Federación Nacional)
 export const GaliaHybridAIPanel = lazy(() => import('@/components/galia/phase9/GaliaHybridAIPanel').then(m => ({ default: m.GaliaHybridAIPanel })));
 export const GaliaNationalFederationDashboard = lazy(() => import('@/components/galia/phase9/GaliaNationalFederationDashboard').then(m => ({ default: m.GaliaNationalFederationDashboard })));
+
+// Territorial Map - lazy loaded (Mapa Interactivo Nacional)
+export const GaliaTerritorialMapPanel = lazy(() => import('@/components/galia/territorial-map/GaliaTerritorialMapPanel').then(m => ({ default: m.GaliaTerritorialMapPanel })));

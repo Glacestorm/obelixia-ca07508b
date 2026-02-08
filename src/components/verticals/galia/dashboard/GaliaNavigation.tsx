@@ -138,6 +138,7 @@ export const galiaNavCategories: NavCategory[] = [
     icon: <Network className="h-4 w-4" />,
     items: [
       { id: 'federation', label: 'Dashboard Nacional', shortLabel: 'Federación', icon: <Network className="h-4 w-4" />, badge: 'v2.0', badgeVariant: 'default' },
+      { id: 'territorial-map', label: 'Mapa Territorial', shortLabel: 'Mapa', icon: <MapPin className="h-4 w-4" />, badge: 'Nuevo', badgeVariant: 'default' },
     ]
   },
 ];
