@@ -46,6 +46,7 @@ import {
   GaliaProjectStatusDashboard,
   GaliaHybridAIPanel,
   GaliaNationalFederationDashboard,
+  GaliaTerritorialMapPanel,
 } from './dashboard/tabs/GaliaMainTabs';
 
 const GaliaAsistenteVirtual = lazy(() => import('./GaliaAsistenteVirtual'));
@@ -220,6 +221,9 @@ export function GaliaDashboard() {
       
       case 'federation':
         return <Suspense fallback={<TabSkeleton />}><GaliaNationalFederationDashboard /></Suspense>;
+      
+      case 'territorial-map':
+        return <Suspense fallback={<TabSkeleton />}><GaliaTerritorialMapPanel /></Suspense>;
       
       default:
         return (
