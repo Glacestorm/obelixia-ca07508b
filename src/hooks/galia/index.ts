@@ -202,3 +202,12 @@ export type {
   ResumenBeneficiario,
   Beneficiario360Context
 } from './useGaliaBeneficiario360';
+
+export { useGaliaBPMNWorkflows } from './useGaliaBPMNWorkflows';
+export type { 
+  GaliaWorkflowTemplate,
+  GaliaWorkflow,
+  WorkflowExecution,
+  WorkflowSuggestion,
+  GaliaWorkflowContext
+} from './useGaliaBPMNWorkflows';
