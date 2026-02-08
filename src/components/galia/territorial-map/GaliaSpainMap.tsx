@@ -29,24 +29,24 @@ interface GeoFeature {
 }
 
 // Fixed scale (no zoom)
-const FIXED_SCALE = 15;
+const FIXED_SCALE = 5;
 
 // Map dimensions
 const WIDTH = 800;
-const HEIGHT = 600;
+const HEIGHT = 550;
 
 // Projection function - projects lon/lat to SVG coordinates
 const projectPoint = (lon: number, lat: number): [number, number] => {
   const centerLon = -3.7;
   const centerLat = 40.0;
   const scale = 2800;
-  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 80;
-  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 30;
+  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 50;
+  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 20;
   return [x, y];
 };
 
-// Offset for Canary Islands repositioning (left side of map)
-const CANARIAS_OFFSET = { x: 480, y: -420 };
+// Offset for Canary Islands repositioning (left side, closer to peninsula)
+const CANARIAS_OFFSET = { x: 530, y: -350 };
 
 // Project point with optional offset for Canarias
 const projectPointWithOffset = (
@@ -370,13 +370,13 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
             );
           })}
 
-          {/* Canary Islands separator box - left side */}
+          {/* Canary Islands separator box - left side closer to peninsula */}
           <g>
             <rect
-              x="20"
-              y="350"
-              width="160"
-              height="130"
+              x="40"
+              y="380"
+              width="150"
+              height="110"
               fill="none"
               stroke="hsl(var(--border))"
               strokeWidth={1}
@@ -384,8 +384,8 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
               rx={4}
             />
             <text
-              x="100"
-              y="368"
+              x="115"
+              y="395"
               textAnchor="middle"
               className="text-[9px] fill-muted-foreground"
             >
