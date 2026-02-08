@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { spainCCAAData, CCAAData } from '@/components/galia/territorial-map/spain-paths';
+import { spainCCAAData, type CCAAData } from '@/components/galia/territorial-map/spain-paths';
 
 // Navigation levels
 export type MapLevel = 'national' | 'regional' | 'provincial' | 'municipal' | 'expediente';

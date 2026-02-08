@@ -5,16 +5,19 @@
 
 export { GaliaTerritorialMapPanel } from './GaliaTerritorialMapPanel';
 export { GaliaSpainMap } from './GaliaSpainMap';
+export { GaliaSpainMapReal } from './GaliaSpainMapReal';
 export { GaliaRegionMap } from './GaliaRegionMap';
 export { GaliaMapBreadcrumb } from './GaliaMapBreadcrumb';
 export { GaliaMapTooltip } from './GaliaMapTooltip';
 export { GaliaMapLegend } from './GaliaMapLegend';
 
-// Geographic path data
+// Geographic path data - Real accurate paths
+export { realSpainCCAAData, getRealCCAAById, getAllRealCCAAIds, getHeatmapColorScale, formatCompactNumber } from './spain-real-paths';
+export type { RealCCAAData } from './spain-real-paths';
+
+// Legacy path data
 export { spainCCAAPathData, getCCAAPathById, getAllCCAAPathIds, formatCompactCurrencyValue } from './spain-ccaa-paths';
 export { provincesByCCAA, getProvincesByCCAA, getProvinceById } from './province-paths';
-
-// Legacy exports for backward compatibility
 export { spainCCAAData, getCCAAById, getAllCCAAIds, formatCompactCurrency } from './spain-paths';
 
 export type { CCAAPathData } from './spain-ccaa-paths';
