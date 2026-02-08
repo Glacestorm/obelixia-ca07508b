@@ -234,3 +234,12 @@ export type {
   SearchResult, 
   ExpertQueryResult 
 } from './useGaliaKnowledgeBase';
+
+export { useGaliaEUFundingMonitor } from './useGaliaEUFundingMonitor';
+export type { 
+  FundingAlert, 
+  FundingSource, 
+  ScanFilters, 
+  OpportunityAnalysis, 
+  Subscription 
+} from './useGaliaEUFundingMonitor';
