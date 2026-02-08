@@ -4,7 +4,7 @@
  * Fase 2-10: Contabilidad Completa con IA Avanzada
  */
 
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { DashboardLayout } from '@/layouts';
 
 import {
@@ -70,11 +70,17 @@ import {
   VerticalAccountingPredictiveCashflow
 } from '@/components/admin/obelixia-accounting/verticals';
 
-// Phase 12: Advanced AI & Automation - Import directo para evitar conflictos de chunking
-import { AdvancedCopilotPanel } from '@/components/admin/advanced-ai/AdvancedCopilotPanel';
-import { AIOrchestorPanel } from '@/components/admin/advanced-ai/AIOrchestorPanel';
-import { SmartAnalyticsPanel } from '@/components/admin/advanced-ai/SmartAnalyticsPanel';
-import { RealTimeInsightsPanel } from '@/components/admin/advanced-ai/RealTimeInsightsPanel';
+// Phase 12: Advanced AI & Automation - Lazy loaded to avoid chunking conflicts
+const AdvancedCopilotPanel = lazy(() => import('@/components/admin/advanced-ai/AdvancedCopilotPanel').then(m => ({ default: m.AdvancedCopilotPanel })));
+const AIOrchestorPanel = lazy(() => import('@/components/admin/advanced-ai/AIOrchestorPanel').then(m => ({ default: m.AIOrchestorPanel })));
+const SmartAnalyticsPanel = lazy(() => import('@/components/admin/advanced-ai/SmartAnalyticsPanel').then(m => ({ default: m.SmartAnalyticsPanel })));
+const RealTimeInsightsPanel = lazy(() => import('@/components/admin/advanced-ai/RealTimeInsightsPanel').then(m => ({ default: m.RealTimeInsightsPanel })));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 export default function ObelixiaAccountingPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -120,15 +126,15 @@ export default function ObelixiaAccountingPage() {
         return <DocumentsPanel />;
       case 'intercompany':
         return <IntercompanyPanel />;
-      // Phase 12: Advanced AI & Automation
+      // Phase 12: Advanced AI & Automation (lazy loaded)
       case 'advanced-copilot':
-        return <AdvancedCopilotPanel context={{ entityId: 'obelixia-accounting', entityName: 'ObelixIA Contabilidad' }} />;
+        return <Suspense fallback={<LoadingFallback />}><AdvancedCopilotPanel context={{ entityId: 'obelixia-accounting', entityName: 'ObelixIA Contabilidad' }} /></Suspense>;
       case 'ai-orchestrator':
-        return <AIOrchestorPanel />;
+        return <Suspense fallback={<LoadingFallback />}><AIOrchestorPanel /></Suspense>;
       case 'smart-analytics':
-        return <SmartAnalyticsPanel context={{ entityId: 'obelixia-accounting', entityType: 'accounting' }} />;
+        return <Suspense fallback={<LoadingFallback />}><SmartAnalyticsPanel context={{ entityId: 'obelixia-accounting', entityType: 'accounting' }} /></Suspense>;
       case 'realtime-insights':
-        return <RealTimeInsightsPanel context={{ entityId: 'obelixia-accounting', entityType: 'accounting' }} />;
+        return <Suspense fallback={<LoadingFallback />}><RealTimeInsightsPanel context={{ entityId: 'obelixia-accounting', entityType: 'accounting' }} /></Suspense>;
       // Phase 13: Regulatory & Advanced Reporting
       case 'regulatory-reporting':
         return <RegulatoryReportingPanel />;
