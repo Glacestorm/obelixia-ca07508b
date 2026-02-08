@@ -4,3 +4,4 @@
  */
 
 export { GaliaKnowledgeExplorer } from './GaliaKnowledgeExplorer';
+export { GaliaEUFundingAlerts } from './GaliaEUFundingAlerts';

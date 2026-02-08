@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-eu-funding-monitor]
+verify_jwt = true
+
 [functions.galia-expert-agent]
 verify_jwt = true
 
