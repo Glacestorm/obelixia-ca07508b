@@ -20,7 +20,7 @@ import {
   Users
 } from 'lucide-react';
 import { useGaliaTerritorialMap } from '@/hooks/galia/useGaliaTerritorialMap';
-import { GaliaSpainMap } from './GaliaSpainMap';
+import { GaliaSpainMapSVG } from './GaliaSpainMapSVG';
 import { GaliaRegionMap, ProvinceMapData } from './GaliaRegionMap';
 import { GaliaMapBreadcrumb } from './GaliaMapBreadcrumb';
 import { GaliaMapLegend } from './GaliaMapLegend';
@@ -183,7 +183,7 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
                 "lg:col-span-3 relative",
                 isFullscreen ? "h-full" : "min-h-[400px]"
               )}>
-                <GaliaSpainMap
+                <GaliaSpainMapSVG
                   data={ccaaData}
                   onSelectCCAA={handleSelectCCAA}
                   selectedCCAA={navigation.selectedCCAA}
