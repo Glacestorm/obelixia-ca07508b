@@ -14,3 +14,9 @@ export type { GaliaMessage, GaliaConversation } from './useGaliaAsistenteIA';
 
 export { useGaliaAnalytics } from './useGaliaAnalytics';
 export type { GaliaKPIs, GaliaAnalyticsData } from './useGaliaAnalytics';
+
+export { useGaliaDocumentos } from './useGaliaDocumentos';
+export type { GaliaDocumento, DocumentoFilters } from './useGaliaDocumentos';
+
+export { useGaliaAnalisisCostes } from './useGaliaAnalisisCostes';
+export type { GaliaAnalisisCoste, AnalisisCostesResult } from './useGaliaAnalisisCostes';
