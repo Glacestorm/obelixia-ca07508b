@@ -5,3 +5,5 @@
 
 export { GaliaKnowledgeExplorer } from './GaliaKnowledgeExplorer';
 export { GaliaEUFundingAlerts } from './GaliaEUFundingAlerts';
+export { GaliaSolicitudWizard } from './GaliaSolicitudWizard';
+export { GaliaPortalCiudadanoAvanzado } from './GaliaPortalCiudadanoAvanzado';
