@@ -3,7 +3,7 @@
  * Manages drill-down navigation between Spain -> CCAA -> Province -> Expediente
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,29 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
     selectedCCAAInfo,
     currentLevelData
   } = useGaliaTerritorialMap();
+
+  // Keyboard shortcuts (Escape to exit fullscreen or go back)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isFullscreen) {
+          setIsFullscreen(false);
+        } else if (navigation.level !== 'national') {
+          drillUp();
+        }
+      }
+      // F key to toggle fullscreen
+      if (e.key === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const activeElement = document.activeElement;
+        if (activeElement?.tagName !== 'INPUT' && activeElement?.tagName !== 'TEXTAREA') {
+          setIsFullscreen(prev => !prev);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen, navigation.level, drillUp]);
 
   // Handle CCAA selection
   const handleSelectCCAA = useCallback((ccaaId: string, ccaaName: string) => {
