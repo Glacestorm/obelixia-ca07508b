@@ -26,6 +26,7 @@ import {
   Globe,
   Calculator,
   FileBarChart,
+  FileSearch,
 } from 'lucide-react';
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
 import { useGaliaExpedientes } from '@/hooks/galia/useGaliaExpedientes';
@@ -36,6 +37,7 @@ import { GaliaAsistenteVirtual } from './GaliaAsistenteVirtual';
 import { GaliaPortalCiudadano } from './GaliaPortalCiudadano';
 import { GaliaModeradorCostes } from './GaliaModeradorCostes';
 import { GaliaReportGenerator } from './GaliaReportGenerator';
+import { GaliaDocumentAnalyzer } from './GaliaDocumentAnalyzer';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -101,7 +103,7 @@ export function GaliaDashboard() {
         {/* Left Column - Main Tabs */}
         <div className={cn("lg:col-span-2", showAssistant && "lg:col-span-1")}>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="resumen" className="text-xs">
                 <BarChart3 className="h-4 w-4 mr-1" />
                 Resumen
@@ -121,6 +123,10 @@ export function GaliaDashboard() {
               <TabsTrigger value="costes" className="text-xs">
                 <Calculator className="h-4 w-4 mr-1" />
                 Costes IA
+              </TabsTrigger>
+              <TabsTrigger value="documentos" className="text-xs">
+                <FileSearch className="h-4 w-4 mr-1" />
+                OCR IA
               </TabsTrigger>
               <TabsTrigger value="informes" className="text-xs">
                 <FileBarChart className="h-4 w-4 mr-1" />
@@ -335,6 +341,11 @@ export function GaliaDashboard() {
             {/* Generador de Informes Tab */}
             <TabsContent value="informes" className="mt-4">
               <GaliaReportGenerator />
+            </TabsContent>
+
+            {/* Analizador de Documentos OCR Tab */}
+            <TabsContent value="documentos" className="mt-4">
+              <GaliaDocumentAnalyzer />
             </TabsContent>
 
             <TabsContent value="alertas" className="mt-4">
