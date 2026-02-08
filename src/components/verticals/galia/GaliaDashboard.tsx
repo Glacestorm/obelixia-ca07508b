@@ -1,5 +1,5 @@
 /**
- * GALIA Dashboard - Main Component
+ * GALIA Dashboard - Main Component (Refactored)
  * Gestión de Ayudas LEADER con Inteligencia Artificial
  */
 
@@ -7,10 +7,6 @@ import { useState, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
   Plus,
@@ -31,11 +27,12 @@ import {
   Workflow,
   Building,
   User,
+  BookOpen,
 } from 'lucide-react';
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
 import { useGaliaExpedientes, GaliaExpediente } from '@/hooks/galia/useGaliaExpedientes';
 import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
-import { GaliaKPICards } from './shared/GaliaKPICards';
+import { GaliaKPICards } from '../shared/GaliaKPICards';
 import { 
   GaliaResumenTab,
   GaliaExpedientesTab,
@@ -45,24 +42,27 @@ import {
   GaliaWorkflowManager, 
   GaliaAlertsList, 
   GaliaTecnicosPanel 
-} from './dashboard';
+} from '../dashboard';
 import { cn } from '@/lib/utils';
+import { GaliaNuevaConvocatoriaModal } from './GaliaNuevaConvocatoriaModal';
 
-// Lazy load heavy components
+// Import lazy components from centralized file to reduce bundle size
+import {
+  GaliaPortalCiudadano,
+  GaliaModeradorCostes,
+  GaliaReportGenerator,
+  GaliaDocumentAnalyzer,
+  GaliaTransparencyPortal,
+  GaliaDocumentGeneratorPanel,
+  GaliaGeoIntelligencePanel,
+  GaliaConvocatoriaSimulatorPanel,
+  GaliaBeneficiario360Panel,
+  GaliaBPMNWorkflowsPanel,
+  GaliaAdminIntegrationsPanel,
+  GaliaKnowledgeExplorer
+} from './dashboard/tabs/GaliaMainTabs';
+
 const GaliaAsistenteVirtual = lazy(() => import('./GaliaAsistenteVirtual'));
-const GaliaPortalCiudadano = lazy(() => import('./GaliaPortalCiudadano'));
-const GaliaModeradorCostes = lazy(() => import('./GaliaModeradorCostes'));
-const GaliaReportGenerator = lazy(() => import('./GaliaReportGenerator'));
-const GaliaDocumentAnalyzer = lazy(() => import('./GaliaDocumentAnalyzer'));
-const GaliaTransparencyPortal = lazy(() => import('./transparency/GaliaTransparencyPortal'));
-
-// Phase 8 - Productividad Avanzada (Lazy loaded)
-const GaliaDocumentGeneratorPanel = lazy(() => import('@/components/galia/phase8/GaliaDocumentGeneratorPanel').then(m => ({ default: m.GaliaDocumentGeneratorPanel })));
-const GaliaGeoIntelligencePanel = lazy(() => import('@/components/galia/phase8/GaliaGeoIntelligencePanel').then(m => ({ default: m.GaliaGeoIntelligencePanel })));
-const GaliaConvocatoriaSimulatorPanel = lazy(() => import('@/components/galia/phase8/GaliaConvocatoriaSimulatorPanel').then(m => ({ default: m.GaliaConvocatoriaSimulatorPanel })));
-const GaliaBeneficiario360Panel = lazy(() => import('@/components/galia/phase8/GaliaBeneficiario360Panel').then(m => ({ default: m.GaliaBeneficiario360Panel })));
-const GaliaBPMNWorkflowsPanel = lazy(() => import('@/components/galia/phase8/GaliaBPMNWorkflowsPanel').then(m => ({ default: m.GaliaBPMNWorkflowsPanel })));
-const GaliaAdminIntegrationsPanel = lazy(() => import('@/components/galia/phase8/GaliaAdminIntegrationsPanel').then(m => ({ default: m.GaliaAdminIntegrationsPanel })));
 
 const TabSkeleton = () => (
   <div className="space-y-4">
@@ -77,30 +77,16 @@ export function GaliaDashboard() {
   const [showAssistant, setShowAssistant] = useState(false);
   const [selectedExpediente, setSelectedExpediente] = useState<GaliaExpediente | null>(null);
   const [workflowEstadoFilter, setWorkflowEstadoFilter] = useState<string | undefined>(undefined);
-  
-  // Modal Nueva Convocatoria
   const [showNuevaConvocatoriaModal, setShowNuevaConvocatoriaModal] = useState(false);
-  const [nuevaConvocatoriaForm, setNuevaConvocatoriaForm] = useState({
-    codigo: '',
-    nombre: '',
-    descripcion: '',
-    presupuesto_total: 0,
-    fecha_inicio: '',
-    fecha_fin: '',
-    porcentaje_ayuda_max: 80
-  });
-  const [creatingConvocatoria, setCreatingConvocatoria] = useState(false);
 
   const { kpis, analyticsData, isLoading: loadingAnalytics, refresh } = useGaliaAnalytics();
   const { 
     expedientes, 
-    isLoading: loadingExpedientes, 
-    getExpedientesConRiesgo,
-    updateExpedienteEstado 
+    updateExpedienteEstado,
+    getExpedientesConRiesgo 
   } = useGaliaExpedientes({ estado: workflowEstadoFilter as GaliaExpediente['estado'] | undefined });
   const { 
     convocatorias, 
-    isLoading: loadingConvocatorias, 
     getPresupuestoStats,
     createConvocatoria 
   } = useGaliaConvocatorias();
@@ -112,46 +98,6 @@ export function GaliaDashboard() {
     if (selectedExpediente) {
       await updateExpedienteEstado(selectedExpediente.id, nuevoEstado);
       setSelectedExpediente(null);
-    }
-  };
-
-  const handleCrearConvocatoria = async () => {
-    if (!nuevaConvocatoriaForm.codigo || !nuevaConvocatoriaForm.nombre || !nuevaConvocatoriaForm.fecha_inicio || !nuevaConvocatoriaForm.fecha_fin) {
-      toast.error('Por favor, completa todos los campos obligatorios');
-      return;
-    }
-
-    setCreatingConvocatoria(true);
-    try {
-      const result = await createConvocatoria({
-        ...nuevaConvocatoriaForm,
-        estado: 'borrador',
-        presupuesto_comprometido: 0,
-        presupuesto_ejecutado: 0,
-        requisitos: [],
-        criterios_valoracion: [],
-        documentacion_requerida: []
-      });
-      
-      if (result) {
-        toast.success('Convocatoria creada correctamente');
-        setShowNuevaConvocatoriaModal(false);
-        setNuevaConvocatoriaForm({
-          codigo: '',
-          nombre: '',
-          descripcion: '',
-          presupuesto_total: 0,
-          fecha_inicio: '',
-          fecha_fin: '',
-          porcentaje_ayuda_max: 80
-        });
-        setActiveTab('convocatorias');
-      }
-    } catch (error) {
-      console.error('Error creating convocatoria:', error);
-      toast.error('Error al crear la convocatoria');
-    } finally {
-      setCreatingConvocatoria(false);
     }
   };
 
@@ -207,69 +153,56 @@ export function GaliaDashboard() {
             <div className="w-full overflow-x-auto pb-2">
               <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max min-w-full">
                 <TabsTrigger value="resumen" className="text-xs whitespace-nowrap">
-                  <BarChart3 className="h-4 w-4 mr-1" />
-                  Resumen
+                  <BarChart3 className="h-4 w-4 mr-1" /> Resumen
                 </TabsTrigger>
                 <TabsTrigger value="gestion" className="text-xs whitespace-nowrap">
-                  <LayoutDashboard className="h-4 w-4 mr-1" />
-                  Gestión
+                  <LayoutDashboard className="h-4 w-4 mr-1" /> Gestión
+                </TabsTrigger>
+                <TabsTrigger value="knowledge" className="text-xs whitespace-nowrap">
+                  <BookOpen className="h-4 w-4 mr-1" /> Normativa
                 </TabsTrigger>
                 <TabsTrigger value="expedientes" className="text-xs whitespace-nowrap">
-                  <FolderOpen className="h-4 w-4 mr-1" />
-                  Expedientes
+                  <FolderOpen className="h-4 w-4 mr-1" /> Expedientes
                 </TabsTrigger>
                 <TabsTrigger value="convocatorias" className="text-xs whitespace-nowrap">
-                  <FileText className="h-4 w-4 mr-1" />
-                  Convocatorias
+                  <FileText className="h-4 w-4 mr-1" /> Convocatorias
                 </TabsTrigger>
                 <TabsTrigger value="portal" className="text-xs whitespace-nowrap">
-                  <Globe className="h-4 w-4 mr-1" />
-                  Portal
+                  <Globe className="h-4 w-4 mr-1" /> Portal
                 </TabsTrigger>
                 <TabsTrigger value="costes" className="text-xs whitespace-nowrap">
-                  <Calculator className="h-4 w-4 mr-1" />
-                  Costes IA
+                  <Calculator className="h-4 w-4 mr-1" /> Costes IA
                 </TabsTrigger>
                 <TabsTrigger value="documentos" className="text-xs whitespace-nowrap">
-                  <FileSearch className="h-4 w-4 mr-1" />
-                  OCR IA
+                  <FileSearch className="h-4 w-4 mr-1" /> OCR IA
                 </TabsTrigger>
                 <TabsTrigger value="informes" className="text-xs whitespace-nowrap">
-                  <FileBarChart className="h-4 w-4 mr-1" />
-                  Informes
+                  <FileBarChart className="h-4 w-4 mr-1" /> Informes
                 </TabsTrigger>
                 <TabsTrigger value="alertas" className="text-xs whitespace-nowrap">
-                  <AlertTriangle className="h-4 w-4 mr-1" />
-                  Alertas
+                  <AlertTriangle className="h-4 w-4 mr-1" /> Alertas
                 </TabsTrigger>
                 <TabsTrigger value="transparencia" className="text-xs whitespace-nowrap">
-                  <Shield className="h-4 w-4 mr-1" />
-                  Transparencia
+                  <Shield className="h-4 w-4 mr-1" /> Transparencia
                 </TabsTrigger>
                 {/* Phase 8 Tabs */}
                 <TabsTrigger value="docgen" className="text-xs whitespace-nowrap">
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  Doc IA
+                  <Sparkles className="h-4 w-4 mr-1" /> Doc IA
                 </TabsTrigger>
                 <TabsTrigger value="geo" className="text-xs whitespace-nowrap">
-                  <MapPin className="h-4 w-4 mr-1" />
-                  Geo
+                  <MapPin className="h-4 w-4 mr-1" /> Geo
                 </TabsTrigger>
                 <TabsTrigger value="simulator" className="text-xs whitespace-nowrap">
-                  <Calculator className="h-4 w-4 mr-1" />
-                  Simulador
+                  <Calculator className="h-4 w-4 mr-1" /> Simulador
                 </TabsTrigger>
                 <TabsTrigger value="beneficiario360" className="text-xs whitespace-nowrap">
-                  <User className="h-4 w-4 mr-1" />
-                  360°
+                  <User className="h-4 w-4 mr-1" /> 360°
                 </TabsTrigger>
                 <TabsTrigger value="bpmn" className="text-xs whitespace-nowrap">
-                  <Workflow className="h-4 w-4 mr-1" />
-                  Flujos
+                  <Workflow className="h-4 w-4 mr-1" /> Flujos
                 </TabsTrigger>
                 <TabsTrigger value="integraciones" className="text-xs whitespace-nowrap">
-                  <Building className="h-4 w-4 mr-1" />
-                  AAPP
+                  <Building className="h-4 w-4 mr-1" /> AAPP
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -283,7 +216,6 @@ export function GaliaDashboard() {
               />
             </TabsContent>
 
-            {/* Panel de Gestión Técnica */}
             <TabsContent value="gestion" className="mt-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <GaliaWorkflowManager 
@@ -313,6 +245,12 @@ export function GaliaDashboard() {
               </div>
             </TabsContent>
 
+            <TabsContent value="knowledge" className="mt-4 h-[600px]">
+              <Suspense fallback={<TabSkeleton />}>
+                <GaliaKnowledgeExplorer />
+              </Suspense>
+            </TabsContent>
+
             <TabsContent value="expedientes" className="mt-4">
               <GaliaExpedientesTab
                 expedientes={expedientes}
@@ -333,28 +271,24 @@ export function GaliaDashboard() {
               />
             </TabsContent>
 
-            {/* Portal Ciudadano Tab */}
             <TabsContent value="portal" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaPortalCiudadano />
               </Suspense>
             </TabsContent>
 
-            {/* Moderador de Costes Tab */}
             <TabsContent value="costes" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaModeradorCostes />
               </Suspense>
             </TabsContent>
 
-            {/* Generador de Informes Tab */}
             <TabsContent value="informes" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaReportGenerator />
               </Suspense>
             </TabsContent>
 
-            {/* Analizador de Documentos OCR Tab */}
             <TabsContent value="documentos" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaDocumentAnalyzer />
@@ -365,51 +299,42 @@ export function GaliaDashboard() {
               <GaliaAlertasTab expedientesRiesgo={expedientesRiesgo} />
             </TabsContent>
 
-            {/* Portal de Transparencia Tab */}
             <TabsContent value="transparencia" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaTransparencyPortal />
               </Suspense>
             </TabsContent>
-
-            {/* === PHASE 8 TABS === */}
             
-            {/* 8A - Generador de Documentos IA */}
             <TabsContent value="docgen" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaDocumentGeneratorPanel />
               </Suspense>
             </TabsContent>
 
-            {/* 8B - Geointeligencia Territorial */}
             <TabsContent value="geo" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaGeoIntelligencePanel />
               </Suspense>
             </TabsContent>
 
-            {/* 8C - Simulador de Convocatorias */}
             <TabsContent value="simulator" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaConvocatoriaSimulatorPanel />
               </Suspense>
             </TabsContent>
 
-            {/* 8D - Beneficiario 360° */}
             <TabsContent value="beneficiario360" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaBeneficiario360Panel />
               </Suspense>
             </TabsContent>
 
-            {/* 8E - Flujos BPMN No-Code */}
             <TabsContent value="bpmn" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaBPMNWorkflowsPanel />
               </Suspense>
             </TabsContent>
 
-            {/* 8F - Integraciones Administrativas */}
             <TabsContent value="integraciones" className="mt-4">
               <Suspense fallback={<TabSkeleton />}>
                 <GaliaAdminIntegrationsPanel />
@@ -430,116 +355,12 @@ export function GaliaDashboard() {
         )}
       </div>
 
-      {/* Modal Nueva Convocatoria */}
-      <Dialog open={showNuevaConvocatoriaModal} onOpenChange={setShowNuevaConvocatoriaModal}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-primary" />
-              Nueva Convocatoria
-            </DialogTitle>
-            <DialogDescription>
-              Crea una nueva convocatoria de ayudas LEADER. Los campos marcados con * son obligatorios.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="codigo">Código *</Label>
-                <Input
-                  id="codigo"
-                  placeholder="LEADER-2024-001"
-                  value={nuevaConvocatoriaForm.codigo}
-                  onChange={(e) => setNuevaConvocatoriaForm(prev => ({ ...prev, codigo: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="presupuesto">Presupuesto Total (€)</Label>
-                <Input
-                  id="presupuesto"
-                  type="number"
-                  placeholder="500000"
-                  value={nuevaConvocatoriaForm.presupuesto_total || ''}
-                  onChange={(e) => setNuevaConvocatoriaForm(prev => ({ ...prev, presupuesto_total: parseFloat(e.target.value) || 0 }))}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre de la Convocatoria *</Label>
-              <Input
-                id="nombre"
-                placeholder="Ayudas para la modernización de explotaciones agrarias"
-                value={nuevaConvocatoriaForm.nombre}
-                onChange={(e) => setNuevaConvocatoriaForm(prev => ({ ...prev, nombre: e.target.value }))}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="descripcion">Descripción</Label>
-              <Textarea
-                id="descripcion"
-                placeholder="Descripción detallada de la convocatoria..."
-                rows={3}
-                value={nuevaConvocatoriaForm.descripcion}
-                onChange={(e) => setNuevaConvocatoriaForm(prev => ({ ...prev, descripcion: e.target.value }))}
-              />
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fecha_inicio">Fecha Inicio *</Label>
-                <Input
-                  id="fecha_inicio"
-                  type="date"
-                  value={nuevaConvocatoriaForm.fecha_inicio}
-                  onChange={(e) => setNuevaConvocatoriaForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fecha_fin">Fecha Fin *</Label>
-                <Input
-                  id="fecha_fin"
-                  type="date"
-                  value={nuevaConvocatoriaForm.fecha_fin}
-                  onChange={(e) => setNuevaConvocatoriaForm(prev => ({ ...prev, fecha_fin: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="porcentaje">% Ayuda Máx.</Label>
-                <Input
-                  id="porcentaje"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={nuevaConvocatoriaForm.porcentaje_ayuda_max}
-                  onChange={(e) => setNuevaConvocatoriaForm(prev => ({ ...prev, porcentaje_ayuda_max: parseInt(e.target.value) || 80 }))}
-                />
-              </div>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNuevaConvocatoriaModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleCrearConvocatoria} disabled={creatingConvocatoria}>
-              {creatingConvocatoria ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Creando...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear Convocatoria
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modal Nueva Convocatoria (Refactored to separate component) */}
+      <GaliaNuevaConvocatoriaModal
+        isOpen={showNuevaConvocatoriaModal}
+        onClose={() => setShowNuevaConvocatoriaModal(false)}
+        onCreate={createConvocatoria}
+      />
     </div>
   );
 }
