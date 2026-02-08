@@ -1221,3 +1221,9 @@ verify_jwt = true
 
 [functions.galia-moderador-costes]
 verify_jwt = true
+
+[functions.galia-assistant]
+verify_jwt = false
+
+[functions.galia-document-ocr]
+verify_jwt = false
