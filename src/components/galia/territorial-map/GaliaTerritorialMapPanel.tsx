@@ -231,14 +231,8 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
                   </ScrollArea>
                 </motion.div>
               )}
-            </AnimatePresence>
-
-            {/* Legend overlay - top left */}
-            <GaliaMapLegend 
-              className="absolute top-4 left-4 w-44"
-              compact={!isFullscreen}
-            />
-          </div>
+          </AnimatePresence>
+        </div>
 
           {/* Side panel - Summary stats */}
           <div className="lg:col-span-1 space-y-4">
@@ -343,6 +337,12 @@ export const GaliaTerritorialMapPanel = memo(function GaliaTerritorialMapPanel({
                 </div>
               </div>
             )}
+
+            {/* Legend - positioned under Top 5 */}
+            <GaliaMapLegend 
+              className="w-full"
+              compact={false}
+            />
           </div>
         </div>
       </CardContent>
