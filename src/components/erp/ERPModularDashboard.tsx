@@ -34,7 +34,8 @@ import {
   Bot,
   Truck,
   UserCog,
-  Scale
+  Scale,
+  Landmark
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
 import { ERPCompanySelector } from './config/ERPCompanySelector';
@@ -57,6 +58,7 @@ import { LogisticsModuleDashboard } from './logistics';
 import { FiscalModule } from './fiscal';
 import { HRModule } from './hr';
 import { LegalModule } from './legal';
+import { GaliaDashboard } from '@/components/verticals/galia';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
@@ -73,7 +75,7 @@ function ERPModularDashboardContent() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
-  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'migration', 'utilities'];
+  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'migration', 'utilities'];
   
   // Detectar si estamos dentro de un módulo específico
   const isInsideModule = moduleTabIds.includes(activeTab);
@@ -145,6 +147,7 @@ function ERPModularDashboardContent() {
     { id: 'tax', name: 'Fiscal', icon: Receipt, permission: 'tax.read', color: 'bg-red-500' },
     { id: 'hr', name: 'RRHH', icon: UserCog, permission: 'hr.read', color: 'bg-pink-500' },
     { id: 'legal', name: 'Jurídico', icon: Scale, permission: 'legal.read', color: 'bg-indigo-600' },
+    { id: 'galia', name: 'GALIA', icon: Landmark, permission: 'admin.all', color: 'bg-emerald-600' },
   ];
 
   const availableModules = modules.filter(m => hasPermission(m.permission));
@@ -244,6 +247,12 @@ function ERPModularDashboardContent() {
                   Jurídico
                 </TabsTrigger>
               )}
+              {hasPermission('admin.all') && (
+                <TabsTrigger value="galia" className="gap-2">
+                  <Landmark className="h-4 w-4" />
+                  GALIA
+                </TabsTrigger>
+              )}
             </>
           )}
           
@@ -261,6 +270,7 @@ function ERPModularDashboardContent() {
               {activeTab === 'tax' && <><Receipt className="h-4 w-4" /> Fiscal</>}
               {activeTab === 'hr' && <><UserCog className="h-4 w-4" /> RRHH</>}
               {activeTab === 'legal' && <><Scale className="h-4 w-4" /> Jurídico</>}
+              {activeTab === 'galia' && <><Landmark className="h-4 w-4" /> GALIA</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
               {activeTab === 'utilities' && <><Wrench className="h-4 w-4" /> Utilidades</>}
             </Badge>
@@ -503,6 +513,11 @@ function ERPModularDashboardContent() {
         {/* Legal Tab */}
         <TabsContent value="legal">
           <LegalModule />
+        </TabsContent>
+
+        {/* GALIA Tab - Gestión Ayudas LEADER IA */}
+        <TabsContent value="galia">
+          <GaliaDashboard />
         </TabsContent>
 
         {/* Companies Tab */}
