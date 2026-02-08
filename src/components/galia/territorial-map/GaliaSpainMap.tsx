@@ -39,14 +39,14 @@ const HEIGHT = 550;
 const projectPoint = (lon: number, lat: number): [number, number] => {
   const centerLon = -3.7;
   const centerLat = 40.0;
-  const scale = 3400; // Increased for larger map
-  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 60;
-  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 40;
+  const scale = 3600; // Slightly larger map
+  const x = (lon - centerLon) * (scale / 100) + WIDTH / 2 + 70;
+  const y = (centerLat - lat) * (scale / 75) + HEIGHT / 2 - 50;
   return [x, y];
 };
 
 // Offset for Canary Islands repositioning (inside the box on left)
-const CANARIAS_OFFSET = { x: 320, y: -200 };
+const CANARIAS_OFFSET = { x: 200, y: -120 };
 
 // Project point with optional offset for Canarias
 const projectPointWithOffset = (
