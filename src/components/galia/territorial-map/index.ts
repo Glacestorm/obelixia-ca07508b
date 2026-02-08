@@ -8,5 +8,5 @@ export { GaliaSpainMap } from './GaliaSpainMap';
 export { GaliaMapBreadcrumb } from './GaliaMapBreadcrumb';
 export { GaliaMapTooltip } from './GaliaMapTooltip';
 export { GaliaMapLegend } from './GaliaMapLegend';
-export { spainCCAAData, getCCAAById, getAllCCAAIds, formatCompactCurrency } from './spain-paths';
+export { spainCCAAData, getCCAAById, getCCAAByTopoId, getAllCCAAIds, formatCompactCurrency } from './spain-paths';
 export type { CCAAData } from './spain-paths';
