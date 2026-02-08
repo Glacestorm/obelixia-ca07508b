@@ -326,6 +326,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
                   strokeWidth={isHovered || isSelected ? 2 : 0.5}
                   className="cursor-pointer transition-colors"
                   onMouseEnter={() => setHoveredCCAA(id)}
+                  onMouseLeave={() => setHoveredCCAA(null)}
                   onClick={() => handleCCAAClick(id)}
                 />
 
