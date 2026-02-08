@@ -1,8 +1,10 @@
 /**
  * GALIA Phase 5 Components - Expansión
- * Cl@ve Auth, Federation Dashboard, Gamification
+ * Lazy-loaded exports for build optimization
  */
 
-export { GaliaClaveAuthPanel } from './GaliaClaveAuthPanel';
-export { GaliaFederationDashboard } from './GaliaFederationDashboard';
-export { GaliaGamificationPanel } from './GaliaGamificationPanel';
+import { lazy } from 'react';
+
+export const GaliaClaveAuthPanel = lazy(() => import('./GaliaClaveAuthPanel').then(m => ({ default: m.GaliaClaveAuthPanel })));
+export const GaliaFederationDashboard = lazy(() => import('./GaliaFederationDashboard').then(m => ({ default: m.GaliaFederationDashboard })));
+export const GaliaGamificationPanel = lazy(() => import('./GaliaGamificationPanel').then(m => ({ default: m.GaliaGamificationPanel })));

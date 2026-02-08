@@ -1,9 +1,11 @@
 /**
  * GALIA Phase 4 Components - Advanced AI Features
- * Re-exports all Phase 4 components
+ * Lazy-loaded exports for build optimization
  */
 
-export { GaliaImpactPredictorPanel } from './GaliaImpactPredictorPanel';
-export { GaliaBDNSPanel } from './GaliaBDNSPanel';
-export { GaliaAutoApprovalPanel } from './GaliaAutoApprovalPanel';
-export { GaliaProactivePanel } from './GaliaProactivePanel';
+import { lazy } from 'react';
+
+export const GaliaImpactPredictorPanel = lazy(() => import('./GaliaImpactPredictorPanel').then(m => ({ default: m.GaliaImpactPredictorPanel })));
+export const GaliaBDNSPanel = lazy(() => import('./GaliaBDNSPanel').then(m => ({ default: m.GaliaBDNSPanel })));
+export const GaliaAutoApprovalPanel = lazy(() => import('./GaliaAutoApprovalPanel').then(m => ({ default: m.GaliaAutoApprovalPanel })));
+export const GaliaProactivePanel = lazy(() => import('./GaliaProactivePanel').then(m => ({ default: m.GaliaProactivePanel })));
