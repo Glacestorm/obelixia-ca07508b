@@ -1,9 +1,10 @@
 /**
  * GALIA - Portal Público del Ciudadano
  * Interfaz para ciudadanos, empresas y entidades
+ * Integrado con Supabase para datos reales
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Search, 
   FileText, 
@@ -27,22 +29,17 @@ import {
   Building2,
   Leaf,
   Users,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import { GaliaAsistenteVirtual } from './GaliaAsistenteVirtual';
+import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-
-interface Convocatoria {
-  id: string;
-  titulo: string;
-  galNombre: string;
-  fechaInicio: string;
-  fechaFin: string;
-  presupuesto: number;
-  estado: 'abierta' | 'proxima' | 'cerrada';
-  tipoProyecto: string[];
-  intensidadAyuda: number;
-}
+import { toast } from 'sonner';
+import { format, formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface ExpedientePublico {
   codigo: string;
@@ -51,44 +48,45 @@ interface ExpedientePublico {
   fechaUltimaActualizacion: string;
   progreso: number;
   proximoPaso?: string;
+  importeSolicitado?: number;
+  importeConcedido?: number | null;
 }
 
-// Mock data para demo
-const convocatoriasMock: Convocatoria[] = [
-  {
-    id: '1',
-    titulo: 'Ayudas a la diversificación económica rural 2024',
-    galNombre: 'GAL Sierra Norte',
-    fechaInicio: '2024-01-15',
-    fechaFin: '2024-06-30',
-    presupuesto: 500000,
-    estado: 'abierta',
-    tipoProyecto: ['Turismo rural', 'Agroalimentario', 'Artesanía'],
-    intensidadAyuda: 45
-  },
-  {
-    id: '2',
-    titulo: 'Modernización de explotaciones agrarias',
-    galNombre: 'GAL Campiña Sur',
-    fechaInicio: '2024-03-01',
-    fechaFin: '2024-09-15',
-    presupuesto: 750000,
-    estado: 'abierta',
-    tipoProyecto: ['Agricultura', 'Ganadería', 'Transformación'],
-    intensidadAyuda: 50
-  },
-  {
-    id: '3',
-    titulo: 'Servicios básicos para población rural',
-    galNombre: 'GAL Montaña Oriental',
-    fechaInicio: '2024-07-01',
-    fechaFin: '2024-12-31',
-    presupuesto: 300000,
-    estado: 'proxima',
-    tipoProyecto: ['Servicios', 'Infraestructuras', 'Digital'],
-    intensidadAyuda: 60
-  }
-];
+// Mapeo de estados a porcentaje de progreso
+const estadoProgreso: Record<string, number> = {
+  'borrador': 5,
+  'presentada': 15,
+  'admitida': 25,
+  'subsanacion': 20,
+  'instruccion': 40,
+  'evaluacion': 55,
+  'propuesta': 70,
+  'resolucion': 85,
+  'concedido': 95,
+  'justificacion': 90,
+  'cerrado': 100,
+  'denegado': 100,
+  'renunciado': 100,
+  'desistido': 100,
+};
+
+// Mapeo de estados a próximo paso
+const estadoProximoPaso: Record<string, string> = {
+  'borrador': 'Completar y presentar la solicitud',
+  'presentada': 'Pendiente de admisión a trámite',
+  'admitida': 'En proceso de instrucción técnica',
+  'subsanacion': 'Aportar documentación requerida',
+  'instruccion': 'Análisis de elegibilidad en curso',
+  'evaluacion': 'Valoración técnica y puntuación',
+  'propuesta': 'Pendiente de resolución definitiva',
+  'resolucion': 'Notificación de resolución',
+  'concedido': 'Iniciar ejecución del proyecto',
+  'justificacion': 'Presentar justificación de gastos',
+  'cerrado': 'Expediente finalizado',
+  'denegado': 'Posibilidad de recurso (20 días)',
+  'renunciado': 'Sin acciones pendientes',
+  'desistido': 'Sin acciones pendientes',
+};
 
 export function GaliaPortalCiudadano() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -96,36 +94,142 @@ export function GaliaPortalCiudadano() {
   const [showAsistente, setShowAsistente] = useState(false);
   const [codigoExpediente, setCodigoExpediente] = useState('');
   const [expedienteConsultado, setExpedienteConsultado] = useState<ExpedientePublico | null>(null);
+  const [isConsultando, setIsConsultando] = useState(false);
+  const [consultaError, setConsultaError] = useState<string | null>(null);
 
-  const filteredConvocatorias = convocatoriasMock.filter(c => 
-    c.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.galNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.tipoProyecto.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Hook real para convocatorias
+  const { 
+    convocatorias, 
+    isLoading: isLoadingConvocatorias, 
+    fetchConvocatorias,
+    getPresupuestoStats 
+  } = useGaliaConvocatorias({
+    estado: 'abierta',
+    searchTerm: searchTerm || undefined
+  });
+
+  // Estadísticas del presupuesto
+  const presupuestoStats = getPresupuestoStats();
+
+  // Filtrar convocatorias por búsqueda local (además del filtro del hook)
+  const filteredConvocatorias = convocatorias.filter(c => 
+    !searchTerm || 
+    c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.codigo.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleConsultarExpediente = () => {
-    // Simulación de consulta
-    if (codigoExpediente.trim()) {
-      setExpedienteConsultado({
-        codigo: codigoExpediente.toUpperCase(),
-        titulo: 'Proyecto de turismo rural sostenible',
-        estado: 'En valoración técnica',
-        fechaUltimaActualizacion: new Date().toISOString(),
-        progreso: 65,
-        proximoPaso: 'Pendiente de informe de elegibilidad'
-      });
+  // Consultar expediente real en Supabase
+  const handleConsultarExpediente = useCallback(async () => {
+    const codigo = codigoExpediente.trim().toUpperCase();
+    if (!codigo) {
+      toast.error('Introduce un código de expediente válido');
+      return;
     }
-  };
 
-  const getEstadoBadge = (estado: Convocatoria['estado']) => {
+    setIsConsultando(true);
+    setConsultaError(null);
+    setExpedienteConsultado(null);
+
+    try {
+      // Buscar en galia_expedientes por numero_expediente
+      const { data: expediente, error: expError } = await supabase
+        .from('galia_expedientes')
+        .select(`
+          *,
+          solicitud:galia_solicitudes(
+            titulo_proyecto,
+            presupuesto_total,
+            importe_solicitado
+          )
+        `)
+        .eq('numero_expediente', codigo)
+        .maybeSingle();
+
+      if (expError) throw expError;
+
+      if (expediente) {
+        const solicitud = expediente.solicitud as { titulo_proyecto?: string; importe_solicitado?: number } | null;
+        setExpedienteConsultado({
+          codigo: expediente.numero_expediente,
+          titulo: solicitud?.titulo_proyecto || 'Proyecto sin título',
+          estado: expediente.estado,
+          fechaUltimaActualizacion: expediente.updated_at,
+          progreso: estadoProgreso[expediente.estado] || 0,
+          proximoPaso: estadoProximoPaso[expediente.estado],
+          importeSolicitado: solicitud?.importe_solicitado,
+          importeConcedido: expediente.importe_concedido,
+        });
+        return;
+      }
+
+      // Si no encontró expediente, buscar en solicitudes
+      const { data: solicitud, error: solError } = await supabase
+        .from('galia_solicitudes')
+        .select('*')
+        .eq('numero_registro', codigo)
+        .maybeSingle();
+
+      if (solError) throw solError;
+
+      if (solicitud) {
+        setExpedienteConsultado({
+          codigo: solicitud.numero_registro || codigo,
+          titulo: solicitud.titulo_proyecto,
+          estado: solicitud.estado,
+          fechaUltimaActualizacion: solicitud.updated_at,
+          progreso: estadoProgreso[solicitud.estado] || 0,
+          proximoPaso: estadoProximoPaso[solicitud.estado],
+          importeSolicitado: solicitud.importe_solicitado,
+        });
+        return;
+      }
+
+      // No encontrado
+      setConsultaError('No se encontró ningún expediente o solicitud con ese código. Verifica que esté escrito correctamente.');
+
+    } catch (err) {
+      console.error('[GaliaPortalCiudadano] Error consultando expediente:', err);
+      setConsultaError('Error al consultar el expediente. Inténtalo de nuevo.');
+    } finally {
+      setIsConsultando(false);
+    }
+  }, [codigoExpediente]);
+
+  const getEstadoBadge = (estado: string) => {
     switch (estado) {
       case 'abierta':
         return <Badge className="bg-green-500/20 text-green-700 border-green-500/30">Abierta</Badge>;
-      case 'proxima':
+      case 'publicada':
         return <Badge className="bg-blue-500/20 text-blue-700 border-blue-500/30">Próximamente</Badge>;
       case 'cerrada':
+      case 'resuelta':
         return <Badge className="bg-gray-500/20 text-gray-600 border-gray-500/30">Cerrada</Badge>;
+      default:
+        return <Badge variant="secondary">{estado}</Badge>;
     }
+  };
+
+  const getEstadoExpedienteBadge = (estado: string) => {
+    const colores: Record<string, string> = {
+      'borrador': 'bg-gray-500/20 text-gray-600',
+      'presentada': 'bg-blue-500/20 text-blue-700',
+      'admitida': 'bg-cyan-500/20 text-cyan-700',
+      'subsanacion': 'bg-orange-500/20 text-orange-700',
+      'instruccion': 'bg-indigo-500/20 text-indigo-700',
+      'evaluacion': 'bg-purple-500/20 text-purple-700',
+      'propuesta': 'bg-violet-500/20 text-violet-700',
+      'resolucion': 'bg-pink-500/20 text-pink-700',
+      'concedido': 'bg-green-500/20 text-green-700',
+      'justificacion': 'bg-emerald-500/20 text-emerald-700',
+      'cerrado': 'bg-slate-500/20 text-slate-700',
+      'denegado': 'bg-red-500/20 text-red-700',
+      'renunciado': 'bg-amber-500/20 text-amber-700',
+    };
+    return <Badge className={colores[estado] || 'bg-gray-500/20 text-gray-600'}>{estado}</Badge>;
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
   };
 
   return (
@@ -143,23 +247,32 @@ export function GaliaPortalCiudadano() {
             </div>
           </div>
           
-          {/* Quick Stats */}
+          {/* Quick Stats - Datos reales */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{convocatorias.length}</div>
               <div className="text-sm text-green-100">Convocatorias activas</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-2xl font-bold">€4.5M</div>
+              <div className="text-2xl font-bold">
+                {presupuestoStats.disponible > 0 
+                  ? `€${(presupuestoStats.disponible / 1000000).toFixed(1)}M`
+                  : '€0'
+                }
+              </div>
               <div className="text-sm text-green-100">Presupuesto disponible</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-2xl font-bold">28</div>
-              <div className="text-sm text-green-100">GALs participantes</div>
+              <div className="text-2xl font-bold">
+                {((presupuestoStats.ejecutado / (presupuestoStats.total || 1)) * 100).toFixed(0)}%
+              </div>
+              <div className="text-sm text-green-100">Ejecución presupuestaria</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-2xl font-bold">156</div>
-              <div className="text-sm text-green-100">Proyectos en curso</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(presupuestoStats.comprometido)}
+              </div>
+              <div className="text-sm text-green-100">Comprometido</div>
             </div>
           </div>
         </div>
@@ -187,80 +300,126 @@ export function GaliaPortalCiudadano() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Convocatorias Tab */}
+          {/* Convocatorias Tab - Datos reales */}
           <TabsContent value="convocatorias" className="space-y-6">
             {/* Search */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por título, GAL o tipo de proyecto..."
+                  placeholder="Buscar por título, código o tipo de proyecto..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Button variant="outline" className="gap-2">
-                <MapPin className="h-4 w-4" />
-                Filtrar por zona
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => fetchConvocatorias()}
+                disabled={isLoadingConvocatorias}
+              >
+                <RefreshCw className={cn("h-4 w-4", isLoadingConvocatorias && "animate-spin")} />
+                Actualizar
               </Button>
             </div>
 
-            {/* Convocatorias List */}
-            <div className="grid gap-4">
-              {filteredConvocatorias.map((conv) => (
-                <Card key={conv.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="text-lg font-semibold">{conv.titulo}</h3>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                              <Building2 className="h-4 w-4" />
-                              {conv.galNombre}
-                            </div>
-                          </div>
-                          {getEstadoBadge(conv.estado)}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {conv.tipoProyecto.map((tipo) => (
-                            <Badge key={tipo} variant="secondary" className="text-xs">
-                              {tipo}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>Hasta {new Date(conv.fechaFin).toLocaleDateString('es-ES')}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Euro className="h-4 w-4 text-muted-foreground" />
-                            <span>{(conv.presupuesto / 1000).toFixed(0)}K disponibles</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span>{conv.intensidadAyuda}% intensidad</span>
-                          </div>
-                          <div>
-                            <Button size="sm" className="gap-2">
-                              Ver detalles
-                              <ExternalLink className="h-3 w-3" />
-                            </Button>
-                          </div>
+            {/* Loading State */}
+            {isLoadingConvocatorias && (
+              <div className="grid gap-4">
+                {[1, 2, 3].map(i => (
+                  <Card key={i}>
+                    <CardContent className="p-6">
+                      <div className="space-y-3">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/4" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-6 w-20" />
+                          <Skeleton className="h-6 w-24" />
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Convocatorias List - Datos reales */}
+            {!isLoadingConvocatorias && (
+              <div className="grid gap-4">
+                {filteredConvocatorias.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                      <p className="text-muted-foreground">No hay convocatorias disponibles con esos criterios</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  filteredConvocatorias.map((conv) => (
+                    <Card key={conv.id} className="hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <h3 className="text-lg font-semibold">{conv.nombre}</h3>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                  <Building2 className="h-4 w-4" />
+                                  Código: {conv.codigo}
+                                </div>
+                              </div>
+                              {getEstadoBadge(conv.estado)}
+                            </div>
+
+                            {conv.descripcion && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {conv.descripcion}
+                              </p>
+                            )}
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-3 border-t">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span>Hasta {format(new Date(conv.fecha_fin), 'dd/MM/yyyy', { locale: es })}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Euro className="h-4 w-4 text-muted-foreground" />
+                                <span>{formatCurrency(conv.presupuesto_total - conv.presupuesto_comprometido)} disponibles</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span>{conv.porcentaje_ayuda_max}% intensidad máx.</span>
+                              </div>
+                              <div>
+                                <Button size="sm" className="gap-2">
+                                  Ver detalles
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Barra de ejecución presupuestaria */}
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Ejecución presupuestaria</span>
+                                <span>{((conv.presupuesto_comprometido / conv.presupuesto_total) * 100).toFixed(0)}%</span>
+                              </div>
+                              <Progress 
+                                value={(conv.presupuesto_comprometido / conv.presupuesto_total) * 100} 
+                                className="h-1.5" 
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            )}
           </TabsContent>
 
-          {/* Consulta Expediente Tab */}
+          {/* Consulta Expediente Tab - Consulta real */}
           <TabsContent value="consulta" className="space-y-6">
             <Card>
               <CardHeader>
@@ -269,20 +428,39 @@ export function GaliaPortalCiudadano() {
                   Consultar estado de expediente
                 </CardTitle>
                 <CardDescription>
-                  Introduce el código de tu expediente para conocer su estado actual
+                  Introduce el código de tu expediente o número de registro para conocer su estado actual
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-4">
                   <Input
-                    placeholder="Ej: EXP-2024-00123"
+                    placeholder="Ej: EXP-2024-00123 o REG-2024-00456"
                     value={codigoExpediente}
                     onChange={(e) => setCodigoExpediente(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleConsultarExpediente()}
                     className="max-w-sm"
                   />
-                  <Button onClick={handleConsultarExpediente}>Consultar</Button>
+                  <Button 
+                    onClick={handleConsultarExpediente}
+                    disabled={isConsultando}
+                  >
+                    {isConsultando ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'Consultar'
+                    )}
+                  </Button>
                 </div>
 
+                {/* Error de consulta */}
+                {consultaError && (
+                  <div className="flex items-center gap-2 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    {consultaError}
+                  </div>
+                )}
+
+                {/* Resultado de expediente */}
                 {expedienteConsultado && (
                   <Card className="bg-muted/50 mt-6">
                     <CardContent className="p-6 space-y-4">
@@ -292,10 +470,32 @@ export function GaliaPortalCiudadano() {
                           <div className="text-xl font-bold">{expedienteConsultado.codigo}</div>
                           <div className="text-sm mt-1">{expedienteConsultado.titulo}</div>
                         </div>
-                        <Badge className="bg-amber-500/20 text-amber-700">
-                          {expedienteConsultado.estado}
-                        </Badge>
+                        {getEstadoExpedienteBadge(expedienteConsultado.estado)}
                       </div>
+
+                      {/* Importes */}
+                      {(expedienteConsultado.importeSolicitado || expedienteConsultado.importeConcedido) && (
+                        <div className="grid grid-cols-2 gap-4 p-3 bg-background rounded-lg">
+                          <div>
+                            <div className="text-xs text-muted-foreground">Importe solicitado</div>
+                            <div className="font-semibold">
+                              {expedienteConsultado.importeSolicitado 
+                                ? formatCurrency(expedienteConsultado.importeSolicitado)
+                                : '-'
+                              }
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Importe concedido</div>
+                            <div className="font-semibold text-green-600">
+                              {expedienteConsultado.importeConcedido 
+                                ? formatCurrency(expedienteConsultado.importeConcedido)
+                                : 'Pendiente'
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -305,14 +505,26 @@ export function GaliaPortalCiudadano() {
                         <Progress value={expedienteConsultado.progreso} className="h-2" />
                       </div>
 
-                      <div className="flex items-center gap-2 p-3 bg-blue-500/10 rounded-lg text-sm">
-                        <Clock className="h-4 w-4 text-blue-600" />
-                        <span><strong>Próximo paso:</strong> {expedienteConsultado.proximoPaso}</span>
-                      </div>
+                      {expedienteConsultado.proximoPaso && (
+                        <div className="flex items-center gap-2 p-3 bg-blue-500/10 rounded-lg text-sm">
+                          <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+                          <span><strong>Próximo paso:</strong> {expedienteConsultado.proximoPaso}</span>
+                        </div>
+                      )}
 
                       <div className="text-xs text-muted-foreground">
-                        Última actualización: {new Date(expedienteConsultado.fechaUltimaActualizacion).toLocaleString('es-ES')}
+                        Última actualización: {formatDistanceToNow(new Date(expedienteConsultado.fechaUltimaActualizacion), { addSuffix: true, locale: es })}
                       </div>
+
+                      {/* Botón para abrir asistente con contexto */}
+                      <Button 
+                        variant="outline" 
+                        className="w-full gap-2"
+                        onClick={() => setShowAsistente(true)}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Consultar dudas sobre mi expediente
+                      </Button>
                     </CardContent>
                   </Card>
                 )}
@@ -412,6 +624,8 @@ export function GaliaPortalCiudadano() {
                         { q: '¿Cuál es la inversión mínima?', a: 'Generalmente entre 10.000€ y 15.000€, aunque puede variar según la convocatoria específica.' },
                         { q: '¿Cuánto tarda la tramitación?', a: 'El proceso completo suele durar entre 6 y 12 meses desde la solicitud hasta la resolución.' },
                         { q: '¿Puedo empezar el proyecto antes de la resolución?', a: 'No se recomienda. Los gastos anteriores a la resolución de concesión no son elegibles.' },
+                        { q: '¿Qué pasa si me deniegan la ayuda?', a: 'Puedes presentar un recurso de reposición en el plazo de 20 días hábiles desde la notificación.' },
+                        { q: '¿Cómo justifico los gastos?', a: 'Mediante facturas, justificantes de pago bancario y documentación acreditativa de la inversión realizada.' },
                       ].map((faq, idx) => (
                         <div key={idx} className="p-4 border rounded-lg">
                           <div className="font-medium flex items-start gap-2">
@@ -481,6 +695,7 @@ export function GaliaPortalCiudadano() {
         <div className="fixed bottom-4 right-4 w-full max-w-md z-50">
           <GaliaAsistenteVirtual 
             modo="ciudadano"
+            expedienteId={expedienteConsultado?.codigo}
             onClose={() => setShowAsistente(false)}
           />
         </div>
