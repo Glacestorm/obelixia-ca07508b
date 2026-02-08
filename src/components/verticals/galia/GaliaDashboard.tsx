@@ -1,34 +1,14 @@
 /**
- * GALIA Dashboard - Main Component (Refactored)
+ * GALIA Dashboard - Main Component (Refactored v2.0)
  * Gestión de Ayudas LEADER con Inteligencia Artificial
+ * Navegación moderna con categorías agrupadas
  */
 
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import {
-  Plus,
-  RefreshCw,
-  Bot,
-  BarChart3,
-  FolderOpen,
-  FileText,
-  Globe,
-  Calculator,
-  FileBarChart,
-  FileSearch,
-  LayoutDashboard,
-  AlertTriangle,
-  Shield,
-  Sparkles,
-  MapPin,
-  Workflow,
-  Building,
-  User,
-  BookOpen,
-} from 'lucide-react';
+import { Plus, RefreshCw, Bot } from 'lucide-react';
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
 import { useGaliaExpedientes, GaliaExpediente } from '@/hooks/galia/useGaliaExpedientes';
 import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
@@ -43,6 +23,7 @@ import {
   GaliaAlertsList, 
   GaliaTecnicosPanel 
 } from './dashboard';
+import { GaliaNavigation } from './dashboard/GaliaNavigation';
 import { cn } from '@/lib/utils';
 import { GaliaNuevaConvocatoriaModal } from './GaliaNuevaConvocatoriaModal';
 
@@ -59,7 +40,12 @@ import {
   GaliaBeneficiario360Panel,
   GaliaBPMNWorkflowsPanel,
   GaliaAdminIntegrationsPanel,
-  GaliaKnowledgeExplorer
+  GaliaKnowledgeExplorer,
+  GaliaExportToolbar,
+  GaliaComplianceAuditor,
+  GaliaProjectStatusDashboard,
+  GaliaHybridAIPanel,
+  GaliaNationalFederationDashboard,
 } from './dashboard/tabs/GaliaMainTabs';
 
 const GaliaAsistenteVirtual = lazy(() => import('./GaliaAsistenteVirtual'));
@@ -94,20 +80,154 @@ export function GaliaDashboard() {
   const presupuestoStats = getPresupuestoStats();
   const expedientesRiesgo = getExpedientesConRiesgo(70);
 
-  const handleCambiarEstado = async (nuevoEstado: GaliaExpediente['estado']) => {
+  // Listen for tab change events from sidebar
+  useEffect(() => {
+    const handleTabChange = (event: CustomEvent<string>) => {
+      setActiveTab(event.detail);
+    };
+    window.addEventListener('galia-tab-change', handleTabChange as EventListener);
+    return () => window.removeEventListener('galia-tab-change', handleTabChange as EventListener);
+  }, []);
+
+  const handleCambiarEstado = useCallback(async (nuevoEstado: GaliaExpediente['estado']) => {
     if (selectedExpediente) {
       await updateExpedienteEstado(selectedExpediente.id, nuevoEstado);
       setSelectedExpediente(null);
     }
-  };
+  }, [selectedExpediente, updateExpedienteEstado]);
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
       currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
+  }, []);
+
+  // Render tab content based on activeTab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'resumen':
+        return (
+          <GaliaResumenTab
+            presupuestoStats={presupuestoStats}
+            analyticsData={analyticsData}
+            kpis={kpis}
+            formatCurrency={formatCurrency}
+          />
+        );
+      
+      case 'gestion':
+        return (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <GaliaWorkflowManager 
+                selectedEstado={workflowEstadoFilter}
+                onSelectEstado={(estado) => setWorkflowEstadoFilter(
+                  estado === workflowEstadoFilter ? undefined : estado
+                )}
+              />
+              <GaliaTecnicosPanel 
+                expedienteSeleccionado={selectedExpediente?.numero_expediente}
+                onAsignarExpediente={(tecnicoId) => {
+                  console.log('Asignar expediente a técnico:', tecnicoId);
+                  toast.info(`Expediente asignado al técnico ${tecnicoId}`);
+                }}
+              />
+            </div>
+            <div className="mt-4">
+              <GaliaAlertsList 
+                onSelectExpediente={(expId) => {
+                  const exp = expedientes.find(e => e.numero_expediente === expId);
+                  if (exp) {
+                    setSelectedExpediente(exp);
+                    toast.info(`Expediente ${expId} seleccionado`);
+                  }
+                }}
+              />
+            </div>
+          </>
+        );
+      
+      case 'alertas':
+        return <GaliaAlertasTab expedientesRiesgo={expedientesRiesgo} />;
+      
+      case 'expedientes':
+        return (
+          <GaliaExpedientesTab
+            expedientes={expedientes}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedExpediente={selectedExpediente}
+            onSelectExpediente={setSelectedExpediente}
+            onCambiarEstado={handleCambiarEstado}
+            workflowEstadoFilter={workflowEstadoFilter}
+            formatCurrency={formatCurrency}
+          />
+        );
+      
+      case 'convocatorias':
+        return <GaliaConvocatoriasTab convocatorias={convocatorias} formatCurrency={formatCurrency} />;
+      
+      case 'beneficiario360':
+        return <Suspense fallback={<TabSkeleton />}><GaliaBeneficiario360Panel /></Suspense>;
+      
+      case 'costes':
+        return <Suspense fallback={<TabSkeleton />}><GaliaModeradorCostes /></Suspense>;
+      
+      case 'documentos':
+        return <Suspense fallback={<TabSkeleton />}><GaliaDocumentAnalyzer /></Suspense>;
+      
+      case 'docgen':
+        return <Suspense fallback={<TabSkeleton />}><GaliaDocumentGeneratorPanel /></Suspense>;
+      
+      case 'hybrid-ai':
+        return <Suspense fallback={<TabSkeleton />}><GaliaHybridAIPanel /></Suspense>;
+      
+      case 'knowledge':
+        return <Suspense fallback={<TabSkeleton />}><GaliaKnowledgeExplorer /></Suspense>;
+      
+      case 'simulator':
+        return <Suspense fallback={<TabSkeleton />}><GaliaConvocatoriaSimulatorPanel /></Suspense>;
+      
+      case 'geo':
+        return <Suspense fallback={<TabSkeleton />}><GaliaGeoIntelligencePanel /></Suspense>;
+      
+      case 'informes':
+        return <Suspense fallback={<TabSkeleton />}><GaliaReportGenerator /></Suspense>;
+      
+      case 'export':
+        return <Suspense fallback={<TabSkeleton />}><GaliaExportToolbar expedienteId={selectedExpediente?.id} /></Suspense>;
+      
+      case 'bpmn':
+        return <Suspense fallback={<TabSkeleton />}><GaliaBPMNWorkflowsPanel /></Suspense>;
+      
+      case 'integraciones':
+        return <Suspense fallback={<TabSkeleton />}><GaliaAdminIntegrationsPanel /></Suspense>;
+      
+      case 'portal':
+        return <Suspense fallback={<TabSkeleton />}><GaliaPortalCiudadano /></Suspense>;
+      
+      case 'transparencia':
+        return <Suspense fallback={<TabSkeleton />}><GaliaTransparencyPortal /></Suspense>;
+      
+      case 'compliance':
+        return <Suspense fallback={<TabSkeleton />}><GaliaComplianceAuditor /></Suspense>;
+      
+      case 'project-status':
+        return <Suspense fallback={<TabSkeleton />}><GaliaProjectStatusDashboard /></Suspense>;
+      
+      case 'federation':
+        return <Suspense fallback={<TabSkeleton />}><GaliaNationalFederationDashboard /></Suspense>;
+      
+      default:
+        return (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>Selecciona una opción del menú</p>
+          </div>
+        );
+    }
   };
 
   return (
@@ -145,202 +265,16 @@ export function GaliaDashboard() {
       {/* KPIs */}
       <GaliaKPICards kpis={kpis} isLoading={loadingAnalytics} />
 
+      {/* Navigation */}
+      <GaliaNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Main Tabs */}
+        {/* Left Column - Main Content */}
         <div className={cn("lg:col-span-2", showAssistant && "lg:col-span-1")}>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="w-full overflow-x-auto pb-2">
-              <TabsList className="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max min-w-full">
-                <TabsTrigger value="resumen" className="text-xs whitespace-nowrap">
-                  <BarChart3 className="h-4 w-4 mr-1" /> Resumen
-                </TabsTrigger>
-                <TabsTrigger value="gestion" className="text-xs whitespace-nowrap">
-                  <LayoutDashboard className="h-4 w-4 mr-1" /> Gestión
-                </TabsTrigger>
-                <TabsTrigger value="knowledge" className="text-xs whitespace-nowrap">
-                  <BookOpen className="h-4 w-4 mr-1" /> Normativa
-                </TabsTrigger>
-                <TabsTrigger value="expedientes" className="text-xs whitespace-nowrap">
-                  <FolderOpen className="h-4 w-4 mr-1" /> Expedientes
-                </TabsTrigger>
-                <TabsTrigger value="convocatorias" className="text-xs whitespace-nowrap">
-                  <FileText className="h-4 w-4 mr-1" /> Convocatorias
-                </TabsTrigger>
-                <TabsTrigger value="portal" className="text-xs whitespace-nowrap">
-                  <Globe className="h-4 w-4 mr-1" /> Portal
-                </TabsTrigger>
-                <TabsTrigger value="costes" className="text-xs whitespace-nowrap">
-                  <Calculator className="h-4 w-4 mr-1" /> Costes IA
-                </TabsTrigger>
-                <TabsTrigger value="documentos" className="text-xs whitespace-nowrap">
-                  <FileSearch className="h-4 w-4 mr-1" /> OCR IA
-                </TabsTrigger>
-                <TabsTrigger value="informes" className="text-xs whitespace-nowrap">
-                  <FileBarChart className="h-4 w-4 mr-1" /> Informes
-                </TabsTrigger>
-                <TabsTrigger value="alertas" className="text-xs whitespace-nowrap">
-                  <AlertTriangle className="h-4 w-4 mr-1" /> Alertas
-                </TabsTrigger>
-                <TabsTrigger value="transparencia" className="text-xs whitespace-nowrap">
-                  <Shield className="h-4 w-4 mr-1" /> Transparencia
-                </TabsTrigger>
-                {/* Phase 8 Tabs */}
-                <TabsTrigger value="docgen" className="text-xs whitespace-nowrap">
-                  <Sparkles className="h-4 w-4 mr-1" /> Doc IA
-                </TabsTrigger>
-                <TabsTrigger value="geo" className="text-xs whitespace-nowrap">
-                  <MapPin className="h-4 w-4 mr-1" /> Geo
-                </TabsTrigger>
-                <TabsTrigger value="simulator" className="text-xs whitespace-nowrap">
-                  <Calculator className="h-4 w-4 mr-1" /> Simulador
-                </TabsTrigger>
-                <TabsTrigger value="beneficiario360" className="text-xs whitespace-nowrap">
-                  <User className="h-4 w-4 mr-1" /> 360°
-                </TabsTrigger>
-                <TabsTrigger value="bpmn" className="text-xs whitespace-nowrap">
-                  <Workflow className="h-4 w-4 mr-1" /> Flujos
-                </TabsTrigger>
-                <TabsTrigger value="integraciones" className="text-xs whitespace-nowrap">
-                  <Building className="h-4 w-4 mr-1" /> AAPP
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="resumen" className="mt-4">
-              <GaliaResumenTab
-                presupuestoStats={presupuestoStats}
-                analyticsData={analyticsData}
-                kpis={kpis}
-                formatCurrency={formatCurrency}
-              />
-            </TabsContent>
-
-            <TabsContent value="gestion" className="mt-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <GaliaWorkflowManager 
-                  selectedEstado={workflowEstadoFilter}
-                  onSelectEstado={(estado) => setWorkflowEstadoFilter(
-                    estado === workflowEstadoFilter ? undefined : estado
-                  )}
-                />
-                <GaliaTecnicosPanel 
-                  expedienteSeleccionado={selectedExpediente?.numero_expediente}
-                  onAsignarExpediente={(tecnicoId) => {
-                    console.log('Asignar expediente a técnico:', tecnicoId);
-                    toast.info(`Expediente asignado al técnico ${tecnicoId}`);
-                  }}
-                />
-              </div>
-              <div className="mt-4">
-                <GaliaAlertsList 
-                  onSelectExpediente={(expId) => {
-                    const exp = expedientes.find(e => e.numero_expediente === expId);
-                    if (exp) {
-                      setSelectedExpediente(exp);
-                      toast.info(`Expediente ${expId} seleccionado`);
-                    }
-                  }}
-                />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="knowledge" className="mt-4 h-[600px]">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaKnowledgeExplorer />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="expedientes" className="mt-4">
-              <GaliaExpedientesTab
-                expedientes={expedientes}
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                selectedExpediente={selectedExpediente}
-                onSelectExpediente={setSelectedExpediente}
-                onCambiarEstado={handleCambiarEstado}
-                workflowEstadoFilter={workflowEstadoFilter}
-                formatCurrency={formatCurrency}
-              />
-            </TabsContent>
-
-            <TabsContent value="convocatorias" className="mt-4">
-              <GaliaConvocatoriasTab
-                convocatorias={convocatorias}
-                formatCurrency={formatCurrency}
-              />
-            </TabsContent>
-
-            <TabsContent value="portal" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaPortalCiudadano />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="costes" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaModeradorCostes />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="informes" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaReportGenerator />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="documentos" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaDocumentAnalyzer />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="alertas" className="mt-4">
-              <GaliaAlertasTab expedientesRiesgo={expedientesRiesgo} />
-            </TabsContent>
-
-            <TabsContent value="transparencia" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaTransparencyPortal />
-              </Suspense>
-            </TabsContent>
-            
-            <TabsContent value="docgen" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaDocumentGeneratorPanel />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="geo" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaGeoIntelligencePanel />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="simulator" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaConvocatoriaSimulatorPanel />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="beneficiario360" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaBeneficiario360Panel />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="bpmn" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaBPMNWorkflowsPanel />
-              </Suspense>
-            </TabsContent>
-
-            <TabsContent value="integraciones" className="mt-4">
-              <Suspense fallback={<TabSkeleton />}>
-                <GaliaAdminIntegrationsPanel />
-              </Suspense>
-            </TabsContent>
-          </Tabs>
+          <div className="bg-card rounded-xl border border-border/50 p-4 min-h-[400px]">
+            {renderTabContent()}
+          </div>
         </div>
 
         {/* Right Column - Assistant or Sidebar */}
@@ -355,7 +289,7 @@ export function GaliaDashboard() {
         )}
       </div>
 
-      {/* Modal Nueva Convocatoria (Refactored to separate component) */}
+      {/* Modal Nueva Convocatoria */}
       <GaliaNuevaConvocatoriaModal
         isOpen={showNuevaConvocatoriaModal}
         onClose={() => setShowNuevaConvocatoriaModal(false)}

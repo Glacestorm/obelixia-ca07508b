@@ -26,3 +26,7 @@ export const GaliaDecisionSupportPanel = lazy(() => import('@/components/galia/p
 export const GaliaExportToolbar = lazy(() => import('@/components/galia/phase9/GaliaExportToolbar').then(m => ({ default: m.GaliaExportToolbar })));
 export const GaliaComplianceAuditor = lazy(() => import('@/components/galia/phase9/GaliaComplianceAuditor').then(m => ({ default: m.GaliaComplianceAuditor })));
 export const GaliaProjectStatusDashboard = lazy(() => import('@/components/galia/phase9/GaliaProjectStatusDashboard').then(m => ({ default: m.GaliaProjectStatusDashboard })));
+
+// Phase 9-10 Components - lazy loaded (IA Híbrida y Federación Nacional)
+export const GaliaHybridAIPanel = lazy(() => import('@/components/galia/phase9/GaliaHybridAIPanel').then(m => ({ default: m.GaliaHybridAIPanel })));
+export const GaliaNationalFederationDashboard = lazy(() => import('@/components/galia/phase9/GaliaNationalFederationDashboard').then(m => ({ default: m.GaliaNationalFederationDashboard })));
