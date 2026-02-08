@@ -225,3 +225,12 @@ export type {
   ConsultaLog,
   GaliaAdminIntegrationsContext
 } from './useGaliaAdminIntegrations';
+
+// === PHASE 9 - GALIA 2.0 ===
+export { useGaliaKnowledgeBase } from './useGaliaKnowledgeBase';
+export type { 
+  KnowledgeSource, 
+  KnowledgeItem, 
+  SearchResult, 
+  ExpertQueryResult 
+} from './useGaliaKnowledgeBase';

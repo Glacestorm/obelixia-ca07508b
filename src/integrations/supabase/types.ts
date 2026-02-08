@@ -40601,6 +40601,138 @@ export type Database = {
           },
         ]
       }
+      galia_communications_log: {
+        Row: {
+          acuse_recibo_id: string | null
+          asunto: string
+          canal: string
+          contenido: string
+          contenido_html: string | null
+          created_at: string
+          created_by: string | null
+          destinatario_email: string | null
+          destinatario_nif: string
+          destinatario_nombre: string | null
+          documento_url: string | null
+          error_mensaje: string | null
+          estado: string | null
+          expediente_id: string | null
+          fecha_entrega: string | null
+          fecha_envio: string | null
+          fecha_lectura: string | null
+          id: string
+          metadata: Json | null
+          reintentos: number | null
+          tipo_comunicacion: string
+          updated_at: string
+        }
+        Insert: {
+          acuse_recibo_id?: string | null
+          asunto: string
+          canal: string
+          contenido: string
+          contenido_html?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinatario_email?: string | null
+          destinatario_nif: string
+          destinatario_nombre?: string | null
+          documento_url?: string | null
+          error_mensaje?: string | null
+          estado?: string | null
+          expediente_id?: string | null
+          fecha_entrega?: string | null
+          fecha_envio?: string | null
+          fecha_lectura?: string | null
+          id?: string
+          metadata?: Json | null
+          reintentos?: number | null
+          tipo_comunicacion: string
+          updated_at?: string
+        }
+        Update: {
+          acuse_recibo_id?: string | null
+          asunto?: string
+          canal?: string
+          contenido?: string
+          contenido_html?: string | null
+          created_at?: string
+          created_by?: string | null
+          destinatario_email?: string | null
+          destinatario_nif?: string
+          destinatario_nombre?: string | null
+          documento_url?: string | null
+          error_mensaje?: string | null
+          estado?: string | null
+          expediente_id?: string | null
+          fecha_entrega?: string | null
+          fecha_envio?: string | null
+          fecha_lectura?: string | null
+          id?: string
+          metadata?: Json | null
+          reintentos?: number | null
+          tipo_comunicacion?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      galia_compliance_status: {
+        Row: {
+          actuacion: string
+          created_at: string
+          descripcion: string | null
+          estado: string | null
+          evidencias: string[] | null
+          fase: string
+          fecha_implementacion: string | null
+          fecha_verificacion: string | null
+          gal_id: string | null
+          id: string
+          metadata: Json | null
+          notas: string | null
+          porcentaje_completado: number | null
+          requisito: string
+          updated_at: string
+          verificado_por: string | null
+        }
+        Insert: {
+          actuacion: string
+          created_at?: string
+          descripcion?: string | null
+          estado?: string | null
+          evidencias?: string[] | null
+          fase: string
+          fecha_implementacion?: string | null
+          fecha_verificacion?: string | null
+          gal_id?: string | null
+          id?: string
+          metadata?: Json | null
+          notas?: string | null
+          porcentaje_completado?: number | null
+          requisito: string
+          updated_at?: string
+          verificado_por?: string | null
+        }
+        Update: {
+          actuacion?: string
+          created_at?: string
+          descripcion?: string | null
+          estado?: string | null
+          evidencias?: string[] | null
+          fase?: string
+          fecha_implementacion?: string | null
+          fecha_verificacion?: string | null
+          gal_id?: string | null
+          id?: string
+          metadata?: Json | null
+          notas?: string | null
+          porcentaje_completado?: number | null
+          requisito?: string
+          updated_at?: string
+          verificado_por?: string | null
+        }
+        Relationships: []
+      }
       galia_convocatorias: {
         Row: {
           bases_url: string | null
@@ -41369,6 +41501,143 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      galia_knowledge_base: {
+        Row: {
+          ambito_territorial: string[] | null
+          boe_referencia: string | null
+          bopa_referencia: string | null
+          categoria: string
+          consultas_count: number | null
+          contenido_html: string | null
+          contenido_texto: string
+          created_at: string
+          doue_referencia: string | null
+          fecha_publicacion: string | null
+          fecha_vigencia_fin: string | null
+          fecha_vigencia_inicio: string | null
+          fuente_url: string | null
+          id: string
+          is_vigente: boolean | null
+          keywords: string[] | null
+          metadata: Json | null
+          relevancia_score: number | null
+          resumen: string | null
+          sectores_aplicables: string[] | null
+          source_id: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+          version_numero: number | null
+        }
+        Insert: {
+          ambito_territorial?: string[] | null
+          boe_referencia?: string | null
+          bopa_referencia?: string | null
+          categoria: string
+          consultas_count?: number | null
+          contenido_html?: string | null
+          contenido_texto: string
+          created_at?: string
+          doue_referencia?: string | null
+          fecha_publicacion?: string | null
+          fecha_vigencia_fin?: string | null
+          fecha_vigencia_inicio?: string | null
+          fuente_url?: string | null
+          id?: string
+          is_vigente?: boolean | null
+          keywords?: string[] | null
+          metadata?: Json | null
+          relevancia_score?: number | null
+          resumen?: string | null
+          sectores_aplicables?: string[] | null
+          source_id?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+          version_numero?: number | null
+        }
+        Update: {
+          ambito_territorial?: string[] | null
+          boe_referencia?: string | null
+          bopa_referencia?: string | null
+          categoria?: string
+          consultas_count?: number | null
+          contenido_html?: string | null
+          contenido_texto?: string
+          created_at?: string
+          doue_referencia?: string | null
+          fecha_publicacion?: string | null
+          fecha_vigencia_fin?: string | null
+          fecha_vigencia_inicio?: string | null
+          fuente_url?: string | null
+          id?: string
+          is_vigente?: boolean | null
+          keywords?: string[] | null
+          metadata?: Json | null
+          relevancia_score?: number | null
+          resumen?: string | null
+          sectores_aplicables?: string[] | null
+          source_id?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          version_numero?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_knowledge_base_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "galia_knowledge_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_knowledge_sources: {
+        Row: {
+          configuracion: Json | null
+          created_at: string
+          descripcion: string | null
+          estado_sync: string | null
+          frecuencia_sync: string | null
+          id: string
+          is_active: boolean | null
+          nombre: string
+          tipo: string
+          ultimo_sync: string | null
+          updated_at: string
+          url_base: string | null
+        }
+        Insert: {
+          configuracion?: Json | null
+          created_at?: string
+          descripcion?: string | null
+          estado_sync?: string | null
+          frecuencia_sync?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre: string
+          tipo: string
+          ultimo_sync?: string | null
+          updated_at?: string
+          url_base?: string | null
+        }
+        Update: {
+          configuracion?: Json | null
+          created_at?: string
+          descripcion?: string | null
+          estado_sync?: string | null
+          frecuencia_sync?: string | null
+          id?: string
+          is_active?: boolean | null
+          nombre?: string
+          tipo?: string
+          ultimo_sync?: string | null
+          updated_at?: string
+          url_base?: string | null
+        }
+        Relationships: []
       }
       galia_solicitudes: {
         Row: {
