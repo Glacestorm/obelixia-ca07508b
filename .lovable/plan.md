@@ -1,535 +1,447 @@
 
-# Plan Estratégico: Módulo GALIA - Gestión de Ayudas LEADER con Inteligencia Artificial
+# PLAN ESTRATÉGICO GALIA 2.0 - EXCELENCIA DIGITAL EN GESTIÓN DE AYUDAS PÚBLICAS
 
 ## Resumen Ejecutivo
 
-Tras analizar exhaustivamente el documento "PROYECTO GALIA V4" y la arquitectura existente del sistema, propongo crear un **nuevo módulo vertical de Administración Pública** especializado en la gestión de subvenciones que integre IA avanzada. Este módulo se ubicará como expansión del vertical de Gobierno existente (`src/components/verticals/government/`) y tendrá su propio acceso tanto desde el ERP como desde un **Portal Público Ciudadano**.
+Este plan transforma el módulo GALIA en una plataforma de referencia europea para la gestión de ayudas públicas, superando los modelos de Estonia (e-Governance) y Dinamarca (Digital First). Se estructura en **10 Fases** que cubren desde la corrección del error de memoria hasta la implementación de un ecosistema completo de automatización UE-Estado-GAL-Ciudadano.
 
-## Ubicación del Módulo
+---
 
-**Recomendación: Vertical independiente de Gobierno/Administración Pública**
+## ANÁLISIS COMPARATIVO: ESTADO ACTUAL vs PROYECTO GALIA V4
 
-El módulo encaja mejor como una expansión del vertical de gobierno existente por estas razones:
-- Es gestión de fondos públicos (no comercial como CRM)
-- Involucra procedimiento administrativo (Ley 39/2015, 40/2015)
-- Requiere cumplimiento normativo específico (RGPD, transparencia, rendición de cuentas)
-- Necesita un portal público para ciudadanos/beneficiarios
+### Requisitos del Documento vs Implementación Actual
 
-Sin embargo, integrará capacidades del ERP (contabilidad, tesorería, documentación) y del CRM (gestión de solicitantes, comunicaciones).
+| Requisito Proyecto GALIA V4 | Estado Actual | Gap |
+|---|---|---|
+| **ACTUACIÓN 1**: Análisis experiencias IA | No existe base de conocimiento estructurada | Crear módulo de Knowledge Base |
+| **ACTUACIÓN 2**: Estudio normativo RGPD/Ley 39-40/2015 | Parcial (transparencia) | Integrar validación legal en cada acción |
+| **ACTUACIÓN 3.1**: Asistente virtual | ✅ Implementado (GaliaAsistenteVirtualMejorado) | Ampliar base de conocimiento |
+| **ACTUACIÓN 3.2**: Base de conocimiento | Tabla `galia_faq` básica | Expandir con RAG y normativa |
+| **ACTUACIÓN 3.3**: Panel de control | ✅ Dashboard implementado | Añadir más KPIs |
+| **ACTUACIÓN 3.4**: Entrenar modelo | ✅ Usa Gemini 2.5 Flash | Añadir fine-tuning contextual |
+| **ACTUACIÓN 3.5**: Formación equipos GAL | No existe | Crear módulo de onboarding |
+| **ACTUACIÓN 3.6**: Pruebas piloto | No existe sistema de testing | Implementar sandbox |
+| **ACTUACIÓN 4**: Plan Fase 2 | Parcialmente (Fases 4-8) | Completar roadmap |
+| **ACTUACIÓN 5**: Búsqueda socios | No existe | Portal federación nacional |
+| **ACTUACIÓN 6**: Coordinación transversal | No existe | Dashboard coordinador |
 
-## Arquitectura de Alto Nivel
+### Funcionalidades Pendientes del Circuito UE-Ciudadano
 
-```text
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                           MÓDULO GALIA - ARQUITECTURA                            │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                  │
-│  ┌────────────────────────────┐    ┌────────────────────────────────────────┐   │
-│  │   PORTAL PÚBLICO          │    │   PANEL DE GESTIÓN (GAL)                │   │
-│  │   (Ciudadanía)            │    │                                         │   │
-│  │                           │    │  ┌─────────────┐ ┌─────────────────┐    │   │
-│  │  • Consulta convocatorias │    │  │ Dashboard   │ │ Expedientes     │    │   │
-│  │  • Asistente Virtual IA   │    │  │ Analítico   │ │ Inteligentes    │    │   │
-│  │  • Autodiagnóstico        │    │  └─────────────┘ └─────────────────┘    │   │
-│  │    elegibilidad           │    │                                         │   │
-│  │  • Carga documentación    │    │  ┌─────────────┐ ┌─────────────────┐    │   │
-│  │  • Seguimiento estado     │    │  │ Moderación  │ │ Verificación    │    │   │
-│  │  • Justificaciones        │    │  │ de Costes   │ │ Documental IA   │    │   │
-│  │                           │    │  └─────────────┘ └─────────────────┘    │   │
-│  └──────────────┬────────────┘    │                                         │   │
-│                 │                 │  ┌─────────────┐ ┌─────────────────┐    │   │
-│                 │                 │  │ Asistente   │ │ Alertas y       │    │   │
-│                 │                 │  │ Técnico IA  │ │ Anomalías       │    │   │
-│                 │                 │  └─────────────┘ └─────────────────┘    │   │
-│                 │                 └──────────────────────┬──────────────────┘   │
-│                 │                                        │                      │
-│                 ▼                                        ▼                      │
-│  ┌──────────────────────────────────────────────────────────────────────────┐  │
-│  │                         CAPA DE IA (Edge Functions)                       │  │
-│  │                                                                           │  │
-│  │  galia-assistant          galia-document-analyzer    galia-cost-moderator │  │
-│  │  (Asistente Virtual)      (OCR + Clasificación)      (Detección anomalías)│  │
-│  │                                                                           │  │
-│  │  galia-eligibility        galia-justification        galia-predictor     │  │
-│  │  (Análisis requisitos)    (Validación gastos)        (Impacto proyectos) │  │
-│  └──────────────────────────────────────────────────────────────────────────┘  │
-│                                       │                                         │
-│                                       ▼                                         │
-│  ┌──────────────────────────────────────────────────────────────────────────┐  │
-│  │                         BASE DE DATOS                                     │  │
-│  │                                                                           │  │
-│  │  galia_convocatorias    galia_solicitudes    galia_expedientes           │  │
-│  │  galia_beneficiarios    galia_documentos     galia_justificaciones       │  │
-│  │  galia_costes_ref       galia_auditorias     galia_gal_config            │  │
-│  └──────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────┘
+| Fase del Circuito | Implementación Actual | Pendiente |
+|---|---|---|
+| UE → España (Reglamentos) | No automatizado | Scraping BOE/DOUE + alertas |
+| España → CCAA (Distribución) | No existe | Integración BDNS automática |
+| Convocatoria → BDNS | Manual | Publicación automática |
+| Solicitud ciudadano | Básico | Formularios dinámicos + Cl@ve |
+| Evaluación IA | ✅ Auto-approval básico | Scoring multicriteria |
+| Resolución → Notificación | No automatizada | Notific@ + e-mail oficial |
+| Justificación | ✅ Plantillas básicas | OCR + validación 3 ofertas |
+| Auditoría/Reintegro | ✅ Smart Audit | Ampliar con IA predictiva |
+
+---
+
+## FASE 0: CORRECCIÓN CRÍTICA - ERROR DE MEMORIA
+
+**Problema**: `JavaScript heap out of memory` durante el build de Vite.
+
+**Causa raíz**: El componente `GaliaDashboard.tsx` carga 16+ tabs con lazy loading pero el archivo tiene 547 líneas con múltiples imports estáticos.
+
+**Solución técnica**:
+1. Dividir `GaliaDashboard.tsx` en componentes más pequeños
+2. Mover la lógica de tabs a un subdirectorio `dashboard/tabs/`
+3. Implementar code-splitting más agresivo
+4. Reducir imports estáticos de lucide-react (usar dynamic imports)
+
+**Archivos a modificar**:
+- `src/components/verticals/galia/GaliaDashboard.tsx` → Refactorizar
+- Crear `src/components/verticals/galia/dashboard/tabs/` con componentes individuales
+
+---
+
+## FASE 1: SISTEMA DE CONOCIMIENTO NORMATIVO (Base RAG)
+
+**Objetivo**: Crear una base de conocimiento exhaustiva para el Agente GALIA Experto.
+
+### 1.1 Infraestructura de Conocimiento
+
+**Nueva tabla**: `galia_knowledge_base`
+```
+- id, categoria (UE/Nacional/Autonómico/Local)
+- tipo (reglamento/ley/orden/convocatoria/guia/faq)
+- titulo, contenido_texto, contenido_embeddings
+- fuente_url, boe_referencia, doue_referencia
+- fecha_publicacion, fecha_vigencia_inicio, fecha_vigencia_fin
+- ambito_territorial, sectores_aplicables
+- created_at, updated_at
 ```
 
-## Funcionalidades por Fase
-
-### FASE 1: Prueba de Concepto (MVP)
-
-**1.1 Asistente Virtual para Ciudadanos**
-- Chatbot conversacional entrenado con normativa LEADER
-- RAG (Retrieval Augmented Generation) sobre base de conocimiento
-- Respuestas a consultas frecuentes (plazos, documentación, elegibilidad)
-- Derivación automática a técnico cuando supera umbral de complejidad
-- Métricas: tasa de resolución sin intervención humana
-
-**1.2 Panel de Control (Dashboard) para GAL**
-- Visualización en tiempo real del estado de expedientes
-- Alertas de plazos críticos (vencimientos, hitos)
-- Extracción automática de datos de informes (OCR inteligente)
-- Filtros por estado, beneficiario, tipo de proyecto, comarca
-- Exportación de informes para reporting
-
-**1.3 Base de Conocimiento Estructurada**
-- Importación de normativa (PDFs, BOE, BOPA)
-- Catálogo de costes de referencia
-- FAQs categorizadas
-- Histórico de interpretaciones y criterios
-
-### FASE 2: Despliegue Completo
-
-**2.1 Portal Público de Autoservicio**
-- Registro de beneficiarios potenciales
-- Autodiagnóstico de elegibilidad con IA
-- Carga y seguimiento de documentación
-- Firma electrónica integrada
-- Notificaciones automáticas de estado
-- Acceso a histórico de solicitudes
-
-**2.2 Gestión Inteligente de Expedientes**
-- Workflow automatizado con estados configurables
-- Clasificación automática de documentos entrantes
-- Extracción de datos estructurados (NIF, importes, fechas)
-- Asignación automática a técnicos por carga de trabajo
-- Control de versiones de documentación
-
-**2.3 Sistema de Moderación de Costes**
-- Comparación automática con catálogos de referencia
-- Detección de sobrecostes (desviación > umbral configurable)
-- Alertas de inconsistencias (duplicidades, errores)
-- Justificación requerida para desviaciones
-- Histórico de precios para análisis de tendencias
-
-**2.4 Verificación Documental con IA**
-- Análisis de facturas y justificantes
-- Validación de proveedores
-- Detección de documentos alterados
-- Verificación de requisitos formales
-- Scoring de riesgo por expediente
-
-**2.5 Asistente Técnico Interno**
-- Copiloto para técnicos del GAL
-- Consultas sobre normativa en contexto del expediente
-- Sugerencias de resolución basadas en histórico
-- Generación de borradores de informes
-
-### FASE 3: Funcionalidades Avanzadas
-
-**3.1 Predicción de Impacto Socioeconómico**
-- Modelos ML entrenados con proyectos históricos
-- Scoring de viabilidad del proyecto
-- Estimación de empleo generado
-- Predicción de cumplimiento de objetivos
-
-**3.2 Integración con Sistemas Externos**
-- Conexión con gestor de expedientes regional (si existe)
-- Sincronización con registro de subvenciones BDNS
-- Consulta de datos fiscales (AEAT)
-- Integración con catastro para verificaciones
-
-**3.3 Reporting Automatizado**
-- Generación automática de memorias
-- Informes de seguimiento periódicos
-- Cuadros de mando para auditorías
-- Exportación a formatos requeridos (FEDER, etc.)
-
-**3.4 Sistema de Transparencia**
-- Publicación automática en portal de transparencia
-- Trazabilidad completa de actuaciones
-- Explicabilidad de decisiones IA
-- Mecanismo de reclamación para beneficiarios
-
-### FASE 4: Mejoras Avanzadas ✅ COMPLETADO
-
-**4.1 Aprobación Semi-Automática** ✅
-- Pre-aprobación de solicitudes que cumplen 100% criterios objetivos
-- Validación humana requerida en ventana de 24h
-- Edge Function: `galia-auto-approval`
-- Hook: `useGaliaAutoApproval.ts`
-
-**4.2 Asistente Proactivo** ✅
-- Notificaciones push de plazos críticos
-- Alertas de documentos faltantes
-- Avisos de cambios normativos (BOE/BOPA)
-- Digest diario para técnicos
-- Edge Function: `galia-proactive-assistant`
-- Hook: `useGaliaProactiveAssistant.ts`
-
-**4.3 Interoperabilidad BDNS** ✅
-- Sincronización con Base de Datos Nacional de Subvenciones
-- Búsqueda de convocatorias por código/CIF
-- Validación de beneficiarios (NIF, límites de minimis)
-- Publicación automática de resoluciones
-- Edge Function: `galia-bdns-sync`
-- Hook: `useGaliaBDNS.ts`
-
-**4.4 PWA Modo Offline** ✅
-- Aplicación instalable desde navegador
-- Soporte para zonas rurales con conectividad limitada
-- Service Worker con estrategias de caché (NetworkFirst para API, CacheFirst para assets)
-- Sincronización automática al recuperar conexión
-- Página de instalación: `/install`
-- Manifest y meta tags PWA en index.html
-- Configuración vite-plugin-pwa
-
-### FASE 5: Expansión ✅ COMPLETADO
-
-### FASE 6: Innovación ✅ COMPLETADO
-
-**6.1 eIDAS 2.0 / EUDI Wallet** ✅
-- Verificación de credenciales European Digital Identity Wallet
-- Soporte PID, mDL, QEAA, EAA
-- OpenID4VP presentation verification
-- Edge Function: `galia-eudi-wallet`
-- Hook: `useGaliaEUDIWallet.ts`
-
-**6.2 IA Multimodal (Voz + Documentos)** ✅
-- OCR avanzado con extracción estructurada
-- Transcripción de audio a texto
-- Asistente de voz para consultas
-- Análisis de imágenes de documentos
-- Edge Function: `galia-multimodal-ai`
-- Hook: `useGaliaMultimodalAI.ts`
-
-**6.3 Blockchain Audit Trail** ✅
-- Registro inmutable de decisiones críticas
-- Hash SHA-256 encadenado
-- Pruebas de integridad verificables
-- Anclaje a blockchain pública
-- Edge Function: `galia-blockchain-audit`
-- Hook: `useGaliaBlockchainAudit.ts`
-
-**6.4 API Pública para Terceros** ✅
-- REST API documentada (OpenAPI 3.0)
-- Endpoints: convocatorias, expedientes, estadísticas
-- Verificación de elegibilidad
-- Edge Function: `galia-public-api`
-- Hook: `useGaliaPublicAPI.ts`
-
-**5.1 Integración Cl@ve/DNIe** ✅
-- Autenticación ciudadana con sistema Cl@ve del gobierno español
-- Soporte para DNI electrónico, Cl@ve PIN, Cl@ve Permanente y Certificado Digital
-- Niveles de aseguramiento (bajo, sustancial, alto)
-- Edge Function: `galia-clave-auth`
-- Hook: `useGaliaClaveAuth.ts`
-
-**5.2 Portal Nacional Federado** ✅
-- Dashboard agregado multi-GAL a nivel regional/nacional
-- Comparación de rendimiento entre GALs con análisis IA
-- Agregación de KPIs y benchmarking
-- Informes regionales y mapa de calor
-- Edge Function: `galia-federation`
-- Hook: `useGaliaFederation.ts`
-
-**5.3 Sistema de Gamificación** ✅
-- Puntos por actividades (expediente resuelto, documento verificado, etc.)
-- Logros desbloqueables (Velocista, Mentor, Maestro LEADER, etc.)
-- Tabla de clasificación semanal/mensual
-- Desafíos diarios y semanales
-- Niveles y títulos (Aprendiz → Gran Maestro LEADER)
-- Edge Function: `galia-gamification`
-- Hook: `useGaliaGamification.ts`
-
-**5.4 Optimización de Rendimiento** ✅
-- Caché inteligente con stale-while-revalidate
-- Lazy loading con Intersection Observer
-- Métricas de rendimiento (hit rate, load time)
-- Batch fetching y prefetch
-- Limpieza automática de caché expirado
-- Hook: `useGaliaPerformance.ts`
-
-**5.5 Componentes UI Fase 5** ✅
-- Panel de autenticación Cl@ve: `GaliaClaveAuthPanel.tsx`
-- Dashboard federación nacional: `GaliaFederationDashboard.tsx`
-- Panel de gamificación para técnicos: `GaliaGamificationPanel.tsx`
-- Ubicación: `src/components/galia/phase5/`
-
-## Estructura de Archivos Propuesta
-
-```text
-src/
-├── components/verticals/galia/
-│   ├── index.ts
-│   ├── GaliaDashboard.tsx                 # Dashboard principal GAL
-│   ├── GaliaPublicPortal.tsx              # Portal ciudadano
-│   ├── GaliaConvocatoriasPanel.tsx        # Gestión convocatorias
-│   ├── GaliaExpedientesGrid.tsx           # Lista de expedientes
-│   ├── GaliaExpedienteDetail.tsx          # Detalle expediente
-│   ├── GaliaSolicitudWizard.tsx           # Wizard de solicitud
-│   ├── GaliaJustificacionPanel.tsx        # Panel justificaciones
-│   ├── GaliaCostesModeradorPanel.tsx      # Moderación de costes
-│   ├── GaliaDocumentViewer.tsx            # Visor documentos IA
-│   ├── GaliaAsistenteVirtual.tsx          # Chatbot ciudadano
-│   ├── GaliaAsistenteTecnico.tsx          # Copiloto técnicos
-│   ├── GaliaAuditTrail.tsx                # Trazabilidad
-│   ├── GaliaAnalyticsPanel.tsx            # Analíticas
-│   ├── GaliaConfigPanel.tsx               # Configuración GAL
-│   └── shared/
-│       ├── GaliaStatusBadge.tsx
-│       ├── GaliaTimelineView.tsx
-│       ├── GaliaKPICards.tsx
-│       └── GaliaAlertsList.tsx
-│
-├── hooks/galia/
-│   ├── index.ts
-│   ├── useGaliaConvocatorias.ts           # CRUD convocatorias
-│   ├── useGaliaExpedientes.ts             # Gestión expedientes
-│   ├── useGaliaSolicitudes.ts             # Solicitudes ciudadanos
-│   ├── useGaliaJustificaciones.ts         # Justificaciones
-│   ├── useGaliaCostesReferencia.ts        # Catálogo costes
-│   ├── useGaliaDocumentos.ts              # Gestión documental
-│   ├── useGaliaAsistenteIA.ts             # Asistente virtual
-│   ├── useGaliaModeradorCostes.ts         # Análisis costes
-│   ├── useGaliaElegibilidad.ts            # Verificación requisitos
-│   └── useGaliaAnalytics.ts               # Métricas y KPIs
-│
-├── pages/galia/
-│   ├── GaliaPage.tsx                      # Página principal admin
-│   └── GaliaPublicPage.tsx                # Portal público
-
-supabase/functions/
-├── galia-assistant/index.ts               # Asistente virtual IA
-├── galia-document-analyzer/index.ts       # OCR + Clasificación
-├── galia-cost-moderator/index.ts          # Detección anomalías
-├── galia-eligibility-checker/index.ts     # Análisis requisitos
-├── galia-justification-validator/index.ts # Validación gastos
-└── galia-impact-predictor/index.ts        # Predicción impacto
+**Nueva tabla**: `galia_knowledge_sources`
+```
+- id, nombre (BOE/BOPA/DOUE/BDNS/etc)
+- url_base, frecuencia_sync
+- ultimo_sync, estado_sync
 ```
 
-## Modelo de Datos (Esquema Simplificado)
+### 1.2 Descarga Automática de Normativa
+
+**Nueva Edge Function**: `galia-knowledge-sync`
+- Conexión a APIs oficiales: BOE.es, BOPA.es, BDNS, EUR-Lex
+- Parsing de PDFs normativos con OCR
+- Generación de embeddings para búsqueda semántica
+- Actualización diaria automática (cron)
+
+### 1.3 Agente GALIA Experto
+
+**Nueva Edge Function**: `galia-expert-agent`
+- Arquitectura RAG con Gemini 2.5 Pro
+- Consulta vectorial sobre base de conocimiento
+- Citación de fuentes normativas
+- Especialización por rol: ciudadano/técnico/auditor/gestor
+
+**Nuevo componente**: `GaliaKnowledgeExplorer.tsx`
+- Navegador de normativa por categorías
+- Buscador semántico
+- Vista de árbol jerárquico (UE→España→Asturias→Municipio)
+- Descarga de documentos originales
+
+---
+
+## FASE 2: AUTOMATIZACIÓN DEL CIRCUITO UE → CIUDADANO
+
+### 2.1 Monitor de Nuevas Dotaciones (UE/Estado)
+
+**Nueva Edge Function**: `galia-eu-funding-monitor`
+- Scraping de convocatorias del Plan de Recuperación
+- Detección de nuevos programas FEDER/LEADER
+- Alertas a administradores cuando hay nuevo funding
+
+### 2.2 Sincronización BDNS Bidireccional
+
+**Mejora de**: `galia-bdns-sync`
+- Publicación automática de convocatorias al crear en GALIA
+- Descarga de convocatorias de otros GAL/CCAA
+- Validación de beneficiarios contra BDNS (consulta de minimis)
+
+### 2.3 Creación Automática de Convocatorias
+
+**Mejora del formulario "Nueva Convocatoria"**:
+- Campos adicionales: documentos adjuntos, requisitos BDNS, tipos beneficiario
+- Upload de bases reguladoras (PDF)
+- Generación automática de extracto para BOE/BOPA
+- Pre-validación de cumplimiento normativo
+
+---
+
+## FASE 3: PORTAL CIUDADANO AVANZADO
+
+### 3.1 Autenticación Cl@ve/DNIe
+
+**Mejora de**: `useGaliaClaveAuth`
+- Integración real con Cl@ve PIN/Permanente
+- Firma electrónica de solicitudes
+- Verificación de identidad para expedientes
+
+### 3.2 Formularios de Solicitud Dinámicos
+
+**Nuevo componente**: `GaliaSolicitudWizard.tsx`
+- Wizard paso a paso adaptado a cada convocatoria
+- Campos dinámicos según tipo de beneficiario
+- Validación en tiempo real
+- Guardado de borrador
+- Anexo de documentos con verificación
+
+### 3.3 Comunicaciones Oficiales Automatizadas
+
+**Nueva Edge Function**: `galia-official-notifications`
+- Integración con Notific@ (sistema nacional de notificaciones)
+- Generación de documentos oficiales (resoluciones, requerimientos)
+- Envío por e-mail con acuse de recibo
+- Registro en expediente automático
+
+---
+
+## FASE 4: VINCULACIÓN CON MÓDULO JURÍDICO
+
+### 4.1 Asistencia Legal Integrada
+
+**Nueva integración**:
+- Conexión con `legal-ai-advisor` existente
+- Consultas sobre recursos administrativos
+- Plazos legales y prescripciones
+- Generación de alegaciones/recursos
+
+### 4.2 Validación Legal en Tiempo Real
+
+**Nuevo componente**: `GaliaLegalValidationBadge.tsx`
+- Verificación automática de cumplimiento Ley 38/2003
+- Alertas de plazos administrativos
+- Sugerencias de corrección antes de resolución
+
+### 4.3 Recursos y Reclamaciones
+
+**Nuevo componente**: `GaliaRecursosPanel.tsx`
+- Gestión de recursos alzada/reposición
+- Calendario de plazos con alertas
+- Plantillas de respuesta a recursos
+
+---
+
+## FASE 5: VINCULACIÓN CON MÓDULOS CONTABLE Y TESORERÍA
+
+### 5.1 Integración Contable
+
+**Conexiones con ERP existente**:
+- Registro automático de compromisos en contabilidad
+- Generación de asientos por pagos de subvenciones
+- Reconciliación de justificaciones con facturas
+
+### 5.2 Gestión de Tesorería
+
+**Nuevas funcionalidades**:
+- Previsión de pagos a beneficiarios
+- Control de cash-flow por convocatoria
+- Alertas de fondos insuficientes
+
+### 5.3 Reporting Unificado
+
+**Nuevo componente**: `GaliaFinancialBridgePanel.tsx`
+- Vista consolidada subvención + contabilidad
+- Exportación a formatos oficiales (cuenta justificativa)
+- Cruce automático con extractos bancarios
+
+---
+
+## FASE 6: TRANSPARENCIA TOTAL Y COMUNICACIÓN CIUDADANA
+
+### 6.1 Portal de Transparencia Mejorado
+
+**Mejora de**: `GaliaTransparencyPortal.tsx`
+- Publicación automática de beneficiarios (Ley 19/2013)
+- Explicabilidad IA (Art. 22 RGPD)
+- Estadísticas públicas en tiempo real
+
+### 6.2 Notificaciones Proactivas al Ciudadano
+
+**Nuevo sistema**:
+- SMS/Email cuando cambia estado de expediente
+- Recordatorio de plazos de justificación
+- Alertas de nuevas convocatorias según perfil
+
+### 6.3 Encuestas de Satisfacción
+
+**Nuevo componente**: `GaliaSatisfactionSurvey.tsx`
+- Encuesta post-resolución
+- NPS del servicio
+- Sugerencias de mejora
+
+---
+
+## FASE 7: IMPRESIÓN Y EXPORTACIÓN UNIVERSAL
+
+### 7.1 Sistema de Impresión de Expedientes
+
+**Nuevo componente**: `GaliaExpedientePrint.tsx`
+- Vista de impresión optimizada
+- Selección de secciones a imprimir
+- Generación de PDF con firma electrónica
+
+### 7.2 Exportación Multiformato
+
+**Nueva funcionalidad en todos los paneles**:
+- Export a PDF, Excel, Word, CSV
+- Envío por email integrado
+- Compartir enlace temporal (documento público)
+
+### 7.3 Generación de Documentos Oficiales
+
+**Mejora de**: `GaliaDocumentGeneratorPanel`
+- Plantillas de resoluciones según normativa
+- Requerimientos de subsanación
+- Actas de verificación
+- Memorias FEDER
+
+---
+
+## FASE 8: BOTÓN COMPARATIVO DE CUMPLIMIENTO
+
+### 8.1 Auditor de Cumplimiento GALIA V4
+
+**Nuevo componente**: `GaliaComplianceAuditor.tsx`
+- Análisis punto por punto del documento V4
+- Indicador visual de implementación (%)
+- Detalle de gaps pendientes
+- Recomendaciones de mejora
+
+### 8.2 Dashboard de Estado del Proyecto
+
+**Nuevo componente**: `GaliaProjectStatusDashboard.tsx`
+- Roadmap visual de fases
+- Progreso por actuación
+- Comparativa con Estonia/Dinamarca
+
+---
+
+## FASE 9: AUTOMATIZACIÓN EXTREMA (IA LOCAL + CLOUD)
+
+### 9.1 Integración IA Híbrida
+
+**Conexión con sistema existente**:
+- Uso de Ollama local para datos sensibles
+- Gemini/GPT para análisis generales
+- Routing inteligente por tipo de consulta
+
+### 9.2 Procesamiento Automático de Expedientes
+
+**Nuevo workflow**:
+- Recepción → OCR → Validación → Scoring → Pre-resolución
+- Todo sin intervención humana para casos simples
+- Derivación a técnico solo cuando necesario
+
+### 9.3 Detección de Anomalías en Tiempo Real
+
+**Mejora de Smart Audit**:
+- Alertas inmediatas por desviaciones
+- Bloqueo preventivo de operaciones sospechosas
+- Recomendaciones de acción
+
+---
+
+## FASE 10: FEDERACIÓN NACIONAL E INTERNACIONAL
+
+### 10.1 Portal Multi-GAL Nacional
+
+**Mejora de**: `GaliaFederationDashboard`
+- Conexión con los 300+ GAL de España
+- Benchmarking automático
+- Compartición de buenas prácticas
+
+### 10.2 Interoperabilidad Europea
+
+**Nuevas integraciones**:
+- ENRD (European Network for Rural Development)
+- eIDAS 2.0 para ciudadanos UE
+- Reporte automático a Comisión Europea
+
+### 10.3 Modelo de Referencia
+
+**Documentación**:
+- API pública documentada (OpenAPI 3.0)
+- SDK para otros GAL
+- Manual de implementación
+
+---
+
+## CRONOGRAMA ESTIMADO
+
+| Fase | Duración | Prioridad |
+|---|---|---|
+| Fase 0 (Error memoria) | 1 día | CRÍTICA |
+| Fase 1 (Knowledge Base) | 2 semanas | ALTA |
+| Fase 2 (Circuito UE) | 2 semanas | ALTA |
+| Fase 3 (Portal ciudadano) | 2 semanas | ALTA |
+| Fase 4 (Jurídico) | 1 semana | MEDIA |
+| Fase 5 (Contable/Tesorería) | 1 semana | MEDIA |
+| Fase 6 (Transparencia) | 1 semana | MEDIA |
+| Fase 7 (Impresión/Export) | 3 días | MEDIA |
+| Fase 8 (Comparativo) | 2 días | MEDIA |
+| Fase 9 (IA extrema) | 2 semanas | BAJA |
+| Fase 10 (Federación) | 2 semanas | BAJA |
+
+---
+
+## ARQUITECTURA TÉCNICA PROPUESTA
 
 ```text
-TABLAS PRINCIPALES:
-
-galia_gal_config
-├── id, nombre, codigo_leader, region, contacto, logo_url
-└── RLS: solo técnicos del GAL pueden ver/editar su config
-
-galia_convocatorias
-├── id, gal_id, nombre, descripcion, presupuesto_total
-├── fecha_inicio, fecha_fin, estado, requisitos_json
-└── RLS: públicas para lectura, solo técnicos para edición
-
-galia_beneficiarios
-├── id, tipo (empresa|ayuntamiento|asociacion), nif, nombre
-├── representante, email, telefono, direccion, sector_cnae
-└── RLS: beneficiario ve su perfil, técnicos ven todos de su GAL
-
-galia_solicitudes
-├── id, convocatoria_id, beneficiario_id, fecha_solicitud
-├── estado, puntuacion_elegibilidad, asignado_tecnico_id
-└── RLS: beneficiario ve las suyas, técnicos del GAL ven todas
-
-galia_expedientes
-├── id, solicitud_id, numero_expediente, estado_workflow
-├── importe_solicitado, importe_concedido, fecha_resolucion
-└── RLS: beneficiario ve los suyos, técnicos del GAL gestionan
-
-galia_documentos
-├── id, expediente_id, tipo, nombre_archivo, storage_path
-├── fecha_subida, validado, resultado_ia_json, requiere_revision
-└── RLS: beneficiario sube/ve los suyos, técnicos validan
-
-galia_justificaciones
-├── id, expediente_id, tipo_gasto, proveedor, importe
-├── fecha_factura, doc_factura_id, doc_pago_id, validado
-├── desviacion_coste_ref, alerta_anomalia
-└── RLS: beneficiario sube, técnicos validan
-
-galia_costes_referencia
-├── id, categoria, descripcion, precio_min, precio_max
-├── precio_medio, unidad, fecha_actualizacion, fuente
-└── RLS: lectura pública, solo admins editan
-
-galia_interacciones_ia
-├── id, tipo (asistente|moderador|clasificador), usuario_id
-├── expediente_id, pregunta, respuesta, confianza
-├── derivado_tecnico, feedback_usuario
-└── RLS: auditoría completa para cumplimiento
++------------------------------------------------------------------+
+|                        FRONTEND (React/Vite)                      |
+|  +------------+  +------------+  +------------+  +------------+   |
+|  |  Portal    |  | Dashboard  |  | Knowledge  |  | Compliance |   |
+|  | Ciudadano  |  |  Técnico   |  |  Explorer  |  |   Auditor  |   |
+|  +------------+  +------------+  +------------+  +------------+   |
++------------------------------------------------------------------+
+                              |
++------------------------------------------------------------------+
+|                      EDGE FUNCTIONS (Deno)                        |
+|  +------------------+  +------------------+  +------------------+ |
+|  | galia-expert     |  | galia-knowledge  |  | galia-official   | |
+|  |     -agent       |  |      -sync       |  |  -notifications  | |
+|  +------------------+  +------------------+  +------------------+ |
+|  +------------------+  +------------------+  +------------------+ |
+|  | galia-eu-funding |  | galia-legal      |  | galia-financial  | |
+|  |    -monitor      |  |   -bridge        |  |    -bridge       | |
+|  +------------------+  +------------------+  +------------------+ |
++------------------------------------------------------------------+
+                              |
++------------------------------------------------------------------+
+|                    SUPABASE DATABASE                              |
+|  galia_knowledge_base | galia_sources | galia_convocatorias       |
+|  galia_expedientes    | galia_audit   | galia_notifications       |
++------------------------------------------------------------------+
+                              |
++------------------------------------------------------------------+
+|                   INTEGRACIONES EXTERNAS                          |
+|  +-------+  +------+  +------+  +--------+  +-------+  +-------+  |
+|  | BDNS  |  | BOE  |  | BOPA |  | Notific@|  | AEAT  |  | TGSS  | |
+|  +-------+  +------+  +------+  +--------+  +-------+  +-------+  |
++------------------------------------------------------------------+
 ```
 
-## Edge Functions de IA
+---
 
-### 1. galia-assistant (Asistente Virtual)
-```text
-Acciones:
-- chat: Conversación con ciudadanos sobre LEADER
-- search_faq: Búsqueda semántica en base de conocimiento
-- check_eligibility_quick: Pre-evaluación rápida de elegibilidad
-- explain_procedure: Explicación paso a paso de trámites
+## RESUMEN DE NUEVOS COMPONENTES Y ARCHIVOS
 
-Tecnología:
-- RAG sobre base de conocimiento vectorizada
-- Modelo: google/gemini-2.5-flash (rápido, económico)
-- Historial de conversación por sesión
-- Detección de intención para derivación
-```
+### Hooks (9 nuevos):
+- `useGaliaKnowledgeBase.ts`
+- `useGaliaEUFundingMonitor.ts`
+- `useGaliaSolicitudWizard.ts`
+- `useGaliaLegalBridge.ts`
+- `useGaliaFinancialBridge.ts`
+- `useGaliaOfficialNotifications.ts`
+- `useGaliaComplianceAuditor.ts`
+- `useGaliaExportPrint.ts`
+- `useGaliaProjectStatus.ts`
 
-### 2. galia-document-analyzer (Análisis Documental)
-```text
-Acciones:
-- classify: Clasificar tipo de documento
-- extract_data: Extraer campos estructurados (OCR + NLP)
-- validate_format: Verificar requisitos formales
-- detect_alterations: Análisis de integridad
+### Componentes UI (12 nuevos):
+- `GaliaKnowledgeExplorer.tsx`
+- `GaliaSolicitudWizard.tsx`
+- `GaliaLegalValidationBadge.tsx`
+- `GaliaRecursosPanel.tsx`
+- `GaliaFinancialBridgePanel.tsx`
+- `GaliaSatisfactionSurvey.tsx`
+- `GaliaExpedientePrint.tsx`
+- `GaliaComplianceAuditor.tsx`
+- `GaliaProjectStatusDashboard.tsx`
+- `GaliaEUFundingAlerts.tsx`
+- `GaliaNotificacionesOficiales.tsx`
+- `GaliaExportToolbar.tsx`
 
-Tecnología:
-- OCR con corrección contextual
-- Extracción de entidades (NIF, importes, fechas)
-- Modelo: google/gemini-2.5-pro (precisión en documentos)
-```
+### Edge Functions (8 nuevas):
+- `galia-expert-agent` (RAG con knowledge base)
+- `galia-knowledge-sync` (sincronización normativa)
+- `galia-eu-funding-monitor` (monitor UE)
+- `galia-official-notifications` (Notific@)
+- `galia-legal-bridge` (conexión módulo jurídico)
+- `galia-financial-bridge` (conexión ERP)
+- `galia-compliance-auditor` (verificación V4)
+- `galia-document-print` (generación PDFs)
 
-### 3. galia-cost-moderator (Moderación Costes)
-```text
-Acciones:
-- compare_prices: Comparar con catálogo referencia
-- detect_anomalies: Identificar patrones sospechosos
-- flag_duplicates: Detectar duplicidades
-- calculate_deviation: Calcular desviación porcentual
+### Tablas Supabase (4 nuevas):
+- `galia_knowledge_base`
+- `galia_knowledge_sources`
+- `galia_communications_log`
+- `galia_compliance_status`
 
-Tecnología:
-- Comparación con embeddings de descripciones
-- Reglas configurables de umbrales
-- Scoring de riesgo ponderado
-```
+---
 
-### 4. galia-eligibility-checker (Verificación Elegibilidad)
-```text
-Acciones:
-- full_check: Análisis completo contra requisitos
-- partial_check: Verificación de criterio específico
-- generate_report: Informe de elegibilidad
-- suggest_improvements: Recomendaciones para cumplir
+## CONCLUSIÓN
 
-Tecnología:
-- Matching semántico contra criterios
-- Verificación de umbrales numéricos
-- Generación de explicaciones
-```
+Este plan posiciona a GALIA como la plataforma de referencia para gestión de ayudas públicas en Europa, superando los modelos de Estonia y Dinamarca mediante:
 
-## Cumplimiento Normativo Integrado
+1. **Automatización extrema**: Desde la publicación UE hasta el pago al ciudadano
+2. **Transparencia total**: Cumplimiento Ley 19/2013 y Art. 22 RGPD
+3. **Interoperabilidad**: BDNS, Cl@ve, Notific@, AEAT, TGSS
+4. **IA Especializada**: Agente experto con base de conocimiento normativo
+5. **Modularidad**: Integración con Jurídico, Contable y Tesorería
+6. **Escalabilidad**: Preparado para 300+ GAL nacionales
 
-El módulo incluirá controles para:
-
-1. **RGPD / LOPDGDD**
-   - Consentimiento explícito para tratamiento
-   - Art. 22: Supervisión humana en decisiones automatizadas
-   - Derecho de acceso y rectificación
-   - Anonimización para analytics
-
-2. **Ley 39/2015 (Procedimiento Administrativo)**
-   - Registro de entrada/salida
-   - Plazos legales configurables
-   - Notificaciones electrónicas
-   - Firma electrónica válida
-
-3. **Ley 40/2015 (Actuación Administrativa Automatizada)**
-   - Trazabilidad completa de decisiones IA
-   - Intervención humana en resoluciones
-   - Motivación de actos administrativos
-
-4. **Ley 19/2013 (Transparencia)**
-   - Publicación automática en portal
-   - Explicabilidad de algoritmos
-   - Acceso a información pública
-
-5. **Normativa LEADER / FEDER**
-   - Control de elegibilidad de gastos
-   - Verificaciones sobre el terreno
-   - Pista de auditoría europea
-
-## Innovaciones Respecto a Experiencias Internacionales
-
-Basándome en la investigación de mejores prácticas:
-
-1. **Modelo Estonia (e-Estonia / Kratt AI)**
-   - Servicios 100% digitales con IA proactiva
-   - Notificaciones push personalizadas
-   - Once-only principle (no pedir datos ya disponibles)
-
-2. **Modelo Dinamarca (borger.dk / cBrain)**
-   - 67% aprobación automática en minutos
-   - Self-service obligatorio
-   - Integración con identidad digital
-
-3. **Mejoras propuestas para GALIA:**
-   - **Aprobación semi-automática**: Para solicitudes que cumplen 100% criterios objetivos, pre-aprobar con validación humana en 24h
-   - **Asistente proactivo**: Notificar plazos, documentos faltantes, cambios normativos
-   - **Integración Cl@ve**: Autenticación con DNIe/Cl@ve
-   - **Interoperabilidad BDNS**: Sincronización con Base de Datos Nacional de Subvenciones
-   - **Modo offline**: PWA para zonas rurales con conectividad limitada
-
-## Cronograma Estimado de Implementación
-
-```text
-FASE 1 - MVP (8-10 semanas)
-├── Semana 1-2:  Modelo de datos + migraciones + RLS
-├── Semana 3-4:  Hooks base + Edge Functions (assistant, analyzer)
-├── Semana 5-6:  Dashboard GAL + Panel expedientes
-├── Semana 7-8:  Asistente Virtual ciudadano
-├── Semana 9-10: Testing + ajustes + documentación
-
-FASE 2 - Despliegue (12-16 semanas)
-├── Semana 1-4:  Portal público completo
-├── Semana 5-8:  Moderador costes + Verificación documental
-├── Semana 9-12: Workflows + Integraciones
-├── Semana 13-16: Testing extensivo + Formación
-
-FASE 3 - Avanzado (8-12 semanas)
-├── Predicción impacto
-├── Integraciones externas
-├── Reporting automatizado
-└── Optimizaciones basadas en feedback
-```
-
-## Métricas de Éxito
-
-- **Tasa de resolución automática del asistente**: Objetivo 70%+
-- **Reducción tiempo medio de tramitación**: Objetivo -30%
-- **Detección de anomalías en costes**: Objetivo 95% precisión
-- **Satisfacción ciudadana**: Objetivo 4.5/5
-- **Expedientes sin intervención humana** (pre-evaluación): Objetivo 40%
-
-## Próximos Pasos Inmediatos
-
-1. **Crear estructura de carpetas** del módulo GALIA
-2. **Diseñar migraciones** para las tablas principales
-3. **Implementar Edge Function** `galia-assistant` como primera PoC
-4. **Crear componente** `GaliaDashboard` con KPIs básicos
-5. **Desarrollar hook** `useGaliaConvocatorias` para gestión de convocatorias
-
-## Detalles Técnicos
-
-### Patrones de Implementación
-El módulo seguirá los patrones establecidos en el custom knowledge:
-- Hooks con auto-refresh y manejo de errores
-- Edge Functions con prompts dinámicos
-- Componentes UI con Radix/shadcn
-- RLS policies con funciones security definer
-
-### Integración con Sistema Existente
-- Aprovechará `useAICopilot` para el asistente técnico
-- Usará `useDocumentIntelligence` como base para el analizador
-- Se integrará con el módulo de compliance existente
-- Compartirá la infraestructura de auditoría de IA
-
-### Escalabilidad
-El diseño permite:
-- Multi-tenant: Cada GAL es un tenant aislado
-- Escalado horizontal: Edge Functions stateless
-- Caché inteligente: Base de conocimiento vectorizada
-- Federación: Portal nacional con datos agregados
+**¿Apruebas este plan para comenzar la implementación por Fase 0 (error de memoria) y Fase 1 (Knowledge Base)?**
