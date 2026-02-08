@@ -138,15 +138,16 @@ export function GaliaAsistenteVirtualMejorado({
   const loadFAQ = useCallback(async () => {
     setLoadingFaq(true);
     try {
+      // Use any to avoid type errors while types regenerate
       const { data, error } = await supabase
-        .from('galia_faq')
+        .from('galia_faq' as any)
         .select('*')
         .eq('is_active', true)
         .order('veces_consultada', { ascending: false })
         .limit(20);
 
       if (!error && data) {
-        setFaqItems(data as FAQItem[]);
+        setFaqItems(data as unknown as FAQItem[]);
       }
     } catch (err) {
       console.error('Error loading FAQ:', err);
@@ -154,6 +155,7 @@ export function GaliaAsistenteVirtualMejorado({
       setLoadingFaq(false);
     }
   }, []);
+
 
   // Load conversation history
   const loadHistory = useCallback(async () => {
@@ -227,10 +229,10 @@ export function GaliaAsistenteVirtualMejorado({
   };
 
   const handleFAQClick = async (faq: FAQItem) => {
-    // Increment view count
+    // Increment view count - use any to avoid type errors
     await supabase
-      .from('galia_faq')
-      .update({ veces_consultada: (faq.veces_consultada || 0) + 1 })
+      .from('galia_faq' as any)
+      .update({ veces_consultada: (faq.veces_consultada || 0) + 1 } as any)
       .eq('id', faq.id);
 
     // Send as message or show directly
@@ -594,7 +596,7 @@ function MessageBubble({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 hover:bg-green-100 hover:text-green-600"
+                  className="h-6 w-6 hover:bg-primary/10 hover:text-primary"
                   onClick={() => onFeedback(message.id, true)}
                 >
                   <ThumbsUp className="h-3 w-3" />
@@ -602,7 +604,7 @@ function MessageBubble({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 hover:bg-red-100 hover:text-red-600"
+                  className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
                   onClick={() => onFeedback(message.id, false)}
                 >
                   <ThumbsDown className="h-3 w-3" />
