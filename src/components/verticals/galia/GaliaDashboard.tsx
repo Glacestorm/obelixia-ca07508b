@@ -32,7 +32,7 @@ import {
 import { useGaliaAnalytics } from '@/hooks/galia/useGaliaAnalytics';
 import { useGaliaExpedientes, GaliaExpediente } from '@/hooks/galia/useGaliaExpedientes';
 import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
-import { GaliaKPICards } from '../shared/GaliaKPICards';
+import { GaliaKPICards } from './shared/GaliaKPICards';
 import { 
   GaliaResumenTab,
   GaliaExpedientesTab,
@@ -42,7 +42,7 @@ import {
   GaliaWorkflowManager, 
   GaliaAlertsList, 
   GaliaTecnicosPanel 
-} from '../dashboard';
+} from './dashboard';
 import { cn } from '@/lib/utils';
 import { GaliaNuevaConvocatoriaModal } from './GaliaNuevaConvocatoriaModal';
 
