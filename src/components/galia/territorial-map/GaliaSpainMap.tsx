@@ -1,7 +1,7 @@
 /**
  * GaliaSpainMap - Interactive SVG Map of Spain
- * Lightweight implementation using dynamic JSON loading
- * Optimized for build memory efficiency
+ * Lightweight implementation with labels inside regions
+ * Memory-optimized for build efficiency
  */
 
 import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
@@ -24,29 +24,6 @@ const MIN_ZOOM = 0.8;
 const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.002;
 
-// Simple centroid approximations for labels
-const CCAA_CENTROIDS: Record<string, { x: number; y: number }> = {
-  '01': { x: 350, y: 480 }, // Andalucía
-  '02': { x: 420, y: 280 }, // Aragón
-  '03': { x: 280, y: 150 }, // Asturias
-  '04': { x: 580, y: 350 }, // Baleares
-  '05': { x: 120, y: 520 }, // Canarias
-  '06': { x: 300, y: 170 }, // Cantabria
-  '07': { x: 280, y: 230 }, // Castilla y León
-  '08': { x: 320, y: 340 }, // Castilla-La Mancha
-  '09': { x: 510, y: 240 }, // Cataluña
-  '10': { x: 460, y: 360 }, // Comunitat Valenciana
-  '11': { x: 220, y: 380 }, // Extremadura
-  '12': { x: 170, y: 180 }, // Galicia
-  '13': { x: 340, y: 320 }, // Madrid
-  '14': { x: 430, y: 400 }, // Murcia
-  '15': { x: 370, y: 200 }, // Navarra
-  '16': { x: 340, y: 170 }, // País Vasco
-  '17': { x: 360, y: 230 }, // La Rioja
-  '18': { x: 260, y: 520 }, // Ceuta
-  '19': { x: 290, y: 520 }, // Melilla
-};
-
 interface GeoFeature {
   id: string;
   geometry: {
@@ -55,6 +32,60 @@ interface GeoFeature {
   };
   properties?: Record<string, unknown>;
 }
+
+// Projection function (outside component for memory efficiency)
+const projectPoint = (lon: number, lat: number, width: number, height: number): [number, number] => {
+  const centerLon = -3.7;
+  const centerLat = 40.4;
+  const scale = 2200;
+  const x = (lon - centerLon) * (scale / 100) + width / 2;
+  const y = (centerLat - lat) * (scale / 80) + height / 2;
+  return [x, y];
+};
+
+// Calculate centroid from coordinates
+const calculateCentroid = (coords: number[][][], width: number, height: number): { x: number; y: number } => {
+  let sumX = 0;
+  let sumY = 0;
+  let count = 0;
+  
+  coords.forEach(ring => {
+    ring.forEach(point => {
+      const [x, y] = projectPoint(point[0], point[1], width, height);
+      sumX += x;
+      sumY += y;
+      count++;
+    });
+  });
+  
+  return {
+    x: count > 0 ? sumX / count : 0,
+    y: count > 0 ? sumY / count : 0
+  };
+};
+
+// Calculate centroid for MultiPolygon
+const calculateMultiPolygonCentroid = (coords: number[][][][], width: number, height: number): { x: number; y: number } => {
+  let sumX = 0;
+  let sumY = 0;
+  let count = 0;
+  
+  coords.forEach(polygon => {
+    polygon.forEach(ring => {
+      ring.forEach(point => {
+        const [x, y] = projectPoint(point[0], point[1], width, height);
+        sumX += x;
+        sumY += y;
+        count++;
+      });
+    });
+  });
+  
+  return {
+    x: count > 0 ? sumX / count : 0,
+    y: count > 0 ? sumY / count : 0
+  };
+};
 
 // Cache for loaded geo data
 let cachedCCAAData: GeoFeature[] | null = null;
@@ -70,7 +101,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCCAA, setHoveredCCAA] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [dimensions] = useState({ width: 700, height: 600 });
+  const dimensions = useMemo(() => ({ width: 700, height: 600 }), []);
   
   // Geo data state
   const [ccaaFeatures, setCcaaFeatures] = useState<GeoFeature[]>(cachedCCAAData || []);
@@ -133,38 +164,30 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     return Math.max(...data.map(d => d.totalGrants), 1);
   }, [data]);
 
-  // Create paths from features (memoized to avoid recomputation)
+  // Create paths and centroids from features
   const pathData = useMemo(() => {
     if (ccaaFeatures.length === 0) return [];
 
-    // Dynamically compute projection
     const width = dimensions.width;
     const height = dimensions.height;
-    const centerLon = -3.7;
-    const centerLat = 40.4;
-    const scale = 2200;
-
-    const projectPoint = (lon: number, lat: number): [number, number] => {
-      const x = (lon - centerLon) * (scale / 100) + width / 2;
-      const y = (centerLat - lat) * (scale / 80) + height / 2;
-      return [x, y];
-    };
 
     const pathFromCoords = (coords: number[][]): string => {
       if (coords.length === 0) return '';
-      const points = coords.map(c => projectPoint(c[0], c[1]));
+      const points = coords.map(c => projectPoint(c[0], c[1], width, height));
       return 'M' + points.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
     };
 
     return ccaaFeatures.map(feature => {
       let d = '';
       const geom = feature.geometry;
+      let centroid = { x: 0, y: 0 };
       
       if (geom.type === 'Polygon') {
         const coords = geom.coordinates as number[][][];
         coords.forEach(ring => {
           d += pathFromCoords(ring);
         });
+        centroid = calculateCentroid(coords, width, height);
       } else if (geom.type === 'MultiPolygon') {
         const coords = geom.coordinates as number[][][][];
         coords.forEach(polygon => {
@@ -172,11 +195,13 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
             d += pathFromCoords(ring);
           });
         });
+        centroid = calculateMultiPolygonCentroid(coords, width, height);
       }
 
       return {
         id: String(feature.id),
         path: d,
+        centroid
       };
     });
   }, [ccaaFeatures, dimensions]);
@@ -364,12 +389,11 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
         {/* Zoomable/Pannable group */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* CCAA Paths */}
-          {pathData.map(({ id, path }) => {
+          {pathData.map(({ id, path, centroid }) => {
             const ccaaInfo = getCCAAByTopoId(id);
             const ccaaData = ccaaInfo ? dataMap.get(ccaaInfo.id) : null;
             const isHovered = hoveredCCAA === id;
             const isSelected = ccaaInfo && selectedCCAA === ccaaInfo.id;
-            const centroid = CCAA_CENTROIDS[id];
 
             // Skip Gibraltar
             if (id === '20') return null;
@@ -380,60 +404,48 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
                   d={path}
                   fill={getFillColor(id)}
                   stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
-                  strokeWidth={isHovered || isSelected ? 2 : 0.5}
+                  strokeWidth={(isHovered || isSelected ? 2 : 0.5) / transform.scale}
                   className="cursor-pointer transition-colors"
                   onMouseEnter={() => setHoveredCCAA(id)}
                   onClick={() => handleCCAAClick(id)}
                 />
 
-                {/* CCAA Name label */}
-                {centroid && ccaaInfo && (
-                  <g className="pointer-events-none">
-                    <rect
-                      x={centroid.x - 20}
-                      y={centroid.y - 18}
-                      width="40"
-                      height="12"
-                      rx="2"
-                      fill="hsl(var(--background) / 0.85)"
-                      stroke="hsl(var(--border) / 0.3)"
-                      strokeWidth="0.3"
-                    />
+                {/* Labels inside the region - scaled inversely to maintain size */}
+                {ccaaInfo && centroid.x > 0 && (
+                  <g 
+                    transform={`translate(${centroid.x}, ${centroid.y}) scale(${1 / transform.scale})`}
+                    className="pointer-events-none"
+                  >
+                    {/* CCAA Name */}
                     <text
-                      x={centroid.x}
-                      y={centroid.y - 10}
+                      x={0}
+                      y={-4}
                       textAnchor="middle"
-                      className="text-[6px] font-semibold fill-foreground"
+                      className="text-[10px] font-bold"
+                      fill="hsl(var(--foreground))"
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                      paintOrder="stroke"
                     >
                       {ccaaInfo.shortName}
                     </text>
-                  </g>
-                )}
-
-                {/* Grant count label */}
-                {ccaaData && centroid && (
-                  <g 
-                    className="pointer-events-none"
-                    style={{ opacity: isLoading ? 0.3 : 1 }}
-                  >
-                    <rect
-                      x={centroid.x - 16}
-                      y={centroid.y - 6}
-                      width="32"
-                      height="14"
-                      rx="7"
-                      fill="hsl(var(--background) / 0.95)"
-                      stroke="hsl(var(--border))"
-                      strokeWidth="0.5"
-                    />
-                    <text
-                      x={centroid.x}
-                      y={centroid.y + 5}
-                      textAnchor="middle"
-                      className="text-[8px] font-bold fill-foreground"
-                    >
-                      {ccaaData.totalGrants}
-                    </text>
+                    
+                    {/* Grant count */}
+                    {ccaaData && (
+                      <text
+                        x={0}
+                        y={10}
+                        textAnchor="middle"
+                        className="text-[11px] font-semibold"
+                        fill="hsl(var(--foreground))"
+                        stroke="hsl(var(--background))"
+                        strokeWidth={2}
+                        paintOrder="stroke"
+                        style={{ opacity: isLoading ? 0.3 : 1 }}
+                      >
+                        {ccaaData.totalGrants}
+                      </text>
+                    )}
                   </g>
                 )}
               </g>
@@ -448,7 +460,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
               x2="150"
               y2="0"
               stroke="hsl(var(--border))"
-              strokeWidth="1"
+              strokeWidth={1 / transform.scale}
               strokeDasharray="4 2"
             />
             <text
@@ -456,6 +468,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
               y="-8"
               textAnchor="middle"
               className="text-[8px] fill-muted-foreground"
+              style={{ transform: `scale(${1 / transform.scale})`, transformOrigin: '75px -8px' }}
             >
               Islas Canarias
             </text>
