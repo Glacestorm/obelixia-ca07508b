@@ -13,3 +13,7 @@ export { GaliaDecisionSupportPanel } from './GaliaDecisionSupportPanel';
 // Phase 7 - Export & Print
 export { GaliaExportToolbar } from './GaliaExportToolbar';
 export { GaliaExpedientePrint } from './GaliaExpedientePrint';
+
+// Phase 8 - Compliance Auditor
+export { GaliaComplianceAuditor } from './GaliaComplianceAuditor';
+export { GaliaProjectStatusDashboard } from './GaliaProjectStatusDashboard';
