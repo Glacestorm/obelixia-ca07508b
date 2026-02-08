@@ -1,15 +1,12 @@
 /**
- * GaliaSpainMap - Interactive SVG Map of Spain using TopoJSON
- * Uses official IGN geographic data for accurate representation
- * Dynamically loads geo data to reduce bundle size
- * Supports zoom-dependent labels (CCAA at low zoom, provinces at high zoom)
+ * GaliaSpainMap - Interactive SVG Map of Spain
+ * Lightweight implementation using dynamic JSON loading
+ * Optimized for build memory efficiency
  */
 
 import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as topojson from 'topojson-client';
-import { geoMercator, geoPath, geoCentroid } from 'd3-geo';
-import { getCCAAByTopoId, getProvinceByINECode, spainProvincesData } from './spain-paths';
+import { getCCAAByTopoId } from './spain-paths';
 import { CCAAMapData } from '@/hooks/galia/useGaliaTerritorialMap';
 import { GaliaMapTooltip } from './GaliaMapTooltip';
 import { cn } from '@/lib/utils';
@@ -26,10 +23,41 @@ interface GaliaSpainMapProps {
 const MIN_ZOOM = 0.8;
 const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.002;
-const PROVINCE_ZOOM_THRESHOLD = 1.5; // Show province labels above this zoom level
+
+// Simple centroid approximations for labels
+const CCAA_CENTROIDS: Record<string, { x: number; y: number }> = {
+  '01': { x: 350, y: 480 }, // Andalucía
+  '02': { x: 420, y: 280 }, // Aragón
+  '03': { x: 280, y: 150 }, // Asturias
+  '04': { x: 580, y: 350 }, // Baleares
+  '05': { x: 120, y: 520 }, // Canarias
+  '06': { x: 300, y: 170 }, // Cantabria
+  '07': { x: 280, y: 230 }, // Castilla y León
+  '08': { x: 320, y: 340 }, // Castilla-La Mancha
+  '09': { x: 510, y: 240 }, // Cataluña
+  '10': { x: 460, y: 360 }, // Comunitat Valenciana
+  '11': { x: 220, y: 380 }, // Extremadura
+  '12': { x: 170, y: 180 }, // Galicia
+  '13': { x: 340, y: 320 }, // Madrid
+  '14': { x: 430, y: 400 }, // Murcia
+  '15': { x: 370, y: 200 }, // Navarra
+  '16': { x: 340, y: 170 }, // País Vasco
+  '17': { x: 360, y: 230 }, // La Rioja
+  '18': { x: 260, y: 520 }, // Ceuta
+  '19': { x: 290, y: 520 }, // Melilla
+};
+
+interface GeoFeature {
+  id: string;
+  geometry: {
+    type: string;
+    coordinates: number[][][] | number[][][][];
+  };
+  properties?: Record<string, unknown>;
+}
 
 // Cache for loaded geo data
-let cachedGeoData: { ccaa: any; provinces: any } | null = null;
+let cachedCCAAData: GeoFeature[] | null = null;
 
 export const GaliaSpainMap = memo(function GaliaSpainMap({
   data,
@@ -41,13 +69,12 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCCAA, setHoveredCCAA] = useState<string | null>(null);
-  const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [dimensions] = useState({ width: 700, height: 600 });
   
-  // Geo data state (loaded dynamically)
-  const [geoData, setGeoData] = useState<{ ccaa: any; provinces: any } | null>(cachedGeoData);
-  const [geoLoading, setGeoLoading] = useState(!cachedGeoData);
+  // Geo data state
+  const [ccaaFeatures, setCcaaFeatures] = useState<GeoFeature[]>(cachedCCAAData || []);
+  const [geoLoading, setGeoLoading] = useState(!cachedCCAAData);
   
   // Zoom and pan state
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
@@ -56,8 +83,8 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
 
   // Load geo data dynamically
   useEffect(() => {
-    if (cachedGeoData) {
-      setGeoData(cachedGeoData);
+    if (cachedCCAAData && cachedCCAAData.length > 0) {
+      setCcaaFeatures(cachedCCAAData);
       setGeoLoading(false);
       return;
     }
@@ -65,22 +92,25 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     const loadGeoData = async () => {
       try {
         setGeoLoading(true);
-        const [ccaaRes, provincesRes] = await Promise.all([
-          fetch('/geo/spain-ccaa.json'),
-          fetch('/geo/spain-provinces.json')
-        ]);
+        const response = await fetch('/geo/spain-ccaa.json');
         
-        if (!ccaaRes.ok || !provincesRes.ok) {
+        if (!response.ok) {
           throw new Error('Failed to load geo data');
         }
         
-        const [ccaaData, provincesData] = await Promise.all([
-          ccaaRes.json(),
-          provincesRes.json()
-        ]);
+        const topoData = await response.json();
         
-        cachedGeoData = { ccaa: ccaaData, provinces: provincesData };
-        setGeoData(cachedGeoData);
+        // Dynamically import topojson only when needed
+        const topojson = await import('topojson-client');
+        
+        let features: GeoFeature[] = [];
+        if (topoData?.objects?.autonomous_regions) {
+          const geoJson = topojson.feature(topoData, topoData.objects.autonomous_regions);
+          features = (geoJson as any).features || [];
+        }
+        
+        cachedCCAAData = features;
+        setCcaaFeatures(features);
       } catch (error) {
         console.error('Error loading geo data:', error);
       } finally {
@@ -103,47 +133,52 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     return Math.max(...data.map(d => d.totalGrants), 1);
   }, [data]);
 
-  // Convert TopoJSON to GeoJSON features
-  const { ccaaFeatures, provinceFeatures } = useMemo(() => {
-    if (!geoData) return { ccaaFeatures: [], provinceFeatures: [] };
-    
-    try {
-      // CCAA features
-      let ccaa: any[] = [];
-      if (geoData.ccaa?.objects?.autonomous_regions) {
-        const ccaaGeo = topojson.feature(geoData.ccaa, geoData.ccaa.objects.autonomous_regions);
-        ccaa = (ccaaGeo as any).features || [];
-      }
+  // Create paths from features (memoized to avoid recomputation)
+  const pathData = useMemo(() => {
+    if (ccaaFeatures.length === 0) return [];
+
+    // Dynamically compute projection
+    const width = dimensions.width;
+    const height = dimensions.height;
+    const centerLon = -3.7;
+    const centerLat = 40.4;
+    const scale = 2200;
+
+    const projectPoint = (lon: number, lat: number): [number, number] => {
+      const x = (lon - centerLon) * (scale / 100) + width / 2;
+      const y = (centerLat - lat) * (scale / 80) + height / 2;
+      return [x, y];
+    };
+
+    const pathFromCoords = (coords: number[][]): string => {
+      if (coords.length === 0) return '';
+      const points = coords.map(c => projectPoint(c[0], c[1]));
+      return 'M' + points.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
+    };
+
+    return ccaaFeatures.map(feature => {
+      let d = '';
+      const geom = feature.geometry;
       
-      // Province features
-      let provinces: any[] = [];
-      if (geoData.provinces?.objects?.provinces) {
-        const provGeo = topojson.feature(geoData.provinces, geoData.provinces.objects.provinces);
-        provinces = (provGeo as any).features || [];
+      if (geom.type === 'Polygon') {
+        const coords = geom.coordinates as number[][][];
+        coords.forEach(ring => {
+          d += pathFromCoords(ring);
+        });
+      } else if (geom.type === 'MultiPolygon') {
+        const coords = geom.coordinates as number[][][][];
+        coords.forEach(polygon => {
+          polygon.forEach(ring => {
+            d += pathFromCoords(ring);
+          });
+        });
       }
-      
-      return { ccaaFeatures: ccaa, provinceFeatures: provinces };
-    } catch (error) {
-      console.error('Error converting TopoJSON:', error);
-      return { ccaaFeatures: [], provinceFeatures: [] };
-    }
-  }, [geoData]);
 
-  // Create projection and path generator
-  const { pathGenerator } = useMemo(() => {
-    if (ccaaFeatures.length === 0) {
-      return { projection: null, pathGenerator: null };
-    }
-
-    // Custom projection for Spain
-    const proj = geoMercator()
-      .center([-3.7, 40.4])
-      .scale(2200)
-      .translate([dimensions.width / 2, dimensions.height / 2]);
-
-    const path = geoPath().projection(proj);
-
-    return { projection: proj, pathGenerator: path };
+      return {
+        id: String(feature.id),
+        path: d,
+      };
+    });
   }, [ccaaFeatures, dimensions]);
 
   // Get fill color based on data
@@ -156,26 +191,6 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     
     const intensity = ccaaData.totalGrants / maxGrants;
     const opacity = 0.3 + (intensity * 0.6);
-    
-    if (ccaaData.status === 'critical') {
-      return `hsl(var(--destructive) / ${opacity})`;
-    }
-    if (ccaaData.status === 'warning') {
-      return `hsl(45 100% 50% / ${opacity})`;
-    }
-    return `hsl(var(--primary) / ${opacity})`;
-  }, [dataMap, maxGrants]);
-
-  // Get province fill color (lighter version of CCAA color)
-  const getProvinceFillColor = useCallback((ineCode: string): string => {
-    const provinceInfo = getProvinceByINECode(ineCode);
-    if (!provinceInfo) return 'hsl(var(--muted) / 0.3)';
-    
-    const ccaaData = dataMap.get(provinceInfo.ccaaId);
-    if (!ccaaData) return 'hsl(var(--muted) / 0.3)';
-    
-    const intensity = ccaaData.totalGrants / maxGrants;
-    const opacity = 0.15 + (intensity * 0.35);
     
     if (ccaaData.status === 'critical') {
       return `hsl(var(--destructive) / ${opacity})`;
@@ -262,21 +277,8 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     return dataMap.get(ccaaInfo.id) || null;
   }, [hoveredCCAA, dataMap]);
 
-  // Calculate label position for a feature
-  const getLabelPosition = useCallback((feature: any): { x: number; y: number } | null => {
-    if (!pathGenerator) return null;
-    
-    const centroid = pathGenerator.centroid(feature);
-    if (isNaN(centroid[0]) || isNaN(centroid[1])) return null;
-    
-    return { x: centroid[0], y: centroid[1] };
-  }, [pathGenerator]);
-
-  // Should show province labels based on zoom
-  const showProvinceLabels = transform.scale >= PROVINCE_ZOOM_THRESHOLD;
-
   // Loading state
-  if (geoLoading || !pathGenerator || ccaaFeatures.length === 0) {
+  if (geoLoading || pathData.length === 0) {
     return (
       <div className={cn("relative w-full flex items-center justify-center h-[500px]", className)}>
         <div className="flex flex-col items-center gap-2">
@@ -327,7 +329,6 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
       {transform.scale !== 1 && (
         <div className="absolute bottom-2 left-2 z-10 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
           {Math.round(transform.scale * 100)}%
-          {showProvinceLabels && <span className="ml-2 text-primary">• Provincias</span>}
         </div>
       )}
 
@@ -348,7 +349,6 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
         onMouseUp={handleMouseUp}
         onMouseLeave={() => {
           setHoveredCCAA(null);
-          setHoveredProvince(null);
           setIsPanning(false);
         }}
       >
@@ -363,130 +363,82 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
         
         {/* Zoomable/Pannable group */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
-          {/* Province layer (shown when zoomed in) */}
-          {showProvinceLabels && provinceFeatures.length > 0 && (
-            <g className="provinces-layer">
-              {provinceFeatures.map((feature: any) => {
-                const ineCode = feature.id || feature.properties?.id;
-                const provinceInfo = getProvinceByINECode(ineCode);
-                const pathD = pathGenerator(feature);
-                const labelPos = getLabelPosition(feature);
-                
-                if (!pathD) return null;
-
-                return (
-                  <g key={`prov-${ineCode}`}>
-                    <path
-                      d={pathD}
-                      fill={getProvinceFillColor(ineCode)}
-                      stroke="hsl(var(--border) / 0.5)"
-                      strokeWidth={0.3}
-                      className="pointer-events-none"
-                    />
-                    {/* Province label */}
-                    {labelPos && provinceInfo && (
-                      <text
-                        x={labelPos.x}
-                        y={labelPos.y}
-                        textAnchor="middle"
-                        className="text-[6px] fill-muted-foreground font-medium pointer-events-none"
-                        style={{ 
-                          opacity: Math.min(1, (transform.scale - PROVINCE_ZOOM_THRESHOLD) / 0.5) 
-                        }}
-                      >
-                        {provinceInfo.name}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-            </g>
-          )}
-
           {/* CCAA Paths */}
-          <g className="ccaa-layer">
-            {ccaaFeatures.map((feature: any) => {
-              const topoId = feature.id;
-              const ccaaInfo = getCCAAByTopoId(topoId);
-              const ccaaData = ccaaInfo ? dataMap.get(ccaaInfo.id) : null;
-              const isHovered = hoveredCCAA === topoId;
-              const isSelected = ccaaInfo && selectedCCAA === ccaaInfo.id;
-              const pathD = pathGenerator(feature);
-              const labelPos = getLabelPosition(feature);
-              
-              if (!pathD) return null;
+          {pathData.map(({ id, path }) => {
+            const ccaaInfo = getCCAAByTopoId(id);
+            const ccaaData = ccaaInfo ? dataMap.get(ccaaInfo.id) : null;
+            const isHovered = hoveredCCAA === id;
+            const isSelected = ccaaInfo && selectedCCAA === ccaaInfo.id;
+            const centroid = CCAA_CENTROIDS[id];
 
-              // Skip Gibraltar (id: 20)
-              if (topoId === '20') return null;
+            // Skip Gibraltar
+            if (id === '20') return null;
 
-              return (
-                <g key={topoId}>
-                  {/* Region path */}
-                  <path
-                    d={pathD}
-                    fill={showProvinceLabels ? 'transparent' : getFillColor(topoId)}
-                    stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
-                    strokeWidth={isHovered || isSelected ? 2 : (showProvinceLabels ? 1 : 0.5)}
-                    className="cursor-pointer transition-colors"
-                    onMouseEnter={() => setHoveredCCAA(topoId)}
-                    onClick={() => handleCCAAClick(topoId)}
-                  />
+            return (
+              <g key={id}>
+                <path
+                  d={path}
+                  fill={getFillColor(id)}
+                  stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
+                  strokeWidth={isHovered || isSelected ? 2 : 0.5}
+                  className="cursor-pointer transition-colors"
+                  onMouseEnter={() => setHoveredCCAA(id)}
+                  onClick={() => handleCCAAClick(id)}
+                />
 
-                  {/* CCAA Name label (shown at low zoom) */}
-                  {!showProvinceLabels && labelPos && ccaaInfo && (
-                    <g className="pointer-events-none">
-                      {/* Background for name */}
-                      <rect
-                        x={labelPos.x - 25}
-                        y={labelPos.y - 18}
-                        width="50"
-                        height="12"
-                        rx="2"
-                        fill="hsl(var(--background) / 0.8)"
-                        stroke="hsl(var(--border) / 0.3)"
-                        strokeWidth="0.3"
-                      />
-                      <text
-                        x={labelPos.x}
-                        y={labelPos.y - 10}
-                        textAnchor="middle"
-                        className="text-[6px] font-semibold fill-foreground"
-                      >
-                        {ccaaInfo.shortName}
-                      </text>
-                    </g>
-                  )}
-
-                  {/* Grant count label */}
-                  {ccaaData && labelPos && (
-                    <g 
-                      className="pointer-events-none"
-                      style={{ opacity: isLoading ? 0.3 : 1 }}
+                {/* CCAA Name label */}
+                {centroid && ccaaInfo && (
+                  <g className="pointer-events-none">
+                    <rect
+                      x={centroid.x - 20}
+                      y={centroid.y - 18}
+                      width="40"
+                      height="12"
+                      rx="2"
+                      fill="hsl(var(--background) / 0.85)"
+                      stroke="hsl(var(--border) / 0.3)"
+                      strokeWidth="0.3"
+                    />
+                    <text
+                      x={centroid.x}
+                      y={centroid.y - 10}
+                      textAnchor="middle"
+                      className="text-[6px] font-semibold fill-foreground"
                     >
-                      <rect
-                        x={labelPos.x - 18}
-                        y={labelPos.y - 8}
-                        width="36"
-                        height="16"
-                        rx="8"
-                        fill="hsl(var(--background) / 0.95)"
-                        stroke="hsl(var(--border))"
-                        strokeWidth="0.5"
-                      />
-                      <text
-                        x={labelPos.x}
-                        y={labelPos.y + 4}
-                        textAnchor="middle"
-                        className="text-[9px] font-bold fill-foreground"
-                      >
-                        {ccaaData.totalGrants}
-                      </text>
-                    </g>
-                  )}
-                </g>
-              );
-            })}
-          </g>
+                      {ccaaInfo.shortName}
+                    </text>
+                  </g>
+                )}
+
+                {/* Grant count label */}
+                {ccaaData && centroid && (
+                  <g 
+                    className="pointer-events-none"
+                    style={{ opacity: isLoading ? 0.3 : 1 }}
+                  >
+                    <rect
+                      x={centroid.x - 16}
+                      y={centroid.y - 6}
+                      width="32"
+                      height="14"
+                      rx="7"
+                      fill="hsl(var(--background) / 0.95)"
+                      stroke="hsl(var(--border))"
+                      strokeWidth="0.5"
+                    />
+                    <text
+                      x={centroid.x}
+                      y={centroid.y + 5}
+                      textAnchor="middle"
+                      className="text-[8px] font-bold fill-foreground"
+                    >
+                      {ccaaData.totalGrants}
+                    </text>
+                  </g>
+                )}
+              </g>
+            );
+          })}
 
           {/* Canary Islands separator */}
           <g transform="translate(50, 480)">
