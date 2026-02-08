@@ -1,12 +1,9 @@
 /**
- * GALIA Phase 4 Components - Advanced AI Features (Simplified)
- * Re-exports components with correct hook bindings
+ * GALIA Phase 4 Components - Advanced AI Features
+ * Re-exports all Phase 4 components
  */
 
-// Placeholder exports - these components need hook API alignment
-// Components created but require hook interface updates
-
-export const GaliaImpactPredictorPanel = () => null;
-export const GaliaBDNSPanel = () => null;
-export const GaliaAutoApprovalPanel = () => null;
-export const GaliaProactivePanel = () => null;
+export { GaliaImpactPredictorPanel } from './GaliaImpactPredictorPanel';
+export { GaliaBDNSPanel } from './GaliaBDNSPanel';
+export { GaliaAutoApprovalPanel } from './GaliaAutoApprovalPanel';
+export { GaliaProactivePanel } from './GaliaProactivePanel';
