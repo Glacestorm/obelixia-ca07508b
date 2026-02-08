@@ -20,3 +20,6 @@ export type { GaliaDocumento, DocumentoFilters } from './useGaliaDocumentos';
 
 export { useGaliaAnalisisCostes } from './useGaliaAnalisisCostes';
 export type { GaliaAnalisisCoste, AnalisisCostesResult } from './useGaliaAnalisisCostes';
+
+export { useGaliaNotificaciones } from './useGaliaNotificaciones';
+export type { GaliaNotificacion } from './useGaliaNotificaciones';
