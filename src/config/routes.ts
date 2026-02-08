@@ -97,6 +97,9 @@ const MarketplaceAdmin = lazy(() => import('@/pages/admin/MarketplaceAdmin'));
 // Subscription
 const SubscriptionSuccess = lazy(() => import('@/pages/subscription/Success'));
 
+// PWA Install
+const InstallApp = lazy(() => import('@/pages/InstallApp'));
+
 // CRM
 const CRMPage = lazy(() => import('@/pages/crm/CRMPage'));
 const KanbanPage = lazy(() => import('@/pages/crm/KanbanPage'));
@@ -224,6 +227,9 @@ export const publicRoutes: RouteConfig[] = [
   // GALIA - Portal Ciudadano (público)
   { path: '/galia/portal', component: GaliaPortalPage, layout: 'none', priority: 'high', meta: { title: 'Portal Ciudadano GALIA' } },
   { path: '/galia', component: GaliaPortalPage, layout: 'none', priority: 'high', meta: { title: 'Portal Ciudadano GALIA' } },
+  
+  // PWA Install
+  { path: '/install', component: InstallApp, layout: 'minimal', priority: 'medium', meta: { title: 'Instal·lar ObelixIA' } },
 ];
 
 // ============================================

@@ -153,6 +153,39 @@ Sin embargo, integrará capacidades del ERP (contabilidad, tesorería, documenta
 - Explicabilidad de decisiones IA
 - Mecanismo de reclamación para beneficiarios
 
+### FASE 4: Mejoras Avanzadas ✅ COMPLETADO
+
+**4.1 Aprobación Semi-Automática** ✅
+- Pre-aprobación de solicitudes que cumplen 100% criterios objetivos
+- Validación humana requerida en ventana de 24h
+- Edge Function: `galia-auto-approval`
+- Hook: `useGaliaAutoApproval.ts`
+
+**4.2 Asistente Proactivo** ✅
+- Notificaciones push de plazos críticos
+- Alertas de documentos faltantes
+- Avisos de cambios normativos (BOE/BOPA)
+- Digest diario para técnicos
+- Edge Function: `galia-proactive-assistant`
+- Hook: `useGaliaProactiveAssistant.ts`
+
+**4.3 Interoperabilidad BDNS** ✅
+- Sincronización con Base de Datos Nacional de Subvenciones
+- Búsqueda de convocatorias por código/CIF
+- Validación de beneficiarios (NIF, límites de minimis)
+- Publicación automática de resoluciones
+- Edge Function: `galia-bdns-sync`
+- Hook: `useGaliaBDNS.ts`
+
+**4.4 PWA Modo Offline** ✅
+- Aplicación instalable desde navegador
+- Soporte para zonas rurales con conectividad limitada
+- Service Worker con estrategias de caché (NetworkFirst para API, CacheFirst para assets)
+- Sincronización automática al recuperar conexión
+- Página de instalación: `/install`
+- Manifest y meta tags PWA en index.html
+- Configuración vite-plugin-pwa
+
 ## Estructura de Archivos Propuesta
 
 ```text
