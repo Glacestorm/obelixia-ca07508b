@@ -190,3 +190,15 @@ export type {
   SimulationResult,
   MatchingCall
 } from './useGaliaConvocatoriaSimulator';
+
+export { useGaliaBeneficiario360 } from './useGaliaBeneficiario360';
+export type { 
+  BeneficiarioProfile,
+  ExpedienteBeneficiario,
+  PagoBeneficiario,
+  DocumentoBeneficiario,
+  ComunicacionBeneficiario,
+  NotificacionBeneficiario,
+  ResumenBeneficiario,
+  Beneficiario360Context
+} from './useGaliaBeneficiario360';
