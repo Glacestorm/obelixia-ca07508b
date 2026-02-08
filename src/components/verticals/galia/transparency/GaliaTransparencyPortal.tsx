@@ -184,7 +184,9 @@ export function GaliaTransparencyPortal({ expedienteId, className }: GaliaTransp
                   </div>
                   <div>
                     <p className="text-2xl font-bold">
-                      {publicData?.estadisticas.empleoGenerado || 0}
+                      {typeof publicData?.estadisticas.empleoGenerado === 'object' 
+                        ? ((publicData?.estadisticas.empleoGenerado as any)?.directo || 0) + ((publicData?.estadisticas.empleoGenerado as any)?.indirectoEstimado || 0)
+                        : (publicData?.estadisticas.empleoGenerado || 0)}
                     </p>
                     <p className="text-sm text-muted-foreground">Empleos Generados</p>
                   </div>
