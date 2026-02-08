@@ -1,5 +1,8 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-transparency]
+verify_jwt = false
+
 [functions.galia-impact-predictor]
 verify_jwt = true
 

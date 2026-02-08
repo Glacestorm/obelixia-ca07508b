@@ -51,3 +51,13 @@ export type {
   CuadroMando,
   InformeSeguimiento
 } from './useGaliaReporting';
+
+export { useGaliaTransparency } from './useGaliaTransparency';
+export type { 
+  PublicData,
+  DecisionExplanation,
+  AuditTrail,
+  PublicReport
+} from './useGaliaTransparency';
+
+export { useGaliaTranslations, GALIA_TRANSLATIONS } from './useGaliaTranslations';
