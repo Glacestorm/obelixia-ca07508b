@@ -211,3 +211,17 @@ export type {
   WorkflowSuggestion,
   GaliaWorkflowContext
 } from './useGaliaBPMNWorkflows';
+
+// 8F - Integraciones Administrativas
+export { useGaliaAdminIntegrations } from './useGaliaAdminIntegrations';
+export type { 
+  AdminIntegrationType,
+  AdminIntegration,
+  AEATConsultaResult,
+  TGSSConsultaResult,
+  RegistroMercantilResult,
+  CatastroResult,
+  SIGPACResult,
+  ConsultaLog,
+  GaliaAdminIntegrationsContext
+} from './useGaliaAdminIntegrations';

@@ -20,5 +20,5 @@ export const GaliaBeneficiario360Panel = lazy(() => import('./GaliaBeneficiario3
 // 8E - Flujos No-Code (BPMN)
 export const GaliaBPMNWorkflowsPanel = lazy(() => import('./GaliaBPMNWorkflowsPanel').then(m => ({ default: m.GaliaBPMNWorkflowsPanel })));
 
-// Próximos componentes Phase 8:
-// 8F - Integraciones Administrativas (AEAT, TGSS, etc.)
+// 8F - Integraciones Administrativas (AEAT, TGSS, Registro Mercantil, Catastro/SIGPAC)
+export const GaliaAdminIntegrationsPanel = lazy(() => import('./GaliaAdminIntegrationsPanel').then(m => ({ default: m.GaliaAdminIntegrationsPanel })));
