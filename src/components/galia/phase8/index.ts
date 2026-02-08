@@ -11,6 +11,8 @@ export const GaliaDocumentGeneratorPanel = lazy(() => import('./GaliaDocumentGen
 // 8B - Geointeligencia Territorial
 export const GaliaGeoIntelligencePanel = lazy(() => import('./GaliaGeoIntelligencePanel').then(m => ({ default: m.GaliaGeoIntelligencePanel })));
 
+// 8C - Simulador de Convocatorias
+export const GaliaConvocatoriaSimulatorPanel = lazy(() => import('./GaliaConvocatoriaSimulatorPanel').then(m => ({ default: m.GaliaConvocatoriaSimulatorPanel })));
+
 // Próximos componentes Phase 8:
-// export const GaliaConvocatoriaSimulatorPanel = lazy(() => import('./GaliaConvocatoriaSimulatorPanel').then(m => ({ default: m.GaliaConvocatoriaSimulatorPanel })));
 // export const GaliaBeneficiario360Panel = lazy(() => import('./GaliaBeneficiario360Panel').then(m => ({ default: m.GaliaBeneficiario360Panel })));
