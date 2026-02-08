@@ -1,12 +1,11 @@
 /**
- * GaliaSpainMap - Interactive SVG Map of Spain
- * Lightweight implementation using dynamic JSON loading
- * Optimized for build memory efficiency
+ * GaliaSpainMap - Static SVG Map of Spain
+ * Ultra-lightweight implementation with no external dependencies
+ * Uses pre-computed simplified paths for maximum build efficiency
  */
 
-import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { memo, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCCAAByTopoId } from './spain-paths';
 import { CCAAMapData } from '@/hooks/galia/useGaliaTerritorialMap';
 import { GaliaMapTooltip } from './GaliaMapTooltip';
 import { cn } from '@/lib/utils';
@@ -24,40 +23,142 @@ const MIN_ZOOM = 0.8;
 const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.002;
 
-// Simple centroid approximations for labels
-const CCAA_CENTROIDS: Record<string, { x: number; y: number }> = {
-  '01': { x: 350, y: 480 }, // Andalucía
-  '02': { x: 420, y: 280 }, // Aragón
-  '03': { x: 280, y: 150 }, // Asturias
-  '04': { x: 580, y: 350 }, // Baleares
-  '05': { x: 120, y: 520 }, // Canarias
-  '06': { x: 300, y: 170 }, // Cantabria
-  '07': { x: 280, y: 230 }, // Castilla y León
-  '08': { x: 320, y: 340 }, // Castilla-La Mancha
-  '09': { x: 510, y: 240 }, // Cataluña
-  '10': { x: 460, y: 360 }, // Comunitat Valenciana
-  '11': { x: 220, y: 380 }, // Extremadura
-  '12': { x: 170, y: 180 }, // Galicia
-  '13': { x: 340, y: 320 }, // Madrid
-  '14': { x: 430, y: 400 }, // Murcia
-  '15': { x: 370, y: 200 }, // Navarra
-  '16': { x: 340, y: 170 }, // País Vasco
-  '17': { x: 360, y: 230 }, // La Rioja
-  '18': { x: 260, y: 520 }, // Ceuta
-  '19': { x: 290, y: 520 }, // Melilla
+// Simplified SVG paths for each CCAA (pre-computed, no runtime processing)
+const CCAA_PATHS: Record<string, { path: string; name: string; shortName: string; cx: number; cy: number }> = {
+  'andalucia': {
+    path: 'M120,280 L180,260 L240,270 L300,260 L340,280 L320,320 L280,350 L220,360 L160,340 L120,300 Z',
+    name: 'Andalucía',
+    shortName: 'AND',
+    cx: 220,
+    cy: 310
+  },
+  'aragon': {
+    path: 'M320,120 L360,100 L400,110 L420,150 L400,200 L360,220 L320,200 L300,160 Z',
+    name: 'Aragón',
+    shortName: 'ARA',
+    cx: 360,
+    cy: 155
+  },
+  'asturias': {
+    path: 'M140,60 L200,50 L240,60 L230,90 L180,100 L140,85 Z',
+    name: 'Principado de Asturias',
+    shortName: 'AST',
+    cx: 190,
+    cy: 72
+  },
+  'islas-baleares': {
+    path: 'M440,220 L480,210 L500,230 L490,260 L450,270 L430,250 Z',
+    name: 'Illes Balears',
+    shortName: 'BAL',
+    cx: 465,
+    cy: 240
+  },
+  'islas-canarias': {
+    path: 'M60,380 L120,375 L160,390 L150,420 L100,430 L50,415 Z',
+    name: 'Canarias',
+    shortName: 'CAN',
+    cx: 105,
+    cy: 400
+  },
+  'cantabria': {
+    path: 'M210,50 L260,45 L290,55 L280,80 L240,90 L210,75 Z',
+    name: 'Cantabria',
+    shortName: 'CTB',
+    cx: 250,
+    cy: 65
+  },
+  'castilla-leon': {
+    path: 'M120,90 L200,80 L280,90 L300,120 L280,180 L200,200 L140,180 L100,140 Z',
+    name: 'Castilla y León',
+    shortName: 'CYL',
+    cx: 200,
+    cy: 140
+  },
+  'castilla-la-mancha': {
+    path: 'M200,200 L280,190 L340,210 L360,260 L320,300 L260,310 L200,280 L180,240 Z',
+    name: 'Castilla-La Mancha',
+    shortName: 'CLM',
+    cx: 270,
+    cy: 250
+  },
+  'cataluna': {
+    path: 'M400,80 L450,70 L480,90 L490,140 L460,180 L420,190 L390,160 L380,110 Z',
+    name: 'Cataluña',
+    shortName: 'CAT',
+    cx: 435,
+    cy: 130
+  },
+  'comunidad-valenciana': {
+    path: 'M360,200 L400,180 L430,200 L440,260 L410,300 L360,290 L340,250 Z',
+    name: 'Comunitat Valenciana',
+    shortName: 'VAL',
+    cx: 390,
+    cy: 240
+  },
+  'extremadura': {
+    path: 'M80,200 L140,190 L180,210 L180,270 L140,300 L80,290 L60,250 Z',
+    name: 'Extremadura',
+    shortName: 'EXT',
+    cx: 120,
+    cy: 245
+  },
+  'galicia': {
+    path: 'M40,60 L100,50 L140,70 L130,120 L80,140 L30,120 L20,80 Z',
+    name: 'Galicia',
+    shortName: 'GAL',
+    cx: 80,
+    cy: 95
+  },
+  'madrid': {
+    path: 'M220,190 L260,180 L280,200 L270,230 L240,240 L210,220 Z',
+    name: 'Comunidad de Madrid',
+    shortName: 'MAD',
+    cx: 245,
+    cy: 210
+  },
+  'region-murcia': {
+    path: 'M340,300 L390,290 L420,310 L410,350 L360,360 L330,340 Z',
+    name: 'Región de Murcia',
+    shortName: 'MUR',
+    cx: 370,
+    cy: 325
+  },
+  'navarra': {
+    path: 'M280,60 L320,50 L350,65 L345,100 L310,115 L280,100 Z',
+    name: 'Comunidad Foral de Navarra',
+    shortName: 'NAV',
+    cx: 315,
+    cy: 80
+  },
+  'pais-vasco': {
+    path: 'M250,40 L300,35 L330,50 L320,75 L280,85 L250,70 Z',
+    name: 'País Vasco',
+    shortName: 'PVA',
+    cx: 290,
+    cy: 57
+  },
+  'la-rioja': {
+    path: 'M280,95 L320,90 L340,105 L330,130 L300,140 L275,125 Z',
+    name: 'La Rioja',
+    shortName: 'RIO',
+    cx: 305,
+    cy: 115
+  },
+  'ceuta': {
+    path: 'M180,370 L200,365 L210,380 L195,395 L175,390 Z',
+    name: 'Ciudad Autónoma de Ceuta',
+    shortName: 'CEU',
+    cx: 192,
+    cy: 380
+  },
+  'melilla': {
+    path: 'M230,370 L250,365 L260,380 L245,395 L225,390 Z',
+    name: 'Ciudad Autónoma de Melilla',
+    shortName: 'MEL',
+    cx: 242,
+    cy: 380
+  }
 };
-
-interface GeoFeature {
-  id: string;
-  geometry: {
-    type: string;
-    coordinates: number[][][] | number[][][][];
-  };
-  properties?: Record<string, unknown>;
-}
-
-// Cache for loaded geo data
-let cachedCCAAData: GeoFeature[] | null = null;
 
 export const GaliaSpainMap = memo(function GaliaSpainMap({
   data,
@@ -67,126 +168,22 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
   className
 }: GaliaSpainMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCCAA, setHoveredCCAA] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [dimensions] = useState({ width: 700, height: 600 });
-  
-  // Geo data state
-  const [ccaaFeatures, setCcaaFeatures] = useState<GeoFeature[]>(cachedCCAAData || []);
-  const [geoLoading, setGeoLoading] = useState(!cachedCCAAData);
-  
-  // Zoom and pan state
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
 
-  // Load geo data dynamically
-  useEffect(() => {
-    if (cachedCCAAData && cachedCCAAData.length > 0) {
-      setCcaaFeatures(cachedCCAAData);
-      setGeoLoading(false);
-      return;
-    }
-
-    const loadGeoData = async () => {
-      try {
-        setGeoLoading(true);
-        const response = await fetch('/geo/spain-ccaa.json');
-        
-        if (!response.ok) {
-          throw new Error('Failed to load geo data');
-        }
-        
-        const topoData = await response.json();
-        
-        // Dynamically import topojson only when needed
-        const topojson = await import('topojson-client');
-        
-        let features: GeoFeature[] = [];
-        if (topoData?.objects?.autonomous_regions) {
-          const geoJson = topojson.feature(topoData, topoData.objects.autonomous_regions);
-          features = (geoJson as any).features || [];
-        }
-        
-        cachedCCAAData = features;
-        setCcaaFeatures(features);
-      } catch (error) {
-        console.error('Error loading geo data:', error);
-      } finally {
-        setGeoLoading(false);
-      }
-    };
-
-    loadGeoData();
-  }, []);
-
   // Map data by CCAA ID for quick lookup
-  const dataMap = useMemo(() => {
-    const map = new Map<string, CCAAMapData>();
-    data.forEach(d => map.set(d.id, d));
-    return map;
-  }, [data]);
+  const dataMap = new Map<string, CCAAMapData>();
+  data.forEach(d => dataMap.set(d.id, d));
 
   // Calculate max values for color scaling
-  const maxGrants = useMemo(() => {
-    return Math.max(...data.map(d => d.totalGrants), 1);
-  }, [data]);
-
-  // Create paths from features (memoized to avoid recomputation)
-  const pathData = useMemo(() => {
-    if (ccaaFeatures.length === 0) return [];
-
-    // Dynamically compute projection
-    const width = dimensions.width;
-    const height = dimensions.height;
-    const centerLon = -3.7;
-    const centerLat = 40.4;
-    const scale = 2200;
-
-    const projectPoint = (lon: number, lat: number): [number, number] => {
-      const x = (lon - centerLon) * (scale / 100) + width / 2;
-      const y = (centerLat - lat) * (scale / 80) + height / 2;
-      return [x, y];
-    };
-
-    const pathFromCoords = (coords: number[][]): string => {
-      if (coords.length === 0) return '';
-      const points = coords.map(c => projectPoint(c[0], c[1]));
-      return 'M' + points.map(p => `${p[0]},${p[1]}`).join('L') + 'Z';
-    };
-
-    return ccaaFeatures.map(feature => {
-      let d = '';
-      const geom = feature.geometry;
-      
-      if (geom.type === 'Polygon') {
-        const coords = geom.coordinates as number[][][];
-        coords.forEach(ring => {
-          d += pathFromCoords(ring);
-        });
-      } else if (geom.type === 'MultiPolygon') {
-        const coords = geom.coordinates as number[][][][];
-        coords.forEach(polygon => {
-          polygon.forEach(ring => {
-            d += pathFromCoords(ring);
-          });
-        });
-      }
-
-      return {
-        id: String(feature.id),
-        path: d,
-      };
-    });
-  }, [ccaaFeatures, dimensions]);
+  const maxGrants = Math.max(...data.map(d => d.totalGrants), 1);
 
   // Get fill color based on data
-  const getFillColor = useCallback((topoId: string): string => {
-    const ccaaInfo = getCCAAByTopoId(topoId);
-    if (!ccaaInfo) return 'hsl(var(--muted))';
-    
-    const ccaaData = dataMap.get(ccaaInfo.id);
+  const getFillColor = useCallback((ccaaId: string): string => {
+    const ccaaData = dataMap.get(ccaaId);
     if (!ccaaData) return 'hsl(var(--muted) / 0.5)';
     
     const intensity = ccaaData.totalGrants / maxGrants;
@@ -256,44 +253,16 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
     }
   }, []);
 
-  // Handle CCAA click
-  const handleCCAAClick = useCallback((topoId: string) => {
-    const ccaaInfo = getCCAAByTopoId(topoId);
-    if (ccaaInfo) {
-      onSelectCCAA(ccaaInfo.id, ccaaInfo.name);
-    }
-  }, [onSelectCCAA]);
-
   // Reset zoom
   const resetZoom = useCallback(() => {
     setTransform({ x: 0, y: 0, scale: 1 });
   }, []);
 
   // Get tooltip data
-  const tooltipData = useMemo(() => {
-    if (!hoveredCCAA) return null;
-    const ccaaInfo = getCCAAByTopoId(hoveredCCAA);
-    if (!ccaaInfo) return null;
-    return dataMap.get(ccaaInfo.id) || null;
-  }, [hoveredCCAA, dataMap]);
-
-  // Loading state
-  if (geoLoading || pathData.length === 0) {
-    return (
-      <div className={cn("relative w-full flex items-center justify-center h-[500px]", className)}>
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-muted-foreground">Cargando mapa...</span>
-        </div>
-      </div>
-    );
-  }
+  const tooltipData = hoveredCCAA ? dataMap.get(hoveredCCAA) || null : null;
 
   return (
-    <div 
-      ref={containerRef}
-      className={cn("relative w-full overflow-hidden", className)}
-    >
+    <div className={cn("relative w-full overflow-hidden", className)}>
       {/* Zoom controls */}
       <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
         <button
@@ -335,7 +304,7 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
       {/* SVG Map */}
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+        viewBox="0 0 520 450"
         className={cn(
           "w-full h-auto",
           isPanning ? "cursor-grabbing" : "cursor-grab"
@@ -353,73 +322,60 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
         }}
       >
         {/* Background */}
-        <rect 
-          x="0" 
-          y="0" 
-          width={dimensions.width} 
-          height={dimensions.height} 
-          fill="transparent"
-        />
+        <rect x="0" y="0" width="520" height="450" fill="transparent" />
         
         {/* Zoomable/Pannable group */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.scale})`}>
           {/* CCAA Paths */}
-          {pathData.map(({ id, path }) => {
-            const ccaaInfo = getCCAAByTopoId(id);
-            const ccaaData = ccaaInfo ? dataMap.get(ccaaInfo.id) : null;
+          {Object.entries(CCAA_PATHS).map(([id, ccaaPath]) => {
+            const ccaaData = dataMap.get(id);
             const isHovered = hoveredCCAA === id;
-            const isSelected = ccaaInfo && selectedCCAA === ccaaInfo.id;
-            const centroid = CCAA_CENTROIDS[id];
-
-            // Skip Gibraltar
-            if (id === '20') return null;
+            const isSelected = selectedCCAA === id;
 
             return (
               <g key={id}>
                 <path
-                  d={path}
+                  d={ccaaPath.path}
                   fill={getFillColor(id)}
                   stroke={isHovered || isSelected ? 'hsl(var(--primary))' : 'hsl(var(--border))'}
                   strokeWidth={isHovered || isSelected ? 2 : 0.5}
                   className="cursor-pointer transition-colors"
                   onMouseEnter={() => setHoveredCCAA(id)}
-                  onClick={() => handleCCAAClick(id)}
+                  onClick={() => onSelectCCAA(id, ccaaPath.name)}
                 />
 
                 {/* CCAA Name label */}
-                {centroid && ccaaInfo && (
-                  <g className="pointer-events-none">
-                    <rect
-                      x={centroid.x - 20}
-                      y={centroid.y - 18}
-                      width="40"
-                      height="12"
-                      rx="2"
-                      fill="hsl(var(--background) / 0.85)"
-                      stroke="hsl(var(--border) / 0.3)"
-                      strokeWidth="0.3"
-                    />
-                    <text
-                      x={centroid.x}
-                      y={centroid.y - 10}
-                      textAnchor="middle"
-                      className="text-[6px] font-semibold fill-foreground"
-                    >
-                      {ccaaInfo.shortName}
-                    </text>
-                  </g>
-                )}
+                <g className="pointer-events-none">
+                  <rect
+                    x={ccaaPath.cx - 18}
+                    y={ccaaPath.cy - 16}
+                    width="36"
+                    height="12"
+                    rx="2"
+                    fill="hsl(var(--background) / 0.85)"
+                    stroke="hsl(var(--border) / 0.3)"
+                    strokeWidth="0.3"
+                  />
+                  <text
+                    x={ccaaPath.cx}
+                    y={ccaaPath.cy - 8}
+                    textAnchor="middle"
+                    className="text-[6px] font-semibold fill-foreground"
+                  >
+                    {ccaaPath.shortName}
+                  </text>
+                </g>
 
                 {/* Grant count label */}
-                {ccaaData && centroid && (
+                {ccaaData && (
                   <g 
                     className="pointer-events-none"
                     style={{ opacity: isLoading ? 0.3 : 1 }}
                   >
                     <rect
-                      x={centroid.x - 16}
-                      y={centroid.y - 6}
-                      width="32"
+                      x={ccaaPath.cx - 14}
+                      y={ccaaPath.cy - 2}
+                      width="28"
                       height="14"
                       rx="7"
                       fill="hsl(var(--background) / 0.95)"
@@ -427,8 +383,8 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
                       strokeWidth="0.5"
                     />
                     <text
-                      x={centroid.x}
-                      y={centroid.y + 5}
+                      x={ccaaPath.cx}
+                      y={ccaaPath.cy + 9}
                       textAnchor="middle"
                       className="text-[8px] font-bold fill-foreground"
                     >
@@ -441,19 +397,19 @@ export const GaliaSpainMap = memo(function GaliaSpainMap({
           })}
 
           {/* Canary Islands separator */}
-          <g transform="translate(50, 480)">
+          <g>
             <line
-              x1="0"
-              y1="0"
-              x2="150"
-              y2="0"
+              x1="30"
+              y1="365"
+              x2="180"
+              y2="365"
               stroke="hsl(var(--border))"
               strokeWidth="1"
               strokeDasharray="4 2"
             />
             <text
-              x="75"
-              y="-8"
+              x="105"
+              y="358"
               textAnchor="middle"
               className="text-[8px] fill-muted-foreground"
             >
