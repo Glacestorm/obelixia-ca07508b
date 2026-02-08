@@ -6,7 +6,7 @@ import viteCompression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
   server: {
     host: "::",
     port: 8080,
@@ -24,10 +24,13 @@ export default defineConfig(({ mode }) => ({
     react({
       // SWC optimizations
       jsxImportSource: undefined,
-    }), 
-    mode === "development" && componentTagger(),
-    // PWA Configuration for Offline Support
-    VitePWA({
+    }),
+
+    // Only tag components during dev *serve* (avoid extra work/memory during build:dev)
+    command === 'serve' && mode === "development" && componentTagger(),
+
+    // PWA only for production builds (Workbox + manifest generation can be heavy)
+    mode === "production" && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'brain-logo.png', 'robots.txt'],
       manifest: {
@@ -141,6 +144,7 @@ export default defineConfig(({ mode }) => ({
         enabled: false,
       },
     }),
+
     // Brotli Compression Level 11 - Maximum compression for static assets
     mode === "production" && viteCompression({
       algorithm: 'brotliCompress',
@@ -156,6 +160,7 @@ export default defineConfig(({ mode }) => ({
       verbose: true,
       filter: /\.(js|mjs|json|css|html|svg|xml|woff|woff2|ttf|eot)$/i,
     }),
+
     // Gzip fallback for older browsers
     mode === "production" && viteCompression({
       algorithm: 'gzip',
@@ -174,20 +179,28 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+
   // Core Web Vitals Optimizations - Vite 6 enhancements
   build: {
-    // Code splitting for better caching
+    // In development builds, disable sourcemaps + minify + size reporting to reduce memory usage
+    sourcemap: false,
+    minify: mode === 'production' ? 'esbuild' : false,
+    reportCompressedSize: mode === 'production',
+
+    // Code splitting for better caching (keep for prod; avoid forcing empty chunks in dev)
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
-          'vendor-query': ['@tanstack/react-query'],
-          'vendor-charts': ['recharts'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-map': ['maplibre-gl'],
-        },
+        manualChunks: mode === 'production'
+          ? {
+              'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+              'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
+              'vendor-query': ['@tanstack/react-query'],
+              'vendor-charts': ['recharts'],
+              'vendor-supabase': ['@supabase/supabase-js'],
+              'vendor-map': ['maplibre-gl'],
+            }
+          : undefined,
+
         // Aggressive tree-shaking configuration (Priority 5)
         compact: true,
         generatedCode: {
@@ -195,6 +208,7 @@ export default defineConfig(({ mode }) => ({
           constBindings: true,
           objectShorthand: true,
         },
+
         // Optimize chunk names for better caching
         chunkFileNames: (chunkInfo) => {
           const facadeModuleId = chunkInfo.facadeModuleId ?? '';
@@ -214,6 +228,7 @@ export default defineConfig(({ mode }) => ({
           return 'assets/[name]-[hash][extname]';
         },
       },
+
       // Tree-shaking optimization
       treeshake: {
         moduleSideEffects: 'no-external',
@@ -222,10 +237,7 @@ export default defineConfig(({ mode }) => ({
         unknownGlobalSideEffects: false,
       },
     },
-    // Minification for smaller bundle sizes
-    minify: 'esbuild',
-    // Enable source maps for debugging in development
-    sourcemap: mode !== 'production',
+
     // Chunk size warning
     chunkSizeWarningLimit: 500,
     // CSS code splitting
@@ -238,9 +250,8 @@ export default defineConfig(({ mode }) => ({
     modulePreload: {
       polyfill: false,
     },
-    // Report compressed sizes
-    reportCompressedSize: true,
   },
+
   // Optimize dependencies - Vite 6 improvements
   optimizeDeps: {
     include: [
@@ -251,29 +262,26 @@ export default defineConfig(({ mode }) => ({
       '@supabase/supabase-js',
       'lucide-react',
     ],
-    // Exclude large dependencies from pre-bundling for tree-shaking
     exclude: [],
-    // Vite 6: Better dependency discovery
     esbuildOptions: {
       target: 'esnext',
-      // Tree-shaking for esbuild
       treeShaking: true,
-      // Drop console in production
       drop: mode === 'production' ? ['console', 'debugger'] : [],
-      // Minify identifiers
       minifyIdentifiers: mode === 'production',
       minifySyntax: mode === 'production',
       minifyWhitespace: mode === 'production',
     },
   },
+
   // Enable CSS optimization
   css: {
-    devSourcemap: true,
-    // Vite 6: CSS modules optimization
+    // Only needed while serving locally; avoid extra overhead in build
+    devSourcemap: command === 'serve' && mode === 'development',
     modules: {
       localsConvention: 'camelCase',
     },
   },
+
   // Vite 6: Improved preview server with HTTP/3 hints
   preview: {
     port: 4173,
@@ -283,18 +291,21 @@ export default defineConfig(({ mode }) => ({
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   },
+
   // Vite 6: JSON handling
   json: {
     stringify: true,
   },
+
   // Vite 6: Environment handling
   envPrefix: 'VITE_',
+
   // esbuild optimization for tree-shaking
   esbuild: {
     legalComments: 'none',
     treeShaking: true,
     target: 'esnext',
-    // Remove dead code paths
     pure: mode === 'production' ? ['console.log', 'console.debug', 'console.trace'] : [],
   },
 }));
+
