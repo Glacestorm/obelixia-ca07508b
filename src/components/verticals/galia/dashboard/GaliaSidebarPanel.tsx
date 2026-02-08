@@ -48,19 +48,51 @@ export function GaliaSidebarPanel({ expedientes }: GaliaSidebarPanelProps) {
           <CardTitle className="text-base">Acciones Rápidas</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button variant="outline" className="w-full justify-start" size="sm">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start" 
+            size="sm"
+            onClick={() => {
+              const event = new CustomEvent('galia-tab-change', { detail: 'expedientes' });
+              window.dispatchEvent(event);
+            }}
+          >
             <FileText className="h-4 w-4 mr-2" />
             Revisar solicitudes pendientes
           </Button>
-          <Button variant="outline" className="w-full justify-start" size="sm">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start" 
+            size="sm"
+            onClick={() => {
+              const event = new CustomEvent('galia-tab-change', { detail: 'costes' });
+              window.dispatchEvent(event);
+            }}
+          >
             <FileCheck className="h-4 w-4 mr-2" />
             Validar justificaciones
           </Button>
-          <Button variant="outline" className="w-full justify-start" size="sm">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start" 
+            size="sm"
+            onClick={() => {
+              const event = new CustomEvent('galia-tab-change', { detail: 'beneficiario360' });
+              window.dispatchEvent(event);
+            }}
+          >
             <Users className="h-4 w-4 mr-2" />
             Ver beneficiarios
           </Button>
-          <Button variant="outline" className="w-full justify-start" size="sm">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start" 
+            size="sm"
+            onClick={() => {
+              const event = new CustomEvent('galia-tab-change', { detail: 'gestion' });
+              window.dispatchEvent(event);
+            }}
+          >
             <Settings className="h-4 w-4 mr-2" />
             Configuración GAL
           </Button>
