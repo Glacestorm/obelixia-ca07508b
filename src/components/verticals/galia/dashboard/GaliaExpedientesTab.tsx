@@ -1,15 +1,18 @@
 /**
  * GALIA Dashboard - Expedientes Tab
- * Lista de expedientes con búsqueda y panel de detalle
+ * Lista de expedientes con búsqueda, panel de detalle e insights IA
  */
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, AlertTriangle } from 'lucide-react';
+import { Search, AlertTriangle, Brain } from 'lucide-react';
 import { GaliaStatusBadge } from '../shared/GaliaStatusBadge';
 import { GaliaExpedienteDetailPanel } from './GaliaExpedienteDetailPanel';
+import { GaliaAIInsightsPanel } from './GaliaAIInsightsPanel';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -36,28 +39,50 @@ export function GaliaExpedientesTab({
   workflowEstadoFilter,
   formatCurrency
 }: GaliaExpedientesTabProps) {
+  const [showAIPanel, setShowAIPanel] = useState(false);
+
   const filteredExpedientes = expedientes.filter(e => 
     !searchTerm || 
     e.numero_expediente.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.solicitud?.titulo_proyecto?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Layout dinámico basado en paneles activos
+  const getGridCols = () => {
+    if (selectedExpediente && showAIPanel) return "grid-cols-1 lg:grid-cols-3";
+    if (selectedExpediente || showAIPanel) return "grid-cols-1 lg:grid-cols-2";
+    return "grid-cols-1";
+  };
+
   return (
-    <div className={cn("grid gap-4", selectedExpediente ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
+    <div className={cn("grid gap-4", getGridCols())}>
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">
               Expedientes {workflowEstadoFilter && <Badge variant="secondary" className="ml-2">{workflowEstadoFilter}</Badge>}
             </CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar expediente..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-8 h-9"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative w-48 lg:w-64">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar expediente..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="pl-8 h-9"
+                />
+              </div>
+              {selectedExpediente && (
+                <Button
+                  variant={showAIPanel ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowAIPanel(!showAIPanel)}
+                  className="gap-1"
+                >
+                  <Brain className="h-4 w-4" />
+                  <span className="hidden sm:inline">IA</span>
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -67,9 +92,14 @@ export function GaliaExpedientesTab({
               {filteredExpedientes.slice(0, 20).map((expediente) => (
                 <div 
                   key={expediente.id}
-                  onClick={() => onSelectExpediente(
-                    selectedExpediente?.id === expediente.id ? null : expediente
-                  )}
+                  onClick={() => {
+                    onSelectExpediente(
+                      selectedExpediente?.id === expediente.id ? null : expediente
+                    );
+                    if (selectedExpediente?.id === expediente.id) {
+                      setShowAIPanel(false);
+                    }
+                  }}
                   className={cn(
                     "p-3 rounded-lg border cursor-pointer transition-colors",
                     selectedExpediente?.id === expediente.id 
@@ -120,8 +150,19 @@ export function GaliaExpedientesTab({
       {selectedExpediente && (
         <GaliaExpedienteDetailPanel
           expediente={selectedExpediente}
-          onClose={() => onSelectExpediente(null)}
+          onClose={() => {
+            onSelectExpediente(null);
+            setShowAIPanel(false);
+          }}
           onCambiarEstado={onCambiarEstado}
+        />
+      )}
+
+      {/* Panel de Insights IA */}
+      {selectedExpediente && showAIPanel && (
+        <GaliaAIInsightsPanel
+          expediente={selectedExpediente}
+          onClose={() => setShowAIPanel(false)}
         />
       )}
     </div>

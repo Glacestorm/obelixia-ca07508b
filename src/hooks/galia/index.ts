@@ -23,3 +23,14 @@ export type { GaliaAnalisisCoste, AnalisisCostesResult } from './useGaliaAnalisi
 
 export { useGaliaNotificaciones } from './useGaliaNotificaciones';
 export type { GaliaNotificacion } from './useGaliaNotificaciones';
+
+export { useGaliaAIAnalysis } from './useGaliaAIAnalysis';
+export type { 
+  RiskAnalysisResult, 
+  SmartAssignmentResult, 
+  DeadlinePredictionResult,
+  ProactiveAlert,
+  ProactiveAlertsResult,
+  FullAnalysisResult,
+  TecnicoData 
+} from './useGaliaAIAnalysis';
