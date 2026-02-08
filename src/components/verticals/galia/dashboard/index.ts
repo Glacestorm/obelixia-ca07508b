@@ -11,3 +11,4 @@ export { GaliaExpedientesTab } from './GaliaExpedientesTab';
 export { GaliaConvocatoriasTab } from './GaliaConvocatoriasTab';
 export { GaliaAlertasTab } from './GaliaAlertasTab';
 export { GaliaSidebarPanel } from './GaliaSidebarPanel';
+export { GaliaAIInsightsPanel } from './GaliaAIInsightsPanel';
