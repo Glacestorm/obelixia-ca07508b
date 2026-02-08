@@ -1,5 +1,11 @@
 project_id = "avaugfnqvvqcilhiudlf"
 
+[functions.galia-hybrid-ai]
+verify_jwt = true
+
+[functions.galia-national-federation]
+verify_jwt = true
+
 [functions.galia-clave-auth]
 verify_jwt = false
 
