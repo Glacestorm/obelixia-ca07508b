@@ -31,10 +31,14 @@ import {
   Users,
   Sparkles,
   RefreshCw,
-  Loader2
+  Loader2,
+  Bell,
+  BellRing
 } from 'lucide-react';
-import { GaliaAsistenteVirtual } from './GaliaAsistenteVirtual';
+import { GaliaAsistenteVirtualMejorado } from './GaliaAsistenteVirtualMejorado';
+import { GaliaNotificacionesPanel } from './GaliaNotificacionesPanel';
 import { useGaliaConvocatorias } from '@/hooks/galia/useGaliaConvocatorias';
+import { useGaliaNotificaciones } from '@/hooks/galia/useGaliaNotificaciones';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -92,6 +96,7 @@ export function GaliaPortalCiudadano() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('convocatorias');
   const [showAsistente, setShowAsistente] = useState(false);
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
   const [codigoExpediente, setCodigoExpediente] = useState('');
   const [expedienteConsultado, setExpedienteConsultado] = useState<ExpedientePublico | null>(null);
   const [isConsultando, setIsConsultando] = useState(false);
@@ -106,6 +111,12 @@ export function GaliaPortalCiudadano() {
   } = useGaliaConvocatorias({
     estado: 'abierta',
     searchTerm: searchTerm || undefined
+  });
+
+  // Hook para notificaciones del expediente consultado
+  const { unreadCount } = useGaliaNotificaciones({
+    codigoExpediente: expedienteConsultado?.codigo,
+    autoSubscribe: !!expedienteConsultado
   });
 
   // Estadísticas del presupuesto
@@ -516,15 +527,34 @@ export function GaliaPortalCiudadano() {
                         Última actualización: {formatDistanceToNow(new Date(expedienteConsultado.fechaUltimaActualizacion), { addSuffix: true, locale: es })}
                       </div>
 
-                      {/* Botón para abrir asistente con contexto */}
-                      <Button 
-                        variant="outline" 
-                        className="w-full gap-2"
-                        onClick={() => setShowAsistente(true)}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        Consultar dudas sobre mi expediente
-                      </Button>
+                      {/* Botones de acción */}
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          className="flex-1 gap-2"
+                          onClick={() => setShowAsistente(true)}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          Consultar dudas
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          className="gap-2 relative"
+                          onClick={() => setShowNotificaciones(true)}
+                        >
+                          {unreadCount > 0 ? (
+                            <BellRing className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Bell className="h-4 w-4" />
+                          )}
+                          Alertas
+                          {unreadCount > 0 && (
+                            <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 min-w-5 px-1">
+                              {unreadCount}
+                            </Badge>
+                          )}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -532,72 +562,171 @@ export function GaliaPortalCiudadano() {
             </Card>
           </TabsContent>
 
-          {/* Documentación Tab */}
+          {/* Documentación Tab - Mejorada con categorías */}
           <TabsContent value="documentacion" className="space-y-6">
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+                <CardContent className="p-6 text-center">
+                  <div className="p-4 bg-primary/20 rounded-xl w-fit mx-auto mb-3">
+                    <FileText className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg">Formularios</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Documentos oficiales para tramitación
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-500/20">
+                <CardContent className="p-6 text-center">
+                  <div className="p-4 bg-green-500/20 rounded-xl w-fit mx-auto mb-3">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg">Guías</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Manuales paso a paso
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-500/20">
+                <CardContent className="p-6 text-center">
+                  <div className="p-4 bg-amber-500/20 rounded-xl w-fit mx-auto mb-3">
+                    <Euro className="h-8 w-8 text-amber-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg">Justificación</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Plantillas de gastos
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-4">
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg">
+                  <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                     <FileText className="h-6 w-6 text-primary" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold">Guía del solicitante</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Pasos para solicitar ayudas LEADER
+                      Pasos para solicitar ayudas LEADER - Actualizado 2024
                     </p>
-                    <Button variant="link" className="px-0 h-auto mt-2">
-                      Descargar PDF
+                    <div className="flex items-center gap-2 mt-3">
+                      <Badge variant="outline" className="text-xs">PDF</Badge>
+                      <Badge variant="secondary" className="text-xs">2.4 MB</Badge>
+                    </div>
+                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                      <Download className="h-3 w-3" />
+                      Descargar
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-green-500/10 rounded-lg">
+                  <div className="p-3 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
                     <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold">Checklist de documentación</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Documentos necesarios según tipo de proyecto
                     </p>
-                    <Button variant="link" className="px-0 h-auto mt-2">
+                    <div className="flex items-center gap-2 mt-3">
+                      <Badge variant="outline" className="text-xs">Interactivo</Badge>
+                    </div>
+                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                      <ExternalLink className="h-3 w-3" />
                       Ver checklist
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-amber-500/10 rounded-lg">
+                  <div className="p-3 bg-amber-500/10 rounded-lg group-hover:bg-amber-500/20 transition-colors">
                     <Euro className="h-6 w-6 text-amber-600" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold">Guía de justificación</h3>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Guía de justificación económica</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Cómo justificar los gastos de tu proyecto
+                      Cómo justificar los gastos de tu proyecto según normativa FEADER
                     </p>
-                    <Button variant="link" className="px-0 h-auto mt-2">
-                      Descargar PDF
+                    <div className="flex items-center gap-2 mt-3">
+                      <Badge variant="outline" className="text-xs">PDF</Badge>
+                      <Badge variant="secondary" className="text-xs">1.8 MB</Badge>
+                    </div>
+                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                      <Download className="h-3 w-3" />
+                      Descargar
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
                 <CardContent className="p-6 flex items-start gap-4">
-                  <div className="p-3 bg-blue-500/10 rounded-lg">
+                  <div className="p-3 bg-blue-500/10 rounded-lg group-hover:bg-blue-500/20 transition-colors">
                     <Users className="h-6 w-6 text-blue-600" />
                   </div>
-                  <div>
-                    <h3 className="font-semibold">Directorio de GALs</h3>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Directorio de GALs de Asturias</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Encuentra tu Grupo de Acción Local
+                      Encuentra tu Grupo de Acción Local por municipio
                     </p>
-                    <Button variant="link" className="px-0 h-auto mt-2">
+                    <div className="flex items-center gap-2 mt-3">
+                      <Badge variant="outline" className="text-xs">Mapa</Badge>
+                      <Badge className="text-xs bg-green-500/20 text-green-700">11 GALs</Badge>
+                    </div>
+                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                      <MapPin className="h-3 w-3" />
                       Ver directorio
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                <CardContent className="p-6 flex items-start gap-4">
+                  <div className="p-3 bg-purple-500/10 rounded-lg group-hover:bg-purple-500/20 transition-colors">
+                    <FileText className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Modelo de memoria técnica</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Plantilla para describir tu proyecto y objetivos
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Badge variant="outline" className="text-xs">DOCX</Badge>
+                      <Badge variant="secondary" className="text-xs">156 KB</Badge>
+                    </div>
+                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                      <Download className="h-3 w-3" />
+                      Descargar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+                <CardContent className="p-6 flex items-start gap-4">
+                  <div className="p-3 bg-cyan-500/10 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
+                    <Sparkles className="h-6 w-6 text-cyan-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">Modelo de presupuesto</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Excel con desglose por partidas y cálculo automático de ayuda
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Badge variant="outline" className="text-xs">XLSX</Badge>
+                      <Badge variant="secondary" className="text-xs">89 KB</Badge>
+                    </div>
+                    <Button variant="link" className="px-0 h-auto mt-2 gap-2">
+                      <Download className="h-3 w-3" />
+                      Descargar
                     </Button>
                   </div>
                 </CardContent>
@@ -690,13 +819,24 @@ export function GaliaPortalCiudadano() {
         </Tabs>
       </div>
 
-      {/* Floating Assistant */}
+      {/* Floating Assistant - Versión Mejorada */}
       {showAsistente && (
-        <div className="fixed bottom-4 right-4 w-full max-w-md z-50">
-          <GaliaAsistenteVirtual 
+        <div className="fixed bottom-4 right-4 w-full max-w-lg z-50 animate-in slide-in-from-bottom-4 duration-300">
+          <GaliaAsistenteVirtualMejorado 
             modo="ciudadano"
             expedienteId={expedienteConsultado?.codigo}
             onClose={() => setShowAsistente(false)}
+          />
+        </div>
+      )}
+
+      {/* Panel de Notificaciones Flotante */}
+      {showNotificaciones && expedienteConsultado && (
+        <div className="fixed bottom-4 left-4 w-full max-w-md z-50 animate-in slide-in-from-bottom-4 duration-300">
+          <GaliaNotificacionesPanel
+            codigoExpediente={expedienteConsultado.codigo}
+            autoSubscribe={true}
+            onClose={() => setShowNotificaciones(false)}
           />
         </div>
       )}
