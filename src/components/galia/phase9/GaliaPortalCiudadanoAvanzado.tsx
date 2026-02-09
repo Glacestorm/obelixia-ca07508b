@@ -176,7 +176,7 @@ export function GaliaPortalCiudadanoAvanzado({ className }: GaliaPortalCiudadano
       <div className={cn("space-y-6", className)}>
         {/* Hero */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 p-8 text-white">
-          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(hsl(var(--border)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 rounded-xl bg-white/20 backdrop-blur">
