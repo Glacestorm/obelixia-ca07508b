@@ -227,7 +227,7 @@ class KBWebSocketManager<T = unknown> {
       console.warn('WebSocket is not open');
       return;
     }
-    this.ws.send(data);
+    this.ws.send(data as any);
   }
 
   sendJson(data: unknown): void {
@@ -737,7 +737,7 @@ export function useKBBinaryWebSocket(
 
   const sendBinary = useCallback((data: ArrayBuffer | Blob | Uint8Array) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(data);
+      wsRef.current.send(data as any);
     }
   }, []);
 
