@@ -55,7 +55,7 @@ export function PushNotifications() {
   const checkSubscription = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
       setSubscribed(!!subscription);
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -89,7 +89,7 @@ export function PushNotifications() {
       await navigator.serviceWorker.ready;
 
       // Subscribe to push - using a simple approach without VAPID for demo
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
       });
 
@@ -109,7 +109,7 @@ export function PushNotifications() {
     setLoading(true);
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager.getSubscription();
       
       if (subscription) {
         await subscription.unsubscribe();
