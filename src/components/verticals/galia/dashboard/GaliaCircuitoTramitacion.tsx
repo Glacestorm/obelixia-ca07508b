@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Maximize2, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Minimize2, HelpCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GaliaCircuitoTramitacionProps {
@@ -46,8 +46,26 @@ export function GaliaCircuitoTramitacion({
 }: GaliaCircuitoTramitacionProps) {
   const { getTransicionesDisponibles, getFaseProgreso } = useGaliaCircuitoTramitacion();
   const containerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.85);
   const [showHelp, setShowHelp] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Listen for fullscreen changes (including Escape key exit)
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!cardRef.current) return;
+    if (!document.fullscreenElement) {
+      cardRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
 
   // Compute passed states
   const estadosPasados = useMemo(() => {
@@ -369,7 +387,7 @@ export function GaliaCircuitoTramitacion({
   };
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card ref={cardRef} className={cn("flex flex-col", isFullscreen ? "h-screen rounded-none border-none" : "h-full")}>
       <CardHeader className="pb-3 border-b shrink-0">
         <CardTitle className="text-base flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -387,6 +405,9 @@ export function GaliaCircuitoTramitacion({
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleZoom('fit')} title="Ajustar">
               <Maximize2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggleFullscreen} title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}>
+              {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowHelp(!showHelp)} title="Ayuda">
               <HelpCircle className="h-3.5 w-3.5" />
