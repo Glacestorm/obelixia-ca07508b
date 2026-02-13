@@ -75,6 +75,7 @@ export const galiaNavCategories: NavCategory[] = [
     defaultOpen: true,
     items: [
       { id: 'resumen', label: 'Resumen Ejecutivo', shortLabel: 'Resumen', icon: <BarChart3 className="h-4 w-4" /> },
+      { id: 'circuito', label: 'Circuito LEADER (35 pasos)', shortLabel: 'Circuito', icon: <Workflow className="h-4 w-4" />, badge: '35', badgeVariant: 'default' },
       { id: 'gestion', label: 'Gestión Técnica', shortLabel: 'Gestión', icon: <LayoutDashboard className="h-4 w-4" /> },
       { id: 'alertas', label: 'Alertas y Riesgos', shortLabel: 'Alertas', icon: <AlertTriangle className="h-4 w-4" />, badge: 'Live', badgeVariant: 'destructive' },
     ]
