@@ -24,6 +24,8 @@ import {
 } from './dashboard';
 import { GaliaCircuitoTramitacion } from './dashboard/GaliaCircuitoTramitacion';
 import { GaliaTecnicoToolkit } from './dashboard/GaliaTecnicoToolkit';
+import { GaliaFraudDetectionPanel } from './dashboard/GaliaFraudDetectionPanel';
+import { GaliaDocClassificationPanel } from './dashboard/GaliaDocClassificationPanel';
 import { GaliaNavigation } from './dashboard/GaliaNavigation';
 import { cn } from '@/lib/utils';
 import { GaliaNuevaConvocatoriaModal } from './GaliaNuevaConvocatoriaModal';
@@ -227,6 +229,12 @@ export function GaliaDashboard() {
       
       case 'compliance':
         return <Suspense fallback={<TabSkeleton />}><GaliaComplianceAuditor /></Suspense>;
+      
+      case 'fraud-detection':
+        return <GaliaFraudDetectionPanel />;
+      
+      case 'doc-classification':
+        return <GaliaDocClassificationPanel />;
       
       case 'project-status':
         return <Suspense fallback={<TabSkeleton />}><GaliaProjectStatusDashboard /></Suspense>;

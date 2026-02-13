@@ -106,8 +106,10 @@ export const galiaNavCategories: NavCategory[] = [
     items: [
       { id: 'toolkit-panel', label: 'Panel de Herramientas', shortLabel: 'Toolkit', icon: <Layers className="h-4 w-4" />, badge: 'Nuevo' },
       { id: 'costes', label: 'Moderador de Costes', shortLabel: 'Costes', icon: <Calculator className="h-4 w-4" /> },
+      { id: 'fraud-detection', label: 'Detección de Fraude', shortLabel: 'Fraude', icon: <Shield className="h-4 w-4" />, badge: 'IA', badgeVariant: 'destructive' },
+      { id: 'doc-classification', label: 'Clasificación Documental', shortLabel: 'Clasif.', icon: <FileSearch className="h-4 w-4" />, badge: 'IA' },
       { id: 'documentos', label: 'Análisis Documental', shortLabel: 'Docs', icon: <FileSearch className="h-4 w-4" /> },
-      { id: 'compliance', label: 'Compliance y Fraude', shortLabel: 'Compliance', icon: <Shield className="h-4 w-4" /> },
+      { id: 'compliance', label: 'Compliance', shortLabel: 'Compliance', icon: <Shield className="h-4 w-4" /> },
     ]
   },
   {
