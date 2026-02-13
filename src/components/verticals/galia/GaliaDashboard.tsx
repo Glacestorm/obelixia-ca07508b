@@ -117,6 +117,16 @@ export function GaliaDashboard() {
             formatCurrency={formatCurrency}
           />
         );
+
+      case 'circuito':
+        return (
+          <GaliaCircuitoTramitacion 
+            estadoActual={selectedExpediente?.estado || 'incorporacion_solicitud'}
+            historial={selectedExpediente?.historial_transiciones || []}
+            onTransicion={handleCambiarEstado}
+            readOnly={!selectedExpediente}
+          />
+        );
       
       case 'gestion':
         return (
