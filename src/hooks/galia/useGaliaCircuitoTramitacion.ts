@@ -213,74 +213,74 @@ export const ESTADO_LABELS: Record<string, string> = {
 };
 
 // === NODOS DEL FLUJOGRAMA CON POSICIONES ===
-// Layout: columnas por fase, filas para bifurcaciones
-const COL_W = 200;
-const ROW_H = 80;
+// Layout: vertical flow, wider spacing for readability
+const COL_W = 280;
+const ROW_H = 100;
 
 export const NODOS_FLUJOGRAMA: NodoFlujograma[] = [
-  // === SOLICITUD (col 0) ===
-  { id: 'incorporacion_solicitud', label: 'Incorporación solicitud', fase: 'solicitud', tipo: 'start', x: 0, y: 0 },
-  { id: 'peticion_informes_cruzados', label: 'Informes cruzados', fase: 'solicitud', tipo: 'task', x: 0, y: ROW_H },
-  { id: 'apertura_expediente', label: 'Apertura expediente', fase: 'solicitud', tipo: 'task', x: 0, y: ROW_H * 2 },
-  { id: 'especificacion_controles', label: 'Especif. controles', fase: 'solicitud', tipo: 'task', x: 0, y: ROW_H * 3 },
-  { id: 'decision_subsanacion', label: '¿Subsanación?', fase: 'solicitud', tipo: 'decision', x: 0, y: ROW_H * 4 },
-  { id: 'requerimiento_subsanacion', label: 'Req. subsanación', fase: 'solicitud', tipo: 'task', x: COL_W, y: ROW_H * 4 },
+  // === SOLICITUD ===
+  { id: 'incorporacion_solicitud', label: 'Incorporación solicitud', fase: 'solicitud', tipo: 'start', x: 100, y: 0 },
+  { id: 'peticion_informes_cruzados', label: 'Informes cruzados', fase: 'solicitud', tipo: 'task', x: 50, y: ROW_H },
+  { id: 'apertura_expediente', label: 'Apertura expediente', fase: 'solicitud', tipo: 'task', x: 50, y: ROW_H * 2 },
+  { id: 'especificacion_controles', label: 'Especificación controles', fase: 'solicitud', tipo: 'task', x: 50, y: ROW_H * 3 },
+  { id: 'decision_subsanacion', label: '¿Subsanación?', fase: 'solicitud', tipo: 'decision', x: 75, y: ROW_H * 4 },
+  { id: 'requerimiento_subsanacion', label: 'Req. subsanación', fase: 'solicitud', tipo: 'task', x: COL_W + 50, y: ROW_H * 3.5 },
 
-  // === ELEGIBILIDAD (col 0, rows 5-10) ===
-  { id: 'control_elegibilidad_oodr', label: 'Control eleg. OODR', fase: 'elegibilidad', tipo: 'task', x: 0, y: ROW_H * 5.5 },
-  { id: 'control_administrativo_elegibilidad', label: 'Control admvo. eleg.', fase: 'elegibilidad', tipo: 'task', x: 0, y: ROW_H * 6.5 },
-  { id: 'decision_elegibilidad', label: '¿Elegible?', fase: 'elegibilidad', tipo: 'decision', x: 0, y: ROW_H * 7.5 },
-  { id: 'propuesta_resolucion_elegibilidad', label: 'Propuesta res. eleg.', fase: 'elegibilidad', tipo: 'task', x: 0, y: ROW_H * 8.5 },
-  { id: 'resolucion_elegibilidad_dg', label: 'Resolución eleg. DG', fase: 'elegibilidad', tipo: 'task', x: 0, y: ROW_H * 9.5 },
-  { id: 'elegibilidad_hechos', label: 'Elegibilidad hechos', fase: 'elegibilidad', tipo: 'task', x: 0, y: ROW_H * 10.5 },
-  { id: 'indicadores_expediente', label: 'Indicadores expediente', fase: 'elegibilidad', tipo: 'task', x: 0, y: ROW_H * 11.5 },
+  // === ELEGIBILIDAD ===
+  { id: 'control_elegibilidad_oodr', label: 'Control elegibilidad OODR', fase: 'elegibilidad', tipo: 'task', x: 50, y: ROW_H * 5.5 },
+  { id: 'control_administrativo_elegibilidad', label: 'Control admvo. elegibilidad', fase: 'elegibilidad', tipo: 'task', x: 50, y: ROW_H * 6.5 },
+  { id: 'decision_elegibilidad', label: '¿Elegible?', fase: 'elegibilidad', tipo: 'decision', x: 75, y: ROW_H * 7.5 },
+  { id: 'propuesta_resolucion_elegibilidad', label: 'Propuesta res. elegibilidad', fase: 'elegibilidad', tipo: 'task', x: 50, y: ROW_H * 8.7 },
+  { id: 'resolucion_elegibilidad_dg', label: 'Resolución elegibilidad DG', fase: 'elegibilidad', tipo: 'task', x: 50, y: ROW_H * 9.7 },
+  { id: 'elegibilidad_hechos', label: 'Elegibilidad de hechos', fase: 'elegibilidad', tipo: 'task', x: 50, y: ROW_H * 10.7 },
+  { id: 'indicadores_expediente', label: 'Indicadores expediente', fase: 'elegibilidad', tipo: 'task', x: 50, y: ROW_H * 11.7 },
 
-  // === EVALUACIÓN (col 0, rows 12-15) ===
-  { id: 'peticion_informe_tecnico_economico', label: 'Inf. técnico-eco.', fase: 'evaluacion', tipo: 'task', x: 0, y: ROW_H * 13 },
-  { id: 'control_administrativo_previo', label: 'Control admvo. previo', fase: 'evaluacion', tipo: 'task', x: 0, y: ROW_H * 14 },
-  { id: 'tramite_espera_junta_ct', label: 'Espera Junta CT', fase: 'evaluacion', tipo: 'task', x: 0, y: ROW_H * 15 },
-  { id: 'control_previsto_ayuda_concesion', label: 'Control ayuda/conc.', fase: 'evaluacion', tipo: 'task', x: 0, y: ROW_H * 16 },
+  // === EVALUACIÓN ===
+  { id: 'peticion_informe_tecnico_economico', label: 'Petición inf. técnico-eco.', fase: 'evaluacion', tipo: 'task', x: 50, y: ROW_H * 13.2 },
+  { id: 'control_administrativo_previo', label: 'Control admvo. previo', fase: 'evaluacion', tipo: 'task', x: 50, y: ROW_H * 14.2 },
+  { id: 'tramite_espera_junta_ct', label: 'Espera Junta CT', fase: 'evaluacion', tipo: 'task', x: 50, y: ROW_H * 15.2 },
+  { id: 'control_previsto_ayuda_concesion', label: 'Control ayuda/concesión', fase: 'evaluacion', tipo: 'task', x: 50, y: ROW_H * 16.2 },
 
-  // === RESOLUCIÓN (col 0, rows 17-21) ===
-  { id: 'tramite_espera_resolucion_dg', label: 'Espera resol. DG', fase: 'resolucion', tipo: 'task', x: 0, y: ROW_H * 17.5 },
-  { id: 'incorporar_resolucion_dg', label: 'Incorporar resol. DG', fase: 'resolucion', tipo: 'task', x: 0, y: ROW_H * 18.5 },
-  { id: 'notificacion_beneficiario', label: 'Notif. beneficiario', fase: 'resolucion', tipo: 'task', x: 0, y: ROW_H * 19.5 },
-  { id: 'decision_aceptacion', label: '¿Acepta?', fase: 'resolucion', tipo: 'decision', x: 0, y: ROW_H * 20.5 },
-  { id: 'renuncia_beneficiario', label: 'Renuncia', fase: 'resolucion', tipo: 'task', x: COL_W, y: ROW_H * 19.5 },
-  { id: 'desistimiento_beneficiario', label: 'Desistimiento', fase: 'resolucion', tipo: 'task', x: COL_W, y: ROW_H * 20.5 },
-  { id: 'vencimiento_sin_pronunciamiento', label: 'Vencimiento s/pron.', fase: 'resolucion', tipo: 'task', x: COL_W, y: ROW_H * 21.5 },
-  { id: 'control_aceptacion_renuncia', label: 'Control aceptación', fase: 'resolucion', tipo: 'task', x: 0, y: ROW_H * 21.5 },
+  // === RESOLUCIÓN ===
+  { id: 'tramite_espera_resolucion_dg', label: 'Espera resolución DG', fase: 'resolucion', tipo: 'task', x: 50, y: ROW_H * 17.7 },
+  { id: 'incorporar_resolucion_dg', label: 'Incorporar resolución DG', fase: 'resolucion', tipo: 'task', x: 50, y: ROW_H * 18.7 },
+  { id: 'notificacion_beneficiario', label: 'Notificación beneficiario', fase: 'resolucion', tipo: 'task', x: 50, y: ROW_H * 19.7 },
+  { id: 'decision_aceptacion', label: '¿Acepta?', fase: 'resolucion', tipo: 'decision', x: 75, y: ROW_H * 20.7 },
+  { id: 'renuncia_beneficiario', label: 'Renuncia beneficiario', fase: 'resolucion', tipo: 'task', x: COL_W + 50, y: ROW_H * 19.7 },
+  { id: 'desistimiento_beneficiario', label: 'Desistimiento', fase: 'resolucion', tipo: 'task', x: COL_W + 50, y: ROW_H * 20.7 },
+  { id: 'vencimiento_sin_pronunciamiento', label: 'Vencimiento s/pronunciam.', fase: 'resolucion', tipo: 'task', x: COL_W + 50, y: ROW_H * 21.7 },
+  { id: 'control_aceptacion_renuncia', label: 'Control aceptación', fase: 'resolucion', tipo: 'task', x: 50, y: ROW_H * 22 },
 
-  // === PAGO (col 0, rows 22-33) ===
-  { id: 'incorporacion_aceptacion_pago', label: 'Incorp. acept. pago', fase: 'pago', tipo: 'task', x: 0, y: ROW_H * 23 },
-  { id: 'decision_pago', label: '¿Pago antic.?', fase: 'pago', tipo: 'decision', x: 0, y: ROW_H * 24 },
-  { id: 'aceptacion_pago_anticipado', label: 'Pago anticipado', fase: 'pago', tipo: 'task', x: COL_W, y: ROW_H * 24 },
-  { id: 'adjuntar_solicitud_pago', label: 'Adjuntar solic. pago', fase: 'pago', tipo: 'task', x: 0, y: ROW_H * 25 },
-  { id: 'peticion_informes_cruzados_pago', label: 'Informes cruzados (P)', fase: 'pago', tipo: 'task', x: 0, y: ROW_H * 26 },
-  { id: 'especificacion_controles_pago', label: 'Controles pago', fase: 'pago', tipo: 'task', x: 0, y: ROW_H * 27 },
-  { id: 'requerimiento_subsanacion_pago', label: 'Req. subsan. (pago)', fase: 'pago', tipo: 'task', x: COL_W, y: ROW_H * 27 },
-  { id: 'informe_certificacion', label: 'Inf. certificación', fase: 'pago', tipo: 'task', x: -COL_W * 0.6, y: ROW_H * 28.5 },
-  { id: 'control_justificacion', label: 'Control justificación', fase: 'pago', tipo: 'task', x: 0, y: ROW_H * 28.5 },
-  { id: 'acta_verificacion_in_situ', label: 'Verificación in situ', fase: 'pago', tipo: 'task', x: COL_W * 0.6, y: ROW_H * 28.5 },
-  { id: 'decision_certificacion', label: '¿Certif. OK?', fase: 'pago', tipo: 'decision', x: 0, y: ROW_H * 30 },
-  { id: 'control_contratacion_publica', label: 'Control contrat. púb.', fase: 'pago', tipo: 'task', x: -COL_W * 0.5, y: ROW_H * 31 },
-  { id: 'revision_tecnica_final', label: 'Revisión técnica final', fase: 'pago', tipo: 'task', x: COL_W * 0.5, y: ROW_H * 31 },
-  { id: 'control_certificacion_pago', label: 'Control certif. pago', fase: 'pago', tipo: 'task', x: 0, y: ROW_H * 32 },
+  // === PAGO ===
+  { id: 'incorporacion_aceptacion_pago', label: 'Incorp. aceptación pago', fase: 'pago', tipo: 'task', x: 50, y: ROW_H * 23.5 },
+  { id: 'decision_pago', label: '¿Pago anticipado?', fase: 'pago', tipo: 'decision', x: 75, y: ROW_H * 24.5 },
+  { id: 'aceptacion_pago_anticipado', label: 'Pago anticipado', fase: 'pago', tipo: 'task', x: COL_W + 50, y: ROW_H * 24.5 },
+  { id: 'adjuntar_solicitud_pago', label: 'Adjuntar solicitud pago', fase: 'pago', tipo: 'task', x: 50, y: ROW_H * 25.7 },
+  { id: 'peticion_informes_cruzados_pago', label: 'Informes cruzados (pago)', fase: 'pago', tipo: 'task', x: 50, y: ROW_H * 26.7 },
+  { id: 'especificacion_controles_pago', label: 'Controles pago', fase: 'pago', tipo: 'task', x: 50, y: ROW_H * 27.7 },
+  { id: 'requerimiento_subsanacion_pago', label: 'Req. subsanación (pago)', fase: 'pago', tipo: 'task', x: COL_W + 50, y: ROW_H * 27.7 },
+  { id: 'informe_certificacion', label: 'Informe certificación', fase: 'pago', tipo: 'task', x: -COL_W * 0.5 + 50, y: ROW_H * 29 },
+  { id: 'control_justificacion', label: 'Control justificación', fase: 'pago', tipo: 'task', x: 50, y: ROW_H * 29 },
+  { id: 'acta_verificacion_in_situ', label: 'Verificación in situ', fase: 'pago', tipo: 'task', x: COL_W * 0.5 + 50, y: ROW_H * 29 },
+  { id: 'decision_certificacion', label: '¿Certificación OK?', fase: 'pago', tipo: 'decision', x: 75, y: ROW_H * 30.5 },
+  { id: 'control_contratacion_publica', label: 'Control contratación púb.', fase: 'pago', tipo: 'task', x: -COL_W * 0.4 + 50, y: ROW_H * 31.7 },
+  { id: 'revision_tecnica_final', label: 'Revisión técnica final', fase: 'pago', tipo: 'task', x: COL_W * 0.4 + 50, y: ROW_H * 31.7 },
+  { id: 'control_certificacion_pago', label: 'Control certif. pago', fase: 'pago', tipo: 'task', x: 50, y: ROW_H * 32.9 },
 
-  // === CIERRE (col 0, rows 33-38) ===
-  { id: 'propuesta_ordenacion_pago', label: 'Propuesta ord. pago', fase: 'cierre', tipo: 'task', x: 0, y: ROW_H * 33.5 },
-  { id: 'peticion_orden_pago', label: 'Petición orden pago', fase: 'cierre', tipo: 'task', x: 0, y: ROW_H * 34.5 },
-  { id: 'indicar_fecha_pago', label: 'Indicar fecha pago', fase: 'cierre', tipo: 'task', x: 0, y: ROW_H * 35.5 },
-  { id: 'resolucion_revocacion', label: 'Resol. revocación', fase: 'cierre', tipo: 'task', x: COL_W, y: ROW_H * 33.5 },
-  { id: 'notificacion_revocacion', label: 'Notif. revocación', fase: 'cierre', tipo: 'task', x: COL_W, y: ROW_H * 34.5 },
-  { id: 'terminacion_expediente', label: 'Terminación expediente', fase: 'cierre', tipo: 'task', x: 0, y: ROW_H * 36.5 },
+  // === CIERRE ===
+  { id: 'propuesta_ordenacion_pago', label: 'Propuesta ordenación pago', fase: 'cierre', tipo: 'task', x: 50, y: ROW_H * 34.2 },
+  { id: 'peticion_orden_pago', label: 'Petición orden pago', fase: 'cierre', tipo: 'task', x: 50, y: ROW_H * 35.2 },
+  { id: 'indicar_fecha_pago', label: 'Indicar fecha pago', fase: 'cierre', tipo: 'task', x: 50, y: ROW_H * 36.2 },
+  { id: 'resolucion_revocacion', label: 'Resolución revocación', fase: 'cierre', tipo: 'task', x: COL_W + 50, y: ROW_H * 34.2 },
+  { id: 'notificacion_revocacion', label: 'Notificación revocación', fase: 'cierre', tipo: 'task', x: COL_W + 50, y: ROW_H * 35.2 },
+  { id: 'terminacion_expediente', label: 'Terminación expediente', fase: 'cierre', tipo: 'task', x: 50, y: ROW_H * 37.2 },
 
   // === TERMINALES ===
-  { id: 'concedido', label: 'Concedido', fase: 'cierre', tipo: 'terminal', x: -COL_W * 0.8, y: ROW_H * 8.5 },
-  { id: 'denegado', label: 'Denegado', fase: 'cierre', tipo: 'terminal', x: COL_W, y: ROW_H * 7.5 },
-  { id: 'renunciado', label: 'Renunciado', fase: 'cierre', tipo: 'terminal', x: COL_W * 1.5, y: ROW_H * 19.5 },
-  { id: 'desistido', label: 'Desistido', fase: 'cierre', tipo: 'terminal', x: COL_W * 1.5, y: ROW_H * 20.5 },
-  { id: 'cerrado', label: 'Cerrado', fase: 'cierre', tipo: 'end', x: 0, y: ROW_H * 38 },
+  { id: 'concedido', label: 'Concedido', fase: 'cierre', tipo: 'terminal', x: -COL_W * 0.6, y: ROW_H * 8.7 },
+  { id: 'denegado', label: 'Denegado', fase: 'cierre', tipo: 'terminal', x: COL_W + 80, y: ROW_H * 7.5 },
+  { id: 'renunciado', label: 'Renunciado', fase: 'cierre', tipo: 'terminal', x: COL_W * 1.7, y: ROW_H * 19.7 },
+  { id: 'desistido', label: 'Desistido', fase: 'cierre', tipo: 'terminal', x: COL_W * 1.7, y: ROW_H * 20.7 },
+  { id: 'cerrado', label: 'Cerrado', fase: 'cierre', tipo: 'end', x: 100, y: ROW_H * 38.5 },
 ];
 
 // === ARISTAS DEL FLUJOGRAMA ===
