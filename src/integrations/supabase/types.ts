@@ -41455,11 +41455,16 @@ export type Database = {
           alertas: Json | null
           analisis_ia: Json | null
           condiciones_especiales: Json | null
+          control_contratacion: boolean | null
           created_at: string | null
           estado: Database["public"]["Enums"]["galia_expediente_estado"] | null
+          fase_actual: string | null
+          fecha_aceptacion: string | null
           fecha_apertura: string | null
           fecha_cierre: string | null
+          fecha_notificacion: string | null
           fecha_resolucion: string | null
+          historial_transiciones: Json | null
           hitos: Json | null
           id: string
           importe_concedido: number | null
@@ -41479,13 +41484,17 @@ export type Database = {
           resolucion_publicacion_url: string | null
           resolucion_referencia: string | null
           resolucion_tipo: string | null
+          resultado_control: Json | null
           riesgo_detalle: Json | null
           scoring_riesgo: number | null
           solicitud_id: string
+          sub_estado: string | null
           tecnico_evaluador_id: string | null
           tecnico_instructor_id: string | null
+          tipo_pago: string | null
           updated_at: string | null
           verificacion_fecha: string | null
+          verificacion_in_situ: boolean | null
           verificacion_resultado: Json | null
           verificacion_terreno: boolean | null
         }
@@ -41493,11 +41502,16 @@ export type Database = {
           alertas?: Json | null
           analisis_ia?: Json | null
           condiciones_especiales?: Json | null
+          control_contratacion?: boolean | null
           created_at?: string | null
           estado?: Database["public"]["Enums"]["galia_expediente_estado"] | null
+          fase_actual?: string | null
+          fecha_aceptacion?: string | null
           fecha_apertura?: string | null
           fecha_cierre?: string | null
+          fecha_notificacion?: string | null
           fecha_resolucion?: string | null
+          historial_transiciones?: Json | null
           hitos?: Json | null
           id?: string
           importe_concedido?: number | null
@@ -41517,13 +41531,17 @@ export type Database = {
           resolucion_publicacion_url?: string | null
           resolucion_referencia?: string | null
           resolucion_tipo?: string | null
+          resultado_control?: Json | null
           riesgo_detalle?: Json | null
           scoring_riesgo?: number | null
           solicitud_id: string
+          sub_estado?: string | null
           tecnico_evaluador_id?: string | null
           tecnico_instructor_id?: string | null
+          tipo_pago?: string | null
           updated_at?: string | null
           verificacion_fecha?: string | null
+          verificacion_in_situ?: boolean | null
           verificacion_resultado?: Json | null
           verificacion_terreno?: boolean | null
         }
@@ -41531,11 +41549,16 @@ export type Database = {
           alertas?: Json | null
           analisis_ia?: Json | null
           condiciones_especiales?: Json | null
+          control_contratacion?: boolean | null
           created_at?: string | null
           estado?: Database["public"]["Enums"]["galia_expediente_estado"] | null
+          fase_actual?: string | null
+          fecha_aceptacion?: string | null
           fecha_apertura?: string | null
           fecha_cierre?: string | null
+          fecha_notificacion?: string | null
           fecha_resolucion?: string | null
+          historial_transiciones?: Json | null
           hitos?: Json | null
           id?: string
           importe_concedido?: number | null
@@ -41555,13 +41578,17 @@ export type Database = {
           resolucion_publicacion_url?: string | null
           resolucion_referencia?: string | null
           resolucion_tipo?: string | null
+          resultado_control?: Json | null
           riesgo_detalle?: Json | null
           scoring_riesgo?: number | null
           solicitud_id?: string
+          sub_estado?: string | null
           tecnico_evaluador_id?: string | null
           tecnico_instructor_id?: string | null
+          tipo_pago?: string | null
           updated_at?: string | null
           verificacion_fecha?: string | null
+          verificacion_in_situ?: boolean | null
           verificacion_resultado?: Json | null
           verificacion_terreno?: boolean | null
         }
@@ -65118,6 +65145,42 @@ export type Database = {
         | "renunciado"
         | "justificacion"
         | "cerrado"
+        | "incorporacion_solicitud"
+        | "peticion_informes_cruzados"
+        | "apertura_expediente"
+        | "especificacion_controles"
+        | "requerimiento_subsanacion"
+        | "control_elegibilidad_oodr"
+        | "control_administrativo_elegibilidad"
+        | "propuesta_resolucion_elegibilidad"
+        | "resolucion_elegibilidad_dg"
+        | "elegibilidad_hechos"
+        | "indicadores_expediente"
+        | "peticion_informe_tecnico_economico"
+        | "tramite_espera_junta_ct"
+        | "control_previsto_ayuda_concesion"
+        | "tramite_espera_resolucion_dg"
+        | "incorporar_resolucion_dg"
+        | "notificacion_beneficiario"
+        | "control_aceptacion_renuncia"
+        | "aceptacion_pago_anticipado"
+        | "solicitud_excepcion"
+        | "adjuntar_solicitud_pago"
+        | "peticion_informes_cruzados_pago"
+        | "especificacion_controles_pago"
+        | "requerimiento_subsanacion_pago"
+        | "informe_certificacion"
+        | "control_justificacion"
+        | "acta_verificacion_in_situ"
+        | "control_contratacion_publica"
+        | "control_certificacion_pago"
+        | "propuesta_ordenacion_pago"
+        | "peticion_orden_pago"
+        | "indicar_fecha_pago"
+        | "resolucion_revocacion"
+        | "notificacion_revocacion"
+        | "terminacion_expediente"
+        | "desistido"
       galia_role: "admin" | "tecnico" | "gestor" | "auditor" | "beneficiario"
       galia_solicitud_estado:
         | "borrador"
@@ -65442,6 +65505,42 @@ export const Constants = {
         "renunciado",
         "justificacion",
         "cerrado",
+        "incorporacion_solicitud",
+        "peticion_informes_cruzados",
+        "apertura_expediente",
+        "especificacion_controles",
+        "requerimiento_subsanacion",
+        "control_elegibilidad_oodr",
+        "control_administrativo_elegibilidad",
+        "propuesta_resolucion_elegibilidad",
+        "resolucion_elegibilidad_dg",
+        "elegibilidad_hechos",
+        "indicadores_expediente",
+        "peticion_informe_tecnico_economico",
+        "tramite_espera_junta_ct",
+        "control_previsto_ayuda_concesion",
+        "tramite_espera_resolucion_dg",
+        "incorporar_resolucion_dg",
+        "notificacion_beneficiario",
+        "control_aceptacion_renuncia",
+        "aceptacion_pago_anticipado",
+        "solicitud_excepcion",
+        "adjuntar_solicitud_pago",
+        "peticion_informes_cruzados_pago",
+        "especificacion_controles_pago",
+        "requerimiento_subsanacion_pago",
+        "informe_certificacion",
+        "control_justificacion",
+        "acta_verificacion_in_situ",
+        "control_contratacion_publica",
+        "control_certificacion_pago",
+        "propuesta_ordenacion_pago",
+        "peticion_orden_pago",
+        "indicar_fecha_pago",
+        "resolucion_revocacion",
+        "notificacion_revocacion",
+        "terminacion_expediente",
+        "desistido",
       ],
       galia_role: ["admin", "tecnico", "gestor", "auditor", "beneficiario"],
       galia_solicitud_estado: [

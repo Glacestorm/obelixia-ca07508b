@@ -6,7 +6,6 @@
 import { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
   Collapsible,
   CollapsibleContent,
@@ -46,6 +45,7 @@ import {
   CheckCircle,
   Layers,
   Menu,
+  Briefcase,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -94,10 +94,19 @@ export const galiaNavCategories: NavCategory[] = [
     label: 'Inteligencia Artificial',
     icon: <Brain className="h-4 w-4" />,
     items: [
-      { id: 'costes', label: 'Moderador de Costes IA', shortLabel: 'Costes IA', icon: <Calculator className="h-4 w-4" />, badge: 'IA' },
-      { id: 'documentos', label: 'Análisis OCR', shortLabel: 'OCR IA', icon: <FileSearch className="h-4 w-4" />, badge: 'IA' },
-      { id: 'docgen', label: 'Generador Documentos', shortLabel: 'Doc IA', icon: <Sparkles className="h-4 w-4" />, badge: 'IA' },
       { id: 'hybrid-ai', label: 'IA Híbrida', shortLabel: 'Híbrida', icon: <Cpu className="h-4 w-4" />, badge: 'v2.0', badgeVariant: 'default' },
+      { id: 'docgen', label: 'Generador Documentos', shortLabel: 'Doc IA', icon: <Sparkles className="h-4 w-4" />, badge: 'IA' },
+    ]
+  },
+  {
+    id: 'toolkit',
+    label: 'Toolkit Técnico',
+    icon: <Briefcase className="h-4 w-4" />,
+    items: [
+      { id: 'toolkit-panel', label: 'Panel de Herramientas', shortLabel: 'Toolkit', icon: <Layers className="h-4 w-4" />, badge: 'Nuevo' },
+      { id: 'costes', label: 'Moderador de Costes', shortLabel: 'Costes', icon: <Calculator className="h-4 w-4" /> },
+      { id: 'documentos', label: 'Análisis Documental', shortLabel: 'Docs', icon: <FileSearch className="h-4 w-4" /> },
+      { id: 'compliance', label: 'Compliance y Fraude', shortLabel: 'Compliance', icon: <Shield className="h-4 w-4" /> },
     ]
   },
   {
@@ -123,12 +132,11 @@ export const galiaNavCategories: NavCategory[] = [
   },
   {
     id: 'transparencia',
-    label: 'Transparencia y Cumplimiento',
+    label: 'Transparencia',
     icon: <Shield className="h-4 w-4" />,
     items: [
       { id: 'portal', label: 'Portal Ciudadano', shortLabel: 'Portal', icon: <Globe className="h-4 w-4" /> },
       { id: 'transparencia', label: 'Portal de Transparencia', shortLabel: 'Transparencia', icon: <Shield className="h-4 w-4" /> },
-      { id: 'compliance', label: 'Auditoría de Cumplimiento', shortLabel: 'Auditoría', icon: <CheckCircle className="h-4 w-4" />, badge: 'v2.0' },
       { id: 'project-status', label: 'Estado del Proyecto', shortLabel: 'Estado', icon: <Eye className="h-4 w-4" /> },
     ]
   },
@@ -170,7 +178,7 @@ export const GaliaNavigationDesktop = memo(function GaliaNavigationDesktop({
   const activeNavItem = findNavItem(activeTab);
 
   return (
-    <div className="hidden md:flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm">
+    <div className="hidden md:flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm overflow-x-auto">
       {galiaNavCategories.map((category) => {
         const isActiveCategory = category.items.some(item => item.id === activeTab);
         
@@ -181,7 +189,7 @@ export const GaliaNavigationDesktop = memo(function GaliaNavigationDesktop({
                 variant={isActiveCategory ? "default" : "ghost"}
                 size="sm"
                 className={cn(
-                  "h-9 gap-1.5 text-xs font-medium transition-all",
+                  "h-9 gap-1.5 text-xs font-medium transition-all shrink-0",
                   isActiveCategory && "shadow-sm"
                 )}
               >

@@ -23,7 +23,7 @@ const COUNTRY_SOURCES: Record<string, { name: string; sources: string[]; regulat
   ES: {
     name: 'España',
     sources: ['BOE (Boletín Oficial del Estado)', 'AEAT', 'ICAC', 'Banco de España'],
-    regulators: ['Ministerio de Hacienda', 'AEAT', 'ICAC', 'CNMV']
+    regulators: ['Administración tributaria competente', 'AEAT', 'ICAC', 'CNMV']
   },
   FR: {
     name: 'Francia',

@@ -105,8 +105,8 @@ const GRANT_SOURCES = {
         }
       ]
     },
-    ministerio: {
-      name: 'Ministerio de Economía y Competitividad',
+    administracion: {
+      name: 'Administración competente',
       programs: [
         {
           name: 'Kit Digital',
