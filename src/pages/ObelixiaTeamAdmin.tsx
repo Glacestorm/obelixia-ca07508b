@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
@@ -43,7 +43,6 @@ import {
 } from '@/components/admin/module-studio';
 
 // Lazy loaded components for new tabs
-import { lazy, Suspense } from 'react';
 const RFMDashboard = lazy(() => import('@/components/admin/RFMDashboard').then(m => ({ default: m.RFMDashboard })));
 const PredictiveAnalyticsDashboard = lazy(() => import('@/components/admin/PredictiveAnalyticsDashboard').then(m => ({ default: m.PredictiveAnalyticsDashboard })));
 const ISO27001Dashboard = lazy(() => import('@/components/admin/ISO27001Dashboard').then(m => ({ default: m.ISO27001Dashboard })));
