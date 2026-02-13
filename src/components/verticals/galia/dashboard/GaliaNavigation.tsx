@@ -175,7 +175,7 @@ export const GaliaNavigationDesktop = memo(function GaliaNavigationDesktop({
   activeTab, 
   onTabChange 
 }: GaliaNavigationProps) {
-  const activeNavItem = findNavItem(activeTab);
+  // activeNavItem available via findNavItem if needed
 
   return (
     <div className="hidden md:flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border/50 backdrop-blur-sm overflow-x-auto">

@@ -4,14 +4,14 @@
  */
 
 import { useCallback } from 'react';
-import { useGaliaCircuitoTramitacion, FaseCircuito, FASE_LABELS, ESTADO_LABELS } from '@/hooks/galia/useGaliaCircuitoTramitacion';
+import { useGaliaCircuitoTramitacion, FaseCircuito, FASE_LABELS as FASE_LABELS_CONST, ESTADO_LABELS as ESTADO_LABELS_CONST } from '@/hooks/galia/useGaliaCircuitoTramitacion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { 
   CheckCircle2, Circle, ArrowRight, AlertTriangle, FileText, 
-  Search, ShieldCheck, Euro, Archive, Milestone, Map
+  Search, ShieldCheck, Euro, Archive, Milestone, MapPin
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -51,7 +51,7 @@ const NODOS_CIRCUITO: Array<{ id: string; fase: FaseCircuito; icon: React.Elemen
   { id: 'adjuntar_solicitud_pago', fase: 'pago', icon: FileText, x: 250, y: 450 },
   { id: 'especificacion_controles_pago', fase: 'pago', icon: ShieldCheck, x: 450, y: 450 },
   { id: 'informe_certificacion', fase: 'pago', icon: CheckCircle2, x: 650, y: 450 },
-  { id: 'acta_verificacion_in_situ', fase: 'pago', icon: Map, x: 850, y: 450 },
+  { id: 'acta_verificacion_in_situ', fase: 'pago', icon: MapPin, x: 850, y: 450 },
   { id: 'control_certificacion_pago', fase: 'pago', icon: ShieldCheck, x: 1050, y: 450 },
   
   // Cierre

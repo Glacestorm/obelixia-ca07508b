@@ -92,7 +92,7 @@ export function useGaliaExpedientesExtended(filters?: GaliaExpedienteFilters) {
     notas?: string
   ) => {
     try {
-      const updates: Partial<GaliaExpedienteExtended> = { estado: nuevoEstado as any };
+      const updates: Record<string, unknown> = { estado: nuevoEstado };
 
       if (['resolucion', 'concedido', 'denegado', 'resolucion_revocacion'].includes(nuevoEstado)) {
         updates.fecha_resolucion = new Date().toISOString();
@@ -104,7 +104,7 @@ export function useGaliaExpedientesExtended(filters?: GaliaExpedienteFilters) {
 
       const { error: updateError } = await supabase
         .from('galia_expedientes')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id);
 
       if (updateError) throw updateError;
