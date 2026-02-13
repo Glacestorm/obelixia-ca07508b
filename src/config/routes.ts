@@ -110,7 +110,12 @@ const AutomationPage = lazy(() => import('@/pages/crm/AutomationPage'));
 
 // Fase 3: Diferenciadores
 const CompliancePage = lazy(() => import('@/pages/compliance/CompliancePage'));
-const ERPPage = lazy(() => import('@/pages/erp/ERPPage'));
+const ERPPage = lazy(() => import('@/pages/erp/ERPPage').catch(() => {
+  // Retry once on dynamic import failure (transient network/cache issue)
+  return new Promise<typeof import('@/pages/erp/ERPPage')>(resolve => {
+    setTimeout(() => resolve(import('@/pages/erp/ERPPage')), 1000);
+  });
+}));
 const RevenuePage = lazy(() => import('@/pages/revenue/RevenuePage'));
 const GISPage = lazy(() => import('@/pages/gis/GISPage'));
 const DocsPage = lazy(() => import('@/pages/docs/DocsPage'));
