@@ -232,7 +232,7 @@ export function useGaliaCircuitoTramitacion() {
 
       const { error: updateErr } = await supabase
         .from('galia_expedientes')
-        .update(updates)
+        .update(updates as any)
         .eq('id', expedienteId);
 
       if (updateErr) throw updateErr;
