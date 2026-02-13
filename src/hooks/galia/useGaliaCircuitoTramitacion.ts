@@ -214,8 +214,8 @@ export const ESTADO_LABELS: Record<string, string> = {
 
 // === NODOS DEL FLUJOGRAMA CON POSICIONES ===
 // Layout: vertical flow, wider spacing for readability
-const COL_W = 280;
-const ROW_H = 100;
+const COL_W = 300;
+const ROW_H = 110;
 
 export const NODOS_FLUJOGRAMA: NodoFlujograma[] = [
   // === SOLICITUD ===
