@@ -41,3 +41,6 @@ export const GaliaPilotFeedback = lazy(() => import('@/components/galia/feedback
 // Phase V4 Coverage - Planificación Fase 2 (Act. 4 -> 100%)
 export const GaliaBudgetPlanner = lazy(() => import('@/components/galia/planning/GaliaBudgetPlanner'));
 export const GaliaPhase2Planner = lazy(() => import('@/components/galia/planning/GaliaPhase2Planner'));
+
+// Phase V4 Coverage - CRM Socios (Act. 5 -> 100%)
+export const GaliaPartnerCRM = lazy(() => import('@/components/galia/partners/GaliaPartnerCRM'));

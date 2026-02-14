@@ -42088,6 +42088,104 @@ export type Database = {
         }
         Relationships: []
       }
+      galia_partner_interactions: {
+        Row: {
+          created_at: string
+          date: string
+          description: string
+          id: string
+          interaction_type: string
+          metadata: Json | null
+          partner_id: string
+          performed_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          description: string
+          id?: string
+          interaction_type?: string
+          metadata?: Json | null
+          partner_id: string
+          performed_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          interaction_type?: string
+          metadata?: Json | null
+          partner_id?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "galia_partner_interactions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "galia_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      galia_partners: {
+        Row: {
+          contact_person: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          evaluation_scores: Json | null
+          id: string
+          interest_declaration: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          scope: string | null
+          status: string
+          territory: string | null
+          type: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          evaluation_scores?: Json | null
+          id?: string
+          interest_declaration?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          scope?: string | null
+          status?: string
+          territory?: string | null
+          type?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          evaluation_scores?: Json | null
+          id?: string
+          interest_declaration?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          scope?: string | null
+          status?: string
+          territory?: string | null
+          type?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       galia_pilot_feedback: {
         Row: {
           ai_summary: string | null
