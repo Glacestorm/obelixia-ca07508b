@@ -147,7 +147,7 @@ function ERPModularDashboardContent() {
     { id: 'tax', name: 'Fiscal', icon: Receipt, permission: 'tax.read', color: 'bg-red-500' },
     { id: 'hr', name: 'RRHH', icon: UserCog, permission: 'hr.read', color: 'bg-pink-500' },
     { id: 'legal', name: 'Jurídico', icon: Scale, permission: 'legal.read', color: 'bg-indigo-600' },
-    { id: 'galia', name: 'GALIA', icon: Landmark, permission: 'admin.all', color: 'bg-emerald-600' },
+    { id: 'galia', name: 'LEADER', icon: Landmark, permission: 'admin.all', color: 'bg-emerald-600' },
   ];
 
   const availableModules = modules.filter(m => hasPermission(m.permission));
@@ -270,7 +270,7 @@ function ERPModularDashboardContent() {
               {activeTab === 'tax' && <><Receipt className="h-4 w-4" /> Fiscal</>}
               {activeTab === 'hr' && <><UserCog className="h-4 w-4" /> RRHH</>}
               {activeTab === 'legal' && <><Scale className="h-4 w-4" /> Jurídico</>}
-              {activeTab === 'galia' && <><Landmark className="h-4 w-4" /> GALIA</>}
+              {activeTab === 'galia' && <><Landmark className="h-4 w-4" /> LEADER</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
               {activeTab === 'utilities' && <><Wrench className="h-4 w-4" /> Utilidades</>}
             </Badge>
@@ -515,7 +515,7 @@ function ERPModularDashboardContent() {
           <LegalModule />
         </TabsContent>
 
-        {/* GALIA Tab - Gestión Ayudas LEADER IA */}
+        {/* LEADER Tab - Gestión Ayudas LEADER IA */}
         <TabsContent value="galia">
           <GaliaDashboard />
         </TabsContent>

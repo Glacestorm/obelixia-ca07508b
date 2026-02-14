@@ -169,7 +169,7 @@ export function GaliaKnowledgeExplorer({
               <BookOpen className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-base">Base de Conocimiento GALIA</CardTitle>
+              <CardTitle className="text-base">Base de Conocimiento LEADER</CardTitle>
               <CardDescription className="text-xs">
                 Normativa, procedimientos y consultas al experto IA
               </CardDescription>
@@ -343,7 +343,7 @@ export function GaliaKnowledgeExplorer({
                 {expertHistory.length === 0 ? (
                   <div className="text-center py-6">
                     <Sparkles className="h-10 w-10 mx-auto mb-3 text-primary/50" />
-                    <h4 className="font-medium mb-1">Agente Experto GALIA</h4>
+                    <h4 className="font-medium mb-1">Agente Experto LEADER</h4>
                     <p className="text-xs text-muted-foreground mb-4">
                       Consulta sobre normativa, procedimientos y requisitos de ayudas LEADER
                     </p>

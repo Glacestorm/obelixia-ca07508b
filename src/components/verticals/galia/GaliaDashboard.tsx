@@ -260,7 +260,7 @@ export function GaliaDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            GALIA - Gestión de Ayudas LEADER
+            LEADER - Gestión de Ayudas
           </h1>
           <p className="text-muted-foreground">
             Sistema inteligente de gestión de subvenciones públicas
