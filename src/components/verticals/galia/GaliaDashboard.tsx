@@ -50,6 +50,8 @@ import {
   GaliaHybridAIPanel,
   GaliaTrainingCenter,
   GaliaPilotFeedback,
+  GaliaBudgetPlanner,
+  GaliaPhase2Planner,
   GaliaNationalFederationDashboard,
   GaliaTerritorialMapPanel,
 } from './dashboard/tabs/GaliaMainTabs';
@@ -252,6 +254,12 @@ export function GaliaDashboard() {
       
       case 'pilot-feedback':
         return <Suspense fallback={<TabSkeleton />}><GaliaPilotFeedback /></Suspense>;
+      
+      case 'budget-planner':
+        return <Suspense fallback={<TabSkeleton />}><GaliaBudgetPlanner /></Suspense>;
+      
+      case 'phase2-planner':
+        return <Suspense fallback={<TabSkeleton />}><GaliaPhase2Planner /></Suspense>;
       
       default:
         return (

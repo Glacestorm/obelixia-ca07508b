@@ -133,6 +133,8 @@ export const galiaNavCategories: NavCategory[] = [
     items: [
       { id: 'bpmn', label: 'Flujos de Trabajo', shortLabel: 'Flujos', icon: <Workflow className="h-4 w-4" /> },
       { id: 'integraciones', label: 'Integraciones AAPP', shortLabel: 'AAPP', icon: <Building className="h-4 w-4" /> },
+      { id: 'budget-planner', label: 'Presupuestación Fase 2', shortLabel: 'Presupuesto', icon: <Calculator className="h-4 w-4" />, badge: 'V4', badgeVariant: 'default' as const },
+      { id: 'phase2-planner', label: 'Plan Fase 2', shortLabel: 'Plan F2', icon: <FileText className="h-4 w-4" />, badge: 'V4', badgeVariant: 'default' as const },
     ]
   },
   {

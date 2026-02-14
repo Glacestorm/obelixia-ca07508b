@@ -37,3 +37,7 @@ export const GaliaTerritorialMapPanel = lazy(() => import('@/components/galia/te
 // Phase V4 Coverage - Formación y Feedback (Act. 3 -> 100%)
 export const GaliaTrainingCenter = lazy(() => import('@/components/galia/training/GaliaTrainingCenter'));
 export const GaliaPilotFeedback = lazy(() => import('@/components/galia/feedback/GaliaPilotFeedback'));
+
+// Phase V4 Coverage - Planificación Fase 2 (Act. 4 -> 100%)
+export const GaliaBudgetPlanner = lazy(() => import('@/components/galia/planning/GaliaBudgetPlanner'));
+export const GaliaPhase2Planner = lazy(() => import('@/components/galia/planning/GaliaPhase2Planner'));
