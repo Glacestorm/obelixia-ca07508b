@@ -8,3 +8,4 @@ export * from './useEmotionalDetector';
 export * from './useAdaptiveQuiz';
 export * from './useLearningPath';
 export * from './useGamification';
+export * from './useAcademiaKPIs';

@@ -29,6 +29,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { AcademiaNavigation } from './AcademiaNavigation';
+import { AcademiaKPIPanel } from './AcademiaKPIPanel';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -63,13 +64,7 @@ const TabSkeleton = () => (
   </div>
 );
 
-// KPI Cards for Academia
-const quickStats = [
-  { label: 'Estudiantes Activos', value: '1,234', change: '+12%', up: true, icon: Users, color: 'from-blue-500 to-cyan-500' },
-  { label: 'Cursos Publicados', value: '24', change: '+3', up: true, icon: BookOpen, color: 'from-violet-500 to-purple-500' },
-  { label: 'Tasa de Finalización', value: '78%', change: '+5%', up: true, icon: Target, color: 'from-emerald-500 to-green-500' },
-  { label: 'Certificados Emitidos', value: '456', change: '+18%', up: true, icon: Award, color: 'from-amber-500 to-orange-500' },
-];
+// KPI Panel is now a dedicated real-time component
 
 export function AcademiaModuleDashboard() {
   const [activeTab, setActiveTab] = useState('resumen');
@@ -281,25 +276,8 @@ export function AcademiaModuleDashboard() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {quickStats.map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color}`}>
-                  <stat.icon className="h-4 w-4 text-white" />
-                </div>
-                <Badge variant={stat.up ? 'default' : 'destructive'} className="text-xs">
-                  {stat.change}
-                </Badge>
-              </div>
-              <p className="text-2xl font-bold mt-2">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* KPIs - Real-time */}
+      <AcademiaKPIPanel />
 
       {/* Navigation */}
       <AcademiaNavigation activeTab={activeTab} onTabChange={setActiveTab} />
