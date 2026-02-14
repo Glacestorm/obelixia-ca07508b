@@ -164,6 +164,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
       navigate('/obelixia-admin/crm');
       return;
     }
+    if (tab === 'academia') {
+      navigate('/obelixia-admin/academia');
+      return;
+    }
     setActiveTab(tab);
     setSearchParams({ tab });
   };
