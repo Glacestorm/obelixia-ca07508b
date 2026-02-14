@@ -44,3 +44,7 @@ export const GaliaPhase2Planner = lazy(() => import('@/components/galia/planning
 
 // Phase V4 Coverage - CRM Socios (Act. 5 -> 100%)
 export const GaliaPartnerCRM = lazy(() => import('@/components/galia/partners/GaliaPartnerCRM'));
+
+// Phase V4 Coverage - Coordinación Transversal (Act. 6 -> 100%)
+export const GaliaProcurementManager = lazy(() => import('@/components/galia/procurement/GaliaProcurementManager'));
+export const GaliaDiffusionManager = lazy(() => import('@/components/galia/diffusion/GaliaDiffusionManager'));

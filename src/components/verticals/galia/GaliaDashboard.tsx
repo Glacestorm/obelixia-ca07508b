@@ -55,6 +55,8 @@ import {
   GaliaNationalFederationDashboard,
   GaliaTerritorialMapPanel,
   GaliaPartnerCRM,
+  GaliaProcurementManager,
+  GaliaDiffusionManager,
 } from './dashboard/tabs/GaliaMainTabs';
 
 const GaliaAsistenteVirtual = lazy(() => import('./GaliaAsistenteVirtual'));
@@ -264,6 +266,12 @@ export function GaliaDashboard() {
       
       case 'partner-crm':
         return <Suspense fallback={<TabSkeleton />}><GaliaPartnerCRM /></Suspense>;
+      
+      case 'procurement':
+        return <Suspense fallback={<TabSkeleton />}><GaliaProcurementManager /></Suspense>;
+      
+      case 'diffusion':
+        return <Suspense fallback={<TabSkeleton />}><GaliaDiffusionManager /></Suspense>;
       
       default:
         return (

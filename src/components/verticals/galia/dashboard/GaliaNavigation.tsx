@@ -146,6 +146,7 @@ export const galiaNavCategories: NavCategory[] = [
       { id: 'portal', label: 'Portal Ciudadano', shortLabel: 'Portal', icon: <Globe className="h-4 w-4" /> },
       { id: 'transparencia', label: 'Portal de Transparencia', shortLabel: 'Transparencia', icon: <Shield className="h-4 w-4" /> },
       { id: 'project-status', label: 'Estado del Proyecto', shortLabel: 'Estado', icon: <Eye className="h-4 w-4" /> },
+      { id: 'diffusion', label: 'Difusión y Contenidos', shortLabel: 'Difusión', icon: <Globe className="h-4 w-4" />, badge: 'V4', badgeVariant: 'default' as const },
     ]
   },
   {
@@ -156,6 +157,7 @@ export const galiaNavCategories: NavCategory[] = [
       { id: 'federation', label: 'Dashboard Nacional', shortLabel: 'Federación', icon: <Network className="h-4 w-4" />, badge: 'v2.0', badgeVariant: 'default' },
       { id: 'territorial-map', label: 'Mapa Territorial', shortLabel: 'Mapa', icon: <MapPin className="h-4 w-4" />, badge: 'Nuevo', badgeVariant: 'default' },
       { id: 'partner-crm', label: 'CRM Socios', shortLabel: 'Socios', icon: <Users className="h-4 w-4" />, badge: 'V4', badgeVariant: 'default' as const },
+      { id: 'procurement', label: 'Contratación Pública', shortLabel: 'Contratos', icon: <Briefcase className="h-4 w-4" />, badge: 'V4', badgeVariant: 'default' as const },
     ]
   },
 ];
