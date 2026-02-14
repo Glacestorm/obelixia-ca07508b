@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, validatePayloadSize } from "../_shared/owasp-security.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,17 +32,10 @@ interface AuditBlock {
   nonce: number;
 }
 
+const VALID_ACTIONS = ['record_decision', 'verify_integrity', 'get_audit_trail', 'generate_proof', 'anchor_batch'];
+
 /**
  * GALIA Blockchain Audit Trail
- * 
- * Registro inmutable de decisiones críticas mediante blockchain privada.
- * Compatible con requisitos de auditoría FEDER/LEADER.
- * 
- * Características:
- * - Hash SHA-256 encadenado
- * - Timestamps certificados
- * - Pruebas de integridad verificables
- * - Exportación para auditorías europeas
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,6 +43,20 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit({
+      identifier: `${clientIp}:galia-blockchain-audit`,
+      maxRequests: 30,
+      windowMs: 60 * 1000
+    });
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
@@ -58,6 +66,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    const body = await req.json();
+    const payloadCheck = validatePayloadSize(body);
+    if (!payloadCheck.valid) {
+      return new Response(JSON.stringify({ error: payloadCheck.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { 
       action, 
       expedienteId, 
@@ -66,7 +83,14 @@ serve(async (req) => {
       blockHash,
       fromDate,
       toDate 
-    } = await req.json() as BlockchainAuditRequest;
+    } = body as BlockchainAuditRequest;
+
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ error: 'Invalid action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     let systemPrompt = '';
     let userPrompt = '';

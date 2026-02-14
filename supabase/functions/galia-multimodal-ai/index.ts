@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, validatePayloadSize } from "../_shared/owasp-security.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,14 +16,11 @@ interface MultimodalRequest {
   expedienteId?: string;
 }
 
+const VALID_ACTIONS = ['analyze_document', 'transcribe_voice', 'voice_assistant', 'extract_structured_data'];
+const MAX_BASE64_SIZE = 5 * 1024 * 1024; // 5MB
+
 /**
  * GALIA Multimodal AI - Análisis de Documentos y Voz
- * 
- * Capacidades:
- * - OCR avanzado con extracción de datos estructurados
- * - Transcripción de audio a texto
- * - Asistente de voz para consultas
- * - Análisis de imágenes de documentos
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,10 +28,26 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit({
+      identifier: `${clientIp}:galia-multimodal-ai`,
+      maxRequests: 20,
+      windowMs: 60 * 1000
+    });
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
+
+    const body = await req.json();
 
     const { 
       action, 
@@ -43,7 +57,29 @@ serve(async (req) => {
       documentType = 'general',
       language = 'es',
       expedienteId 
-    } = await req.json() as MultimodalRequest;
+    } = body as MultimodalRequest;
+
+    // Validate action
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ error: 'Invalid action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate base64 payload sizes
+    if (imageBase64 && imageBase64.length > MAX_BASE64_SIZE) {
+      return new Response(JSON.stringify({ error: 'Image too large (max 5MB)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (audioBase64 && audioBase64.length > MAX_BASE64_SIZE) {
+      return new Response(JSON.stringify({ error: 'Audio too large (max 5MB)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     let systemPrompt = '';
     let userPrompt = '';

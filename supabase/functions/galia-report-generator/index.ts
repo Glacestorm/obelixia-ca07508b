@@ -1,3 +1,5 @@
+import { checkRateLimit, validatePayloadSize } from "../_shared/owasp-security.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -13,6 +15,9 @@ interface ReportRequest {
   dateRange?: { start: string; end: string };
 }
 
+const VALID_ACTIONS = ['generate', 'get_data'];
+const VALID_REPORT_TYPES = ['seguimiento', 'justificacion', 'riesgos', 'presupuestario', 'beneficiarios', 'gal'];
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -21,12 +26,48 @@ Deno.serve(async (req) => {
   const startTime = Date.now();
 
   try {
+    // Rate limiting
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit({
+      identifier: `${clientIp}:galia-report-generator`,
+      maxRequests: 15,
+      windowMs: 60 * 1000
+    });
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { action, reportType, sections, period, format, galId, dateRange } = await req.json() as ReportRequest;
+    const body = await req.json();
+    const payloadCheck = validatePayloadSize(body);
+    if (!payloadCheck.valid) {
+      return new Response(JSON.stringify({ success: false, error: payloadCheck.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { action, reportType, sections, period, format, galId, dateRange } = body as ReportRequest;
+
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!reportType || !VALID_REPORT_TYPES.includes(reportType)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid report type' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log(`[galia-report-generator] Processing: ${action}, type: ${reportType}`);
 

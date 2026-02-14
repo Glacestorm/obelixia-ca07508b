@@ -83,7 +83,8 @@ export function useGaliaPublicAPI() {
     setError(null);
 
     try {
-      const url = new URL(`https://avaugfnqvvqcilhiudlf.supabase.co/functions/v1/galia-public-api/${endpoint}`);
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const url = new URL(`${supabaseUrl}/functions/v1/galia-public-api/${endpoint}`);
       
       const options: RequestInit = {
         method,

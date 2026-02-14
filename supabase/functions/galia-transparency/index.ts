@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, validatePayloadSize } from "../_shared/owasp-security.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,18 +17,50 @@ interface TransparencyRequest {
   };
 }
 
+const VALID_ACTIONS = ['get_public_data', 'explain_decision', 'get_audit_trail', 'generate_public_report'];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Rate limiting
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit({
+      identifier: `${clientIp}:galia-transparency`,
+      maxRequests: 30,
+      windowMs: 60 * 1000
+    });
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { action, expediente_id, decision_id, filters } = await req.json() as TransparencyRequest;
+    const body = await req.json();
+    const payloadCheck = validatePayloadSize(body);
+    if (!payloadCheck.valid) {
+      return new Response(JSON.stringify({ error: payloadCheck.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { action, expediente_id, decision_id, filters } = body as TransparencyRequest;
+
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ error: 'Invalid action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log(`[galia-transparency] Action: ${action}`);
 

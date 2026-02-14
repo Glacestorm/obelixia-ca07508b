@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, validatePayloadSize } from "../_shared/owasp-security.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,16 +9,12 @@ const corsHeaders = {
 
 /**
  * GALIA Cl@ve Authentication Edge Function
- * Integración con sistema de autenticación Cl@ve del gobierno español
- * 
- * Cl@ve es el sistema de identificación electrónica para ciudadanos españoles
- * que permite autenticarse con DNIe, Cl@ve PIN, Cl@ve Permanente o certificado digital
  */
 
 interface ClaveAuthRequest {
   action: 'initiate' | 'callback' | 'verify' | 'get_user_data' | 'logout';
   redirect_uri?: string;
-  auth_level?: 'basic' | 'advanced' | 'high'; // Niveles de seguridad eIDAS
+  auth_level?: 'basic' | 'advanced' | 'high';
   nif?: string;
   code?: string;
   state?: string;
@@ -30,11 +27,13 @@ interface ClaveUserData {
   apellido1: string;
   apellido2?: string;
   email?: string;
-  nivel_aseguramiento: 'bajo' | 'sustancial' | 'alto'; // eIDAS levels
+  nivel_aseguramiento: 'bajo' | 'sustancial' | 'alto';
   metodo_autenticacion: 'dnie' | 'clave_pin' | 'clave_permanente' | 'certificado';
   fecha_nacimiento?: string;
   nacionalidad?: string;
 }
+
+const VALID_ACTIONS = ['initiate', 'callback', 'verify', 'get_user_data', 'logout'];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -42,6 +41,20 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting - strict for auth endpoint
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit({
+      identifier: `${clientIp}:galia-clave-auth`,
+      maxRequests: 20,
+      windowMs: 60 * 1000
+    });
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
@@ -52,7 +65,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { action, redirect_uri, auth_level, nif, code, state, metadata } = await req.json() as ClaveAuthRequest;
+    const body = await req.json();
+    const payloadCheck = validatePayloadSize(body);
+    if (!payloadCheck.valid) {
+      return new Response(JSON.stringify({ success: false, error: payloadCheck.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { action, redirect_uri, auth_level, nif, code, state, metadata } = body as ClaveAuthRequest;
+
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log(`[galia-clave-auth] Processing action: ${action}`);
 
