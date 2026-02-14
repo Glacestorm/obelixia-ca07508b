@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, validatePayloadSize } from "../_shared/owasp-security.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,29 +16,6 @@ interface APIRequest {
 
 /**
  * GALIA Public API - REST/GraphQL for Third-Party Integrations
- * 
- * Endpoints disponibles:
- * 
- * CONVOCATORIAS:
- * - GET /convocatorias - Listar convocatorias activas
- * - GET /convocatorias/:id - Detalle de convocatoria
- * - GET /convocatorias/:id/requisitos - Requisitos de elegibilidad
- * 
- * EXPEDIENTES:
- * - GET /expedientes/:codigo - Consultar estado (con código seguimiento)
- * - POST /expedientes/check-eligibility - Verificar elegibilidad
- * 
- * BENEFICIARIOS:
- * - GET /beneficiarios/:nif/expedientes - Expedientes por NIF
- * - POST /beneficiarios/validate - Validar datos beneficiario
- * 
- * ESTADÍSTICAS:
- * - GET /stats/global - KPIs públicos agregados
- * - GET /stats/gal/:codigo - Estadísticas por GAL
- * 
- * DOCUMENTACIÓN:
- * - GET /docs/openapi - OpenAPI 3.0 spec
- * - GET /docs/postman - Colección Postman
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -45,6 +23,20 @@ serve(async (req) => {
   }
 
   try {
+    // Rate limiting
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit({
+      identifier: `${clientIp}:galia-public-api`,
+      maxRequests: 100,
+      windowMs: 60 * 1000
+    });
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -82,7 +74,7 @@ serve(async (req) => {
             .select('id, codigo, nombre, fecha_inicio, fecha_fin, presupuesto_total, estado, descripcion')
             .eq('estado', 'abierta')
             .order('fecha_inicio', { ascending: false })
-            .limit(parseInt(queryParams.limit as string) || 20);
+            .limit(Math.min(parseInt(queryParams.limit as string) || 20, 50));
 
           if (error) throw error;
 

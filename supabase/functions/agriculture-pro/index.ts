@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, validatePayloadSize } from "../_shared/owasp-security.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const VALID_ACTIONS = ['get_precision_data', 'get_weather_predictions', 'get_irrigation_plan'];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,7 +14,41 @@ serve(async (req) => {
   }
 
   try {
-    const { action, params } = await req.json();
+    // Rate limiting by IP
+    const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit({
+      identifier: `${clientIp}:agriculture-pro`,
+      maxRequests: 60,
+      windowMs: 60 * 1000
+    });
+    if (!rateLimit.allowed) {
+      return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const body = await req.json();
+
+    // Payload size validation
+    const payloadCheck = validatePayloadSize(body);
+    if (!payloadCheck.valid) {
+      return new Response(JSON.stringify({ success: false, error: payloadCheck.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { action, params } = body;
+
+    // Input validation
+    if (!action || typeof action !== 'string' || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(`[agriculture-pro] Action: ${action}`);
 
     const mockResponses: Record<string, unknown> = {
