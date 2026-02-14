@@ -42225,6 +42225,60 @@ export type Database = {
         }
         Relationships: []
       }
+      galia_procurement: {
+        Row: {
+          budget_base: number | null
+          contract_type: string
+          contractor: string | null
+          created_at: string
+          created_by: string | null
+          deliverables: Json | null
+          description: string | null
+          documents_checklist: Json | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          budget_base?: number | null
+          contract_type?: string
+          contractor?: string | null
+          created_at?: string
+          created_by?: string | null
+          deliverables?: Json | null
+          description?: string | null
+          documents_checklist?: Json | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          budget_base?: number | null
+          contract_type?: string
+          contractor?: string | null
+          created_at?: string
+          created_by?: string | null
+          deliverables?: Json | null
+          description?: string | null
+          documents_checklist?: Json | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       galia_solicitudes: {
         Row: {
           analisis_ia: Json | null
