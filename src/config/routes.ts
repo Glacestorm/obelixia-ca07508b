@@ -229,9 +229,9 @@ export const publicRoutes: RouteConfig[] = [
   { path: '/cdp', component: CDPDashboard, layout: 'public', priority: 'medium', meta: { title: 'CDP Dashboard' } },
   { path: '/chat', component: Chat, layout: 'public', priority: 'high', meta: { title: 'Chat IA' } },
   
-  // GALIA - Portal Ciudadano (público)
-  { path: '/galia/portal', component: GaliaPortalPage, layout: 'none', priority: 'high', meta: { title: 'Portal Ciudadano GALIA' } },
-  { path: '/galia', component: GaliaPortalPage, layout: 'none', priority: 'high', meta: { title: 'Portal Ciudadano GALIA' } },
+  // LEADER - Portal Ciudadano (público)
+  { path: '/galia/portal', component: GaliaPortalPage, layout: 'none', priority: 'high', meta: { title: 'Portal Ciudadano LEADER' } },
+  { path: '/galia', component: GaliaPortalPage, layout: 'none', priority: 'high', meta: { title: 'Portal Ciudadano LEADER' } },
   
   // PWA Install
   { path: '/install', component: InstallApp, layout: 'minimal', priority: 'medium', meta: { title: 'Instal·lar ObelixIA' } },

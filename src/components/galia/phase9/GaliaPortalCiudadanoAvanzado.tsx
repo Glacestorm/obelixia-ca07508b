@@ -183,7 +183,7 @@ export function GaliaPortalCiudadanoAvanzado({ className }: GaliaPortalCiudadano
                 <Sparkles className="h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Portal Ciudadano GALIA</h1>
+                <h1 className="text-3xl font-bold">Portal Ciudadano LEADER</h1>
                 <p className="text-white/80">Gestión de Ayudas LEADER con Inteligencia Artificial</p>
               </div>
             </div>
