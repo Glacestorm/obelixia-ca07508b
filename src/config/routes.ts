@@ -130,6 +130,7 @@ const RemoteSupportPage = lazy(() => import('@/pages/admin/RemoteSupportPage'));
 const EnterpriseDashboardPage = lazy(() => import('@/pages/admin/EnterpriseDashboardPage'));
 const CSMetricsPage = lazy(() => import('@/pages/admin/CSMetricsPage'));
 const AcademiaAdminPage = lazy(() => import('@/pages/admin/AcademiaAdminPage'));
+const AcademiaModulePage = lazy(() => import('@/pages/admin/AcademiaModulePage'));
 const ESGSustainabilityPage = lazy(() => import('@/pages/admin/ESGSustainabilityPage'));
 const AIAgentsPage = lazy(() => import('@/pages/admin/AIAgentsPage'));
 const MarketIntelligencePage = lazy(() => import('@/pages/admin/MarketIntelligencePage'));
@@ -325,6 +326,7 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/accounting', component: ObelixiaAccountingPage, layout: 'none', priority: 'high', meta: { title: 'ObelixIA Accounting', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/ai-hybrid', component: AIHybridPage, layout: 'none', priority: 'high', meta: { title: 'IA Híbrida Universal', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/erp', component: ERPPage, layout: 'none', priority: 'high', meta: { title: 'ERP Modular', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/academia', component: AcademiaModulePage, layout: 'none', priority: 'high', meta: { title: 'Academia - Plataforma Educativa', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
