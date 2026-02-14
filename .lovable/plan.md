@@ -1,169 +1,115 @@
 
 
-# Plan: Cobertura 100% del Proyecto LEADER V4
+# Informe Comparativo: Modulo LEADER (GALIA) vs. Proyecto V4
 
-## Resumen de brechas actuales
-
-| Actuacion | Cobertura actual | Elementos pendientes |
-|---|---|---|
-| Act. 1: Analisis experiencias IA | 100% | Ninguno |
-| Act. 2: Estudio normativo | 100% | Ninguno |
-| Act. 3: Prueba de concepto | 90% | Formacion GAL (3.5), Feedback piloto (3.6) |
-| Act. 4: Planificacion Fase 2 | 85% | Presupuestacion (4.4), Prescripciones tecnicas (4.5), Roles (4.6), Estrategia formacion (4.7) |
-| Act. 5: Socios | 40% | CRM socios (5.1/5.2), Evaluacion colaboradores (5.3) |
-| Act. 6: Coordinacion transversal | 65% | Contratacion publica (6.3), Difusion (6.5), Captacion socios (6.6), Formacion continua (6.7) |
+## Objetivo
+Crear un documento Notion detallado que compare punto por punto lo que exige el proyecto GALIA V4 (PDF) con lo que esta implementado en la plataforma, siguiendo el orden cronologico del documento original (Actuaciones 1-6), con un apartado especifico sobre como la herramienta ayuda al personal tecnico, y una comparativa internacional con Estonia y Dinamarca.
 
 ---
 
-## FASE 1: Formacion y Feedback (Act. 3 -> 100%)
-**Complejidad: Media | ~2 sesiones**
+## Estructura del Documento
 
-### 1A. Modulo de Formacion GAL (punto 3.5)
-Crear una seccion dentro del dashboard LEADER que conecte con la Academia existente, pero con contenido especifico para tecnicos GAL.
+### 1. Portada y Contexto
+- Titulo: "Informe Comparativo GALIA - Modulo LEADER: Cumplimiento del Proyecto V4"
+- Subtitulo: Gestion de Ayudas LEADER e Inteligencia Artificial
+- Nota: Proyecto piloto con ayudas LEADER, escalable a otras subvenciones de diferentes administraciones.
 
-**Archivos nuevos:**
-- `src/components/galia/training/GaliaTrainingCenter.tsx` - Panel con modulos formativos: uso del asistente, panel de control, moderacion de costes, flujo de tramitacion. Incluye indicador de progreso por tecnico, manuales descargables (PDF via export existente) y guias rapidas contextuales.
-- `src/hooks/galia/useGaliaTraining.ts` - Hook que gestiona progreso formativo, modulos completados y certificados basicos.
+### 2. Indice de Cumplimiento por Actuacion (orden cronologico del PDF)
 
-**Integracion:** Nueva pestana "Formacion" en `GaliaNavigation.tsx` dentro del grupo "Herramientas".
+Se detallara cada accion del PDF y su correspondencia con funcionalidades implementadas:
 
-### 1B. Sistema de Feedback Piloto (punto 3.6)
-Formulario estructurado para usuarios piloto con metricas de satisfaccion.
+**ACTUACION 1: Analisis de experiencias de IA en subvenciones**
+- 1.1 Identificar experiencias: Implementado via `galia-compliance-auditor` (benchmarking internacional), base de conocimiento RAG
+- 1.2 Trabajo de campo: Implementado via CRM Socios con enlaces a READER, REDR, RRN, ENRD, ELARD
+- 1.3 Sistematizar aprendizajes: Implementado via Knowledge Graph semantico, Decision Support Panel
 
-**Archivos nuevos:**
-- `src/components/galia/feedback/GaliaPilotFeedback.tsx` - Formulario con: valoracion por estrellas, tipo de incidencia (bug/mejora/consulta), area afectada (asistente/panel/docs), texto libre, NPS score.
-- `src/components/galia/feedback/GaliaFeedbackDashboard.tsx` - Dashboard de metricas: tasa de satisfaccion, incidencias por categoria, tendencia temporal, consultas no resueltas del asistente.
-- `supabase/functions/galia-pilot-feedback/index.ts` - Edge function que almacena feedback y genera resumen con IA.
+**ACTUACION 2: Estudio normativo y legislativo**
+- 2.1 Proteccion de datos (RGPD): Implementado via Hybrid AI con routing local para datos sensibles, EUDI Wallet
+- 2.2 Procedimiento administrativo electronico (Ley 39/2015): Circuito de 49 pasos, documentos con CSV
+- 2.3 Transparencia (Ley 19/2013): Portal de Transparencia, API Publica
+- 2.4 Fiscalizacion y control: Blockchain Audit Trail, Smart Audit
+- 2.5 Normativa de ayudas e IA: Compliance Auditor, auto-aprobacion con ventana 24h humana
 
-**Base de datos:** Tabla `galia_pilot_feedback` (id, user_id, rating, category, area, comment, nps_score, created_at).
+**ACTUACION 3: Prueba de concepto (Asistente Virtual + Panel de Control)**
+- 3.1 Alcance y objetivos: Dashboard con 8 grupos de navegacion, metricas KPI
+- 3.2 Base de conocimiento: Knowledge Base RAG con normativa LEADER, FAQs
+- 3.3 Tecnologia y arquitectura: React + Edge Functions + Gemini 2.5, multi-tenant
+- 3.4 Desarrollo y entrenamiento: Asistente Virtual con PLN, panel de control con 50+ hooks
+- 3.5 Formacion equipos: Modulo Training con 10 modulos formativos y tracking de progreso
+- 3.6 Pruebas piloto: Sistema Pilot Feedback con NPS, formularios de retroalimentacion
 
----
+**ACTUACION 4: Planificacion Fase 2**
+- 4.1 Prioridades: Strategic Planner con generacion de especificaciones tecnicas y matrices RACI
+- 4.2 Escalabilidad: Arquitectura multi-tenant, Federation para 300+ GALs
+- 4.3 Otras herramientas IA: 7 herramientas del Toolkit Tecnico ya implementadas (no solo planificadas)
+- 4.4 Presupuesto: Budget Planner con planificacion de fases futuras
 
-## FASE 2: Planificacion Fase 2 (Act. 4 -> 100%)
-**Complejidad: Media | ~2 sesiones**
+**ACTUACION 5: Busqueda y contacto de socios**
+- 5.1 Perfil de socios: CRM Socios con criterios de evaluacion ponderados
+- 5.2 Identificar socios: Pipeline Kanban con estados, enlaces a redes LEADER
+- 5.3 Evaluar colaboradores: Sistema de scoring con 6 criterios (Afinidad, Capacidad Tecnica, etc.)
 
-### 2A. Presupuestacion de Fase 2 (punto 4.4)
-Herramienta de estimacion presupuestaria con desglose por herramienta.
+**ACTUACION 6: Coordinacion transversal**
+- 6.1 Gestion administrativa: Procurement Manager (LCSP), checklist documental
+- 6.2 Coordinacion y seguimiento: Dashboard ejecutivo, alertas proactivas
+- 6.3 Contratacion publica: GaliaProcurementManager con pipeline de contratos
+- 6.4 Mantenimiento asistente: Knowledge Base actualizable, ciclo de retroalimentacion
+- 6.5 Difusion: GaliaDiffusionManager con calendario, metricas de alcance
+- 6.6 Captacion socios: CRM integrado con materiales promocionales
+- 6.7 Formacion continua: Training con progreso por modulo, certificados
 
-**Archivos nuevos:**
-- `src/components/galia/planning/GaliaBudgetPlanner.tsx` - Tabla interactiva con categorias predefinidas (Desarrollo IA, Integraciones, Infraestructura/Licencias, Formacion, Gestion/Soporte). Permite ajustar importes, genera totales y cronograma financiero. Exportable a PDF/Excel via el sistema de export existente.
-- `src/hooks/galia/useGaliaBudgetPlanner.ts` - Hook con logica de calculo, persistencia en base de datos y generacion de plan financiero con IA.
+### 3. Apartado Especifico: Como GALIA Ayuda al Personal Tecnico en el Dia a Dia
 
-### 2B. Prescripciones Tecnicas, Roles y Estrategia Formativa (puntos 4.5, 4.6, 4.7)
-Panel de documentacion estrategica para la Fase 2.
+Detalle exhaustivo de las 7 herramientas del Toolkit Tecnico + Flujograma:
 
-**Archivos nuevos:**
-- `src/components/galia/planning/GaliaPhase2Planner.tsx` - Panel con tres secciones en pestanas:
-  - **Prescripciones tecnicas**: Generador de pliegos con plantillas predefinidas (asistente virtual, moderacion costes, dashboards). Usa IA para rellenar campos tecnicos automaticamente.
-  - **Roles y responsabilidades**: Matriz RACI visual (GAL coordinador, GALs socios, asistencias tecnicas, administracion). Asignacion de responsabilidades por actuacion.
-  - **Estrategia de formacion**: Diseno del programa formativo para Fase 2 con modulos, calendario y modalidad (presencial/virtual).
-- `supabase/functions/galia-phase2-planner/index.ts` - Edge function que genera documentos de planificacion con IA.
+1. **Moderacion de Costes** (`galia-moderador-costes`): Verificacion automatica contra catalogos de referencia, alertas por desviaciones >15%, exigencia de 3 ofertas para >18.000EUR, informe pre-generado
+2. **Analisis de Empresas Vinculadas** (`galia-vinculacion-analysis`): Deteccion de administradores comunes, coincidencia de direcciones/cuentas, verificacion de minimis (300.000EUR/3 anos), cruce con Registro Mercantil
+3. **Deteccion de Indicios de Fraude** (`galia-fraud-detection`): Facturas entre vinculadas, proveedores ficticios (NIF inactivos), splitting de contratos, facturas duplicadas entre convocatorias
+4. **Clasificacion Automatica de Documentacion** (`galia-doc-classification`): OCR+IA para DNI/escrituras/licencias/facturas, checklist automatico, extraccion de datos clave, deteccion de caducados
+5. **Analisis de Cumplimiento de Requisitos** (`GaliaCumplimientoRequisitosPanel`): Semaforo verde/amarillo/rojo, sugerencias de subsanacion, verificacion cruzada con bases publicas
+6. **Elaboracion de Requerimientos e Informes** (`galia-report-generator`): Requerimiento de subsanacion, informe tecnico-economico, propuesta de resolucion, acta de verificacion in situ
+7. **Reconocimiento Automatico de Gastos** (`galia-gasto-recognition`): Extraccion de proveedor/NIF/fecha/concepto/IVA, clasificacion en partidas LEADER, deteccion de gastos no elegibles
+8. **Flujograma Interactivo de 49 Pasos** (`GaliaCircuitoTramitacion`): 6 fases macro (Solicitud a Cierre), transiciones ejecutables, bifurcaciones condicionales, zoom/pan, estados visuales
 
----
+### 4. Funcionalidades que Exceden el Proyecto V4 (Valor Anadido)
+- Portal del Beneficiario 360 con gestion de pagos y comunicaciones
+- Simulador de Convocatorias con evaluacion de elegibilidad
+- Motor BPMN No-code para diseno visual de flujos
+- Integraciones con AEAT, TGSS, Registro Mercantil, Catastro/SIGPAC
+- Gamificacion para tecnicos ("Maestro LEADER")
+- Prediccion de impacto ML (empleo, viabilidad)
+- IA Multimodal con soporte de voz (Gemini 2.5)
+- Blockchain Audit Trail con SHA-256
+- EUDI Wallet (eIDAS 2.0)
+- GIS territorial con mapas interactivos
+- Federacion Nacional para 300+ GALs
 
-## FASE 3: CRM de Socios (Act. 5 -> 100%)
-**Complejidad: Media-Alta | ~2 sesiones**
+### 5. Comparativa Internacional: Estonia y Dinamarca
 
-### 3A. Gestion de Socios Potenciales (puntos 5.1 y 5.2)
-CRM ligero integrado en el dashboard para gestionar la captacion de socios.
+**Estonia (e-Estonia, X-Road)**:
+- Administracion 100% digital, identidad digital universal
+- X-Road: plataforma de interoperabilidad entre organismos
+- GALIA supera en: IA aplicada especificamente a subvenciones rurales, toolkit tecnico especializado, circuito de 49 pasos, deteccion de fraude con IA
+- Estonia aventaja en: madurez de infraestructura digital nacional, adopcion ciudadana universal
 
-**Archivos nuevos:**
-- `src/components/galia/partners/GaliaPartnerCRM.tsx` - Panel con:
-  - Listado de socios potenciales con filtros por tipo (GAL, organismo publico, centro tecnologico, universidad), ambito (nacional/transnacional) y estado (identificado/contactado/interesado/comprometido).
-  - Ficha de contacto: nombre, tipo, territorio, persona de contacto, email, telefono, notas, historial de interacciones, manifestacion de interes (si/no/pendiente).
-  - Timeline de actividades por socio.
-  - Kanban visual de pipeline de captacion.
-- `src/hooks/galia/useGaliaPartnerCRM.ts` - Hook CRUD con Supabase.
+**Dinamarca (Borger.dk, NemID/MitID)**:
+- Borger.dk: portal unico ciudadano, autoservicio digital
+- MitID: identidad digital nacional
+- GALIA supera en: especializacion en gestion de ayudas rurales, herramientas de analisis predictivo, IA conversacional entrenada en normativa LEADER, transparencia con API publica
+- Dinamarca aventaja en: estandarizacion nacional de servicios, experiencia de usuario ciudadana unificada
 
-**Base de datos:** Tabla `galia_partners` (id, name, type, territory, scope, contact_person, email, phone, status, interest_declaration, notes, created_at, updated_at). Tabla `galia_partner_interactions` (id, partner_id, interaction_type, description, date, performed_by).
+**Conclusion comparativa**: GALIA va mas alla del estado del arte europeo en la aplicacion vertical de IA a la gestion de subvenciones publicas, con herramientas que ni Estonia ni Dinamarca han implementado en el ambito especifico de fondos rurales. La ventaja competitiva reside en la especializacion sectorial y la adaptabilidad a diferentes niveles de la administracion.
 
-### 3B. Evaluacion y Seleccion de Colaboradores (punto 5.3)
-Sistema de scoring para evaluar y comparar socios candidatos.
-
-**Incluido en GaliaPartnerCRM.tsx:**
-- Formulario de evaluacion con criterios ponderados: afinidad de objetivos (25%), capacidad tecnica (20%), experiencia relevante (20%), compromiso financiero (15%), cobertura territorial (10%), complementariedad (10%).
-- Puntuacion automatica con radar chart comparativo.
-- Generacion de informe de seleccion exportable.
-
----
-
-## FASE 4: Coordinacion Transversal (Act. 6 -> 100%)
-**Complejidad: Media | ~2 sesiones**
-
-### 4A. Gestion de Contratacion Publica (punto 6.3)
-Modulo basico de seguimiento de contratos conforme a LCSP.
-
-**Archivos nuevos:**
-- `src/components/galia/procurement/GaliaProcurementManager.tsx` - Panel con:
-  - Registro de contratos: objeto, tipo (menor/abierto/negociado), presupuesto base, adjudicatario, fechas clave, estado (preparacion/licitacion/valoracion/adjudicacion/ejecucion/finalizado).
-  - Checklist de documentacion por contrato (pliego tecnico, pliego administrativo, informe valoracion, resolucion adjudicacion, contrato formalizado).
-  - Seguimiento de entregables vinculados a cada contrato.
-  - Alertas de plazos.
-- `src/hooks/galia/useGaliaProcurement.ts` - Hook con CRUD y alertas.
-
-**Base de datos:** Tabla `galia_procurement` (id, title, type, budget, contractor, status, start_date, end_date, deliverables, documents_checklist, created_at).
-
-### 4B. Difusion y Contenidos (punto 6.5)
-Panel de gestion de materiales de comunicacion del proyecto.
-
-**Archivos nuevos:**
-- `src/components/galia/diffusion/GaliaDiffusionManager.tsx` - Panel con:
-  - Registro de actividades de difusion (publicaciones web, eventos, foros, jornadas).
-  - Biblioteca de materiales (presentaciones, infografias, videos) con subida a Storage.
-  - Calendario de eventos planificados.
-  - Metricas basicas: n actividades realizadas, alcance estimado.
-
-### 4C. Herramientas de Captacion de Socios (punto 6.6)
-Integrado con el CRM de Fase 3.
-
-**Anadido a GaliaPartnerCRM.tsx:**
-- Seccion "Eventos de captacion": registro de encuentros, foros y jornadas con asistentes vinculados.
-- Generacion automatica de materiales promocionales (resumen del proyecto) para enviar a candidatos, usando IA.
-- Enlace a redes: READER, REDR, RRN, ENRD, ELARD.
-
-### 4D. Formacion Interna Continua (punto 6.7)
-Extension del modulo de Fase 1A con seguimiento continuo.
-
-**Anadido a GaliaTrainingCenter.tsx:**
-- Seccion "Necesidades formativas": formulario para que tecnicos reporten gaps de conocimiento.
-- Dashboard de capacitacion: mapa de competencias por tecnico, horas de formacion acumuladas, areas cubiertas vs. pendientes.
-- Integracion con calendario de sesiones formativas (presenciales/virtuales).
+### 6. Escalabilidad a Otras Subvenciones
+- Arquitectura multi-tenant adaptable a cualquier administracion
+- Herramientas genericas (moderacion de costes, fraude, clasificacion) aplicables a FEDER, FSE, PRTR
+- Modelo replicable en otras comunidades autonomas o paises UE
 
 ---
 
-## Integracion en el Dashboard
+## Implementacion Tecnica
 
-Todas las nuevas funcionalidades se integran en la navegacion existente del dashboard LEADER:
+Se creara una pagina Notion con todo el contenido estructurado en secciones, usando el formato de markdown enriquecido de Notion, con tablas de cumplimiento (Punto del PDF | Estado | Funcionalidad implementada | Detalle).
 
-| Grupo de navegacion | Nuevas pestanas |
-|---|---|
-| Herramientas | Formacion, Feedback Piloto |
-| Automatizacion | Plan Fase 2, Presupuestacion |
-| Federacion | CRM Socios, Contratacion |
-| Transparencia | Difusion |
-
-Cada componente se carga con `React.lazy()` siguiendo el patron existente en `GaliaMainTabs.tsx`.
-
----
-
-## Resultado esperado por actuacion
-
-| Actuacion | Antes | Despues |
-|---|---|---|
-| Act. 1 | 100% | 100% |
-| Act. 2 | 100% | 100% |
-| Act. 3 | 90% | 100% |
-| Act. 4 | 85% | 100% |
-| Act. 5 | 40% | 100% |
-| Act. 6 | 65% | 100% |
-| **TOTAL** | **~82%** | **100%** |
-
----
-
-## Orden de implementacion recomendado
-
-1. **Fase 1** (Act. 3): Formacion + Feedback - Son requisitos basicos del documento V4 y los mas sencillos de implementar.
-2. **Fase 2** (Act. 4): Planificacion Fase 2 - Depende solo de IA generativa ya disponible.
-3. **Fase 3** (Act. 5): CRM Socios - Requiere nuevas tablas y es la actuacion con menor cobertura (40%).
-4. **Fase 4** (Act. 6): Transversal - Se beneficia de lo construido en fases anteriores (CRM, formacion).
+El documento se generara directamente en el workspace de Notion del usuario.
 
