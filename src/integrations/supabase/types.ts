@@ -42088,6 +42088,45 @@ export type Database = {
         }
         Relationships: []
       }
+      galia_pilot_feedback: {
+        Row: {
+          ai_summary: string | null
+          area: string
+          category: string
+          comment: string | null
+          created_at: string
+          id: string
+          nps_score: number | null
+          rating: number
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          area: string
+          category: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          nps_score?: number | null
+          rating: number
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          area?: string
+          category?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          nps_score?: number | null
+          rating?: number
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       galia_solicitudes: {
         Row: {
           analisis_ia: Json | null
@@ -42213,6 +42252,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      galia_training_needs: {
+        Row: {
+          area: string
+          created_at: string
+          description: string
+          id: string
+          priority: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area: string
+          created_at?: string
+          description: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area?: string
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      galia_training_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          module_key: string
+          module_title: string
+          notes: string | null
+          progress_percentage: number | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_key: string
+          module_title: string
+          notes?: string | null
+          progress_percentage?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_key?: string
+          module_title?: string
+          notes?: string | null
+          progress_percentage?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       galia_user_roles: {
         Row: {
