@@ -50,6 +50,75 @@ export type Database = {
         }
         Relationships: []
       }
+      academia_capstone_projects: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          deliverable_url: string | null
+          description: string | null
+          enrollment_id: string | null
+          feedback: string | null
+          graded_at: string | null
+          graded_by: string | null
+          id: string
+          rubric_score: Json | null
+          status: string | null
+          submitted_at: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          deliverable_url?: string | null
+          description?: string | null
+          enrollment_id?: string | null
+          feedback?: string | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          rubric_score?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          deliverable_url?: string | null
+          description?: string | null
+          enrollment_id?: string | null
+          feedback?: string | null
+          graded_at?: string | null
+          graded_by?: string | null
+          id?: string
+          rubric_score?: Json | null
+          status?: string | null
+          submitted_at?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_capstone_projects_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_capstone_projects_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "academia_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academia_certificates: {
         Row: {
           certificate_code: string
@@ -100,6 +169,68 @@ export type Database = {
             columns: ["enrollment_id"]
             isOneToOne: false
             referencedRelation: "academia_enrollments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_cohorts: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          currency: string | null
+          current_participants: number | null
+          deliverables: Json | null
+          description: string | null
+          end_date: string | null
+          id: string
+          max_participants: number | null
+          name: string
+          price: number | null
+          schedule: Json | null
+          start_date: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          currency?: string | null
+          current_participants?: number | null
+          deliverables?: Json | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          max_participants?: number | null
+          name: string
+          price?: number | null
+          schedule?: Json | null
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          currency?: string | null
+          current_participants?: number | null
+          deliverables?: Json | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          max_participants?: number | null
+          name?: string
+          price?: number | null
+          schedule?: Json | null
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_cohorts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
             referencedColumns: ["id"]
           },
         ]
@@ -253,9 +384,67 @@ export type Database = {
           },
         ]
       }
+      academia_course_resources: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          description: string | null
+          download_count: number | null
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          module_id: string | null
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          module_id?: string | null
+          title: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          module_id?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_course_resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_course_resources_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "academia_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academia_courses: {
         Row: {
           average_rating: number | null
+          beta_price: number | null
           category: string
           created_at: string | null
           description: string | null
@@ -266,22 +455,28 @@ export type Database = {
           is_featured: boolean | null
           is_free: boolean | null
           is_published: boolean | null
+          launch_date: string | null
           learning_objectives: string[] | null
           level: string
+          niche: string | null
           prerequisites: string[] | null
           price: number | null
           short_description: string | null
           slug: string
           tags: string[] | null
+          target_avatar: Json | null
           thumbnail_url: string | null
           title: string
           total_lessons: number | null
           total_reviews: number | null
           total_students: number | null
           updated_at: string | null
+          validation_checklist: Json | null
+          validation_status: string | null
         }
         Insert: {
           average_rating?: number | null
+          beta_price?: number | null
           category?: string
           created_at?: string | null
           description?: string | null
@@ -292,22 +487,28 @@ export type Database = {
           is_featured?: boolean | null
           is_free?: boolean | null
           is_published?: boolean | null
+          launch_date?: string | null
           learning_objectives?: string[] | null
           level?: string
+          niche?: string | null
           prerequisites?: string[] | null
           price?: number | null
           short_description?: string | null
           slug: string
           tags?: string[] | null
+          target_avatar?: Json | null
           thumbnail_url?: string | null
           title: string
           total_lessons?: number | null
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string | null
+          validation_checklist?: Json | null
+          validation_status?: string | null
         }
         Update: {
           average_rating?: number | null
+          beta_price?: number | null
           category?: string
           created_at?: string | null
           description?: string | null
@@ -318,19 +519,24 @@ export type Database = {
           is_featured?: boolean | null
           is_free?: boolean | null
           is_published?: boolean | null
+          launch_date?: string | null
           learning_objectives?: string[] | null
           level?: string
+          niche?: string | null
           prerequisites?: string[] | null
           price?: number | null
           short_description?: string | null
           slug?: string
           tags?: string[] | null
+          target_avatar?: Json | null
           thumbnail_url?: string | null
           title?: string
           total_lessons?: number | null
           total_reviews?: number | null
           total_students?: number | null
           updated_at?: string | null
+          validation_checklist?: Json | null
+          validation_status?: string | null
         }
         Relationships: [
           {
@@ -514,6 +720,75 @@ export type Database = {
           },
         ]
       }
+      academia_leads: {
+        Row: {
+          converted: boolean | null
+          converted_at: string | null
+          course_id: string | null
+          created_at: string | null
+          email: string
+          funnel_id: string | null
+          id: string
+          lead_magnet_downloaded: boolean | null
+          metadata: Json | null
+          name: string | null
+          source: string | null
+          stage: string | null
+          tags: string[] | null
+          updated_at: string | null
+          webinar_attended: boolean | null
+        }
+        Insert: {
+          converted?: boolean | null
+          converted_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          email: string
+          funnel_id?: string | null
+          id?: string
+          lead_magnet_downloaded?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          source?: string | null
+          stage?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          webinar_attended?: boolean | null
+        }
+        Update: {
+          converted?: boolean | null
+          converted_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          email?: string
+          funnel_id?: string | null
+          id?: string
+          lead_magnet_downloaded?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          source?: string | null
+          stage?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          webinar_attended?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_leads_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_leads_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "academia_sales_funnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academia_learning_paths: {
         Row: {
           adaptations_made: Json[] | null
@@ -562,6 +837,59 @@ export type Database = {
             foreignKeyName: "academia_learning_paths_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_legal_config: {
+        Row: {
+          country_rules: Json | null
+          course_id: string
+          created_at: string | null
+          crypto_advertising: boolean | null
+          disclaimer_text: string | null
+          has_financial_disclaimer: boolean | null
+          id: string
+          influencer_warning: boolean | null
+          oss_enabled: boolean | null
+          updated_at: string | null
+          vat_config: Json | null
+          vat_exempt: boolean | null
+        }
+        Insert: {
+          country_rules?: Json | null
+          course_id: string
+          created_at?: string | null
+          crypto_advertising?: boolean | null
+          disclaimer_text?: string | null
+          has_financial_disclaimer?: boolean | null
+          id?: string
+          influencer_warning?: boolean | null
+          oss_enabled?: boolean | null
+          updated_at?: string | null
+          vat_config?: Json | null
+          vat_exempt?: boolean | null
+        }
+        Update: {
+          country_rules?: Json | null
+          course_id?: string
+          created_at?: string | null
+          crypto_advertising?: boolean | null
+          disclaimer_text?: string | null
+          has_financial_disclaimer?: boolean | null
+          id?: string
+          influencer_warning?: boolean | null
+          oss_enabled?: boolean | null
+          updated_at?: string | null
+          vat_config?: Json | null
+          vat_exempt?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_legal_config_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
             referencedRelation: "academia_courses"
             referencedColumns: ["id"]
           },
@@ -633,7 +961,10 @@ export type Database = {
           lesson_type: string | null
           module_id: string
           order_index: number
+          production_status: string | null
+          recording_batch: string | null
           resources: Json | null
+          script_template: Json | null
           title: string
           updated_at: string | null
           video_url: string | null
@@ -649,7 +980,10 @@ export type Database = {
           lesson_type?: string | null
           module_id: string
           order_index?: number
+          production_status?: string | null
+          recording_batch?: string | null
           resources?: Json | null
+          script_template?: Json | null
           title: string
           updated_at?: string | null
           video_url?: string | null
@@ -665,7 +999,10 @@ export type Database = {
           lesson_type?: string | null
           module_id?: string
           order_index?: number
+          production_status?: string | null
+          recording_batch?: string | null
           resources?: Json | null
+          script_template?: Json | null
           title?: string
           updated_at?: string | null
           video_url?: string | null
@@ -813,6 +1150,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      academia_pricing_tiers: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_students: number | null
+          order_index: number | null
+          price: number | null
+          tier_name: string
+          tier_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_students?: number | null
+          order_index?: number | null
+          price?: number | null
+          tier_name: string
+          tier_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_students?: number | null
+          order_index?: number | null
+          price?: number | null
+          tier_name?: string
+          tier_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_pricing_tiers_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       academia_quiz_attempts: {
         Row: {
@@ -1041,6 +1434,116 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_sales_funnels: {
+        Row: {
+          conversion_rates: Json | null
+          course_id: string | null
+          created_at: string | null
+          id: string
+          name: string
+          stages: Json | null
+          status: string | null
+          total_conversions: number | null
+          total_leads: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          conversion_rates?: Json | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          stages?: Json | null
+          status?: string | null
+          total_conversions?: number | null
+          total_leads?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          conversion_rates?: Json | null
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          stages?: Json | null
+          status?: string | null
+          total_conversions?: number | null
+          total_leads?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_sales_funnels_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_subscriptions: {
+        Row: {
+          amount: number | null
+          cancelled_at: string | null
+          course_id: string | null
+          created_at: string | null
+          currency: string | null
+          expires_at: string | null
+          id: string
+          payment_method: string | null
+          plan_id: string | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          cancelled_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          expires_at?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          cancelled_at?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          expires_at?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_subscriptions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "academia_pricing_tiers"
             referencedColumns: ["id"]
           },
         ]
