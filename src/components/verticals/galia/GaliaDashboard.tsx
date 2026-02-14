@@ -48,6 +48,8 @@ import {
   GaliaComplianceAuditor,
   GaliaProjectStatusDashboard,
   GaliaHybridAIPanel,
+  GaliaTrainingCenter,
+  GaliaPilotFeedback,
   GaliaNationalFederationDashboard,
   GaliaTerritorialMapPanel,
 } from './dashboard/tabs/GaliaMainTabs';
@@ -244,6 +246,12 @@ export function GaliaDashboard() {
       
       case 'territorial-map':
         return <Suspense fallback={<TabSkeleton />}><GaliaTerritorialMapPanel /></Suspense>;
+      
+      case 'training':
+        return <Suspense fallback={<TabSkeleton />}><GaliaTrainingCenter /></Suspense>;
+      
+      case 'pilot-feedback':
+        return <Suspense fallback={<TabSkeleton />}><GaliaPilotFeedback /></Suspense>;
       
       default:
         return (

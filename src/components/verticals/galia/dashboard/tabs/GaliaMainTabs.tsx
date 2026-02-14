@@ -33,3 +33,7 @@ export const GaliaNationalFederationDashboard = lazy(() => import('@/components/
 
 // Territorial Map - lazy loaded (Mapa Interactivo Nacional)
 export const GaliaTerritorialMapPanel = lazy(() => import('@/components/galia/territorial-map/GaliaTerritorialMapPanel').then(m => ({ default: m.GaliaTerritorialMapPanel })));
+
+// Phase V4 Coverage - Formación y Feedback (Act. 3 -> 100%)
+export const GaliaTrainingCenter = lazy(() => import('@/components/galia/training/GaliaTrainingCenter'));
+export const GaliaPilotFeedback = lazy(() => import('@/components/galia/feedback/GaliaPilotFeedback'));

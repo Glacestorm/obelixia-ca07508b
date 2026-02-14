@@ -122,6 +122,8 @@ export const galiaNavCategories: NavCategory[] = [
       { id: 'geo', label: 'Inteligencia Geográfica', shortLabel: 'Geo', icon: <MapPin className="h-4 w-4" /> },
       { id: 'informes', label: 'Generador de Informes', shortLabel: 'Informes', icon: <FileBarChart className="h-4 w-4" /> },
       { id: 'export', label: 'Exportación Universal', shortLabel: 'Exportar', icon: <FileOutput className="h-4 w-4" /> },
+      { id: 'training', label: 'Formación GAL', shortLabel: 'Formación', icon: <BookOpen className="h-4 w-4" />, badge: 'V4', badgeVariant: 'default' as const },
+      { id: 'pilot-feedback', label: 'Feedback Piloto', shortLabel: 'Feedback', icon: <AlertTriangle className="h-4 w-4" />, badge: 'V4', badgeVariant: 'default' as const },
     ]
   },
   {
