@@ -43,7 +43,7 @@ export function SalesFunnelDesigner() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500">
-          <Funnel className="h-5 w-5 text-white" />
+          <Filter className="h-5 w-5 text-white" />
         </div>
         <div>
           <h2 className="text-xl font-bold">Funnel de Ventas</h2>
