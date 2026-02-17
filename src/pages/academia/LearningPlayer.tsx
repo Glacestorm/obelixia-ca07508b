@@ -26,7 +26,7 @@ import {
   type Module,
   type Resource,
 } from '@/components/academia/learning-player';
-import { GamificationMiniWidget } from '@/components/academia';
+import { GamificationMiniWidget } from '@/components/academia/GamificationMiniWidget';
 
 // Mock data para demostración
 const generateMockCourse = (language: string) => ({

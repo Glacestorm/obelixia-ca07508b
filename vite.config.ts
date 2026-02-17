@@ -217,6 +217,8 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/components/academia/gamification/')) return 'app-academia-gamification';
           if (id.includes('/components/academia/adaptive-quiz/')) return 'app-academia-quiz';
           if (id.includes('/components/academia/learning-path/')) return 'app-academia-lpath';
+          if (id.includes('/components/academia/learning-player/')) return 'app-academia-player';
+          if (id.includes('/components/academia/')) return 'app-academia-misc';
           
           // Remaining node_modules
           if (id.includes('node_modules')) return 'vendor-misc';
