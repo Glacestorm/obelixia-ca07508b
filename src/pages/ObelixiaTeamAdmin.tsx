@@ -60,7 +60,7 @@ const ApplicationStateAnalyzer = lazy(() => import('@/components/admin/Applicati
 const AppStoreManager = lazy(() => import('@/components/admin/appstore/AppStoreManager').then(m => ({ default: m.AppStoreManager })));
 const WhiteLabelConfig = lazy(() => import('@/components/admin/WhiteLabelConfig'));
 const APIDocumentation = lazy(() => import('@/components/admin/APIDocumentation'));
-const VerticalPacksManager = lazy(() => import('@/components/admin/verticals').then(m => ({ default: m.VerticalPacksManager })));
+const VerticalPacksManager = lazy(() => import('@/components/admin/verticals/VerticalPacksManager').then(m => ({ default: m.VerticalPacksManager })));
 const SectorsManager = lazy(() => import('@/components/admin/SectorsManager').then(m => ({ default: m.SectorsManager })));
 const CoreWebVitalsDashboard = lazy(() => import('@/components/admin/CoreWebVitalsDashboard').then(m => ({ default: m.CoreWebVitalsDashboard })));
 
