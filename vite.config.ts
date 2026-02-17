@@ -207,7 +207,16 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/components/galia/')) return 'app-galia';
           if (id.includes('/components/admin/')) return 'app-admin';
           if (id.includes('/components/verticals/')) return 'app-verticals';
-          if (id.includes('/components/academia/')) return 'app-academia';
+          // Academia: split by subdirectory to avoid huge single chunk
+          if (id.includes('/components/academia/dashboard/')) return 'app-academia-dashboard';
+          if (id.includes('/components/academia/strategy/')) return 'app-academia-strategy';
+          if (id.includes('/components/academia/structure/')) return 'app-academia-structure';
+          if (id.includes('/components/academia/production/')) return 'app-academia-production';
+          if (id.includes('/components/academia/business/')) return 'app-academia-business';
+          if (id.includes('/components/academia/marketing/')) return 'app-academia-marketing';
+          if (id.includes('/components/academia/gamification/')) return 'app-academia-gamification';
+          if (id.includes('/components/academia/adaptive-quiz/')) return 'app-academia-quiz';
+          if (id.includes('/components/academia/learning-path/')) return 'app-academia-lpath';
           
           // Remaining node_modules
           if (id.includes('node_modules')) return 'vendor-misc';
