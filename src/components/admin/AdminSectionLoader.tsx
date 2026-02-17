@@ -154,7 +154,7 @@ export const BPMNDesigner = lazy(() => import('@/components/bpmn/BPMNDesigner'))
 export const ProcessMiningDashboard = lazy(() => import('@/components/bpmn/ProcessMiningDashboard').then(m => ({ default: m.ProcessMiningDashboard })));
 
 // Verticals & Sectors
-export const VerticalPacksManager = lazy(() => import('@/components/admin/verticals').then(m => ({ default: m.VerticalPacksManager })));
+export const VerticalPacksManager = lazy(() => import('@/components/admin/verticals/VerticalPacksManager').then(m => ({ default: m.VerticalPacksManager })));
 export const SectorsManager = lazy(() => import('@/components/admin/SectorsManager').then(m => ({ default: m.SectorsManager })));
 
 // Performance & Translations

@@ -204,7 +204,20 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('node_modules/zod')) return 'vendor-zod';
           
           // App code splitting by domain
-          if (id.includes('/components/galia/')) return 'app-galia';
+          // GALIA: split by phase
+          if (id.includes('/components/galia/phase4/')) return 'app-galia-p4';
+          if (id.includes('/components/galia/phase5/')) return 'app-galia-p5';
+          if (id.includes('/components/galia/phase6/')) return 'app-galia-p6';
+          if (id.includes('/components/galia/phase7/')) return 'app-galia-p7';
+          if (id.includes('/components/galia/phase8/')) return 'app-galia-p8';
+          if (id.includes('/components/galia/phase9/')) return 'app-galia-p9';
+          if (id.includes('/components/galia/')) return 'app-galia-misc';
+          // ERP: split by submodule
+          if (id.includes('/components/erp/hr/')) return 'app-erp-hr';
+          if (id.includes('/components/erp/logistics/')) return 'app-erp-logistics';
+          if (id.includes('/components/erp/maestros/')) return 'app-erp-maestros';
+          if (id.includes('/components/erp/treasury/')) return 'app-erp-treasury';
+          if (id.includes('/components/erp/')) return 'app-erp-misc';
           if (id.includes('/components/admin/')) return 'app-admin';
           if (id.includes('/components/verticals/')) return 'app-verticals';
           // Academia: split by subdirectory to avoid huge single chunk
