@@ -1,4 +1,6 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,11 +30,6 @@ interface SupervisorContext {
   accountingFramework?: string;
 }
 
-interface SupervisorRequest {
-  action: 'analyze' | 'validate' | 'recommend';
-  context: SupervisorContext;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -44,7 +41,76 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const { action, context } = await req.json() as SupervisorRequest;
+    const body = await req.json();
+    const { action } = body;
+
+    // === NUEVA FUNCIONALIDAD: ACADEMIA SIMULATOR ===
+    if (action === 'validate_entries') {
+        const { journal_entries, dataset_id } = body;
+        
+        const supabase = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+        );
+
+        // Fetch expected solution from dataset
+        const { data: dataset } = await supabase
+            .from('academia_simulator_datasets')
+            .select('expected_solution')
+            .eq('id', dataset_id)
+            .single();
+
+        if (!dataset) throw new Error('Dataset not found');
+        
+        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'google/gemini-2.5-flash',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `Eres un profesor de contabilidad corrigiendo un ejercicio.
+                        Compara los asientos del alumno con la solución correcta.
+                        Sé flexible con los nombres de cuentas si el código es correcto o muy similar.
+                        Evalúa: importes correctos, cuentas correctas (Debe/Haber), fechas coherentes.
+                        
+                        Devuelve JSON: {
+                            "score": 0-100,
+                            "correct_entries": [indices],
+                            "errors": [{ "entry_index": 0, "message": "..." }],
+                            "feedback_general": "..."
+                        }`
+                    },
+                    {
+                        role: 'user',
+                        content: `SOLUCIÓN ESPERADA: ${JSON.stringify(dataset.expected_solution)}
+                        
+                        RESPUESTA ALUMNO: ${JSON.stringify(journal_entries)}`
+                    }
+                ]
+            })
+        });
+
+        const aiData = await aiResponse.json();
+        let feedback;
+        try {
+             feedback = JSON.parse(aiData.choices[0].message.content.replace(/```json/g, '').replace(/```/g, ''));
+        } catch (e) {
+            console.error('JSON parse error', e);
+            feedback = { score: 0, feedback_general: "Error procesando corrección", errors: [] };
+        }
+
+        return new Response(JSON.stringify({ success: true, ...feedback }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+
+    // === FUNCIONALIDAD ORIGINAL: SUPERVISOR ERP ===
+    const { context } = body;
 
     const systemPrompt = `Eres un Supervisor Contable AI experto en normativa contable española (PGC) e internacional (NIIF/IFRS).
 Tu rol es supervisar partidas contables en tiempo real, detectar errores, y proporcionar alertas y recomendaciones.
@@ -118,7 +184,7 @@ DATOS DE LA OPERACIÓN:
 ${JSON.stringify(context.operationData, null, 2)}
 
 PARTIDAS CONTABLES:
-${context.entries.map((e, i) => `${i + 1}. ${e.account_code} - ${e.account_name}: Debe=${e.debit}€, Haber=${e.credit}€ ${e.description ? `(${e.description})` : ''}`).join('\n')}
+${context.entries.map((e: any, i: number) => `${i + 1}. ${e.account_code} - ${e.account_name}: Debe=${e.debit}€, Haber=${e.credit}€ ${e.description ? `(${e.description})` : ''}`).join('\n')}
 
 Marco contable: ${context.accountingFramework || 'PGC'} (${context.countryCode || 'ES'})
 
@@ -135,7 +201,7 @@ Si hay problemas críticos, marca la alerta con severity "critical" para activar
       case 'validate':
         userPrompt = `Valida técnicamente las siguientes partidas contables:
 
-${context.entries.map((e, i) => `${i + 1}. ${e.account_code} - ${e.account_name}: D=${e.debit}€, H=${e.credit}€`).join('\n')}
+${context.entries.map((e: any, i: number) => `${i + 1}. ${e.account_code} - ${e.account_name}: D=${e.debit}€, H=${e.credit}€`).join('\n')}
 
 Verifica:
 - Cuadre contable
@@ -147,7 +213,7 @@ Verifica:
         userPrompt = `Basándote en esta operación de ${getOperationName(context.operationType)} por ${context.operationData?.amount}€:
 
 Partidas actuales:
-${context.entries.map((e, i) => `${i + 1}. ${e.account_code}: D=${e.debit}€, H=${e.credit}€`).join('\n')}
+${context.entries.map((e: any, i: number) => `${i + 1}. ${e.account_code}: D=${e.debit}€, H=${e.credit}€`).join('\n')}
 
 Proporciona recomendaciones de mejora y optimización contable.`;
         break;
@@ -170,7 +236,7 @@ Proporciona recomendaciones de mejora y optimización contable.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3, // Baja temperatura para respuestas más precisas
+        temperature: 0.3,
         max_tokens: 2000,
       }),
     });
