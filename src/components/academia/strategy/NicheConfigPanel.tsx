@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { generateCsvContent } from './nicheExampleGenerators';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -316,200 +317,120 @@ export function NicheConfigPanel() {
 function generateExampleFile(example: NicheExample) {
   const { title, type, description, difficulty } = example;
   
-  if (type === 'excel') {
-    // Generate CSV content that can be opened in Excel
-    const csvContent = [
-      [`${title}`],
-      [`Nivel: ${difficulty}`],
-      [''],
-      ['Descripción:', description],
-      [''],
-      ['=== CONTENIDO DE EJEMPLO ==='],
-      [''],
-    ];
-    
-    // Add type-specific sample data
-    if (title.toLowerCase().includes('presupuesto')) {
-      csvContent.push(
-        ['Categoría', 'Presupuesto', 'Real', 'Diferencia', '% Desviación'],
-        ['Vivienda (50%)', '1750', '1680', '70', '4.0%'],
-        ['Alimentación', '400', '425', '-25', '-6.3%'],
-        ['Transporte', '200', '185', '15', '7.5%'],
-        ['Servicios', '150', '155', '-5', '-3.3%'],
-        ['Ocio (30%)', '600', '720', '-120', '-20.0%'],
-        ['Restaurantes', '200', '280', '-80', '-40.0%'],
-        ['Entretenimiento', '150', '190', '-40', '-26.7%'],
-        ['Ropa', '100', '120', '-20', '-20.0%'],
-        ['Viajes', '150', '130', '20', '13.3%'],
-        ['Ahorro (20%)', '700', '600', '-100', '-14.3%'],
-        ['Fondo emergencia', '300', '300', '0', '0.0%'],
-        ['Inversión', '400', '300', '-100', '-25.0%'],
-        ['', '', '', '', ''],
-        ['TOTAL', '3500', '3490', '10', '0.3%'],
-      );
-    } else if (title.toLowerCase().includes('cash flow') || title.toLowerCase().includes('flujo')) {
-      csvContent.push(
-        ['Mes', 'Ingresos', 'Gastos Fijos', 'Gastos Variables', 'Flujo Neto', 'Acumulado'],
-        ['Enero', '12000', '5500', '3200', '3300', '3300'],
-        ['Febrero', '11500', '5500', '2800', '3200', '6500'],
-        ['Marzo', '13000', '5500', '4100', '3400', '9900'],
-        ['Abril', '12500', '5500', '3500', '3500', '13400'],
-        ['Mayo', '14000', '5500', '3800', '4700', '18100'],
-        ['Junio', '13500', '5500', '4200', '3800', '21900'],
-      );
-    } else if (title.toLowerCase().includes('dcf') || title.toLowerCase().includes('valoración')) {
-      csvContent.push(
-        ['=== MODELO DCF SIMPLIFICADO ==='],
-        [''],
-        ['Año', 'FCFF', 'Factor Descuento', 'VP del FCFF'],
-        ['2025', '5200000', '0.909', '4727300'],
-        ['2026', '5720000', '0.826', '4725600'],
-        ['2027', '6292000', '0.751', '4725300'],
-        ['2028', '6921200', '0.683', '4727200'],
-        ['2029', '7613320', '0.621', '4727900'],
-        [''],
-        ['WACC', '10.0%'],
-        ['Tasa crecimiento terminal (g)', '2.5%'],
-        ['Valor Terminal', '104182133'],
-        ['VP Valor Terminal', '64696600'],
-        [''],
-        ['Valor Empresa (EV)', '88330000'],
-        ['(-) Deuda Neta', '15000000'],
-        ['Valor Equity', '73330000'],
-      );
-    } else if (title.toLowerCase().includes('ratio') || title.toLowerCase().includes('estados financieros')) {
-      csvContent.push(
-        ['=== RATIOS FINANCIEROS ==='],
-        [''],
-        ['RATIO', '2023', '2024', 'BENCHMARK', 'ESTADO'],
-        ['Ratio Corriente', '1.85', '1.72', '>1.5', 'OK'],
-        ['Ratio Rápido', '1.20', '1.15', '>1.0', 'OK'],
-        ['Ratio Deuda/Equity', '0.45', '0.52', '<0.6', 'OK'],
-        ['ROE', '18.5%', '16.2%', '>15%', 'OK'],
-        ['ROA', '9.2%', '8.1%', '>5%', 'OK'],
-        ['Margen Bruto', '42.3%', '40.8%', '>35%', 'OK'],
-        ['Margen Neto', '12.1%', '10.5%', '>10%', 'OK'],
-        ['Rotación Activos', '1.45', '1.38', '>1.0', 'OK'],
-        ['Periodo Cobro (días)', '45', '52', '<60', 'OK'],
-        ['Periodo Pago (días)', '38', '41', '<45', 'OK'],
-      );
-    } else if (title.toLowerCase().includes('interés compuesto')) {
-      csvContent.push(
-        ['=== SIMULADOR INTERÉS COMPUESTO ==='],
-        [''],
-        ['Capital Inicial', '10000'],
-        ['Aportación Mensual', '500'],
-        ['Rentabilidad Anual', '7%'],
-        [''],
-        ['Año', 'Aportaciones', 'Intereses', 'Total Acumulado'],
-        ['1', '16000', '763', '16763'],
-        ['5', '40000', '9245', '49245'],
-        ['10', '70000', '32610', '102610'],
-        ['15', '100000', '79835', '179835'],
-        ['20', '130000', '162340', '292340'],
-        ['25', '160000', '298700', '458700'],
-        ['30', '190000', '519430', '709430'],
-      );
-    } else if (title.toLowerCase().includes('dashboard') && title.toLowerCase().includes('financiero')) {
-      csvContent.push(
-        ['=== KPIs DASHBOARD FINANCIERO ==='],
-        [''],
-        ['KPI', 'Valor Actual', 'Objetivo', 'Var% MoM', 'Estado'],
-        ['Ingresos', '€285.000', '€300.000', '+5.2%', '⚠️'],
-        ['EBITDA', '€52.000', '€50.000', '+3.1%', '✅'],
-        ['Margen EBITDA', '18.2%', '16.7%', '+1.5pp', '✅'],
-        ['Cash Flow Operativo', '€38.000', '€35.000', '+8.5%', '✅'],
-        ['DSO (Días Cobro)', '47', '<45', '+2', '⚠️'],
-        ['DPO (Días Pago)', '38', '<40', '-1', '✅'],
-        ['Working Capital', '€125.000', '€120.000', '+4.2%', '✅'],
-        ['Ratio Endeudamiento', '0.42', '<0.50', '-0.03', '✅'],
-        ['ROCE', '15.8%', '>12%', '+1.2pp', '✅'],
-        ['Burn Rate', '€18.000', '<€20.000', '-5.3%', '✅'],
-        ['Runway (meses)', '14.2', '>12', '+0.8', '✅'],
-        ['CAC', '€145', '<€150', '-3.3%', '✅'],
-      );
-    } else {
-      csvContent.push(
-        ['Concepto', 'Valor', 'Notas'],
-        ['Dato ejemplo 1', '1000', 'Personalizable'],
-        ['Dato ejemplo 2', '2500', 'Editar según necesidad'],
-        ['Dato ejemplo 3', '750', 'Añadir más filas'],
-        ['Total', '4250', 'Suma automática'],
-      );
-    }
-    
-    const csvString = csvContent.map(row => row.join(',')).join('\n');
+  if (type === 'excel' || type === 'calculator') {
+    // Use professional CSV generators
+    const csvString = generateCsvContent(title);
     const BOM = '\uFEFF';
     const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
     downloadBlob(blob, `${slugify(title)}.csv`);
-    
+  } else if (type === 'checklist') {
+    const content = generateChecklistContent(title, description, difficulty);
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    downloadBlob(blob, `${slugify(title)}.md`);
+  } else if (type === 'quiz') {
+    const content = generateQuizContent(title, description, difficulty);
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    downloadBlob(blob, `${slugify(title)}.md`);
+  } else if (type === 'case_study') {
+    const content = generateCaseStudyContent(title, description, difficulty);
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    downloadBlob(blob, `${slugify(title)}.md`);
+  } else if (type === 'guide') {
+    const content = generateGuideContent(title, description, difficulty);
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    downloadBlob(blob, `${slugify(title)}.md`);
   } else {
-    // For all other types generate a text/markdown file
-    let content = `# ${title}\n\n`;
-    content += `**Tipo:** ${TYPE_LABELS[type]}\n`;
-    content += `**Nivel:** ${difficulty}\n\n`;
-    content += `## Descripción\n${description}\n\n`;
-
-    if (type === 'checklist') {
-      content += `## Checklist\n\n`;
-      const items = description.match(/(\d+)\s+(puntos|preguntas|items)/i);
-      const count = items ? parseInt(items[1]) : 10;
-      for (let i = 1; i <= Math.min(count, 25); i++) {
-        content += `- [ ] Punto ${i}: Revisar y completar\n`;
-      }
-    } else if (type === 'quiz') {
-      content += `## Preguntas de Práctica\n\n`;
-      for (let i = 1; i <= 5; i++) {
-        content += `### Pregunta ${i}\n`;
-        content += `¿Cuál de las siguientes opciones es correcta?\n\n`;
-        content += `a) Opción A\nb) Opción B\nc) Opción C\nd) Opción D\n\n`;
-        content += `**Respuesta correcta:** c)\n**Explicación:** Justificación detallada de la respuesta.\n\n---\n\n`;
-      }
-    } else if (type === 'calculator') {
-      content += `## Instrucciones de Uso\n\n`;
-      content += `1. Introduce tus datos en las celdas amarillas\n`;
-      content += `2. Los resultados se calculan automáticamente\n`;
-      content += `3. Revisa los gráficos generados\n\n`;
-      content += `## Variables de Entrada\n\n`;
-      content += `| Variable | Valor | Unidad |\n|----------|-------|--------|\n`;
-      content += `| Capital inicial | 10.000 | € |\n`;
-      content += `| Aportación mensual | 500 | € |\n`;
-      content += `| Plazo | 10 | años |\n`;
-      content += `| Rentabilidad esperada | 7,0 | % |\n\n`;
-      content += `## Resultados\n\n`;
-      content += `| Métrica | Valor |\n|---------|-------|\n`;
-      content += `| Total aportado | 70.000 € |\n`;
-      content += `| Intereses generados | 32.610 € |\n`;
-      content += `| **Valor final** | **102.610 €** |\n`;
-    } else if (type === 'case_study') {
-      content += `## Contexto del Caso\n\n`;
-      content += `Este caso práctico presenta un escenario real para aplicar los conceptos aprendidos.\n\n`;
-      content += `## Datos del Caso\n\n`;
-      content += `- Situación inicial: Descripción detallada\n`;
-      content += `- Objetivo: Meta a alcanzar\n`;
-      content += `- Restricciones: Limitaciones a considerar\n\n`;
-      content += `## Preguntas para el Análisis\n\n`;
-      content += `1. ¿Cuál es el diagnóstico de la situación actual?\n`;
-      content += `2. ¿Qué alternativas de acción existen?\n`;
-      content += `3. ¿Cuál es la recomendación y por qué?\n\n`;
-      content += `## Solución Propuesta\n\n`;
-      content += `_Completa tu análisis antes de ver la solución._\n`;
-    } else if (type === 'guide') {
-      content += `## Índice\n\n`;
-      content += `1. Introducción\n2. Conceptos Clave\n3. Paso a Paso\n4. Errores Comunes\n5. Recursos Adicionales\n\n`;
-      content += `## 1. Introducción\n\nEsta guía te ayudará a dominar los conceptos fundamentales.\n\n`;
-      content += `## 2. Conceptos Clave\n\n- Concepto A: Explicación\n- Concepto B: Explicación\n- Concepto C: Explicación\n\n`;
-      content += `## 3. Paso a Paso\n\n1. Primer paso\n2. Segundo paso\n3. Tercer paso\n\n`;
-    } else {
-      content += `## Contenido\n\nEste recurso contiene la plantilla completa lista para usar.\n`;
-      content += `Personaliza los campos según tu caso específico.\n`;
-    }
-
+    const content = generateTemplateContent(title, description, difficulty);
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
     downloadBlob(blob, `${slugify(title)}.md`);
   }
   
   toast.success(`"${title}" descargado correctamente`);
+}
+
+// === PROFESSIONAL MARKDOWN GENERATORS ===
+
+function generateChecklistContent(title: string, description: string, difficulty: string): string {
+  const lowerTitle = title.toLowerCase();
+  
+  if (lowerTitle.includes('auditoría financiera personal')) {
+    return `# ✅ ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## A. INGRESOS Y GASTOS\n- [ ] 1. ¿Conoces exactamente tu ingreso neto mensual (tras impuestos y SS)?\n- [ ] 2. ¿Tienes un presupuesto mensual escrito y actualizado?\n- [ ] 3. ¿Revisas tus gastos bancarios al menos 1 vez al mes?\n- [ ] 4. ¿Has cancelado suscripciones que no usas en los últimos 3 meses?\n- [ ] 5. ¿Tu ratio gastos fijos / ingresos es inferior al 50%?\n\n## B. AHORRO Y FONDO DE EMERGENCIA\n- [ ] 6. ¿Tienes un fondo de emergencia de al menos 3 meses de gastos?\n- [ ] 7. ¿El fondo está en una cuenta separada de tu cuenta corriente?\n- [ ] 8. ¿Ahorras automáticamente al menos un 10% de tu ingreso neto?\n- [ ] 9. ¿Tienes un objetivo de ahorro definido con fecha?\n- [ ] 10. ¿Has definido tu "número de libertad financiera"?\n\n## C. DEUDAS\n- [ ] 11. ¿Conoces el saldo exacto de TODAS tus deudas?\n- [ ] 12. ¿Conoces el TAE (no solo el TIN) de cada deuda?\n- [ ] 13. ¿Tu ratio deuda/ingresos es inferior al 35%?\n- [ ] 14. ¿Tienes un plan de eliminación de deudas (avalancha o bola de nieve)?\n- [ ] 15. ¿Has renegociado condiciones bancarias en los últimos 12 meses?\n\n## D. SEGUROS Y PROTECCIÓN\n- [ ] 16. ¿Tienes seguro de vida si tienes dependientes económicos?\n- [ ] 17. ¿Tienes seguro de salud privado o complementario?\n- [ ] 18. ¿Tu seguro de hogar está actualizado al valor real?\n- [ ] 19. ¿Tienes seguro de responsabilidad civil?\n- [ ] 20. ¿Has revisado coberturas y beneficiarios en el último año?\n\n## E. PLANIFICACIÓN Y DOCUMENTOS\n- [ ] 21. ¿Tienes testamento actualizado?\n- [ ] 22. ¿Tu pareja/familia sabe dónde están tus documentos financieros?\n- [ ] 23. ¿Tienes un archivo digital seguro con contraseñas financieras?\n- [ ] 24. ¿Has hecho tu declaración de la renta optimizando deducciones?\n- [ ] 25. ¿Tienes un plan de inversión a largo plazo documentado?\n\n---\n**Puntuación:**\n- 20-25 ✅: Salud financiera excelente\n- 15-19 ✅: Buena base, mejora puntos débiles\n- 10-14 ✅: Necesitas acción urgente en varias áreas\n- <10 ✅: Prioridad máxima: construye fundamentos\n`;
+  }
+
+  if (lowerTitle.includes('due diligence')) {
+    return `# ✅ ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## 1. CALIDAD DE BENEFICIOS\n- [ ] Reconciliar EBITDA reportado vs EBITDA ajustado\n- [ ] Identificar partidas extraordinarias / no recurrentes\n- [ ] Analizar política de reconocimiento de ingresos\n- [ ] Verificar cut-off de ingresos en cierre de ejercicio\n- [ ] Comprobar evolución del margen bruto (3-5 años)\n- [ ] Detectar cambios en políticas contables recientes\n- [ ] Normalizar salarios de propietarios/directivos\n- [ ] Ajustar gastos de alquiler a valor de mercado\n- [ ] Identificar ingresos/gastos entre partes vinculadas\n- [ ] Verificar consistencia de márgenes por línea de negocio\n\n## 2. WORKING CAPITAL\n- [ ] Analizar evolución del capital circulante (3 años)\n- [ ] Calcular días de cobro (DSO) y tendencia\n- [ ] Calcular días de pago (DPO) y tendencia\n- [ ] Calcular días de inventario (DIO) y tendencia\n- [ ] Identificar estacionalidad en working capital\n- [ ] Detectar deudores de cobro dudoso\n- [ ] Verificar provisiones de inventario obsoleto\n- [ ] Analizar dependencia de clientes (concentración >10%)\n- [ ] Revisar condiciones de pago a proveedores clave\n- [ ] Estimar necesidad de WC normalizado para la transacción\n\n## 3. DEUDA Y ESTRUCTURA FINANCIERA\n- [ ] Listar toda la deuda financiera (incluyendo avales/garantías)\n- [ ] Verificar cumplimiento de covenants bancarios\n- [ ] Identificar deuda oculta (leasing, factoring, confirming)\n- [ ] Analizar vencimientos de deuda y refinanciación necesaria\n- [ ] Revisar cláusulas de cambio de control (change of control)\n- [ ] Calcular deuda neta ajustada para la transacción\n\n## 4. FISCAL Y CONTINGENCIAS\n- [ ] Verificar declaraciones de IVA, IS e IRPF (últimos 4 años)\n- [ ] Identificar inspecciones fiscales abiertas o previstas\n- [ ] Revisar precios de transferencia si hay grupo\n- [ ] Analizar contingencias laborales (demandas, ERE)\n- [ ] Revisar contingencias medioambientales\n- [ ] Identificar litigios en curso y provisiones\n- [ ] Verificar cumplimiento de LOPD/RGPD\n\n## 5. ACTIVOS Y CAPEX\n- [ ] Verificar titularidad de activos inmobiliarios\n- [ ] Analizar estado y antigüedad del inmovilizado material\n- [ ] Distinguir CAPEX de mantenimiento vs crecimiento\n- [ ] Revisar política de amortización vs vida útil real\n- [ ] Identificar activos no operativos\n- [ ] Valorar intangibles (marcas, patentes, software)\n`;
+  }
+
+  if (lowerTitle.includes('antes de invertir')) {
+    return `# ✅ ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## COMPRENSIÓN DEL PRODUCTO\n- [ ] 1. ¿Puedes explicar en 2 frases cómo genera dinero este producto?\n- [ ] 2. ¿Has leído el folleto/KID completo del producto?\n- [ ] 3. ¿Conoces TODAS las comisiones (gestión, custodia, éxito, entrada/salida)?\n- [ ] 4. ¿Sabes cuál es la fiscalidad de este producto en tu país?\n- [ ] 5. ¿Conoces la liquidez (en cuántos días puedes recuperar tu dinero)?\n\n## RIESGO\n- [ ] 6. ¿Cuál es la pérdida máxima histórica (máximo drawdown) de este producto?\n- [ ] 7. ¿Cuánto puedes permitirte perder SIN que afecte a tu vida diaria?\n- [ ] 8. ¿Has comprobado que está regulado por un supervisor (CNMV, BaFin, SEC)?\n- [ ] 9. ¿Entiendes la diferencia entre riesgo de mercado, crédito y liquidez?\n- [ ] 10. ¿Has verificado la calificación crediticia del emisor (si aplica)?\n\n## CONFLICTOS DE INTERÉS\n- [ ] 11. ¿Quién te ha recomendado este producto? ¿Cobra comisión por vendértelo?\n- [ ] 12. ¿Es un producto de la propia entidad o de un tercero independiente?\n- [ ] 13. ¿Has comparado con al menos 3 alternativas similares?\n- [ ] 14. ¿Has buscado opiniones independientes (no de la propia entidad)?\n- [ ] 15. ¿El asesor tiene las certificaciones requeridas (MiFID II)?\n\n## ENCAJE EN TU CARTERA\n- [ ] 16. ¿Este producto encaja con tu perfil de riesgo documentado?\n- [ ] 17. ¿Cuánto % de tu cartera total representará esta inversión?\n- [ ] 18. ¿Estás diversificando o concentrando riesgo?\n- [ ] 19. ¿Tienes un horizonte temporal definido para esta inversión?\n- [ ] 20. ¿Tienes un plan de salida (stop-loss, take-profit, rebalanceo)?\n\n---\n⚠️ **Regla de oro:** Si no puedes responder SÍ a las preguntas 1, 2 y 8, NO inviertas.\n`;
+  }
+
+  if (lowerTitle.includes('métricas saas')) {
+    return `# ✅ ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## MÉTRICAS DE INGRESOS\n- [ ] **MRR** (Monthly Recurring Revenue): Ingresos recurrentes mensuales → Meta: crecimiento >10% MoM en fase temprana\n- [ ] **ARR** (Annual Recurring Revenue): MRR × 12 → Métrica principal para inversores\n- [ ] **NRR** (Net Revenue Retention): Ingresos de la misma cohorte año vs año → Benchmark: >100%, ideal >120%\n- [ ] **ARPU** (Average Revenue Per User): ARR / nº clientes → ¿Estás vendiendo a los clientes correctos?\n\n## MÉTRICAS DE CRECIMIENTO\n- [ ] **Growth Rate** (MoM / YoY): Velocidad de crecimiento → Benchmark: T2D3 (triple, triple, double, double, double)\n- [ ] **Quick Ratio**: (New MRR + Expansion) / (Churn + Contraction) → Benchmark: >4x\n- [ ] **Magic Number**: Net New ARR / S&M del trimestre anterior → Benchmark: >0.75\n\n## MÉTRICAS DE EFICIENCIA\n- [ ] **CAC** (Customer Acquisition Cost): Gasto total S&M / nuevos clientes → ¿Puedes adquirir de forma rentable?\n- [ ] **LTV** (Lifetime Value): ARPU × Margen bruto / Churn rate → Benchmark: LTV/CAC > 3x\n- [ ] **Payback Period**: CAC / (ARPU × Margen bruto mensual) → Benchmark: <18 meses\n- [ ] **Rule of 40**: Growth rate + Profit margin → Benchmark: suma >40%\n- [ ] **Burn Multiple**: Net Burn / Net New ARR → Benchmark: <2x\n\n## MÉTRICAS DE RETENCIÓN\n- [ ] **Gross Churn**: MRR perdido / MRR inicio mes → Benchmark: <2% mensual\n- [ ] **Logo Churn**: Clientes perdidos / clientes inicio mes → ¿Estás perdiendo los correctos?\n- [ ] **Expansion Revenue %**: % MRR que viene de upsell/cross-sell → Benchmark: >30% del crecimiento\n\n## MÉTRICAS DE PRODUCTO\n- [ ] **DAU/MAU**: Ratio de engagement → Benchmark: >20% para B2B\n- [ ] **Activation Rate**: % usuarios que completan onboarding → Detecta fricción temprana\n- [ ] **Time to Value**: Tiempo hasta que el usuario obtiene valor → Cuanto menor, mejor\n`;
+  }
+
+  // Generic checklist
+  return `# ✅ ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## Checklist\n${Array.from({length: 15}, (_, i) => `- [ ] ${i + 1}. Punto de verificación ${i + 1}`).join('\n')}\n`;
+}
+
+function generateQuizContent(title: string, description: string, difficulty: string): string {
+  const lowerTitle = title.toLowerCase();
+
+  if (lowerTitle.includes('sesgos cognitivos')) {
+    return `# 🧠 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n---\n\n### Pregunta 1: Anclaje\nHas comprado acciones de Telefónica a 5,20€. Ahora cotizan a 3,80€. Un analista rebaja el precio objetivo a 3,50€. ¿Qué haces?\n\na) Mantienes porque "ya se recuperará al precio que pagaste"\nb) Vendes inmediatamente\nc) Analizas los fundamentales actuales sin considerar tu precio de compra\nd) Compras más para "promediar a la baja"\n\n**Respuesta correcta:** c)\n**Explicación:** La opción a) es el **sesgo de anclaje**: tu precio de compra es irrelevante para el valor futuro de la acción. La opción d) combina anclaje con **falacia del coste hundido**. Lo correcto es evaluar la inversión como si NO la tuvieras.\n\n---\n\n### Pregunta 2: Aversión a Pérdidas\nTu cartera tiene dos posiciones: Acción A con +40% de ganancia y Acción B con -30% de pérdida. Necesitas liquidez y debes vender una. ¿Cuál vendes?\n\na) Acción A (así "aseguras" la ganancia)\nb) Acción B (para cortar pérdidas)\nc) La que tenga peores perspectivas futuras, independientemente de la ganancia/pérdida\nd) Mitad de cada una\n\n**Respuesta correcta:** c)\n**Explicación:** Vender la ganadora y mantener la perdedora es el **efecto disposición** (Shefrin & Statman, 1985). La decisión correcta depende SOLO de las perspectivas futuras. El precio al que compraste es irrelevante.\n\n---\n\n### Pregunta 3: Efecto Manada\nTodos tus amigos están invirtiendo en un fondo temático de IA que ha subido un 85% en el último año. ¿Qué haces?\n\na) Inviertes inmediatamente para no "perderte la subida"\nb) Investigas fundamentales, valoración y riesgos antes de decidir\nc) No inviertes porque "seguro que ya ha subido demasiado"\nd) Inviertes la mitad "por si acaso"\n\n**Respuesta correcta:** b)\n**Explicación:** La opción a) es **efecto manada** (FOMO). La c) es el **sesgo de representatividad inversa**. La d) es un compromiso irracional. Solo b) aplica un proceso de inversión disciplinado.\n\n---\n\n### Pregunta 4: Sobreconfianza\nLlevas 6 meses invirtiendo y has obtenido +25% de rentabilidad en un mercado alcista. ¿Qué conclusión es más acertada?\n\na) "Tengo talento natural para invertir"\nb) "Mi estrategia es superior al mercado"\nc) "El mercado alcista ha impulsado mis resultados; debo evaluar en un ciclo completo"\nd) "Debo apalancarme para ganar más"\n\n**Respuesta correcta:** c)\n**Explicación:** Atribuir resultados a tu habilidad en un mercado alcista es **sesgo de sobreconfianza** y **sesgo de atribución**. Los estudios muestran que los inversores sobreconfiados operan más y obtienen peores resultados netos (Barber & Odean, 2001).\n\n---\n\n### Pregunta 5: Sesgo de Confirmación\nHas decidido invertir en Bitcoin. Al investigar, ¿cuál es el comportamiento más peligroso?\n\na) Leer solo artículos positivos sobre Bitcoin\nb) Buscar activamente argumentos EN CONTRA de tu tesis\nc) Preguntar a expertos con opiniones diversas\nd) Establecer un criterio de invalidación antes de invertir\n\n**Respuesta correcta:** a)\n**Explicación:** Buscar solo información que confirma tu tesis es el **sesgo de confirmación**. Las opciones b), c) y d) son antídotos contra este sesgo. Charlie Munger: "Invierto tu argumento. Busca siempre lo que puede salir mal."\n`;
+  }
+
+  if (lowerTitle.includes('estados financieros')) {
+    return `# 📊 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n---\n\n### Pregunta 1\nUna empresa muestra ingresos crecientes del 15% anual pero su flujo de caja operativo ha CAÍDO un 20%. ¿Qué puede estar pasando?\n\na) La empresa está creciendo de forma saludable\nb) Posible deterioro en calidad de ingresos (ventas a crédito agresivas, inventario creciente)\nc) Es normal en empresas en crecimiento\nd) Error contable\n\n**Respuesta correcta:** b)\n**Explicación:** Cuando ingresos y cash flow divergen significativamente, es una **red flag de calidad de beneficios**. Revisar: ¿Ha crecido el DSO (días de cobro)? ¿Ha crecido el inventario más que las ventas? ¿Hay cambios en política de reconocimiento de ingresos?\n\n---\n\n### Pregunta 2\nEl margen EBITDA de una empresa es 25% pero su margen de flujo de caja libre es solo 5%. ¿Cuál es la causa más probable?\n\na) Alta eficiencia operativa\nb) Elevadas necesidades de CAPEX y/o capital circulante\nc) Bajos impuestos\nd) No hay problema, EBITDA es la métrica correcta\n\n**Respuesta correcta:** b)\n**Explicación:** EBITDA ignora CAPEX, cambios en working capital e impuestos. Una brecha grande entre EBITDA y FCF indica que la empresa necesita reinvertir mucho para mantener operaciones. "EBITDA is not cash flow" - Warren Buffett.\n\n---\n\n### Pregunta 3\nUna empresa tiene Ratio Corriente de 2,5 pero Ratio Rápido (Acid Test) de 0,4. ¿Qué indica?\n\na) Excelente liquidez\nb) La mayor parte del activo corriente está en inventario (posible problema de liquidez real)\nc) Demasiado efectivo ocioso\nd) Gestión eficiente del working capital\n\n**Respuesta correcta:** b)\n**Explicación:** La diferencia entre Ratio Corriente y Rápido = inventario. Un ratio rápido de 0,4 significa que sin vender inventario, la empresa NO puede pagar sus deudas a corto plazo. Esto es crítico en sectores con inventario de lenta rotación.\n`;
+  }
+
+  // Generic quiz
+  return `# 📝 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n${Array.from({length: 5}, (_, i) => `### Pregunta ${i+1}\n¿Pregunta de ejemplo ${i+1}?\n\na) Opción A\nb) Opción B\nc) Opción C\nd) Opción D\n\n**Respuesta correcta:** c)\n**Explicación:** Justificación detallada.\n\n---\n`).join('\n')}\n`;
+}
+
+function generateCaseStudyContent(title: string, description: string, difficulty: string): string {
+  const lowerTitle = title.toLowerCase();
+
+  if (lowerTitle.includes('familia garcía')) {
+    return `# 📋 ${title}\n**Nivel:** ${difficulty}\n\n## Situación Inicial\n\n**Familia:** Carlos (38) y Laura (36), 2 hijos (8 y 5 años)\n**Ingresos netos combinados:** 3.500 €/mes\n**Deudas totales:** 15.230 €\n\n### Desglose de Deudas\n| Deuda | Saldo | TAE | Cuota mensual |\n|-------|-------|-----|---------------|\n| Tarjeta Visa | 3.800€ | 22,0% | 95€ |\n| Tarjeta Mastercard | 2.200€ | 19,5% | 55€ |\n| Préstamo electrodomésticos | 1.730€ | 12,0% | 85€ |\n| Préstamo coche | 7.500€ | 6,5% | 280€ |\n| **Total** | **15.230€** | - | **515€** |\n\n### Gastos Mensuales Actuales\n| Categoría | Importe | % Ingresos |\n|-----------|---------|------------|\n| Alquiler | 900€ | 25,7% |\n| Alimentación | 550€ | 15,7% |\n| Colegios + actividades | 320€ | 9,1% |\n| Cuotas deuda | 515€ | 14,7% |\n| Transporte | 180€ | 5,1% |\n| Seguros | 120€ | 3,4% |\n| Servicios (luz, agua, internet) | 195€ | 5,6% |\n| Ocio y restaurantes | 380€ | 10,9% |\n| Ropa y cuidado personal | 150€ | 4,3% |\n| Suscripciones | 85€ | 2,4% |\n| **Total Gastos** | **3.395€** | **97,0%** |\n| **Margen disponible** | **105€** | **3,0%** |\n\n## Diagnóstico\n\n🔴 **Problemas identificados:**\n1. Ratio deuda/ingresos del 14,7% (solo cuotas, sin hipoteca)\n2. Margen de ahorro de solo 3% (objetivo mínimo: 10%)\n3. Sin fondo de emergencia\n4. Tarjetas a TAE >19%: están pagando ~1.100€/año solo en intereses\n5. Gasto en ocio (10,9%) desproporcionado para su situación\n\n## Plan de Reestructuración (18 meses)\n\n### Fase 1: Estabilización (Meses 1-3)\n- Reducir ocio de 380€ a 200€ → Ahorro: 180€/mes\n- Cancelar suscripciones no esenciales: 45€/mes\n- Renegociar seguro coche y hogar: 25€/mes\n- **Nuevo margen disponible: 355€/mes**\n- Crear mini fondo de emergencia: 1.000€ (3 meses)\n\n### Fase 2: Ataque a Deudas (Meses 4-14)\nMétodo Avalancha (mayor interés primero):\n- Mes 4-7: Eliminar Tarjeta Visa (3.800€ a 22% TAE)\n- Mes 8-10: Eliminar Tarjeta Mastercard (2.200€ a 19,5%)\n- Mes 11-12: Eliminar Préstamo electrodomésticos (1.730€ a 12%)\n- Meses 13+: Pago normal coche (ya sin presión de deuda tóxica)\n\n### Fase 3: Construcción (Meses 15-18)\n- Deuda tóxica: 0€ ✅\n- Fondo de emergencia: 3.500€ (1 mes de gastos) ✅\n- Inicio ahorro sistemático: 300€/mes en fondo indexado\n- Nuevo presupuesto 50/30/20 funcional\n\n## Resultado Proyectado (Mes 18)\n| Métrica | Antes | Después |\n|---------|-------|----------|\n| Deuda tóxica | 7.730€ | 0€ |\n| Intereses anuales pagados | 1.100€ | 0€ |\n| Fondo de emergencia | 0€ | 3.500€ |\n| Ahorro mensual | 105€ | 655€ |\n| Ratio ahorro | 3% | 18,7% |\n`;
+  }
+
+  if (lowerTitle.includes('inditex') || lowerTitle.includes('valoración')) {
+    return `# 📋 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## 1. Análisis de Negocio\n\n**Modelo:** Fast fashion integrado verticalmente\n**Marcas:** Zara (>70% ingresos), Pull&Bear, Massimo Dutti, Bershka, Stradivarius, Oysho\n**Presencia:** >5.800 tiendas en 96 mercados + ecommerce en 215 mercados\n\n### Ventajas Competitivas (Moat)\n1. **Modelo integrado:** Diseño-producción-distribución en 2-3 semanas (vs 6 meses competidores)\n2. **Data-driven:** Reposición basada en ventas reales, no predicciones\n3. **Baja publicidad:** <1% ventas vs 3-5% competidores. La tienda ES el marketing\n4. **Ubicaciones premium:** Difícil de replicar\n\n## 2. Análisis Financiero (Datos FY2024)\n| Métrica | Valor |\n|---------|-------|\n| Ingresos | 35.900M€ |\n| EBITDA | 10.100M€ |\n| Margen EBITDA | 28,1% |\n| Beneficio Neto | 5.700M€ |\n| Free Cash Flow | 5.200M€ |\n| Deuda Neta | -11.400M€ (caja neta) |\n| ROE | 28,5% |\n| ROIC | 42,3% |\n\n## 3. Valoración por DCF\n| Supuesto | Valor |\n|----------|-------|\n| WACC | 8,5% |\n| Crecimiento ventas (5 años) | 7% CAGR |\n| Margen EBITDA terminal | 27% |\n| Tasa crecimiento terminal | 2,5% |\n| **Valor empresa (EV)** | **155.000M€** |\n| (-) Deuda neta | -11.400M€ |\n| **Valor equity** | **166.400M€** |\n| **Precio objetivo/acción** | **53,2€** |\n\n## 4. Valoración por Múltiplos\n| Múltiplo | Inditex | Media sector | Prima/Descuento |\n|----------|---------|-------------|------------------|\n| EV/EBITDA | 15,3x | 11,2x | +37% prima |\n| P/E | 27,1x | 20,5x | +32% prima |\n| EV/Revenue | 4,3x | 2,1x | +105% prima |\n\n**Justificación de la prima:** ROIC superior (42% vs 15% media), crecimiento sostenido, caja neta, modelo de negocio defensivo.\n`;
+  }
+
+  // Generic case study
+  return `# 📋 ${title}\n**Nivel:** ${difficulty}\n\n## Contexto\n${description}\n\n## Datos del Caso\n- Situación inicial: [Descripción detallada]\n- Objetivo: [Meta a alcanzar]\n- Restricciones: [Limitaciones]\n\n## Análisis\n1. ¿Cuál es el diagnóstico?\n2. ¿Qué alternativas existen?\n3. ¿Cuál es tu recomendación?\n\n## Solución Propuesta\n_Completa tu análisis antes de ver la solución._\n`;
+}
+
+function generateGuideContent(title: string, description: string, difficulty: string): string {
+  if (title.toLowerCase().includes('7 hábitos') || title.toLowerCase().includes('ahorrador')) {
+    return `# 📖 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n---\n\n## Hábito 1: Págate a Ti Mismo Primero\n\n> "No ahorres lo que te sobra después de gastar; gasta lo que te sobra después de ahorrar." — Warren Buffett\n\n**Cómo implementarlo:**\n- Configura una transferencia automática el día 1 de cada mes\n- Destina al menos el 10% de tu ingreso neto\n- Usa una cuenta separada que NO tenga tarjeta asociada\n\n**Psicología detrás:** El "sesgo del status quo" trabaja a tu favor: una vez automatizado, la inercia mantiene el hábito.\n\n## Hábito 2: Conoce Tu Número\n\nCalcula tu **"Freedom Number"**: la cantidad que necesitas para que tus inversiones cubran tus gastos.\n\n**Fórmula:** Gastos anuales × 25 (regla del 4%)\n- Si gastas 2.000€/mes → necesitas 600.000€\n- Si gastas 3.000€/mes → necesitas 900.000€\n\n## Hábito 3: La Regla de las 48 Horas\n\nPara cualquier compra no esencial >100€, espera 48 horas antes de comprar.\n\n**Resultado esperado:** Eliminarás el 60-70% de compras impulsivas (estudio Journal of Consumer Research, 2019).\n\n## Hábito 4: Auditoría Mensual de 15 Minutos\n\nEl día 1 de cada mes, revisa:\n1. ¿Cuánto gasté el mes anterior? (vs presupuesto)\n2. ¿Cuánto ahorré? (vs objetivo)\n3. ¿Hay suscripciones que no uso?\n4. ¿Mi patrimonio neto subió o bajó?\n\n## Hábito 5: El Principio del Coste de Oportunidad\n\nAntes de cada compra, pregúntate: "¿Cuánto valdrá esto invertido en 10 años?"\n\n**Ejemplo:** Un gasto de 200€/mes en comidas fuera = 2.400€/año\nInvertido al 7% durante 20 años = **98.500€**\n\n## Hábito 6: Diversifica Tus Fuentes de Ingreso\n\nNo dependas de un solo salario. Explora:\n- Inversiones que generen dividendos o rentas\n- Un proyecto paralelo (side hustle) alineado con tus skills\n- Formación continua que aumente tu valor en el mercado\n\n## Hábito 7: Edúcate Financieramente (1 hora/semana)\n\n**Lecturas recomendadas:**\n- "El inversor inteligente" - Benjamin Graham\n- "Padre rico, padre pobre" - Robert Kiyosaki\n- "Un paso por delante de Wall Street" - Peter Lynch\n- "The Psychology of Money" - Morgan Housel\n\n---\n\n## Implementación: Plan de 30 Días\n\n| Semana | Acción |\n|--------|--------|\n| 1 | Automatizar ahorro + calcular Freedom Number |\n| 2 | Auditoría de gastos + cancelar suscripciones |\n| 3 | Implementar regla 48h + abrir cuenta inversión |\n| 4 | Primera inversión automática + lectura semanal |\n`;
+  }
+
+  return `# 📖 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## 1. Introducción\nEsta guía cubre los conceptos fundamentales.\n\n## 2. Conceptos Clave\n- Concepto A\n- Concepto B\n- Concepto C\n\n## 3. Paso a Paso\n1. Primer paso\n2. Segundo paso\n3. Tercer paso\n\n## 4. Errores Comunes\n- Error 1: Explicación\n- Error 2: Explicación\n\n## 5. Recursos Adicionales\n- Recurso 1\n- Recurso 2\n`;
+}
+
+function generateTemplateContent(title: string, description: string, difficulty: string): string {
+  const lowerTitle = title.toLowerCase();
+
+  if (lowerTitle.includes('50 fórmulas') || lowerTitle.includes('fórmulas financieras')) {
+    return `# 📐 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n---\n\n## VALOR TEMPORAL DEL DINERO\n\n| # | Fórmula | Excel | Descripción |\n|---|---------|-------|-------------|\n| 1 | VAN (Valor Actual Neto) | =VNA(tasa;flujos)+inversión | Valor presente de flujos futuros menos inversión |\n| 2 | TIR (Tasa Interna Retorno) | =TIR(flujos) | Tasa que hace VAN=0 |\n| 3 | TIRM (TIR Modificada) | =TIRM(flujos;tasa_fin;tasa_reinv) | TIR con tasa de reinversión realista |\n| 4 | VA (Valor Actual) | =VA(tasa;nper;pago;vf) | Valor presente de pagos futuros |\n| 5 | VF (Valor Futuro) | =VF(tasa;nper;pago;va) | Valor futuro con interés compuesto |\n| 6 | PMT (Cuota) | =PAGO(tasa;nper;va) | Cuota periódica de un préstamo |\n| 7 | NPER (Períodos) | =NPER(tasa;pago;va;vf) | Nº de períodos para alcanzar objetivo |\n| 8 | TASA | =TASA(nper;pago;va;vf) | Tasa de interés implícita |\n\n## ESTADÍSTICA Y RIESGO\n\n| # | Fórmula | Excel | Descripción |\n|---|---------|-------|-------------|\n| 9 | Media | =PROMEDIO(rango) | Rendimiento medio |\n| 10 | Desviación estándar | =DESVEST(rango) | Volatilidad / riesgo |\n| 11 | Varianza | =VAR(rango) | Dispersión de rendimientos |\n| 12 | Covarianza | =COVARIANZA.M(rango1;rango2) | Co-movimiento entre activos |\n| 13 | Correlación | =COEF.DE.CORREL(rango1;rango2) | Correlación entre activos (-1 a +1) |\n| 14 | Beta | =COVARIANZA.M(activo;mercado)/VAR(mercado) | Sensibilidad al mercado |\n| 15 | Sharpe Ratio | =(Rp-Rf)/σp | Rendimiento ajustado por riesgo |\n\n## RATIOS FINANCIEROS\n\n| # | Fórmula | Cálculo | Benchmark |\n|---|---------|---------|----------|\n| 16 | Ratio Corriente | Activo Corriente / Pasivo Corriente | >1,5 |\n| 17 | Ratio Rápido | (AC - Inventario) / PC | >1,0 |\n| 18 | ROE | Beneficio Neto / Patrimonio Neto | >15% |\n| 19 | ROA | Beneficio Neto / Activo Total | >5% |\n| 20 | ROIC | NOPAT / Capital Invertido | >WACC |\n| 21 | Margen Bruto | (Ventas - COGS) / Ventas | Sector |\n| 22 | Margen EBITDA | EBITDA / Ventas | Sector |\n| 23 | Margen Neto | Beneficio Neto / Ventas | >10% |\n| 24 | DuPont (3 factores) | Margen × Rotación × Apalancamiento | Descomposición ROE |\n| 25 | EV/EBITDA | Enterprise Value / EBITDA | 8-12x |\n`;
+  }
+
+  if (lowerTitle.includes('formulario') || lowerTitle.includes('cfa')) {
+    return `# 📋 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n---\n\n## ETHICS & PROFESSIONAL STANDARDS\n- Standard I(A): Knowledge of the Law → Comply with most strict law/regulation\n- Standard III(A): Loyalty, Prudence, Care → Duty to clients above employer\n- Standard V(A): Diligence → Reasonable basis for recommendations\n- Standard VI(B): Priority of Transactions → Client > Employer > Personal\n\n## QUANTITATIVE METHODS\n- Future Value: FV = PV × (1 + r)^n\n- Present Value: PV = FV / (1 + r)^n\n- Annuity PV: PV = PMT × [(1 - (1+r)^-n) / r]\n- HPR: (P1 - P0 + D1) / P0\n- Time-Weighted Return: (1+R1)(1+R2)...(1+Rn) - 1\n- Money-Weighted Return: IRR of cash flows\n- Sharpe: (Rp - Rf) / σp\n- Roy's Safety First: (E(Rp) - RL) / σp\n\n## ECONOMICS\n- GDP = C + I + G + (X - M)\n- Fisher Effect: (1 + Rnom) = (1 + Rreal)(1 + π)\n- Quantity Theory: MV = PY\n\n## FINANCIAL REPORTING\n- Basic EPS = (NI - Preferred Div) / Weighted Avg Shares\n- Diluted EPS: Include convertible bonds, options, warrants\n- DuPont: ROE = (NI/Sales)(Sales/Assets)(Assets/Equity)\n- CFO = NI + Non-cash charges ± ΔWC\n\n## CORPORATE FINANCE\n- WACC = (E/V)×Re + (D/V)×Rd×(1-T)\n- CAPM: E(Ri) = Rf + βi(E(Rm) - Rf)\n- NPV = Σ [CFt / (1+r)^t] - CF0\n- Payback = Years before recovery + (Unrecovered / CF next year)\n- DOL = %ΔEBIT / %ΔSales\n- DFL = %ΔEPS / %ΔEBIT\n- DTL = DOL × DFL\n\n## EQUITY\n- DDM: V0 = D1 / (r - g)\n- Gordon Growth: g = ROE × (1 - Payout ratio)\n- P/E = Payout / (r - g)\n- PEG = (P/E) / g\n- EV = Market Cap + Debt - Cash\n\n## FIXED INCOME\n- Duration: ΔP/P ≈ -D × Δy\n- Modified Duration = Macaulay D / (1 + y/n)\n- Convexity adjustment: ΔP/P ≈ -D×Δy + ½×C×(Δy)²\n- Spot rate from forward: (1+S2)² = (1+S1)(1+f1,1)\n`;
+  }
+
+  if (lowerTitle.includes('flashcard') || lowerTitle.includes('ética')) {
+    return `# 🃏 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n---\n\n## Flashcard 1\n**Escenario:** Un analista descubre que su empresa ha inflado los ingresos del último trimestre. Su jefe le pide que no diga nada hasta el próximo informe.\n**Standard aplicable:** I(A) Knowledge of the Law, I(D) Misconduct\n**Acción correcta:** Disociar del fraude. Informar al compliance/legal. Si no se toma acción, escalar o renunciar. Documentar todo.\n\n## Flashcard 2\n**Escenario:** Un gestor de fondos compra acciones de una empresa para su cuenta personal ANTES de ejecutar la misma orden para el fondo.\n**Standard aplicable:** VI(B) Priority of Transactions\n**Acción correcta:** Esto es **front-running** y viola directamente el Standard. Las transacciones de clientes SIEMPRE van primero. Sanción: suspensión o revocación de charter.\n\n## Flashcard 3\n**Escenario:** Un asesor recomienda un fondo de inversión a un cliente porque la gestora le paga una comisión del 2% por cada venta, sin informar al cliente.\n**Standard aplicable:** VI(A) Disclosure of Conflicts, I(B) Independence and Objectivity\n**Acción correcta:** DEBE revelar el conflicto de interés al cliente ANTES de la recomendación. El incentivo puede sesgar el consejo.\n\n## Flashcard 4\n**Escenario:** Un analista incluye en su informe una proyección de crecimiento del 40% anual sin ningún dato que la respalde.\n**Standard aplicable:** V(A) Diligence and Reasonable Basis\n**Acción correcta:** Toda recomendación debe tener "reasonable basis". Debe documentar la investigación, fuentes y metodología utilizada.\n\n## Flashcard 5\n**Escenario:** Un CFA charterholder publica en LinkedIn: "Como CFA, garantizo rendimientos superiores al 15% anual."\n**Standard aplicable:** VII(B) Reference to CFA Institute\n**Acción correcta:** No se puede usar la designación para implicar rendimiento superior. No se pueden garantizar rendimientos. Violación del Code of Ethics.\n`;
+  }
+
+  if (lowerTitle.includes('plan de estudio')) {
+    return `# 📅 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n---\n\n## Distribución por Área (300 horas)\n\n| Área | Peso Examen | Horas | Semanas |\n|------|------------|-------|----------|\n| Ethics | 15-20% | 36h | 3 |\n| Quant Methods | 8-12% | 30h | 2,5 |\n| Economics | 8-12% | 28h | 2,5 |\n| FRA | 13-17% | 48h | 4 |\n| Corporate Finance | 8-12% | 28h | 2,5 |\n| Equity | 10-12% | 36h | 3 |\n| Fixed Income | 10-12% | 36h | 3 |\n| Derivatives | 5-8% | 20h | 1,5 |\n| Alternative Inv. | 5-8% | 14h | 1 |\n| Portfolio Mgmt | 5-8% | 24h | 2 |\n| **Total** | **100%** | **300h** | **25** |\n\n## Plan Semanal (6 meses)\n\n| Semana | Área | Actividad |\n|--------|------|----------|\n| 1-3 | Ethics | Lectura + Flashcards + Cases |\n| 4-5 | Quant | Lectura + Problemas prácticos |\n| 6-7 | Economics | Lectura + Esquemas |\n| 8-11 | FRA | Lectura + Ejercicios contables |\n| 12-13 | Corporate Finance | Lectura + Cálculos WACC/NPV |\n| 14-16 | Equity | Lectura + Modelos valoración |\n| 17-19 | Fixed Income | Lectura + Duration/Convexity |\n| 20 | Derivatives | Lectura + Pricing options |\n| 21 | Alternative | Lectura + Comparativas |\n| 22-23 | Portfolio | Lectura + CAPM/APT |\n| 24 | **Repaso general** | Mock exams + áreas débiles |\n| 25 | **Simulacros finales** | 2 mock exams completos |\n| 26 | **Últimos repasos** | Ethics (re-read) + fórmulas |\n`;
+  }
+
+  return `# 📄 ${title}\n**Nivel:** ${difficulty}\n\n${description}\n\n## Contenido\nEste recurso contiene la plantilla completa lista para usar.\nPersonaliza los campos según tu caso específico.\n`;
 }
 
 function slugify(text: string): string {
