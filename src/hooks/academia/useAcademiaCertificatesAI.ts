@@ -55,8 +55,8 @@ export function useAcademiaCertificatesAI() {
         'academia-certificates',
         {
           body: {
-            action: 'get_certificates',
-            context: { userId: user.id }
+            action: 'get_user_certificates',
+            userId: user.id
           }
         }
       );
