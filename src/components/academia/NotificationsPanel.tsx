@@ -108,7 +108,7 @@ export function NotificationsPanel({ className }: NotificationsPanelProps) {
             <div>
               <CardTitle className="text-base">Notificaciones</CardTitle>
               <p className="text-xs text-muted-foreground">
-                {unreadCount} sin leer • {urgentNotifications.length} urgentes
+                {unreadCount} sin leer • {urgentNotifications?.length ?? 0} urgentes
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ export function NotificationsPanel({ className }: NotificationsPanelProps) {
                 <span className="font-medium text-sm">Resumen IA del día</span>
               </div>
               <p className="text-sm text-muted-foreground mb-3">{digest.summary}</p>
-              {digest.actionItems.length > 0 && (
+              {(digest.actionItems?.length ?? 0) > 0 && (
                 <div className="space-y-1">
                   <p className="text-xs font-medium">Acciones pendientes:</p>
                   {digest.actionItems.slice(0, 3).map((item, idx) => (
@@ -211,7 +211,7 @@ export function NotificationsPanel({ className }: NotificationsPanelProps) {
               Sin leer ({unreadCount})
             </TabsTrigger>
             <TabsTrigger value="important" className="text-xs">
-              Importantes ({urgentNotifications.length})
+              Importantes ({urgentNotifications?.length ?? 0})
             </TabsTrigger>
           </TabsList>
 
