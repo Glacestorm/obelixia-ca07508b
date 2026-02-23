@@ -393,6 +393,7 @@ export type Database = {
           effective_date: string | null
           id: string
           importance: string | null
+          importance_score: number
           is_published: boolean | null
           is_regulation: boolean | null
           regulation_code: string | null
@@ -411,6 +412,7 @@ export type Database = {
           effective_date?: string | null
           id?: string
           importance?: string | null
+          importance_score?: number
           is_published?: boolean | null
           is_regulation?: boolean | null
           regulation_code?: string | null
@@ -429,6 +431,7 @@ export type Database = {
           effective_date?: string | null
           id?: string
           importance?: string | null
+          importance_score?: number
           is_published?: boolean | null
           is_regulation?: boolean | null
           regulation_code?: string | null
@@ -1126,6 +1129,94 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "academia_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_news_settings: {
+        Row: {
+          course_id: string
+          created_at: string
+          cron_expression: string | null
+          frequency: string
+          id: string
+          is_enabled: boolean
+          last_run_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          cron_expression?: string | null
+          frequency?: string
+          id?: string
+          is_enabled?: boolean
+          last_run_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          cron_expression?: string | null
+          frequency?: string
+          id?: string
+          is_enabled?: boolean
+          last_run_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_news_settings_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_news_sources: {
+        Row: {
+          course_id: string | null
+          created_at: string
+          fetch_limit: number
+          id: string
+          is_active: boolean
+          name: string
+          query: string | null
+          source_type: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string
+          fetch_limit?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          query?: string | null
+          source_type?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string
+          fetch_limit?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          query?: string | null
+          source_type?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_news_sources_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "academia_courses"
