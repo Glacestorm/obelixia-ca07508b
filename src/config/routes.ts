@@ -28,6 +28,7 @@ const CourseManagement = lazy(() => import('@/pages/academia/CourseManagement'))
 const AcademiaNotifications = lazy(() => import('@/pages/academia/AcademiaNotifications'));
 const AcademiaCommunity = lazy(() => import('@/pages/academia/AcademiaCommunity'));
 const AcademiaDemo = lazy(() => import('@/pages/AcademiaDemo'));
+const AcademiaPaymentSuccess = lazy(() => import('@/pages/academia/AcademiaPaymentSuccess'));
 
 // Store
 const StoreLanding = lazy(() => import('@/pages/store/StoreLanding'));
@@ -186,6 +187,7 @@ export const publicRoutes: RouteConfig[] = [
   { path: '/academia/cursos', component: CourseCatalog, layout: 'public', priority: 'high', meta: { title: 'Cursos' } },
   { path: '/academia/curso/:courseId', component: CourseDetail, layout: 'public', priority: 'high', meta: { title: 'Curso' } },
   { path: '/academia/aprender/:courseId', component: LearningPlayer, layout: 'public', priority: 'high', meta: { title: 'Aprender', requiresAuth: true } },
+  { path: '/academia/pago-exitoso', component: AcademiaPaymentSuccess, layout: 'public', priority: 'medium', meta: { title: 'Pago Exitoso' } },
   { path: '/academia/mi-perfil', component: AcademiaProfile, layout: 'public', priority: 'high', meta: { title: 'Mi Perfil Académico', requiresAuth: true } },
   { path: '/academia/verificar/:code', component: CertificateVerification, layout: 'public', priority: 'medium', meta: { title: 'Verificar Certificado' } },
   { path: '/academia/verificar', component: CertificateVerification, layout: 'public', priority: 'medium', meta: { title: 'Verificar Certificado' } },
