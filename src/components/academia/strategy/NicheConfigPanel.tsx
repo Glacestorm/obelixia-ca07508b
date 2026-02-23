@@ -313,6 +313,225 @@ export function NicheConfigPanel() {
   );
 }
 
+function generateExampleFile(example: NicheExample) {
+  const { title, type, description, difficulty } = example;
+  
+  if (type === 'excel') {
+    // Generate CSV content that can be opened in Excel
+    const csvContent = [
+      [`${title}`],
+      [`Nivel: ${difficulty}`],
+      [''],
+      ['Descripción:', description],
+      [''],
+      ['=== CONTENIDO DE EJEMPLO ==='],
+      [''],
+    ];
+    
+    // Add type-specific sample data
+    if (title.toLowerCase().includes('presupuesto')) {
+      csvContent.push(
+        ['Categoría', 'Presupuesto', 'Real', 'Diferencia', '% Desviación'],
+        ['Vivienda (50%)', '1750', '1680', '70', '4.0%'],
+        ['Alimentación', '400', '425', '-25', '-6.3%'],
+        ['Transporte', '200', '185', '15', '7.5%'],
+        ['Servicios', '150', '155', '-5', '-3.3%'],
+        ['Ocio (30%)', '600', '720', '-120', '-20.0%'],
+        ['Restaurantes', '200', '280', '-80', '-40.0%'],
+        ['Entretenimiento', '150', '190', '-40', '-26.7%'],
+        ['Ropa', '100', '120', '-20', '-20.0%'],
+        ['Viajes', '150', '130', '20', '13.3%'],
+        ['Ahorro (20%)', '700', '600', '-100', '-14.3%'],
+        ['Fondo emergencia', '300', '300', '0', '0.0%'],
+        ['Inversión', '400', '300', '-100', '-25.0%'],
+        ['', '', '', '', ''],
+        ['TOTAL', '3500', '3490', '10', '0.3%'],
+      );
+    } else if (title.toLowerCase().includes('cash flow') || title.toLowerCase().includes('flujo')) {
+      csvContent.push(
+        ['Mes', 'Ingresos', 'Gastos Fijos', 'Gastos Variables', 'Flujo Neto', 'Acumulado'],
+        ['Enero', '12000', '5500', '3200', '3300', '3300'],
+        ['Febrero', '11500', '5500', '2800', '3200', '6500'],
+        ['Marzo', '13000', '5500', '4100', '3400', '9900'],
+        ['Abril', '12500', '5500', '3500', '3500', '13400'],
+        ['Mayo', '14000', '5500', '3800', '4700', '18100'],
+        ['Junio', '13500', '5500', '4200', '3800', '21900'],
+      );
+    } else if (title.toLowerCase().includes('dcf') || title.toLowerCase().includes('valoración')) {
+      csvContent.push(
+        ['=== MODELO DCF SIMPLIFICADO ==='],
+        [''],
+        ['Año', 'FCFF', 'Factor Descuento', 'VP del FCFF'],
+        ['2025', '5200000', '0.909', '4727300'],
+        ['2026', '5720000', '0.826', '4725600'],
+        ['2027', '6292000', '0.751', '4725300'],
+        ['2028', '6921200', '0.683', '4727200'],
+        ['2029', '7613320', '0.621', '4727900'],
+        [''],
+        ['WACC', '10.0%'],
+        ['Tasa crecimiento terminal (g)', '2.5%'],
+        ['Valor Terminal', '104182133'],
+        ['VP Valor Terminal', '64696600'],
+        [''],
+        ['Valor Empresa (EV)', '88330000'],
+        ['(-) Deuda Neta', '15000000'],
+        ['Valor Equity', '73330000'],
+      );
+    } else if (title.toLowerCase().includes('ratio') || title.toLowerCase().includes('estados financieros')) {
+      csvContent.push(
+        ['=== RATIOS FINANCIEROS ==='],
+        [''],
+        ['RATIO', '2023', '2024', 'BENCHMARK', 'ESTADO'],
+        ['Ratio Corriente', '1.85', '1.72', '>1.5', 'OK'],
+        ['Ratio Rápido', '1.20', '1.15', '>1.0', 'OK'],
+        ['Ratio Deuda/Equity', '0.45', '0.52', '<0.6', 'OK'],
+        ['ROE', '18.5%', '16.2%', '>15%', 'OK'],
+        ['ROA', '9.2%', '8.1%', '>5%', 'OK'],
+        ['Margen Bruto', '42.3%', '40.8%', '>35%', 'OK'],
+        ['Margen Neto', '12.1%', '10.5%', '>10%', 'OK'],
+        ['Rotación Activos', '1.45', '1.38', '>1.0', 'OK'],
+        ['Periodo Cobro (días)', '45', '52', '<60', 'OK'],
+        ['Periodo Pago (días)', '38', '41', '<45', 'OK'],
+      );
+    } else if (title.toLowerCase().includes('interés compuesto')) {
+      csvContent.push(
+        ['=== SIMULADOR INTERÉS COMPUESTO ==='],
+        [''],
+        ['Capital Inicial', '10000'],
+        ['Aportación Mensual', '500'],
+        ['Rentabilidad Anual', '7%'],
+        [''],
+        ['Año', 'Aportaciones', 'Intereses', 'Total Acumulado'],
+        ['1', '16000', '763', '16763'],
+        ['5', '40000', '9245', '49245'],
+        ['10', '70000', '32610', '102610'],
+        ['15', '100000', '79835', '179835'],
+        ['20', '130000', '162340', '292340'],
+        ['25', '160000', '298700', '458700'],
+        ['30', '190000', '519430', '709430'],
+      );
+    } else if (title.toLowerCase().includes('dashboard') && title.toLowerCase().includes('financiero')) {
+      csvContent.push(
+        ['=== KPIs DASHBOARD FINANCIERO ==='],
+        [''],
+        ['KPI', 'Valor Actual', 'Objetivo', 'Var% MoM', 'Estado'],
+        ['Ingresos', '€285.000', '€300.000', '+5.2%', '⚠️'],
+        ['EBITDA', '€52.000', '€50.000', '+3.1%', '✅'],
+        ['Margen EBITDA', '18.2%', '16.7%', '+1.5pp', '✅'],
+        ['Cash Flow Operativo', '€38.000', '€35.000', '+8.5%', '✅'],
+        ['DSO (Días Cobro)', '47', '<45', '+2', '⚠️'],
+        ['DPO (Días Pago)', '38', '<40', '-1', '✅'],
+        ['Working Capital', '€125.000', '€120.000', '+4.2%', '✅'],
+        ['Ratio Endeudamiento', '0.42', '<0.50', '-0.03', '✅'],
+        ['ROCE', '15.8%', '>12%', '+1.2pp', '✅'],
+        ['Burn Rate', '€18.000', '<€20.000', '-5.3%', '✅'],
+        ['Runway (meses)', '14.2', '>12', '+0.8', '✅'],
+        ['CAC', '€145', '<€150', '-3.3%', '✅'],
+      );
+    } else {
+      csvContent.push(
+        ['Concepto', 'Valor', 'Notas'],
+        ['Dato ejemplo 1', '1000', 'Personalizable'],
+        ['Dato ejemplo 2', '2500', 'Editar según necesidad'],
+        ['Dato ejemplo 3', '750', 'Añadir más filas'],
+        ['Total', '4250', 'Suma automática'],
+      );
+    }
+    
+    const csvString = csvContent.map(row => row.join(',')).join('\n');
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `${slugify(title)}.csv`);
+    
+  } else {
+    // For all other types generate a text/markdown file
+    let content = `# ${title}\n\n`;
+    content += `**Tipo:** ${TYPE_LABELS[type]}\n`;
+    content += `**Nivel:** ${difficulty}\n\n`;
+    content += `## Descripción\n${description}\n\n`;
+
+    if (type === 'checklist') {
+      content += `## Checklist\n\n`;
+      const items = description.match(/(\d+)\s+(puntos|preguntas|items)/i);
+      const count = items ? parseInt(items[1]) : 10;
+      for (let i = 1; i <= Math.min(count, 25); i++) {
+        content += `- [ ] Punto ${i}: Revisar y completar\n`;
+      }
+    } else if (type === 'quiz') {
+      content += `## Preguntas de Práctica\n\n`;
+      for (let i = 1; i <= 5; i++) {
+        content += `### Pregunta ${i}\n`;
+        content += `¿Cuál de las siguientes opciones es correcta?\n\n`;
+        content += `a) Opción A\nb) Opción B\nc) Opción C\nd) Opción D\n\n`;
+        content += `**Respuesta correcta:** c)\n**Explicación:** Justificación detallada de la respuesta.\n\n---\n\n`;
+      }
+    } else if (type === 'calculator') {
+      content += `## Instrucciones de Uso\n\n`;
+      content += `1. Introduce tus datos en las celdas amarillas\n`;
+      content += `2. Los resultados se calculan automáticamente\n`;
+      content += `3. Revisa los gráficos generados\n\n`;
+      content += `## Variables de Entrada\n\n`;
+      content += `| Variable | Valor | Unidad |\n|----------|-------|--------|\n`;
+      content += `| Capital inicial | 10.000 | € |\n`;
+      content += `| Aportación mensual | 500 | € |\n`;
+      content += `| Plazo | 10 | años |\n`;
+      content += `| Rentabilidad esperada | 7,0 | % |\n\n`;
+      content += `## Resultados\n\n`;
+      content += `| Métrica | Valor |\n|---------|-------|\n`;
+      content += `| Total aportado | 70.000 € |\n`;
+      content += `| Intereses generados | 32.610 € |\n`;
+      content += `| **Valor final** | **102.610 €** |\n`;
+    } else if (type === 'case_study') {
+      content += `## Contexto del Caso\n\n`;
+      content += `Este caso práctico presenta un escenario real para aplicar los conceptos aprendidos.\n\n`;
+      content += `## Datos del Caso\n\n`;
+      content += `- Situación inicial: Descripción detallada\n`;
+      content += `- Objetivo: Meta a alcanzar\n`;
+      content += `- Restricciones: Limitaciones a considerar\n\n`;
+      content += `## Preguntas para el Análisis\n\n`;
+      content += `1. ¿Cuál es el diagnóstico de la situación actual?\n`;
+      content += `2. ¿Qué alternativas de acción existen?\n`;
+      content += `3. ¿Cuál es la recomendación y por qué?\n\n`;
+      content += `## Solución Propuesta\n\n`;
+      content += `_Completa tu análisis antes de ver la solución._\n`;
+    } else if (type === 'guide') {
+      content += `## Índice\n\n`;
+      content += `1. Introducción\n2. Conceptos Clave\n3. Paso a Paso\n4. Errores Comunes\n5. Recursos Adicionales\n\n`;
+      content += `## 1. Introducción\n\nEsta guía te ayudará a dominar los conceptos fundamentales.\n\n`;
+      content += `## 2. Conceptos Clave\n\n- Concepto A: Explicación\n- Concepto B: Explicación\n- Concepto C: Explicación\n\n`;
+      content += `## 3. Paso a Paso\n\n1. Primer paso\n2. Segundo paso\n3. Tercer paso\n\n`;
+    } else {
+      content += `## Contenido\n\nEste recurso contiene la plantilla completa lista para usar.\n`;
+      content += `Personaliza los campos según tu caso específico.\n`;
+    }
+
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+    downloadBlob(blob, `${slugify(title)}.md`);
+  }
+  
+  toast.success(`"${title}" descargado correctamente`);
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 60);
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function ExampleCard({ example }: { example: NicheExample }) {
   const Icon = TYPE_ICONS[example.type] || BookOpen;
 
@@ -334,7 +553,16 @@ function ExampleCard({ example }: { example: NicheExample }) {
               {example.difficulty}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{example.description}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed mb-2">{example.description}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => generateExampleFile(example)}
+          >
+            <Download className="h-3 w-3" />
+            Descargar {example.type === 'excel' ? 'CSV' : 'Recurso'}
+          </Button>
         </div>
       </div>
     </div>
