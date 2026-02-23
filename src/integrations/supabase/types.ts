@@ -384,6 +384,71 @@ export type Database = {
           },
         ]
       }
+      academia_course_news: {
+        Row: {
+          category: string | null
+          content: string | null
+          course_id: string
+          created_at: string | null
+          effective_date: string | null
+          id: string
+          importance: string | null
+          is_published: boolean | null
+          is_regulation: boolean | null
+          regulation_code: string | null
+          source_name: string | null
+          source_url: string | null
+          summary: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          course_id: string
+          created_at?: string | null
+          effective_date?: string | null
+          id?: string
+          importance?: string | null
+          is_published?: boolean | null
+          is_regulation?: boolean | null
+          regulation_code?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          course_id?: string
+          created_at?: string | null
+          effective_date?: string | null
+          id?: string
+          importance?: string | null
+          is_published?: boolean | null
+          is_regulation?: boolean | null
+          regulation_code?: string | null
+          source_name?: string | null
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_course_news_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academia_course_resources: {
         Row: {
           course_id: string
@@ -1481,6 +1546,135 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_simulator_datasets: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          data: Json
+          dataset_type: string | null
+          description: string | null
+          difficulty: string | null
+          expected_solution: Json | null
+          id: string
+          is_published: boolean | null
+          lesson_id: string | null
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          data?: Json
+          dataset_type?: string | null
+          description?: string | null
+          difficulty?: string | null
+          expected_solution?: Json | null
+          id?: string
+          is_published?: boolean | null
+          lesson_id?: string | null
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          data?: Json
+          dataset_type?: string | null
+          description?: string | null
+          difficulty?: string | null
+          expected_solution?: Json | null
+          id?: string
+          is_published?: boolean | null
+          lesson_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_simulator_datasets_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_simulator_datasets_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academia_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academia_simulator_sessions: {
+        Row: {
+          balance_sheet: Json | null
+          course_id: string
+          created_at: string | null
+          dataset_type: string | null
+          feedback: Json | null
+          id: string
+          income_statement: Json | null
+          journal_entries: Json | null
+          ledger_data: Json | null
+          lesson_id: string | null
+          score: number | null
+          session_name: string | null
+          status: string | null
+          trial_balance: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance_sheet?: Json | null
+          course_id: string
+          created_at?: string | null
+          dataset_type?: string | null
+          feedback?: Json | null
+          id?: string
+          income_statement?: Json | null
+          journal_entries?: Json | null
+          ledger_data?: Json | null
+          lesson_id?: string | null
+          score?: number | null
+          session_name?: string | null
+          status?: string | null
+          trial_balance?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance_sheet?: Json | null
+          course_id?: string
+          created_at?: string | null
+          dataset_type?: string | null
+          feedback?: Json | null
+          id?: string
+          income_statement?: Json | null
+          journal_entries?: Json | null
+          ledger_data?: Json | null
+          lesson_id?: string | null
+          score?: number | null
+          session_name?: string | null
+          status?: string | null
+          trial_balance?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academia_simulator_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "academia_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academia_simulator_sessions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academia_lessons"
             referencedColumns: ["id"]
           },
         ]
