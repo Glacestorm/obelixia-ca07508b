@@ -31,6 +31,8 @@ import {
   type Resource,
 } from '@/components/academia/learning-player';
 import { GamificationMiniWidget } from '@/components/academia/GamificationMiniWidget';
+import { AccountingSimulator } from '@/components/academia/simulator/AccountingSimulator';
+import { NewsFeed } from '@/components/academia/news/NewsFeed';
 
 interface DBQuizQuestion {
   id: string;
@@ -60,12 +62,27 @@ const LearningPlayer: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentLessonId, setCurrentLessonId] = useState('');
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
-  const [rightPanelTab, setRightPanelTab] = useState<string>('notes');
+  const [rightPanelTab, setRightPanelTab] = useState<string>('simulator');
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
   const [showContent, setShowContent] = useState(false);
+  const [currentDatasetId, setCurrentDatasetId] = useState<string | undefined>(undefined);
+
+  // Load dataset for current lesson if exists
+  useEffect(() => {
+    const loadLessonDataset = async () => {
+        if (!currentLessonId) return;
+        const { data } = await supabase
+            .from('academia_simulator_datasets')
+            .select('id')
+            .eq('lesson_id', currentLessonId)
+            .maybeSingle();
+        setCurrentDatasetId(data?.id);
+    };
+    loadLessonDataset();
+  }, [currentLessonId]);
 
   // Load course data and check access
   useEffect(() => {
