@@ -167,7 +167,7 @@ export function ProgressDashboard({
             </div>
 
             {/* Strengths */}
-            {progressAnalysis.strengths.length > 0 && (
+            {(progressAnalysis.strengths?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-white flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-emerald-400" />
@@ -188,7 +188,7 @@ export function ProgressDashboard({
             )}
 
             {/* Areas to Improve */}
-            {progressAnalysis.areasToImprove.length > 0 && (
+            {(progressAnalysis.areasToImprove?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-white flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-400" />
@@ -209,7 +209,7 @@ export function ProgressDashboard({
             )}
 
             {/* Recommendations */}
-            {progressAnalysis.recommendations.length > 0 && (
+            {(progressAnalysis.recommendations?.length ?? 0) > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-white flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
