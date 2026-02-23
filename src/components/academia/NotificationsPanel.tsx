@@ -289,7 +289,12 @@ function NotificationCard({
           </p>
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(notification.createdAt), { locale: es, addSuffix: true })}
+              {(() => {
+                try {
+                  const d = new Date(notification.createdAt);
+                  return isNaN(d.getTime()) ? 'Reciente' : formatDistanceToNow(d, { locale: es, addSuffix: true });
+                } catch { return 'Reciente'; }
+              })()}
             </span>
             <div className="flex items-center gap-1">
               {!notification.isRead && (
