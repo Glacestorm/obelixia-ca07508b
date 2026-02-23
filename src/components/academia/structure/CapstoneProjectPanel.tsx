@@ -29,7 +29,7 @@ export function CapstoneProjectPanel() {
     const fetch = async () => {
       setLoading(true);
       const query = supabase.from('academia_capstone_projects').select('*').order('submitted_at', { ascending: false }).limit(50);
-      if (selectedCourse) query.eq('course_id', selectedCourse);
+      if (selectedCourse && selectedCourse !== 'all') query.eq('course_id', selectedCourse);
       const { data } = await query;
       if (data) setProjects(data);
       setLoading(false);
@@ -56,7 +56,7 @@ export function CapstoneProjectPanel() {
           <Select value={selectedCourse} onValueChange={setSelectedCourse}>
             <SelectTrigger><SelectValue placeholder="Filtrar por curso..." /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los cursos</SelectItem>
+              <SelectItem value="all">Todos los cursos</SelectItem>
               {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
             </SelectContent>
           </Select>
