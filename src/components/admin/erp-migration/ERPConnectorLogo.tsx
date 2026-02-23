@@ -46,6 +46,7 @@ const VENDOR_ICON_MAP: Record<string, React.ComponentType<{ className?: string }
   'exact': Briefcase,
   'odoo': Store,
   'holded': Cloud,
+  'proconsi': Factory,
   
   // Default
   'default': Building2
@@ -63,6 +64,7 @@ const VENDOR_COLOR_MAP: Record<string, string> = {
   'cegid': 'bg-indigo-100 text-indigo-600',
   'odoo': 'bg-violet-100 text-violet-600',
   'holded': 'bg-teal-100 text-teal-600',
+  'proconsi': 'bg-amber-100 text-amber-600',
   'default': 'bg-muted text-muted-foreground'
 };
 
