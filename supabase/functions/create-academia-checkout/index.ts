@@ -60,22 +60,31 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://lovable.dev";
 
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      line_items: [
-        {
+    // Map course IDs to Stripe price IDs
+    const COURSE_PRICE_MAP: Record<string, string> = {
+      'b6ce668b-3114-522a-aec2-ca725475952c': 'price_1T450t4BQ21V0AcN9qFBXmKc', // Contabilidad Empresarial 360 - 297€
+    };
+
+    const stripePriceId = COURSE_PRICE_MAP[courseId];
+    
+    const lineItems = stripePriceId 
+      ? [{ price: stripePriceId, quantity: 1 }]
+      : [{
           price_data: {
             currency: 'eur',
             product_data: {
               name: courseTitle || 'Curso Academia ObelixIA',
               description: 'Acceso completo al curso con certificado',
-              metadata: { course_id: courseId },
             },
             unit_amount: Math.round(price * 100),
           },
           quantity: 1,
-        },
-      ],
+        }];
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email,
+      line_items: lineItems,
       mode: "payment",
       success_url: `${origin}/academia/pago-exitoso?session_id={CHECKOUT_SESSION_ID}&course_id=${courseId}`,
       cancel_url: `${origin}/academia/curso/${courseId}`,
@@ -84,7 +93,6 @@ serve(async (req) => {
         user_id: user.id,
         type: 'academia_course',
       },
-      payment_method_types: ['card'],
     });
 
     logStep("Checkout session created", { sessionId: session.id });
