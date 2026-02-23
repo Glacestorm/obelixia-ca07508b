@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  action: 'generate_personalized' | 'prioritize' | 'batch_create' | 'smart_schedule' | 'analyze_engagement';
+  action: 'generate_personalized' | 'prioritize' | 'batch_create' | 'smart_schedule' | 'analyze_engagement' | 'get_notifications' | 'generate_digest' | 'get_preferences';
   userId?: string;
   notificationType?: string;
   context?: {
@@ -212,6 +212,75 @@ FORMATO DE RESPUESTA (JSON estricto):
 
         userPrompt = `Analiza el engagement de notificaciones para usuario ${userId}:
 Contexto: ${JSON.stringify(context)}`;
+        break;
+
+      case 'get_notifications':
+        systemPrompt = `Eres un sistema de notificaciones educativas. Genera una lista de notificaciones recientes relevantes para el estudiante.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "notifications": [
+    {
+      "id": "uuid",
+      "title": "Título",
+      "message": "Mensaje",
+      "type": "achievement" | "reminder" | "progress" | "community" | "course",
+      "priority": "low" | "medium" | "high",
+      "is_read": false,
+      "created_at": "timestamp",
+      "link": "/ruta"
+    }
+  ],
+  "unreadCount": 0,
+  "summary": "Resumen breve"
+}`;
+        userPrompt = `Genera notificaciones recientes para usuario ${userId}. Contexto: ${JSON.stringify(context)}`;
+        break;
+
+      case 'generate_digest':
+        systemPrompt = `Eres un sistema de resúmenes educativos. Genera un digest/resumen de actividad reciente del estudiante.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "digest": {
+    "title": "Tu resumen semanal",
+    "period": "última semana",
+    "highlights": ["logro1", "logro2"],
+    "stats": {
+      "lessonsCompleted": 0,
+      "timeSpent": "X horas",
+      "quizzesPassed": 0,
+      "streakDays": 0
+    },
+    "nextSteps": ["paso1", "paso2"],
+    "motivationalMessage": "Mensaje motivacional"
+  }
+}`;
+        userPrompt = `Genera un digest de actividad para usuario ${userId}. Contexto: ${JSON.stringify(context)}`;
+        break;
+
+      case 'get_preferences':
+        systemPrompt = `Eres un sistema de preferencias de notificaciones. Genera las preferencias por defecto para un usuario.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "preferences": {
+    "email": { "enabled": true, "frequency": "daily" },
+    "push": { "enabled": true, "frequency": "immediate" },
+    "inApp": { "enabled": true },
+    "types": {
+      "achievement": true,
+      "reminder": true,
+      "progress": true,
+      "community": true,
+      "course": true,
+      "streak": true,
+      "deadline": true
+    },
+    "quietHours": { "enabled": false, "start": "22:00", "end": "08:00" }
+  }
+}`;
+        userPrompt = `Obtén las preferencias de notificación para usuario ${userId}. Contexto: ${JSON.stringify(context)}`;
         break;
 
       default:
