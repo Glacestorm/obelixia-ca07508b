@@ -504,3 +504,6 @@ verify_jwt = true
 
 [functions.galia-demo-mode]
 verify_jwt = true
+
+[functions.academia-content-enricher]
+verify_jwt = true
