@@ -1,119 +1,89 @@
 
 
-# Curso "Contabilidad Empresarial 360" - Plan de Implementacion Completa por Fases
+# Plan: OCR, Actualización y Enriquecimiento del Curso Contabilidad Empresarial 360
 
-## Estado actual del proyecto
+## Contenido extraido de los PDFs
 
-Tras analizar el codigo en profundidad, el modulo Academia tiene una **brecha critica**: las paginas que ven los clientes (Catalogo, Detalle de curso, Reproductor de lecciones) usan **datos ficticios hardcodeados** en lugar de leer de la base de datos. Esto significa que aunque insertes los datos del curso, **ningun cliente podra verlo ni seguirlo**.
+Se han procesado 6 documentos PDF escaneados que contienen un curso completo de contabilidad de la "Sociedad Europea para el Desarrollo Empresarial", organizado en **18 sesiones** con tres tipos de material cada una:
 
-### Lo que YA funciona (backend)
-- Tablas de base de datos completas: `academia_courses`, `academia_modules`, `academia_lessons`, `academia_quizzes`, `academia_quiz_questions`, `academia_enrollments`, `academia_lesson_progress`
-- Panel de administracion (`CourseManagement.tsx`) lee cursos desde la base de datos
-- Edge functions de IA (tutor, rutas de aprendizaje, gamificacion)
-- Sistema de quizzes adaptativos, gamificacion, certificados
+| Sesiones | Contenido principal |
+|----------|-------------------|
+| 1 | Definicion contabilidad, Balance, Activo/Pasivo, Capital, Reservas, Fondos Propios |
+| 2 | Plan General Contabilidad, grupos/subgrupos, Inmovilizado Material, Amortizaciones, Provisiones, Principios contables |
+| 3 | Existencias, Deudores, Clientes, IVA soportado/repercutido, Tesoreria |
+| 4 | Pasivo Fijo/Circulante, Proveedores, Acreedores, Hacienda Publica |
+| 6-7 | Balances completos (Activo/Pasivo), operaciones mensuales empresa ALFA, asientos |
+| 14 | Comprobaciones contables, conciliaciones bancarias, arqueo de caja |
+| 16 | Analisis de Balances, masas patrimoniales, Fondo de Maniobra, Origen/Aplicacion de Fondos |
+| 17 | Ratios financieros, analisis de tendencias, representacion grafica |
+| 18 | Analisis economico: rentabilidad, rotacion existencias, supervivencia, mecanizacion |
 
-### Lo que NO funciona para el cliente
-1. **CourseCatalog.tsx** - Usa array hardcodeado, no consulta la base de datos
-2. **CourseDetail.tsx** - Usa datos mock, no carga el curso real
-3. **LearningPlayer.tsx** - Usa lecciones ficticias de un "CRM Avanzado", no carga contenido real
-4. **Sin flujo de inscripcion funcional** - No hay boton que inscriba al usuario en `academia_enrollments`
-5. **Sin control de acceso** - No verifica si el usuario esta inscrito antes de mostrar contenido
-
----
-
-## Plan por Fases
-
-### FASE 1: Insercion de datos (yo lo hago)
-**Que se hace:** Ejecutar el SQL seed para insertar en la base de datos:
-- 1 curso (Contabilidad Empresarial 360, 297 EUR, nivel intermedio, 30h)
-- 6 modulos (Bloques 0-V)
-- 22 lecciones con contenido Markdown completo
-- 22 quizzes (1 por leccion)
-- 110 preguntas de quiz (5 por quiz)
-
-**Correccion necesaria:** El SQL ya tiene el campo `resources` como `jsonb` (correcto). Se usara `ON CONFLICT (id) DO NOTHING` para seguridad.
-
-**Quien:** Yo, automaticamente.
+Cada sesion incluye: **Texto teorico** + **Tests V/F** (14-30 preguntas) + **Ejercicios practicos** (balances, asientos, calculos).
 
 ---
 
-### FASE 2: Catalogo de cursos dinamico (yo lo hago)
-**Que se hace:** Reescribir `CourseCatalog.tsx` para que cargue cursos desde la base de datos en lugar de usar datos mock.
+## Correspondencia con el curso existente
 
-- Consultar `academia_courses` filtrando por `is_published = true`
-- Mantener filtros existentes (categoria, nivel, precio)
-- Mostrar los cursos reales, incluyendo el nuevo de Contabilidad
+El curso "Contabilidad Empresarial 360" ya tiene 6 bloques y 22 lecciones en la base de datos. El contenido de los PDFs se mapea asi:
 
-**Quien:** Yo.
-
----
-
-### FASE 3: Detalle de curso dinamico (yo lo hago)
-**Que se hace:** Reescribir `CourseDetail.tsx` para que cargue desde la base de datos:
-
-- Cargar curso por `courseId` desde URL
-- Cargar modulos y lecciones asociados
-- Mostrar contenido real: descripcion, objetivos, prerequisitos, estructura de modulos
-- Mostrar precio real (297 EUR) y boton de inscripcion
-
-**Quien:** Yo.
+| Bloque existente | Sesiones PDF relevantes |
+|-----------------|------------------------|
+| Bloque 0 - Fundamentos estrategicos (4 lecciones) | Sesiones 1, 2 (teoria base) |
+| Bloque I - Estructura contable (4 lecciones) | Sesiones 2, 7 (PGC, asientos, partida doble) |
+| Bloque II - Operativa diaria (5 lecciones) | Sesiones 3, 14 (existencias, IVA, tesoreria, conciliaciones) |
+| Bloque III - Activos y financiacion (4 lecciones) | Sesiones 2, 4, 6 (inmovilizado, amortizaciones, financiacion) |
+| Bloque IV - Ajustes y cierre (3 lecciones) | Sesiones 14 (comprobaciones, cierre) |
+| Bloque V - Avanzada y estrategica (2 lecciones) | Sesiones 16, 17, 18 (analisis, ratios, tendencias) |
 
 ---
 
-### FASE 4: Flujo de inscripcion (yo lo hago)
-**Que se hace:** Implementar el boton "Inscribirse" que:
+## Fases de implementacion
 
-- Para cursos gratuitos: inscribe directamente en `academia_enrollments`
-- Para cursos de pago (como este de 297 EUR): marca como "pendiente" hasta pago
-- Verifica si el usuario ya esta inscrito
-- Requiere autenticacion (login/registro)
+### FASE 1: Creacion de la Edge Function de procesamiento OCR-IA
+- Crear edge function `academia-content-enricher` que recibe el contenido OCR extraido y lo transforma en contenido pedagogico moderno
+- La IA actualizara: pesetas a euros, PGC 1990 a PGC 2007/2025, referencias a SII/TicketBAI/VeriFactu, normativa vigente 2026
+- Generara contenido Markdown estructurado con ejemplos actualizados, notas de actualizacion normativa, y llamadas a la accion
 
-**Quien:** Yo.
+### FASE 2: Enriquecimiento del contenido de las 22 lecciones
+- Invocar la edge function para cada leccion, pasando el contenido OCR correspondiente como contexto
+- Actualizar el campo `content` (Markdown) de cada leccion en `academia_lessons` con el contenido enriquecido
+- Cada leccion incluira: teoria original actualizada + ejemplos con euros + referencias PGC 2007/2025 + tips practicos + enlaces al ERP
+
+### FASE 3: Generacion de tests y ejercicios actualizados
+- Usar el contenido OCR de los tests V/F para crear/actualizar los quizzes en `academia_quizzes` + `academia_quiz_questions`
+- Actualizar las 110 preguntas existentes con el material real de los PDFs, adaptado a normativa 2026
+- Anadir ejercicios practicos como recursos descargables en `academia_course_resources` (plantillas Excel, CSV de asientos)
+
+### FASE 4: Creacion de recursos complementarios
+- Insertar en `academia_course_resources` plantillas y material descargable derivado de los ejercicios de los PDFs:
+  - Plantilla de Balance (sesion 1)
+  - Hoja de Conciliacion Bancaria (sesion 14)
+  - Plantilla de Arqueo de Caja (sesion 14)
+  - Calculadora de Ratios Financieros (sesiones 17-18)
+  - Hoja de Fondo de Maniobra (sesion 16)
+- Cada recurso vinculado a la leccion correspondiente
+
+### FASE 5: Integracion con el modulo ERP
+- Crear enlaces cruzados entre las lecciones del curso y los modulos del ERP (contabilidad, tesoreria, fiscal)
+- En cada leccion relevante, anadir seccion "Practica en tu ERP" con instrucciones para usar el simulador contable existente
+- Actualizar los `academia_simulator_datasets` con escenarios basados en los ejercicios de los PDFs (empresa ALFA, panadero, alfarero)
+
+### FASE 6: Verificacion y ajustes
+- Verificar que las 22 lecciones tienen contenido actualizado
+- Comprobar que los 22 quizzes reflejan el material real de los PDFs
+- Validar que los recursos se descargan correctamente
+- Test end-to-end del flujo: Catalogo → Detalle → Leccion → Quiz → Recursos
 
 ---
 
-### FASE 5: Reproductor de lecciones dinamico (yo lo hago)
-**Que se hace:** Reescribir `LearningPlayer.tsx` para cargar datos reales:
+## Actualizaciones normativas a aplicar
 
-- Cargar modulos y lecciones del curso desde la base de datos
-- Renderizar el contenido Markdown de cada leccion (el campo `content` ya tiene todo el material)
-- Cargar quizzes reales desde `academia_quizzes` + `academia_quiz_questions`
-- Registrar progreso en `academia_lesson_progress`
-- Navegacion entre lecciones secuencial
-- Verificar inscripcion antes de mostrar contenido
+El material original data de los anos 90 (usa pesetas, referencia al PGC de 1990). Se actualizara a:
 
-**Quien:** Yo.
-
----
-
-### FASE 6: Verificacion y ajustes finales (yo lo hago)
-**Que se hace:**
-- Verificar que el flujo completo funciona: Catalogo -> Detalle -> Inscripcion -> Reproductor -> Quiz -> Progreso
-- Asegurar que el contenido Markdown se renderiza correctamente
-- Verificar que los quizzes cargan las 5 preguntas con feedback
-- Comprobar que el progreso se guarda entre sesiones
-
-**Quien:** Yo.
-
----
-
-## Lo que tu tendras que hacer (acciones manuales)
-
-| Accion | Necesario para... | Urgencia |
-|--------|-------------------|----------|
-| Subir videos (`video_url` esta null en las 22 lecciones) | Tener contenido en video ademas del texto | Opcional - el curso funciona solo con texto |
-| Subir recursos reales (CSV, plantillas, checklists) | Que los enlaces de recursos descarguen archivos reales | Opcional - ahora muestra titulos sin archivo |
-| Configurar pasarela de pago | Cobrar los 297 EUR del curso | Necesario si quieres vender |
-| Crear thumbnail del curso | Imagen de portada en el catalogo | Recomendado |
-
-## Resultado esperado tras las 6 fases
-
-Un cliente podra:
-1. Ver el curso en el catalogo publico
-2. Ver el detalle con los 6 bloques y 22 sesiones
-3. Inscribirse (gratis o pago segun configuracion)
-4. Acceder al reproductor y leer cada leccion completa
-5. Hacer el quiz de 5 preguntas al final de cada leccion
-6. Ver su progreso guardado y continuar donde lo dejo
-7. Usar el tutor IA y la ruta de aprendizaje adaptativa (ya existente)
+- **Moneda**: Pesetas → Euros (conversion 1€ = 166,386 ptas)
+- **PGC**: Real Decreto 1643/90 → PGC 2007 (RD 1514/2007) + reformas 2021-2025
+- **IVA**: Modelo actual con SII, Ley Crea y Crece, factura electronica obligatoria
+- **Digital**: Contabilidad manual → ERP, digitalizacion obligatoria, VeriFactu/TicketBAI
+- **Normativa**: NIIF-UE, Ley 11/2023 digitalizacion, normas de sostenibilidad (CSRD/ESRS)
+- **Ejemplos**: Actualizados a contexto empresarial 2026
 
