@@ -24,36 +24,36 @@ export interface EnrichmentProgress {
 }
 
 // === MAPPING: Lecciones → Sesiones OCR ===
-// Based on plan.md correspondences
+// Based on plan.md correspondences (10 PDFs procesados: sesiones 1-5, 6-12, 14, 16-18)
 const LESSON_OCR_MAP: Record<string, { sessions: number[]; contentType: 'theory' | 'mixed' }> = {
   // Bloque 0 - Fundamentos
   'Bienvenida + mapa del curso y método (Academia 3.0)': { sessions: [1], contentType: 'theory' },
   'Marco conceptual, ecuación patrimonial y masas': { sessions: [1], contentType: 'theory' },
-  'Plan General de Contabilidad (PGC) y lógica de cuentas': { sessions: [2], contentType: 'theory' },
-  'Circuito documental y digitalización (ERP) + trazabilidad': { sessions: [2], contentType: 'theory' },
+  'Plan General de Contabilidad (PGC) y lógica de cuentas': { sessions: [2, 5], contentType: 'theory' },
+  'Circuito documental y digitalización (ERP) + trazabilidad': { sessions: [2, 12], contentType: 'theory' },
   // Bloque I - Estructura contable
-  'Partida doble: Debe/Haber y mecánica del asiento': { sessions: [7], contentType: 'theory' },
-  'Libros contables: Diario, Mayor y balance de sumas': { sessions: [7], contentType: 'mixed' },
-  'Ciclo contable completo (apertura→cierre) con checklist': { sessions: [7], contentType: 'mixed' },
-  'Primer mini-proyecto: contabilidad del mes 1 (empresa simulada)': { sessions: [7], contentType: 'mixed' },
+  'Partida doble: Debe/Haber y mecánica del asiento': { sessions: [7, 8], contentType: 'theory' },
+  'Libros contables: Diario, Mayor y balance de sumas': { sessions: [7, 8], contentType: 'mixed' },
+  'Ciclo contable completo (apertura→cierre) con checklist': { sessions: [7, 10, 11], contentType: 'mixed' },
+  'Primer mini-proyecto: contabilidad del mes 1 (empresa simulada)': { sessions: [7, 8], contentType: 'mixed' },
   // Bloque II - Operativa diaria  
-  'Compras y gastos con IVA: proveedores, descuentos y suplidos': { sessions: [3, 4], contentType: 'theory' },
-  'Ventas e ingresos: clientes, anticipos, devoluciones': { sessions: [3], contentType: 'theory' },
-  'IVA avanzado: liquidación periódica y asiento completo': { sessions: [3], contentType: 'theory' },
-  'Tesorería: cobros/pagos + conciliación bancaria': { sessions: [14], contentType: 'mixed' },
-  'Existencias: inventario, variación y deterioro': { sessions: [3], contentType: 'theory' },
+  'Compras y gastos con IVA: proveedores, descuentos y suplidos': { sessions: [3, 4, 9], contentType: 'theory' },
+  'Ventas e ingresos: clientes, anticipos, devoluciones': { sessions: [3, 10], contentType: 'theory' },
+  'IVA avanzado: liquidación periódica y asiento completo': { sessions: [3, 9], contentType: 'theory' },
+  'Tesorería: cobros/pagos + conciliación bancaria': { sessions: [9, 14], contentType: 'mixed' },
+  'Existencias: inventario, variación y deterioro': { sessions: [3, 10], contentType: 'theory' },
   // Bloque III - Activos y financiación
-  'Inmovilizado: altas, bajas, mejoras y en curso': { sessions: [2, 6], contentType: 'theory' },
-  'Amortizaciones y deterioros: cálculo y asientos': { sessions: [2], contentType: 'theory' },
-  'Arrendamientos: renting vs leasing (visión práctica)': { sessions: [2], contentType: 'theory' },
-  'Financiación: capital, préstamos, intereses y reclasificación': { sessions: [4], contentType: 'theory' },
+  'Inmovilizado: altas, bajas, mejoras y en curso': { sessions: [2, 5, 6], contentType: 'theory' },
+  'Amortizaciones y deterioros: cálculo y asientos': { sessions: [2, 5], contentType: 'theory' },
+  'Arrendamientos: renting vs leasing (visión práctica)': { sessions: [5], contentType: 'theory' },
+  'Financiación: capital, préstamos, intereses y reclasificación': { sessions: [4, 9], contentType: 'theory' },
   // Bloque IV - Ajustes y cierre
-  'Devengo y periodificaciones: gastos/ingresos anticipados': { sessions: [14], contentType: 'theory' },
-  'Provisiones y contingencias (visión práctica)': { sessions: [14], contentType: 'theory' },
-  'Cierre contable: regularización, resultado y asiento de cierre': { sessions: [14], contentType: 'mixed' },
+  'Devengo y periodificaciones: gastos/ingresos anticipados': { sessions: [11, 14], contentType: 'theory' },
+  'Provisiones y contingencias (visión práctica)': { sessions: [5, 14], contentType: 'theory' },
+  'Cierre contable: regularización, resultado y asiento de cierre': { sessions: [10, 11, 14], contentType: 'mixed' },
   // Bloque V - Avanzada y estratégica
-  'Impuesto sobre Sociedades: impuesto corriente (y noción de diferido)': { sessions: [16], contentType: 'theory' },
-  'Análisis de estados financieros + ratios clave (cuadro de mando)': { sessions: [16, 17, 18], contentType: 'mixed' },
+  'Impuesto sobre Sociedades: impuesto corriente (y noción de diferido)': { sessions: [10, 16], contentType: 'theory' },
+  'Análisis de estados financieros + ratios clave (cuadro de mando)': { sessions: [12, 16, 17, 18], contentType: 'mixed' },
 };
 
 // OCR content organized by session (extracted from PDFs)

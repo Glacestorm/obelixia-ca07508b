@@ -11,8 +11,14 @@ Se han procesado 6 documentos PDF escaneados que contienen un curso completo de 
 | 1 | Definicion contabilidad, Balance, Activo/Pasivo, Capital, Reservas, Fondos Propios |
 | 2 | Plan General Contabilidad, grupos/subgrupos, Inmovilizado Material, Amortizaciones, Provisiones, Principios contables |
 | 3 | Existencias, Deudores, Clientes, IVA soportado/repercutido, Tesoreria |
-| 4 | Pasivo Fijo/Circulante, Proveedores, Acreedores, Hacienda Publica |
+| 4 | Pasivo Fijo/Circulante, Proveedores, Acreedores, Hacienda Publica, Emprestitos, Deudas CP |
+| 5 | Inmovilizado Inmaterial, Gastos de Establecimiento, Gastos a Distribuir, Provisiones para Riesgos, Fianzas, Inversiones Financieras |
 | 6-7 | Balances completos (Activo/Pasivo), operaciones mensuales empresa ALFA, asientos |
+| 8 | Cuentas como instrumento contable, Debe/Haber, funcionamiento cuentas Activo/Pasivo, asientos contables |
+| 9 | Gastos: compras, servicios exteriores, tributos, personal, gastos financieros, descuento de efectos |
+| 10 | Ingresos: ventas, subvenciones, ingresos financieros, Cuenta de Perdidas y Ganancias, Impuesto sobre Beneficios |
+| 11 | Regularizacion contable, cierre del ejercicio, Balance final, Cuentas Anuales |
+| 12 | Memoria, informacion complementaria, modelos oficiales de Cuentas Anuales |
 | 14 | Comprobaciones contables, conciliaciones bancarias, arqueo de caja |
 | 16 | Analisis de Balances, masas patrimoniales, Fondo de Maniobra, Origen/Aplicacion de Fondos |
 | 17 | Ratios financieros, analisis de tendencias, representacion grafica |
