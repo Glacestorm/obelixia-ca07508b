@@ -32,9 +32,12 @@ serve(async (req) => {
 
     const { action, lessonId, courseId, ocrContent, lessonTitle, moduleTitle, sessionNumbers, quizId, resourceType, params } = await req.json() as EnricherRequest;
 
-    if (!ocrContent || !action) {
-      throw new Error('action and ocrContent are required');
+    if (!action) {
+      throw new Error('action is required');
     }
+
+    // For AI-generated sessions (13, 15, 19), ocrContent may be a descriptive prompt instead of OCR text
+    const contentInput = ocrContent || '';
 
     let systemPrompt = '';
     let userPrompt = '';

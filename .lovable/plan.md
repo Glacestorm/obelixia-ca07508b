@@ -4,7 +4,7 @@
 
 ## Contenido extraido de los PDFs
 
-Se han procesado 6 documentos PDF escaneados que contienen un curso completo de contabilidad de la "Sociedad Europea para el Desarrollo Empresarial", organizado en **18 sesiones** con tres tipos de material cada una:
+Se han procesado 10+ documentos PDF escaneados que contienen un curso completo de contabilidad de la "Sociedad Europea para el Desarrollo Empresarial", organizado en **19 sesiones** (18 originales + 1 extraordinaria) con tres tipos de material cada una:
 
 | Sesiones | Contenido principal |
 |----------|-------------------|
@@ -19,10 +19,13 @@ Se han procesado 6 documentos PDF escaneados que contienen un curso completo de 
 | 10 | Ingresos: ventas, subvenciones oficiales/privadas, ingresos financieros, arrendamientos, comisiones, Cuenta de Perdidas y Ganancias, Impuesto sobre Beneficios |
 | 11 | Regularizacion contable, cierre del ejercicio, Balance final, Cuentas Anuales, asiento de regularizacion y cierre |
 | 12 | Memoria completa (8 apartados), informacion complementaria, modelos oficiales de Cuentas Anuales, distribucion de beneficios |
+| 13 | **[IA-generada]** Contabilidad analitica y de costes: costes directos/indirectos, centros de coste, margenes de contribucion, punto de equilibrio, ABC costing, costes estandar vs reales |
 | 14 | Comprobaciones contables, conciliaciones bancarias, arqueo de caja |
+| 15 | **[IA-generada]** Auditoria y control interno: principios de auditoria, control interno COSO, revision de cuentas anuales, informe de auditoria, compliance contable, prevencion de fraude |
 | 16 | Analisis de Balances, masas patrimoniales, Fondo de Maniobra, Origen/Aplicacion de Fondos |
 | 17 | Ratios financieros, analisis de tendencias, representacion grafica |
 | 18 | Analisis economico: rentabilidad, rotacion existencias, supervivencia, mecanizacion |
+| 19 | **[EXTRAORDINARIA]** Contabilidad Digital 2026: IA generativa aplicada a contabilidad, blockchain contable y trazabilidad inmutable, automatizacion fiscal (VeriFactu/TicketBAI/SII), contabilidad predictiva con machine learning, smart contracts y facturacion programable, ESG/CSRD reporting automatizado, ciberseguridad contable |
 
 Cada sesion incluye: **Texto teorico** + **Tests V/F** (14-30 preguntas) + **Ejercicios practicos** (balances, asientos, calculos).
 
