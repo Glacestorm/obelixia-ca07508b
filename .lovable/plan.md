@@ -26,6 +26,9 @@ Se han procesado 10+ documentos PDF escaneados que contienen un curso completo d
 | 17 | Ratios financieros, analisis de tendencias, representacion grafica |
 | 18 | Analisis economico: rentabilidad, rotacion existencias, supervivencia, mecanizacion |
 | 19 | **[EXTRAORDINARIA]** Contabilidad Digital 2026: IA generativa aplicada a contabilidad, blockchain contable y trazabilidad inmutable, automatizacion fiscal (VeriFactu/TicketBAI/SII), contabilidad predictiva con machine learning, smart contracts y facturacion programable, ESG/CSRD reporting automatizado, ciberseguridad contable |
+| 20 | Previsiones de tesorería: cobros/pagos pendientes, pagos fijos mensuales/anuales, compras y ventas previstas, cuadro resumen 4 meses |
+| 21 | Análisis Fondo de Maniobra necesario vs real, determinación capital necesario, punto de equilibrio (comercial e industrial), apalancamiento operativo |
+| 22 | Análisis económico-financiero completo: rentabilidad fondos propios, ratios solvencia/tesorería/liquidez/endeudamiento, plan de acción CP/MP/LP |
 
 Cada sesion incluye: **Texto teorico** + **Tests V/F** (14-30 preguntas) + **Ejercicios practicos** (balances, asientos, calculos).
 
