@@ -55,6 +55,7 @@ const LESSON_OCR_MAP: Record<string, { sessions: number[]; contentType: 'theory'
   // Bloque V - Avanzada y estratégica
   'Impuesto sobre Sociedades: impuesto corriente (y noción de diferido)': { sessions: [10, 16], contentType: 'theory' },
   'Análisis de estados financieros + ratios clave (cuadro de mando)': { sessions: [12, 15, 16, 17, 18, 20, 21, 22], contentType: 'mixed' },
+  'Análisis financiero + decisiones: ratios, cashflow y señales': { sessions: [12, 15, 16, 17, 18, 20, 21, 22], contentType: 'mixed' },
   'Contabilidad Digital 2026: IA generativa, blockchain contable y automatización fiscal': { sessions: [19], contentType: 'mixed' },
 };
 
