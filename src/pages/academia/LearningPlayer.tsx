@@ -8,13 +8,15 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, ChevronRight, Menu, X, FileText, Download, 
-  CheckCircle, Layers, MessageSquare, Trophy, Loader2, Lock
+  CheckCircle, Layers, MessageSquare, Trophy, Loader2, Lock,
+  Sun, Moon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useAcademiaEnrollment } from '@/hooks/academia/useAcademiaEnrollment';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,6 +49,7 @@ const LearningPlayer: React.FC = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { resolvedTheme, setTheme } = useTheme();
   const { user, loading: authLoading } = useAuth();
   const { enrollment, checkEnrollment } = useAcademiaEnrollment();
   
@@ -387,7 +390,7 @@ const LearningPlayer: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
+    <div className="min-h-screen bg-background text-foreground flex" style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif" }}>
       {/* Mobile Sidebar */}
       <Sheet>
         <SheetTrigger asChild className="lg:hidden">
@@ -442,6 +445,15 @@ const LearningPlayer: React.FC = () => {
           <Badge variant="outline" className="border-border text-muted-foreground hidden sm:flex">
             {language === 'es' ? `Lección ${currentLessonIndex + 1} de ${allLessons.length}` : `Lesson ${currentLessonIndex + 1} of ${allLessons.length}`}
           </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(resolvedTheme === 'night' ? 'day' : 'night')}
+            className="text-muted-foreground hover:text-foreground h-9 w-9"
+            aria-label="Toggle theme"
+          >
+            {resolvedTheme === 'night' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => setShowRightPanel(!showRightPanel)} className={`text-muted-foreground hover:text-foreground ${showRightPanel ? 'bg-muted' : ''}`}>
             <Layers className="w-5 h-5" />
           </Button>
@@ -463,22 +475,26 @@ const LearningPlayer: React.FC = () => {
                 </motion.div>
               ) : currentContent ? (
                 <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 overflow-auto">
-                  <div className="max-w-4xl mx-auto p-6 md:p-10">
-                    <div className="max-w-none text-foreground leading-relaxed
-                      [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mt-8 [&_h1]:mb-4
-                      [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-7 [&_h2]:mb-3
-                      [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2
-                      [&_p]:text-foreground/90 [&_p]:mb-4
-                      [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4
-                      [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4
-                      [&_li]:text-foreground/90 [&_li]:mb-1
+                  <div className="max-w-3xl mx-auto px-6 md:px-12 py-8 md:py-14">
+                    <div className="text-foreground leading-[1.8] text-[16.5px] tracking-[-0.01em]
+                      [&_h1]:font-bold [&_h1]:text-[2rem] [&_h1]:leading-[1.2] [&_h1]:tracking-[-0.03em] [&_h1]:text-foreground [&_h1]:mt-12 [&_h1]:mb-5 [&_h1]:pb-3 [&_h1]:border-b [&_h1]:border-border
+                      [&_h2]:font-semibold [&_h2]:text-[1.5rem] [&_h2]:leading-[1.3] [&_h2]:tracking-[-0.02em] [&_h2]:text-foreground [&_h2]:mt-10 [&_h2]:mb-4
+                      [&_h3]:font-semibold [&_h3]:text-[1.2rem] [&_h3]:leading-[1.4] [&_h3]:text-foreground [&_h3]:mt-8 [&_h3]:mb-3
+                      [&_h1,&_h2,&_h3]:font-['Source_Serif_4',_Georgia,_serif]
+                      [&_p]:text-foreground/85 [&_p]:mb-5 [&_p]:leading-[1.8]
+                      [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-5 [&_ul]:space-y-1.5
+                      [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-5 [&_ol]:space-y-1.5
+                      [&_li]:text-foreground/85 [&_li]:leading-[1.7]
                       [&_strong]:text-foreground [&_strong]:font-semibold
-                      [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2
-                      [&_blockquote]:border-l-4 [&_blockquote]:border-primary/40 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground
-                      [&_code]:bg-muted [&_code]:text-primary [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded
-                      [&_pre]:bg-muted [&_pre]:border [&_pre]:border-border [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:overflow-auto
-                      [&_hr]:border-border [&_hr]:my-8
-                      [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:text-foreground [&_th]:p-2 [&_th]:text-left [&_td]:border [&_td]:border-border [&_td]:p-2 [&_td]:text-foreground/90">
+                      [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 [&_a]:decoration-primary/40 hover:[&_a]:decoration-primary
+                      [&_blockquote]:border-l-4 [&_blockquote]:border-primary/30 [&_blockquote]:pl-5 [&_blockquote]:py-1 [&_blockquote]:italic [&_blockquote]:text-muted-foreground [&_blockquote]:bg-muted/30 [&_blockquote]:rounded-r-lg [&_blockquote]:my-6
+                      [&_code]:bg-muted [&_code]:text-primary [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[0.9em] [&_code]:font-['JetBrains_Mono',_monospace]
+                      [&_pre]:bg-muted [&_pre]:border [&_pre]:border-border [&_pre]:rounded-xl [&_pre]:p-5 [&_pre]:overflow-auto [&_pre]:my-6 [&_pre]:text-[0.875rem]
+                      [&_hr]:border-border [&_hr]:my-10
+                      [&_table]:w-full [&_table]:border-collapse [&_table]:my-6 [&_table]:rounded-lg [&_table]:overflow-hidden [&_table]:text-[0.9375rem]
+                      [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:text-foreground [&_th]:p-3 [&_th]:text-left [&_th]:font-semibold [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider
+                      [&_td]:border [&_td]:border-border [&_td]:p-3 [&_td]:text-foreground/85
+                      [&_tr:hover]:bg-muted/40">
                       <ReactMarkdown>{currentContent}</ReactMarkdown>
                     </div>
                   </div>
