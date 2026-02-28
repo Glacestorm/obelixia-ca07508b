@@ -69,10 +69,10 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
       return <CheckCircle className="w-5 h-5 text-green-400" />;
     }
     if (lesson.isLocked) {
-      return <Lock className="w-5 h-5 text-slate-500" />;
+      return <Lock className="w-5 h-5 text-muted-foreground" />;
     }
     
-    const iconClass = lesson.id === currentLessonId ? 'text-primary' : 'text-slate-500';
+    const iconClass = lesson.id === currentLessonId ? 'text-primary' : 'text-muted-foreground';
     
     switch (lesson.type) {
       case 'video':
@@ -115,21 +115,21 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
           animate={{ width: 380, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="bg-slate-900 border-r border-slate-800 overflow-hidden flex-shrink-0 h-screen"
+          className="bg-card border-r border-border overflow-hidden flex-shrink-0 h-screen"
         >
           <div className="w-[380px] h-full flex flex-col">
             {/* Header */}
-            <div className="p-4 border-b border-slate-800">
+            <div className="p-4 border-b border-border">
               <Link 
                 to={backUrl} 
-                className="flex items-center gap-2 text-slate-400 hover:text-white text-sm mb-3 transition-colors"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm mb-3 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
                 {backLabel}
               </Link>
-              <h2 className="font-semibold text-white line-clamp-2">{courseTitle}</h2>
+              <h2 className="font-semibold text-foreground line-clamp-2">{courseTitle}</h2>
               <div className="mt-3">
-                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
                   <span>{progress}% complete</span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
@@ -156,12 +156,12 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                       <AccordionItem 
                         key={module.id} 
                         value={module.id}
-                        className="border border-slate-800 rounded-lg overflow-hidden bg-slate-800/30"
+                        className="border border-border rounded-lg overflow-hidden bg-muted/30"
                       >
-                        <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-800/50 text-sm group">
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/60 text-sm group">
                           <div className="flex-1 text-left">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs text-slate-500 font-medium">
+                              <span className="text-xs text-muted-foreground font-medium">
                                 Module {moduleIndex + 1}
                               </span>
                               {moduleProgress === 100 && (
@@ -170,17 +170,17 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                                 </Badge>
                               )}
                             </div>
-                            <span className="text-white font-medium">{module.title}</span>
+                            <span className="text-foreground font-medium">{module.title}</span>
                             <div className="flex items-center gap-2 mt-2">
                               <Progress value={moduleProgress} className="h-1 flex-1" />
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-muted-foreground">
                                 {completedCount}/{module.lessons.length}
                               </span>
                             </div>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent className="pb-0">
-                          <div className="divide-y divide-slate-800">
+                          <div className="divide-y divide-border">
                             {module.lessons.map((lesson, lessonIndex) => {
                               const isCurrent = lesson.id === currentLessonId;
                               
@@ -193,7 +193,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                                     "w-full flex items-center gap-3 p-3 text-left transition-colors",
                                     isCurrent 
                                       ? "bg-primary/10 border-l-2 border-l-primary"
-                                      : "hover:bg-slate-800/50 border-l-2 border-l-transparent",
+                                      : "hover:bg-muted/60 border-l-2 border-l-transparent",
                                     lesson.isLocked && "opacity-50 cursor-not-allowed"
                                   )}
                                 >
@@ -205,7 +205,7 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs text-slate-500">
+                                      <span className="text-xs text-muted-foreground">
                                         {moduleIndex + 1}.{lessonIndex + 1}
                                       </span>
                                       {lesson.isFree && !lesson.completed && (
@@ -216,12 +216,12 @@ export const LessonSidebar: React.FC<LessonSidebarProps> = ({
                                     </div>
                                     <p className={cn(
                                       "text-sm line-clamp-1 mt-0.5",
-                                      isCurrent ? 'text-white font-medium' : 'text-slate-300'
+                                      isCurrent ? 'text-foreground font-medium' : 'text-muted-foreground'
                                     )}>
                                       {lesson.title}
                                     </p>
                                     {lesson.duration > 0 && (
-                                      <p className="text-xs text-slate-500 mt-0.5">
+                                      <p className="text-xs text-muted-foreground mt-0.5">
                                         {formatDuration(lesson.duration)}
                                       </p>
                                     )}
