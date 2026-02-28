@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import SESSION_OCR_CONTENT_DATA from '@/data/ocr-content-sessions';
 
 export interface EnrichmentJob {
   lessonId: string;
@@ -33,32 +34,33 @@ const LESSON_OCR_MAP: Record<string, { sessions: number[]; contentType: 'theory'
   'Circuito documental y digitalización (ERP) + trazabilidad': { sessions: [2, 12, 13], contentType: 'theory' },
   // Bloque I - Estructura contable
   'Partida doble: Debe/Haber y mecánica del asiento': { sessions: [7, 8], contentType: 'theory' },
-  'Libros contables: Diario, Mayor y balance de sumas': { sessions: [7, 8], contentType: 'mixed' },
+  'Libros contables: Diario, Mayor y balance de sumas': { sessions: [7, 8, 11], contentType: 'mixed' },
   'Ciclo contable completo (apertura→cierre) con checklist': { sessions: [7, 10, 11], contentType: 'mixed' },
-  'Primer mini-proyecto: contabilidad del mes 1 (empresa simulada)': { sessions: [7, 8], contentType: 'mixed' },
+  'Primer mini-proyecto: contabilidad del mes 1 (empresa simulada)': { sessions: [7, 8, 11], contentType: 'mixed' },
   // Bloque II - Operativa diaria  
-  'Compras y gastos con IVA: proveedores, descuentos y suplidos': { sessions: [3, 4, 9], contentType: 'theory' },
-  'Ventas e ingresos: clientes, anticipos, devoluciones': { sessions: [3, 10], contentType: 'theory' },
+  'Compras y gastos con IVA: proveedores, descuentos y suplidos': { sessions: [3, 4, 9, 11], contentType: 'theory' },
+  'Ventas e ingresos: clientes, anticipos, devoluciones': { sessions: [3, 10, 11], contentType: 'theory' },
   'IVA avanzado: liquidación periódica y asiento completo': { sessions: [3, 9, 13], contentType: 'theory' },
-  'Tesorería: cobros/pagos + conciliación bancaria': { sessions: [9, 14], contentType: 'mixed' },
+  'Tesorería: cobros/pagos + conciliación bancaria': { sessions: [9, 14, 20], contentType: 'mixed' },
   'Existencias: inventario, variación y deterioro': { sessions: [3, 10, 13], contentType: 'theory' },
   // Bloque III - Activos y financiación
-  'Inmovilizado: altas, bajas, mejoras y en curso': { sessions: [2, 5, 6], contentType: 'theory' },
-  'Amortizaciones y deterioros: cálculo y asientos': { sessions: [2, 5], contentType: 'theory' },
+  'Inmovilizado: altas, bajas, mejoras y en curso': { sessions: [2, 5, 6, 8], contentType: 'theory' },
+  'Amortizaciones y deterioros: cálculo y asientos': { sessions: [2, 5, 8], contentType: 'theory' },
   'Arrendamientos: renting vs leasing (visión práctica)': { sessions: [5], contentType: 'theory' },
-  'Financiación: capital, préstamos, intereses y reclasificación': { sessions: [4, 9], contentType: 'theory' },
+  'Financiación: capital, préstamos, intereses y reclasificación': { sessions: [4, 9, 11, 21], contentType: 'theory' },
   // Bloque IV - Ajustes y cierre
   'Devengo y periodificaciones: gastos/ingresos anticipados': { sessions: [11, 14], contentType: 'theory' },
-  'Provisiones y contingencias (visión práctica)': { sessions: [5, 14, 15], contentType: 'theory' },
-  'Cierre contable: regularización, resultado y asiento de cierre': { sessions: [10, 11, 14, 15], contentType: 'mixed' },
+  'Provisiones y contingencias (visión práctica)': { sessions: [5, 14, 15, 8], contentType: 'theory' },
+  'Cierre contable: regularización, resultado y asiento de cierre': { sessions: [10, 11, 14, 15, 16], contentType: 'mixed' },
   // Bloque V - Avanzada y estratégica
   'Impuesto sobre Sociedades: impuesto corriente (y noción de diferido)': { sessions: [10, 16], contentType: 'theory' },
-  'Análisis de estados financieros + ratios clave (cuadro de mando)': { sessions: [12, 15, 16, 17, 18], contentType: 'mixed' },
+  'Análisis de estados financieros + ratios clave (cuadro de mando)': { sessions: [12, 15, 16, 17, 18, 20, 21, 22], contentType: 'mixed' },
   'Contabilidad Digital 2026: IA generativa, blockchain contable y automatización fiscal': { sessions: [19], contentType: 'mixed' },
 };
 
 // OCR content organized by session (extracted from PDFs + AI-generated for sessions 13, 15, 19)
-const SESSION_OCR_CONTENT: Record<number, string> = {};
+// Sessions 8-11, 16, 20-22 loaded from modernized OCR data file
+const SESSION_OCR_CONTENT: Record<number, string> = { ...SESSION_OCR_CONTENT_DATA };
 
 // AI-generated session descriptions for sessions without PDF source
 const AI_SESSION_DESCRIPTIONS: Record<number, string> = {
