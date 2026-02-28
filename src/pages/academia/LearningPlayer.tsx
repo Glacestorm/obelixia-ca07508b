@@ -47,7 +47,7 @@ const LearningPlayer: React.FC = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { enrollment, checkEnrollment } = useAcademiaEnrollment();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -87,6 +87,8 @@ const LearningPlayer: React.FC = () => {
   // Load course data and check access
   useEffect(() => {
     const loadCourse = async () => {
+      if (authLoading) return; // Wait for auth to finish
+      
       if (!courseId || !user?.id) {
         setAccessDenied(true);
         setIsLoading(false);
@@ -216,7 +218,7 @@ const LearningPlayer: React.FC = () => {
     };
 
     loadCourse();
-  }, [courseId, user?.id]);
+  }, [courseId, user?.id, authLoading]);
 
   const allLessons = useMemo(() => modules.flatMap(m => m.lessons), [modules]);
   const currentLessonIndex = useMemo(() => allLessons.findIndex(l => l.id === currentLessonId), [allLessons, currentLessonId]);
