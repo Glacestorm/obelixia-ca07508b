@@ -349,7 +349,7 @@ const LearningPlayer: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -358,19 +358,19 @@ const LearningPlayer: React.FC = () => {
   // Access denied
   if (accessDenied || !user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
-          <Lock className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-3">
+          <Lock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-foreground mb-3">
             {language === 'es' ? 'Acceso restringido' : 'Access restricted'}
           </h2>
-          <p className="text-slate-400 mb-6">
+          <p className="text-muted-foreground mb-6">
             {language === 'es' 
               ? 'Necesitas estar inscrito en este curso para acceder al contenido.'
               : 'You need to be enrolled in this course to access the content.'}
           </p>
           <div className="flex gap-3 justify-center">
-            <Button asChild variant="outline" className="border-slate-600 text-white">
+            <Button asChild variant="outline" className="border-border text-foreground">
               <Link to={`/academia/curso/${courseSlug || courseId}`}>
                 {language === 'es' ? 'Ver detalles del curso' : 'View course details'}
               </Link>
@@ -387,15 +387,15 @@ const LearningPlayer: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen bg-background text-foreground flex">
       {/* Mobile Sidebar */}
       <Sheet>
         <SheetTrigger asChild className="lg:hidden">
-          <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 text-slate-400 hover:text-white bg-slate-900/80 backdrop-blur">
+          <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur">
             <Menu className="w-5 h-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-[350px] p-0 bg-slate-900 border-slate-800">
+        <SheetContent side="left" className="w-[350px] p-0 bg-card border-border">
           <LessonSidebar
             courseTitle={courseTitle}
             progress={courseProgress}
@@ -413,7 +413,7 @@ const LearningPlayer: React.FC = () => {
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 380 : 0 }}
-        className="hidden lg:block bg-slate-900 border-r border-slate-800 overflow-hidden flex-shrink-0"
+        className="hidden lg:block bg-card border-r border-border overflow-hidden flex-shrink-0"
       >
         <div className="w-[380px] h-screen">
           <LessonSidebar
@@ -431,18 +431,18 @@ const LearningPlayer: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-slate-900 border-b border-slate-800 flex items-center px-4 gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex text-slate-400 hover:text-white">
+        <header className="h-14 bg-card border-b border-border flex items-center px-4 gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="hidden lg:flex text-muted-foreground hover:text-foreground">
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-medium truncate">{currentLesson?.title}</p>
-            <p className="text-xs text-slate-500 truncate">{currentModule?.title}</p>
+            <p className="text-foreground font-medium truncate">{currentLesson?.title}</p>
+            <p className="text-xs text-muted-foreground truncate">{currentModule?.title}</p>
           </div>
-          <Badge variant="outline" className="border-slate-700 text-slate-400 hidden sm:flex">
+          <Badge variant="outline" className="border-border text-muted-foreground hidden sm:flex">
             {language === 'es' ? `Lección ${currentLessonIndex + 1} de ${allLessons.length}` : `Lesson ${currentLessonIndex + 1} of ${allLessons.length}`}
           </Badge>
-          <Button variant="ghost" size="icon" onClick={() => setShowRightPanel(!showRightPanel)} className={`text-slate-400 hover:text-white ${showRightPanel ? 'bg-slate-800' : ''}`}>
+          <Button variant="ghost" size="icon" onClick={() => setShowRightPanel(!showRightPanel)} className={`text-muted-foreground hover:text-foreground ${showRightPanel ? 'bg-muted' : ''}`}>
             <Layers className="w-5 h-5" />
           </Button>
         </header>
@@ -463,14 +463,22 @@ const LearningPlayer: React.FC = () => {
                 </motion.div>
               ) : currentContent ? (
                 <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 overflow-auto">
-                  <div className="max-w-3xl mx-auto p-6 md:p-10">
-                    <div className="prose prose-invert prose-lg max-w-none
-                      prose-headings:text-white prose-p:text-slate-300 prose-strong:text-white
-                      prose-ul:text-slate-300 prose-ol:text-slate-300
-                      prose-a:text-primary prose-code:text-primary
-                      prose-blockquote:border-primary/50 prose-blockquote:text-slate-400
-                      prose-table:text-slate-300 prose-th:text-white prose-td:text-slate-300
-                      prose-hr:border-slate-700">
+                  <div className="max-w-4xl mx-auto p-6 md:p-10">
+                    <div className="max-w-none text-foreground leading-relaxed
+                      [&_h1]:text-3xl [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mt-8 [&_h1]:mb-4
+                      [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-7 [&_h2]:mb-3
+                      [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-6 [&_h3]:mb-2
+                      [&_p]:text-foreground/90 [&_p]:mb-4
+                      [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4
+                      [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4
+                      [&_li]:text-foreground/90 [&_li]:mb-1
+                      [&_strong]:text-foreground [&_strong]:font-semibold
+                      [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2
+                      [&_blockquote]:border-l-4 [&_blockquote]:border-primary/40 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-muted-foreground
+                      [&_code]:bg-muted [&_code]:text-primary [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded
+                      [&_pre]:bg-muted [&_pre]:border [&_pre]:border-border [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:overflow-auto
+                      [&_hr]:border-border [&_hr]:my-8
+                      [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-border [&_th]:bg-muted [&_th]:text-foreground [&_th]:p-2 [&_th]:text-left [&_td]:border [&_td]:border-border [&_td]:p-2 [&_td]:text-foreground/90">
                       <ReactMarkdown>{currentContent}</ReactMarkdown>
                     </div>
                   </div>
@@ -492,8 +500,8 @@ const LearningPlayer: React.FC = () => {
               )}
             </AnimatePresence>
 
-            <footer className="h-16 bg-slate-900 border-t border-slate-800 flex items-center justify-between px-4">
-              <Button variant="ghost" className="text-slate-400 hover:text-white gap-2" onClick={handlePreviousLesson} disabled={currentLessonIndex === 0}>
+            <footer className="h-16 bg-card border-t border-border flex items-center justify-between px-4">
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground gap-2" onClick={handlePreviousLesson} disabled={currentLessonIndex === 0}>
                 <ChevronLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">{language === 'es' ? 'Anterior' : 'Previous'}</span>
               </Button>
@@ -504,7 +512,7 @@ const LearningPlayer: React.FC = () => {
                   {completedLessons.includes(currentLessonId) ? (language === 'es' ? 'Completado' : 'Completed') : (language === 'es' ? 'Marcar como completado' : 'Mark as completed')}
                 </span>
               </Button>
-              <Button variant="ghost" className="text-slate-400 hover:text-white gap-2" onClick={handleNextLesson} disabled={currentLessonIndex === allLessons.length - 1}>
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground gap-2" onClick={handleNextLesson} disabled={currentLessonIndex === allLessons.length - 1}>
                 <span className="hidden sm:inline">{language === 'es' ? 'Siguiente' : 'Next'}</span>
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -515,7 +523,7 @@ const LearningPlayer: React.FC = () => {
           <AnimatePresence>
             {showRightPanel && (
               <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 400, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-                className="bg-slate-900 border-l border-slate-800 overflow-hidden hidden md:block">
+                className="bg-card border-l border-border overflow-hidden hidden md:block">
                 <div className="w-[400px] h-full flex flex-col">
                   <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="flex-1 flex flex-col">
                     <TabsList className="grid w-full grid-cols-4 m-2 mx-4">
@@ -546,7 +554,7 @@ const LearningPlayer: React.FC = () => {
 
       {/* Mobile Right Panel */}
       <Sheet open={showRightPanel} onOpenChange={setShowRightPanel}>
-        <SheetContent side="right" className="w-full sm:w-[400px] p-0 bg-slate-900 border-slate-800 md:hidden">
+        <SheetContent side="right" className="w-full sm:w-[400px] p-0 bg-card border-border md:hidden">
           <Tabs value={rightPanelTab} onValueChange={setRightPanelTab} className="h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-4 m-2 mx-4">
               <TabsTrigger value="notes" className="text-xs gap-1"><FileText className="w-3 h-3" /></TabsTrigger>
