@@ -10,14 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Sparkles, RefreshCw, CheckCircle, XCircle, Clock, 
   BookOpen, FileQuestion, FileSpreadsheet, Database,
-  Play, Pause, AlertTriangle
+  Play, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useContentEnricher, type EnrichmentJob } from '@/hooks/admin/useContentEnricher';
+import SESSION_OCR_CONTENT_DATA from '@/data/ocr-content-sessions';
 import { toast } from 'sonner';
 
 const COURSE_SLUG = 'contabilidad-empresarial-360';
@@ -26,7 +26,7 @@ export function ContentEnricherPanel() {
   const [lessons, setLessons] = useState<Array<{
     id: string; title: string; moduleTitle: string; quizId?: string;
   }>>([]);
-  const [ocrBySession, setOcrBySession] = useState<Record<number, string>>({});
+  const [ocrBySession, setOcrBySession] = useState<Record<number, string>>(SESSION_OCR_CONTENT_DATA);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
 
@@ -84,11 +84,6 @@ export function ContentEnricherPanel() {
   }, []);
 
   const handleStartEnrichment = useCallback(() => {
-    if (Object.keys(ocrBySession).length === 0) {
-      toast.error('Debes pegar el contenido OCR de al menos una sesión');
-      return;
-    }
-
     const courseId = 'b6ce668b-3114-522a-aec2-ca725475952c';
     runFullEnrichment(lessons, ocrBySession, courseId);
   }, [lessons, ocrBySession, runFullEnrichment]);
@@ -237,31 +232,38 @@ export function ContentEnricherPanel() {
             <div className="space-y-4">
               <div className="p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  <p className="text-sm font-medium">Contenido OCR por Sesión</p>
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-medium">Contenido OCR Pre-cargado</p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Pega el contenido OCR de cada sesión del curso original. El sistema lo mapeará automáticamente a las lecciones correspondientes.
+                  {Object.keys(ocrBySession).length} sesiones cargadas automáticamente desde los PDFs procesados.
                 </p>
               </div>
               <ScrollArea className="h-[400px]">
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map(session => (
-                    <div key={session} className="space-y-1">
-                      <label className="text-sm font-medium flex items-center gap-2">
-                        Sesión {session}
-                        {ocrBySession[session] && (
-                          <Badge variant="outline" className="text-xs">
-                            {ocrBySession[session].length.toLocaleString()} chars
-                          </Badge>
-                        )}
-                      </label>
-                      <Textarea
-                        placeholder={`Pega aquí el contenido OCR de la Sesión ${session}...`}
-                        value={ocrBySession[session] || ''}
-                        onChange={(e) => setOcrBySession(prev => ({ ...prev, [session]: e.target.value }))}
-                        className="h-24 text-xs font-mono"
-                      />
+                    <div key={session} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                      <span className="text-xs font-mono text-muted-foreground w-6">{session}</span>
+                      {ocrBySession[session] ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 text-emerald-500" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">Sesión {session}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {ocrBySession[session].length.toLocaleString()} caracteres
+                            </p>
+                          </div>
+                          <Badge variant="default" className="text-xs">Cargada</Badge>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground">Sesión {session}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">Generada por IA</Badge>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
