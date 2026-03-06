@@ -12373,7 +12373,7 @@ export type Database = {
         Row: {
           analysis_period_end: string | null
           analysis_period_start: string | null
-          average_time_to_convert: unknown
+          average_time_to_convert: string | null
           bottleneck_stage: string | null
           calculated_at: string | null
           company_id: string | null
@@ -12392,7 +12392,7 @@ export type Database = {
         Insert: {
           analysis_period_end?: string | null
           analysis_period_start?: string | null
-          average_time_to_convert?: unknown
+          average_time_to_convert?: string | null
           bottleneck_stage?: string | null
           calculated_at?: string | null
           company_id?: string | null
@@ -12411,7 +12411,7 @@ export type Database = {
         Update: {
           analysis_period_end?: string | null
           analysis_period_start?: string | null
-          average_time_to_convert?: unknown
+          average_time_to_convert?: string | null
           bottleneck_stage?: string | null
           calculated_at?: string | null
           company_id?: string | null
@@ -44372,7 +44372,7 @@ export type Database = {
           action_type: string | null
           config: Json | null
           created_at: string | null
-          delay_duration: unknown
+          delay_duration: string | null
           delay_until_time: string | null
           id: string
           journey_id: string
@@ -44389,7 +44389,7 @@ export type Database = {
           action_type?: string | null
           config?: Json | null
           created_at?: string | null
-          delay_duration?: unknown
+          delay_duration?: string | null
           delay_until_time?: string | null
           id?: string
           journey_id: string
@@ -44406,7 +44406,7 @@ export type Database = {
           action_type?: string | null
           config?: Json | null
           created_at?: string | null
-          delay_duration?: unknown
+          delay_duration?: string | null
           delay_until_time?: string | null
           id?: string
           journey_id?: string
@@ -54410,13 +54410,13 @@ export type Database = {
         Row: {
           acknowledged_at: string | null
           acknowledged_by: string | null
-          actual_duration: unknown
+          actual_duration: string | null
           created_at: string
           escalated_to: string[] | null
           escalation_level: number | null
-          exceeded_by: unknown
+          exceeded_by: string | null
           exceeded_percentage: number | null
-          expected_duration: unknown
+          expected_duration: string | null
           id: string
           instance_id: string
           node_id: string
@@ -54432,13 +54432,13 @@ export type Database = {
         Insert: {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
-          actual_duration?: unknown
+          actual_duration?: string | null
           created_at?: string
           escalated_to?: string[] | null
           escalation_level?: number | null
-          exceeded_by?: unknown
+          exceeded_by?: string | null
           exceeded_percentage?: number | null
-          expected_duration?: unknown
+          expected_duration?: string | null
           id?: string
           instance_id: string
           node_id: string
@@ -54454,13 +54454,13 @@ export type Database = {
         Update: {
           acknowledged_at?: string | null
           acknowledged_by?: string | null
-          actual_duration?: unknown
+          actual_duration?: string | null
           created_at?: string
           escalated_to?: string[] | null
           escalation_level?: number | null
-          exceeded_by?: unknown
+          exceeded_by?: string | null
           exceeded_percentage?: number | null
-          expected_duration?: unknown
+          expected_duration?: string | null
           id?: string
           instance_id?: string
           node_id?: string
@@ -58455,7 +58455,7 @@ export type Database = {
           last_refreshed_at: string | null
           member_count: number | null
           name: string
-          refresh_frequency: unknown
+          refresh_frequency: string | null
           rule_type: string
           tags: string[] | null
           updated_at: string | null
@@ -58472,7 +58472,7 @@ export type Database = {
           last_refreshed_at?: string | null
           member_count?: number | null
           name: string
-          refresh_frequency?: unknown
+          refresh_frequency?: string | null
           rule_type?: string
           tags?: string[] | null
           updated_at?: string | null
@@ -58489,7 +58489,7 @@ export type Database = {
           last_refreshed_at?: string | null
           member_count?: number | null
           name?: string
-          refresh_frequency?: unknown
+          refresh_frequency?: string | null
           rule_type?: string
           tags?: string[] | null
           updated_at?: string | null
