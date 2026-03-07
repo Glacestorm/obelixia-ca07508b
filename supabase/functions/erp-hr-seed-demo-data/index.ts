@@ -447,16 +447,31 @@ async function seedEmployees(supabase: any): Promise<PhaseResult> {
 async function seedPayrolls(supabase: any): Promise<PhaseResult> {
   await cleanupDemoData(supabase, 'payrolls');
 
-  const { data: emps } = await supabase.from('erp_hr_employees').select('id, base_salary, contract_type').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+  const { data: emps } = await supabase.from('erp_hr_employees').select('id, base_salary, contract_type, fiscal_jurisdiction, autonomous_community').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
   if (!emps?.length) throw new Error('No demo employees found');
 
   const payrolls: any[] = [];
-  const months = [1,2,3,4,5,6,7,8,9,10];
+  // Seed months 1-10 of 2025 AND months 1-3 of 2026 (current year)
+  const periods = [
+    ...([1,2,3,4,5,6,7,8,9,10].map(m => ({ month: m, year: 2025 }))),
+    ...([1,2,3].map(m => ({ month: m, year: 2026 }))),
+  ];
 
   for (const emp of emps) {
+    const jurisdiction = emp.fiscal_jurisdiction || 'ES';
     const monthlySalary = (emp.base_salary || 24000) / 14;
-    for (const month of months) {
-      const irpfPct = emp.base_salary > 60000 ? randomDecimal(28,35) : (emp.base_salary > 35000 ? randomDecimal(18,26) : (emp.base_salary > 22000 ? randomDecimal(12,18) : randomDecimal(2,11)));
+    for (const { month, year } of periods) {
+      // Jurisdiction-aware IRPF calculation
+      let irpfPct: number;
+      if (jurisdiction === 'AD') {
+        // Andorra: flat 10% max
+        irpfPct = emp.base_salary > 40000 ? randomDecimal(7, 10) : randomDecimal(0, 5);
+      } else if (jurisdiction === 'ES') {
+        irpfPct = emp.base_salary > 60000 ? randomDecimal(28,35) : (emp.base_salary > 35000 ? randomDecimal(18,26) : (emp.base_salary > 22000 ? randomDecimal(12,18) : randomDecimal(2,11)));
+      } else {
+        irpfPct = randomDecimal(15, 30); // Generic EU
+      }
+
       const cAntig = emp.base_salary > 30000 ? randomDecimal(50, 200) : 0;
       const cTransp = randomDecimal(40, 100);
       const cConv = randomDecimal(30, 150);
@@ -464,27 +479,39 @@ async function seedPayrolls(supabase: any): Promise<PhaseResult> {
       const complements = { antiguedad: cAntig, transporte: cTransp, plus_convenio: cConv, productividad: cProd };
       const totalComp = cAntig + cTransp + cConv + cProd;
       const grossSalary = parseFloat((monthlySalary + totalComp).toFixed(2));
-      const ssWorker = parseFloat((grossSalary * 0.0635).toFixed(2));
+
+      // Jurisdiction-aware SS rates
+      const ssRate = jurisdiction === 'AD' ? 0.065 : 0.0635;
+      const ssCompanyRate = jurisdiction === 'AD' ? 0.155 : 0.305;
+      const ssWorker = parseFloat((grossSalary * ssRate).toFixed(2));
       const irpfAmount = parseFloat((grossSalary * irpfPct / 100).toFixed(2));
       const otherDed = month === 3 ? { anticipo: 200 } : {};
       const totalOtherDed = Object.values(otherDed).reduce((s: number, v: any) => s + (v as number), 0);
       const totalDeductions = parseFloat((ssWorker + irpfAmount + totalOtherDed).toFixed(2));
       const netSalary = parseFloat((grossSalary - totalDeductions).toFixed(2));
-      const ssCompany = parseFloat((grossSalary * 0.305).toFixed(2));
+      const ssCompany = parseFloat((grossSalary * ssCompanyRate).toFixed(2));
       const totalCost = parseFloat((grossSalary + ssCompany).toFixed(2));
-      const statusOpts = month <= 7 ? ['paid'] : (month <= 9 ? ['approved', 'paid'] : ['draft', 'calculated']);
+
+      let statusOpts: string[];
+      if (year === 2025) {
+        statusOpts = month <= 7 ? ['paid'] : (month <= 9 ? ['approved', 'paid'] : ['draft', 'calculated']);
+      } else {
+        // 2026
+        statusOpts = month === 1 ? ['paid'] : (month === 2 ? ['approved', 'paid'] : ['draft', 'calculated']);
+      }
       const status = randomFrom(statusOpts);
 
       payrolls.push({
-        company_id: COMPANY_ID, employee_id: emp.id, period_month: month, period_year: 2025,
-        payroll_type: month === 6 ? 'extra' : 'mensual',
+        company_id: COMPANY_ID, employee_id: emp.id, period_month: month, period_year: year,
+        payroll_type: (month === 6 || month === 12) ? 'extra' : 'mensual',
         base_salary: parseFloat(monthlySalary.toFixed(2)), complements, gross_salary: grossSalary,
         ss_worker: ssWorker, irpf_amount: irpfAmount, irpf_percentage: irpfPct,
         other_deductions: Object.keys(otherDed).length > 0 ? otherDed : null,
         total_deductions: totalDeductions, net_salary: netSalary, ss_company: ssCompany, total_cost: totalCost,
         status, calculated_at: new Date().toISOString(),
-        paid_at: status === 'paid' ? `2025-${String(month).padStart(2,'0')}-${randomBetween(25,28)}T10:00:00Z` : null,
-        payment_reference: status === 'paid' ? `SEPA-2025${String(month).padStart(2,'0')}-${randomBetween(1000,9999)}` : null,
+        paid_at: status === 'paid' ? `${year}-${String(month).padStart(2,'0')}-${randomBetween(25,28)}T10:00:00Z` : null,
+        payment_reference: status === 'paid' ? `SEPA-${year}${String(month).padStart(2,'0')}-${randomBetween(1000,9999)}` : null,
+        fiscal_jurisdiction: jurisdiction,
         metadata: DEMO_META,
       });
     }
@@ -496,7 +523,7 @@ async function seedPayrolls(supabase: any): Promise<PhaseResult> {
     if (error) throw new Error(`Payrolls batch ${b}: ${error.message}`);
     inserted += payrolls.slice(b, b + 50).length;
   }
-  return { phase: 'payrolls', records: inserted, details: `${inserted} nóminas (${emps.length} emp × ${months.length} meses)` };
+  return { phase: 'payrolls', records: inserted, details: `${inserted} nóminas (${emps.length} emp × ${periods.length} meses, multijurisdicción)` };
 }
 
 // =============================================
