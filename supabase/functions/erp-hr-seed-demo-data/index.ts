@@ -73,6 +73,11 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
     await q;
   };
 
+  if (scope === 'all' || scope === 'time_clock') {
+    await deleteDemo('erp_hr_time_clock');
+    await deleteByCompany('erp_hr_time_clock');
+  }
+
   if (scope === 'all' || scope === 'operations') {
     await deleteByCompany('erp_hr_settlements');
     await deleteByCompany('erp_hr_termination_analysis');
