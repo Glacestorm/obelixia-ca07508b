@@ -42,49 +42,63 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
   await supabase.from('erp_hr_leave_types').delete().in('code', ['VAC','IT','MAT','PAT','AP','MATRIM','MUDANZA','FALLEC']);
   await supabase.from('erp_hr_collective_agreements').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
   await supabase.from('erp_hr_job_positions').delete().eq('company_id', COMPANY_ID).like('position_name', '%(Demo)%');
-  // Delete ALL departments for this company with matching codes to avoid unique constraint violations
-  await supabase.from('erp_hr_departments').delete().eq('company_id', COMPANY_ID).in('code', ['DIR','ADM','RRHH','COM','PROD','LOG','IT','CAL']);
-  
-  const depts = [
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'DIR', name: 'Dirección General', description: 'Alta dirección y estrategia', sort_order: 1, is_active: true, metadata: DEMO_META },
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'ADM', name: 'Administración y Finanzas', description: 'Contabilidad, tesorería y fiscal', sort_order: 2, is_active: true, metadata: DEMO_META },
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'RRHH', name: 'Recursos Humanos', description: 'Gestión de personas y talento', sort_order: 3, is_active: true, metadata: DEMO_META },
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'COM', name: 'Comercial', description: 'Ventas y desarrollo de negocio', sort_order: 4, is_active: true, metadata: DEMO_META },
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'PROD', name: 'Producción', description: 'Operaciones y fabricación', sort_order: 5, is_active: true, metadata: DEMO_META },
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'LOG', name: 'Logística', description: 'Almacén y distribución', sort_order: 6, is_active: true, metadata: DEMO_META },
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'IT', name: 'Tecnología', description: 'Sistemas, desarrollo y soporte', sort_order: 7, is_active: true, metadata: DEMO_META },
-    { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'CAL', name: 'Calidad y PRL', description: 'Control de calidad y prevención', sort_order: 8, is_active: true, metadata: DEMO_META },
+  const deptSeeds = [
+    { company_id: COMPANY_ID, code: 'DIR', name: 'Dirección General', description: 'Alta dirección y estrategia', sort_order: 1, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, code: 'ADM', name: 'Administración y Finanzas', description: 'Contabilidad, tesorería y fiscal', sort_order: 2, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, code: 'RRHH', name: 'Recursos Humanos', description: 'Gestión de personas y talento', sort_order: 3, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, code: 'COM', name: 'Comercial', description: 'Ventas y desarrollo de negocio', sort_order: 4, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, code: 'PROD', name: 'Producción', description: 'Operaciones y fabricación', sort_order: 5, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, code: 'LOG', name: 'Logística', description: 'Almacén y distribución', sort_order: 6, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, code: 'IT', name: 'Tecnología', description: 'Sistemas, desarrollo y soporte', sort_order: 7, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, code: 'CAL', name: 'Calidad y PRL', description: 'Control de calidad y prevención', sort_order: 8, is_active: true, metadata: DEMO_META },
   ];
-  const { error: deptErr } = await supabase.from('erp_hr_departments').upsert(depts, { onConflict: 'company_id,code' });
+
+  const deptCodes = deptSeeds.map((d) => d.code);
+  const { error: deptErr } = await supabase.from('erp_hr_departments').upsert(deptSeeds, { onConflict: 'company_id,code' });
   if (deptErr) throw new Error(`Departments: ${deptErr.message}`);
-  count += depts.length;
+
+  const { data: deptRows, error: deptFetchErr } = await supabase
+    .from('erp_hr_departments')
+    .select('id, code')
+    .eq('company_id', COMPANY_ID)
+    .in('code', deptCodes);
+  if (deptFetchErr) throw new Error(`Departments fetch: ${deptFetchErr.message}`);
+
+  const deptMapByCode = Object.fromEntries((deptRows || []).map((d: any) => [d.code, d.id])) as Record<string, string>;
+  for (const code of deptCodes) {
+    if (!deptMapByCode[code]) {
+      throw new Error(`Departments: missing department code ${code} after upsert`);
+    }
+  }
+
+  count += deptSeeds.length;
 
   const positions = [
-    { company_id: COMPANY_ID, position_code: 'D-CEO', position_name: 'Director General (Demo)', department_id: depts[0].id, salary_band_min: 70000, salary_band_max: 95000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-CFO', position_name: 'Director Financiero (Demo)', department_id: depts[1].id, salary_band_min: 55000, salary_band_max: 80000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-HRD', position_name: 'Director RRHH (Demo)', department_id: depts[2].id, salary_band_min: 50000, salary_band_max: 70000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-COO', position_name: 'Director Operaciones (Demo)', department_id: depts[4].id, salary_band_min: 55000, salary_band_max: 75000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-CTO', position_name: 'Director Tecnología (Demo)', department_id: depts[6].id, salary_band_min: 55000, salary_band_max: 80000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-CCOO', position_name: 'Director Comercial (Demo)', department_id: depts[3].id, salary_band_min: 50000, salary_band_max: 75000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-CONT', position_name: 'Contable Senior (Demo)', department_id: depts[1].id, salary_band_min: 30000, salary_band_max: 42000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-CONTJR', position_name: 'Contable Junior (Demo)', department_id: depts[1].id, salary_band_min: 22000, salary_band_max: 28000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-HRBP', position_name: 'HR Business Partner (Demo)', department_id: depts[2].id, salary_band_min: 35000, salary_band_max: 48000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-ADMRH', position_name: 'Administrativo RRHH (Demo)', department_id: depts[2].id, salary_band_min: 22000, salary_band_max: 30000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-KAM', position_name: 'Key Account Manager (Demo)', department_id: depts[3].id, salary_band_min: 35000, salary_band_max: 55000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-VEND', position_name: 'Comercial de Zona (Demo)', department_id: depts[3].id, salary_band_min: 24000, salary_band_max: 38000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-JPROD', position_name: 'Jefe de Producción (Demo)', department_id: depts[4].id, salary_band_min: 38000, salary_band_max: 52000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-OPER', position_name: 'Operario de Producción (Demo)', department_id: depts[4].id, salary_band_min: 18000, salary_band_max: 26000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-TECN', position_name: 'Técnico de Mantenimiento (Demo)', department_id: depts[4].id, salary_band_min: 24000, salary_band_max: 34000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-JLOG', position_name: 'Jefe de Logística (Demo)', department_id: depts[5].id, salary_band_min: 35000, salary_band_max: 48000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-MOZO', position_name: 'Mozo de Almacén (Demo)', department_id: depts[5].id, salary_band_min: 18000, salary_band_max: 24000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-DEVSR', position_name: 'Desarrollador Senior (Demo)', department_id: depts[6].id, salary_band_min: 40000, salary_band_max: 58000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-DEVJR', position_name: 'Desarrollador Junior (Demo)', department_id: depts[6].id, salary_band_min: 24000, salary_band_max: 32000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-SYSAD', position_name: 'Administrador de Sistemas (Demo)', department_id: depts[6].id, salary_band_min: 32000, salary_band_max: 45000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-HELP', position_name: 'Soporte IT (Demo)', department_id: depts[6].id, salary_band_min: 20000, salary_band_max: 28000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-CAL', position_name: 'Técnico de Calidad (Demo)', department_id: depts[7].id, salary_band_min: 26000, salary_band_max: 38000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-PRL', position_name: 'Técnico PRL (Demo)', department_id: depts[7].id, salary_band_min: 28000, salary_band_max: 40000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-RECEP', position_name: 'Recepcionista (Demo)', department_id: depts[1].id, salary_band_min: 18000, salary_band_max: 22000, is_active: true },
-    { company_id: COMPANY_ID, position_code: 'D-COND', position_name: 'Conductor/Repartidor (Demo)', department_id: depts[5].id, salary_band_min: 20000, salary_band_max: 28000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-CEO', position_name: 'Director General (Demo)', department_id: deptMapByCode.DIR, salary_band_min: 70000, salary_band_max: 95000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-CFO', position_name: 'Director Financiero (Demo)', department_id: deptMapByCode.ADM, salary_band_min: 55000, salary_band_max: 80000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-HRD', position_name: 'Director RRHH (Demo)', department_id: deptMapByCode.RRHH, salary_band_min: 50000, salary_band_max: 70000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-COO', position_name: 'Director Operaciones (Demo)', department_id: deptMapByCode.PROD, salary_band_min: 55000, salary_band_max: 75000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-CTO', position_name: 'Director Tecnología (Demo)', department_id: deptMapByCode.IT, salary_band_min: 55000, salary_band_max: 80000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-CCOO', position_name: 'Director Comercial (Demo)', department_id: deptMapByCode.COM, salary_band_min: 50000, salary_band_max: 75000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-CONT', position_name: 'Contable Senior (Demo)', department_id: deptMapByCode.ADM, salary_band_min: 30000, salary_band_max: 42000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-CONTJR', position_name: 'Contable Junior (Demo)', department_id: deptMapByCode.ADM, salary_band_min: 22000, salary_band_max: 28000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-HRBP', position_name: 'HR Business Partner (Demo)', department_id: deptMapByCode.RRHH, salary_band_min: 35000, salary_band_max: 48000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-ADMRH', position_name: 'Administrativo RRHH (Demo)', department_id: deptMapByCode.RRHH, salary_band_min: 22000, salary_band_max: 30000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-KAM', position_name: 'Key Account Manager (Demo)', department_id: deptMapByCode.COM, salary_band_min: 35000, salary_band_max: 55000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-VEND', position_name: 'Comercial de Zona (Demo)', department_id: deptMapByCode.COM, salary_band_min: 24000, salary_band_max: 38000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-JPROD', position_name: 'Jefe de Producción (Demo)', department_id: deptMapByCode.PROD, salary_band_min: 38000, salary_band_max: 52000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-OPER', position_name: 'Operario de Producción (Demo)', department_id: deptMapByCode.PROD, salary_band_min: 18000, salary_band_max: 26000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-TECN', position_name: 'Técnico de Mantenimiento (Demo)', department_id: deptMapByCode.PROD, salary_band_min: 24000, salary_band_max: 34000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-JLOG', position_name: 'Jefe de Logística (Demo)', department_id: deptMapByCode.LOG, salary_band_min: 35000, salary_band_max: 48000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-MOZO', position_name: 'Mozo de Almacén (Demo)', department_id: deptMapByCode.LOG, salary_band_min: 18000, salary_band_max: 24000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-DEVSR', position_name: 'Desarrollador Senior (Demo)', department_id: deptMapByCode.IT, salary_band_min: 40000, salary_band_max: 58000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-DEVJR', position_name: 'Desarrollador Junior (Demo)', department_id: deptMapByCode.IT, salary_band_min: 24000, salary_band_max: 32000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-SYSAD', position_name: 'Administrador de Sistemas (Demo)', department_id: deptMapByCode.IT, salary_band_min: 32000, salary_band_max: 45000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-HELP', position_name: 'Soporte IT (Demo)', department_id: deptMapByCode.IT, salary_band_min: 20000, salary_band_max: 28000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-CAL', position_name: 'Técnico de Calidad (Demo)', department_id: deptMapByCode.CAL, salary_band_min: 26000, salary_band_max: 38000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-PRL', position_name: 'Técnico PRL (Demo)', department_id: deptMapByCode.CAL, salary_band_min: 28000, salary_band_max: 40000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-RECEP', position_name: 'Recepcionista (Demo)', department_id: deptMapByCode.ADM, salary_band_min: 18000, salary_band_max: 22000, is_active: true },
+    { company_id: COMPANY_ID, position_code: 'D-COND', position_name: 'Conductor/Repartidor (Demo)', department_id: deptMapByCode.LOG, salary_band_min: 20000, salary_band_max: 28000, is_active: true },
   ];
   const { error: posErr } = await supabase.from('erp_hr_job_positions').insert(positions);
   if (posErr) throw new Error(`Positions: ${posErr.message}`);
@@ -123,7 +137,7 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
   if (tpErr) console.warn('Time policies:', tpErr.message);
   else count += timePolicies.length;
 
-  return { phase: 'infrastructure', records: count, details: `${depts.length} departamentos, ${positions.length} puestos, ${agreements.length} convenios, ${leaveTypes.length} tipos ausencia, ${timePolicies.length} políticas horarias` };
+  return { phase: 'infrastructure', records: count, details: `${deptSeeds.length} departamentos, ${positions.length} puestos, ${agreements.length} convenios, ${leaveTypes.length} tipos ausencia, ${timePolicies.length} políticas horarias` };
 }
 
 async function seedEmployees(supabase: any): Promise<PhaseResult> {
