@@ -131,21 +131,21 @@ export function HRPayrollEntryDialog({
         setSelectedEmployeeCategory(emp?.job_title || '');
 
         // Restore complements as earnings
-        const complements = Array.isArray(data.complements) ? data.complements : [];
+        const complements = Array.isArray(data.complements) ? data.complements as any[] : [];
         const restoredEarnings = DEFAULT_EARNINGS.map((e, i) => {
           const saved = complements.find((c: any) => c.code === e.code);
           return {
             ...e,
             id: `earning-${i}`,
-            amount: e.code === 'BASE' ? (data.base_salary || 0) : (saved?.amount || 0)
+            amount: e.code === 'BASE' ? (Number(data.base_salary) || 0) : (saved?.amount || 0)
           };
         });
         setEarnings(restoredEarnings);
 
         // Restore deductions
-        const otherDeds = Array.isArray(data.other_deductions) ? data.other_deductions : [];
+        const otherDeds = Array.isArray(data.other_deductions) ? data.other_deductions as any[] : [];
         const restoredDeductions = DEFAULT_DEDUCTIONS.map((d, i) => {
-          if (d.code === 'IRPF') return { ...d, id: `deduction-${i}`, amount: data.irpf_percentage || 15 };
+          if (d.code === 'IRPF') return { ...d, id: `deduction-${i}`, amount: Number(data.irpf_percentage) || 15 };
           const saved = otherDeds.find((o: any) => o.code === d.code);
           return { ...d, id: `deduction-${i}`, amount: saved?.amount || 0 };
         });
@@ -200,14 +200,14 @@ export function HRPayrollEntryDialog({
       setSelectedEmployeeName(`${employee.first_name} ${employee.last_name}`);
       setSelectedEmployeeCategory(employee.job_title || 'Sin categoría');
 
-      // Fetch base salary
       const { data } = await supabase
         .from('erp_hr_employees')
         .select('base_salary')
         .eq('id', employeeId)
         .single();
 
-      const baseSalary = data?.base_salary ? parseFloat(data.base_salary) / 12 : 0; // Annual → monthly
+      const rawSalary = data?.base_salary ? Number(data.base_salary) : 0;
+      const baseSalary = rawSalary / 12; // Annual → monthly
       resetConcepts(Math.round(baseSalary * 100) / 100, 15);
     }
   };
