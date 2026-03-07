@@ -56,7 +56,7 @@ interface PhaseResult { phase: string; records: number; details: string; }
 // =============================================
 // CLEANUP HELPER: delete demo data from dependent tables in safe FK order
 // =============================================
-async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations' | 'regulatory') {
+async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations' | 'regulatory' | 'time_clock') {
   const deleteDemo = async (table: string) => {
     const { error } = await supabase.from(table).delete().eq('metadata->>is_demo', 'true');
     if (error) {
