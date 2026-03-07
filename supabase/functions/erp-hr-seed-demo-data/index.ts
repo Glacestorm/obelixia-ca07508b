@@ -945,12 +945,198 @@ async function seedTalentAdvanced(supabase: any): Promise<PhaseResult> {
 }
 
 // =============================================
+// PHASE 10: Operations (Settlements, Termination Analysis, Recalculations, Objectives)
+// =============================================
+async function seedOperations(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'operations');
+
+  const { data: emps } = await supabase.from('erp_hr_employees').select('id, first_name, last_name, base_salary, hire_date, department_id, contract_type').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true').limit(50);
+  if (!emps?.length) return { phase: 'operations', records: 0, details: 'No employees' };
+
+  const { data: cycles } = await supabase.from('erp_hr_evaluation_cycles').select('id').eq('company_id', COMPANY_ID).limit(3);
+  const { data: agreements } = await supabase.from('erp_hr_collective_agreements').select('id, code').eq('company_id', COMPANY_ID);
+
+  let count = 0;
+
+  // --- Termination Analysis (Offboarding) ---
+  const termTypes = ['voluntary', 'objective', 'disciplinary', 'end_contract', 'mutual', 'retirement'];
+  const termStatuses = ['draft', 'under_review', 'approved', 'in_progress', 'executed'];
+  const terminations: any[] = [];
+  // Pick 6 employees for termination scenarios
+  const termEmps = emps.slice(40, 46);
+  for (let i = 0; i < termEmps.length; i++) {
+    const emp = termEmps[i];
+    const tType = termTypes[i];
+    const status = termStatuses[Math.min(i, termStatuses.length - 1)];
+    const salary = emp.base_salary || 28000;
+    const hireDate = new Date(emp.hire_date);
+    const yearsWorked = Math.max(1, new Date().getFullYear() - hireDate.getFullYear());
+    const costMin = tType === 'voluntary' ? 0 : salary * yearsWorked * 20 / 365;
+    const costMax = tType === 'voluntary' ? salary / 12 : salary * yearsWorked * 33 / 365;
+    
+    terminations.push({
+      company_id: COMPANY_ID, employee_id: emp.id,
+      termination_type: tType,
+      status,
+      proposed_termination_date: dateStr(2025, randomBetween(8, 12), randomBetween(1, 28)),
+      actual_termination_date: ['executed'].includes(status) ? dateStr(2025, 11, 30) : null,
+      termination_reason: tType === 'voluntary' ? 'Mejor oferta laboral' : (tType === 'objective' ? 'Amortización de puesto por reestructuración' : (tType === 'retirement' ? 'Jubilación ordinaria' : 'Reorganización departamental')),
+      estimated_cost_min: parseFloat(costMin.toFixed(2)),
+      estimated_cost_max: parseFloat(costMax.toFixed(2)),
+      final_cost: status === 'executed' ? parseFloat(((costMin + costMax) / 2).toFixed(2)) : null,
+      legal_review_required: ['objective', 'disciplinary', 'collective'].includes(tType),
+      legal_review_status: ['objective', 'disciplinary'].includes(tType) ? (status === 'executed' ? 'approved' : 'pending') : null,
+      notice_period_days: tType === 'voluntary' ? 15 : (tType === 'objective' ? 15 : 0),
+      indemnity_calculated: status !== 'draft',
+      severance_calculated: status !== 'draft',
+      recommended_approach: tType === 'voluntary' ? 'Tramitar baja voluntaria estándar' : (tType === 'objective' ? 'Carta de despido objetivo con indemnización 20 días/año' : 'Procedimiento disciplinario con acta'),
+      legal_risks: tType === 'disciplinary' ? [{ risk: 'Impugnación por improcedencia', probability: 'media', mitigation: 'Documentar faltas graves con pruebas' }] : [],
+      ai_analysis: { risk_score: randomBetween(20, 80), recommendation: 'Seguir protocolo estándar', compliance_check: true },
+    });
+  }
+  const { error: termErr } = await supabase.from('erp_hr_termination_analysis').insert(terminations);
+  if (termErr) console.warn('Terminations:', termErr.message); else count += terminations.length;
+
+  // --- Settlements (Finiquitos) ---
+  const settlements: any[] = [];
+  const settlementStatuses = ['draft', 'calculated', 'pending_legal_validation', 'approved', 'paid'];
+  for (let i = 0; i < 5; i++) {
+    const emp = termEmps[i];
+    const salary = emp.base_salary || 28000;
+    const dailySalary = parseFloat((salary / 365).toFixed(2));
+    const hireDate = emp.hire_date;
+    const yearsWorked = Math.max(1, 2025 - parseInt(hireDate.substring(0, 4)));
+    const termDate = dateStr(2025, randomBetween(6, 11), randomBetween(1, 28));
+    const vacDays = randomBetween(3, 15);
+    const vacAmount = parseFloat((dailySalary * vacDays).toFixed(2));
+    const extraPaysProp = parseFloat((salary / 14 * randomDecimal(0.2, 0.8)).toFixed(2));
+    const salaryMonth = parseFloat((salary / 12).toFixed(2));
+    const tType = termTypes[i];
+    const indemnDaysPerYear = tType === 'objective' ? 20 : (tType === 'disciplinary' ? 33 : (tType === 'end_contract' ? 12 : 0));
+    const indemnTotalDays = parseFloat((indemnDaysPerYear * yearsWorked).toFixed(2));
+    const indemnGross = parseFloat((dailySalary * indemnTotalDays).toFixed(2));
+    const indemnExempt = Math.min(indemnGross, 180000);
+    const indemnTaxable = Math.max(0, indemnGross - indemnExempt);
+    const grossTotal = parseFloat((vacAmount + extraPaysProp + salaryMonth + indemnGross).toFixed(2));
+    const irpfPct = randomDecimal(12, 28);
+    const irpfRet = parseFloat(((grossTotal - indemnExempt) * irpfPct / 100).toFixed(2));
+    const ssRet = parseFloat((grossTotal * 0.0635).toFixed(2));
+    const netTotal = parseFloat((grossTotal - irpfRet - ssRet).toFixed(2));
+    const status = settlementStatuses[i];
+    
+    settlements.push({
+      company_id: COMPANY_ID, employee_id: emp.id,
+      employee_snapshot: { first_name: emp.first_name, last_name: emp.last_name },
+      hire_date: hireDate, termination_date: termDate,
+      last_work_day: termDate,
+      termination_type: tType,
+      termination_reason: tType === 'voluntary' ? 'Baja voluntaria' : 'Despido objetivo',
+      base_salary: salary, daily_salary: dailySalary, years_worked: yearsWorked,
+      pending_vacation_days: vacDays, vacation_amount: vacAmount,
+      extra_pays_proportional: extraPaysProp, salary_current_month: salaryMonth,
+      other_concepts: 0, other_concepts_detail: [],
+      indemnization_type: tType, indemnization_days_per_year: indemnDaysPerYear,
+      indemnization_total_days: indemnTotalDays, indemnization_gross: indemnGross,
+      indemnization_exempt: indemnExempt, indemnization_taxable: indemnTaxable,
+      gross_total: grossTotal, irpf_retention: Math.max(0, irpfRet), irpf_percentage: irpfPct,
+      ss_retention: ssRet, net_total: netTotal,
+      status,
+      legal_references: [{ ref: 'Art. 49.1.c ET', description: 'Extinción por causas objetivas' }],
+      ai_validation_status: ['calculated', 'pending_legal_validation', 'approved', 'paid'].includes(status) ? 'validated' : null,
+      ai_confidence_score: ['calculated', 'pending_legal_validation', 'approved', 'paid'].includes(status) ? randomDecimal(85, 98) : null,
+      ai_explanation: ['calculated', 'pending_legal_validation', 'approved', 'paid'].includes(status) ? 'Cálculo verificado conforme a ET y convenio aplicable' : null,
+      legal_validation_status: ['approved', 'paid'].includes(status) ? 'approved' : null,
+      legal_validation_notes: status === 'paid' ? 'Conforme a normativa vigente' : null,
+      hr_approval_status: ['approved', 'paid'].includes(status) ? 'approved' : null,
+      payment_date: status === 'paid' ? dateStr(2025, 10, 28) : null,
+      payment_method: status === 'paid' ? 'transfer' : null,
+      collective_agreement_name: 'Convenio Colectivo del Metal',
+    });
+  }
+  const { error: setErr } = await supabase.from('erp_hr_settlements').insert(settlements);
+  if (setErr) console.warn('Settlements:', setErr.message); else count += settlements.length;
+
+  // --- Payroll Recalculations ---
+  const recalculations: any[] = [];
+  const recalcStatuses = ['pending', 'completed', 'completed', 'applied', 'rejected'];
+  for (let i = 0; i < 8; i++) {
+    const emp = emps[i * 5];
+    const origBase = parseFloat(((emp.base_salary || 28000) / 14).toFixed(2));
+    const recalcBase = parseFloat((origBase * randomDecimal(1.01, 1.05)).toFixed(2));
+    const diff = parseFloat((recalcBase - origBase).toFixed(2));
+    const period = `2025-${String(randomBetween(1, 9)).padStart(2, '0')}`;
+    const status = recalcStatuses[i % recalcStatuses.length];
+    
+    recalculations.push({
+      company_id: COMPANY_ID, employee_id: emp.id,
+      period,
+      status,
+      original_values: { base_salary: origBase, ss_worker: parseFloat((origBase * 0.0635).toFixed(2)), irpf: parseFloat((origBase * 0.18).toFixed(2)), net: parseFloat((origBase * 0.75).toFixed(2)) },
+      recalculated_values: { base_salary: recalcBase, ss_worker: parseFloat((recalcBase * 0.0635).toFixed(2)), irpf: parseFloat((recalcBase * 0.18).toFixed(2)), net: parseFloat((recalcBase * 0.75).toFixed(2)) },
+      differences: { base_salary: { original: origBase, recalculated: recalcBase, diff } },
+      total_difference: diff,
+      risk_level: diff > 100 ? 'medium' : 'low',
+      compliance_issues: diff > 80 ? [{ type: 'salary_update', severity: 'info', message: 'Actualización por revisión salarial de convenio' }] : [],
+      ai_validation_status: status !== 'pending' ? 'validated' : null,
+      ai_validation: status !== 'pending' ? { status: 'validated', analysis: 'Recálculo conforme a tablas salariales', recommendations: ['Aplicar retroactivos'] } : null,
+      legal_validation_status: ['applied', 'completed'].includes(status) ? 'approved' : null,
+      legal_validation: ['applied', 'completed'].includes(status) ? { status: 'approved', opinion: 'Conforme', risk_level: 'low' } : null,
+      hr_approval_status: status === 'applied' ? 'approved' : null,
+      hr_approval: status === 'applied' ? { status: 'approved', approver: 'Director RRHH', notes: 'Aprobado', approved_at: new Date().toISOString() } : null,
+      agreement_id: agreements?.[0]?.id || null,
+      notes: 'Recálculo por actualización tablas convenio',
+    });
+  }
+  const { error: recErr } = await supabase.from('erp_hr_payroll_recalculations').insert(recalculations);
+  if (recErr) console.warn('Recalculations:', recErr.message); else count += recalculations.length;
+
+  // --- Employee Objectives ---
+  if (cycles?.length) {
+    const objectives: any[] = [];
+    const objTypes = ['individual', 'team', 'company', 'development'];
+    const objStatuses = ['active', 'active', 'completed', 'in_progress'];
+    const objTitles = [
+      'Incrementar ventas 15% trimestral', 'Reducir incidencias producción', 'Completar certificación PMP',
+      'Mejorar NPS cliente interno', 'Optimizar tiempo de entrega', 'Implementar proceso lean en línea 2',
+      'Alcanzar ratio calidad 99.5%', 'Formación equipo en nuevas herramientas', 'Reducir absentismo departamental',
+      'Desarrollar plan de carrera individual', 'Liderar proyecto transformación digital', 'Mejorar eficiencia energética planta'
+    ];
+    for (let i = 0; i < 30; i++) {
+      const emp = randomFrom(emps);
+      const cycle = randomFrom(cycles);
+      objectives.push({
+        company_id: COMPANY_ID, employee_id: emp.id, cycle_id: cycle.id,
+        title: objTitles[i % objTitles.length],
+        description: `Objetivo asignado en ciclo de evaluación`,
+        objective_type: randomFrom(objTypes),
+        status: randomFrom(objStatuses),
+        weight_percentage: randomBetween(10, 40),
+        target_value: randomBetween(70, 100),
+        current_value: randomBetween(30, 95),
+        achievement_percentage: randomBetween(40, 100),
+        target_unit: randomFrom(['%', 'unidades', 'puntos', 'días']),
+        due_date: dateStr(2025, 12, 31),
+      });
+    }
+    const { error: objErr } = await supabase.from('erp_hr_employee_objectives').insert(objectives);
+    if (objErr) console.warn('Objectives:', objErr.message); else count += objectives.length;
+  }
+
+  return { phase: 'operations', records: count, details: `${terminations.length} offboardings, ${settlements.length} finiquitos, ${recalculations.length} recálculos, ${cycles?.length ? 30 : 0} objetivos` };
+}
+
+// =============================================
 // PURGE ALL DEMO DATA
 // =============================================
 async function purgeAllDemo(supabase: any): Promise<PhaseResult> {
   // Clean new talent advanced tables first
   await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
+  // Clean operations tables
+  await supabase.from('erp_hr_settlements').delete().eq('company_id', COMPANY_ID);
+  await supabase.from('erp_hr_termination_analysis').delete().eq('company_id', COMPANY_ID);
+  await supabase.from('erp_hr_payroll_recalculations').delete().eq('company_id', COMPANY_ID);
+  await supabase.from('erp_hr_employee_objectives').delete().eq('company_id', COMPANY_ID);
   // Use the centralized cleanup which handles FK order
   await cleanupDemoData(supabase, 'all');
 
