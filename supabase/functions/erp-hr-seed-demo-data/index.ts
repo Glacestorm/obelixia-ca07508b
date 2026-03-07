@@ -137,7 +137,7 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
   if (tpErr) console.warn('Time policies:', tpErr.message);
   else count += timePolicies.length;
 
-  return { phase: 'infrastructure', records: count, details: `${depts.length} departamentos, ${positions.length} puestos, ${agreements.length} convenios, ${leaveTypes.length} tipos ausencia, ${timePolicies.length} políticas horarias` };
+  return { phase: 'infrastructure', records: count, details: `${deptSeeds.length} departamentos, ${positions.length} puestos, ${agreements.length} convenios, ${leaveTypes.length} tipos ausencia, ${timePolicies.length} políticas horarias` };
 }
 
 async function seedEmployees(supabase: any): Promise<PhaseResult> {
