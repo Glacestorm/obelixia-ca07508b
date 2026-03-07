@@ -413,6 +413,9 @@ async function seedEmployees(supabase: any): Promise<PhaseResult> {
       department_id: deptMap[def.dept], category: def.ct === 'indefinido' ? 'fijo' : def.ct,
       job_title: `Puesto ${i + 1}`, base_salary: salary, contract_type: def.ct,
       work_schedule: 'full_time', weekly_hours: 40, metadata: DEMO_META,
+      // Multi-jurisdictional: 90% Spain, 5% Andorra, 5% EU
+      fiscal_jurisdiction: i < 45 ? 'ES' : (i < 48 ? 'AD' : 'EU'),
+      autonomous_community: i < 45 ? randomFrom(['Cataluña','Aragón','Madrid','Andalucía','País Vasco']) : null,
     });
 
     const agreementKey = ['PROD','LOG','CAL'].includes(def.dept) ? 'CONV-METAL-2024' : (def.dept === 'IT' ? 'CONV-ELEC-2024' : 'CONV-OFIC-2024');
