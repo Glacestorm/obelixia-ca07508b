@@ -10,11 +10,25 @@ let COMPANY_ID = '2cbd8718-7a8b-42ce-af61-bef193da32df';
 const DEMO_META = { is_demo: true };
 
 async function resolveCompanyId(supabase: any, requestCompanyId?: string): Promise<string> {
-  if (requestCompanyId) { COMPANY_ID = requestCompanyId; return requestCompanyId; }
-  const { data } = await supabase.from('erp_companies').select('id').limit(1).single();
-  if (!data?.id) throw new Error('No ERP company found. Create one first.');
-  COMPANY_ID = data.id;
-  return data.id;
+  if (requestCompanyId) { COMPANY_ID = requestCompanyId; }
+  else {
+    const { data } = await supabase.from('erp_companies').select('id, name').limit(1).single();
+    if (!data?.id) throw new Error('No ERP company found. Create one first.');
+    COMPANY_ID = data.id;
+  }
+
+  // Ensure company exists in BOTH tables (some HR tables FK to `companies`, others to `erp_companies`)
+  const { data: erpCo } = await supabase.from('erp_companies').select('id, name').eq('id', COMPANY_ID).single();
+  if (erpCo) {
+    const { data: mainCo } = await supabase.from('companies').select('id').eq('id', COMPANY_ID).maybeSingle();
+    if (!mainCo) {
+      // Insert into companies table so FKs referencing companies(id) work
+      await supabase.from('companies').insert({ id: COMPANY_ID, name: erpCo.name || 'Demo Company' });
+      console.log(`[resolveCompanyId] Synced company ${COMPANY_ID} into companies table`);
+    }
+  }
+
+  return COMPANY_ID;
 }
 
 const FIRST_NAMES_M = ['Carlos','Miguel','Alejandro','David','Javier','Pablo','Andrés','Daniel','Jorge','Fernando','Sergio','Raúl','Antonio','Manuel','Francisco','Luis','Pedro','Iván','Rubén','Óscar'];
