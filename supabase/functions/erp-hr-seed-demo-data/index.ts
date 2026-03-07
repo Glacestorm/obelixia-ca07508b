@@ -611,7 +611,7 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   for (const emp of emps) {
     evals.push({
       company_id: COMPANY_ID, employee_id: emp.id, cycle_id: randomFrom(cycleData).id,
-      evaluator_id: emps[0].id, evaluation_type: randomFrom(['self', 'manager', 'peer']),
+      evaluation_type: randomFrom(['self', 'manager', 'peer']),
       overall_score: randomDecimal(50, 98, 1),
       status: randomFrom(['approved', 'approved', 'draft', 'submitted', 'reviewed']),
       strengths: ['Trabajo en equipo', 'Puntualidad', 'Resolución de problemas'].slice(0, randomBetween(1,3)),
@@ -760,7 +760,7 @@ async function seedLegal(supabase: any): Promise<PhaseResult> {
   const reports = [
     { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'harassment', subject: 'Posible acoso verbal', description: 'Posible acoso verbal en producción', status: 'investigating', priority: 'high', is_anonymous: true, received_at: '2025-04-20T10:00:00Z' },
     { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'fraud', subject: 'Uso indebido tarjeta empresa', description: 'Uso indebido de tarjeta corporativa', status: 'resolved', priority: 'medium', is_anonymous: false, received_at: '2025-02-15T14:30:00Z', resolved_at: '2025-03-10T09:00:00Z' },
-    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'safety_violation', subject: 'Incumplimiento normas seguridad', description: 'Incumplimiento normas seguridad turno noche', status: 'pending', priority: 'high', is_anonymous: true, received_at: '2025-09-05T08:00:00Z' },
+    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'safety_violation', subject: 'Incumplimiento normas seguridad', description: 'Incumplimiento normas seguridad turno noche', status: 'received', priority: 'high', is_anonymous: true, received_at: '2025-09-05T08:00:00Z' },
   ];
   const { error: repErr } = await supabase.from('erp_hr_whistleblower_reports').insert(reports);
   if (repErr) console.warn('Whistleblower:', repErr.message); else count += reports.length;
