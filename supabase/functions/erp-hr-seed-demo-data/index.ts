@@ -56,12 +56,10 @@ interface PhaseResult { phase: string; records: number; details: string; }
 // =============================================
 // CLEANUP HELPER: delete demo data from dependent tables in safe FK order
 // =============================================
-async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations') {
+async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations' | 'regulatory') {
   const deleteDemo = async (table: string) => {
-    // Try metadata-based deletion first
     const { error } = await supabase.from(table).delete().eq('metadata->>is_demo', 'true');
     if (error) {
-      // Fallback: delete by company_id for tables without metadata
       await supabase.from(table).delete().eq('company_id', COMPANY_ID);
     }
   };
@@ -75,20 +73,23 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
     await q;
   };
 
-  // Order matters: delete children before parents
   if (scope === 'all' || scope === 'operations') {
-    // Settlements, termination analysis, payroll recalculations, objectives
     await deleteByCompany('erp_hr_settlements');
     await deleteByCompany('erp_hr_termination_analysis');
     await deleteByCompany('erp_hr_payroll_recalculations');
     await deleteByCompany('erp_hr_employee_objectives');
   }
 
+  if (scope === 'all' || scope === 'regulatory') {
+    await deleteByCompany('erp_hr_regulatory_alerts');
+    await deleteByCompany('erp_hr_regulatory_watch');
+    await deleteByCompany('erp_hr_regulatory_watch_config');
+  }
+
   if (scope === 'all' || scope === 'experience') {
     await deleteDemo('erp_hr_ss_contributions');
     await deleteDemo('erp_hr_recognition');
     await deleteDemo('erp_hr_recognition_programs');
-    // Onboarding tasks reference onboarding, so delete tasks first
     await supabase.from('erp_hr_onboarding_tasks').delete().in(
       'onboarding_id',
       (await supabase.from('erp_hr_employee_onboarding').select('id').eq('company_id', COMPANY_ID)).data?.map((r: any) => r.id) || []
@@ -106,8 +107,15 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
   if (scope === 'all' || scope === 'compliance') {
     await deleteByCompany('erp_hr_employee_documents');
     await deleteByCompany('erp_hr_document_templates');
+    // Clean both benefit table sets
     await deleteByCompany('erp_hr_benefits_enrollments');
     await deleteByCompany('erp_hr_benefits_plans');
+    // Also clean the social benefits tables used by the panel
+    await supabase.from('erp_hr_employee_benefits').delete().in(
+      'benefit_id',
+      (await supabase.from('erp_hr_social_benefits').select('id').eq('company_id', COMPANY_ID)).data?.map((r: any) => r.id) || []
+    );
+    await deleteByCompany('erp_hr_social_benefits');
     await deleteByCompany('erp_hr_safety_incidents');
   }
 
@@ -145,7 +153,6 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
     await supabase.from('erp_hr_leave_types').delete().in('code', ['VAC','IT','MAT','PAT','AP','MATRIM','MUDANZA','FALLEC']);
     await deleteDemo('erp_hr_collective_agreements');
     await deleteByCompany('erp_hr_job_positions', { col: 'position_name', op: 'like', val: '%(Demo)%' });
-    // Departments: only delete if no remaining FK references
     await supabase.from('erp_hr_departments').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
   }
 
