@@ -61,6 +61,7 @@ const PHASES: PhaseConfig[] = [
   { action: 'seed_experience', label: 'Experiencia Empleado', description: 'Onboarding, reconocimientos, cotizaciones SS', icon: <Heart className="h-4 w-4" />, estimatedRecords: '~570' },
   { action: 'seed_talent_advanced', label: 'Talento Avanzado', description: 'Oportunidades marketplace, posiciones sucesión', icon: <Sparkles className="h-4 w-4" />, estimatedRecords: '~13' },
   { action: 'seed_operations', label: 'Operaciones Avanzadas', description: 'Finiquitos, offboarding, recálculos, objetivos', icon: <Receipt className="h-4 w-4" />, estimatedRecords: '~49' },
+  { action: 'seed_regulatory', label: 'Vigilancia Normativa', description: 'Normativas BOE/DOUE, alertas, configuración', icon: <Shield className="h-4 w-4" />, estimatedRecords: '~14' },
 ];
 
 interface PhaseStatus {
