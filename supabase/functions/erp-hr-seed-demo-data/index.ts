@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-let COMPANY_ID = '';
+let COMPANY_ID = '2cbd8718-7a8b-42ce-af61-bef193da32df';
 const DEMO_META = { is_demo: true };
 
 async function resolveCompanyId(supabase: any, requestCompanyId?: string): Promise<string> {
@@ -14,9 +14,9 @@ async function resolveCompanyId(supabase: any, requestCompanyId?: string): Promi
     COMPANY_ID = requestCompanyId;
     return requestCompanyId;
   }
-  // Auto-detect: first active company
-  const { data } = await supabase.from('companies').select('id').limit(1).single();
-  if (!data?.id) throw new Error('No company found in database. Create a company first.');
+  // Auto-detect: first active ERP company
+  const { data } = await supabase.from('erp_companies').select('id').limit(1).single();
+  if (!data?.id) throw new Error('No ERP company found. Create one first.');
   COMPANY_ID = data.id;
   return data.id;
 }
