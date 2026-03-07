@@ -459,7 +459,7 @@ async function seedPayrolls(supabase: any): Promise<PhaseResult> {
 
       payrolls.push({
         company_id: COMPANY_ID, employee_id: emp.id, period_month: month, period_year: 2025,
-        payroll_type: month === 6 ? 'extra_junio' : 'ordinaria',
+        payroll_type: month === 6 ? 'extra' : 'mensual',
         base_salary: parseFloat(monthlySalary.toFixed(2)), complements, gross_salary: grossSalary,
         ss_worker: ssWorker, irpf_amount: irpfAmount, irpf_percentage: irpfPct,
         other_deductions: Object.keys(otherDed).length > 0 ? otherDed : null,
