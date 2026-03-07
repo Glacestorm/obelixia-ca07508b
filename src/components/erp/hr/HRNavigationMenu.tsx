@@ -33,7 +33,8 @@ import {
   ChevronRight,
   ChevronDown,
   Calculator,
-  Link2
+  Link2,
+  Database
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
