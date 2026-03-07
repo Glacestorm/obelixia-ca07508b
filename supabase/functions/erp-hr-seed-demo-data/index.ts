@@ -55,7 +55,7 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
     { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'IT', name: 'Tecnología', description: 'Sistemas, desarrollo y soporte', sort_order: 7, is_active: true, metadata: DEMO_META },
     { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'CAL', name: 'Calidad y PRL', description: 'Control de calidad y prevención', sort_order: 8, is_active: true, metadata: DEMO_META },
   ];
-  const { error: deptErr } = await supabase.from('erp_hr_departments').insert(depts);
+  const { error: deptErr } = await supabase.from('erp_hr_departments').upsert(depts, { onConflict: 'company_id,code' });
   if (deptErr) throw new Error(`Departments: ${deptErr.message}`);
   count += depts.length;
 
