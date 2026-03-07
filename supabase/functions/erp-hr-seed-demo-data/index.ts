@@ -25,6 +25,10 @@ interface PhaseResult { phase: string; records: number; details: string; }
 
 async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
   let count = 0;
+  // Clean existing demo infrastructure first to avoid unique constraint violations
+  await supabase.from('erp_hr_departments').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+  await supabase.from('erp_hr_job_positions').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+  
   const depts = [
     { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'DIR', name: 'Dirección General', description: 'Alta dirección y estrategia', sort_order: 1, is_active: true, metadata: DEMO_META },
     { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'ADM', name: 'Administración y Finanzas', description: 'Contabilidad, tesorería y fiscal', sort_order: 2, is_active: true, metadata: DEMO_META },
