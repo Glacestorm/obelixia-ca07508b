@@ -202,7 +202,7 @@ async function seedEmployees(supabase: any): Promise<PhaseResult> {
       first_name: firstName, last_name: `${lastName1} ${lastName2}`,
       national_id: padDNI(randomBetween(10000000, 99999999)), ss_number: genSSN(),
       birth_date: dateStr(randomBetween(1968, 2000), randomBetween(1,12), randomBetween(1,28)),
-      gender: isFemale ? 'female' : 'male',
+      gender: isFemale ? 'F' : 'M',
       email: `${firstName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}.${lastName1.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}@empresa-demo.es`,
       phone: `+34 6${randomBetween(10,99)} ${randomBetween(100,999)} ${randomBetween(100,999)}`,
       address: { street: `Calle ${randomFrom(['Mayor','Real','Nueva','Sol','Luna','Estrella','Paz'])} ${randomBetween(1,120)}`, city: randomFrom(['Lleida','Balaguer','Tàrrega','Mollerussa','Cervera']), postal_code: `25${String(randomBetween(1,999)).padStart(3,'0')}`, province: 'Lleida', country: 'ES' },
