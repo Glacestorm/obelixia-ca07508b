@@ -118,6 +118,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'knowledge', label: 'Normativa', icon: BookOpen },
         { id: 'legal-compliance', label: 'Cumplimiento Legal', icon: Shield },
         { id: 'integration', label: 'Integración Módulos', icon: Link2 },
+        { id: 'demo-seed', label: 'Datos Demo', icon: Database },
         { id: 'help', label: 'Ayuda', icon: HelpCircle },
       ]
     },
