@@ -26,9 +26,8 @@ export default defineConfig(({ mode }) => ({
       jsxImportSource: undefined,
     }), 
     mode === "development" && componentTagger(),
-    // PWA Configuration for Offline Support
-    VitePWA({
-      registerType: 'autoUpdate',
+    // PWA only in production builds to reduce build-time memory in development mode
+    mode === "production" && VitePWA({
       includeAssets: ['favicon.ico', 'brain-logo.png', 'robots.txt'],
       manifest: {
         name: 'ObelixIA - CRM Bancario Inteligente',
