@@ -10,15 +10,33 @@ let COMPANY_ID = '2cbd8718-7a8b-42ce-af61-bef193da32df';
 const DEMO_META = { is_demo: true };
 
 async function resolveCompanyId(supabase: any, requestCompanyId?: string): Promise<string> {
-  if (requestCompanyId) {
-    COMPANY_ID = requestCompanyId;
-    return requestCompanyId;
+  if (requestCompanyId) { COMPANY_ID = requestCompanyId; }
+  else {
+    const { data } = await supabase.from('erp_companies').select('id, name').limit(1).single();
+    if (!data?.id) throw new Error('No ERP company found. Create one first.');
+    COMPANY_ID = data.id;
   }
-  // Auto-detect: first active ERP company
-  const { data } = await supabase.from('erp_companies').select('id').limit(1).single();
-  if (!data?.id) throw new Error('No ERP company found. Create one first.');
-  COMPANY_ID = data.id;
-  return data.id;
+
+  // Ensure company exists in BOTH tables (some HR tables FK to `companies`, others to `erp_companies`)
+  const { data: erpCo } = await supabase.from('erp_companies').select('id, name').eq('id', COMPANY_ID).single();
+  if (erpCo) {
+    const { data: mainCo } = await supabase.from('companies').select('id').eq('id', COMPANY_ID).maybeSingle();
+    if (!mainCo) {
+      // Insert into companies table so FKs referencing companies(id) work
+      const { error: syncErr } = await supabase.from('companies').insert({
+        id: COMPANY_ID,
+        name: erpCo.name || 'Demo Company',
+        address: 'Carrer Major 1, 25001 Lleida',
+        longitude: 0.6206,
+        latitude: 41.6148,
+        parroquia: 'Lleida',
+      });
+      if (syncErr) console.warn('[resolveCompanyId] Sync error:', syncErr.message);
+      else console.log(`[resolveCompanyId] Synced company ${COMPANY_ID} into companies table`);
+    }
+  }
+
+  return COMPANY_ID;
 }
 
 const FIRST_NAMES_M = ['Carlos','Miguel','Alejandro','David','Javier','Pablo','Andrés','Daniel','Jorge','Fernando','Sergio','Raúl','Antonio','Manuel','Francisco','Luis','Pedro','Iván','Rubén','Óscar'];
@@ -35,13 +53,102 @@ function dateStr(y: number, m: number, d: number): string { return `${y}-${Strin
 
 interface PhaseResult { phase: string; records: number; details: string; }
 
+// =============================================
+// CLEANUP HELPER: delete demo data from dependent tables in safe FK order
+// =============================================
+async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience') {
+  const deleteDemo = async (table: string) => {
+    // Try metadata-based deletion first
+    const { error } = await supabase.from(table).delete().eq('metadata->>is_demo', 'true');
+    if (error) {
+      // Fallback: delete by company_id for tables without metadata
+      await supabase.from(table).delete().eq('company_id', COMPANY_ID);
+    }
+  };
+
+  const deleteByCompany = async (table: string, extraFilter?: { col: string; op: string; val: any }) => {
+    let q = supabase.from(table).delete().eq('company_id', COMPANY_ID);
+    if (extraFilter) {
+      if (extraFilter.op === 'like') q = q.like(extraFilter.col, extraFilter.val);
+      else if (extraFilter.op === 'in') q = q.in(extraFilter.col, extraFilter.val);
+    }
+    await q;
+  };
+
+  // Order matters: delete children before parents
+  if (scope === 'all' || scope === 'experience') {
+    await deleteDemo('erp_hr_ss_contributions');
+    await deleteDemo('erp_hr_recognition');
+    await deleteDemo('erp_hr_recognition_programs');
+    // Onboarding tasks reference onboarding, so delete tasks first
+    await supabase.from('erp_hr_onboarding_tasks').delete().in(
+      'onboarding_id',
+      (await supabase.from('erp_hr_employee_onboarding').select('id').eq('company_id', COMPANY_ID)).data?.map((r: any) => r.id) || []
+    );
+    await deleteByCompany('erp_hr_employee_onboarding');
+    await deleteByCompany('erp_hr_offboarding_history');
+  }
+
+  if (scope === 'all' || scope === 'legal') {
+    await deleteDemo('erp_hr_sanction_alerts');
+    await deleteDemo('erp_hr_whistleblower_reports');
+    await deleteDemo('erp_hr_equality_plans');
+  }
+
+  if (scope === 'all' || scope === 'compliance') {
+    await deleteDemo('erp_hr_employee_documents');
+    await deleteDemo('erp_hr_document_templates');
+    await deleteDemo('erp_hr_benefits_enrollments');
+    await deleteDemo('erp_hr_benefits_plans');
+    await deleteDemo('erp_hr_safety_incidents');
+  }
+
+  if (scope === 'all' || scope === 'talent') {
+    await deleteByCompany('erp_hr_interviews');
+    await deleteByCompany('erp_hr_candidates');
+    await deleteByCompany('erp_hr_job_openings');
+    await deleteDemo('erp_hr_performance_evaluations');
+    await deleteByCompany('erp_hr_evaluation_cycles');
+    await deleteDemo('erp_hr_training_enrollments');
+    await deleteDemo('erp_hr_training_catalog');
+  }
+
+  if (scope === 'all' || scope === 'time_absences') {
+    await deleteDemo('erp_hr_time_entries');
+    await deleteByCompany('erp_hr_leave_requests');
+    await deleteByCompany('erp_hr_leave_balances');
+  }
+
+  if (scope === 'all' || scope === 'payrolls') {
+    await deleteDemo('erp_hr_payrolls');
+  }
+
+  if (scope === 'all' || scope === 'employees') {
+    await deleteDemo('erp_hr_employee_compensation');
+    await deleteByCompany('erp_hr_contracts');
+    await deleteDemo('erp_hr_employees');
+  }
+
+  if (scope === 'all' || scope === 'infrastructure') {
+    await deleteByCompany('erp_hr_time_policies', { col: 'policy_name', op: 'like', val: '%Demo%' });
+    await supabase.from('erp_hr_leave_types').delete().in('code', ['VAC','IT','MAT','PAT','AP','MATRIM','MUDANZA','FALLEC']);
+    await deleteDemo('erp_hr_collective_agreements');
+    await deleteByCompany('erp_hr_job_positions', { col: 'position_name', op: 'like', val: '%(Demo)%' });
+    // Departments: only delete if no remaining FK references
+    await supabase.from('erp_hr_departments').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+  }
+
+  console.log(`[cleanup] Scope ${scope} completed for company ${COMPANY_ID}`);
+}
+
+// =============================================
+// PHASE 1: Infrastructure
+// =============================================
 async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'infrastructure');
   let count = 0;
-  // Clean existing demo infrastructure first to avoid unique constraint violations
-  await supabase.from('erp_hr_time_policies').delete().eq('company_id', COMPANY_ID).like('policy_name', '%Demo%');
-  await supabase.from('erp_hr_leave_types').delete().in('code', ['VAC','IT','MAT','PAT','AP','MATRIM','MUDANZA','FALLEC']);
-  await supabase.from('erp_hr_collective_agreements').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
-  await supabase.from('erp_hr_job_positions').delete().eq('company_id', COMPANY_ID).like('position_name', '%(Demo)%');
+
+  // --- Departments: select existing, insert only missing ---
   const deptSeeds = [
     { company_id: COMPANY_ID, code: 'DIR', name: 'Dirección General', description: 'Alta dirección y estrategia', sort_order: 1, is_active: true, metadata: DEMO_META },
     { company_id: COMPANY_ID, code: 'ADM', name: 'Administración y Finanzas', description: 'Contabilidad, tesorería y fiscal', sort_order: 2, is_active: true, metadata: DEMO_META },
@@ -52,11 +159,29 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
     { company_id: COMPANY_ID, code: 'IT', name: 'Tecnología', description: 'Sistemas, desarrollo y soporte', sort_order: 7, is_active: true, metadata: DEMO_META },
     { company_id: COMPANY_ID, code: 'CAL', name: 'Calidad y PRL', description: 'Control de calidad y prevención', sort_order: 8, is_active: true, metadata: DEMO_META },
   ];
+  const deptCodes = deptSeeds.map(d => d.code);
 
-  const deptCodes = deptSeeds.map((d) => d.code);
-  const { error: deptErr } = await supabase.from('erp_hr_departments').upsert(deptSeeds, { onConflict: 'company_id,code' });
-  if (deptErr) throw new Error(`Departments: ${deptErr.message}`);
+  // Check which departments already exist
+  const { data: existingDepts } = await supabase
+    .from('erp_hr_departments')
+    .select('id, code')
+    .eq('company_id', COMPANY_ID)
+    .in('code', deptCodes);
 
+  const existingCodes = new Set((existingDepts || []).map((d: any) => d.code));
+  const newDepts = deptSeeds.filter(d => !existingCodes.has(d.code));
+
+  if (newDepts.length > 0) {
+    const { error: deptErr } = await supabase.from('erp_hr_departments').insert(newDepts);
+    if (deptErr) throw new Error(`Departments insert: ${deptErr.message}`);
+  }
+
+  // Update metadata on existing departments to mark as demo
+  for (const existing of (existingDepts || [])) {
+    await supabase.from('erp_hr_departments').update({ metadata: DEMO_META }).eq('id', existing.id);
+  }
+
+  // Fetch all department IDs
   const { data: deptRows, error: deptFetchErr } = await supabase
     .from('erp_hr_departments')
     .select('id, code')
@@ -64,15 +189,13 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
     .in('code', deptCodes);
   if (deptFetchErr) throw new Error(`Departments fetch: ${deptFetchErr.message}`);
 
-  const deptMapByCode = Object.fromEntries((deptRows || []).map((d: any) => [d.code, d.id])) as Record<string, string>;
+  const deptMapByCode = Object.fromEntries((deptRows || []).map((d: any) => [d.code, d.id]));
   for (const code of deptCodes) {
-    if (!deptMapByCode[code]) {
-      throw new Error(`Departments: missing department code ${code} after upsert`);
-    }
+    if (!deptMapByCode[code]) throw new Error(`Missing department: ${code}`);
   }
-
   count += deptSeeds.length;
 
+  // --- Positions ---
   const positions = [
     { company_id: COMPANY_ID, position_code: 'D-CEO', position_name: 'Director General (Demo)', department_id: deptMapByCode.DIR, salary_band_min: 70000, salary_band_max: 95000, is_active: true },
     { company_id: COMPANY_ID, position_code: 'D-CFO', position_name: 'Director Financiero (Demo)', department_id: deptMapByCode.ADM, salary_band_min: 55000, salary_band_max: 80000, is_active: true },
@@ -100,10 +223,23 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
     { company_id: COMPANY_ID, position_code: 'D-RECEP', position_name: 'Recepcionista (Demo)', department_id: deptMapByCode.ADM, salary_band_min: 18000, salary_band_max: 22000, is_active: true },
     { company_id: COMPANY_ID, position_code: 'D-COND', position_name: 'Conductor/Repartidor (Demo)', department_id: deptMapByCode.LOG, salary_band_min: 20000, salary_band_max: 28000, is_active: true },
   ];
-  const { error: posErr } = await supabase.from('erp_hr_job_positions').insert(positions);
-  if (posErr) throw new Error(`Positions: ${posErr.message}`);
+
+  // Check existing positions and only insert missing
+  const posCodes = positions.map(p => p.position_code);
+  const { data: existingPos } = await supabase
+    .from('erp_hr_job_positions')
+    .select('position_code')
+    .eq('company_id', COMPANY_ID)
+    .in('position_code', posCodes);
+  const existingPosCodes = new Set((existingPos || []).map((p: any) => p.position_code));
+  const newPositions = positions.filter(p => !existingPosCodes.has(p.position_code));
+  if (newPositions.length > 0) {
+    const { error: posErr } = await supabase.from('erp_hr_job_positions').insert(newPositions);
+    if (posErr) throw new Error(`Positions: ${posErr.message}`);
+  }
   count += positions.length;
 
+  // --- Collective Agreements ---
   const agreements = [
     { company_id: COMPANY_ID, code: 'CONV-METAL-2024', name: 'Convenio Colectivo del Metal de Lleida', jurisdiction_code: 'ES-L', effective_date: '2024-01-01', expiration_date: '2026-12-31', extra_payments: 2, working_hours_week: 40, vacation_days: 23, is_active: true, metadata: DEMO_META },
     { company_id: COMPANY_ID, code: 'CONV-OFIC-2024', name: 'Convenio Colectivo de Oficinas y Despachos', jurisdiction_code: 'ES-CT', effective_date: '2024-01-01', expiration_date: '2025-12-31', extra_payments: 2, working_hours_week: 38.5, vacation_days: 22, is_active: true, metadata: DEMO_META },
@@ -113,6 +249,7 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
   if (agErr) throw new Error(`Agreements: ${agErr.message}`);
   count += agreements.length;
 
+  // --- Leave Types (global, not company-scoped) ---
   const leaveTypes = [
     { code: 'VAC', name: 'Vacaciones anuales', jurisdiction: 'ES', category: 'vacation', days_entitled: 22, is_calendar_days: false, is_paid: true, requires_documentation: false, legal_reference: 'Art. 38 ET', is_active: true },
     { code: 'IT', name: 'Incapacidad Temporal', jurisdiction: 'ES', category: 'sick', days_entitled: 365, is_calendar_days: true, is_paid: true, requires_documentation: true, legal_reference: 'Art. 169 LGSS', is_active: true },
@@ -123,10 +260,20 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
     { code: 'MUDANZA', name: 'Mudanza', jurisdiction: 'ES', category: 'personal', days_entitled: 1, is_calendar_days: false, is_paid: true, requires_documentation: false, legal_reference: 'Art. 37.3.c ET', is_active: true },
     { code: 'FALLEC', name: 'Fallecimiento familiar', jurisdiction: 'ES', category: 'bereavement', days_entitled: 3, is_calendar_days: true, is_paid: true, requires_documentation: true, legal_reference: 'Art. 37.3.b ET', is_active: true },
   ];
-  const { error: ltErr } = await supabase.from('erp_hr_leave_types').insert(leaveTypes);
-  if (ltErr) console.warn('Leave types:', ltErr.message);
-  else count += leaveTypes.length;
+  // Use select-then-insert for leave types (unique on code+jurisdiction)
+  const ltCodes = leaveTypes.map(lt => lt.code);
+  const { data: existingLT } = await supabase.from('erp_hr_leave_types').select('code').in('code', ltCodes).eq('jurisdiction', 'ES');
+  const existingLTCodes = new Set((existingLT || []).map((lt: any) => lt.code));
+  const newLeaveTypes = leaveTypes.filter(lt => !existingLTCodes.has(lt.code));
+  if (newLeaveTypes.length > 0) {
+    const { error: ltErr } = await supabase.from('erp_hr_leave_types').insert(newLeaveTypes);
+    if (ltErr) console.warn('Leave types:', ltErr.message);
+    else count += newLeaveTypes.length;
+  } else {
+    count += leaveTypes.length;
+  }
 
+  // --- Time Policies ---
   const timePolicies = [
     { company_id: COMPANY_ID, policy_name: 'Jornada Continua Demo', policy_code: 'DEMO-CONT', weekly_hours: 35, daily_hours: 7, break_duration_minutes: 15, is_active: true },
     { company_id: COMPANY_ID, policy_name: 'Jornada Partida Demo', policy_code: 'DEMO-PART', weekly_hours: 40, daily_hours: 8, break_duration_minutes: 60, is_active: true },
@@ -134,17 +281,23 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
     { company_id: COMPANY_ID, policy_name: 'Turno Tarde Demo', policy_code: 'DEMO-TT', weekly_hours: 40, daily_hours: 8, break_duration_minutes: 20, is_active: true },
   ];
   const { error: tpErr } = await supabase.from('erp_hr_time_policies').insert(timePolicies);
-  if (tpErr) console.warn('Time policies:', tpErr.message);
+  if (tpErr) console.warn('Time policies (may already exist):', tpErr.message);
   else count += timePolicies.length;
 
   return { phase: 'infrastructure', records: count, details: `${deptSeeds.length} departamentos, ${positions.length} puestos, ${agreements.length} convenios, ${leaveTypes.length} tipos ausencia, ${timePolicies.length} políticas horarias` };
 }
 
+// =============================================
+// PHASE 2: Employees
+// =============================================
 async function seedEmployees(supabase: any): Promise<PhaseResult> {
-  const { data: deptData } = await supabase.from('erp_hr_departments').select('id, code').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+  await cleanupDemoData(supabase, 'employees');
+
+  const { data: deptData } = await supabase.from('erp_hr_departments').select('id, code').eq('company_id', COMPANY_ID).in('code', ['DIR','ADM','RRHH','COM','PROD','LOG','IT','CAL']);
   const deptMap: Record<string, string> = {};
   (deptData || []).forEach((d: any) => { deptMap[d.code] = d.id; });
-  const { data: agreeData } = await supabase.from('erp_hr_collective_agreements').select('id, code').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+
+  const { data: agreeData } = await supabase.from('erp_hr_collective_agreements').select('id, code').eq('company_id', COMPANY_ID);
   const agreeMap: Record<string, string> = {};
   (agreeData || []).forEach((a: any) => { agreeMap[a.code] = a.id; });
 
@@ -270,7 +423,12 @@ async function seedEmployees(supabase: any): Promise<PhaseResult> {
   return { phase: 'employees', records: employees.length + contracts.length + compensations.length, details: `${employees.length} empleados, ${contracts.length} contratos, ${compensations.length} compensaciones` };
 }
 
+// =============================================
+// PHASE 3: Payrolls
+// =============================================
 async function seedPayrolls(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'payrolls');
+
   const { data: emps } = await supabase.from('erp_hr_employees').select('id, base_salary, contract_type').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
   if (!emps?.length) throw new Error('No demo employees found');
 
@@ -301,7 +459,7 @@ async function seedPayrolls(supabase: any): Promise<PhaseResult> {
 
       payrolls.push({
         company_id: COMPANY_ID, employee_id: emp.id, period_month: month, period_year: 2025,
-        payroll_type: month === 6 ? 'extra_junio' : 'ordinaria',
+        payroll_type: month === 6 ? 'extra' : 'mensual',
         base_salary: parseFloat(monthlySalary.toFixed(2)), complements, gross_salary: grossSalary,
         ss_worker: ssWorker, irpf_amount: irpfAmount, irpf_percentage: irpfPct,
         other_deductions: Object.keys(otherDed).length > 0 ? otherDed : null,
@@ -323,7 +481,12 @@ async function seedPayrolls(supabase: any): Promise<PhaseResult> {
   return { phase: 'payrolls', records: inserted, details: `${inserted} nóminas (${emps.length} emp × ${months.length} meses)` };
 }
 
+// =============================================
+// PHASE 4: Time & Absences
+// =============================================
 async function seedTimeAndAbsences(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'time_absences');
+
   const { data: emps } = await supabase.from('erp_hr_employees').select('id').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true').limit(50);
   if (!emps?.length) return { phase: 'time_absences', records: 0, details: 'No employees' };
   let count = 0;
@@ -388,27 +551,32 @@ async function seedTimeAndAbsences(supabase: any): Promise<PhaseResult> {
   return { phase: 'time_absences', records: count, details: `${timeEntries.length} registros horarios, ${leaveRequests.length} ausencias, ${balances.length} saldos` };
 }
 
+// =============================================
+// PHASE 5: Talent
+// =============================================
 async function seedTalent(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'talent');
+
   const { data: emps } = await supabase.from('erp_hr_employees').select('id').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true').limit(50);
   if (!emps?.length) return { phase: 'talent', records: 0, details: 'No employees' };
   let count = 0;
 
   const courses = [
-    { company_id: COMPANY_ID, course_code: 'PRL-BAS', course_name: 'Prevención Riesgos Laborales Básico', category: 'seguridad', duration_hours: 30, modality: 'online', provider: 'Prevenia S.L.', cost_per_participant: 150, is_mandatory: true, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'GDPR', course_name: 'Protección de Datos (RGPD/LOPDGDD)', category: 'legal', duration_hours: 10, modality: 'online', provider: 'DataProtect', cost_per_participant: 80, is_mandatory: true, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'EXCEL-AVZ', course_name: 'Excel Avanzado y Power BI', category: 'informatica', duration_hours: 20, modality: 'presencial', provider: 'FormaTech', cost_per_participant: 300, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'LIDER', course_name: 'Liderazgo y Gestión de Equipos', category: 'habilidades', duration_hours: 16, modality: 'presencial', provider: 'LeaderSkills', cost_per_participant: 450, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'INGLES-B2', course_name: 'Inglés Profesional B2', category: 'idiomas', duration_hours: 60, modality: 'hibrido', provider: 'LinguaPro', cost_per_participant: 600, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'IGUALDAD', course_name: 'Igualdad y Prevención de Acoso', category: 'legal', duration_hours: 6, modality: 'online', provider: 'IgualdadPro', cost_per_participant: 60, is_mandatory: true, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'LEAN', course_name: 'Lean Manufacturing', category: 'produccion', duration_hours: 24, modality: 'presencial', provider: 'LeanConsult', cost_per_participant: 350, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'PYTHON', course_name: 'Python para Análisis de Datos', category: 'informatica', duration_hours: 40, modality: 'online', provider: 'CodeAcademy', cost_per_participant: 250, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'NEGOC', course_name: 'Técnicas de Negociación Avanzada', category: 'habilidades', duration_hours: 12, modality: 'presencial', provider: 'NegociaPlus', cost_per_participant: 400, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'CIBERSEG', course_name: 'Ciberseguridad para Empleados', category: 'informatica', duration_hours: 8, modality: 'online', provider: 'CyberGuard', cost_per_participant: 120, is_mandatory: true, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'PRIMAUX', course_name: 'Primeros Auxilios', category: 'seguridad', duration_hours: 16, modality: 'presencial', provider: 'CruzRoja', cost_per_participant: 100, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'CARRET', course_name: 'Carretillero', category: 'produccion', duration_hours: 20, modality: 'presencial', provider: 'FormaTech', cost_per_participant: 200, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'AGILE', course_name: 'Metodologías Ágiles', category: 'habilidades', duration_hours: 16, modality: 'hibrido', provider: 'AgileLab', cost_per_participant: 350, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'CONTA', course_name: 'Actualización Contable PGC 2025', category: 'finanzas', duration_hours: 20, modality: 'online', provider: 'ContaFormación', cost_per_participant: 180, is_mandatory: false, is_active: true, metadata: DEMO_META },
-    { company_id: COMPANY_ID, course_code: 'IA-EMP', course_name: 'IA Generativa para Empresas', category: 'informatica', duration_hours: 12, modality: 'online', provider: 'TechFuture', cost_per_participant: 280, is_mandatory: false, is_active: true, metadata: DEMO_META },
+    { company_id: COMPANY_ID, title: 'Prevención Riesgos Laborales Básico (Demo)', description: 'PRL básico', duration_hours: 30, modality: 'online', provider_name: 'Prevenia S.L.', cost_per_person: 150, is_mandatory: true, is_active: true },
+    { company_id: COMPANY_ID, title: 'Protección de Datos RGPD (Demo)', description: 'RGPD/LOPDGDD', duration_hours: 10, modality: 'online', provider_name: 'DataProtect', cost_per_person: 80, is_mandatory: true, is_active: true },
+    { company_id: COMPANY_ID, title: 'Excel Avanzado y Power BI (Demo)', description: 'Informática', duration_hours: 20, modality: 'presencial', provider_name: 'FormaTech', cost_per_person: 300, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Liderazgo y Gestión de Equipos (Demo)', description: 'Habilidades', duration_hours: 16, modality: 'presencial', provider_name: 'LeaderSkills', cost_per_person: 450, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Inglés Profesional B2 (Demo)', description: 'Idiomas', duration_hours: 60, modality: 'hibrido', provider_name: 'LinguaPro', cost_per_person: 600, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Igualdad y Prevención de Acoso (Demo)', description: 'Legal', duration_hours: 6, modality: 'online', provider_name: 'IgualdadPro', cost_per_person: 60, is_mandatory: true, is_active: true },
+    { company_id: COMPANY_ID, title: 'Lean Manufacturing (Demo)', description: 'Producción', duration_hours: 24, modality: 'presencial', provider_name: 'LeanConsult', cost_per_person: 350, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Python para Análisis de Datos (Demo)', description: 'Informática', duration_hours: 40, modality: 'online', provider_name: 'CodeAcademy', cost_per_person: 250, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Técnicas de Negociación Avanzada (Demo)', description: 'Habilidades', duration_hours: 12, modality: 'presencial', provider_name: 'NegociaPlus', cost_per_person: 400, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Ciberseguridad para Empleados (Demo)', description: 'Informática', duration_hours: 8, modality: 'online', provider_name: 'CyberGuard', cost_per_person: 120, is_mandatory: true, is_active: true },
+    { company_id: COMPANY_ID, title: 'Primeros Auxilios (Demo)', description: 'Seguridad', duration_hours: 16, modality: 'presencial', provider_name: 'CruzRoja', cost_per_person: 100, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Carretillero (Demo)', description: 'Producción', duration_hours: 20, modality: 'presencial', provider_name: 'FormaTech', cost_per_person: 200, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Metodologías Ágiles (Demo)', description: 'Habilidades', duration_hours: 16, modality: 'hibrido', provider_name: 'AgileLab', cost_per_person: 350, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'Actualización Contable PGC 2025 (Demo)', description: 'Finanzas', duration_hours: 20, modality: 'online', provider_name: 'ContaFormación', cost_per_person: 180, is_mandatory: false, is_active: true },
+    { company_id: COMPANY_ID, title: 'IA Generativa para Empresas (Demo)', description: 'Informática', duration_hours: 12, modality: 'online', provider_name: 'TechFuture', cost_per_person: 280, is_mandatory: false, is_active: true },
   ];
   const { data: courseData, error: courseErr } = await supabase.from('erp_hr_training_catalog').insert(courses).select('id');
   if (courseErr) throw new Error(`Training: ${courseErr.message}`);
@@ -497,7 +665,12 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   return { phase: 'talent', records: count, details: `${courses.length} cursos, ${enrollments.length} inscripciones, ${cycles.length} ciclos, ${evals.length} evaluaciones, ${openings.length} ofertas, ${candidates.length} candidatos, ${interviews.length} entrevistas` };
 }
 
+// =============================================
+// PHASE 6: Compliance
+// =============================================
 async function seedCompliance(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'compliance');
+
   const { data: emps } = await supabase.from('erp_hr_employees').select('id').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true').limit(50);
   if (!emps?.length) return { phase: 'compliance', records: 0, details: 'No employees' };
   let count = 0;
@@ -567,7 +740,11 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
   return { phase: 'compliance', records: count, details: `${incidents.length} incidentes, ${plans.length} beneficios, ${benEnrollments.length} inscripciones, ${docs.length} documentos, ${templates.length} plantillas` };
 }
 
+// =============================================
+// PHASE 7: Legal
+// =============================================
 async function seedLegal(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'legal');
   let count = 0;
 
   const eqPlans = [
@@ -597,7 +774,12 @@ async function seedLegal(supabase: any): Promise<PhaseResult> {
   return { phase: 'legal', records: count, details: `${eqPlans.length} plan igualdad, ${reports.length} denuncias, ${sanctions.length} alertas` };
 }
 
+// =============================================
+// PHASE 8: Experience
+// =============================================
 async function seedExperience(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'experience');
+
   const { data: emps } = await supabase.from('erp_hr_employees').select('id').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true').limit(50);
   if (!emps?.length) return { phase: 'experience', records: 0, details: 'No employees' };
   let count = 0;
@@ -694,37 +876,22 @@ async function seedExperience(supabase: any): Promise<PhaseResult> {
   return { phase: 'experience', records: count, details: `${onboardings.length} onboardings, ${offboardings.length} offboardings, ${recognitions.length} reconocimientos, ${ssContribs.length} cotizaciones SS` };
 }
 
+// =============================================
+// PURGE ALL DEMO DATA
+// =============================================
 async function purgeAllDemo(supabase: any): Promise<PhaseResult> {
-  const tables = [
-    'erp_hr_ss_contributions', 'erp_hr_recognition', 'erp_hr_recognition_programs',
-    'erp_hr_onboarding_tasks', 'erp_hr_employee_onboarding', 'erp_hr_offboarding_history',
-    'erp_hr_sanction_alerts', 'erp_hr_whistleblower_reports', 'erp_hr_equality_plans',
-    'erp_hr_employee_documents', 'erp_hr_document_templates', 'erp_hr_benefits_enrollments',
-    'erp_hr_benefits_plans', 'erp_hr_safety_incidents', 'erp_hr_interviews', 'erp_hr_candidates',
-    'erp_hr_job_openings', 'erp_hr_performance_evaluations', 'erp_hr_evaluation_cycles',
-    'erp_hr_training_enrollments', 'erp_hr_training_catalog', 'erp_hr_leave_balances',
-    'erp_hr_leave_requests', 'erp_hr_time_entries', 'erp_hr_payrolls',
-    'erp_hr_employee_compensation', 'erp_hr_contracts', 'erp_hr_employees',
-    'erp_hr_time_policies', 'erp_hr_collective_agreements', 'erp_hr_job_positions', 'erp_hr_departments',
-  ];
-  let totalDeleted = 0;
-  const details: string[] = [];
+  // Use the centralized cleanup which handles FK order
+  await cleanupDemoData(supabase, 'all');
 
-  for (const table of tables) {
-    try {
-      const { data, error } = await supabase.from(table).delete().eq('metadata->>is_demo', 'true').select('id');
-      if (!error && data) {
-        totalDeleted += data.length;
-        if (data.length > 0) details.push(`${table.replace('erp_hr_','')}: ${data.length}`);
-      } else if (error) {
-        const { data: d2, error: e2 } = await supabase.from(table).delete().eq('company_id', COMPANY_ID).select('id');
-        if (!e2 && d2) { totalDeleted += d2.length; if (d2.length > 0) details.push(`${table.replace('erp_hr_','')}: ${d2.length}`); }
-      }
-    } catch (err) { console.warn(`Purge ${table}:`, err); }
-  }
-  return { phase: 'purge', records: totalDeleted, details: details.join(', ') };
+  // Count remaining demo data to confirm
+  const { count: empCount } = await supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+
+  return { phase: 'purge', records: 0, details: `Purge complete. Remaining demo employees: ${empCount || 0}` };
 }
 
+// =============================================
+// MAIN HANDLER
+// =============================================
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
@@ -744,15 +911,28 @@ serve(async (req) => {
       case 'seed_legal': result = await seedLegal(supabase); break;
       case 'seed_experience': result = await seedExperience(supabase); break;
       case 'seed_all': {
+        // Full cleanup first to guarantee idempotency
+        console.log('[seed_all] Starting full cleanup...');
+        await cleanupDemoData(supabase, 'all');
+        console.log('[seed_all] Cleanup done. Seeding...');
+
         const results: PhaseResult[] = [];
         results.push(await seedInfrastructure(supabase));
+        console.log('[seed_all] Infrastructure done');
         results.push(await seedEmployees(supabase));
+        console.log('[seed_all] Employees done');
         results.push(await seedPayrolls(supabase));
+        console.log('[seed_all] Payrolls done');
         results.push(await seedTimeAndAbsences(supabase));
+        console.log('[seed_all] Time done');
         results.push(await seedTalent(supabase));
+        console.log('[seed_all] Talent done');
         results.push(await seedCompliance(supabase));
+        console.log('[seed_all] Compliance done');
         results.push(await seedLegal(supabase));
+        console.log('[seed_all] Legal done');
         results.push(await seedExperience(supabase));
+        console.log('[seed_all] Experience done');
         result = { phase: 'all', records: results.reduce((s, r) => s + r.records, 0), details: results.map(r => `${r.phase}: ${r.records}`).join(' | ') };
         break;
       }
