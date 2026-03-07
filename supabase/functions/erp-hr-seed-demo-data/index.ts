@@ -611,7 +611,8 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   for (const emp of emps) {
     evals.push({
       company_id: COMPANY_ID, employee_id: emp.id, cycle_id: randomFrom(cycleData).id,
-      evaluator_id: emps[0].id, overall_score: randomDecimal(2.5, 5.0, 1),
+      evaluator_id: emps[0].id, evaluation_type: randomFrom(['self', 'manager', 'peer']),
+      overall_score: randomDecimal(2.5, 5.0, 1),
       status: randomFrom(['completed', 'completed', 'pending', 'in_progress']),
       strengths: ['Trabajo en equipo', 'Puntualidad', 'Resolución de problemas'].slice(0, randomBetween(1,3)),
       areas_for_improvement: ['Comunicación', 'Delegación'].slice(0, randomBetween(0,2)),
@@ -757,19 +758,19 @@ async function seedLegal(supabase: any): Promise<PhaseResult> {
   if (eqErr) console.warn('Equality:', eqErr.message); else count += eqPlans.length;
 
   const reports = [
-    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'harassment', description: 'Posible acoso verbal en producción', status: 'investigating', priority: 'high', is_anonymous: true, received_at: '2025-04-20T10:00:00Z', metadata: DEMO_META },
-    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'fraud', description: 'Uso indebido tarjeta empresa', status: 'resolved', priority: 'medium', is_anonymous: false, received_at: '2025-02-15T14:30:00Z', resolved_at: '2025-03-10T09:00:00Z', resolution: 'Amonestación por escrito.', metadata: DEMO_META },
-    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'safety', description: 'Incumplimiento normas seguridad turno noche', status: 'pending', priority: 'high', is_anonymous: true, received_at: '2025-09-05T08:00:00Z', metadata: DEMO_META },
+    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'harassment', subject: 'Posible acoso verbal', description: 'Posible acoso verbal en producción', status: 'investigating', priority: 'high', is_anonymous: true, received_at: '2025-04-20T10:00:00Z' },
+    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'fraud', subject: 'Uso indebido tarjeta empresa', description: 'Uso indebido de tarjeta corporativa', status: 'resolved', priority: 'medium', is_anonymous: false, received_at: '2025-02-15T14:30:00Z', resolved_at: '2025-03-10T09:00:00Z' },
+    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'safety', subject: 'Incumplimiento normas seguridad', description: 'Incumplimiento normas seguridad turno noche', status: 'pending', priority: 'high', is_anonymous: true, received_at: '2025-09-05T08:00:00Z' },
   ];
   const { error: repErr } = await supabase.from('erp_hr_whistleblower_reports').insert(reports);
   if (repErr) console.warn('Whistleblower:', repErr.message); else count += reports.length;
 
   const sanctions = [
-    { company_id: COMPANY_ID, alert_type: 'contract_expiry', severity: 'high', title: 'Contratos temporales venciendo', description: '3 contratos vencen en 30 días', due_date: '2025-11-15', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'training_overdue', severity: 'medium', title: 'Formación PRL pendiente', description: '5 empleados sin PRL actualizada', due_date: '2025-10-31', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'equality_audit', severity: 'medium', title: 'Auditoría salarial pendiente', description: 'Vence el 31/03', due_date: '2026-03-31', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'data_protection', severity: 'low', title: 'Renovación RGPD', description: 'Revisión anual consentimientos', due_date: '2025-12-31', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'medical_review', severity: 'high', title: 'Reconocimientos médicos', description: '8 empleados sin reconocimiento', due_date: '2025-11-30', status: 'active', metadata: DEMO_META },
+    { company_id: COMPANY_ID, alert_level: 'warning', title: 'Contratos temporales venciendo', description: '3 contratos vencen en 30 días', days_remaining: 30 },
+    { company_id: COMPANY_ID, alert_level: 'prealert', title: 'Formación PRL pendiente', description: '5 empleados sin PRL actualizada', days_remaining: 60 },
+    { company_id: COMPANY_ID, alert_level: 'prealert', title: 'Auditoría salarial pendiente', description: 'Vence el 31/03', days_remaining: 180 },
+    { company_id: COMPANY_ID, alert_level: 'prealert', title: 'Renovación RGPD', description: 'Revisión anual consentimientos', days_remaining: 90 },
+    { company_id: COMPANY_ID, alert_level: 'warning', title: 'Reconocimientos médicos', description: '8 empleados sin reconocimiento', days_remaining: 45 },
   ];
   const { error: sanErr } = await supabase.from('erp_hr_sanction_alerts').insert(sanctions);
   if (sanErr) console.warn('Sanctions:', sanErr.message); else count += sanctions.length;
@@ -860,22 +861,34 @@ async function seedExperience(supabase: any): Promise<PhaseResult> {
   // SS Contributions: UNIQUE on (company_id, period_month, period_year) — aggregate per month
   const ssContribs: any[] = [];
   for (let m = 1; m <= 10; m++) {
-    let totalBase = 0, totalWorker = 0, totalCompany = 0, totalMei = 0, totalAll = 0;
+    const numWorkers = emps.length;
+    let totalBaseCC = 0, totalBaseAT = 0;
     for (const emp of emps.slice(0, 50)) {
       const base = randomDecimal(1500, 5000);
-      totalBase += base;
-      totalWorker += base * 0.0635;
-      totalCompany += base * 0.305;
-      totalMei += base * 0.007;
-      totalAll += base * 0.3755;
+      totalBaseCC += base;
+      totalBaseAT += base;
     }
+    const ccCompany = parseFloat((totalBaseCC * 0.236).toFixed(2));
+    const atCompany = parseFloat((totalBaseAT * 0.035).toFixed(2));
+    const unemploymentCompany = parseFloat((totalBaseCC * 0.055).toFixed(2));
+    const fogasa = parseFloat((totalBaseCC * 0.002).toFixed(2));
+    const fpCompany = parseFloat((totalBaseCC * 0.006).toFixed(2));
+    const totalCompany = parseFloat((ccCompany + atCompany + unemploymentCompany + fogasa + fpCompany).toFixed(2));
+    const ccWorker = parseFloat((totalBaseCC * 0.047).toFixed(2));
+    const unemploymentWorker = parseFloat((totalBaseCC * 0.0155).toFixed(2));
+    const fpWorker = parseFloat((totalBaseCC * 0.001).toFixed(2));
+    const totalWorker = parseFloat((ccWorker + unemploymentWorker + fpWorker).toFixed(2));
+    const totalAmount = parseFloat((totalCompany + totalWorker).toFixed(2));
+
     ssContribs.push({
       company_id: COMPANY_ID, period_month: m, period_year: 2025,
-      base_amount: parseFloat(totalBase.toFixed(2)),
-      worker_contribution: parseFloat(totalWorker.toFixed(2)),
-      company_contribution: parseFloat(totalCompany.toFixed(2)),
-      mei_contribution: parseFloat(totalMei.toFixed(2)),
-      total_contribution: parseFloat(totalAll.toFixed(2)),
+      total_workers: numWorkers,
+      total_base_cc: parseFloat(totalBaseCC.toFixed(2)),
+      total_base_at: parseFloat(totalBaseAT.toFixed(2)),
+      cc_company: ccCompany, at_ep_company: atCompany, unemployment_company: unemploymentCompany,
+      fogasa, fp_company: fpCompany, total_company: totalCompany,
+      cc_worker: ccWorker, unemployment_worker: unemploymentWorker, fp_worker: fpWorker,
+      total_worker: totalWorker, total_amount: totalAmount,
       status: m <= 8 ? 'paid' : 'pending', metadata: DEMO_META,
     });
   }
