@@ -146,7 +146,7 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
     setIsPurging(true);
     try {
       const { data, error } = await supabase.functions.invoke('erp-hr-seed-demo-data', {
-        body: { action: 'purge_demo' }
+        body: { action: 'purge_demo', company_id: companyId }
       });
 
       if (error) throw error;
