@@ -113,7 +113,7 @@ export function HRModule() {
         const [empRes, contractRes, vacRes, payRes] = await Promise.all([
           supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'active'),
           supabase.from('erp_hr_contracts').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('is_active', true),
-          supabase.from('erp_hr_vacation_requests').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'pending_dept'),
+          supabase.from('erp_hr_leave_requests').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'pending_dept'),
           supabase.from('erp_hr_payrolls').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'draft'),
         ]);
         setStats({
