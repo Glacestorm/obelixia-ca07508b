@@ -1000,6 +1000,8 @@ async function seedOperations(supabase: any): Promise<PhaseResult> {
   // --- Settlements (Finiquitos) ---
   const settlements: any[] = [];
   const settlementStatuses = ['draft', 'calculated', 'pending_legal_validation', 'approved', 'paid'];
+  // Map termination types for settlements (uses mutual_agreement, not mutual)
+  const settlementTermTypes = ['voluntary', 'objective', 'disciplinary', 'end_contract', 'mutual_agreement'];
   for (let i = 0; i < 5; i++) {
     const emp = termEmps[i];
     const salary = emp.base_salary || 28000;
@@ -1011,7 +1013,7 @@ async function seedOperations(supabase: any): Promise<PhaseResult> {
     const vacAmount = parseFloat((dailySalary * vacDays).toFixed(2));
     const extraPaysProp = parseFloat((salary / 14 * randomDecimal(0.2, 0.8)).toFixed(2));
     const salaryMonth = parseFloat((salary / 12).toFixed(2));
-    const tType = termTypes[i];
+    const tType = settlementTermTypes[i];
     const indemnDaysPerYear = tType === 'objective' ? 20 : (tType === 'disciplinary' ? 33 : (tType === 'end_contract' ? 12 : 0));
     const indemnTotalDays = parseFloat((indemnDaysPerYear * yearsWorked).toFixed(2));
     const indemnGross = parseFloat((dailySalary * indemnTotalDays).toFixed(2));
@@ -1042,7 +1044,7 @@ async function seedOperations(supabase: any): Promise<PhaseResult> {
       ss_retention: ssRet, net_total: netTotal,
       status,
       legal_references: [{ ref: 'Art. 49.1.c ET', description: 'Extinción por causas objetivas' }],
-      ai_validation_status: ['calculated', 'pending_legal_validation', 'approved', 'paid'].includes(status) ? 'validated' : null,
+      ai_validation_status: ['calculated', 'pending_legal_validation', 'approved', 'paid'].includes(status) ? 'approved' : null,
       ai_confidence_score: ['calculated', 'pending_legal_validation', 'approved', 'paid'].includes(status) ? randomDecimal(85, 98) : null,
       ai_explanation: ['calculated', 'pending_legal_validation', 'approved', 'paid'].includes(status) ? 'Cálculo verificado conforme a ET y convenio aplicable' : null,
       legal_validation_status: ['approved', 'paid'].includes(status) ? 'approved' : null,
@@ -1058,7 +1060,7 @@ async function seedOperations(supabase: any): Promise<PhaseResult> {
 
   // --- Payroll Recalculations ---
   const recalculations: any[] = [];
-  const recalcStatuses = ['pending', 'completed', 'completed', 'applied', 'rejected'];
+  const recalcStatuses = ['draft', 'ai_reviewed', 'legal_reviewed', 'approved', 'applied', 'rejected', 'pending_approval', 'calculating'];
   for (let i = 0; i < 8; i++) {
     const emp = emps[i * 5];
     const origBase = parseFloat(((emp.base_salary || 28000) / 14).toFixed(2));
@@ -1077,10 +1079,10 @@ async function seedOperations(supabase: any): Promise<PhaseResult> {
       total_difference: diff,
       risk_level: diff > 100 ? 'medium' : 'low',
       compliance_issues: diff > 80 ? [{ type: 'salary_update', severity: 'info', message: 'Actualización por revisión salarial de convenio' }] : [],
-      ai_validation_status: status !== 'pending' ? 'validated' : null,
-      ai_validation: status !== 'pending' ? { status: 'validated', analysis: 'Recálculo conforme a tablas salariales', recommendations: ['Aplicar retroactivos'] } : null,
-      legal_validation_status: ['applied', 'completed'].includes(status) ? 'approved' : null,
-      legal_validation: ['applied', 'completed'].includes(status) ? { status: 'approved', opinion: 'Conforme', risk_level: 'low' } : null,
+      ai_validation_status: !['draft', 'calculating'].includes(status) ? 'approved' : null,
+      ai_validation: !['draft', 'calculating'].includes(status) ? { status: 'approved', analysis: 'Recálculo conforme a tablas salariales', recommendations: ['Aplicar retroactivos'] } : null,
+      legal_validation_status: ['approved', 'applied', 'legal_reviewed'].includes(status) ? 'approved' : null,
+      legal_validation: ['approved', 'applied', 'legal_reviewed'].includes(status) ? { status: 'approved', opinion: 'Conforme', risk_level: 'low' } : null,
       hr_approval_status: status === 'applied' ? 'approved' : null,
       hr_approval: status === 'applied' ? { status: 'approved', approver: 'Director RRHH', notes: 'Aprobado', approved_at: new Date().toISOString() } : null,
       agreement_id: agreements?.[0]?.id || null,
@@ -1093,8 +1095,8 @@ async function seedOperations(supabase: any): Promise<PhaseResult> {
   // --- Employee Objectives ---
   if (cycles?.length) {
     const objectives: any[] = [];
-    const objTypes = ['individual', 'team', 'company', 'development'];
-    const objStatuses = ['active', 'active', 'completed', 'in_progress'];
+    const objTypes = ['quantitative', 'qualitative', 'project', 'competency', 'development'];
+    const objStatuses = ['in_progress', 'in_progress', 'achieved', 'partially_achieved', 'pending'];
     const objTitles = [
       'Incrementar ventas 15% trimestral', 'Reducir incidencias producción', 'Completar certificación PMP',
       'Mejorar NPS cliente interno', 'Optimizar tiempo de entrega', 'Implementar proceso lean en línea 2',
