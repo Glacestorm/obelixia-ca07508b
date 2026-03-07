@@ -1270,9 +1270,65 @@ async function seedRegulatoryWatch(supabase: any): Promise<PhaseResult> {
 }
 
 // =============================================
+// PHASE 12: Time Clock (Control de Fichaje - Art. 34.9 ET)
+// =============================================
+async function seedTimeClock(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'time_clock');
+  const { data: emps } = await supabase.from('erp_hr_employees').select('id').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true').limit(50);
+  if (!emps?.length) return { phase: 'time_clock', records: 0, details: 'No employees' };
+  let count = 0;
+  const methods = ['web', 'app', 'biometric', 'nfc', 'qr'];
+  const entries: any[] = [];
+  const today = new Date();
+
+  for (const emp of emps) {
+    let workDays = 0;
+    const day = new Date(today);
+    while (workDays < 20) {
+      day.setDate(day.getDate() - 1);
+      if (day.getDay() === 0 || day.getDay() === 6) continue;
+      workDays++;
+      const ds = day.toISOString().split('T')[0];
+      const ciH = randomBetween(7, 9), ciM = randomBetween(0, 59);
+      const coH = ciH + 8 + (Math.random() > 0.7 ? 1 : 0), coM = randomBetween(0, 59);
+      const worked = parseFloat((coH - ciH + (coM - ciM) / 60).toFixed(2));
+      const overtime = worked > 8 ? parseFloat((worked - 8).toFixed(2)) : 0;
+      const breakMins = randomBetween(30, 60);
+      const method = randomFrom(methods);
+      const isAnomaly = Math.random() < 0.08;
+      const isMissingOut = Math.random() < 0.03;
+
+      entries.push({
+        company_id: COMPANY_ID, employee_id: emp.id, clock_date: ds,
+        clock_in: `${ds}T${String(ciH).padStart(2,'0')}:${String(ciM).padStart(2,'0')}:00+01:00`,
+        clock_out: isMissingOut ? null : `${ds}T${String(Math.min(coH, 23)).padStart(2,'0')}:${String(coM).padStart(2,'0')}:00+01:00`,
+        break_minutes: breakMins,
+        worked_hours: isMissingOut ? 0 : worked,
+        overtime_hours: overtime,
+        clock_in_method: method,
+        clock_out_method: isMissingOut ? null : method,
+        status: isMissingOut ? 'anomaly' : (isAnomaly ? 'anomaly' : (workDays > 5 ? 'approved' : 'closed')),
+        anomaly_type: isMissingOut ? 'missing_clock_out' : (isAnomaly ? randomFrom(['excessive_hours', 'insufficient_break', 'schedule_deviation']) : null),
+        anomaly_notes: isAnomaly ? 'Detectado automáticamente por el sistema' : null,
+        metadata: DEMO_META,
+      });
+    }
+  }
+
+  for (let b = 0; b < entries.length; b += 100) {
+    const { error } = await supabase.from('erp_hr_time_clock').insert(entries.slice(b, b + 100));
+    if (error) console.warn(`TimeClock batch ${b}:`, error.message);
+    else count += entries.slice(b, b + 100).length;
+  }
+
+  return { phase: 'time_clock', records: count, details: `${count} registros de fichaje (${emps.length} emp × 20 días)` };
+}
+
+// =============================================
 // PURGE ALL DEMO DATA
 // =============================================
 async function purgeAllDemo(supabase: any): Promise<PhaseResult> {
+  await supabase.from('erp_hr_time_clock').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_settlements').delete().eq('company_id', COMPANY_ID);
@@ -1310,9 +1366,11 @@ serve(async (req) => {
       case 'seed_talent_advanced': result = await seedTalentAdvanced(supabase); break;
       case 'seed_operations': result = await seedOperations(supabase); break;
       case 'seed_regulatory': result = await seedRegulatoryWatch(supabase); break;
+      case 'seed_time_clock': result = await seedTimeClock(supabase); break;
       case 'seed_all': {
         console.log('[seed_all] Starting full cleanup...');
         await cleanupDemoData(supabase, 'all');
+        await supabase.from('erp_hr_time_clock').delete().eq('company_id', COMPANY_ID);
         await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
         await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
         await supabase.from('erp_hr_settlements').delete().eq('company_id', COMPANY_ID);
@@ -1333,6 +1391,7 @@ serve(async (req) => {
         results.push(await seedTalentAdvanced(supabase));
         results.push(await seedOperations(supabase));
         results.push(await seedRegulatoryWatch(supabase));
+        results.push(await seedTimeClock(supabase));
         console.log('[seed_all] All phases done');
         result = { phase: 'all', records: results.reduce((s, r) => s + r.records, 0), details: results.map(r => `${r.phase}: ${r.records}`).join(' | ') };
         break;
