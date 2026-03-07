@@ -23,8 +23,16 @@ async function resolveCompanyId(supabase: any, requestCompanyId?: string): Promi
     const { data: mainCo } = await supabase.from('companies').select('id').eq('id', COMPANY_ID).maybeSingle();
     if (!mainCo) {
       // Insert into companies table so FKs referencing companies(id) work
-      await supabase.from('companies').insert({ id: COMPANY_ID, name: erpCo.name || 'Demo Company' });
-      console.log(`[resolveCompanyId] Synced company ${COMPANY_ID} into companies table`);
+      const { error: syncErr } = await supabase.from('companies').insert({
+        id: COMPANY_ID,
+        name: erpCo.name || 'Demo Company',
+        address: 'Carrer Major 1, 25001 Lleida',
+        longitude: 0.6206,
+        latitude: 41.6148,
+        parroquia: 'Lleida',
+      });
+      if (syncErr) console.warn('[resolveCompanyId] Sync error:', syncErr.message);
+      else console.log(`[resolveCompanyId] Synced company ${COMPANY_ID} into companies table`);
     }
   }
 
