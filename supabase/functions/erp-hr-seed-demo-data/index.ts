@@ -42,7 +42,8 @@ async function seedInfrastructure(supabase: any): Promise<PhaseResult> {
   await supabase.from('erp_hr_leave_types').delete().in('code', ['VAC','IT','MAT','PAT','AP','MATRIM','MUDANZA','FALLEC']);
   await supabase.from('erp_hr_collective_agreements').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
   await supabase.from('erp_hr_job_positions').delete().eq('company_id', COMPANY_ID).like('position_name', '%(Demo)%');
-  await supabase.from('erp_hr_departments').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+  // Delete ALL departments for this company with matching codes to avoid unique constraint violations
+  await supabase.from('erp_hr_departments').delete().eq('company_id', COMPANY_ID).in('code', ['DIR','ADM','RRHH','COM','PROD','LOG','IT','CAL']);
   
   const depts = [
     { id: crypto.randomUUID(), company_id: COMPANY_ID, code: 'DIR', name: 'Dirección General', description: 'Alta dirección y estrategia', sort_order: 1, is_active: true, metadata: DEMO_META },
