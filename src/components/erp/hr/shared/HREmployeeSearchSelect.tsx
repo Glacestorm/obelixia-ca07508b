@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,32 +71,27 @@ export function HREmployeeSearchSelect({
     
     setLoading(true);
     try {
-      // Use only columns that exist in the table (excluding dni which doesn't exist)
-      let url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employees?company_id=eq.${companyId}&select=id,first_name,last_name,employee_number,social_security_number,phone,email,job_title,department_id,status&order=first_name`;
+      const { data, error } = await supabase
+        .from('erp_hr_employees')
+        .select('id, first_name, last_name, employee_number, social_security_number, phone, email, job_title, department_id, status')
+        .eq('company_id', companyId)
+        .order('first_name');
 
-      const response = await fetch(url, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        }
-      });
-
-      if (response.ok) {
-        const data: EmployeeOption[] = await response.json();
-        const filtered = excludeIds.length > 0 
-          ? data.filter(e => !excludeIds.includes(e.id))
-          : data;
-        setEmployees(filtered);
-        onEmployeesFetched?.(filtered);
-
-        // Set selected employee if value exists
-        if (value) {
-          const selected = filtered.find(e => e.id === value);
-          setSelectedEmployee(selected || null);
-        }
-      } else {
-        console.warn('Error fetching employees for search');
+      if (error) {
+        console.warn('Error fetching employees:', error.message);
         setEmployees([]);
+        return;
+      }
+
+      const filtered = excludeIds.length > 0
+        ? (data || []).filter((e: any) => !excludeIds.includes(e.id))
+        : (data || []);
+      setEmployees(filtered as EmployeeOption[]);
+      onEmployeesFetched?.(filtered as EmployeeOption[]);
+
+      if (value) {
+        const selected = filtered.find((e: any) => e.id === value);
+        setSelectedEmployee(selected as EmployeeOption || null);
       }
     } catch (err) {
       console.error('Error fetching employees:', err);
