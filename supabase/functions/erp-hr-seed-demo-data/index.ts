@@ -707,6 +707,7 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
   const { error: incErr } = await supabase.from('erp_hr_safety_incidents').insert(incidents);
   if (incErr) console.warn('Incidents:', incErr.message); else count += incidents.length;
 
+  // --- Benefits Plans (legacy table) ---
   const plans = [
     { company_id: COMPANY_ID, plan_code: 'SEG-MED', plan_name: 'Seguro Médico Privado', plan_type: 'health', provider_name: 'Sanitas', coverage_type: 'employee_family', employer_contribution: 120, annual_cost: 1440, effective_from: '2025-01-01', is_active: true, metadata: DEMO_META },
     { company_id: COMPANY_ID, plan_code: 'GUARD', plan_name: 'Cheque Guardería', plan_type: 'childcare', provider_name: 'Ticket Guardería', coverage_type: 'employee', employer_contribution: 0, employee_contribution: 200, annual_cost: 0, effective_from: '2025-01-01', is_active: true, metadata: DEMO_META },
@@ -715,21 +716,56 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
     { company_id: COMPANY_ID, plan_code: 'PENSION', plan_name: 'Plan Pensiones Empresa', plan_type: 'retirement', provider_name: 'VidaCaixa', coverage_type: 'employee', employer_contribution: 100, annual_cost: 0, effective_from: '2025-01-01', is_active: true, metadata: DEMO_META },
   ];
   const { data: planData, error: plnErr } = await supabase.from('erp_hr_benefits_plans').insert(plans).select('id');
-  if (plnErr) throw new Error(`Benefits: ${plnErr.message}`);
-  count += plans.length;
+  if (plnErr) console.warn('Benefits plans:', plnErr.message); else count += plans.length;
 
-  const benEnrollments: any[] = [];
-  for (let i = 0; i < 30; i++) {
-    benEnrollments.push({
-      company_id: COMPANY_ID, employee_id: randomFrom(emps).id, plan_id: randomFrom(planData).id,
-      enrollment_status: 'active', coverage_level: 'individual',
-      enrolled_at: '2025-01-15', effective_date: '2025-02-01',
-      employee_contribution: randomDecimal(0, 200), employer_contribution: randomDecimal(50, 200),
-      contribution_frequency: 'monthly', metadata: DEMO_META,
-    });
+  if (planData?.length) {
+    const benEnrollments: any[] = [];
+    for (let i = 0; i < 30; i++) {
+      benEnrollments.push({
+        company_id: COMPANY_ID, employee_id: randomFrom(emps).id, plan_id: randomFrom(planData).id,
+        enrollment_status: 'active', coverage_level: 'individual',
+        enrolled_at: '2025-01-15', effective_date: '2025-02-01',
+        employee_contribution: randomDecimal(0, 200), employer_contribution: randomDecimal(50, 200),
+        contribution_frequency: 'monthly', metadata: DEMO_META,
+      });
+    }
+    const { error: benErr } = await supabase.from('erp_hr_benefits_enrollments').insert(benEnrollments);
+    if (benErr) console.warn('Benefits enrollments:', benErr.message); else count += benEnrollments.length;
   }
-  const { error: benErr } = await supabase.from('erp_hr_benefits_enrollments').insert(benEnrollments);
-  if (benErr) console.warn('Benefits enrollments:', benErr.message); else count += benEnrollments.length;
+
+  // --- Social Benefits (table used by HRSocialBenefitsPanel) ---
+  const socialBenefits = [
+    { company_id: COMPANY_ID, benefit_code: 'SB-HEALTH', benefit_name: 'Seguro Médico Privado', benefit_type: 'health_insurance', provider_name: 'Sanitas', monthly_cost_company: 120, monthly_cost_employee: 0, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Seguro médico completo con cobertura familiar', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-DENTAL', benefit_name: 'Seguro Dental', benefit_type: 'dental_insurance', provider_name: 'Sanitas Dental', monthly_cost_company: 25, monthly_cost_employee: 10, is_taxable: false, tax_percentage: 0, is_flex_benefit: true, flex_points_cost: 15, is_active: true, description: 'Cobertura dental básica y ortodoncia', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-CHILD', benefit_name: 'Cheque Guardería', benefit_type: 'childcare', provider_name: 'Ticket Guardería', monthly_cost_company: 0, monthly_cost_employee: 200, is_taxable: false, tax_percentage: 0, is_flex_benefit: true, flex_points_cost: 100, is_active: true, description: 'Cheque guardería exento de IRPF', max_beneficiaries: 50 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-MEAL', benefit_name: 'Ticket Restaurant', benefit_type: 'meal_vouchers', provider_name: 'Edenred', monthly_cost_company: 180, monthly_cost_employee: 0, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Ticket restaurant diario 11€ (exento IRPF)', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-TRANSPORT', benefit_name: 'Tarjeta Transporte', benefit_type: 'transport', provider_name: 'Cobee', monthly_cost_company: 0, monthly_cost_employee: 60, is_taxable: false, tax_percentage: 0, is_flex_benefit: true, flex_points_cost: 30, is_active: true, description: 'Abono transporte público exento de IRPF hasta 1.500€/año', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-GYM', benefit_name: 'Gimnasio Corporativo', benefit_type: 'gym', provider_name: 'Gympass', monthly_cost_company: 35, monthly_cost_employee: 15, is_taxable: true, tax_percentage: 21, is_flex_benefit: true, flex_points_cost: 25, is_active: true, description: 'Acceso a red de gimnasios y clases online', max_beneficiaries: 100 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-PENSION', benefit_name: 'Plan de Pensiones', benefit_type: 'pension', provider_name: 'VidaCaixa', monthly_cost_company: 100, monthly_cost_employee: 50, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Plan de pensiones de empleo con aportación empresa', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-EDUCATION', benefit_name: 'Formación Bonificada', benefit_type: 'education', provider_name: 'FUNDAE', monthly_cost_company: 0, monthly_cost_employee: 0, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Formación continua bonificada por FUNDAE', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-REMOTE', benefit_name: 'Compensación Teletrabajo', benefit_type: 'remote_work_allowance', provider_name: null, monthly_cost_company: 55, monthly_cost_employee: 0, is_taxable: true, tax_percentage: 21, is_flex_benefit: false, is_active: true, description: 'Compensación gastos teletrabajo (Art. 12 Ley 10/2021)', max_beneficiaries: 100 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-LIFE', benefit_name: 'Seguro de Vida', benefit_type: 'life_insurance', provider_name: 'Zurich', monthly_cost_company: 20, monthly_cost_employee: 0, is_taxable: true, tax_percentage: 21, is_flex_benefit: false, is_active: true, description: 'Seguro de vida y accidentes 2x salario anual', max_beneficiaries: 200 },
+  ];
+  const { data: sbData, error: sbErr } = await supabase.from('erp_hr_social_benefits').insert(socialBenefits).select('id');
+  if (sbErr) console.warn('Social benefits:', sbErr.message); else count += socialBenefits.length;
+
+  // --- Employee Benefits enrollments (for social benefits panel) ---
+  if (sbData?.length) {
+    const empBenefits: any[] = [];
+    for (let i = 0; i < 40; i++) {
+      empBenefits.push({
+        employee_id: randomFrom(emps).id,
+        benefit_id: randomFrom(sbData).id,
+        enrollment_date: `2025-${String(randomBetween(1, 6)).padStart(2, '0')}-${String(randomBetween(1, 28)).padStart(2, '0')}`,
+        status: randomFrom(['active', 'active', 'active', 'pending', 'cancelled']),
+        employee_contribution: randomDecimal(0, 200),
+        company_contribution: randomDecimal(20, 180),
+        coverage_level: randomFrom(['individual', 'individual', 'family', 'couple']),
+      });
+    }
+    const { error: ebErr } = await supabase.from('erp_hr_employee_benefits').insert(empBenefits);
+    if (ebErr) console.warn('Employee benefits:', ebErr.message); else count += empBenefits.length;
+  }
 
   const docs: any[] = [];
   const docTypes = ['contrato', 'nomina', 'certificado', 'titulo', 'dni_copy'];
@@ -756,7 +792,7 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
   const { error: tplErr } = await supabase.from('erp_hr_document_templates').insert(templates);
   if (tplErr) console.warn('Templates:', tplErr.message); else count += templates.length;
 
-  return { phase: 'compliance', records: count, details: `${incidents.length} incidentes, ${plans.length} beneficios, ${benEnrollments.length} inscripciones, ${docs.length} documentos, ${templates.length} plantillas` };
+  return { phase: 'compliance', records: count, details: `${incidents.length} incidentes, ${socialBenefits.length} beneficios sociales, ${docs.length} documentos, ${templates.length} plantillas` };
 }
 
 // =============================================
