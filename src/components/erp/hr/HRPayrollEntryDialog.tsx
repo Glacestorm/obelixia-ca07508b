@@ -1,5 +1,6 @@
 /**
  * HRPayrollEntryDialog - Dialog para crear/editar nóminas con conceptos
+ * Persiste datos reales en erp_hr_payrolls
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2, User } from 'lucide-react';
+import { DollarSign, Calculator, Save, Euro, TrendingUp, TrendingDown, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,23 +32,13 @@ interface PayrollConcept {
   isEditable: boolean;
 }
 
-interface EmployeeData {
-  id: string;
-  name: string;
-  department: string;
-  category: string;
-  baseSalary: number;
-  seniorityYears: number;
-  irpfRate: number;
-}
-
 interface HRPayrollEntryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   companyId?: string;
-  employee?: EmployeeData;
   month?: string;
-  onSave?: (payrollData: any) => void;
+  payrollId?: string | null;
+  onSave?: () => void;
 }
 
 const SS_RATES = {
@@ -73,41 +64,101 @@ const DEFAULT_EARNINGS: Omit<PayrollConcept, 'id'>[] = [
 ];
 
 const DEFAULT_DEDUCTIONS: Omit<PayrollConcept, 'id'>[] = [
-  { code: 'IRPF', name: 'Retención IRPF', type: 'deduction', category: 'irpf', amount: 0, isPercentage: true, cotizaSS: false, tributaIRPF: false, isEditable: true },
+  { code: 'IRPF', name: 'Retención IRPF', type: 'deduction', category: 'irpf', amount: 15, isPercentage: true, cotizaSS: false, tributaIRPF: false, isEditable: true },
   { code: 'ANTICIPO', name: 'Anticipo', type: 'deduction', category: 'other', amount: 0, isPercentage: false, cotizaSS: false, tributaIRPF: false, isEditable: true },
   { code: 'CUOTA_SIND', name: 'Cuota sindical', type: 'deduction', category: 'other', amount: 0, isPercentage: false, cotizaSS: false, tributaIRPF: false, isEditable: true },
 ];
 
-export function HRPayrollEntryDialog({ 
-  open, 
-  onOpenChange, 
-  companyId = '', 
-  month = 'Febrero 2026', 
-  onSave 
+export function HRPayrollEntryDialog({
+  open,
+  onOpenChange,
+  companyId = '',
+  month = '',
+  payrollId = null,
+  onSave
 }: HRPayrollEntryDialogProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
-  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeData | null>(null);
+  const [selectedEmployeeName, setSelectedEmployeeName] = useState('');
+  const [selectedEmployeeCategory, setSelectedEmployeeCategory] = useState('');
   const [earnings, setEarnings] = useState<PayrollConcept[]>([]);
   const [deductions, setDeductions] = useState<PayrollConcept[]>([]);
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('earnings');
+  const [isEditMode, setIsEditMode] = useState(false);
 
+  // Parse month
+  const [periodYear, periodMonth] = month ? month.split('-').map(Number) : [new Date().getFullYear(), new Date().getMonth() + 1];
+
+  // Init concepts
+  const resetConcepts = useCallback((baseSalary = 0, irpfRate = 15) => {
+    setEarnings(DEFAULT_EARNINGS.map((e, i) => ({
+      ...e,
+      id: `earning-${i}`,
+      amount: e.code === 'BASE' ? baseSalary : 0
+    })));
+    setDeductions(DEFAULT_DEDUCTIONS.map((d, i) => ({
+      ...d,
+      id: `deduction-${i}`,
+      amount: d.code === 'IRPF' ? irpfRate : 0
+    })));
+  }, []);
+
+  // Load existing payroll or reset
   useEffect(() => {
-    if (open) {
-      const initialEarnings = DEFAULT_EARNINGS.map((e, i) => ({
-        ...e,
-        id: `earning-${i}`,
-        amount: e.code === 'BASE' && selectedEmployee ? selectedEmployee.baseSalary : 0
-      }));
-      const initialDeductions = DEFAULT_DEDUCTIONS.map((d, i) => ({
-        ...d,
-        id: `deduction-${i}`,
-        amount: d.code === 'IRPF' && selectedEmployee ? selectedEmployee.irpfRate : 0
-      }));
-      setEarnings(initialEarnings);
-      setDeductions(initialDeductions);
+    if (!open) return;
+
+    if (payrollId) {
+      setIsEditMode(true);
+      // Load existing payroll
+      (async () => {
+        const { data, error } = await supabase
+          .from('erp_hr_payrolls')
+          .select(`
+            *,
+            erp_hr_employees!erp_hr_payrolls_employee_id_fkey(first_name, last_name, job_title, base_salary)
+          `)
+          .eq('id', payrollId)
+          .single();
+
+        if (error || !data) {
+          toast.error('Error al cargar nómina');
+          return;
+        }
+
+        setSelectedEmployeeId(data.employee_id);
+        const emp = data.erp_hr_employees as any;
+        setSelectedEmployeeName(emp ? `${emp.first_name} ${emp.last_name}` : '');
+        setSelectedEmployeeCategory(emp?.job_title || '');
+
+        // Restore complements as earnings
+        const complements = Array.isArray(data.complements) ? data.complements : [];
+        const restoredEarnings = DEFAULT_EARNINGS.map((e, i) => {
+          const saved = complements.find((c: any) => c.code === e.code);
+          return {
+            ...e,
+            id: `earning-${i}`,
+            amount: e.code === 'BASE' ? (data.base_salary || 0) : (saved?.amount || 0)
+          };
+        });
+        setEarnings(restoredEarnings);
+
+        // Restore deductions
+        const otherDeds = Array.isArray(data.other_deductions) ? data.other_deductions : [];
+        const restoredDeductions = DEFAULT_DEDUCTIONS.map((d, i) => {
+          if (d.code === 'IRPF') return { ...d, id: `deduction-${i}`, amount: data.irpf_percentage || 15 };
+          const saved = otherDeds.find((o: any) => o.code === d.code);
+          return { ...d, id: `deduction-${i}`, amount: saved?.amount || 0 };
+        });
+        setDeductions(restoredDeductions);
+      })();
+    } else {
+      setIsEditMode(false);
+      setSelectedEmployeeId('');
+      setSelectedEmployeeName('');
+      setSelectedEmployeeCategory('');
+      resetConcepts();
     }
-  }, [open, selectedEmployee]);
+  }, [open, payrollId, resetConcepts]);
 
   const calculateTotals = useCallback(() => {
     const totalEarnings = earnings.reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -144,54 +195,92 @@ export function HRPayrollEntryDialog({
 
   const handleEmployeeSelect = async (employeeId: string, employee?: EmployeeOption) => {
     setSelectedEmployeeId(employeeId);
-    
+
     if (employee) {
-      // Fetch additional data
+      setSelectedEmployeeName(`${employee.first_name} ${employee.last_name}`);
+      setSelectedEmployeeCategory(employee.job_title || 'Sin categoría');
+
+      // Fetch base salary
       const { data } = await supabase
         .from('erp_hr_employees')
-        .select('base_salary, department_id')
+        .select('base_salary')
         .eq('id', employeeId)
         .single();
 
-      if (data) {
-        const empData: EmployeeData = {
-          id: employee.id,
-          name: `${employee.first_name} ${employee.last_name}`,
-          department: employee.department_name || 'Sin departamento',
-          category: employee.job_title || 'Sin categoría',
-          baseSalary: data.base_salary || 0,
-          seniorityYears: 0,
-          irpfRate: 15 // Default IRPF rate
-        };
-        setSelectedEmployee(empData);
-        setEarnings(prev => prev.map(e => e.code === 'BASE' ? { ...e, amount: empData.baseSalary } : e));
-        setDeductions(prev => prev.map(d => d.code === 'IRPF' ? { ...d, amount: empData.irpfRate } : d));
-      }
+      const baseSalary = data?.base_salary ? parseFloat(data.base_salary) / 12 : 0; // Annual → monthly
+      resetConcepts(Math.round(baseSalary * 100) / 100, 15);
     }
   };
 
   const handleSave = async () => {
-    if (!selectedEmployee) {
+    if (!selectedEmployeeId) {
       toast.error('Selecciona un empleado');
       return;
     }
-    setIsCalculating(true);
+
+    const baseSalary = earnings.find(e => e.code === 'BASE')?.amount || 0;
+    if (baseSalary <= 0) {
+      toast.error('El salario base debe ser mayor que 0');
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      const payrollData = { 
-        employee_id: selectedEmployee.id, 
-        month, 
-        earnings: earnings.filter(e => e.amount > 0), 
-        deductions: deductions.filter(d => d.amount > 0), 
-        totals, 
-        status: 'calculated' 
+      const complements = earnings
+        .filter(e => e.code !== 'BASE' && e.amount > 0)
+        .map(e => ({ code: e.code, name: e.name, amount: e.amount, cotizaSS: e.cotizaSS, tributaIRPF: e.tributaIRPF }));
+
+      const otherDeds = deductions
+        .filter(d => d.category === 'other' && d.amount > 0)
+        .map(d => ({ code: d.code, name: d.name, amount: d.amount }));
+
+      const payrollRecord = {
+        company_id: companyId,
+        employee_id: selectedEmployeeId,
+        period_month: periodMonth,
+        period_year: periodYear,
+        payroll_type: 'mensual' as const,
+        base_salary: baseSalary,
+        complements: complements,
+        gross_salary: parseFloat(totals.totalEarnings.toFixed(2)),
+        ss_worker: parseFloat(totals.totalSS.toFixed(2)),
+        irpf_amount: parseFloat(totals.irpfAmount.toFixed(2)),
+        irpf_percentage: totals.irpfRate,
+        other_deductions: otherDeds,
+        total_deductions: parseFloat(totals.totalDeductions.toFixed(2)),
+        net_salary: parseFloat(totals.netSalary.toFixed(2)),
+        ss_company: parseFloat(totals.companySS.toFixed(2)),
+        total_cost: parseFloat(totals.totalCost.toFixed(2)),
+        status: 'calculated' as const,
+        calculated_at: new Date().toISOString(),
       };
-      onSave?.(payrollData);
-      toast.success('Nómina guardada correctamente');
+
+      if (isEditMode && payrollId) {
+        const { error } = await supabase
+          .from('erp_hr_payrolls')
+          .update(payrollRecord as any)
+          .eq('id', payrollId);
+        if (error) throw error;
+        toast.success('Nómina actualizada correctamente');
+      } else {
+        const { error } = await supabase
+          .from('erp_hr_payrolls')
+          .insert(payrollRecord as any);
+        if (error) throw error;
+        toast.success('Nómina creada y calculada correctamente');
+      }
+
+      onSave?.();
       onOpenChange(false);
-    } catch (error) {
-      toast.error('Error al guardar la nómina');
+    } catch (error: any) {
+      console.error('Error saving payroll:', error);
+      if (error?.message?.includes('unique') || error?.code === '23505') {
+        toast.error('Ya existe una nómina para este empleado en este período');
+      } else {
+        toast.error(`Error al guardar: ${error?.message || 'Error desconocido'}`);
+      }
     } finally {
-      setIsCalculating(false);
+      setIsSaving(false);
     }
   };
 
@@ -201,9 +290,11 @@ export function HRPayrollEntryDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />
-            Entrada de Nómina - {month}
+            {isEditMode ? 'Editar Nómina' : 'Nueva Nómina'} — {new Date(periodYear, periodMonth - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
           </DialogTitle>
-          <DialogDescription>Configura los conceptos salariales</DialogDescription>
+          <DialogDescription>
+            {isEditMode ? 'Modifica los conceptos salariales' : 'Selecciona un empleado y configura los conceptos'}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
@@ -211,20 +302,22 @@ export function HRPayrollEntryDialog({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
                 <Label className="text-xs">Empleado</Label>
-                <HREmployeeSearchSelect
-                  value={selectedEmployeeId}
-                  onValueChange={handleEmployeeSelect}
-                  companyId={companyId}
-                  placeholder="Buscar empleado..."
-                />
+                {isEditMode ? (
+                  <p className="text-sm font-medium mt-1">{selectedEmployeeName}</p>
+                ) : (
+                  <HREmployeeSearchSelect
+                    value={selectedEmployeeId}
+                    onValueChange={handleEmployeeSelect}
+                    companyId={companyId}
+                    placeholder="Buscar empleado..."
+                  />
+                )}
               </div>
-              {selectedEmployee && (
-                <>
-                  <div>
-                    <Label className="text-xs">Categoría</Label>
-                    <Badge variant="outline" className="mt-1">{selectedEmployee.category}</Badge>
-                  </div>
-                </>
+              {selectedEmployeeCategory && (
+                <div>
+                  <Label className="text-xs">Categoría</Label>
+                  <Badge variant="outline" className="mt-1">{selectedEmployeeCategory}</Badge>
+                </div>
               )}
             </div>
           </div>
@@ -254,7 +347,7 @@ export function HRPayrollEntryDialog({
                     <div key={concept.id} className={cn("flex items-center gap-2 p-2 rounded-lg border", concept.amount > 0 ? "bg-background" : "bg-muted/30")}>
                       <div className="flex-1"><span className="text-sm">{concept.name}</span></div>
                       <div className="w-24">
-                        <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" />
+                        <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" step="0.01" />
                       </div>
                       <div className="flex gap-1">
                         {concept.cotizaSS && <Badge variant="outline" className="text-[10px] h-5">SS</Badge>}
@@ -269,23 +362,24 @@ export function HRPayrollEntryDialog({
             <TabsContent value="deductions" className="mt-4">
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-2">
-                  <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Seguridad Social</h4>
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Seguridad Social (automático)</h4>
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>CC ({SS_RATES.cc_worker}%)</span><span>€{totals.ssCC.toFixed(2)}</span></div>
                     <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>Desempleo ({SS_RATES.unemployment_general_worker}%)</span><span>€{totals.ssDesempleo.toFixed(2)}</span></div>
                     <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>FP ({SS_RATES.fp_worker}%)</span><span>€{totals.ssFP.toFixed(2)}</span></div>
                     <div className="flex justify-between py-1 px-2 bg-muted/50 rounded"><span>MEI ({SS_RATES.mei}%)</span><span>€{totals.ssMEI.toFixed(2)}</span></div>
-                    <div className="flex justify-between py-1 px-2 bg-primary/10 rounded font-medium"><span>Total SS</span><span>€{totals.totalSS.toFixed(2)}</span></div>
+                    <div className="flex justify-between py-1 px-2 bg-primary/10 rounded font-medium"><span>Total SS Trabajador</span><span>€{totals.totalSS.toFixed(2)}</span></div>
                   </div>
                   <Separator className="my-3" />
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase mb-2">Otras deducciones</h4>
                   {deductions.map(concept => (
                     <div key={concept.id} className="flex items-center gap-2 p-2 rounded-lg border">
                       <div className="flex-1"><span className="text-sm">{concept.name}</span></div>
                       <div className="w-24">
-                        <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" />
+                        <Input type="number" value={concept.amount || ''} onChange={(e) => updateConcept(concept.id, parseFloat(e.target.value) || 0)} className="h-8 text-sm" placeholder="0" step="0.01" />
                       </div>
                       <span className="text-xs text-muted-foreground">{concept.isPercentage ? '%' : '€'}</span>
-                      {concept.code === 'IRPF' && <span className="text-sm font-medium">€{totals.irpfAmount.toFixed(2)}</span>}
+                      {concept.code === 'IRPF' && <span className="text-sm font-medium">= €{totals.irpfAmount.toFixed(2)}</span>}
                     </div>
                   ))}
                 </div>
@@ -300,6 +394,9 @@ export function HRPayrollEntryDialog({
                     <div className="flex justify-between"><span>Total Devengos</span><span className="font-medium text-green-600">€{totals.totalEarnings.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span>Deducciones SS</span><span className="text-red-600">-€{totals.totalSS.toFixed(2)}</span></div>
                     <div className="flex justify-between"><span>IRPF ({totals.irpfRate}%)</span><span className="text-red-600">-€{totals.irpfAmount.toFixed(2)}</span></div>
+                    {totals.otherDeductions > 0 && (
+                      <div className="flex justify-between"><span>Otras deducciones</span><span className="text-red-600">-€{totals.otherDeductions.toFixed(2)}</span></div>
+                    )}
                     <Separator className="my-2" />
                     <div className="flex justify-between text-lg font-bold"><span>Salario Neto</span><span className="text-primary">€{totals.netSalary.toFixed(2)}</span></div>
                   </CardContent>
@@ -308,7 +405,7 @@ export function HRPayrollEntryDialog({
                   <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Building2 className="h-4 w-4" />Coste Empresa</CardTitle></CardHeader>
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between"><span>Salario Bruto</span><span>€{totals.totalEarnings.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>SS Empresa</span><span>€{totals.companySS.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>SS Empresa ({(SS_RATES.cc_company + SS_RATES.unemployment_general_company + SS_RATES.fogasa + SS_RATES.fp_company).toFixed(2)}%)</span><span>€{totals.companySS.toFixed(2)}</span></div>
                     <Separator className="my-2" />
                     <div className="flex justify-between text-lg font-bold"><span>Coste Total</span><span className="text-amber-600">€{totals.totalCost.toFixed(2)}</span></div>
                   </CardContent>
@@ -320,8 +417,12 @@ export function HRPayrollEntryDialog({
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!selectedEmployee || isCalculating}>
-            {isCalculating ? <><Calculator className="h-4 w-4 mr-1 animate-spin" />Calculando...</> : <><Save className="h-4 w-4 mr-1" />Guardar Nómina</>}
+          <Button onClick={handleSave} disabled={!selectedEmployeeId || isSaving || totals.totalEarnings <= 0}>
+            {isSaving ? (
+              <><Calculator className="h-4 w-4 mr-1 animate-spin" />Guardando...</>
+            ) : (
+              <><Save className="h-4 w-4 mr-1" />{isEditMode ? 'Actualizar Nómina' : 'Calcular y Guardar'}</>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

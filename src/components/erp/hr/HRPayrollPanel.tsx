@@ -1,25 +1,51 @@
 /**
- * HRPayrollPanel - Gestión de nóminas
- * Cálculo, generación y seguimiento de nóminas
+ * HRPayrollPanel - Gestión de nóminas (datos reales desde Supabase)
+ * Flujo: draft → calculated → approved → paid
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Table, TableBody, TableCell, TableHead, 
-  TableHeader, TableRow 
+import {
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow
 } from '@/components/ui/table';
-import { 
+import {
   DollarSign, Calculator, FileDown, Search, Filter,
   CheckCircle, Clock, AlertTriangle, Users,
-  TrendingUp, Euro, Plus, Eye
+  TrendingUp, Euro, Plus, Eye, RefreshCw, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
+
+interface PayrollRow {
+  id: string;
+  employee_id: string;
+  period_month: number;
+  period_year: number;
+  payroll_type: string;
+  base_salary: number;
+  gross_salary: number;
+  ss_worker: number;
+  irpf_amount: number;
+  irpf_percentage: number;
+  total_deductions: number;
+  net_salary: number;
+  ss_company: number;
+  total_cost: number;
+  status: string;
+  paid_at: string | null;
+  complements: any;
+  other_deductions: any;
+  notes: string | null;
+  employee_first_name?: string;
+  employee_last_name?: string;
+  department_name?: string;
+}
 
 interface HRPayrollPanelProps {
   companyId: string;
@@ -27,94 +53,116 @@ interface HRPayrollPanelProps {
 
 export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState('2026-02');
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
   const [selectedPayrollId, setSelectedPayrollId] = useState<string | null>(null);
+  const [payrolls, setPayrolls] = useState<PayrollRow[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Demo data
-  const payrolls = [
-    { 
-      id: '1', 
-      employee: 'María García López', 
-      department: 'Administración',
-      grossSalary: 2800,
-      netSalary: 2156.80,
-      irpf: 15.2,
-      ss: 6.35,
-      extras: 200,
-      deductions: 50,
-      status: 'paid',
-      payDate: '2026-01-28'
-    },
-    { 
-      id: '2', 
-      employee: 'Juan Martínez Ruiz', 
-      department: 'Producción',
-      grossSalary: 2400,
-      netSalary: 1891.20,
-      irpf: 12.5,
-      ss: 6.35,
-      extras: 150,
-      deductions: 0,
-      status: 'pending',
-      payDate: null
-    },
-    { 
-      id: '3', 
-      employee: 'Ana Fernández Castro', 
-      department: 'Comercial',
-      grossSalary: 3200,
-      netSalary: 2432.00,
-      irpf: 18.0,
-      ss: 6.35,
-      extras: 400,
-      deductions: 100,
-      status: 'calculated',
-      payDate: null
-    },
-    { 
-      id: '4', 
-      employee: 'Carlos Rodríguez Pérez', 
-      department: 'IT',
-      grossSalary: 3500,
-      netSalary: 2625.00,
-      irpf: 20.0,
-      ss: 6.35,
-      extras: 0,
-      deductions: 0,
-      status: 'error',
-      payDate: null
-    },
-  ];
+  const [year, month] = selectedMonth.split('-').map(Number);
 
+  // Fetch payrolls from DB
+  const fetchPayrolls = useCallback(async () => {
+    if (!companyId) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_payrolls')
+        .select(`
+          *,
+          erp_hr_employees!erp_hr_payrolls_employee_id_fkey(first_name, last_name, department_id, erp_hr_departments!erp_hr_employees_department_id_fkey(name))
+        `)
+        .eq('company_id', companyId)
+        .eq('period_month', month)
+        .eq('period_year', year)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const mapped: PayrollRow[] = (data || []).map((row: any) => ({
+        ...row,
+        employee_first_name: row.erp_hr_employees?.first_name || '',
+        employee_last_name: row.erp_hr_employees?.last_name || '',
+        department_name: row.erp_hr_employees?.erp_hr_departments?.name || 'Sin dpto.',
+      }));
+
+      setPayrolls(mapped);
+    } catch (err) {
+      console.error('Error fetching payrolls:', err);
+      toast.error('Error al cargar nóminas');
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId, month, year]);
+
+  useEffect(() => { fetchPayrolls(); }, [fetchPayrolls]);
+
+  // Summary from real data
   const summary = {
-    totalGross: 142800,
-    totalNet: 109752.50,
-    totalIRPF: 21420,
-    totalSS: 9073.80,
-    employeesCount: 47,
-    pendingCount: 3
+    totalGross: payrolls.reduce((s, p) => s + (p.gross_salary || 0), 0),
+    totalNet: payrolls.reduce((s, p) => s + (p.net_salary || 0), 0),
+    totalIRPF: payrolls.reduce((s, p) => s + (p.irpf_amount || 0), 0),
+    totalSS: payrolls.reduce((s, p) => s + (p.ss_worker || 0), 0),
+    employeesCount: payrolls.length,
+    pendingCount: payrolls.filter(p => p.status === 'draft' || p.status === 'calculated').length,
   };
+
+  // Approve a payroll
+  const handleApprove = useCallback(async (payrollId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('erp_hr_payrolls')
+      .update({ status: 'approved', approved_by: user?.id, approved_at: new Date().toISOString() } as any)
+      .eq('id', payrollId);
+
+    if (error) {
+      toast.error('Error al aprobar nómina');
+    } else {
+      toast.success('Nómina aprobada');
+      fetchPayrolls();
+    }
+  }, [fetchPayrolls]);
+
+  // Mark as paid
+  const handleMarkPaid = useCallback(async (payrollId: string) => {
+    const ref = `PAY-${year}${String(month).padStart(2, '0')}-${payrollId.slice(0, 6).toUpperCase()}`;
+    const { error } = await supabase
+      .from('erp_hr_payrolls')
+      .update({ status: 'paid', paid_at: new Date().toISOString(), payment_reference: ref } as any)
+      .eq('id', payrollId);
+
+    if (error) {
+      toast.error('Error al marcar como pagada');
+    } else {
+      toast.success(`Nómina pagada (ref: ${ref})`);
+      fetchPayrolls();
+    }
+  }, [fetchPayrolls, year, month]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
         return <Badge className="bg-green-500/10 text-green-600 border-green-500/30">Pagada</Badge>;
-      case 'pending':
-        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">Pendiente</Badge>;
+      case 'approved':
+        return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Aprobada</Badge>;
       case 'calculated':
         return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/30">Calculada</Badge>;
-      case 'error':
-        return <Badge className="bg-red-500/10 text-red-600 border-red-500/30">Error</Badge>;
+      case 'draft':
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">Borrador</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-500/10 text-red-600 border-red-500/30">Cancelada</Badge>;
       default:
-        return <Badge variant="outline">Desconocido</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const filteredPayrolls = payrolls.filter(p =>
-    p.employee.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPayrolls = payrolls.filter(p => {
+    const name = `${p.employee_first_name} ${p.employee_last_name}`.toLowerCase();
+    const dept = (p.department_name || '').toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return name.includes(term) || dept.includes(term);
+  });
 
   return (
     <div className="space-y-4">
@@ -126,7 +174,7 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
               <Euro className="h-4 w-4 text-green-500" />
               <div>
                 <p className="text-xs text-muted-foreground">Bruto Total</p>
-                <p className="text-lg font-bold">€{summary.totalGross.toLocaleString()}</p>
+                <p className="text-lg font-bold">€{summary.totalGross.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
           </CardContent>
@@ -138,7 +186,7 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
               <DollarSign className="h-4 w-4 text-blue-500" />
               <div>
                 <p className="text-xs text-muted-foreground">Neto Total</p>
-                <p className="text-lg font-bold">€{summary.totalNet.toLocaleString()}</p>
+                <p className="text-lg font-bold">€{summary.totalNet.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
           </CardContent>
@@ -150,7 +198,7 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
               <Calculator className="h-4 w-4 text-purple-500" />
               <div>
                 <p className="text-xs text-muted-foreground">IRPF</p>
-                <p className="text-lg font-bold">€{summary.totalIRPF.toLocaleString()}</p>
+                <p className="text-lg font-bold">€{summary.totalIRPF.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
           </CardContent>
@@ -161,8 +209,8 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-amber-500" />
               <div>
-                <p className="text-xs text-muted-foreground">Seg. Social</p>
-                <p className="text-lg font-bold">€{summary.totalSS.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">SS Trabajador</p>
+                <p className="text-lg font-bold">€{summary.totalSS.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
           </CardContent>
@@ -173,7 +221,7 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-cyan-500" />
               <div>
-                <p className="text-xs text-muted-foreground">Empleados</p>
+                <p className="text-xs text-muted-foreground">Nóminas</p>
                 <p className="text-lg font-bold">{summary.employeesCount}</p>
               </div>
             </div>
@@ -198,7 +246,7 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-base">Nóminas - {selectedMonth}</CardTitle>
+              <CardTitle className="text-base">Nóminas - {new Date(year, month - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</CardTitle>
               <CardDescription>Gestión y cálculo de nóminas mensuales</CardDescription>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -208,31 +256,12 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="w-[180px]"
               />
-              <Button size="sm" onClick={() => setShowPayrollDialog(true)}>
+              <Button size="sm" variant="ghost" onClick={fetchPayrolls} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button size="sm" onClick={() => { setSelectedPayrollId(null); setShowPayrollDialog(true); }}>
                 <Plus className="h-4 w-4 mr-1" />
                 Nueva Nómina
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  toast.success('Calculando nóminas...', { duration: 2000 });
-                  setTimeout(() => toast.success('4 nóminas calculadas correctamente'), 2500);
-                }}
-              >
-                <Calculator className="h-4 w-4 mr-1" />
-                Calcular Todas
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  toast.success('Exportando archivo SEPA...');
-                  setTimeout(() => toast.success('Archivo remesa_202602.xml generado'), 1500);
-                }}
-              >
-                <FileDown className="h-4 w-4 mr-1" />
-                Exportar SEPA
               </Button>
             </div>
           </div>
@@ -249,60 +278,90 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-1" />
-              Filtros
-            </Button>
           </div>
 
           {/* Tabla de nóminas */}
           <ScrollArea className="h-[400px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Empleado</TableHead>
-                  <TableHead>Departamento</TableHead>
-                  <TableHead className="text-right">Bruto</TableHead>
-                  <TableHead className="text-right">IRPF %</TableHead>
-                  <TableHead className="text-right">SS %</TableHead>
-                  <TableHead className="text-right">Extras</TableHead>
-                  <TableHead className="text-right">Neto</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPayrolls.map((payroll) => (
-                  <TableRow key={payroll.id}>
-                    <TableCell className="font-medium">{payroll.employee}</TableCell>
-                    <TableCell>{payroll.department}</TableCell>
-                    <TableCell className="text-right">€{payroll.grossSalary.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{payroll.irpf}%</TableCell>
-                    <TableCell className="text-right">{payroll.ss}%</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {payroll.extras > 0 ? `+€${payroll.extras}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      €{payroll.netSalary.toLocaleString()}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(payroll.status)}</TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedPayrollId(payroll.id);
-                          setShowPayrollDialog(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Ver
-                      </Button>
-                    </TableCell>
+            {loading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <RefreshCw className="h-5 w-5 animate-spin mr-2" />
+                Cargando nóminas...
+              </div>
+            ) : filteredPayrolls.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <DollarSign className="h-10 w-10 mb-3 opacity-30" />
+                <p className="text-sm">No hay nóminas para este período</p>
+                <p className="text-xs mt-1">Pulsa "Nueva Nómina" para crear una</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Empleado</TableHead>
+                    <TableHead>Departamento</TableHead>
+                    <TableHead className="text-right">Base</TableHead>
+                    <TableHead className="text-right">Bruto</TableHead>
+                    <TableHead className="text-right">IRPF</TableHead>
+                    <TableHead className="text-right">SS Trab.</TableHead>
+                    <TableHead className="text-right">Neto</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredPayrolls.map((payroll) => (
+                    <TableRow key={payroll.id}>
+                      <TableCell className="font-medium">
+                        {payroll.employee_first_name} {payroll.employee_last_name}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{payroll.department_name}</TableCell>
+                      <TableCell className="text-right">€{(payroll.base_salary || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right">€{(payroll.gross_salary || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right text-muted-foreground">{payroll.irpf_percentage}%</TableCell>
+                      <TableCell className="text-right text-muted-foreground">€{(payroll.ss_worker || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right font-semibold">€{(payroll.net_salary || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableCell>{getStatusBadge(payroll.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedPayrollId(payroll.id);
+                              setShowPayrollDialog(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {payroll.status === 'calculated' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-emerald-600"
+                              onClick={() => handleApprove(payroll.id)}
+                              title="Aprobar"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {payroll.status === 'approved' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-600"
+                              onClick={() => handleMarkPaid(payroll.id)}
+                              title="Marcar pagada"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>
@@ -316,9 +375,9 @@ export function HRPayrollPanel({ companyId }: HRPayrollPanelProps) {
         }}
         companyId={companyId}
         month={selectedMonth}
-        onSave={(data) => {
-          console.log('Payroll saved:', data);
-          toast.success('Nómina guardada correctamente');
+        payrollId={selectedPayrollId}
+        onSave={() => {
+          fetchPayrolls();
         }}
       />
     </div>
