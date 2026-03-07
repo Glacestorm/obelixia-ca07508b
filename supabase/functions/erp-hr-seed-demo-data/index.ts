@@ -56,12 +56,10 @@ interface PhaseResult { phase: string; records: number; details: string; }
 // =============================================
 // CLEANUP HELPER: delete demo data from dependent tables in safe FK order
 // =============================================
-async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations') {
+async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations' | 'regulatory') {
   const deleteDemo = async (table: string) => {
-    // Try metadata-based deletion first
     const { error } = await supabase.from(table).delete().eq('metadata->>is_demo', 'true');
     if (error) {
-      // Fallback: delete by company_id for tables without metadata
       await supabase.from(table).delete().eq('company_id', COMPANY_ID);
     }
   };
@@ -75,20 +73,23 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
     await q;
   };
 
-  // Order matters: delete children before parents
   if (scope === 'all' || scope === 'operations') {
-    // Settlements, termination analysis, payroll recalculations, objectives
     await deleteByCompany('erp_hr_settlements');
     await deleteByCompany('erp_hr_termination_analysis');
     await deleteByCompany('erp_hr_payroll_recalculations');
     await deleteByCompany('erp_hr_employee_objectives');
   }
 
+  if (scope === 'all' || scope === 'regulatory') {
+    await deleteByCompany('erp_hr_regulatory_alerts');
+    await deleteByCompany('erp_hr_regulatory_watch');
+    await deleteByCompany('erp_hr_regulatory_watch_config');
+  }
+
   if (scope === 'all' || scope === 'experience') {
     await deleteDemo('erp_hr_ss_contributions');
     await deleteDemo('erp_hr_recognition');
     await deleteDemo('erp_hr_recognition_programs');
-    // Onboarding tasks reference onboarding, so delete tasks first
     await supabase.from('erp_hr_onboarding_tasks').delete().in(
       'onboarding_id',
       (await supabase.from('erp_hr_employee_onboarding').select('id').eq('company_id', COMPANY_ID)).data?.map((r: any) => r.id) || []
@@ -106,8 +107,15 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
   if (scope === 'all' || scope === 'compliance') {
     await deleteByCompany('erp_hr_employee_documents');
     await deleteByCompany('erp_hr_document_templates');
+    // Clean both benefit table sets
     await deleteByCompany('erp_hr_benefits_enrollments');
     await deleteByCompany('erp_hr_benefits_plans');
+    // Also clean the social benefits tables used by the panel
+    await supabase.from('erp_hr_employee_benefits').delete().in(
+      'benefit_id',
+      (await supabase.from('erp_hr_social_benefits').select('id').eq('company_id', COMPANY_ID)).data?.map((r: any) => r.id) || []
+    );
+    await deleteByCompany('erp_hr_social_benefits');
     await deleteByCompany('erp_hr_safety_incidents');
   }
 
@@ -145,7 +153,6 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
     await supabase.from('erp_hr_leave_types').delete().in('code', ['VAC','IT','MAT','PAT','AP','MATRIM','MUDANZA','FALLEC']);
     await deleteDemo('erp_hr_collective_agreements');
     await deleteByCompany('erp_hr_job_positions', { col: 'position_name', op: 'like', val: '%(Demo)%' });
-    // Departments: only delete if no remaining FK references
     await supabase.from('erp_hr_departments').delete().eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
   }
 
@@ -700,6 +707,7 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
   const { error: incErr } = await supabase.from('erp_hr_safety_incidents').insert(incidents);
   if (incErr) console.warn('Incidents:', incErr.message); else count += incidents.length;
 
+  // --- Benefits Plans (legacy table) ---
   const plans = [
     { company_id: COMPANY_ID, plan_code: 'SEG-MED', plan_name: 'Seguro Médico Privado', plan_type: 'health', provider_name: 'Sanitas', coverage_type: 'employee_family', employer_contribution: 120, annual_cost: 1440, effective_from: '2025-01-01', is_active: true, metadata: DEMO_META },
     { company_id: COMPANY_ID, plan_code: 'GUARD', plan_name: 'Cheque Guardería', plan_type: 'childcare', provider_name: 'Ticket Guardería', coverage_type: 'employee', employer_contribution: 0, employee_contribution: 200, annual_cost: 0, effective_from: '2025-01-01', is_active: true, metadata: DEMO_META },
@@ -708,21 +716,56 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
     { company_id: COMPANY_ID, plan_code: 'PENSION', plan_name: 'Plan Pensiones Empresa', plan_type: 'retirement', provider_name: 'VidaCaixa', coverage_type: 'employee', employer_contribution: 100, annual_cost: 0, effective_from: '2025-01-01', is_active: true, metadata: DEMO_META },
   ];
   const { data: planData, error: plnErr } = await supabase.from('erp_hr_benefits_plans').insert(plans).select('id');
-  if (plnErr) throw new Error(`Benefits: ${plnErr.message}`);
-  count += plans.length;
+  if (plnErr) console.warn('Benefits plans:', plnErr.message); else count += plans.length;
 
-  const benEnrollments: any[] = [];
-  for (let i = 0; i < 30; i++) {
-    benEnrollments.push({
-      company_id: COMPANY_ID, employee_id: randomFrom(emps).id, plan_id: randomFrom(planData).id,
-      enrollment_status: 'active', coverage_level: 'individual',
-      enrolled_at: '2025-01-15', effective_date: '2025-02-01',
-      employee_contribution: randomDecimal(0, 200), employer_contribution: randomDecimal(50, 200),
-      contribution_frequency: 'monthly', metadata: DEMO_META,
-    });
+  if (planData?.length) {
+    const benEnrollments: any[] = [];
+    for (let i = 0; i < 30; i++) {
+      benEnrollments.push({
+        company_id: COMPANY_ID, employee_id: randomFrom(emps).id, plan_id: randomFrom(planData).id,
+        enrollment_status: 'active', coverage_level: 'individual',
+        enrolled_at: '2025-01-15', effective_date: '2025-02-01',
+        employee_contribution: randomDecimal(0, 200), employer_contribution: randomDecimal(50, 200),
+        contribution_frequency: 'monthly', metadata: DEMO_META,
+      });
+    }
+    const { error: benErr } = await supabase.from('erp_hr_benefits_enrollments').insert(benEnrollments);
+    if (benErr) console.warn('Benefits enrollments:', benErr.message); else count += benEnrollments.length;
   }
-  const { error: benErr } = await supabase.from('erp_hr_benefits_enrollments').insert(benEnrollments);
-  if (benErr) console.warn('Benefits enrollments:', benErr.message); else count += benEnrollments.length;
+
+  // --- Social Benefits (table used by HRSocialBenefitsPanel) ---
+  const socialBenefits = [
+    { company_id: COMPANY_ID, benefit_code: 'SB-HEALTH', benefit_name: 'Seguro Médico Privado', benefit_type: 'health_insurance', provider_name: 'Sanitas', monthly_cost_company: 120, monthly_cost_employee: 0, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Seguro médico completo con cobertura familiar', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-DENTAL', benefit_name: 'Seguro Dental', benefit_type: 'dental_insurance', provider_name: 'Sanitas Dental', monthly_cost_company: 25, monthly_cost_employee: 10, is_taxable: false, tax_percentage: 0, is_flex_benefit: true, flex_points_cost: 15, is_active: true, description: 'Cobertura dental básica y ortodoncia', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-CHILD', benefit_name: 'Cheque Guardería', benefit_type: 'childcare', provider_name: 'Ticket Guardería', monthly_cost_company: 0, monthly_cost_employee: 200, is_taxable: false, tax_percentage: 0, is_flex_benefit: true, flex_points_cost: 100, is_active: true, description: 'Cheque guardería exento de IRPF', max_beneficiaries: 50 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-MEAL', benefit_name: 'Ticket Restaurant', benefit_type: 'meal_vouchers', provider_name: 'Edenred', monthly_cost_company: 180, monthly_cost_employee: 0, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Ticket restaurant diario 11€ (exento IRPF)', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-TRANSPORT', benefit_name: 'Tarjeta Transporte', benefit_type: 'transport', provider_name: 'Cobee', monthly_cost_company: 0, monthly_cost_employee: 60, is_taxable: false, tax_percentage: 0, is_flex_benefit: true, flex_points_cost: 30, is_active: true, description: 'Abono transporte público exento de IRPF hasta 1.500€/año', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-GYM', benefit_name: 'Gimnasio Corporativo', benefit_type: 'gym', provider_name: 'Gympass', monthly_cost_company: 35, monthly_cost_employee: 15, is_taxable: true, tax_percentage: 21, is_flex_benefit: true, flex_points_cost: 25, is_active: true, description: 'Acceso a red de gimnasios y clases online', max_beneficiaries: 100 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-PENSION', benefit_name: 'Plan de Pensiones', benefit_type: 'pension', provider_name: 'VidaCaixa', monthly_cost_company: 100, monthly_cost_employee: 50, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Plan de pensiones de empleo con aportación empresa', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-EDUCATION', benefit_name: 'Formación Bonificada', benefit_type: 'education', provider_name: 'FUNDAE', monthly_cost_company: 0, monthly_cost_employee: 0, is_taxable: false, tax_percentage: 0, is_flex_benefit: false, is_active: true, description: 'Formación continua bonificada por FUNDAE', max_beneficiaries: 200 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-REMOTE', benefit_name: 'Compensación Teletrabajo', benefit_type: 'remote_work_allowance', provider_name: null, monthly_cost_company: 55, monthly_cost_employee: 0, is_taxable: true, tax_percentage: 21, is_flex_benefit: false, is_active: true, description: 'Compensación gastos teletrabajo (Art. 12 Ley 10/2021)', max_beneficiaries: 100 },
+    { company_id: COMPANY_ID, benefit_code: 'SB-LIFE', benefit_name: 'Seguro de Vida', benefit_type: 'life_insurance', provider_name: 'Zurich', monthly_cost_company: 20, monthly_cost_employee: 0, is_taxable: true, tax_percentage: 21, is_flex_benefit: false, is_active: true, description: 'Seguro de vida y accidentes 2x salario anual', max_beneficiaries: 200 },
+  ];
+  const { data: sbData, error: sbErr } = await supabase.from('erp_hr_social_benefits').insert(socialBenefits).select('id');
+  if (sbErr) console.warn('Social benefits:', sbErr.message); else count += socialBenefits.length;
+
+  // --- Employee Benefits enrollments (for social benefits panel) ---
+  if (sbData?.length) {
+    const empBenefits: any[] = [];
+    for (let i = 0; i < 40; i++) {
+      empBenefits.push({
+        employee_id: randomFrom(emps).id,
+        benefit_id: randomFrom(sbData).id,
+        enrollment_date: `2025-${String(randomBetween(1, 6)).padStart(2, '0')}-${String(randomBetween(1, 28)).padStart(2, '0')}`,
+        status: randomFrom(['active', 'active', 'active', 'pending', 'cancelled']),
+        employee_contribution: randomDecimal(0, 200),
+        company_contribution: randomDecimal(20, 180),
+        coverage_level: randomFrom(['individual', 'individual', 'family', 'couple']),
+      });
+    }
+    const { error: ebErr } = await supabase.from('erp_hr_employee_benefits').insert(empBenefits);
+    if (ebErr) console.warn('Employee benefits:', ebErr.message); else count += empBenefits.length;
+  }
 
   const docs: any[] = [];
   const docTypes = ['contrato', 'nomina', 'certificado', 'titulo', 'dni_copy'];
@@ -749,7 +792,7 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
   const { error: tplErr } = await supabase.from('erp_hr_document_templates').insert(templates);
   if (tplErr) console.warn('Templates:', tplErr.message); else count += templates.length;
 
-  return { phase: 'compliance', records: count, details: `${incidents.length} incidentes, ${plans.length} beneficios, ${benEnrollments.length} inscripciones, ${docs.length} documentos, ${templates.length} plantillas` };
+  return { phase: 'compliance', records: count, details: `${incidents.length} incidentes, ${socialBenefits.length} beneficios sociales, ${docs.length} documentos, ${templates.length} plantillas` };
 }
 
 // =============================================
@@ -1128,18 +1171,78 @@ async function seedOperations(supabase: any): Promise<PhaseResult> {
 }
 
 // =============================================
+// PHASE 11: Regulatory Watch (Vigilancia Normativa)
+// =============================================
+async function seedRegulatoryWatch(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'regulatory');
+  let count = 0;
+
+  // --- Config ---
+  const config = {
+    company_id: COMPANY_ID,
+    auto_check_enabled: true,
+    check_frequency: 'daily',
+    check_time: '08:00',
+    jurisdictions: ['ES', 'EU'],
+    watch_boe: true,
+    watch_bopa: false,
+    watch_dogc: true,
+    watch_bocm: false,
+    watch_bopv: false,
+    watch_eu_official_journal: true,
+    watch_press: true,
+    watch_ministry_announcements: true,
+    watch_union_communications: true,
+    watch_categories: ['convenio_colectivo', 'salario_minimo', 'seguridad_social', 'irpf', 'jornada', 'prl', 'igualdad', 'contratacion'],
+    notify_on_detection: true,
+    notify_on_approval: true,
+    last_check_at: new Date().toISOString(),
+    last_check_status: 'success',
+    last_check_results: { items_found: 8, new_items: 3, updated_items: 2 },
+  };
+  const { error: cfgErr } = await supabase.from('erp_hr_regulatory_watch_config').upsert(config, { onConflict: 'company_id' });
+  if (cfgErr) console.warn('Regulatory config:', cfgErr.message); else count += 1;
+
+  // --- Watch Items ---
+  const watchItems = [
+    { company_id: COMPANY_ID, title: 'SMI 2026: Subida del 4,2% confirmada', description: 'El Salario Mínimo Interprofesional se fija en 1.184€/mes (14 pagas) para 2026, con efectos retroactivos desde el 1 de enero.', source_type: 'boe', source_url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-XXXXX', source_name: 'BOE', detected_at: '2026-02-15T09:00:00Z', category: 'salario_minimo', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-02-14', official_publication_number: 'BOE-A-2026-2345', effective_date: '2026-01-01', key_changes: [{ change: 'SMI 14 pagas: 1.184€/mes', impact: 'Afecta a bases mínimas de cotización y contratos con SMI referenciado' }], impact_level: 'high', requires_payroll_recalc: true, requires_contract_update: false, requires_immediate_action: true, estimated_affected_employees: 12, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Nuevo Convenio Metal Lleida 2026-2028', description: 'Publicación del nuevo convenio colectivo del metal de la provincia de Lleida con tablas salariales actualizadas y reducción de jornada.', source_type: 'boe', source_url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-YYYYY', source_name: 'BOP Lleida', detected_at: '2026-01-20T10:00:00Z', category: 'convenio_colectivo', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOP Lleida', official_publication_date: '2026-01-18', effective_date: '2026-01-01', key_changes: [{ change: 'Subida tablas salariales +3,5%', impact: 'Recálculo nóminas retroactivo' }, { change: 'Jornada máxima 1.740h/año', impact: 'Ajustar horarios y turnos' }], impact_level: 'high', requires_payroll_recalc: true, requires_contract_update: true, requires_immediate_action: true, estimated_affected_employees: 30, implementation_status: 'in_progress' },
+    { company_id: COMPANY_ID, title: 'Bases cotización SS 2026 actualizadas', description: 'Orden ISM/XXX/2026 por la que se desarrollan las normas legales de cotización para 2026. Nuevas bases máximas y mínimas.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-01-25T08:30:00Z', category: 'seguridad_social', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-01-24', effective_date: '2026-01-01', key_changes: [{ change: 'Base máxima cotización: 4.720,50€/mes', impact: 'Afecta a empleados con salarios altos' }, { change: 'Tipo MEI: 0,80%', impact: 'Incremento cotización empresarial' }], impact_level: 'medium', requires_payroll_recalc: true, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'completed', implemented_at: '2026-02-01T09:00:00Z' },
+    { company_id: COMPANY_ID, title: 'Directiva UE 2024/2831 Transparencia Salarial', description: 'Transposición obligatoria antes del 7 de junio de 2026. Obligación de informar sobre brecha salarial y criterios retributivos.', source_type: 'eu_official_journal', source_name: 'DOUE', detected_at: '2025-11-10T10:00:00Z', category: 'igualdad', jurisdiction: 'EU', approval_status: 'pending_review', official_publication: 'DOUE', official_publication_date: '2024-04-24', effective_date: '2026-06-07', key_changes: [{ change: 'Obligación de publicar brecha salarial por categoría', impact: 'Requiere auditoría salarial detallada' }], impact_level: 'high', requires_contract_update: false, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Tablas IRPF 2026 actualizadas', description: 'Nuevas tablas de retención de IRPF para 2026 con deflactación del 2% en tramos autonómicos.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-01-05T09:00:00Z', category: 'irpf', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2025-12-30', effective_date: '2026-01-01', key_changes: [{ change: 'Deflactación tramos 2%', impact: 'Menor retención en tramos bajos' }], impact_level: 'medium', requires_payroll_recalc: true, requires_immediate_action: true, estimated_affected_employees: 100, implementation_status: 'completed', implemented_at: '2026-01-02T08:00:00Z' },
+    { company_id: COMPANY_ID, title: 'Reducción jornada máxima a 37,5h/semana', description: 'Proyecto de ley en tramitación para reducir la jornada máxima legal a 37,5 horas semanales sin reducción salarial.', source_type: 'press', source_name: 'Ministerio de Trabajo', detected_at: '2026-02-20T14:00:00Z', category: 'jornada', jurisdiction: 'ES', approval_status: 'monitoring', impact_level: 'critical', requires_contract_update: true, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Nuevo protocolo PRL para trabajo en calor', description: 'Real Decreto que establece medidas de protección de trabajadores frente a riesgos por temperaturas extremas.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-03-01T09:00:00Z', category: 'prl', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-02-28', effective_date: '2026-05-01', key_changes: [{ change: 'Prohibición trabajo al aire libre >40°C', impact: 'Afecta producción y logística en verano' }], impact_level: 'medium', requires_immediate_action: false, estimated_affected_employees: 20, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Prórroga incentivos contratación indefinida', description: 'Prórroga de bonificaciones por conversión de contratos temporales a indefinidos: 275€/mes durante 3 años.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-01-15T11:00:00Z', category: 'contratacion', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-01-14', effective_date: '2026-01-01', key_changes: [{ change: 'Bonificación 275€/mes × 36 meses', impact: 'Oportunidad de ahorro en conversiones' }], impact_level: 'low', requires_immediate_action: false, estimated_affected_employees: 8, implementation_status: 'completed' },
+  ];
+  const { data: watchData, error: watchErr } = await supabase.from('erp_hr_regulatory_watch').insert(watchItems).select('id, title');
+  if (watchErr) console.warn('Regulatory watch:', watchErr.message); else count += watchItems.length;
+
+  // --- Alerts ---
+  if (watchData?.length) {
+    const alerts = [
+      { company_id: COMPANY_ID, watch_item_id: watchData[0]?.id, alert_type: 'action_required', severity: 'high', title: 'Recálculo nóminas por SMI 2026', message: 'Es necesario recalcular las nóminas de enero y febrero por la subida retroactiva del SMI.', action_required: 'Ejecutar recálculo masivo de nóminas con nuevo SMI', action_deadline: '2026-03-31', is_read: false, is_dismissed: false },
+      { company_id: COMPANY_ID, watch_item_id: watchData[1]?.id, alert_type: 'action_required', severity: 'high', title: 'Actualizar tablas convenio metal', message: 'Nuevo convenio del metal publicado. Actualizar tablas salariales y recalcular retroactivos.', action_required: 'Importar nuevas tablas salariales del convenio', action_deadline: '2026-03-15', is_read: false, is_dismissed: false },
+      { company_id: COMPANY_ID, watch_item_id: watchData[3]?.id, alert_type: 'upcoming_deadline', severity: 'medium', title: 'Transparencia salarial UE - Plazo junio 2026', message: 'La directiva de transparencia salarial debe transponerse antes del 7 de junio. Preparar auditoría salarial.', action_required: 'Iniciar auditoría salarial por categorías', action_deadline: '2026-05-31', is_read: true, is_dismissed: false },
+      { company_id: COMPANY_ID, watch_item_id: watchData[5]?.id, alert_type: 'monitoring', severity: 'low', title: 'Jornada 37,5h - En tramitación', message: 'Proyecto de ley en tramitación parlamentaria. Preparar escenarios de impacto.', action_required: 'Analizar impacto en planificación de turnos', is_read: false, is_dismissed: false },
+      { company_id: COMPANY_ID, watch_item_id: watchData[6]?.id, alert_type: 'information', severity: 'medium', title: 'Protocolo calor - Implementar antes mayo', message: 'Nuevo protocolo PRL para temperaturas extremas entra en vigor el 1 de mayo.', action_required: 'Actualizar plan de PRL y protocolo de calor', action_deadline: '2026-04-30', is_read: false, is_dismissed: false },
+    ];
+    const { error: alertErr } = await supabase.from('erp_hr_regulatory_alerts').insert(alerts);
+    if (alertErr) console.warn('Regulatory alerts:', alertErr.message); else count += alerts.length;
+  }
+
+  return { phase: 'regulatory', records: count, details: `1 config, ${watchItems.length} normativas, ${watchData?.length ? 5 : 0} alertas` };
+}
+
+// =============================================
 // PURGE ALL DEMO DATA
 // =============================================
 async function purgeAllDemo(supabase: any): Promise<PhaseResult> {
-  // Clean new talent advanced tables first
   await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
-  // Clean operations tables
   await supabase.from('erp_hr_settlements').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_termination_analysis').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_payroll_recalculations').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_employee_objectives').delete().eq('company_id', COMPANY_ID);
-  // Use the centralized cleanup which handles FK order
   await cleanupDemoData(supabase, 'all');
 
   const { count: empCount } = await supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
@@ -1170,6 +1273,7 @@ serve(async (req) => {
       case 'seed_experience': result = await seedExperience(supabase); break;
       case 'seed_talent_advanced': result = await seedTalentAdvanced(supabase); break;
       case 'seed_operations': result = await seedOperations(supabase); break;
+      case 'seed_regulatory': result = await seedRegulatoryWatch(supabase); break;
       case 'seed_all': {
         console.log('[seed_all] Starting full cleanup...');
         await cleanupDemoData(supabase, 'all');
@@ -1192,6 +1296,7 @@ serve(async (req) => {
         results.push(await seedExperience(supabase));
         results.push(await seedTalentAdvanced(supabase));
         results.push(await seedOperations(supabase));
+        results.push(await seedRegulatoryWatch(supabase));
         console.log('[seed_all] All phases done');
         result = { phase: 'all', records: results.reduce((s, r) => s + r.records, 0), details: results.map(r => `${r.phase}: ${r.records}`).join(' | ') };
         break;
