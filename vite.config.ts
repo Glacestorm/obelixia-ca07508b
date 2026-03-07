@@ -26,13 +26,12 @@ export default defineConfig(({ mode }) => ({
       jsxImportSource: undefined,
     }), 
     mode === "development" && componentTagger(),
-    // PWA Configuration for Offline Support
-    VitePWA({
+    // PWA only in production builds to reduce build-time memory in development mode
+    mode === "production" && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'brain-logo.png', 'robots.txt'],
       manifest: {
         name: 'ObelixIA - CRM Bancario Inteligente',
-        short_name: 'ObelixIA',
         description: 'Plataforma CRM bancaria con IA para gestión comercial, GALIA y análisis financiero',
         theme_color: '#0f172a',
         background_color: '#0f172a',
@@ -286,9 +285,9 @@ export default defineConfig(({ mode }) => ({
         propertyReadSideEffects: false,
       },
     },
-    // Minification for smaller bundle sizes
-    minify: 'esbuild',
-    // MEMORY: Disable source maps during build
+    // Minify only in production to reduce memory in development builds
+    minify: mode === 'production' ? 'esbuild' : false,
+    // Keep sourcemaps off to reduce memory footprint
     sourcemap: false,
     // Increase chunk warning limit
     chunkSizeWarningLimit: 1000,
