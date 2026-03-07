@@ -6,8 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const COMPANY_ID = '2cbd8718-7a8b-42ce-af61-bef193da32df';
+let COMPANY_ID = '';
 const DEMO_META = { is_demo: true };
+
+async function resolveCompanyId(supabase: any, requestCompanyId?: string): Promise<string> {
+  if (requestCompanyId) {
+    COMPANY_ID = requestCompanyId;
+    return requestCompanyId;
+  }
+  // Auto-detect: first active company
+  const { data } = await supabase.from('companies').select('id').limit(1).single();
+  if (!data?.id) throw new Error('No company found in database. Create a company first.');
+  COMPANY_ID = data.id;
+  return data.id;
+}
 
 const FIRST_NAMES_M = ['Carlos','Miguel','Alejandro','David','Javier','Pablo','Andrés','Daniel','Jorge','Fernando','Sergio','Raúl','Antonio','Manuel','Francisco','Luis','Pedro','Iván','Rubén','Óscar'];
 const FIRST_NAMES_F = ['María','Laura','Ana','Carmen','Lucía','Elena','Marta','Paula','Cristina','Patricia','Sara','Raquel','Beatriz','Irene','Nuria','Isabel','Rosa','Pilar','Sofía','Andrea'];
@@ -703,7 +715,8 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { action } = await req.json();
+    const { action, company_id: reqCompanyId } = await req.json();
+    await resolveCompanyId(supabase, reqCompanyId);
     let result: PhaseResult;
 
     switch (action) {
