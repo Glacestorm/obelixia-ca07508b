@@ -29445,6 +29445,80 @@ export type Database = {
           },
         ]
       }
+      erp_hr_opportunities: {
+        Row: {
+          applicants: number | null
+          company_id: string
+          created_at: string | null
+          deadline: string | null
+          department: string | null
+          description: string | null
+          duration: string | null
+          id: string
+          metadata: Json | null
+          posted_by: string | null
+          posted_date: string | null
+          skills_developed: string[] | null
+          skills_required: string[] | null
+          spots: number | null
+          status: string | null
+          time_commitment: string | null
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          applicants?: number | null
+          company_id: string
+          created_at?: string | null
+          deadline?: string | null
+          department?: string | null
+          description?: string | null
+          duration?: string | null
+          id?: string
+          metadata?: Json | null
+          posted_by?: string | null
+          posted_date?: string | null
+          skills_developed?: string[] | null
+          skills_required?: string[] | null
+          spots?: number | null
+          status?: string | null
+          time_commitment?: string | null
+          title: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          applicants?: number | null
+          company_id?: string
+          created_at?: string | null
+          deadline?: string | null
+          department?: string | null
+          description?: string | null
+          duration?: string | null
+          id?: string
+          metadata?: Json | null
+          posted_by?: string | null
+          posted_date?: string | null
+          skills_developed?: string[] | null
+          skills_required?: string[] | null
+          spots?: number | null
+          status?: string | null
+          time_commitment?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_opportunities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_payroll_concepts: {
         Row: {
           category: string | null
@@ -31513,6 +31587,75 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_succession_positions: {
+        Row: {
+          bench_strength: string | null
+          candidates_count: number | null
+          company_id: string
+          created_at: string | null
+          criticality: string | null
+          department: string | null
+          id: string
+          incumbent_employee_id: string | null
+          incumbent_name: string | null
+          incumbent_tenure_years: number | null
+          metadata: Json | null
+          ready_now_count: number | null
+          title: string
+          updated_at: string | null
+          vacancy_risk: string | null
+        }
+        Insert: {
+          bench_strength?: string | null
+          candidates_count?: number | null
+          company_id: string
+          created_at?: string | null
+          criticality?: string | null
+          department?: string | null
+          id?: string
+          incumbent_employee_id?: string | null
+          incumbent_name?: string | null
+          incumbent_tenure_years?: number | null
+          metadata?: Json | null
+          ready_now_count?: number | null
+          title: string
+          updated_at?: string | null
+          vacancy_risk?: string | null
+        }
+        Update: {
+          bench_strength?: string | null
+          candidates_count?: number | null
+          company_id?: string
+          created_at?: string | null
+          criticality?: string | null
+          department?: string | null
+          id?: string
+          incumbent_employee_id?: string | null
+          incumbent_name?: string | null
+          incumbent_tenure_years?: number | null
+          metadata?: Json | null
+          ready_now_count?: number | null
+          title?: string
+          updated_at?: string | null
+          vacancy_risk?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_succession_positions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_succession_positions_incumbent_employee_id_fkey"
+            columns: ["incumbent_employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
             referencedColumns: ["id"]
           },
         ]

@@ -104,7 +104,11 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
       items: [
         { id: 'performance', label: 'Desempeño', icon: Award },
         { id: 'training', label: 'Formación', icon: GraduationCap },
+        { id: 'skills-matrix', label: 'Competencias', icon: Brain },
+        { id: 'marketplace', label: 'Marketplace', icon: Rocket },
+        { id: 'succession', label: 'Sucesión', icon: Shield },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'analytics-intelligence', label: 'Analytics IA', icon: Brain },
         { id: 'benefits', label: 'Beneficios', icon: Gift },
         { id: 'safety', label: 'PRL', icon: Shield, badge: stats.safetyAlerts, badgeVariant: 'destructive' },
       ]

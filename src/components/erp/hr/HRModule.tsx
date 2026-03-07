@@ -53,6 +53,10 @@ import { HRRegulatoryWatchPanel } from './HRRegulatoryWatchPanel';
 import { HRLegalComplianceDashboard } from './compliance';
 import { HRIntegrationDashboard } from './integration';
 import { HRDemoSeedPanel } from './HRDemoSeedPanel';
+import { HRSkillsMatrixPanel } from './talent/HRSkillsMatrixPanel';
+import { HRInternalMarketplacePanel } from './talent/HRInternalMarketplacePanel';
+import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
+import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -294,6 +298,10 @@ export function HRModule() {
         {activeModule === 'legal-compliance' && <HRLegalComplianceDashboard companyId={demoCompanyId} />}
         {activeModule === 'integration' && <HRIntegrationDashboard companyId={demoCompanyId} />}
         {activeModule === 'demo-seed' && <HRDemoSeedPanel companyId={demoCompanyId} />}
+        {activeModule === 'skills-matrix' && <HRSkillsMatrixPanel companyId={demoCompanyId} />}
+        {activeModule === 'marketplace' && <HRInternalMarketplacePanel companyId={demoCompanyId} />}
+        {activeModule === 'succession' && <HRSuccessionPlanningPanel companyId={demoCompanyId} />}
+        {activeModule === 'analytics-intelligence' && <HRAnalyticsIntelligencePanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
