@@ -90,27 +90,30 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
   }
 
   if (scope === 'all' || scope === 'legal') {
-    await deleteDemo('erp_hr_sanction_alerts');
-    await deleteDemo('erp_hr_whistleblower_reports');
-    await deleteDemo('erp_hr_equality_plans');
+    await deleteByCompany('erp_hr_sanction_alerts');
+    await deleteByCompany('erp_hr_whistleblower_reports');
+    await deleteByCompany('erp_hr_equality_plans');
   }
 
   if (scope === 'all' || scope === 'compliance') {
-    await deleteDemo('erp_hr_employee_documents');
-    await deleteDemo('erp_hr_document_templates');
-    await deleteDemo('erp_hr_benefits_enrollments');
-    await deleteDemo('erp_hr_benefits_plans');
-    await deleteDemo('erp_hr_safety_incidents');
+    await deleteByCompany('erp_hr_employee_documents');
+    await deleteByCompany('erp_hr_document_templates');
+    await deleteByCompany('erp_hr_benefits_enrollments');
+    await deleteByCompany('erp_hr_benefits_plans');
+    await deleteByCompany('erp_hr_safety_incidents');
   }
 
   if (scope === 'all' || scope === 'talent') {
     await deleteByCompany('erp_hr_interviews');
     await deleteByCompany('erp_hr_candidates');
     await deleteByCompany('erp_hr_job_openings');
-    await deleteDemo('erp_hr_performance_evaluations');
+    await deleteByCompany('erp_hr_performance_evaluations');
     await deleteByCompany('erp_hr_evaluation_cycles');
-    await deleteDemo('erp_hr_training_enrollments');
-    await deleteDemo('erp_hr_training_catalog');
+    await supabase.from('erp_hr_training_enrollments').delete().in(
+      'training_id',
+      (await supabase.from('erp_hr_training_catalog').select('id').eq('company_id', COMPANY_ID)).data?.map((r: any) => r.id) || []
+    );
+    await deleteByCompany('erp_hr_training_catalog');
   }
 
   if (scope === 'all' || scope === 'time_absences') {
@@ -508,7 +511,7 @@ async function seedTimeAndAbsences(supabase: any): Promise<PhaseResult> {
         clock_in: `${ds}T${String(ciH).padStart(2,'0')}:${String(ciM).padStart(2,'0')}:00+01:00`,
         clock_out: `${ds}T${String(coH).padStart(2,'0')}:${String(coM).padStart(2,'0')}:00+01:00`,
         worked_hours: parseFloat((coH - ciH + (coM - ciM)/60).toFixed(2)),
-        entry_type: 'regular', source: 'system', status: 'approved', metadata: DEMO_META,
+        entry_method: 'web', status: 'approved',
       });
     }
   }
@@ -582,13 +585,14 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   if (courseErr) throw new Error(`Training: ${courseErr.message}`);
   count += courses.length;
 
+  // training_enrollments uses training_id (not catalog_id), no company_id
   const enrollments: any[] = [];
   for (let i = 0; i < 60; i++) {
     enrollments.push({
-      company_id: COMPANY_ID, employee_id: randomFrom(emps).id, catalog_id: randomFrom(courseData).id,
+      employee_id: randomFrom(emps).id, training_id: randomFrom(courseData).id,
       status: randomFrom(['completed', 'completed', 'in_progress', 'enrolled']),
-      enrolled_at: `2025-${String(randomBetween(1,8)).padStart(2,'0')}-${String(randomBetween(1,28)).padStart(2,'0')}`,
-      score: Math.random() > 0.3 ? randomBetween(60, 100) : null, metadata: DEMO_META,
+      requested_at: `2025-${String(randomBetween(1,8)).padStart(2,'0')}-${String(randomBetween(1,28)).padStart(2,'0')}`,
+      final_score: Math.random() > 0.3 ? randomBetween(60, 100) : null,
     });
   }
   const { error: enrErr } = await supabase.from('erp_hr_training_enrollments').insert(enrollments);
@@ -607,11 +611,11 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   for (const emp of emps) {
     evals.push({
       company_id: COMPANY_ID, employee_id: emp.id, cycle_id: randomFrom(cycleData).id,
-      evaluator_id: emps[0].id, overall_score: randomDecimal(2.5, 5.0, 1),
-      status: randomFrom(['completed', 'completed', 'pending', 'in_progress']),
+      evaluation_type: randomFrom(['self', 'manager', 'peer']),
+      overall_score: randomDecimal(50, 98, 1),
+      status: randomFrom(['approved', 'approved', 'draft', 'submitted', 'reviewed']),
       strengths: ['Trabajo en equipo', 'Puntualidad', 'Resolución de problemas'].slice(0, randomBetween(1,3)),
       areas_for_improvement: ['Comunicación', 'Delegación'].slice(0, randomBetween(0,2)),
-      metadata: DEMO_META,
     });
   }
   for (let b = 0; b < evals.length; b += 25) {
@@ -620,11 +624,11 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   }
 
   const openings = [
-    { company_id: COMPANY_ID, title: 'Desarrollador Full-Stack Senior', description: 'Dev senior React+Node', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 42000, salary_range_max: 58000, status: 'open', auto_screen_cvs: true },
-    { company_id: COMPANY_ID, title: 'Técnico de Producción', description: 'Técnico línea automatizada', employment_type: 'full_time', location: 'Lleida', remote_option: 'on_site', salary_range_min: 24000, salary_range_max: 32000, status: 'open' },
-    { company_id: COMPANY_ID, title: 'Comercial Export (Francia/Italia)', description: 'KAM zona sur Europa', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 35000, salary_range_max: 50000, status: 'open' },
-    { company_id: COMPANY_ID, title: 'Becario Administración', description: 'Prácticas universitarias', employment_type: 'internship', location: 'Lleida', remote_option: 'on_site', salary_range_min: 8000, salary_range_max: 12000, status: 'open' },
-    { company_id: COMPANY_ID, title: 'Responsable de Calidad', description: 'ISO 9001/14001', employment_type: 'full_time', location: 'Lleida', remote_option: 'on_site', salary_range_min: 38000, salary_range_max: 48000, status: 'closed' },
+    { company_id: COMPANY_ID, title: 'Desarrollador Full-Stack Senior', description: 'Dev senior React+Node', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 42000, salary_range_max: 58000, status: 'published', auto_screen_cvs: true },
+    { company_id: COMPANY_ID, title: 'Técnico de Producción', description: 'Técnico línea automatizada', employment_type: 'full_time', location: 'Lleida', remote_option: 'no', salary_range_min: 24000, salary_range_max: 32000, status: 'published' },
+    { company_id: COMPANY_ID, title: 'Comercial Export (Francia/Italia)', description: 'KAM zona sur Europa', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 35000, salary_range_max: 50000, status: 'published' },
+    { company_id: COMPANY_ID, title: 'Becario Administración', description: 'Prácticas universitarias', employment_type: 'internship', location: 'Lleida', remote_option: 'no', salary_range_min: 8000, salary_range_max: 12000, status: 'draft' },
+    { company_id: COMPANY_ID, title: 'Responsable de Calidad', description: 'ISO 9001/14001', employment_type: 'full_time', location: 'Lleida', remote_option: 'no', salary_range_min: 38000, salary_range_max: 48000, status: 'closed' },
   ];
   const { data: openingData, error: opErr } = await supabase.from('erp_hr_job_openings').insert(openings).select('id');
   if (opErr) throw new Error(`Openings: ${opErr.message}`);
@@ -638,8 +642,8 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
       first_name: randomFrom(isFemale ? FIRST_NAMES_F : FIRST_NAMES_M),
       last_name: `${randomFrom(LAST_NAMES)} ${randomFrom(LAST_NAMES)}`,
       email: `candidato.${randomBetween(100,9999)}@email.com`,
-      status: randomFrom(['new', 'screening', 'interview', 'offer', 'rejected', 'hired']),
-      source: randomFrom(['linkedin', 'infojobs', 'referral', 'web']),
+      status: randomFrom(['new', 'screening', 'shortlisted', 'interviewing', 'offer', 'rejected', 'hired']),
+      source: randomFrom(['linkedin', 'portal', 'referral', 'email']),
       ai_score: randomDecimal(40, 98),
     });
   }
@@ -651,8 +655,8 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   for (let i = 0; i < 10; i++) {
     interviews.push({
       company_id: COMPANY_ID, candidate_id: randomFrom(candData).id, job_opening_id: randomFrom(openingData).id,
-      interview_type: randomFrom(['phone_screen', 'technical', 'hr', 'final']),
-      mode: randomFrom(['video', 'presencial', 'phone']),
+      interview_type: randomFrom(['screening', 'technical', 'hr', 'final']),
+      mode: randomFrom(['virtual', 'presencial']),
       scheduled_at: `2025-${String(randomBetween(8,10)).padStart(2,'0')}-${String(randomBetween(1,28)).padStart(2,'0')}T${randomBetween(9,17)}:00:00Z`,
       duration_minutes: randomFrom([30, 45, 60]),
       status: randomFrom(['scheduled', 'completed', 'completed']),
@@ -676,14 +680,14 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
   let count = 0;
 
   const incidents = [
-    { company_id: COMPANY_ID, employee_id: emps[17]?.id || emps[0].id, incident_type: 'accident', severity: 'minor', title: 'Corte leve en mano izquierda', description: 'Corte superficial durante manipulación', incident_date: '2025-03-15', location: 'Nave 2', status: 'resolved', metadata: DEMO_META },
-    { company_id: COMPANY_ID, employee_id: emps[22]?.id || emps[1].id, incident_type: 'near_miss', severity: 'low', title: 'Casi-caída en zona húmeda', description: 'Suelo mojado sin señalización', incident_date: '2025-05-22', location: 'Almacén', status: 'resolved', metadata: DEMO_META },
-    { company_id: COMPANY_ID, employee_id: emps[25]?.id || emps[2].id, incident_type: 'accident', severity: 'moderate', title: 'Lumbalgia por sobreesfuerzo', description: 'Dolor lumbar tras carga manual', incident_date: '2025-07-10', location: 'Zona de carga', status: 'investigating', metadata: DEMO_META },
-    { company_id: COMPANY_ID, employee_id: emps[30]?.id || emps[3].id, incident_type: 'near_miss', severity: 'low', title: 'Fallo eléctrico detectado', description: 'Chispa en enchufe nave 1', incident_date: '2025-08-05', location: 'Nave 1', status: 'resolved', metadata: DEMO_META },
-    { company_id: COMPANY_ID, employee_id: emps[14]?.id || emps[4].id, incident_type: 'accident', severity: 'minor', title: 'Golpe en pie con caja', description: 'Caída de caja desde estantería', incident_date: '2025-09-18', location: 'Almacén auxiliar', status: 'reported', metadata: DEMO_META },
-    { company_id: COMPANY_ID, employee_id: emps[35]?.id || emps[5].id, incident_type: 'near_miss', severity: 'medium', title: 'Carretilla sin freno', description: 'Carretilla desplazada sin conductor', incident_date: '2025-06-30', location: 'Muelle carga', status: 'resolved', metadata: DEMO_META },
-    { company_id: COMPANY_ID, employee_id: emps[8]?.id || emps[6].id, incident_type: 'illness', severity: 'minor', title: 'Irritación ocular', description: 'Contacto con limpiador industrial', incident_date: '2025-04-12', location: 'Taller', status: 'resolved', metadata: DEMO_META },
-    { company_id: COMPANY_ID, employee_id: emps[40]?.id || emps[7].id, incident_type: 'near_miss', severity: 'low', title: 'Estantería inestable', description: 'Anclajes deteriorados', incident_date: '2025-10-01', location: 'Almacén', status: 'investigating', metadata: DEMO_META },
+    { company_id: COMPANY_ID, employee_id: emps[17]?.id || emps[0].id, incident_type: 'accident', severity: 'minor', description: 'Corte superficial durante manipulación de piezas en nave 2', incident_date: '2025-03-15', location: 'Nave 2', investigation_status: 'closed' },
+    { company_id: COMPANY_ID, employee_id: emps[22]?.id || emps[1].id, incident_type: 'near_miss', severity: 'low', description: 'Suelo mojado sin señalización en almacén', incident_date: '2025-05-22', location: 'Almacén', investigation_status: 'closed' },
+    { company_id: COMPANY_ID, employee_id: emps[25]?.id || emps[2].id, incident_type: 'accident', severity: 'moderate', description: 'Dolor lumbar tras carga manual pesada', incident_date: '2025-07-10', location: 'Zona de carga', investigation_status: 'in_progress' },
+    { company_id: COMPANY_ID, employee_id: emps[30]?.id || emps[3].id, incident_type: 'near_miss', severity: 'low', description: 'Chispa en enchufe nave 1', incident_date: '2025-08-05', location: 'Nave 1', investigation_status: 'closed' },
+    { company_id: COMPANY_ID, employee_id: emps[14]?.id || emps[4].id, incident_type: 'accident', severity: 'minor', description: 'Caída de caja desde estantería, golpe en pie', incident_date: '2025-09-18', location: 'Almacén auxiliar', investigation_status: 'pending' },
+    { company_id: COMPANY_ID, employee_id: emps[35]?.id || emps[5].id, incident_type: 'near_miss', severity: 'medium', description: 'Carretilla desplazada sin conductor', incident_date: '2025-06-30', location: 'Muelle carga', investigation_status: 'closed' },
+    { company_id: COMPANY_ID, employee_id: emps[8]?.id || emps[6].id, incident_type: 'illness', severity: 'minor', description: 'Irritación ocular por contacto con limpiador industrial', incident_date: '2025-04-12', location: 'Taller', investigation_status: 'closed' },
+    { company_id: COMPANY_ID, employee_id: emps[40]?.id || emps[7].id, incident_type: 'near_miss', severity: 'low', description: 'Anclajes de estantería deteriorados', incident_date: '2025-10-01', location: 'Almacén', investigation_status: 'in_progress' },
   ];
   const { error: incErr } = await supabase.from('erp_hr_safety_incidents').insert(incidents);
   if (incErr) console.warn('Incidents:', incErr.message); else count += incidents.length;
@@ -730,9 +734,9 @@ async function seedCompliance(supabase: any): Promise<PhaseResult> {
   }
 
   const templates = [
-    { company_id: COMPANY_ID, template_code: 'TPL-CONTRATO', document_type: 'contract', template_name: 'Contrato Indefinido', jurisdiction: 'ES', language_code: 'es', template_content: '# CONTRATO\n\nEntre {{empresa}} y {{empleado}}...', is_active: true, is_system: false, metadata: DEMO_META },
-    { company_id: COMPANY_ID, template_code: 'TPL-CERTIF', document_type: 'certificate', template_name: 'Certificado de Empresa', jurisdiction: 'ES', language_code: 'es', template_content: '# CERTIFICADO\n\n{{empleado}}...', is_active: true, is_system: false, metadata: DEMO_META },
-    { company_id: COMPANY_ID, template_code: 'TPL-CARTA', document_type: 'letter', template_name: 'Carta de Comunicación', jurisdiction: 'ES', language_code: 'es', template_content: '# CARTA\n\nEstimado/a {{empleado}}...', is_active: true, is_system: false, metadata: DEMO_META },
+    { company_id: COMPANY_ID, template_code: 'TPL-CONTRATO', document_type: 'contract', template_name: 'Contrato Indefinido', jurisdiction: 'ES', language_code: 'es', template_content: '# CONTRATO\n\nEntre {{empresa}} y {{empleado}}...', is_active: true, is_system: false },
+    { company_id: COMPANY_ID, template_code: 'TPL-CERTIF', document_type: 'certificate', template_name: 'Certificado de Empresa', jurisdiction: 'ES', language_code: 'es', template_content: '# CERTIFICADO\n\n{{empleado}}...', is_active: true, is_system: false },
+    { company_id: COMPANY_ID, template_code: 'TPL-CARTA', document_type: 'letter', template_name: 'Carta de Comunicación', jurisdiction: 'ES', language_code: 'es', template_content: '# CARTA\n\nEstimado/a {{empleado}}...', is_active: true, is_system: false },
   ];
   const { error: tplErr } = await supabase.from('erp_hr_document_templates').insert(templates);
   if (tplErr) console.warn('Templates:', tplErr.message); else count += templates.length;
@@ -748,25 +752,25 @@ async function seedLegal(supabase: any): Promise<PhaseResult> {
   let count = 0;
 
   const eqPlans = [
-    { company_id: COMPANY_ID, plan_name: 'Plan de Igualdad 2025-2029', status: 'active', start_date: '2025-01-01', end_date: '2029-12-31', responsible_person: 'Directora RRHH', registration_number: `PI-${randomBetween(100000,999999)}`, objectives: ['Reducir brecha salarial <5%', 'Paridad en mandos intermedios', 'Protocolo acoso actualizado'], metadata: DEMO_META },
+    { company_id: COMPANY_ID, plan_code: 'PI-2025', plan_name: 'Plan de Igualdad 2025-2029', status: 'active', start_date: '2025-01-01', end_date: '2029-12-31', registration_number: `PI-${randomBetween(100000,999999)}`, objectives: ['Reducir brecha salarial <5%', 'Paridad en mandos intermedios', 'Protocolo acoso actualizado'] },
   ];
   const { error: eqErr } = await supabase.from('erp_hr_equality_plans').insert(eqPlans);
   if (eqErr) console.warn('Equality:', eqErr.message); else count += eqPlans.length;
 
   const reports = [
-    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'harassment', description: 'Posible acoso verbal en producción', status: 'investigating', priority: 'high', is_anonymous: true, received_at: '2025-04-20T10:00:00Z', metadata: DEMO_META },
-    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'fraud', description: 'Uso indebido tarjeta empresa', status: 'resolved', priority: 'medium', is_anonymous: false, received_at: '2025-02-15T14:30:00Z', resolved_at: '2025-03-10T09:00:00Z', resolution: 'Amonestación por escrito.', metadata: DEMO_META },
-    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'safety', description: 'Incumplimiento normas seguridad turno noche', status: 'pending', priority: 'high', is_anonymous: true, received_at: '2025-09-05T08:00:00Z', metadata: DEMO_META },
+    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'harassment', subject: 'Posible acoso verbal', description: 'Posible acoso verbal en producción', status: 'investigating', priority: 'high', is_anonymous: true, received_at: '2025-04-20T10:00:00Z' },
+    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'fraud', subject: 'Uso indebido tarjeta empresa', description: 'Uso indebido de tarjeta corporativa', status: 'resolved', priority: 'medium', is_anonymous: false, received_at: '2025-02-15T14:30:00Z', resolved_at: '2025-03-10T09:00:00Z' },
+    { company_id: COMPANY_ID, report_code: `DEN-${randomBetween(1000,9999)}`, category: 'safety_violation', subject: 'Incumplimiento normas seguridad', description: 'Incumplimiento normas seguridad turno noche', status: 'received', priority: 'high', is_anonymous: true, received_at: '2025-09-05T08:00:00Z' },
   ];
   const { error: repErr } = await supabase.from('erp_hr_whistleblower_reports').insert(reports);
   if (repErr) console.warn('Whistleblower:', repErr.message); else count += reports.length;
 
   const sanctions = [
-    { company_id: COMPANY_ID, alert_type: 'contract_expiry', severity: 'high', title: 'Contratos temporales venciendo', description: '3 contratos vencen en 30 días', due_date: '2025-11-15', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'training_overdue', severity: 'medium', title: 'Formación PRL pendiente', description: '5 empleados sin PRL actualizada', due_date: '2025-10-31', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'equality_audit', severity: 'medium', title: 'Auditoría salarial pendiente', description: 'Vence el 31/03', due_date: '2026-03-31', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'data_protection', severity: 'low', title: 'Renovación RGPD', description: 'Revisión anual consentimientos', due_date: '2025-12-31', status: 'active', metadata: DEMO_META },
-    { company_id: COMPANY_ID, alert_type: 'medical_review', severity: 'high', title: 'Reconocimientos médicos', description: '8 empleados sin reconocimiento', due_date: '2025-11-30', status: 'active', metadata: DEMO_META },
+    { company_id: COMPANY_ID, alert_level: 'warning', title: 'Contratos temporales venciendo', description: '3 contratos vencen en 30 días', days_remaining: 30 },
+    { company_id: COMPANY_ID, alert_level: 'prealert', title: 'Formación PRL pendiente', description: '5 empleados sin PRL actualizada', days_remaining: 60 },
+    { company_id: COMPANY_ID, alert_level: 'prealert', title: 'Auditoría salarial pendiente', description: 'Vence el 31/03', days_remaining: 180 },
+    { company_id: COMPANY_ID, alert_level: 'prealert', title: 'Renovación RGPD', description: 'Revisión anual consentimientos', days_remaining: 90 },
+    { company_id: COMPANY_ID, alert_level: 'warning', title: 'Reconocimientos médicos', description: '8 empleados sin reconocimiento', days_remaining: 45 },
   ];
   const { error: sanErr } = await supabase.from('erp_hr_sanction_alerts').insert(sanctions);
   if (sanErr) console.warn('Sanctions:', sanErr.message); else count += sanctions.length;
@@ -807,8 +811,8 @@ async function seedExperience(supabase: any): Promise<PhaseResult> {
       { code: 'DOC-CONTRATO', name: 'Firma contrato', phase: 'documentation', responsible: 'hr' },
       { code: 'IT-EQUIPO', name: 'Equipo informático', phase: 'it_setup', responsible: 'it' },
       { code: 'IT-EMAIL', name: 'Email corporativo', phase: 'it_setup', responsible: 'it' },
-      { code: 'FORM-PRL', name: 'Formación PRL', phase: 'training', responsible: 'prl' },
-      { code: 'FORM-IGUALDAD', name: 'Formación igualdad', phase: 'training', responsible: 'hr' },
+        { code: 'FORM-PRL', name: 'Formación PRL', phase: 'training', responsible: 'hr' },
+        { code: 'FORM-IGUALDAD', name: 'Formación igualdad', phase: 'training', responsible: 'hr' },
       { code: 'BIENVENIDA', name: 'Reunión bienvenida', phase: 'integration', responsible: 'manager' },
     ];
     const tasks: any[] = [];
@@ -848,30 +852,48 @@ async function seedExperience(supabase: any): Promise<PhaseResult> {
   if (recErr) console.warn('Recognition:', recErr.message); else count += recognitions.length;
 
   const programs = [
-    { company_id: COMPANY_ID, program_name: 'Empleado del Mes', description: 'Reconocimiento mensual', is_active: true, budget_annual: 6000, points_per_award: 200, nomination_type: 'peer', metadata: DEMO_META },
-    { company_id: COMPANY_ID, program_name: 'Premio Innovación', description: 'Premio trimestral ideas', is_active: true, budget_annual: 10000, points_per_award: 500, nomination_type: 'manager', metadata: DEMO_META },
+    { company_id: COMPANY_ID, program_name: 'Empleado del Mes', program_type: 'peer', is_active: true, annual_budget: 6000, metadata: DEMO_META },
+    { company_id: COMPANY_ID, program_name: 'Premio Innovación', program_type: 'manager', is_active: true, annual_budget: 10000, metadata: DEMO_META },
   ];
   const { error: progErr } = await supabase.from('erp_hr_recognition_programs').insert(programs);
   if (progErr) console.warn('Programs:', progErr.message); else count += programs.length;
 
+  // SS Contributions: UNIQUE on (company_id, period_month, period_year) — aggregate per month
   const ssContribs: any[] = [];
-  for (const emp of emps.slice(0, 50)) {
-    for (let m = 1; m <= 10; m++) {
+  for (let m = 1; m <= 10; m++) {
+    const numWorkers = emps.length;
+    let totalBaseCC = 0, totalBaseAT = 0;
+    for (const emp of emps.slice(0, 50)) {
       const base = randomDecimal(1500, 5000);
-      ssContribs.push({
-        company_id: COMPANY_ID, employee_id: emp.id, period_month: m, period_year: 2025,
-        base_amount: base, worker_contribution: parseFloat((base * 0.0635).toFixed(2)),
-        company_contribution: parseFloat((base * 0.305).toFixed(2)),
-        mei_contribution: parseFloat((base * 0.007).toFixed(2)),
-        total_contribution: parseFloat((base * 0.3755).toFixed(2)),
-        status: m <= 8 ? 'paid' : 'pending', metadata: DEMO_META,
-      });
+      totalBaseCC += base;
+      totalBaseAT += base;
     }
+    const ccCompany = parseFloat((totalBaseCC * 0.236).toFixed(2));
+    const atCompany = parseFloat((totalBaseAT * 0.035).toFixed(2));
+    const unemploymentCompany = parseFloat((totalBaseCC * 0.055).toFixed(2));
+    const fogasa = parseFloat((totalBaseCC * 0.002).toFixed(2));
+    const fpCompany = parseFloat((totalBaseCC * 0.006).toFixed(2));
+    const totalCompany = parseFloat((ccCompany + atCompany + unemploymentCompany + fogasa + fpCompany).toFixed(2));
+    const ccWorker = parseFloat((totalBaseCC * 0.047).toFixed(2));
+    const unemploymentWorker = parseFloat((totalBaseCC * 0.0155).toFixed(2));
+    const fpWorker = parseFloat((totalBaseCC * 0.001).toFixed(2));
+    const totalWorker = parseFloat((ccWorker + unemploymentWorker + fpWorker).toFixed(2));
+    const totalAmount = parseFloat((totalCompany + totalWorker).toFixed(2));
+
+    ssContribs.push({
+      company_id: COMPANY_ID, period_month: m, period_year: 2025,
+      total_workers: numWorkers,
+      total_base_cc: parseFloat(totalBaseCC.toFixed(2)),
+      total_base_at: parseFloat(totalBaseAT.toFixed(2)),
+      cc_company: ccCompany, at_ep_company: atCompany, unemployment_company: unemploymentCompany,
+      fogasa, fp_company: fpCompany, total_company: totalCompany,
+      cc_worker: ccWorker, unemployment_worker: unemploymentWorker, fp_worker: fpWorker,
+      total_worker: totalWorker, total_amount: totalAmount,
+      status: m <= 8 ? 'paid' : 'pending', metadata: DEMO_META,
+    });
   }
-  for (let b = 0; b < ssContribs.length; b += 100) {
-    const { error } = await supabase.from('erp_hr_ss_contributions').insert(ssContribs.slice(b, b + 100));
-    if (error) console.warn(`SS ${b}:`, error.message); else count += ssContribs.slice(b, b + 100).length;
-  }
+  const { error: ssErr } = await supabase.from('erp_hr_ss_contributions').upsert(ssContribs, { onConflict: 'company_id,period_month,period_year' });
+  if (ssErr) console.warn('SS contributions:', ssErr.message); else count += ssContribs.length;
 
   return { phase: 'experience', records: count, details: `${onboardings.length} onboardings, ${offboardings.length} offboardings, ${recognitions.length} reconocimientos, ${ssContribs.length} cotizaciones SS` };
 }
