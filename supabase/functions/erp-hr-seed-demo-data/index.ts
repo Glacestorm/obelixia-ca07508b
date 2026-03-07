@@ -899,13 +899,53 @@ async function seedExperience(supabase: any): Promise<PhaseResult> {
 }
 
 // =============================================
+// PHASE 9: Talent Advanced (Opportunities + Succession)
+// =============================================
+async function seedTalentAdvanced(supabase: any): Promise<PhaseResult> {
+  // Cleanup
+  await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
+  await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
+  let count = 0;
+
+  // Opportunities
+  const oppTypes = ['project','rotation','mentoring','committee','stretch'] as const;
+  const opportunities = [
+    { company_id: COMPANY_ID, type: 'project', title: 'Transformación Digital - Fase 2', description: 'Liderar la implementación de automatización en el área comercial.', department: 'Tecnología + Comercial', duration: '6 meses', time_commitment: '30%', skills_required: ['Project Management','Change Management','Digital Tools'], skills_developed: ['Strategic Planning','Cross-functional Leadership'], posted_by: 'CTO', spots: 2, applicants: 8, deadline: '2026-04-15', metadata: DEMO_META },
+    { company_id: COMPANY_ID, type: 'rotation', title: 'Rotación - Business Development', description: 'Rotación de 12 meses en desarrollo de negocio.', department: 'Business Development', duration: '12 meses', time_commitment: '100%', skills_required: ['Sales','B2B'], skills_developed: ['International Business','Market Analysis'], posted_by: 'VP Sales', spots: 1, applicants: 15, deadline: '2026-05-28', metadata: DEMO_META },
+    { company_id: COMPANY_ID, type: 'mentoring', title: 'Programa Mentoring - Future Leaders', description: 'Mentoring de 6 meses con ejecutivos senior.', department: 'RRHH', duration: '6 meses', time_commitment: '5%', skills_required: ['High Potential','Leadership'], skills_developed: ['Executive Presence','Strategic Thinking'], posted_by: 'CHRO', spots: 10, applicants: 25, deadline: '2026-04-10', metadata: DEMO_META },
+    { company_id: COMPANY_ID, type: 'committee', title: 'Comité de Innovación y Sostenibilidad', description: 'Participación en comité estratégico de innovación y ESG.', department: 'Estrategia', duration: 'Indefinido', time_commitment: '10%', skills_required: ['Innovation','ESG'], skills_developed: ['Board Exposure','Strategic Decision Making'], posted_by: 'CEO Office', spots: 3, applicants: 12, deadline: '2026-04-05', metadata: DEMO_META },
+    { company_id: COMPANY_ID, type: 'stretch', title: 'Stretch - Lanzamiento Producto B2C', description: 'Go-to-market de nuevo producto con exposición al comité ejecutivo.', department: 'Marketing + Producto', duration: '4 meses', time_commitment: '50%', skills_required: ['Marketing','Product Launch'], skills_developed: ['GTM Strategy','P&L Ownership'], posted_by: 'VP Marketing', spots: 1, applicants: 6, deadline: '2026-04-20', metadata: DEMO_META },
+    { company_id: COMPANY_ID, type: 'project', title: 'Migración Cloud AWS', description: 'Proyecto de migración de infraestructura on-premise a cloud.', department: 'IT', duration: '8 meses', time_commitment: '40%', skills_required: ['AWS','DevOps','Cloud Architecture'], skills_developed: ['Cloud Engineering','Cost Optimization'], posted_by: 'CTO', spots: 3, applicants: 10, deadline: '2026-05-01', metadata: DEMO_META },
+    { company_id: COMPANY_ID, type: 'mentoring', title: 'Mentoring Técnico - Arquitectura', description: 'Programa de mentoring en arquitectura de software.', department: 'IT', duration: '4 meses', time_commitment: '10%', skills_required: ['Software Development'], skills_developed: ['System Design','Technical Leadership'], posted_by: 'Tech Lead', spots: 5, applicants: 8, deadline: '2026-04-30', metadata: DEMO_META },
+  ];
+  const { error: oppErr } = await supabase.from('erp_hr_opportunities').insert(opportunities);
+  if (oppErr) console.warn('Opportunities:', oppErr.message); else count += opportunities.length;
+
+  // Succession Positions
+  const successionPositions = [
+    { company_id: COMPANY_ID, title: 'Director General (CEO)', department: 'Dirección General', incumbent_name: 'Carlos García López', incumbent_tenure_years: 8, criticality: 'critical', vacancy_risk: 'medium', bench_strength: 'adequate', candidates_count: 3, ready_now_count: 0, metadata: DEMO_META },
+    { company_id: COMPANY_ID, title: 'Director Financiero (CFO)', department: 'Administración y Finanzas', incumbent_name: 'Ana Martínez Ruiz', incumbent_tenure_years: 6, criticality: 'critical', vacancy_risk: 'low', bench_strength: 'adequate', candidates_count: 2, ready_now_count: 1, metadata: DEMO_META },
+    { company_id: COMPANY_ID, title: 'Director de Operaciones (COO)', department: 'Producción', incumbent_name: 'Juan Rodríguez Pérez', incumbent_tenure_years: 12, criticality: 'high', vacancy_risk: 'high', bench_strength: 'weak', candidates_count: 2, ready_now_count: 0, metadata: DEMO_META },
+    { company_id: COMPANY_ID, title: 'Director Tecnología (CTO)', department: 'Tecnología', incumbent_name: 'María García Fernández', incumbent_tenure_years: 5, criticality: 'critical', vacancy_risk: 'medium', bench_strength: 'strong', candidates_count: 4, ready_now_count: 2, metadata: DEMO_META },
+    { company_id: COMPANY_ID, title: 'Director Comercial', department: 'Comercial', incumbent_name: 'Pablo Sánchez Gil', incumbent_tenure_years: 7, criticality: 'high', vacancy_risk: 'low', bench_strength: 'strong', candidates_count: 3, ready_now_count: 1, metadata: DEMO_META },
+    { company_id: COMPANY_ID, title: 'Director RRHH (CHRO)', department: 'Recursos Humanos', incumbent_name: 'Elena Torres Díaz', incumbent_tenure_years: 4, criticality: 'high', vacancy_risk: 'low', bench_strength: 'adequate', candidates_count: 2, ready_now_count: 1, metadata: DEMO_META },
+  ];
+  const { error: sucErr } = await supabase.from('erp_hr_succession_positions').insert(successionPositions);
+  if (sucErr) console.warn('Succession:', sucErr.message); else count += successionPositions.length;
+
+  return { phase: 'talent_advanced', records: count, details: `${opportunities.length} oportunidades, ${successionPositions.length} posiciones sucesión` };
+}
+
+// =============================================
 // PURGE ALL DEMO DATA
 // =============================================
 async function purgeAllDemo(supabase: any): Promise<PhaseResult> {
+  // Clean new talent advanced tables first
+  await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
+  await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
   // Use the centralized cleanup which handles FK order
   await cleanupDemoData(supabase, 'all');
 
-  // Count remaining demo data to confirm
   const { count: empCount } = await supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
 
   return { phase: 'purge', records: 0, details: `Purge complete. Remaining demo employees: ${empCount || 0}` };
@@ -932,29 +972,25 @@ serve(async (req) => {
       case 'seed_compliance': result = await seedCompliance(supabase); break;
       case 'seed_legal': result = await seedLegal(supabase); break;
       case 'seed_experience': result = await seedExperience(supabase); break;
+      case 'seed_talent_advanced': result = await seedTalentAdvanced(supabase); break;
       case 'seed_all': {
-        // Full cleanup first to guarantee idempotency
         console.log('[seed_all] Starting full cleanup...');
         await cleanupDemoData(supabase, 'all');
+        await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
+        await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
         console.log('[seed_all] Cleanup done. Seeding...');
 
         const results: PhaseResult[] = [];
         results.push(await seedInfrastructure(supabase));
-        console.log('[seed_all] Infrastructure done');
         results.push(await seedEmployees(supabase));
-        console.log('[seed_all] Employees done');
         results.push(await seedPayrolls(supabase));
-        console.log('[seed_all] Payrolls done');
         results.push(await seedTimeAndAbsences(supabase));
-        console.log('[seed_all] Time done');
         results.push(await seedTalent(supabase));
-        console.log('[seed_all] Talent done');
         results.push(await seedCompliance(supabase));
-        console.log('[seed_all] Compliance done');
         results.push(await seedLegal(supabase));
-        console.log('[seed_all] Legal done');
         results.push(await seedExperience(supabase));
-        console.log('[seed_all] Experience done');
+        results.push(await seedTalentAdvanced(supabase));
+        console.log('[seed_all] All phases done');
         result = { phase: 'all', records: results.reduce((s, r) => s + r.records, 0), details: results.map(r => `${r.phase}: ${r.records}`).join(' | ') };
         break;
       }
