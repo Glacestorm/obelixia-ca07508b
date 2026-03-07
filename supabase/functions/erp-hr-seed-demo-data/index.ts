@@ -56,7 +56,7 @@ interface PhaseResult { phase: string; records: number; details: string; }
 // =============================================
 // CLEANUP HELPER: delete demo data from dependent tables in safe FK order
 // =============================================
-async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations' | 'regulatory') {
+async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations' | 'regulatory' | 'time_clock') {
   const deleteDemo = async (table: string) => {
     const { error } = await supabase.from(table).delete().eq('metadata->>is_demo', 'true');
     if (error) {
@@ -72,6 +72,11 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
     }
     await q;
   };
+
+  if (scope === 'all' || scope === 'time_clock') {
+    await deleteDemo('erp_hr_time_clock');
+    await deleteByCompany('erp_hr_time_clock');
+  }
 
   if (scope === 'all' || scope === 'operations') {
     await deleteByCompany('erp_hr_settlements');
@@ -408,6 +413,9 @@ async function seedEmployees(supabase: any): Promise<PhaseResult> {
       department_id: deptMap[def.dept], category: def.ct === 'indefinido' ? 'fijo' : def.ct,
       job_title: `Puesto ${i + 1}`, base_salary: salary, contract_type: def.ct,
       work_schedule: 'full_time', weekly_hours: 40, metadata: DEMO_META,
+      // Multi-jurisdictional: 90% Spain, 5% Andorra, 5% EU
+      fiscal_jurisdiction: i < 45 ? 'ES' : (i < 48 ? 'AD' : 'EU'),
+      autonomous_community: i < 45 ? randomFrom(['Cataluña','Aragón','Madrid','Andalucía','País Vasco']) : null,
     });
 
     const agreementKey = ['PROD','LOG','CAL'].includes(def.dept) ? 'CONV-METAL-2024' : (def.dept === 'IT' ? 'CONV-ELEC-2024' : 'CONV-OFIC-2024');
@@ -447,16 +455,31 @@ async function seedEmployees(supabase: any): Promise<PhaseResult> {
 async function seedPayrolls(supabase: any): Promise<PhaseResult> {
   await cleanupDemoData(supabase, 'payrolls');
 
-  const { data: emps } = await supabase.from('erp_hr_employees').select('id, base_salary, contract_type').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
+  const { data: emps } = await supabase.from('erp_hr_employees').select('id, base_salary, contract_type, fiscal_jurisdiction, autonomous_community').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true');
   if (!emps?.length) throw new Error('No demo employees found');
 
   const payrolls: any[] = [];
-  const months = [1,2,3,4,5,6,7,8,9,10];
+  // Seed months 1-10 of 2025 AND months 1-3 of 2026 (current year)
+  const periods = [
+    ...([1,2,3,4,5,6,7,8,9,10].map(m => ({ month: m, year: 2025 }))),
+    ...([1,2,3].map(m => ({ month: m, year: 2026 }))),
+  ];
 
   for (const emp of emps) {
+    const jurisdiction = emp.fiscal_jurisdiction || 'ES';
     const monthlySalary = (emp.base_salary || 24000) / 14;
-    for (const month of months) {
-      const irpfPct = emp.base_salary > 60000 ? randomDecimal(28,35) : (emp.base_salary > 35000 ? randomDecimal(18,26) : (emp.base_salary > 22000 ? randomDecimal(12,18) : randomDecimal(2,11)));
+    for (const { month, year } of periods) {
+      // Jurisdiction-aware IRPF calculation
+      let irpfPct: number;
+      if (jurisdiction === 'AD') {
+        // Andorra: flat 10% max
+        irpfPct = emp.base_salary > 40000 ? randomDecimal(7, 10) : randomDecimal(0, 5);
+      } else if (jurisdiction === 'ES') {
+        irpfPct = emp.base_salary > 60000 ? randomDecimal(28,35) : (emp.base_salary > 35000 ? randomDecimal(18,26) : (emp.base_salary > 22000 ? randomDecimal(12,18) : randomDecimal(2,11)));
+      } else {
+        irpfPct = randomDecimal(15, 30); // Generic EU
+      }
+
       const cAntig = emp.base_salary > 30000 ? randomDecimal(50, 200) : 0;
       const cTransp = randomDecimal(40, 100);
       const cConv = randomDecimal(30, 150);
@@ -464,27 +487,39 @@ async function seedPayrolls(supabase: any): Promise<PhaseResult> {
       const complements = { antiguedad: cAntig, transporte: cTransp, plus_convenio: cConv, productividad: cProd };
       const totalComp = cAntig + cTransp + cConv + cProd;
       const grossSalary = parseFloat((monthlySalary + totalComp).toFixed(2));
-      const ssWorker = parseFloat((grossSalary * 0.0635).toFixed(2));
+
+      // Jurisdiction-aware SS rates
+      const ssRate = jurisdiction === 'AD' ? 0.065 : 0.0635;
+      const ssCompanyRate = jurisdiction === 'AD' ? 0.155 : 0.305;
+      const ssWorker = parseFloat((grossSalary * ssRate).toFixed(2));
       const irpfAmount = parseFloat((grossSalary * irpfPct / 100).toFixed(2));
       const otherDed = month === 3 ? { anticipo: 200 } : {};
       const totalOtherDed = Object.values(otherDed).reduce((s: number, v: any) => s + (v as number), 0);
       const totalDeductions = parseFloat((ssWorker + irpfAmount + totalOtherDed).toFixed(2));
       const netSalary = parseFloat((grossSalary - totalDeductions).toFixed(2));
-      const ssCompany = parseFloat((grossSalary * 0.305).toFixed(2));
+      const ssCompany = parseFloat((grossSalary * ssCompanyRate).toFixed(2));
       const totalCost = parseFloat((grossSalary + ssCompany).toFixed(2));
-      const statusOpts = month <= 7 ? ['paid'] : (month <= 9 ? ['approved', 'paid'] : ['draft', 'calculated']);
+
+      let statusOpts: string[];
+      if (year === 2025) {
+        statusOpts = month <= 7 ? ['paid'] : (month <= 9 ? ['approved', 'paid'] : ['draft', 'calculated']);
+      } else {
+        // 2026
+        statusOpts = month === 1 ? ['paid'] : (month === 2 ? ['approved', 'paid'] : ['draft', 'calculated']);
+      }
       const status = randomFrom(statusOpts);
 
       payrolls.push({
-        company_id: COMPANY_ID, employee_id: emp.id, period_month: month, period_year: 2025,
-        payroll_type: month === 6 ? 'extra' : 'mensual',
+        company_id: COMPANY_ID, employee_id: emp.id, period_month: month, period_year: year,
+        payroll_type: (month === 6 || month === 12) ? 'extra' : 'mensual',
         base_salary: parseFloat(monthlySalary.toFixed(2)), complements, gross_salary: grossSalary,
         ss_worker: ssWorker, irpf_amount: irpfAmount, irpf_percentage: irpfPct,
         other_deductions: Object.keys(otherDed).length > 0 ? otherDed : null,
         total_deductions: totalDeductions, net_salary: netSalary, ss_company: ssCompany, total_cost: totalCost,
         status, calculated_at: new Date().toISOString(),
-        paid_at: status === 'paid' ? `2025-${String(month).padStart(2,'0')}-${randomBetween(25,28)}T10:00:00Z` : null,
-        payment_reference: status === 'paid' ? `SEPA-2025${String(month).padStart(2,'0')}-${randomBetween(1000,9999)}` : null,
+        paid_at: status === 'paid' ? `${year}-${String(month).padStart(2,'0')}-${randomBetween(25,28)}T10:00:00Z` : null,
+        payment_reference: status === 'paid' ? `SEPA-${year}${String(month).padStart(2,'0')}-${randomBetween(1000,9999)}` : null,
+        fiscal_jurisdiction: jurisdiction,
         metadata: DEMO_META,
       });
     }
@@ -496,7 +531,7 @@ async function seedPayrolls(supabase: any): Promise<PhaseResult> {
     if (error) throw new Error(`Payrolls batch ${b}: ${error.message}`);
     inserted += payrolls.slice(b, b + 50).length;
   }
-  return { phase: 'payrolls', records: inserted, details: `${inserted} nóminas (${emps.length} emp × ${months.length} meses)` };
+  return { phase: 'payrolls', records: inserted, details: `${inserted} nóminas (${emps.length} emp × ${periods.length} meses, multijurisdicción)` };
 }
 
 // =============================================
@@ -1203,16 +1238,17 @@ async function seedRegulatoryWatch(supabase: any): Promise<PhaseResult> {
   const { error: cfgErr } = await supabase.from('erp_hr_regulatory_watch_config').upsert(config, { onConflict: 'company_id' });
   if (cfgErr) console.warn('Regulatory config:', cfgErr.message); else count += 1;
 
-  // --- Watch Items ---
+  // --- Watch Items (source_type must be: press, draft, proposal, rumor, union_communication, ministry_announcement) ---
+  // --- (approval_status must be: pending, approved, rejected, in_force, expired, superseded) ---
   const watchItems = [
-    { company_id: COMPANY_ID, title: 'SMI 2026: Subida del 4,2% confirmada', description: 'El Salario Mínimo Interprofesional se fija en 1.184€/mes (14 pagas) para 2026, con efectos retroactivos desde el 1 de enero.', source_type: 'boe', source_url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-XXXXX', source_name: 'BOE', detected_at: '2026-02-15T09:00:00Z', category: 'salario_minimo', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-02-14', official_publication_number: 'BOE-A-2026-2345', effective_date: '2026-01-01', key_changes: [{ change: 'SMI 14 pagas: 1.184€/mes', impact: 'Afecta a bases mínimas de cotización y contratos con SMI referenciado' }], impact_level: 'high', requires_payroll_recalc: true, requires_contract_update: false, requires_immediate_action: true, estimated_affected_employees: 12, implementation_status: 'not_started' },
-    { company_id: COMPANY_ID, title: 'Nuevo Convenio Metal Lleida 2026-2028', description: 'Publicación del nuevo convenio colectivo del metal de la provincia de Lleida con tablas salariales actualizadas y reducción de jornada.', source_type: 'boe', source_url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-YYYYY', source_name: 'BOP Lleida', detected_at: '2026-01-20T10:00:00Z', category: 'convenio_colectivo', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOP Lleida', official_publication_date: '2026-01-18', effective_date: '2026-01-01', key_changes: [{ change: 'Subida tablas salariales +3,5%', impact: 'Recálculo nóminas retroactivo' }, { change: 'Jornada máxima 1.740h/año', impact: 'Ajustar horarios y turnos' }], impact_level: 'high', requires_payroll_recalc: true, requires_contract_update: true, requires_immediate_action: true, estimated_affected_employees: 30, implementation_status: 'in_progress' },
-    { company_id: COMPANY_ID, title: 'Bases cotización SS 2026 actualizadas', description: 'Orden ISM/XXX/2026 por la que se desarrollan las normas legales de cotización para 2026. Nuevas bases máximas y mínimas.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-01-25T08:30:00Z', category: 'seguridad_social', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-01-24', effective_date: '2026-01-01', key_changes: [{ change: 'Base máxima cotización: 4.720,50€/mes', impact: 'Afecta a empleados con salarios altos' }, { change: 'Tipo MEI: 0,80%', impact: 'Incremento cotización empresarial' }], impact_level: 'medium', requires_payroll_recalc: true, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'completed', implemented_at: '2026-02-01T09:00:00Z' },
-    { company_id: COMPANY_ID, title: 'Directiva UE 2024/2831 Transparencia Salarial', description: 'Transposición obligatoria antes del 7 de junio de 2026. Obligación de informar sobre brecha salarial y criterios retributivos.', source_type: 'eu_official_journal', source_name: 'DOUE', detected_at: '2025-11-10T10:00:00Z', category: 'igualdad', jurisdiction: 'EU', approval_status: 'pending_review', official_publication: 'DOUE', official_publication_date: '2024-04-24', effective_date: '2026-06-07', key_changes: [{ change: 'Obligación de publicar brecha salarial por categoría', impact: 'Requiere auditoría salarial detallada' }], impact_level: 'high', requires_contract_update: false, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'not_started' },
-    { company_id: COMPANY_ID, title: 'Tablas IRPF 2026 actualizadas', description: 'Nuevas tablas de retención de IRPF para 2026 con deflactación del 2% en tramos autonómicos.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-01-05T09:00:00Z', category: 'irpf', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2025-12-30', effective_date: '2026-01-01', key_changes: [{ change: 'Deflactación tramos 2%', impact: 'Menor retención en tramos bajos' }], impact_level: 'medium', requires_payroll_recalc: true, requires_immediate_action: true, estimated_affected_employees: 100, implementation_status: 'completed', implemented_at: '2026-01-02T08:00:00Z' },
-    { company_id: COMPANY_ID, title: 'Reducción jornada máxima a 37,5h/semana', description: 'Proyecto de ley en tramitación para reducir la jornada máxima legal a 37,5 horas semanales sin reducción salarial.', source_type: 'press', source_name: 'Ministerio de Trabajo', detected_at: '2026-02-20T14:00:00Z', category: 'jornada', jurisdiction: 'ES', approval_status: 'monitoring', impact_level: 'critical', requires_contract_update: true, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'not_started' },
-    { company_id: COMPANY_ID, title: 'Nuevo protocolo PRL para trabajo en calor', description: 'Real Decreto que establece medidas de protección de trabajadores frente a riesgos por temperaturas extremas.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-03-01T09:00:00Z', category: 'prl', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-02-28', effective_date: '2026-05-01', key_changes: [{ change: 'Prohibición trabajo al aire libre >40°C', impact: 'Afecta producción y logística en verano' }], impact_level: 'medium', requires_immediate_action: false, estimated_affected_employees: 20, implementation_status: 'not_started' },
-    { company_id: COMPANY_ID, title: 'Prórroga incentivos contratación indefinida', description: 'Prórroga de bonificaciones por conversión de contratos temporales a indefinidos: 275€/mes durante 3 años.', source_type: 'boe', source_name: 'BOE', detected_at: '2026-01-15T11:00:00Z', category: 'contratacion', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-01-14', effective_date: '2026-01-01', key_changes: [{ change: 'Bonificación 275€/mes × 36 meses', impact: 'Oportunidad de ahorro en conversiones' }], impact_level: 'low', requires_immediate_action: false, estimated_affected_employees: 8, implementation_status: 'completed' },
+    { company_id: COMPANY_ID, title: 'SMI 2026: Subida del 4,2% confirmada', description: 'El Salario Mínimo Interprofesional se fija en 1.184€/mes (14 pagas) para 2026, con efectos retroactivos desde el 1 de enero.', source_type: 'ministry_announcement', source_url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-XXXXX', source_name: 'BOE', detected_at: '2026-02-15T09:00:00Z', category: 'salario_minimo', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-02-14', official_publication_number: 'BOE-A-2026-2345', effective_date: '2026-01-01', key_changes: [{ change: 'SMI 14 pagas: 1.184€/mes', impact: 'Afecta a bases mínimas de cotización y contratos con SMI referenciado' }], impact_level: 'high', requires_payroll_recalc: true, requires_contract_update: false, requires_immediate_action: true, estimated_affected_employees: 12, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Nuevo Convenio Metal Lleida 2026-2028', description: 'Publicación del nuevo convenio colectivo del metal de la provincia de Lleida con tablas salariales actualizadas y reducción de jornada.', source_type: 'ministry_announcement', source_url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-YYYYY', source_name: 'BOP Lleida', detected_at: '2026-01-20T10:00:00Z', category: 'convenio_colectivo', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOP Lleida', official_publication_date: '2026-01-18', effective_date: '2026-01-01', key_changes: [{ change: 'Subida tablas salariales +3,5%', impact: 'Recálculo nóminas retroactivo' }, { change: 'Jornada máxima 1.740h/año', impact: 'Ajustar horarios y turnos' }], impact_level: 'high', requires_payroll_recalc: true, requires_contract_update: true, requires_immediate_action: true, estimated_affected_employees: 30, implementation_status: 'in_progress' },
+    { company_id: COMPANY_ID, title: 'Bases cotización SS 2026 actualizadas', description: 'Orden ISM/XXX/2026 por la que se desarrollan las normas legales de cotización para 2026. Nuevas bases máximas y mínimas.', source_type: 'ministry_announcement', source_name: 'BOE', detected_at: '2026-01-25T08:30:00Z', category: 'seguridad_social', jurisdiction: 'ES', approval_status: 'in_force', official_publication: 'BOE', official_publication_date: '2026-01-24', effective_date: '2026-01-01', key_changes: [{ change: 'Base máxima cotización: 4.720,50€/mes', impact: 'Afecta a empleados con salarios altos' }, { change: 'Tipo MEI: 0,80%', impact: 'Incremento cotización empresarial' }], impact_level: 'medium', requires_payroll_recalc: true, requires_contract_update: false, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'completed', implemented_at: '2026-02-01T09:00:00Z' },
+    { company_id: COMPANY_ID, title: 'Directiva UE 2024/2831 Transparencia Salarial', description: 'Transposición obligatoria antes del 7 de junio de 2026. Obligación de informar sobre brecha salarial y criterios retributivos.', source_type: 'proposal', source_name: 'DOUE', detected_at: '2025-11-10T10:00:00Z', category: 'igualdad', jurisdiction: 'EU', approval_status: 'pending', official_publication: 'DOUE', official_publication_date: '2024-04-24', effective_date: '2026-06-07', key_changes: [{ change: 'Obligación de publicar brecha salarial por categoría', impact: 'Requiere auditoría salarial detallada' }], impact_level: 'high', requires_contract_update: false, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Tablas IRPF 2026 actualizadas', description: 'Nuevas tablas de retención de IRPF para 2026 con deflactación del 2% en tramos autonómicos.', source_type: 'ministry_announcement', source_name: 'BOE', detected_at: '2026-01-05T09:00:00Z', category: 'irpf', jurisdiction: 'ES', approval_status: 'in_force', official_publication: 'BOE', official_publication_date: '2025-12-30', effective_date: '2026-01-01', key_changes: [{ change: 'Deflactación tramos 2%', impact: 'Menor retención en tramos bajos' }], impact_level: 'medium', requires_payroll_recalc: true, requires_contract_update: false, requires_immediate_action: true, estimated_affected_employees: 100, implementation_status: 'completed', implemented_at: '2026-01-02T08:00:00Z' },
+    { company_id: COMPANY_ID, title: 'Reducción jornada máxima a 37,5h/semana', description: 'Proyecto de ley en tramitación para reducir la jornada máxima legal a 37,5 horas semanales sin reducción salarial.', source_type: 'press', source_name: 'Ministerio de Trabajo', detected_at: '2026-02-20T14:00:00Z', category: 'jornada', jurisdiction: 'ES', approval_status: 'pending', impact_level: 'critical', requires_contract_update: true, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 100, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Nuevo protocolo PRL para trabajo en calor', description: 'Real Decreto que establece medidas de protección de trabajadores frente a riesgos por temperaturas extremas.', source_type: 'ministry_announcement', source_name: 'BOE', detected_at: '2026-03-01T09:00:00Z', category: 'prl', jurisdiction: 'ES', approval_status: 'approved', official_publication: 'BOE', official_publication_date: '2026-02-28', effective_date: '2026-05-01', key_changes: [{ change: 'Prohibición trabajo al aire libre >40°C', impact: 'Afecta producción y logística en verano' }], impact_level: 'medium', requires_contract_update: false, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 20, implementation_status: 'not_started' },
+    { company_id: COMPANY_ID, title: 'Prórroga incentivos contratación indefinida', description: 'Prórroga de bonificaciones por conversión de contratos temporales a indefinidos: 275€/mes durante 3 años.', source_type: 'ministry_announcement', source_name: 'BOE', detected_at: '2026-01-15T11:00:00Z', category: 'contratacion', jurisdiction: 'ES', approval_status: 'in_force', official_publication: 'BOE', official_publication_date: '2026-01-14', effective_date: '2026-01-01', key_changes: [{ change: 'Bonificación 275€/mes × 36 meses', impact: 'Oportunidad de ahorro en conversiones' }], impact_level: 'low', requires_contract_update: false, requires_payroll_recalc: false, requires_immediate_action: false, estimated_affected_employees: 8, implementation_status: 'completed' },
   ];
   const { data: watchData, error: watchErr } = await supabase.from('erp_hr_regulatory_watch').insert(watchItems).select('id, title');
   if (watchErr) console.warn('Regulatory watch:', watchErr.message); else count += watchItems.length;
@@ -1234,9 +1270,65 @@ async function seedRegulatoryWatch(supabase: any): Promise<PhaseResult> {
 }
 
 // =============================================
+// PHASE 12: Time Clock (Control de Fichaje - Art. 34.9 ET)
+// =============================================
+async function seedTimeClock(supabase: any): Promise<PhaseResult> {
+  await cleanupDemoData(supabase, 'time_clock');
+  const { data: emps } = await supabase.from('erp_hr_employees').select('id').eq('company_id', COMPANY_ID).eq('metadata->>is_demo', 'true').limit(50);
+  if (!emps?.length) return { phase: 'time_clock', records: 0, details: 'No employees' };
+  let count = 0;
+  const methods = ['web', 'app', 'biometric', 'nfc', 'qr'];
+  const entries: any[] = [];
+  const today = new Date();
+
+  for (const emp of emps) {
+    let workDays = 0;
+    const day = new Date(today);
+    while (workDays < 20) {
+      day.setDate(day.getDate() - 1);
+      if (day.getDay() === 0 || day.getDay() === 6) continue;
+      workDays++;
+      const ds = day.toISOString().split('T')[0];
+      const ciH = randomBetween(7, 9), ciM = randomBetween(0, 59);
+      const coH = ciH + 8 + (Math.random() > 0.7 ? 1 : 0), coM = randomBetween(0, 59);
+      const worked = parseFloat((coH - ciH + (coM - ciM) / 60).toFixed(2));
+      const overtime = worked > 8 ? parseFloat((worked - 8).toFixed(2)) : 0;
+      const breakMins = randomBetween(30, 60);
+      const method = randomFrom(methods);
+      const isAnomaly = Math.random() < 0.08;
+      const isMissingOut = Math.random() < 0.03;
+
+      entries.push({
+        company_id: COMPANY_ID, employee_id: emp.id, clock_date: ds,
+        clock_in: `${ds}T${String(ciH).padStart(2,'0')}:${String(ciM).padStart(2,'0')}:00+01:00`,
+        clock_out: isMissingOut ? null : `${ds}T${String(Math.min(coH, 23)).padStart(2,'0')}:${String(coM).padStart(2,'0')}:00+01:00`,
+        break_minutes: breakMins,
+        worked_hours: isMissingOut ? 0 : worked,
+        overtime_hours: overtime,
+        clock_in_method: method,
+        clock_out_method: isMissingOut ? null : method,
+        status: isMissingOut ? 'anomaly' : (isAnomaly ? 'anomaly' : (workDays > 5 ? 'approved' : 'closed')),
+        anomaly_type: isMissingOut ? 'missing_clock_out' : (isAnomaly ? randomFrom(['excessive_hours', 'insufficient_break', 'schedule_deviation']) : null),
+        anomaly_notes: isAnomaly ? 'Detectado automáticamente por el sistema' : null,
+        metadata: DEMO_META,
+      });
+    }
+  }
+
+  for (let b = 0; b < entries.length; b += 100) {
+    const { error } = await supabase.from('erp_hr_time_clock').insert(entries.slice(b, b + 100));
+    if (error) console.warn(`TimeClock batch ${b}:`, error.message);
+    else count += entries.slice(b, b + 100).length;
+  }
+
+  return { phase: 'time_clock', records: count, details: `${count} registros de fichaje (${emps.length} emp × 20 días)` };
+}
+
+// =============================================
 // PURGE ALL DEMO DATA
 // =============================================
 async function purgeAllDemo(supabase: any): Promise<PhaseResult> {
+  await supabase.from('erp_hr_time_clock').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
   await supabase.from('erp_hr_settlements').delete().eq('company_id', COMPANY_ID);
@@ -1274,9 +1366,11 @@ serve(async (req) => {
       case 'seed_talent_advanced': result = await seedTalentAdvanced(supabase); break;
       case 'seed_operations': result = await seedOperations(supabase); break;
       case 'seed_regulatory': result = await seedRegulatoryWatch(supabase); break;
+      case 'seed_time_clock': result = await seedTimeClock(supabase); break;
       case 'seed_all': {
         console.log('[seed_all] Starting full cleanup...');
         await cleanupDemoData(supabase, 'all');
+        await supabase.from('erp_hr_time_clock').delete().eq('company_id', COMPANY_ID);
         await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
         await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
         await supabase.from('erp_hr_settlements').delete().eq('company_id', COMPANY_ID);
@@ -1297,6 +1391,7 @@ serve(async (req) => {
         results.push(await seedTalentAdvanced(supabase));
         results.push(await seedOperations(supabase));
         results.push(await seedRegulatoryWatch(supabase));
+        results.push(await seedTimeClock(supabase));
         console.log('[seed_all] All phases done');
         result = { phase: 'all', records: results.reduce((s, r) => s + r.records, 0), details: results.map(r => `${r.phase}: ${r.records}`).join(' | ') };
         break;

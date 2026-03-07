@@ -257,7 +257,7 @@ export function useSettlements(companyId: string) {
 
       toast.success('Finiquito creado en borrador');
       await loadSettlements();
-      return data as Settlement;
+      return data as unknown as Settlement;
     } catch (err) {
       console.error('[useSettlements] createSettlement error:', err);
       toast.error('Error al crear finiquito');

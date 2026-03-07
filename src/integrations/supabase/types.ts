@@ -26749,6 +26749,7 @@ export type Database = {
       erp_hr_employees: {
         Row: {
           address: Json | null
+          autonomous_community: string | null
           bank_account: string | null
           base_salary: number | null
           birth_date: string | null
@@ -26763,6 +26764,7 @@ export type Database = {
           employee_code: string | null
           employee_number: string | null
           first_name: string
+          fiscal_jurisdiction: string
           gender: string | null
           hire_date: string
           id: string
@@ -26785,6 +26787,7 @@ export type Database = {
         }
         Insert: {
           address?: Json | null
+          autonomous_community?: string | null
           bank_account?: string | null
           base_salary?: number | null
           birth_date?: string | null
@@ -26799,6 +26802,7 @@ export type Database = {
           employee_code?: string | null
           employee_number?: string | null
           first_name: string
+          fiscal_jurisdiction?: string
           gender?: string | null
           hire_date: string
           id?: string
@@ -26821,6 +26825,7 @@ export type Database = {
         }
         Update: {
           address?: Json | null
+          autonomous_community?: string | null
           bank_account?: string | null
           base_salary?: number | null
           birth_date?: string | null
@@ -26835,6 +26840,7 @@ export type Database = {
           employee_code?: string | null
           employee_number?: string | null
           first_name?: string
+          fiscal_jurisdiction?: string
           gender?: string | null
           hire_date?: string
           id?: string
@@ -29606,6 +29612,7 @@ export type Database = {
           created_at: string | null
           differences: Json | null
           employee_id: string
+          fiscal_jurisdiction: string | null
           hr_approval: Json | null
           hr_approval_status: string | null
           hr_approver_id: string | null
@@ -29635,6 +29642,7 @@ export type Database = {
           created_at?: string | null
           differences?: Json | null
           employee_id: string
+          fiscal_jurisdiction?: string | null
           hr_approval?: Json | null
           hr_approval_status?: string | null
           hr_approver_id?: string | null
@@ -29664,6 +29672,7 @@ export type Database = {
           created_at?: string | null
           differences?: Json | null
           employee_id?: string
+          fiscal_jurisdiction?: string | null
           hr_approval?: Json | null
           hr_approval_status?: string | null
           hr_approver_id?: string | null
@@ -29708,6 +29717,7 @@ export type Database = {
           complements: Json | null
           created_at: string | null
           employee_id: string
+          fiscal_jurisdiction: string | null
           gross_salary: number | null
           id: string
           irpf_amount: number | null
@@ -29737,6 +29747,7 @@ export type Database = {
           complements?: Json | null
           created_at?: string | null
           employee_id: string
+          fiscal_jurisdiction?: string | null
           gross_salary?: number | null
           id?: string
           irpf_amount?: number | null
@@ -29766,6 +29777,7 @@ export type Database = {
           complements?: Json | null
           created_at?: string | null
           employee_id?: string
+          fiscal_jurisdiction?: string | null
           gross_salary?: number | null
           id?: string
           irpf_amount?: number | null
@@ -31211,6 +31223,7 @@ export type Database = {
           employee_id: string
           employee_snapshot: Json | null
           extra_pays_proportional: number | null
+          fiscal_jurisdiction: string | null
           gross_total: number
           hire_date: string
           hr_approval_notes: string | null
@@ -31269,6 +31282,7 @@ export type Database = {
           employee_id: string
           employee_snapshot?: Json | null
           extra_pays_proportional?: number | null
+          fiscal_jurisdiction?: string | null
           gross_total?: number
           hire_date: string
           hr_approval_notes?: string | null
@@ -31327,6 +31341,7 @@ export type Database = {
           employee_id?: string
           employee_snapshot?: Json | null
           extra_pays_proportional?: number | null
+          fiscal_jurisdiction?: string | null
           gross_total?: number
           hire_date?: string
           hr_approval_notes?: string | null
@@ -31898,6 +31913,127 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "erp_hr_termination_analysis_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_time_clock: {
+        Row: {
+          anomaly_notes: string | null
+          anomaly_type: string | null
+          approved_at: string | null
+          approved_by: string | null
+          break_end: string | null
+          break_minutes: number | null
+          break_start: string | null
+          clock_date: string
+          clock_in: string
+          clock_in_location: Json | null
+          clock_in_method: string
+          clock_out: string | null
+          clock_out_location: Json | null
+          clock_out_method: string | null
+          company_id: string
+          correction_reason: string | null
+          created_at: string
+          device_info: Json | null
+          employee_id: string
+          id: string
+          ip_address_in: string | null
+          ip_address_out: string | null
+          metadata: Json | null
+          notes: string | null
+          original_clock_in: string | null
+          original_clock_out: string | null
+          overtime_hours: number | null
+          status: string
+          updated_at: string
+          worked_hours: number | null
+        }
+        Insert: {
+          anomaly_notes?: string | null
+          anomaly_type?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          break_end?: string | null
+          break_minutes?: number | null
+          break_start?: string | null
+          clock_date?: string
+          clock_in: string
+          clock_in_location?: Json | null
+          clock_in_method?: string
+          clock_out?: string | null
+          clock_out_location?: Json | null
+          clock_out_method?: string | null
+          company_id: string
+          correction_reason?: string | null
+          created_at?: string
+          device_info?: Json | null
+          employee_id: string
+          id?: string
+          ip_address_in?: string | null
+          ip_address_out?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          original_clock_in?: string | null
+          original_clock_out?: string | null
+          overtime_hours?: number | null
+          status?: string
+          updated_at?: string
+          worked_hours?: number | null
+        }
+        Update: {
+          anomaly_notes?: string | null
+          anomaly_type?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          break_end?: string | null
+          break_minutes?: number | null
+          break_start?: string | null
+          clock_date?: string
+          clock_in?: string
+          clock_in_location?: Json | null
+          clock_in_method?: string
+          clock_out?: string | null
+          clock_out_location?: Json | null
+          clock_out_method?: string | null
+          company_id?: string
+          correction_reason?: string | null
+          created_at?: string
+          device_info?: Json | null
+          employee_id?: string
+          id?: string
+          ip_address_in?: string | null
+          ip_address_out?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          original_clock_in?: string | null
+          original_clock_out?: string | null
+          overtime_hours?: number | null
+          status?: string
+          updated_at?: string
+          worked_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_time_clock_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_time_clock_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_time_clock_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
