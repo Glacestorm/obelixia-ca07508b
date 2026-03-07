@@ -57,6 +57,7 @@ import { HRSkillsMatrixPanel } from './talent/HRSkillsMatrixPanel';
 import { HRInternalMarketplacePanel } from './talent/HRInternalMarketplacePanel';
 import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
 import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
+import { HRTimeClockPanel } from './HRTimeClockPanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -269,6 +270,7 @@ export function HRModule() {
         {activeModule === 'payroll' && <HRPayrollPanel companyId={demoCompanyId} />}
         {activeModule === 'payroll-recalc' && <HRPayrollRecalculationPanel companyId={demoCompanyId} />}
         {activeModule === 'settlements' && <HRSettlementsPanel companyId={demoCompanyId} />}
+        {activeModule === 'time-clock' && <HRTimeClockPanel companyId={demoCompanyId} />}
         {activeModule === 'ss' && <HRSocialSecurityPanel companyId={demoCompanyId} />}
         {activeModule === 'vacations' && <HRVacationsPanel companyId={demoCompanyId} />}
         {activeModule === 'contracts' && <HRContractsPanel companyId={demoCompanyId} />}
