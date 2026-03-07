@@ -620,11 +620,11 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   }
 
   const openings = [
-    { company_id: COMPANY_ID, title: 'Desarrollador Full-Stack Senior', description: 'Dev senior React+Node', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 42000, salary_range_max: 58000, status: 'open', auto_screen_cvs: true },
-    { company_id: COMPANY_ID, title: 'Técnico de Producción', description: 'Técnico línea automatizada', employment_type: 'full_time', location: 'Lleida', remote_option: 'on_site', salary_range_min: 24000, salary_range_max: 32000, status: 'open' },
-    { company_id: COMPANY_ID, title: 'Comercial Export (Francia/Italia)', description: 'KAM zona sur Europa', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 35000, salary_range_max: 50000, status: 'open' },
-    { company_id: COMPANY_ID, title: 'Becario Administración', description: 'Prácticas universitarias', employment_type: 'internship', location: 'Lleida', remote_option: 'on_site', salary_range_min: 8000, salary_range_max: 12000, status: 'open' },
-    { company_id: COMPANY_ID, title: 'Responsable de Calidad', description: 'ISO 9001/14001', employment_type: 'full_time', location: 'Lleida', remote_option: 'on_site', salary_range_min: 38000, salary_range_max: 48000, status: 'closed' },
+    { company_id: COMPANY_ID, title: 'Desarrollador Full-Stack Senior', description: 'Dev senior React+Node', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 42000, salary_range_max: 58000, status: 'published', auto_screen_cvs: true },
+    { company_id: COMPANY_ID, title: 'Técnico de Producción', description: 'Técnico línea automatizada', employment_type: 'full_time', location: 'Lleida', remote_option: 'no', salary_range_min: 24000, salary_range_max: 32000, status: 'published' },
+    { company_id: COMPANY_ID, title: 'Comercial Export (Francia/Italia)', description: 'KAM zona sur Europa', employment_type: 'full_time', location: 'Lleida', remote_option: 'hybrid', salary_range_min: 35000, salary_range_max: 50000, status: 'published' },
+    { company_id: COMPANY_ID, title: 'Becario Administración', description: 'Prácticas universitarias', employment_type: 'internship', location: 'Lleida', remote_option: 'no', salary_range_min: 8000, salary_range_max: 12000, status: 'draft' },
+    { company_id: COMPANY_ID, title: 'Responsable de Calidad', description: 'ISO 9001/14001', employment_type: 'full_time', location: 'Lleida', remote_option: 'no', salary_range_min: 38000, salary_range_max: 48000, status: 'closed' },
   ];
   const { data: openingData, error: opErr } = await supabase.from('erp_hr_job_openings').insert(openings).select('id');
   if (opErr) throw new Error(`Openings: ${opErr.message}`);
@@ -638,8 +638,8 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
       first_name: randomFrom(isFemale ? FIRST_NAMES_F : FIRST_NAMES_M),
       last_name: `${randomFrom(LAST_NAMES)} ${randomFrom(LAST_NAMES)}`,
       email: `candidato.${randomBetween(100,9999)}@email.com`,
-      status: randomFrom(['new', 'screening', 'interview', 'offer', 'rejected', 'hired']),
-      source: randomFrom(['linkedin', 'infojobs', 'referral', 'web']),
+      status: randomFrom(['new', 'screening', 'shortlisted', 'interviewing', 'offer', 'rejected', 'hired']),
+      source: randomFrom(['linkedin', 'portal', 'referral', 'email']),
       ai_score: randomDecimal(40, 98),
     });
   }
@@ -651,8 +651,8 @@ async function seedTalent(supabase: any): Promise<PhaseResult> {
   for (let i = 0; i < 10; i++) {
     interviews.push({
       company_id: COMPANY_ID, candidate_id: randomFrom(candData).id, job_opening_id: randomFrom(openingData).id,
-      interview_type: randomFrom(['phone_screen', 'technical', 'hr', 'final']),
-      mode: randomFrom(['video', 'presencial', 'phone']),
+      interview_type: randomFrom(['screening', 'technical', 'hr', 'final']),
+      mode: randomFrom(['virtual', 'presencial']),
       scheduled_at: `2025-${String(randomBetween(8,10)).padStart(2,'0')}-${String(randomBetween(1,28)).padStart(2,'0')}T${randomBetween(9,17)}:00:00Z`,
       duration_minutes: randomFrom([30, 45, 60]),
       status: randomFrom(['scheduled', 'completed', 'completed']),
@@ -854,24 +854,30 @@ async function seedExperience(supabase: any): Promise<PhaseResult> {
   const { error: progErr } = await supabase.from('erp_hr_recognition_programs').insert(programs);
   if (progErr) console.warn('Programs:', progErr.message); else count += programs.length;
 
+  // SS Contributions: UNIQUE on (company_id, period_month, period_year) — aggregate per month
   const ssContribs: any[] = [];
-  for (const emp of emps.slice(0, 50)) {
-    for (let m = 1; m <= 10; m++) {
+  for (let m = 1; m <= 10; m++) {
+    let totalBase = 0, totalWorker = 0, totalCompany = 0, totalMei = 0, totalAll = 0;
+    for (const emp of emps.slice(0, 50)) {
       const base = randomDecimal(1500, 5000);
-      ssContribs.push({
-        company_id: COMPANY_ID, employee_id: emp.id, period_month: m, period_year: 2025,
-        base_amount: base, worker_contribution: parseFloat((base * 0.0635).toFixed(2)),
-        company_contribution: parseFloat((base * 0.305).toFixed(2)),
-        mei_contribution: parseFloat((base * 0.007).toFixed(2)),
-        total_contribution: parseFloat((base * 0.3755).toFixed(2)),
-        status: m <= 8 ? 'paid' : 'pending', metadata: DEMO_META,
-      });
+      totalBase += base;
+      totalWorker += base * 0.0635;
+      totalCompany += base * 0.305;
+      totalMei += base * 0.007;
+      totalAll += base * 0.3755;
     }
+    ssContribs.push({
+      company_id: COMPANY_ID, period_month: m, period_year: 2025,
+      base_amount: parseFloat(totalBase.toFixed(2)),
+      worker_contribution: parseFloat(totalWorker.toFixed(2)),
+      company_contribution: parseFloat(totalCompany.toFixed(2)),
+      mei_contribution: parseFloat(totalMei.toFixed(2)),
+      total_contribution: parseFloat(totalAll.toFixed(2)),
+      status: m <= 8 ? 'paid' : 'pending', metadata: DEMO_META,
+    });
   }
-  for (let b = 0; b < ssContribs.length; b += 100) {
-    const { error } = await supabase.from('erp_hr_ss_contributions').insert(ssContribs.slice(b, b + 100));
-    if (error) console.warn(`SS ${b}:`, error.message); else count += ssContribs.slice(b, b + 100).length;
-  }
+  const { error: ssErr } = await supabase.from('erp_hr_ss_contributions').upsert(ssContribs, { onConflict: 'company_id,period_month,period_year' });
+  if (ssErr) console.warn('SS contributions:', ssErr.message); else count += ssContribs.length;
 
   return { phase: 'experience', records: count, details: `${onboardings.length} onboardings, ${offboardings.length} offboardings, ${recognitions.length} reconocimientos, ${ssContribs.length} cotizaciones SS` };
 }
