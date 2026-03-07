@@ -90,27 +90,30 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
   }
 
   if (scope === 'all' || scope === 'legal') {
-    await deleteDemo('erp_hr_sanction_alerts');
-    await deleteDemo('erp_hr_whistleblower_reports');
-    await deleteDemo('erp_hr_equality_plans');
+    await deleteByCompany('erp_hr_sanction_alerts');
+    await deleteByCompany('erp_hr_whistleblower_reports');
+    await deleteByCompany('erp_hr_equality_plans');
   }
 
   if (scope === 'all' || scope === 'compliance') {
-    await deleteDemo('erp_hr_employee_documents');
-    await deleteDemo('erp_hr_document_templates');
-    await deleteDemo('erp_hr_benefits_enrollments');
-    await deleteDemo('erp_hr_benefits_plans');
-    await deleteDemo('erp_hr_safety_incidents');
+    await deleteByCompany('erp_hr_employee_documents');
+    await deleteByCompany('erp_hr_document_templates');
+    await deleteByCompany('erp_hr_benefits_enrollments');
+    await deleteByCompany('erp_hr_benefits_plans');
+    await deleteByCompany('erp_hr_safety_incidents');
   }
 
   if (scope === 'all' || scope === 'talent') {
     await deleteByCompany('erp_hr_interviews');
     await deleteByCompany('erp_hr_candidates');
     await deleteByCompany('erp_hr_job_openings');
-    await deleteDemo('erp_hr_performance_evaluations');
+    await deleteByCompany('erp_hr_performance_evaluations');
     await deleteByCompany('erp_hr_evaluation_cycles');
-    await deleteDemo('erp_hr_training_enrollments');
-    await deleteDemo('erp_hr_training_catalog');
+    await supabase.from('erp_hr_training_enrollments').delete().in(
+      'training_id',
+      (await supabase.from('erp_hr_training_catalog').select('id').eq('company_id', COMPANY_ID)).data?.map((r: any) => r.id) || []
+    );
+    await deleteByCompany('erp_hr_training_catalog');
   }
 
   if (scope === 'all' || scope === 'time_absences') {
