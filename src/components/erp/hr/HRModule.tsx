@@ -130,27 +130,12 @@ export function HRModule() {
             safetyAlerts: data.data.safetyAlerts || 0
           });
         } else {
-          // Fallback to demo data
-          setStats({
-            totalEmployees: 47,
-            activeContracts: 45,
-            pendingVacations: 8,
-            pendingPayrolls: 3,
-            expiringContracts: 2,
-            safetyAlerts: 1
-          });
+          // Fallback: query directly from tables
+          await fetchStatsDirectly();
         }
       } catch (error) {
-        console.error('Error fetching HR stats:', error);
-        // Fallback to demo data on error
-        setStats({
-          totalEmployees: 47,
-          activeContracts: 45,
-          pendingVacations: 8,
-          pendingPayrolls: 3,
-          expiringContracts: 2,
-          safetyAlerts: 1
-        });
+        console.error('Error fetching HR stats via edge function, trying direct:', error);
+        await fetchStatsDirectly();
       }
     };
 
