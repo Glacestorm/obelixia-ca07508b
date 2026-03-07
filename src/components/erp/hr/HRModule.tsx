@@ -108,9 +108,29 @@ export function HRModule() {
   });
 
   useEffect(() => {
+    const fetchStatsDirectly = async () => {
+      try {
+        const [empRes, contractRes, vacRes, payRes] = await Promise.all([
+          supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'active'),
+          supabase.from('erp_hr_contracts').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('is_active', true),
+          supabase.from('erp_hr_vacation_requests').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'pending_dept'),
+          supabase.from('erp_hr_payrolls').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'draft'),
+        ]);
+        setStats({
+          totalEmployees: empRes.count || 0,
+          activeContracts: contractRes.count || 0,
+          pendingVacations: vacRes.count || 0,
+          pendingPayrolls: payRes.count || 0,
+          expiringContracts: 0,
+          safetyAlerts: 0
+        });
+      } catch {
+        // Keep zeros on error
+      }
+    };
+
     const fetchStats = async () => {
       try {
-        // Use edge function for safe type-independent queries
         const { data, error } = await supabase.functions.invoke('erp-hr-ai-agent', {
           body: {
             action: 'get_dashboard_stats',
@@ -130,11 +150,10 @@ export function HRModule() {
             safetyAlerts: data.data.safetyAlerts || 0
           });
         } else {
-          // Fallback: query directly from tables
           await fetchStatsDirectly();
         }
       } catch (error) {
-        console.error('Error fetching HR stats via edge function, trying direct:', error);
+        console.error('Error fetching HR stats:', error);
         await fetchStatsDirectly();
       }
     };
