@@ -82,7 +82,7 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
     setIsChecking(true);
     try {
       const { data, error } = await supabase.functions.invoke('erp-hr-seed-demo-data', {
-        body: { action: 'check_status' }
+        body: { action: 'check_status', company_id: companyId }
       });
       if (!error && data?.success) {
         const match = data.details?.match(/(\d+) empleados demo, (\d+) nóminas demo/);
@@ -106,7 +106,7 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
 
     try {
       const { data, error } = await supabase.functions.invoke('erp-hr-seed-demo-data', {
-        body: { action }
+        body: { action, company_id: companyId }
       });
 
       if (error) throw error;
@@ -146,7 +146,7 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
     setIsPurging(true);
     try {
       const { data, error } = await supabase.functions.invoke('erp-hr-seed-demo-data', {
-        body: { action: 'purge_demo' }
+        body: { action: 'purge_demo', company_id: companyId }
       });
 
       if (error) throw error;

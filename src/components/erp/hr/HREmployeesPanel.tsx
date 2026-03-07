@@ -104,7 +104,7 @@ export function HREmployeesPanel({ companyId }: HREmployeesPanelProps) {
         .from('erp_hr_employees')
         .select(`
           *,
-          erp_hr_departments(name)
+          erp_hr_departments!erp_hr_employees_department_id_fkey(name)
         `)
         .eq('company_id', companyId)
         .order('last_name', { ascending: true });
