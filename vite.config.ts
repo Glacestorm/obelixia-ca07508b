@@ -28,8 +28,8 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     // PWA only in production builds to reduce build-time memory in development mode
     mode === "production" && VitePWA({
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'brain-logo.png', 'robots.txt'],
-      manifest: {
         name: 'ObelixIA - CRM Bancario Inteligente',
         short_name: 'ObelixIA',
         description: 'Plataforma CRM bancaria con IA para gestión comercial, GALIA y análisis financiero',
