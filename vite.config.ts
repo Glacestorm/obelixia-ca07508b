@@ -285,9 +285,9 @@ export default defineConfig(({ mode }) => ({
         propertyReadSideEffects: false,
       },
     },
-    // Minification for smaller bundle sizes
-    minify: 'esbuild',
-    // MEMORY: Disable source maps during build
+    // Minify only in production to reduce memory in development builds
+    minify: mode === 'production' ? 'esbuild' : false,
+    // Keep sourcemaps off to reduce memory footprint
     sourcemap: false,
     // Increase chunk warning limit
     chunkSizeWarningLimit: 1000,
