@@ -59,6 +59,7 @@ const PHASES: PhaseConfig[] = [
   { action: 'seed_compliance', label: 'Seguridad y Beneficios', description: 'Incidentes, beneficios, documentos', icon: <Shield className="h-4 w-4" />, estimatedRecords: '~145' },
   { action: 'seed_legal', label: 'Cumplimiento Legal', description: 'Plan igualdad, canal ético, alertas', icon: <Scale className="h-4 w-4" />, estimatedRecords: '~9' },
   { action: 'seed_experience', label: 'Experiencia Empleado', description: 'Onboarding, reconocimientos, cotizaciones SS', icon: <Heart className="h-4 w-4" />, estimatedRecords: '~570' },
+  { action: 'seed_talent_advanced', label: 'Talento Avanzado', description: 'Oportunidades marketplace, posiciones sucesión', icon: <Sparkles className="h-4 w-4" />, estimatedRecords: '~13' },
 ];
 
 interface PhaseStatus {
