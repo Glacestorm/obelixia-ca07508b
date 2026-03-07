@@ -1167,11 +1167,16 @@ serve(async (req) => {
       case 'seed_legal': result = await seedLegal(supabase); break;
       case 'seed_experience': result = await seedExperience(supabase); break;
       case 'seed_talent_advanced': result = await seedTalentAdvanced(supabase); break;
+      case 'seed_operations': result = await seedOperations(supabase); break;
       case 'seed_all': {
         console.log('[seed_all] Starting full cleanup...');
         await cleanupDemoData(supabase, 'all');
         await supabase.from('erp_hr_opportunities').delete().eq('company_id', COMPANY_ID);
         await supabase.from('erp_hr_succession_positions').delete().eq('company_id', COMPANY_ID);
+        await supabase.from('erp_hr_settlements').delete().eq('company_id', COMPANY_ID);
+        await supabase.from('erp_hr_termination_analysis').delete().eq('company_id', COMPANY_ID);
+        await supabase.from('erp_hr_payroll_recalculations').delete().eq('company_id', COMPANY_ID);
+        await supabase.from('erp_hr_employee_objectives').delete().eq('company_id', COMPANY_ID);
         console.log('[seed_all] Cleanup done. Seeding...');
 
         const results: PhaseResult[] = [];
@@ -1184,6 +1189,7 @@ serve(async (req) => {
         results.push(await seedLegal(supabase));
         results.push(await seedExperience(supabase));
         results.push(await seedTalentAdvanced(supabase));
+        results.push(await seedOperations(supabase));
         console.log('[seed_all] All phases done');
         result = { phase: 'all', records: results.reduce((s, r) => s + r.records, 0), details: results.map(r => `${r.phase}: ${r.records}`).join(' | ') };
         break;
