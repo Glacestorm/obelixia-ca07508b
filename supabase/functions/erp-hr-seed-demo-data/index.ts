@@ -56,7 +56,7 @@ interface PhaseResult { phase: string; records: number; details: string; }
 // =============================================
 // CLEANUP HELPER: delete demo data from dependent tables in safe FK order
 // =============================================
-async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience') {
+async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 'employees' | 'payrolls' | 'time_absences' | 'talent' | 'compliance' | 'legal' | 'experience' | 'operations') {
   const deleteDemo = async (table: string) => {
     // Try metadata-based deletion first
     const { error } = await supabase.from(table).delete().eq('metadata->>is_demo', 'true');
@@ -76,6 +76,14 @@ async function cleanupDemoData(supabase: any, scope: 'all' | 'infrastructure' | 
   };
 
   // Order matters: delete children before parents
+  if (scope === 'all' || scope === 'operations') {
+    // Settlements, termination analysis, payroll recalculations, objectives
+    await deleteByCompany('erp_hr_settlements');
+    await deleteByCompany('erp_hr_termination_analysis');
+    await deleteByCompany('erp_hr_payroll_recalculations');
+    await deleteByCompany('erp_hr_employee_objectives');
+  }
+
   if (scope === 'all' || scope === 'experience') {
     await deleteDemo('erp_hr_ss_contributions');
     await deleteDemo('erp_hr_recognition');
