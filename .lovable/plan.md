@@ -1,101 +1,113 @@
 
 
-# Plan: OCR, Actualización y Enriquecimiento del Curso Contabilidad Empresarial 360
+# Plan: Generacion Masiva de Datos Demo para RRHH (500 Nominas + Ejemplos Completos)
 
-## Contenido extraido de los PDFs
+## Estado Actual
+- **0 empleados**, **0 nominas**, **0 departamentos** en la base de datos
+- 4 empresas activas (2x Productora Electrica Urgelense, 1x Sociedad Urgelense Fruiticola, 1 duplicada)
+- 110+ tablas HR disponibles pero completamente vacias
+- Empresa principal: `2cbd8718` (Productora Electrica Urgelense, S.L.)
 
-Se han procesado 10+ documentos PDF escaneados que contienen un curso completo de contabilidad de la "Sociedad Europea para el Desarrollo Empresarial", organizado en **19 sesiones** (18 originales + 1 extraordinaria) con tres tipos de material cada una:
+## Arquitectura de la Solucion
 
-| Sesiones | Contenido principal |
-|----------|-------------------|
-| 1 | Definicion contabilidad, Balance, Activo/Pasivo, Capital, Reservas, Fondos Propios |
-| 2 | Plan General Contabilidad, grupos/subgrupos, Inmovilizado Material, Amortizaciones, Provisiones, Principios contables |
-| 3 | Existencias, Deudores, Clientes, IVA soportado/repercutido, Tesoreria |
-| 4 | Pasivo Fijo/Circulante, Fondos Propios, Capital Social, Reservas, Resultados Negativos, Subvenciones Capital, Proveedores, Acreedores, Hacienda Publica, Emprestitos, Deudas CP, Descuento de Efectos |
-| 5 | Inmovilizado Inmaterial, Gastos de Establecimiento, Gastos a Distribuir, Provisiones para Riesgos, Fianzas, Inversiones Financieras, Provisiones por Depreciacion |
-| 6-7 | Balances completos (Activo/Pasivo), operaciones mensuales empresa ALFA, asientos, cuenta como instrumento contable |
-| 8 | Cuentas como instrumento contable, Debe/Haber, funcionamiento cuentas Activo/Pasivo, asientos contables, fichas de cuenta |
-| 9 | Gastos: compras, servicios exteriores, tributos, personal, gastos financieros, descuento de efectos, gastos extraordinarios |
-| 10 | Ingresos: ventas, subvenciones oficiales/privadas, ingresos financieros, arrendamientos, comisiones, Cuenta de Perdidas y Ganancias, Impuesto sobre Beneficios |
-| 11 | Regularizacion contable, cierre del ejercicio, Balance final, Cuentas Anuales, asiento de regularizacion y cierre |
-| 12 | Memoria completa (8 apartados), informacion complementaria, modelos oficiales de Cuentas Anuales, distribucion de beneficios |
-| 13 | **[IA-generada]** Contabilidad analitica y de costes: costes directos/indirectos, centros de coste, margenes de contribucion, punto de equilibrio, ABC costing, costes estandar vs reales |
-| 14 | Comprobaciones contables, conciliaciones bancarias, arqueo de caja |
-| 15 | **[IA-generada]** Auditoria y control interno: principios de auditoria, control interno COSO, revision de cuentas anuales, informe de auditoria, compliance contable, prevencion de fraude |
-| 16 | Analisis de Balances, masas patrimoniales, Fondo de Maniobra, Origen/Aplicacion de Fondos |
-| 17 | Ratios financieros, analisis de tendencias, representacion grafica |
-| 18 | Analisis economico: rentabilidad, rotacion existencias, supervivencia, mecanizacion |
-| 19 | **[EXTRAORDINARIA]** Contabilidad Digital 2026: IA generativa aplicada a contabilidad, blockchain contable y trazabilidad inmutable, automatizacion fiscal (VeriFactu/TicketBAI/SII), contabilidad predictiva con machine learning, smart contracts y facturacion programable, ESG/CSRD reporting automatizado, ciberseguridad contable |
-| 20 | Previsiones de tesorería: cobros/pagos pendientes, pagos fijos mensuales/anuales, compras y ventas previstas, cuadro resumen 4 meses |
-| 21 | Análisis Fondo de Maniobra necesario vs real, determinación capital necesario, punto de equilibrio (comercial e industrial), apalancamiento operativo |
-| 22 | Análisis económico-financiero completo: rentabilidad fondos propios, ratios solvencia/tesorería/liquidez/endeudamiento, plan de acción CP/MP/LP |
-
-Cada sesion incluye: **Texto teorico** + **Tests V/F** (14-30 preguntas) + **Ejercicios practicos** (balances, asientos, calculos).
+Se creara una **Edge Function `erp-hr-seed-demo-data`** que genera todos los datos de forma transaccional, con un campo `metadata->is_demo: true` en cada registro para permitir anulacion masiva posterior. Un boton en el panel de admin permitira ejecutar el seed y otro para purgar todos los datos demo.
 
 ---
 
-## Correspondencia con el curso existente
+## FASE 1: Infraestructura Base (Departamentos, Puestos, Convenios)
+**Edge Function action: `seed_infrastructure`**
 
-El curso "Contabilidad Empresarial 360" ya tiene 6 bloques y 22 lecciones en la base de datos. El contenido de los PDFs se mapea asi:
+- **8 departamentos** jerarquicos: Direccion General, Administracion/Finanzas, RRHH, Comercial, Produccion, Logistica, IT, Calidad
+- **25 puestos de trabajo** (`erp_hr_job_positions`): Director General, CFO, Responsable RRHH, Jefe Produccion, Tecnico IT, Comercial, Operario, etc.
+- **3 convenios colectivos** (`erp_hr_collective_agreements`): Metal, Oficinas, Industria Electrica con sus conceptos salariales
+- **Tipos de ausencia** (`erp_hr_leave_types`): Vacaciones, IT, Maternidad/Paternidad, Asuntos propios, Permiso retribuido
+- **Politicas horarias** (`erp_hr_time_policies`): Jornada continua, partida, turnos rotativos
 
-| Bloque existente | Sesiones PDF relevantes |
-|-----------------|------------------------|
-| Bloque 0 - Fundamentos estrategicos (4 lecciones) | Sesiones 1, 2 (teoria base) |
-| Bloque I - Estructura contable (4 lecciones) | Sesiones 2, 7 (PGC, asientos, partida doble) |
-| Bloque II - Operativa diaria (5 lecciones) | Sesiones 3, 14 (existencias, IVA, tesoreria, conciliaciones) |
-| Bloque III - Activos y financiacion (4 lecciones) | Sesiones 2, 4, 6 (inmovilizado, amortizaciones, financiacion) |
-| Bloque IV - Ajustes y cierre (3 lecciones) | Sesiones 14 (comprobaciones, cierre) |
-| Bloque V - Avanzada y estrategica (2 lecciones) | Sesiones 16, 17, 18 (analisis, ratios, tendencias) |
+## FASE 2: Plantilla de Empleados (50 empleados)
+**Edge Function action: `seed_employees`**
+
+- **50 empleados** con datos realistas espanoles (DNI, NSS, cuentas bancarias IBAN)
+- Distribucion por departamento, genero equilibrado, distintas antigüedades (2018-2025)
+- Salarios base entre 18.000EUR y 85.000EUR segun puesto
+- **50 contratos** (`erp_hr_contracts`): indefinidos, temporales, en practicas, de formacion
+- **50 registros de compensacion** (`erp_hr_employee_compensation`)
+- Relaciones jerarquicas (reports_to) configuradas
+
+## FASE 3: Nominas Masivas (500 nominas)
+**Edge Function action: `seed_payrolls`**
+
+- **500 nominas** distribuidas en 10 meses (Ene 2025 - Oct 2025), 50 empleados x 10 meses
+- Cada nomina con:
+  - `base_salary`, `gross_salary`, `net_salary` calculados realisticamente
+  - `irpf_percentage` (8%-35% segun tramo), `irpf_amount`
+  - `ss_worker` (6.35%), `ss_company` (30.5%)
+  - `complements` JSON: antiguedad, transporte, plus convenio, productividad
+  - `other_deductions` JSON: anticipo, IRPF, embargos
+  - `payroll_type`: ordinaria (mayoría), extra junio, extra diciembre
+  - `status`: draft, calculated, approved, paid (variado)
+  - `metadata`: `{ "is_demo": true }`
+- Nominas extra de junio y diciembre para quienes aplique
+
+## FASE 4: Registro Horario y Ausencias
+**Edge Function action: `seed_time_and_absences`**
+
+- **~2000 registros horarios** (`erp_hr_time_entries`): ultimos 2 meses, entradas/salidas realistas
+- **80 solicitudes de ausencia** (`erp_hr_leave_requests`): vacaciones, IT, permisos
+- **50 saldos de vacaciones** (`erp_hr_leave_balances`): dias consumidos/disponibles
+- Politicas de desconexion digital (`erp_hr_disconnection_policies`)
+
+## FASE 5: Formacion, Evaluaciones y Reclutamiento
+**Edge Function action: `seed_talent`**
+
+- **15 cursos** en catalogo de formacion (`erp_hr_training_catalog`)
+- **60 inscripciones** (`erp_hr_training_enrollments`) con estados variados
+- **3 ciclos de evaluacion** (`erp_hr_evaluation_cycles`)
+- **50 evaluaciones** de desempeño (`erp_hr_performance_evaluations`)
+- **5 ofertas de empleo** (`erp_hr_job_openings`) con **20 candidatos** (`erp_hr_candidates`)
+- **10 entrevistas** (`erp_hr_interviews`)
+
+## FASE 6: Seguridad, Beneficios y Documentos
+**Edge Function action: `seed_compliance`**
+
+- **8 incidentes de seguridad** (`erp_hr_safety_incidents`): accidentes leves, casi-accidentes
+- **5 planes de beneficios** (`erp_hr_benefits_plans`): seguro medico, guarderia, formacion, ticket restaurant, plan pensiones
+- **30 inscripciones a beneficios** (`erp_hr_benefits_enrollments`)
+- **100 documentos de empleado** (`erp_hr_employee_documents`): contratos, nominas firmadas, certificados
+- **3 plantillas de documentos** (`erp_hr_document_templates`): contrato, certificado, carta
+
+## FASE 7: Cumplimiento Legal y Canal Etico
+**Edge Function action: `seed_legal`**
+
+- **1 plan de igualdad** (`erp_hr_equality_plans`) con auditoria salarial
+- **3 denuncias anonimas** (`erp_hr_whistleblower_reports`) con investigaciones
+- **5 alertas de sancion** (`erp_hr_sanction_alerts`)
+- **10 comunicaciones legales** (`erp_hr_legal_communications`)
+- **Checklist de cumplimiento** (`erp_hr_compliance_checklist`)
+
+## FASE 8: Onboarding/Offboarding y Reconocimiento
+**Edge Function action: `seed_experience`**
+
+- **5 procesos de onboarding** activos (`erp_hr_employee_onboarding`) con tareas
+- **2 procesos de offboarding** (`erp_hr_offboarding_history`)
+- **20 reconocimientos** (`erp_hr_recognition`): empleado del mes, innovacion
+- **2 programas de reconocimiento** (`erp_hr_recognition_programs`)
+- **Cotizaciones SS** (`erp_hr_ss_contributions`) para los 50 empleados
+
+## FASE 9: UI - Boton Seed/Purge en Admin
+**Componente React**
+
+- Boton "Generar datos demo" en el panel HR que invoca la Edge Function fase por fase con barra de progreso
+- Boton "Anular datos demo" que ejecuta `DELETE FROM tabla WHERE metadata->>'is_demo' = 'true'` en todas las tablas
+- Confirmacion con dialogo antes de anular
+- Log de operaciones visibles al usuario
 
 ---
 
-## Fases de implementacion
+## Detalles Tecnicos
 
-### FASE 1: Creacion de la Edge Function de procesamiento OCR-IA
-- Crear edge function `academia-content-enricher` que recibe el contenido OCR extraido y lo transforma en contenido pedagogico moderno
-- La IA actualizara: pesetas a euros, PGC 1990 a PGC 2007/2025, referencias a SII/TicketBAI/VeriFactu, normativa vigente 2026
-- Generara contenido Markdown estructurado con ejemplos actualizados, notas de actualizacion normativa, y llamadas a la accion
-
-### FASE 2: Enriquecimiento del contenido de las 22 lecciones
-- Invocar la edge function para cada leccion, pasando el contenido OCR correspondiente como contexto
-- Actualizar el campo `content` (Markdown) de cada leccion en `academia_lessons` con el contenido enriquecido
-- Cada leccion incluira: teoria original actualizada + ejemplos con euros + referencias PGC 2007/2025 + tips practicos + enlaces al ERP
-
-### FASE 3: Generacion de tests y ejercicios actualizados
-- Usar el contenido OCR de los tests V/F para crear/actualizar los quizzes en `academia_quizzes` + `academia_quiz_questions`
-- Actualizar las 110 preguntas existentes con el material real de los PDFs, adaptado a normativa 2026
-- Anadir ejercicios practicos como recursos descargables en `academia_course_resources` (plantillas Excel, CSV de asientos)
-
-### FASE 4: Creacion de recursos complementarios
-- Insertar en `academia_course_resources` plantillas y material descargable derivado de los ejercicios de los PDFs:
-  - Plantilla de Balance (sesion 1)
-  - Hoja de Conciliacion Bancaria (sesion 14)
-  - Plantilla de Arqueo de Caja (sesion 14)
-  - Calculadora de Ratios Financieros (sesiones 17-18)
-  - Hoja de Fondo de Maniobra (sesion 16)
-- Cada recurso vinculado a la leccion correspondiente
-
-### FASE 5: Integracion con el modulo ERP
-- Crear enlaces cruzados entre las lecciones del curso y los modulos del ERP (contabilidad, tesoreria, fiscal)
-- En cada leccion relevante, anadir seccion "Practica en tu ERP" con instrucciones para usar el simulador contable existente
-- Actualizar los `academia_simulator_datasets` con escenarios basados en los ejercicios de los PDFs (empresa ALFA, panadero, alfarero)
-
-### FASE 6: Verificacion y ajustes
-- Verificar que las 22 lecciones tienen contenido actualizado
-- Comprobar que los 22 quizzes reflejan el material real de los PDFs
-- Validar que los recursos se descargan correctamente
-- Test end-to-end del flujo: Catalogo → Detalle → Leccion → Quiz → Recursos
-
----
-
-## Actualizaciones normativas a aplicar
-
-El material original data de los anos 90 (usa pesetas, referencia al PGC de 1990). Se actualizara a:
-
-- **Moneda**: Pesetas → Euros (conversion 1€ = 166,386 ptas)
-- **PGC**: Real Decreto 1643/90 → PGC 2007 (RD 1514/2007) + reformas 2021-2025
-- **IVA**: Modelo actual con SII, Ley Crea y Crece, factura electronica obligatoria
-- **Digital**: Contabilidad manual → ERP, digitalizacion obligatoria, VeriFactu/TicketBAI
-- **Normativa**: NIIF-UE, Ley 11/2023 digitalizacion, normas de sostenibilidad (CSRD/ESRS)
-- **Ejemplos**: Actualizados a contexto empresarial 2026
+- **Edge Function**: `supabase/functions/erp-hr-seed-demo-data/index.ts` con acciones por fase
+- **Marcado demo**: Todas las filas con `metadata: { is_demo: true }` para purga selectiva
+- **Empresa target**: `2cbd8718-7a8b-42ce-af61-bef193da32df`
+- **Volumen total**: ~3,500+ registros across 30+ tablas
+- **Anulacion**: Una accion `purge_demo` en la misma Edge Function que borra en cascada respetando foreign keys (orden inverso de creacion)
 
