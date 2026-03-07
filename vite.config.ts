@@ -233,6 +233,9 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/components/erp/sales/')) return 'app-erp-sales';
           if (id.includes('/components/erp/purchases/')) return 'app-erp-purchases';
           if (id.includes('/components/erp/trade/')) return 'app-erp-trade';
+          if (id.includes('/components/erp/hr/dialogs/')) return 'app-erp-hr-dialogs';
+          if (id.includes('/components/erp/hr/compliance/')) return 'app-erp-hr-compliance';
+          if (id.includes('/components/erp/hr/integration/')) return 'app-erp-hr-integration';
           if (id.includes('/components/erp/hr/')) return 'app-erp-hr';
           if (id.includes('/components/erp/logistics/')) return 'app-erp-logistics';
           if (id.includes('/components/erp/maestros/')) return 'app-erp-maestros';
