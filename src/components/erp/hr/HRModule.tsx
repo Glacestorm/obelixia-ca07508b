@@ -84,6 +84,7 @@ import { CheckCircle2, Loader2 as Spin, AlertCircle as AlertC, Play } from 'luci
 import { Button } from '@/components/ui/button';
 import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
+import { HRUtilitiesNavigation, type UtilitySection } from './premium-dashboard/HRUtilitiesNavigation';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
