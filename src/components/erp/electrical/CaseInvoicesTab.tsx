@@ -273,7 +273,7 @@ export function CaseInvoicesTab({ caseId }: Props) {
                   <span>{inv.is_validated ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}</span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100">
                     {inv.document_url && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); window.open(inv.document_url!, '_blank'); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); handleOpenDocument(inv.document_url!); }}>
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}

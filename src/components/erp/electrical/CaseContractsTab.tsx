@@ -35,7 +35,7 @@ const emptyForm = {
 };
 
 export function CaseContractsTab({ caseId }: Props) {
-  const { contracts, loading, fetchContracts, createContract, updateContract, deleteContract, uploadPdf } = useEnergyContracts(caseId);
+  const { contracts, loading, fetchContracts, createContract, updateContract, deleteContract, uploadPdf, getSignedUrl } = useEnergyContracts(caseId);
   const [showDialog, setShowDialog] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
