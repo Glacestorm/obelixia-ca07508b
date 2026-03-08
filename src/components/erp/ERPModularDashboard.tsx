@@ -75,6 +75,7 @@ import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiu
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
 import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel } from './hr/premium-dashboard';
+import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
