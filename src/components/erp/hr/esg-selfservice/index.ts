@@ -1,0 +1,1 @@
+export { HRESGSelfServicePanel } from './HRESGSelfServicePanel';
