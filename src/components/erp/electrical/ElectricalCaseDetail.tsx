@@ -17,6 +17,7 @@ import { CaseWorkflowTab } from './CaseWorkflowTab';
 import { CaseChecklistPanel } from './CaseChecklistPanel';
 import { CaseProposalTab } from './CaseProposalTab';
 import { CaseAuditLog } from './CaseAuditLog';
+import { ClientPortalManager } from './ClientPortalManager';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
