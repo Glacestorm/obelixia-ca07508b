@@ -58,6 +58,7 @@ import { HRInternalMarketplacePanel } from './talent/HRInternalMarketplacePanel'
 import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
 import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
 import { HRTimeClockPanel } from './HRTimeClockPanel';
+import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel } from './enterprise';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -304,7 +305,13 @@ export function HRModule() {
         {activeModule === 'marketplace' && <HRInternalMarketplacePanel companyId={demoCompanyId} />}
         {activeModule === 'succession' && <HRSuccessionPlanningPanel companyId={demoCompanyId} />}
         {activeModule === 'analytics-intelligence' && <HRAnalyticsIntelligencePanel companyId={demoCompanyId} />}
-      </div>
+        {activeModule === 'enterprise-dashboard' && <HREnterpriseDashboard companyId={demoCompanyId} />}
+        {activeModule === 'legal-entities' && <HRLegalEntitiesPanel companyId={demoCompanyId} />}
+        {activeModule === 'work-centers' && <HRWorkCentersPanel companyId={demoCompanyId} />}
+        {activeModule === 'org-structure' && <HROrgStructurePanel companyId={demoCompanyId} />}
+        {activeModule === 'work-calendars' && <HRCalendarsPanel companyId={demoCompanyId} />}
+        {activeModule === 'enterprise-roles' && <HRRolesPermissionsPanel companyId={demoCompanyId} />}
+        {activeModule === 'audit-trail' && <HRAuditTrailPanel companyId={demoCompanyId} />}
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
       <HRPayrollEntryDialog
