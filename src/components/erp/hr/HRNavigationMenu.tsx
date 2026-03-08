@@ -112,6 +112,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'talent-intelligence', label: 'Talent Intelligence', icon: Brain },
         { id: 'compliance-enterprise', label: 'Compliance Enterprise', icon: Shield },
         { id: 'wellbeing-enterprise', label: 'Wellbeing Enterprise', icon: Heart },
+        { id: 'esg-selfservice', label: 'ESG Social & Self-Service', icon: Leaf },
       ]
     },
     {
