@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Zap, MapPin } from 'lucide-react';
+import { ArrowLeft, Zap, MapPin, GitCompareArrows } from 'lucide-react';
 import { ElectricalBreadcrumb } from './ElectricalBreadcrumb';
 import { CaseSupplyTab } from './CaseSupplyTab';
 import { CaseConsumptionTab } from './CaseConsumptionTab';
