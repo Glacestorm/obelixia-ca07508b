@@ -75,7 +75,7 @@ export interface CopilotKPI {
   trend: string;
 }
 
-export function useHRCopilotTwin(companyId: string = 'demo-company-id') {
+export function useHRCopilotTwin(companyId: string) {
   const [sessions, setSessions] = useState<CopilotSession[]>([]);
   const [actions, setActions] = useState<CopilotAction[]>([]);
   const [snapshots, setSnapshots] = useState<TwinSnapshot[]>([]);
