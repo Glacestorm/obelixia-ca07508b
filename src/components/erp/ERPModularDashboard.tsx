@@ -736,6 +736,10 @@ function ERPModularDashboardContent() {
               <TabsContent value="premium-seed">
                 <PremiumReseedPanel companyId={currentCompany?.id} />
               </TabsContent>
+
+              <TabsContent value="premium-help">
+                <HRPremiumHelpCenter />
+              </TabsContent>
             </Tabs>
           </div>
         </TabsContent>
