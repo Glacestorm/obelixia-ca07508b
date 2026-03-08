@@ -17944,6 +17944,63 @@ export type Database = {
           },
         ]
       }
+      energy_client_portal_tokens: {
+        Row: {
+          case_id: string
+          client_email: string | null
+          client_name: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_accessed_at: string | null
+          token: string
+        }
+        Insert: {
+          case_id: string
+          client_email?: string | null
+          client_name?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          token?: string
+        }
+        Update: {
+          case_id?: string
+          client_email?: string | null
+          client_name?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_accessed_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_client_portal_tokens_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energy_client_portal_tokens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energy_consumption_profiles: {
         Row: {
           case_id: string
@@ -18305,6 +18362,63 @@ export type Database = {
           },
         ]
       }
+      energy_notifications: {
+        Row: {
+          case_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string | null
+          metadata: Json | null
+          severity: string
+          target_user_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          case_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          metadata?: Json | null
+          severity?: string
+          target_user_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          case_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          metadata?: Json | null
+          severity?: string
+          target_user_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_notifications_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energy_notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energy_proposals: {
         Row: {
           accepted_at: string | null
@@ -18323,10 +18437,14 @@ export type Database = {
           id: string
           issued_at: string | null
           observations: string | null
+          pdf_path: string | null
           recommended_supplier: string | null
           recommended_tariff: string | null
           rejected_at: string | null
           rejection_reason: string | null
+          signature_method: string | null
+          signed_at: string | null
+          signed_by: string | null
           status: string
           updated_at: string
           valid_until: string | null
@@ -18349,10 +18467,14 @@ export type Database = {
           id?: string
           issued_at?: string | null
           observations?: string | null
+          pdf_path?: string | null
           recommended_supplier?: string | null
           recommended_tariff?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
+          signature_method?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
           status?: string
           updated_at?: string
           valid_until?: string | null
@@ -18375,10 +18497,14 @@ export type Database = {
           id?: string
           issued_at?: string | null
           observations?: string | null
+          pdf_path?: string | null
           recommended_supplier?: string | null
           recommended_tariff?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
+          signature_method?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
           status?: string
           updated_at?: string
           valid_until?: string | null
@@ -18579,6 +18705,75 @@ export type Database = {
           },
           {
             foreignKeyName: "energy_simulations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_smart_actions: {
+        Row: {
+          action_type: string
+          case_id: string
+          company_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          estimated_savings: number | null
+          id: string
+          is_completed: boolean
+          metadata: Json | null
+          priority: number
+          risk_level: string | null
+          title: string
+          urgency: string
+        }
+        Insert: {
+          action_type: string
+          case_id: string
+          company_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_savings?: number | null
+          id?: string
+          is_completed?: boolean
+          metadata?: Json | null
+          priority?: number
+          risk_level?: string | null
+          title: string
+          urgency?: string
+        }
+        Update: {
+          action_type?: string
+          case_id?: string
+          company_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_savings?: number | null
+          id?: string
+          is_completed?: boolean
+          metadata?: Json | null
+          priority?: number
+          risk_level?: string | null
+          title?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_smart_actions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energy_smart_actions_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
