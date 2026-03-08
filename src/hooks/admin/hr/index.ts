@@ -187,6 +187,6 @@ export type {
 // Phase Enterprise - Talent Intelligence
 export { useHRTalentIntelligence } from './useHRTalentIntelligence';
 export type {
-  SkillNode, CareerPath, TalentPool, MentoringMatch,
+  SkillNode, CareerPath as TalentCareerPath, TalentPool, MentoringMatch,
   GigAssignment, TalentAnalysis, TalentStats
 } from './useHRTalentIntelligence';
