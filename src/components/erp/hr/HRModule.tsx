@@ -325,6 +325,7 @@ export function HRModule() {
         {activeModule === 'compliance-enterprise' && <HRComplianceEnterprisePanel companyId={demoCompanyId} />}
         {activeModule === 'wellbeing-enterprise' && <HRWellbeingEnterprisePanel companyId={demoCompanyId} />}
         {activeModule === 'esg-selfservice' && <HRESGSelfServicePanel companyId={demoCompanyId} />}
+        {activeModule === 'copilot-twin' && <HRCopilotTwinPanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}

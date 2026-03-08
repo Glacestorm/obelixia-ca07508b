@@ -212,3 +212,10 @@ export type {
   ESGSocialMetric, ESGSocialKPI, SelfServiceRequest,
   FAQ, ESGSurvey, DocumentRequest, ESGSocialAnalysis
 } from './useHRESGSelfService';
+
+// Phase 8 - Copilot + Digital Twin
+export { useHRCopilotTwin } from './useHRCopilotTwin';
+export type {
+  CopilotSession, CopilotAction, TwinSnapshot,
+  TwinSimulation, CopilotKPI
+} from './useHRCopilotTwin';
