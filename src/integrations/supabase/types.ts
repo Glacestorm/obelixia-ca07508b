@@ -24916,6 +24916,69 @@ export type Database = {
           },
         ]
       }
+      erp_hr_bi_datasets: {
+        Row: {
+          company_id: string
+          connector_id: string | null
+          created_at: string
+          dataset_type: string
+          export_format: string
+          id: string
+          is_active: boolean
+          last_exported_at: string | null
+          name: string
+          refresh_frequency: string
+          row_count: number | null
+          schema_definition: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          connector_id?: string | null
+          created_at?: string
+          dataset_type: string
+          export_format?: string
+          id?: string
+          is_active?: boolean
+          last_exported_at?: string | null
+          name: string
+          refresh_frequency?: string
+          row_count?: number | null
+          schema_definition?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          connector_id?: string | null
+          created_at?: string
+          dataset_type?: string
+          export_format?: string
+          id?: string
+          is_active?: boolean
+          last_exported_at?: string | null
+          name?: string
+          refresh_frequency?: string
+          row_count?: number | null
+          schema_definition?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_bi_datasets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_bi_datasets_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_connectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_bonus_allocations: {
         Row: {
           adjusted_amount: number | null
@@ -28689,6 +28752,84 @@ export type Database = {
           },
         ]
       }
+      erp_hr_dms_archives: {
+        Row: {
+          archive_status: string
+          archived_at: string | null
+          archived_by: string | null
+          company_id: string
+          connector_id: string | null
+          created_at: string
+          error_message: string | null
+          file_size_bytes: number | null
+          id: string
+          metadata: Json | null
+          mime_type: string | null
+          remote_id: string | null
+          remote_path: string | null
+          retry_count: number | null
+          source_id: string
+          source_name: string
+          source_type: string
+          updated_at: string
+        }
+        Insert: {
+          archive_status?: string
+          archived_at?: string | null
+          archived_by?: string | null
+          company_id: string
+          connector_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          remote_id?: string | null
+          remote_path?: string | null
+          retry_count?: number | null
+          source_id: string
+          source_name: string
+          source_type: string
+          updated_at?: string
+        }
+        Update: {
+          archive_status?: string
+          archived_at?: string | null
+          archived_by?: string | null
+          company_id?: string
+          connector_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          remote_id?: string | null
+          remote_path?: string | null
+          retry_count?: number | null
+          source_id?: string
+          source_name?: string
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_dms_archives_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_dms_archives_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_connectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_document_ai_processing: {
         Row: {
           company_id: string
@@ -29864,6 +30005,65 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_enterprise_connectors: {
+        Row: {
+          auth_type: string
+          company_id: string
+          config: Json
+          connector_type: string
+          created_at: string
+          created_by: string | null
+          credentials_ref: string | null
+          health_status: string
+          id: string
+          is_active: boolean
+          last_health_check_at: string | null
+          name: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          auth_type?: string
+          company_id: string
+          config?: Json
+          connector_type: string
+          created_at?: string
+          created_by?: string | null
+          credentials_ref?: string | null
+          health_status?: string
+          id?: string
+          is_active?: boolean
+          last_health_check_at?: string | null
+          name: string
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          auth_type?: string
+          company_id?: string
+          config?: Json
+          connector_type?: string
+          created_at?: string
+          created_by?: string | null
+          credentials_ref?: string | null
+          health_status?: string
+          id?: string
+          is_active?: boolean
+          last_health_check_at?: string | null
+          name?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_enterprise_connectors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_enterprise_permissions: {
         Row: {
           action: string
@@ -30272,6 +30472,81 @@ export type Database = {
           },
         ]
       }
+      erp_hr_esign_envelopes: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          connector_id: string | null
+          created_at: string
+          document_id: string
+          document_name: string
+          document_type: string
+          envelope_status: string
+          error_message: string | null
+          expiration_date: string | null
+          id: string
+          initiated_by: string | null
+          metadata: Json | null
+          remote_envelope_id: string | null
+          signed_document_url: string | null
+          signers: Json
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          connector_id?: string | null
+          created_at?: string
+          document_id: string
+          document_name: string
+          document_type: string
+          envelope_status?: string
+          error_message?: string | null
+          expiration_date?: string | null
+          id?: string
+          initiated_by?: string | null
+          metadata?: Json | null
+          remote_envelope_id?: string | null
+          signed_document_url?: string | null
+          signers?: Json
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          connector_id?: string | null
+          created_at?: string
+          document_id?: string
+          document_name?: string
+          document_type?: string
+          envelope_status?: string
+          error_message?: string | null
+          expiration_date?: string | null
+          id?: string
+          initiated_by?: string | null
+          metadata?: Json | null
+          remote_envelope_id?: string | null
+          signed_document_url?: string | null
+          signers?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_esign_envelopes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_esign_envelopes_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_connectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_evaluation_cycles: {
         Row: {
           company_id: string
@@ -30330,6 +30605,69 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_ext_integration_log: {
+        Row: {
+          action: string
+          company_id: string
+          connector_id: string | null
+          created_at: string
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          integration_type: string
+          performed_by: string | null
+          resource_id: string | null
+          resource_type: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          company_id: string
+          connector_id?: string | null
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_type: string
+          performed_by?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          status?: string
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          connector_id?: string | null
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          integration_type?: string
+          performed_by?: string | null
+          resource_id?: string | null
+          resource_type?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_ext_integration_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_ext_integration_log_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_connectors"
             referencedColumns: ["id"]
           },
         ]
