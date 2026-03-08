@@ -288,6 +288,11 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
             </ScrollArea>
           </TabsContent>
 
+          {/* === HEALTH / SELF-HEALING TAB === */}
+          <TabsContent value="health">
+            <SelfHealingPanel installation={installation} />
+          </TabsContent>
+
           {/* === UPDATES/VERSIONS TAB === */}
           <TabsContent value="updates">
             <div className="flex items-center justify-between mb-4">
