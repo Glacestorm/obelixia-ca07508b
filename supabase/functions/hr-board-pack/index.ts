@@ -56,6 +56,12 @@ serve(async (req) => {
 
     const { action, companyId, templateId, packId, period, status, comments, reviewerName } = await req.json() as BoardPackRequest;
 
+    if (!companyId || companyId === 'demo-company-id') {
+      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(`[hr-board-pack] action=${action} company=${companyId}`);
 
     switch (action) {
