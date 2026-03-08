@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,28 +8,32 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Save, Zap, AlertTriangle, ShieldCheck, Loader2, Info, BrainCircuit } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sparkles, Save, Zap, AlertTriangle, ShieldCheck, Loader2, Info, BrainCircuit, TrendingUp, CheckCircle, Clock, ArrowRight } from 'lucide-react';
 import { PermissionGate } from './PermissionGate';
-import { useEnergyRecommendation, generateRecommendation, RecommendationInput } from '@/hooks/erp/useEnergyRecommendation';
+import { useEnergyRecommendation } from '@/hooks/erp/useEnergyRecommendation';
 import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { useEnergyInvoices } from '@/hooks/erp/useEnergyInvoices';
 import { useEnergyContracts } from '@/hooks/erp/useEnergyContracts';
 import { useEnergyConsumptionProfile } from '@/hooks/erp/useEnergyConsumptionProfile';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { useEnergyTariffCatalog } from '@/hooks/erp/useEnergyTariffCatalog';
+import { generateEnhancedRecommendation, TariffSimResult } from '@/hooks/erp/useEnhancedRecommendation';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { format, differenceInDays, isPast, addDays } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-interface Props { caseId: string; }
+interface Props { caseId: string; onOpenSimulator?: (caseId: string) => void; }
 
 const RISK_MAP: Record<string, { label: string; color: string; icon: typeof ShieldCheck }> = {
   low: { label: 'Bajo', color: 'text-emerald-600', icon: ShieldCheck },
-  medium: { label: 'Medio', color: 'text-yellow-600', icon: AlertTriangle },
+  medium: { label: 'Medio', color: 'text-amber-600', icon: AlertTriangle },
   high: { label: 'Alto', color: 'text-destructive', icon: AlertTriangle },
 };
 
-export function CaseRecommendationTab({ caseId }: Props) {
+export function CaseRecommendationTab({ caseId, onOpenSimulator }: Props) {
   const { recommendation, loading, saveRecommendation } = useEnergyRecommendation(caseId);
   const { supply } = useEnergySupply(caseId);
   const { invoices } = useEnergyInvoices(caseId);
@@ -40,6 +44,7 @@ export function CaseRecommendationTab({ caseId }: Props) {
   const [saving, setSaving] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiReasoning, setAiReasoning] = useState<string | null>(null);
+  const [simResults, setSimResults] = useState<TariffSimResult[]>([]);
 
   const [form, setForm] = useState({
     recommended_supplier: '',
@@ -69,14 +74,80 @@ export function CaseRecommendationTab({ caseId }: Props) {
     }
   }, [recommendation]);
 
+  // Contract expiry alerts
+  const contractAlerts = useMemo(() => {
+    const alerts: { type: 'expired' | 'expiring_soon' | 'active'; message: string; daysLeft: number }[] = [];
+
+    // Check from energy_case contract_end_date
+    if (energyCase?.contract_end_date) {
+      const endDate = new Date(energyCase.contract_end_date);
+      const daysLeft = differenceInDays(endDate, new Date());
+      if (isPast(endDate)) {
+        alerts.push({ type: 'expired', message: `Contrato vencido desde ${format(endDate, 'dd/MM/yyyy', { locale: es })}`, daysLeft });
+      } else if (daysLeft <= 90) {
+        alerts.push({ type: 'expiring_soon', message: `Contrato vence en ${daysLeft} días (${format(endDate, 'dd/MM/yyyy', { locale: es })})`, daysLeft });
+      }
+    }
+
+    // Check from contracts table
+    contracts.forEach(c => {
+      if (c.end_date) {
+        const endDate = new Date(c.end_date);
+        const daysLeft = differenceInDays(endDate, new Date());
+        if (isPast(endDate)) {
+          alerts.push({ type: 'expired', message: `Contrato ${c.supplier || 'sin comercializadora'} vencido (${format(endDate, 'dd/MM/yyyy', { locale: es })})`, daysLeft });
+        } else if (daysLeft <= 60) {
+          alerts.push({ type: 'expiring_soon', message: `Contrato ${c.supplier || ''} vence en ${daysLeft} días. ${c.has_renewal ? 'Tiene renovación automática.' : 'Sin renovación automática.'}`, daysLeft });
+        }
+      }
+    });
+
+    return alerts;
+  }, [energyCase, contracts]);
+
+  // Savings verification: estimated vs real (from tracking)
+  const savingsVerification = useMemo(() => {
+    if (!recommendation) return null;
+
+    // Get post-recommendation invoices (after recommendation created)
+    const recDate = new Date(recommendation.created_at);
+    const preInvoices = invoices.filter(i => i.billing_start && new Date(i.billing_start) < recDate);
+    const postInvoices = invoices.filter(i => i.billing_start && new Date(i.billing_start) >= recDate);
+
+    if (preInvoices.length === 0 || postInvoices.length === 0) return null;
+
+    const avgPreCost = preInvoices.reduce((s, i) => s + (i.total_amount || 0), 0) / preInvoices.length;
+    const avgPostCost = postInvoices.reduce((s, i) => s + (i.total_amount || 0), 0) / postInvoices.length;
+    const realMonthlySavings = Math.round((avgPreCost - avgPostCost) * 100) / 100;
+    const estimatedMonthlySavings = recommendation.monthly_savings_estimate || 0;
+
+    const deviation = estimatedMonthlySavings > 0
+      ? Math.round(((realMonthlySavings - estimatedMonthlySavings) / estimatedMonthlySavings) * 100)
+      : 0;
+
+    return {
+      preAvg: Math.round(avgPreCost * 100) / 100,
+      postAvg: Math.round(avgPostCost * 100) / 100,
+      realMonthlySavings,
+      estimatedMonthlySavings,
+      deviation,
+      preCount: preInvoices.length,
+      postCount: postInvoices.length,
+    };
+  }, [recommendation, invoices]);
+
   const handleAutoGenerate = useCallback(() => {
     const totalP1 = invoices.reduce((s, i) => s + (i.consumption_p1_kwh || 0), 0);
     const totalP2 = invoices.reduce((s, i) => s + (i.consumption_p2_kwh || 0), 0);
     const totalP3 = invoices.reduce((s, i) => s + (i.consumption_p3_kwh || 0), 0);
+    const totalCost = invoices.reduce((s, i) => s + (i.total_amount || 0), 0);
+    const totalDays = invoices.reduce((s, i) => s + (i.days || 30), 0);
     const hasPermanence = contracts.some(c => c.has_permanence);
 
-    const input: RecommendationInput = {
-      consumptionP1: totalP1, consumptionP2: totalP2, consumptionP3: totalP3,
+    const result = generateEnhancedRecommendation({
+      consumptionP1: totalP1,
+      consumptionP2: totalP2,
+      consumptionP3: totalP3,
       contractedPowerP1: supply?.contracted_power_p1 || 0,
       contractedPowerP2: supply?.contracted_power_p2 || 0,
       maxDemandP1: supply?.max_demand_p1 || 0,
@@ -84,9 +155,11 @@ export function CaseRecommendationTab({ caseId }: Props) {
       currentSupplier: energyCase?.current_supplier || '',
       currentTariff: energyCase?.current_tariff || '',
       hasPermanence,
-    };
+      billingDays: totalDays || 365,
+      currentTotalCost: totalCost,
+      tariffCatalog: tariffs,
+    });
 
-    const result = generateRecommendation(input);
     setForm({
       recommended_supplier: result.recommended_supplier,
       recommended_tariff: result.recommended_tariff,
@@ -98,8 +171,10 @@ export function CaseRecommendationTab({ caseId }: Props) {
       confidence_score: result.confidence_score,
       implementation_notes: result.implementation_notes,
     });
+    setSimResults(result.simulation_results);
     setAiReasoning(null);
-  }, [invoices, supply, contracts, energyCase]);
+    toast.success(`Motor de reglas: ${result.simulation_results.length} tarifas evaluadas del catálogo`);
+  }, [invoices, supply, contracts, energyCase, tariffs]);
 
   const handleAiGenerate = useCallback(async () => {
     setAiGenerating(true);
@@ -169,6 +244,63 @@ export function CaseRecommendationTab({ caseId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Contract expiry alerts */}
+      {contractAlerts.length > 0 && (
+        <div className="space-y-2">
+          {contractAlerts.map((alert, i) => (
+            <div key={i} className={cn("p-3 rounded-lg border flex items-start gap-2",
+              alert.type === 'expired' ? 'border-destructive/30 bg-destructive/5' : 'border-amber-500/30 bg-amber-500/5')}>
+              <Clock className={cn("h-4 w-4 mt-0.5 shrink-0",
+                alert.type === 'expired' ? 'text-destructive' : 'text-amber-600')} />
+              <div>
+                <p className="text-sm font-medium">
+                  {alert.type === 'expired' ? '🔴 Contrato vencido' : '🟡 Vencimiento próximo'}
+                </p>
+                <p className="text-xs text-muted-foreground">{alert.message}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Savings verification */}
+      {savingsVerification && (
+        <Card className="border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-primary" /> Verificación de ahorro: estimado vs real
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Coste medio pre</p>
+                <p className="text-base font-semibold">{savingsVerification.preAvg.toLocaleString('es-ES')} €</p>
+                <p className="text-[10px] text-muted-foreground">{savingsVerification.preCount} facturas</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Coste medio post</p>
+                <p className="text-base font-semibold">{savingsVerification.postAvg.toLocaleString('es-ES')} €</p>
+                <p className="text-[10px] text-muted-foreground">{savingsVerification.postCount} facturas</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Ahorro real/mes</p>
+                <p className={cn("text-base font-bold", savingsVerification.realMonthlySavings >= 0 ? 'text-emerald-600' : 'text-destructive')}>
+                  {savingsVerification.realMonthlySavings >= 0 ? '+' : ''}{savingsVerification.realMonthlySavings.toLocaleString('es-ES')} €
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Desviación vs estimado</p>
+                <p className={cn("text-base font-bold",
+                  Math.abs(savingsVerification.deviation) <= 15 ? 'text-emerald-600' : 'text-amber-600')}>
+                  {savingsVerification.deviation > 0 ? '+' : ''}{savingsVerification.deviation}%
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Executive summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
@@ -208,6 +340,40 @@ export function CaseRecommendationTab({ caseId }: Props) {
         </div>
       )}
 
+      {/* Tariff comparison results */}
+      {simResults.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" /> Comparativa de tarifas ({simResults.length} evaluadas)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="w-full max-h-[200px]">
+              <div className="min-w-[600px]">
+                <div className="grid grid-cols-[1.2fr_1fr_0.6fr_0.6fr_0.7fr_0.5fr] gap-2 px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground border-b">
+                  <span>Comercializadora</span><span>Tarifa</span><span>Energía €</span><span>Potencia €</span><span>Total €</span><span>Ahorro</span>
+                </div>
+                {simResults.slice(0, 10).map((r, i) => (
+                  <div key={r.tariff_id} className={cn("grid grid-cols-[1.2fr_1fr_0.6fr_0.6fr_0.7fr_0.5fr] gap-2 px-4 py-2 border-b text-sm items-center",
+                    i === 0 ? 'bg-emerald-500/5' : 'hover:bg-muted/30')}>
+                    <span className="font-medium truncate">{r.supplier}</span>
+                    <span className="text-xs truncate">{r.tariff_name}{r.has_permanence ? ' 🔒' : ''}</span>
+                    <span className="font-mono text-xs">{r.energy_cost.toLocaleString('es-ES')}</span>
+                    <span className="font-mono text-xs">{r.power_cost.toLocaleString('es-ES')}</span>
+                    <span className="font-mono text-xs font-semibold">{r.total_cost.toLocaleString('es-ES')}</span>
+                    <span className={cn("font-mono text-xs font-semibold",
+                      r.savings > 0 ? 'text-emerald-600' : r.savings < 0 ? 'text-destructive' : '')}>
+                      {r.savings > 0 ? '+' : ''}{r.savings.toLocaleString('es-ES')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main form */}
       <Card>
         <CardHeader>
@@ -218,10 +384,10 @@ export function CaseRecommendationTab({ caseId }: Props) {
               </CardTitle>
               <CardDescription>Editable manualmente, generada por reglas o con asistencia de IA.</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-end">
               <PermissionGate action="approve_recommendation">
                 <Button variant="outline" size="sm" onClick={handleAutoGenerate}>
-                  <Zap className="h-3.5 w-3.5 mr-1" /> Reglas
+                  <Zap className="h-3.5 w-3.5 mr-1" /> Reglas + Catálogo
                 </Button>
               </PermissionGate>
               <PermissionGate action="ai_analysis">
@@ -232,6 +398,11 @@ export function CaseRecommendationTab({ caseId }: Props) {
                     : <><BrainCircuit className="h-3.5 w-3.5 mr-1" /> IA Borrador</>}
                 </Button>
               </PermissionGate>
+              {onOpenSimulator && (
+                <Button variant="outline" size="sm" onClick={() => onOpenSimulator(caseId)}>
+                  <ArrowRight className="h-3.5 w-3.5 mr-1" /> Simulador
+                </Button>
+              )}
               <PermissionGate action="approve_recommendation">
                 <Button size="sm" onClick={handleSave} disabled={saving}>
                   <Save className="h-3.5 w-3.5 mr-1" /> {saving ? 'Guardando...' : 'Guardar'}
