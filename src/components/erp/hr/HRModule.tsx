@@ -410,6 +410,33 @@ export function HRModule() {
         {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={companyId} />}
         {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={companyId} />}
         {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={companyId} />}
+
+        {/* Utilidades Premium — migradas desde ERPModularDashboard */}
+        {activeModule === 'util-premium-dash' && <HRPremiumExecutiveDashboard companyId={companyId} />}
+        {activeModule === 'util-orchestration' && <HROrchestrationPanel companyId={companyId} />}
+        {activeModule === 'util-alerts' && <HRPremiumAlertsPanel companyId={companyId} />}
+        {activeModule === 'util-feed' && <HRPremiumActivityFeed companyId={companyId} />}
+        {activeModule === 'util-settings' && <HRPremiumSettingsPanel companyId={companyId} />}
+        {activeModule === 'util-audit' && (
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Generador unificado de informes de auditoría para ERP, CRM o Suite Integral.
+            </p>
+            <UnifiedAuditGenerator defaultScope="erp" />
+          </div>
+        )}
+        {activeModule === 'util-ai-hybrid' && <AIUnifiedDashboard />}
+        {activeModule === 'util-health' && <HRPremiumHealthCheckPanel companyId={companyId} />}
+        {activeModule === 'util-export' && <HRPremiumExportPanel companyId={companyId} />}
+        {activeModule === 'util-seed' && <PremiumReseedPanel companyId={companyId} />}
+        {activeModule === 'util-help' && <HRPremiumHelpCenter />}
+        {activeModule === 'util-compliance' && <HRComplianceAutomationPanel companyId={companyId} />}
+        {activeModule === 'util-analytics-bi' && <HRAnalyticsBIPremiumPanel companyId={companyId} />}
+        {activeModule === 'util-reporting' && <HRReportingEnginePanel companyId={companyId} />}
+        {activeModule === 'util-regulatory' && <ComplianceReportingPanel companyId={companyId} />}
+        {activeModule === 'util-api-webhooks' && <PremiumAPIWebhooksPanel companyId={companyId} />}
+        {activeModule === 'util-integrations' && <EnterpriseIntegrationsPanel companyId={companyId} />}
+        {activeModule === 'util-board-pack' && <HRBoardPackPanel companyId={companyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
