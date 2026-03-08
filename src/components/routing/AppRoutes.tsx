@@ -108,10 +108,14 @@ function ModuleStudioWrapper() {
   );
 }
 
+const ClientPortalView = lazy(() => import('@/components/erp/electrical/ClientPortalView'));
+
 export function AppRoutes() {
   return (
     <Suspense fallback={<PageStreamingSkeleton />}>
       <Routes>
+        {/* Client portal - public route */}
+        <Route path="/portal-cliente" element={<ClientPortalView />} />
         {/* Redirects */}
         {redirects.map((redirect) => (
           <Route
