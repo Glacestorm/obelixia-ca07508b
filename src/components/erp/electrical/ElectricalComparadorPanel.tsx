@@ -24,6 +24,7 @@ import { useEnergySimulations, SimulationConsumptionData, SimulationPowerData, S
 import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { useEnergyInvoices } from '@/hooks/erp/useEnergyInvoices';
 import { PermissionGate } from './PermissionGate';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
