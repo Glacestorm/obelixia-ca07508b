@@ -65,7 +65,7 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Plan "${r.name || r.title || 'Sin nombre'}" — ${r.status || 'creado'}`,
   },
   {
-    module: 'workforce', table: 'erp_hr_workforce_scenarios',
+    module: 'workforce', table: 'erp_hr_scenarios',
     actionLabel: 'Escenario simulado',
     descriptionFn: (r) => `Escenario "${r.name || r.title || ''}" — ${r.scenario_type || 'análisis'}`,
   },
