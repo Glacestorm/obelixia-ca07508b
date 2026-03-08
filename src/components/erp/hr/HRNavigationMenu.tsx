@@ -130,6 +130,9 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'work-calendars', label: 'Calendarios', icon: Calendar },
         { id: 'enterprise-roles', label: 'Roles y Permisos', icon: Lock },
         { id: 'audit-trail', label: 'Auditoría', icon: ClipboardList },
+        { id: 'workflow-designer', label: 'Workflows', icon: GitBranch },
+        { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox },
+        { id: 'sla-dashboard', label: 'SLA Dashboard', icon: Timer },
       ]
     },
     {
