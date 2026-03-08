@@ -294,6 +294,11 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
             </ScrollArea>
           </TabsContent>
 
+          {/* === EXTENSIONS MARKETPLACE TAB === */}
+          <TabsContent value="extensions">
+            <MarketplaceExtensionsPanel installationId={installation.id} />
+          </TabsContent>
+
           {/* === HEALTH / SELF-HEALING TAB === */}
           <TabsContent value="health">
             <SelfHealingPanel installation={installation} />
