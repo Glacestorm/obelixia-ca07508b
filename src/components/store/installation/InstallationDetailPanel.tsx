@@ -20,6 +20,7 @@ import { SelfHealingPanel } from './SelfHealingPanel';
 import { AIUsagePricingPanel } from './AIUsagePricingPanel';
 import { DigitalTwinPanel } from './DigitalTwinPanel';
 import { MarketplaceExtensionsPanel } from './MarketplaceExtensionsPanel';
+import { FederatedMeshPanel } from './FederatedMeshPanel';
 import {
   type Installation,
   type InstallationModule,
