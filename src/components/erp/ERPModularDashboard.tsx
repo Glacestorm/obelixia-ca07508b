@@ -69,7 +69,58 @@ import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButt
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain } from 'lucide-react';
+import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database } from 'lucide-react';
+import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
+import { Progress } from '@/components/ui/progress';
+import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
+
+function PremiumReseedPanel({ companyId }: { companyId?: string }) {
+  const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
+
+  const statusIcon = (s: SeedPhase['status']) => {
+    if (s === 'done') return <Check2 className="h-4 w-4 text-green-500" />;
+    if (s === 'running') return <Spin className="h-4 w-4 animate-spin text-primary" />;
+    if (s === 'error') return <AlertC className="h-4 w-4 text-destructive" />;
+    return <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />;
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-muted-foreground text-sm">
+        Regenera los datos demo de las 8 fases Premium HR con company_id UUID correcto.
+        Este proceso es idempotente y seguro para ejecutar múltiples veces.
+      </p>
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={() => companyId && runReseed(companyId)}
+          disabled={isRunning || !companyId}
+          className="gap-2"
+        >
+          {isRunning ? <Spin className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {isRunning ? 'Ejecutando...' : 'Ejecutar Re-Seed Premium'}
+        </Button>
+        {!isRunning && phases.some(p => p.status !== 'pending') && (
+          <Button variant="outline" size="sm" onClick={reset}>Reset</Button>
+        )}
+      </div>
+      {(isRunning || phases.some(p => p.status !== 'pending')) && (
+        <>
+          <Progress value={progress} className="h-2" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {phases.map(phase => (
+              <div key={phase.id} className="flex items-center gap-2 p-2 rounded-lg border bg-card text-sm">
+                {statusIcon(phase.status)}
+                <span className={phase.status === 'error' ? 'text-destructive' : ''}>{phase.label}</span>
+                {phase.error && <span className="text-xs text-destructive truncate ml-auto max-w-[150px]" title={phase.error}>{phase.error}</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
   const [activeTab, setActiveTab] = useState('overview');
@@ -602,7 +653,7 @@ function ERPModularDashboardContent() {
             </div>
             
             <Tabs defaultValue="audit" className="space-y-4">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsList className="grid w-full max-w-lg grid-cols-3">
                 <TabsTrigger value="audit" className="gap-2">
                   <FileText className="h-4 w-4" />
                   Auditorías
@@ -610,6 +661,10 @@ function ERPModularDashboardContent() {
                 <TabsTrigger value="ai-hybrid" className="gap-2">
                   <Brain className="h-4 w-4" />
                   IA Híbrida
+                </TabsTrigger>
+                <TabsTrigger value="premium-seed" className="gap-2">
+                  <Database className="h-4 w-4" />
+                  Re-Seed Premium
                 </TabsTrigger>
               </TabsList>
               
@@ -623,6 +678,10 @@ function ERPModularDashboardContent() {
               
               <TabsContent value="ai-hybrid">
                 <AIUnifiedDashboard />
+              </TabsContent>
+
+              <TabsContent value="premium-seed">
+                <PremiumReseedPanel companyId={currentCompany?.id} />
               </TabsContent>
             </Tabs>
           </div>

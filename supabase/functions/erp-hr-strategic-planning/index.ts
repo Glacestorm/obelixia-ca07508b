@@ -96,7 +96,92 @@ serve(async (req) => {
       }});
     }
 
-    // === AI ACTIONS ===
+    // === SEED ACTIONS (P9.6) ===
+    if (action === 'workforce_seed_demo') {
+      // Workforce Planning seed (P3)
+      const plans = [
+        { company_id, plan_name: 'Plan Estratégico RRHH 2026-2028', plan_type: 'strategic', status: 'active', horizon_months: 36, budget_total: 2500000, budget_used: 450000, target_headcount: 320, current_headcount: 275, description: 'Plan estratégico de crecimiento y transformación digital' },
+        { company_id, plan_name: 'Plan Expansión Internacional Q3', plan_type: 'expansion', status: 'draft', horizon_months: 12, budget_total: 800000, budget_used: 0, target_headcount: 45, current_headcount: 0, description: 'Apertura mercado LATAM con equipo local' },
+      ];
+      const { data: planData } = await supabase.from('erp_hr_workforce_plans').insert(plans as any).select();
+
+      if (planData?.[0]) {
+        const planId = planData[0].id;
+        const headcountModels = [
+          { company_id, plan_id: planId, department: 'Engineering', current_headcount: 85, projected_headcount: 110, gap: 25, hiring_priority: 'critical', avg_cost_per_hire: 8500, timeline_months: 12 },
+          { company_id, plan_id: planId, department: 'Sales', current_headcount: 45, projected_headcount: 60, gap: 15, hiring_priority: 'high', avg_cost_per_hire: 6000, timeline_months: 12 },
+          { company_id, plan_id: planId, department: 'Operations', current_headcount: 95, projected_headcount: 100, gap: 5, hiring_priority: 'medium', avg_cost_per_hire: 5000, timeline_months: 18 },
+          { company_id, plan_id: planId, department: 'HR', current_headcount: 20, projected_headcount: 22, gap: 2, hiring_priority: 'low', avg_cost_per_hire: 7000, timeline_months: 24 },
+        ];
+        await supabase.from('erp_hr_headcount_models').insert(headcountModels as any);
+
+        const scenarios = [
+          { company_id, plan_id: planId, scenario_name: 'Crecimiento Orgánico', scenario_type: 'growth', status: 'active', risk_level: 'low', assumptions: { growth_rate: 15, attrition_rate: 8, hiring_success: 85 }, projected_cost: 1200000 },
+          { company_id, plan_id: planId, scenario_name: 'Recesión Moderada', scenario_type: 'downturn', status: 'active', risk_level: 'high', assumptions: { growth_rate: -5, attrition_rate: 12, hiring_freeze: true }, projected_cost: -350000 },
+          { company_id, plan_id: planId, scenario_name: 'Automatización Acelerada', scenario_type: 'transformation', status: 'draft', risk_level: 'medium', assumptions: { automation_pct: 30, reskill_budget: 200000 }, projected_cost: 800000 },
+        ];
+        await supabase.from('erp_hr_scenarios').insert(scenarios as any);
+
+        const skillGaps = [
+          { company_id, plan_id: planId, skill_name: 'AI/ML Engineering', current_level: 2, required_level: 4, gap: 2, criticality: 'critical', mitigation: 'Programa de formación + contratación externa', department: 'Engineering' },
+          { company_id, plan_id: planId, skill_name: 'Cloud Architecture (AWS)', current_level: 3, required_level: 5, gap: 2, criticality: 'high', mitigation: 'Certificaciones + mentoring', department: 'Engineering' },
+          { company_id, plan_id: planId, skill_name: 'Data Analytics', current_level: 2, required_level: 4, gap: 2, criticality: 'high', mitigation: 'Bootcamp interno', department: 'Sales' },
+        ];
+        await supabase.from('erp_hr_skill_gap_forecasts').insert(skillGaps as any);
+
+        const costs = [
+          { company_id, plan_id: planId, period: '2026-Q1', category: 'hiring', amount: 180000, description: 'Contrataciones Q1' },
+          { company_id, plan_id: planId, period: '2026-Q2', category: 'hiring', amount: 250000, description: 'Contrataciones Q2' },
+          { company_id, plan_id: planId, period: '2026-Q1', category: 'training', amount: 75000, description: 'Formación y certificaciones' },
+          { company_id, plan_id: planId, period: '2026-Q2', category: 'training', amount: 95000, description: 'Bootcamps internos' },
+        ];
+        await supabase.from('erp_hr_cost_projections').insert(costs as any);
+      }
+
+      return json({ success: true, data: { message: 'Workforce Planning demo data seeded' } });
+    }
+
+    if (action === 'twin_seed_demo') {
+      // Digital Twin seed (P5)
+      const twins = [
+        { company_id, twin_name: 'Digital Twin - Producción', twin_type: 'production', status: 'active', sync_frequency_minutes: 30, last_sync_at: new Date().toISOString(), health_score: 92, divergence_score: 4, modules_tracked: ['hr', 'operations', 'payroll'], description: 'Réplica del entorno productivo para simulaciones seguras' },
+        { company_id, twin_name: 'Digital Twin - Sandbox', twin_type: 'sandbox', status: 'paused', sync_frequency_minutes: 60, health_score: 78, divergence_score: 18, modules_tracked: ['hr', 'compensation'], description: 'Entorno de pruebas para cambios organizacionales' },
+      ];
+      const { data: twinData } = await supabase.from('erp_hr_twin_instances').insert(twins as any).select();
+
+      if (twinData?.[0]) {
+        const twinId = twinData[0].id;
+        const snapshots = [
+          { company_id, twin_id: twinId, module_name: 'hr', snapshot_data: { employees: 275, departments: 8, avg_tenure: 4.2 }, recorded_at: new Date().toISOString() },
+          { company_id, twin_id: twinId, module_name: 'payroll', snapshot_data: { total_gross: 1250000, avg_salary: 38500, deductions: 312000 }, recorded_at: new Date().toISOString() },
+          { company_id, twin_id: twinId, module_name: 'operations', snapshot_data: { active_projects: 12, utilization: 87, overtime_hours: 340 }, recorded_at: new Date().toISOString() },
+        ];
+        await supabase.from('erp_hr_twin_module_snapshots').insert(snapshots as any);
+
+        const metrics = [
+          { company_id, twin_id: twinId, metric_key: 'headcount', metric_value: 275, metric_type: 'workforce', baseline_value: 260, variance_pct: 5.8 },
+          { company_id, twin_id: twinId, metric_key: 'turnover_rate', metric_value: 8.5, metric_type: 'retention', baseline_value: 10.2, variance_pct: -16.7 },
+          { company_id, twin_id: twinId, metric_key: 'cost_per_employee', metric_value: 42000, metric_type: 'financial', baseline_value: 40500, variance_pct: 3.7 },
+        ];
+        await supabase.from('erp_hr_twin_metrics').insert(metrics as any);
+
+        const experiments = [
+          { company_id, twin_id: twinId, experiment_name: 'Semana laboral 4 días', hypothesis: 'Reducir jornada a 4 días mantiene productividad y reduce rotación', status: 'completed', variables: { work_days: 4, salary_impact: 0, hours_reduction: 20 }, results: { productivity_change: -2, turnover_reduction: 25, satisfaction_increase: 18, roi: 1.4 }, started_at: '2026-01-15', completed_at: '2026-03-01' },
+          { company_id, twin_id: twinId, experiment_name: 'Incremento salarial 8% Engineering', hypothesis: 'Aumento salarial reducirá rotación en Engineering >40%', status: 'running', variables: { department: 'Engineering', salary_increase: 8 }, started_at: '2026-02-01' },
+        ];
+        await supabase.from('erp_hr_twin_experiments').insert(experiments as any);
+
+        const alerts = [
+          { company_id, twin_id: twinId, alert_type: 'divergence', severity: 'medium', title: 'Divergencia creciente en módulo payroll', description: 'La divergencia del módulo payroll ha superado el 15% respecto al entorno de producción', is_resolved: false },
+          { company_id, twin_id: twinId, alert_type: 'health', severity: 'low', title: 'Sync delay detectado', description: 'El último sync tardó 45s (umbral: 30s)', is_resolved: true, resolved_at: new Date().toISOString() },
+        ];
+        await supabase.from('erp_hr_twin_alerts').insert(alerts as any);
+      }
+
+      return json({ success: true, data: { message: 'Digital Twin demo data seeded' } });
+    }
+
+
     let systemPrompt = '';
     let userPrompt = '';
 
