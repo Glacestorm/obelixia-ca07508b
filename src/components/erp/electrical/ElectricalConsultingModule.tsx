@@ -21,6 +21,7 @@ import { ElectricalContratosPanel } from './ElectricalContratosPanel';
 import { ElectricalConsumoPanel } from './ElectricalConsumoPanel';
 import { ElectricalComparadorPanel } from './ElectricalComparadorPanel';
 import { ElectricalTariffCatalogPanel } from './ElectricalTariffCatalogPanel';
+import { ElectricalIndexedPricesPanel } from './ElectricalIndexedPricesPanel';
 import { ElectricalPotenciaPanel } from './ElectricalPotenciaPanel';
 import { ElectricalRecomendacionesPanel } from './ElectricalRecomendacionesPanel';
 import { ElectricalInformesPanel } from './ElectricalInformesPanel';
