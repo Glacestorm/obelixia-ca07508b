@@ -96,6 +96,7 @@ export function ElectricalNavigationMenu({
       items: [
         { id: 'consumo', label: 'Análisis de Consumo', icon: BarChart3, description: 'Consumo por periodos tarifarios' },
         { id: 'comparador', label: 'Simulador', icon: GitCompareArrows, description: 'Simulador y comparador de tarifas' },
+        { id: 'motor-recomendacion', label: 'Motor Multi-Vector', icon: Layers, description: 'Recomendación combinada elec+gas+solar' },
         { id: 'recomendaciones', label: 'Recomendaciones', icon: Lightbulb, description: 'Tarifa y potencia óptima multi-energía' },
         { id: 'analitica-avanzada', label: 'Analítica Avanzada', icon: Layers, description: 'Gráficos multi-energía y KPIs premium' },
       ]
