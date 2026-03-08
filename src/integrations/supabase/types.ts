@@ -73606,6 +73606,14 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: boolean
       }
+      user_has_erp_premium_access: {
+        Args: { p_company_id: string }
+        Returns: boolean
+      }
+      user_has_erp_twin_access: {
+        Args: { p_twin_id: string }
+        Returns: boolean
+      }
       user_is_chat_participant: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
