@@ -199,73 +199,73 @@ function ERPModularDashboardContent() {
           {/* Módulos ERP - Solo visibles en overview */}
           {!isInsideModule && (
             <>
-              {hasPermission('masters.read') && (
+              {canShowModule('masters', 'masters.read') && (
                 <TabsTrigger value="maestros" className="gap-2">
                   <BookOpen className="h-4 w-4" />
                   Maestros
                 </TabsTrigger>
               )}
-              {hasPermission('sales.read') && (
+              {canShowModule('sales', 'sales.read') && (
                 <TabsTrigger value="sales" className="gap-2">
                   <ShoppingCart className="h-4 w-4" />
                   Ventas
                 </TabsTrigger>
               )}
-              {hasPermission('purchases.read') && (
+              {canShowModule('purchases', 'purchases.read') && (
                 <TabsTrigger value="purchases" className="gap-2">
                   <Package className="h-4 w-4" />
                   Compras
                 </TabsTrigger>
               )}
-              {hasPermission('inventory.read') && (
+              {canShowModule('inventory', 'inventory.read') && (
                 <TabsTrigger value="inventory" className="gap-2">
                   <Package className="h-4 w-4" />
                   Almacén
                 </TabsTrigger>
               )}
-              {hasPermission('accounting.read') && (
+              {canShowModule('accounting', 'accounting.read') && (
                 <TabsTrigger value="accounting" className="gap-2">
                   <Calculator className="h-4 w-4" />
                   Contabilidad
                 </TabsTrigger>
               )}
-              {hasPermission('treasury.read') && (
+              {canShowModule('treasury', 'treasury.read') && (
                 <TabsTrigger value="treasury" className="gap-2">
                   <Wallet className="h-4 w-4" />
                   Tesorería
                 </TabsTrigger>
               )}
-              {hasPermission('trade.read') && (
+              {canShowModule('trade', 'trade.read') && (
                 <TabsTrigger value="trade" className="gap-2">
                   <Globe className="h-4 w-4" />
                   Comercio
                 </TabsTrigger>
               )}
-              {hasPermission('logistics.read') && (
+              {canShowModule('logistics', 'logistics.read') && (
                 <TabsTrigger value="logistics" className="gap-2">
                   <Truck className="h-4 w-4" />
                   Logística
                 </TabsTrigger>
               )}
-              {hasPermission('tax.read') && (
+              {canShowModule('tax', 'tax.read') && (
                 <TabsTrigger value="tax" className="gap-2">
                   <Receipt className="h-4 w-4" />
                   Fiscal
                 </TabsTrigger>
               )}
-              {hasPermission('hr.read') && (
+              {canShowModule('hr', 'hr.read') && (
                 <TabsTrigger value="hr" className="gap-2">
                   <UserCog className="h-4 w-4" />
                   RRHH
                 </TabsTrigger>
               )}
-              {hasPermission('legal.read') && (
+              {canShowModule('legal', 'legal.read') && (
                 <TabsTrigger value="legal" className="gap-2">
                   <Scale className="h-4 w-4" />
                   Jurídico
                 </TabsTrigger>
               )}
-              {hasPermission('admin.all') && (
+              {canShowModule('galia', 'admin.all') && (
                 <TabsTrigger value="galia" className="gap-2">
                   <Landmark className="h-4 w-4" />
                   GALIA
