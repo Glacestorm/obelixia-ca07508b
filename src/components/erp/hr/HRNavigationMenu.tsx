@@ -292,6 +292,54 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         },
       ]
     },
+    {
+      id: 'utilities',
+      label: 'Utilidades',
+      icon: Zap,
+      columns: 3,
+      width: 'w-[780px]',
+      headerTitle: 'Utilidades del Sistema',
+      headerDescription: 'Centro de mando, inteligencia, administración y operaciones',
+      subGroups: [
+        {
+          title: 'Centro de Mando',
+          icon: Gauge,
+          color: 'text-primary',
+          items: [
+            { id: 'util-premium-dash', label: 'Dashboard Premium', icon: Gauge, description: 'KPIs ejecutivos 8 módulos' },
+            { id: 'util-orchestration', label: 'Orquestación', icon: Zap, description: 'Reglas reactivas inter-módulo' },
+            { id: 'util-alerts', label: 'Alertas', icon: Search, description: 'Notificaciones críticas' },
+            { id: 'util-feed', label: 'Actividad', icon: Clock, description: 'Timeline en tiempo real' },
+          ]
+        },
+        {
+          title: 'Inteligencia & Análisis',
+          icon: Sparkles,
+          color: 'text-violet-600',
+          items: [
+            { id: 'util-analytics-bi', label: 'Analytics BI', icon: LineChart, description: 'BI cross-module con IA' },
+            { id: 'util-reporting', label: 'Reporting Engine', icon: FileText, description: 'Reportes ejecutivos avanzados' },
+            { id: 'util-regulatory', label: 'Compliance Regulatorio', icon: Shield, description: 'Igualdad, GDPR, EU AI Act' },
+            { id: 'util-board-pack', label: 'Board Pack', icon: Briefcase, description: 'Packs para comités' },
+            { id: 'util-compliance', label: 'Cumplimiento Auto', icon: Shield, description: 'GDPR, LOPDGDD, Igualdad' },
+            { id: 'util-health', label: 'Health Check', icon: Activity, description: 'Diagnóstico del sistema' },
+          ]
+        },
+        {
+          title: 'Administración',
+          icon: Wrench,
+          color: 'text-amber-600',
+          items: [
+            { id: 'util-api-webhooks', label: 'API & Webhooks', icon: Zap, description: 'Integración enterprise' },
+            { id: 'util-integrations', label: 'Integraciones', icon: Globe, description: 'BI, DMS, Firma electrónica' },
+            { id: 'util-settings', label: 'Configuración', icon: Wrench, description: 'Ajustes Premium' },
+            { id: 'util-export', label: 'Exportar', icon: FileText, description: 'Exportación masiva' },
+            { id: 'util-seed', label: 'Seed Data', icon: Database, description: 'Regenerar datos demo' },
+            { id: 'util-help', label: 'Centro de Ayuda', icon: HelpCircle, description: 'Documentación y soporte' },
+          ]
+        },
+      ]
+    },
   ];
 
   // Collect all IDs per category for active detection
