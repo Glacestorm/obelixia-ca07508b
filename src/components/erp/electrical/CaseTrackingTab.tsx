@@ -235,9 +235,11 @@ export function CaseTrackingTab({ caseId }: Props) {
               <CardTitle className="text-base">Tareas del expediente</CardTitle>
               <CardDescription>{tasks.length} tareas</CardDescription>
             </div>
-            <Button size="sm" onClick={() => setShowTaskDialog(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Nueva tarea
-            </Button>
+            <PermissionGate action="manage_tasks">
+              <Button size="sm" onClick={() => setShowTaskDialog(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Nueva tarea
+              </Button>
+            </PermissionGate>
           </div>
         </CardHeader>
         <CardContent>

@@ -112,9 +112,11 @@ export function CaseInvoicesTab({ caseId }: Props) {
               <Button variant="outline" size="sm" onClick={() => fetchInvoices()}>
                 <RefreshCw className="h-3.5 w-3.5 mr-1" /> Recargar
               </Button>
-              <Button size="sm" onClick={openNew}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Nueva factura
-              </Button>
+              <PermissionGate action="edit_cases">
+                <Button size="sm" onClick={openNew}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Nueva factura
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </CardHeader>

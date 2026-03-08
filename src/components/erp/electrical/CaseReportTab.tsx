@@ -377,9 +377,11 @@ export function CaseReportTab({ caseId }: Props) {
           <Button variant="outline" size="sm" onClick={() => setPreviewMode(!previewMode)}>
             <Eye className="h-4 w-4 mr-1" /> {previewMode ? 'Ocultar preview' : 'Ver preview'}
           </Button>
-          <Button size="sm" onClick={generatePDF} disabled={generating}>
-            <Download className="h-4 w-4 mr-1" /> {generating ? 'Generando...' : 'Generar PDF'}
-          </Button>
+          <PermissionGate action="generate_report">
+            <Button size="sm" onClick={generatePDF} disabled={generating}>
+              <Download className="h-4 w-4 mr-1" /> {generating ? 'Generando...' : 'Generar PDF'}
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 

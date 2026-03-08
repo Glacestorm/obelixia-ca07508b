@@ -148,12 +148,14 @@ export function ElectricalTariffCatalogPanel({ companyId }: Props) {
                       <td className="p-3 text-center">{t.is_active ? <Check className="h-4 w-4 text-emerald-500 mx-auto" /> : <X className="h-4 w-4 text-muted-foreground mx-auto" />}</td>
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteTariff(t.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          <PermissionGate action="edit_tariff_catalog">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteTariff(t.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </PermissionGate>
                         </div>
                       </td>
                     </tr>
