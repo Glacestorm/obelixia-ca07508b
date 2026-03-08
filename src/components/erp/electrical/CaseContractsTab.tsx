@@ -87,7 +87,14 @@ export function CaseContractsTab({ caseId }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }, [uploadPdf]);
 
-  // AI Contract Analysis — sends structured data + PDF URL for server-side extraction
+  // Open document with signed URL
+  const handleOpenDocument = useCallback(async (filePath: string) => {
+    const url = await getSignedUrl(filePath);
+    if (url) window.open(url, '_blank');
+    else toast.error('No se pudo obtener acceso al documento');
+  }, [getSignedUrl]);
+
+  // AI Contract Analysis — sends structured data + PDF for server-side extraction
   const handleAiAnalysis = useCallback(async (contract: EnergyContract) => {
     const contractTextContent = (contract as any).contract_text || '';
     const hasStructuredData = contract.supplier || contract.tariff_name || contract.start_date;
