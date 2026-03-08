@@ -224,6 +224,18 @@ export function useHRWorkforcePlanning(companyId: string) {
     }
   }, [invoke]);
 
+  // === DATA BRIDGE: Real headcount from ERP base ===
+  const fetchRealHeadcount = useCallback(async () => {
+    try {
+      const data = await invoke('get_real_headcount');
+      setRealHeadcount(data);
+      return data;
+    } catch (err) {
+      console.error('[useHRWorkforcePlanning] fetchRealHeadcount error:', err);
+      return null;
+    }
+  }, [invoke]);
+
   // Realtime for scenarios
   useEffect(() => {
     const channel = supabase
@@ -245,13 +257,14 @@ export function useHRWorkforcePlanning(companyId: string) {
       fetchPlans();
       fetchScenarios();
       fetchStats();
+      fetchRealHeadcount();
     }
-  }, [companyId, fetchPlans, fetchScenarios, fetchStats]);
+  }, [companyId, fetchPlans, fetchScenarios, fetchStats, fetchRealHeadcount]);
 
   return {
-    plans, scenarios, selectedPlan, stats,
+    plans, scenarios, selectedPlan, stats, realHeadcount,
     loading, aiLoading, aiResult,
-    fetchPlans, fetchPlanDetail, fetchScenarios, fetchStats,
+    fetchPlans, fetchPlanDetail, fetchScenarios, fetchStats, fetchRealHeadcount,
     simulateScenario, runWorkforceAnalysis, runSkillGapStrategy,
     setSelectedPlan, setAiResult,
   };

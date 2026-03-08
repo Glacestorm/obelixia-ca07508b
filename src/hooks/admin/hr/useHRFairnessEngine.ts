@@ -259,7 +259,9 @@ export function useHRFairnessEngine() {
 
   return {
     analyses, metrics, cases, plans, stats, aiAnalysis, loading, aiLoading,
+    realPayEquityData, realDataLoading,
     fetchAll, fetchStats, runFairnessAnalysis, runPayEquityAI, seedDemo,
+    fetchRealPayEquityData,
   };
 }
 

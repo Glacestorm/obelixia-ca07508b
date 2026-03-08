@@ -249,6 +249,40 @@ export function useHRLegalEngine() {
     return null;
   }, []);
 
+  // === DATA BRIDGE: Real contracts from ERP base ===
+  const [realContracts, setRealContracts] = useState<Record<string, unknown> | null>(null);
+  const [realDataLoading, setRealDataLoading] = useState(false);
+
+  const fetchRealContracts = useCallback(async (companyId: string) => {
+    setRealDataLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-premium-intelligence', {
+        body: { action: 'get_real_contracts', company_id: companyId }
+      });
+      if (error) throw error;
+      if (data?.success) { setRealContracts(data.data); return data.data; }
+    } catch (e) { console.error('fetchRealContracts error:', e); toast.error('Error cargando contratos reales'); }
+    finally { setRealDataLoading(false); }
+    return null;
+  }, []);
+
+  const syncRealContractsToLegal = useCallback(async (companyId: string) => {
+    setRealDataLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-premium-intelligence', {
+        body: { action: 'sync_real_contracts_to_legal', company_id: companyId }
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`${data.data.synced} contratos sincronizados`);
+        await fetchContracts(companyId);
+        return data.data;
+      }
+    } catch (e) { console.error('syncRealContracts error:', e); toast.error('Error sincronizando contratos'); }
+    finally { setRealDataLoading(false); }
+    return null;
+  }, [fetchContracts]);
+
   // === SEED DEMO ===
   const seedDemo = useCallback(async (companyId: string) => {
     setLoading(true);
@@ -282,8 +316,10 @@ export function useHRLegalEngine() {
 
   return {
     templates, clauses, contracts, complianceChecks, stats, aiAnalysis,
+    realContracts, realDataLoading,
     loading, aiLoading,
     fetchTemplates, fetchClauses, fetchContracts, fetchComplianceChecks, fetchStats,
     loadAll, aiGenerateContract, aiComplianceAnalysis, aiClauseReview, seedDemo,
+    fetchRealContracts, syncRealContractsToLegal,
   };
 }
