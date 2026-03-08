@@ -8,3 +8,4 @@ export { HRPremiumHelpCenter } from './HRPremiumHelpCenter';
 export { HROrchestrationPanel } from './HROrchestrationPanel';
 export { HRUtilitiesNavigation } from './HRUtilitiesNavigation';
 export type { UtilitySection } from './HRUtilitiesNavigation';
+export { HRComplianceAutomationPanel } from './HRComplianceAutomationPanel';

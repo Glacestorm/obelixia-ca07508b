@@ -20,7 +20,8 @@ export type UtilitySection =
   | 'premium-settings'
   | 'audit' | 'ai-hybrid'
   | 'premium-health' | 'premium-export'
-  | 'premium-seed' | 'premium-help';
+  | 'premium-seed' | 'premium-help'
+  | 'compliance-automation';
 
 interface UtilityItem {
   id: UtilitySection;
@@ -57,6 +58,7 @@ const CATEGORIES: UtilityCategory[] = [
     color: 'from-violet-500/15 to-violet-500/5 border-violet-500/20',
     items: [
       { id: 'ai-hybrid', label: 'IA Híbrida', description: 'Dashboard unificado de inteligencia artificial', icon: <Brain className="h-4 w-4" /> },
+      { id: 'compliance-automation', label: 'Cumplimiento', description: 'Motor automatizado: GDPR, LOPDGDD, Igualdad, EU AI Act', icon: <Shield className="h-4 w-4" /> },
       { id: 'audit', label: 'Auditorías', description: 'Generador de informes de auditoría', icon: <FileText className="h-4 w-4" /> },
       { id: 'premium-health', label: 'Health Check', description: 'Diagnóstico de salud del sistema', icon: <HeartPulse className="h-4 w-4" /> },
     ],
