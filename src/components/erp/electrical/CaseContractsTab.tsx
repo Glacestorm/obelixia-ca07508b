@@ -189,12 +189,14 @@ export function CaseContractsTab({ caseId }: Props) {
                         <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Ver
                       </Button>
                     ) : (
-                      <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
-                        disabled={analyzing === c.id || !c.signed_document_url}
-                        onClick={e => { e.stopPropagation(); handleAiAnalysis(c); }}>
-                        {analyzing === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        {analyzing === c.id ? '...' : 'Analizar'}
-                      </Button>
+                      <PermissionGate action="ai_analysis">
+                        <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
+                          disabled={analyzing === c.id || (!c.signed_document_url && !c.supplier && !c.tariff_name)}
+                          onClick={e => { e.stopPropagation(); handleAiAnalysis(c); }}>
+                          {analyzing === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          {analyzing === c.id ? '...' : 'Analizar'}
+                        </Button>
+                      </PermissionGate>
                     )}
                   </span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100">
