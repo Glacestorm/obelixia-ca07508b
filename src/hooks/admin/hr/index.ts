@@ -238,6 +238,6 @@ export type {
 // Premium Phase 3 - Workforce Planning & Scenario Studio
 export { useHRWorkforcePlanning } from './useHRWorkforcePlanning';
 export type {
-  WorkforcePlan, HeadcountModel, Scenario, SkillGapForecast,
+  WorkforcePlan as StrategicWorkforcePlan, HeadcountModel, Scenario, SkillGapForecast,
   CostProjection, WorkforcePlanningStats, PlanDetail
 } from './useHRWorkforcePlanning';
