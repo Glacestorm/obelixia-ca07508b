@@ -76077,6 +76077,14 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: boolean
       }
+      user_has_energy_case_access: {
+        Args: { p_case_id: string }
+        Returns: boolean
+      }
+      user_has_energy_company_access: {
+        Args: { p_company_id: string }
+        Returns: boolean
+      }
       user_has_erp_board_pack_access: {
         Args: { p_pack_id: string }
         Returns: boolean
