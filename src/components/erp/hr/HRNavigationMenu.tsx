@@ -13,7 +13,7 @@ import {
   FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
   Brain, Newspaper, BookOpen, HelpCircle, Rocket, ChevronRight, ChevronDown,
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
-  Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale
+  Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -119,6 +119,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'workforce-planning', label: 'Workforce Planning', icon: Target },
         { id: 'fairness-engine', label: 'Fairness & Justice', icon: Scale },
         { id: 'digital-twin', label: 'Digital Twin Completo', icon: Layers },
+        { id: 'legal-engine', label: 'Legal Engine', icon: Gavel },
       ]
     },
     {
