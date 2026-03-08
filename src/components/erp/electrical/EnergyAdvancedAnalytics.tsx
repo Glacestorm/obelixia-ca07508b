@@ -58,20 +58,18 @@ export function EnergyAdvancedAnalytics({ companyId }: Props) {
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const [casesRes, invoicesRes, suppliesRes, recsRes] = await Promise.all([
-        supabase.from('energy_cases')
-          .select('id, title, status, energy_type, estimated_annual_savings, estimated_gas_savings, estimated_solar_savings, validated_annual_savings, validated_gas_savings, validated_solar_savings, created_at')
-          .eq('company_id', companyId),
-        supabase.from('energy_invoices')
-          .select('case_id, energy_type, total_amount, consumption_total_kwh, gas_consumption_kwh, billing_start')
-          .eq('company_id', companyId).order('billing_start', { ascending: true }),
-        supabase.from('energy_supplies')
-          .select('case_id, contracted_power_p1, contracted_power_p2, max_demand_p1, max_demand_p2')
-          .eq('company_id', companyId),
-        supabase.from('energy_recommendations')
-          .select('case_id, recommended_power_p1, recommended_power_p2, monthly_savings_estimate')
-          .eq('company_id', companyId),
-      ]);
+      const casesRes = await (supabase.from('energy_cases') as any)
+        .select('id, title, status, energy_type, estimated_annual_savings, estimated_gas_savings, estimated_solar_savings, validated_annual_savings, validated_gas_savings, validated_solar_savings, created_at')
+        .eq('company_id', companyId);
+      const invoicesRes = await (supabase.from('energy_invoices') as any)
+        .select('case_id, energy_type, total_amount, consumption_total_kwh, gas_consumption_kwh, billing_start')
+        .eq('company_id', companyId).order('billing_start', { ascending: true });
+      const suppliesRes = await (supabase.from('energy_supplies') as any)
+        .select('case_id, contracted_power_p1, contracted_power_p2, max_demand_p1, max_demand_p2')
+        .eq('company_id', companyId);
+      const recsRes = await (supabase.from('energy_recommendations') as any)
+        .select('case_id, recommended_power_p1, recommended_power_p2, monthly_savings_estimate')
+        .eq('company_id', companyId);
 
       const cases = (casesRes.data || []) as any[];
       const invoices = (invoicesRes.data || []) as any[];
@@ -152,15 +150,15 @@ export function EnergyAdvancedAnalytics({ companyId }: Props) {
           acc[key].current += inv.total_amount || 0;
           acc[key].count++;
           return acc;
-        }, {});
+        }, {} as Record<string, { current: number; count: number }>);
 
-      const costCompData = Object.entries(costComp).slice(0, 6).map(([caseName, d]) => {
+      const costCompData = Object.entries(costComp).slice(0, 6).map(([caseName, d]: [string, { current: number; count: number }]) => {
         const savings = recs.find(r => cases.find(c => c.title?.startsWith(caseName) && c.id === r.case_id))?.monthly_savings_estimate || d.current * 0.15;
         return {
           case: caseName,
           current: Math.round(d.current),
-          recommended: Math.round(d.current - savings * d.count),
-          savings: Math.round(savings * d.count),
+          recommended: Math.round(d.current - (savings as number) * d.count),
+          savings: Math.round((savings as number) * d.count),
         };
       });
 
