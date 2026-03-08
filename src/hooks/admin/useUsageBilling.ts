@@ -115,8 +115,8 @@ export function useUsageBilling() {
   }) => {
     try {
       // Get pricing rule
-      const { data: ruleData } = await supabase
-        .from('usage_billing_rules')
+      const { data: ruleData } = await (supabase
+        .from('usage_billing_rules') as any)
         .select('*')
         .eq('module_key', params.module_key)
         .eq('event_type', params.event_name)
@@ -124,7 +124,7 @@ export function useUsageBilling() {
         .limit(1)
         .maybeSingle();
       
-      const rule = ruleData as any;
+      const rule = ruleData as { unit_price?: number; currency?: string; free_tier_limit?: number } | null;
 
       const unitPrice = rule?.unit_price || 0;
       const quantity = params.quantity || 1;
