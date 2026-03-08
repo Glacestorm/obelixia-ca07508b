@@ -22,7 +22,7 @@ import { es } from 'date-fns/locale';
 interface Props { caseId: string; companyId: string; }
 
 export function CaseProposalTab({ caseId, companyId }: Props) {
-  const { proposals, loading, error, createProposal, acceptProposal, rejectProposal, issueProposal } = useEnergyProposals(caseId);
+  const { proposals, loading, error, createProposal, acceptProposal, rejectProposal, issueProposal, fetchProposals } = useEnergyProposals(caseId);
   const { downloadPDF, uploadPDF } = useEnergyProposalPDF();
   const { energyCase } = useEnergyCase(caseId);
   const { log } = useEnergyAuditLog(companyId, caseId);
@@ -223,22 +223,28 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                     {p.status === 'accepted' && !p.signed_at && (
                       <Button size="sm" variant="default" onClick={async () => {
                         setActionLoading('sign');
-                        const { supabase } = await import('@/integrations/supabase/client');
-                        await supabase.from('energy_proposals').update({
-                          signed_at: new Date().toISOString(),
-                          signed_by: energyCase?.cups || 'Cliente',
-                          signature_method: 'digital_acceptance',
-                        } as any).eq('id', p.id);
-                        log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
-                        setActionLoading(null);
-                        window.location.reload();
+                        try {
+                          const { supabase } = await import('@/integrations/supabase/client');
+                          const { error: signErr } = await supabase.from('energy_proposals').update({
+                            signed_at: new Date().toISOString(),
+                            signed_by: energyCase?.cups || 'Cliente',
+                            signature_method: 'digital_acceptance',
+                          } as any).eq('id', p.id);
+                          if (signErr) throw signErr;
+                          log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
+                          await fetchProposals();
+                        } catch (err) {
+                          console.error('[CaseProposalTab] sign error:', err);
+                        } finally {
+                          setActionLoading(null);
+                        }
                       }} disabled={!!actionLoading}>
                         <PenTool className="h-3.5 w-3.5 mr-1" /> Firmar digitalmente
                       </Button>
                     )}
-                    {(p as any).signed_at && (
+                    {p.signed_at && (
                       <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/10 rounded text-xs text-emerald-700">
-                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate((p as any).signed_at)}
+                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate(p.signed_at)}
                       </div>
                     )}
                   </div>

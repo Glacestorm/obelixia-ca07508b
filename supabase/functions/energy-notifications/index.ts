@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -11,23 +11,42 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const startTime = Date.now();
+  console.log(`[energy-notifications] START - ${new Date().toISOString()}`);
 
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('[energy-notifications] FATAL: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Server configuration error: missing environment variables',
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
     const now = new Date();
     const notifications: { company_id: string; case_id: string | null; type: string; severity: string; title: string; message: string }[] = [];
 
     // 1. Contracts expiring in <= 30 days
     const in30 = new Date();
     in30.setDate(in30.getDate() + 30);
-    const { data: expiringCases } = await supabase
+
+    const { data: expiringCases, error: expiringErr } = await supabase
       .from('energy_cases')
       .select('id, company_id, title, contract_end_date')
       .not('status', 'in', '("completed","cancelled")')
       .lte('contract_end_date', in30.toISOString())
       .gte('contract_end_date', now.toISOString());
+
+    if (expiringErr) {
+      console.error('[energy-notifications] Error fetching expiring cases:', expiringErr.message);
+    }
 
     for (const c of expiringCases || []) {
       const daysLeft = Math.round((new Date(c.contract_end_date).getTime() - now.getTime()) / 86400000);
@@ -40,16 +59,20 @@ serve(async (req) => {
         message: `Expediente "${c.title}" requiere atención urgente.`,
       });
     }
+    console.log(`[energy-notifications] Expiring contracts: ${(expiringCases || []).length}`);
 
     // 2. Expired proposals
-    const { data: expiredProposals } = await supabase
+    const { data: expiredProposals, error: proposalErr } = await supabase
       .from('energy_proposals')
       .select('id, case_id, version, valid_until')
       .in('status', ['issued', 'sent'])
       .lt('valid_until', now.toISOString());
 
+    if (proposalErr) {
+      console.error('[energy-notifications] Error fetching expired proposals:', proposalErr.message);
+    }
+
     if (expiredProposals && expiredProposals.length > 0) {
-      // Get case info
       const caseIds = [...new Set(expiredProposals.map(p => p.case_id))];
       const { data: caseInfo } = await supabase.from('energy_cases').select('id, company_id, title').in('id', caseIds);
       const caseMap = new Map((caseInfo || []).map(c => [c.id, c]));
@@ -67,17 +90,23 @@ serve(async (req) => {
         });
 
         // Auto-expire in DB
-        await supabase.from('energy_proposals')
+        const { error: updateErr } = await supabase.from('energy_proposals')
           .update({ status: 'expired', updated_at: now.toISOString() })
           .eq('id', p.id);
+        if (updateErr) console.error(`[energy-notifications] Failed to expire proposal ${p.id}:`, updateErr.message);
       }
     }
+    console.log(`[energy-notifications] Expired proposals: ${(expiredProposals || []).length}`);
 
-    // 3. Stalled workflows (>15 days)
-    const { data: allWorkflows } = await supabase
+    // 3. Stalled workflows (>15 days without change in non-terminal status)
+    const { data: allWorkflows, error: wfErr } = await supabase
       .from('energy_workflow_states')
       .select('case_id, status, changed_at')
       .order('changed_at', { ascending: false });
+
+    if (wfErr) {
+      console.error('[energy-notifications] Error fetching workflows:', wfErr.message);
+    }
 
     const latestByCase = new Map<string, { status: string; changed_at: string }>();
     for (const w of allWorkflows || []) {
@@ -106,10 +135,11 @@ serve(async (req) => {
           type: 'workflow_stalled',
           severity: days > 30 ? 'high' : 'medium',
           title: `Trámite estancado ${days} días`,
-          message: `El expediente "${c.title}" necesita seguimiento.`,
+          message: `El expediente "${c.title}" en estado "${wf.status}" necesita seguimiento.`,
         });
       }
     }
+    console.log(`[energy-notifications] Stalled workflows: ${stalledCaseIds.length}`);
 
     // Deduplicate: don't insert if same type+case_id notification exists in last 24h
     const yesterday = new Date(now.getTime() - 86400000).toISOString();
@@ -119,28 +149,35 @@ serve(async (req) => {
       .gte('created_at', yesterday);
 
     const recentKeys = new Set((recentNotifs || []).map(n => `${n.type}-${n.case_id}`));
-
     const toInsert = notifications.filter(n => !recentKeys.has(`${n.type}-${n.case_id}`));
 
     if (toInsert.length > 0) {
-      await supabase.from('energy_notifications').insert(toInsert);
+      const { error: insertErr } = await supabase.from('energy_notifications').insert(toInsert);
+      if (insertErr) {
+        console.error('[energy-notifications] Insert error:', insertErr.message);
+      }
     }
 
-    console.log(`[energy-notifications] Processed: ${notifications.length} total, ${toInsert.length} new`);
+    const elapsed = Date.now() - startTime;
+    console.log(`[energy-notifications] DONE in ${elapsed}ms - Total: ${notifications.length}, New: ${toInsert.length}, Deduplicated: ${notifications.length - toInsert.length}`);
 
     return new Response(JSON.stringify({
       success: true,
       processed: notifications.length,
       inserted: toInsert.length,
+      deduplicated: notifications.length - toInsert.length,
+      elapsed_ms: elapsed,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('[energy-notifications] Error:', error);
+    const elapsed = Date.now() - startTime;
+    console.error(`[energy-notifications] FATAL ERROR after ${elapsed}ms:`, error);
     return new Response(JSON.stringify({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      elapsed_ms: elapsed,
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
