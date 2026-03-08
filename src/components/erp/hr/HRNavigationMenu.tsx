@@ -116,6 +116,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'copilot-twin', label: 'Copilot + Digital Twin', icon: Bot },
         { id: 'security-governance', label: 'Security & SoD', icon: ShieldAlert },
         { id: 'ai-governance', label: 'AI Governance', icon: Brain },
+        { id: 'workforce-planning', label: 'Workforce Planning', icon: Target },
       ]
     },
     {
