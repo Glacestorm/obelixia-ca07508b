@@ -52,7 +52,7 @@ const TABLE_CHECKS: TableCheck[] = [
   { module: 'fairness', table: 'erp_hr_pay_equity_analyses', label: 'Análisis de equidad', description: 'Análisis salariales y de equidad' },
   { module: 'fairness', table: 'erp_hr_pay_equity_snapshots', label: 'Snapshots pay equity', description: 'Snapshots de equidad salarial' },
   // P5 Twin
-  { module: 'twin', table: 'erp_hr_twin_snapshots', label: 'Snapshots Twin', description: 'Snapshots del gemelo digital' },
+  { module: 'twin', table: 'erp_hr_twin_module_snapshots', label: 'Snapshots Twin', description: 'Snapshots del gemelo digital' },
   { module: 'twin', table: 'erp_hr_twin_alerts', label: 'Alertas Twin', description: 'Alertas de divergencia organizacional' },
   { module: 'twin', table: 'erp_hr_twin_experiments', label: 'Experimentos Twin', description: 'Experimentos what-if del gemelo' },
   // P6 Legal
