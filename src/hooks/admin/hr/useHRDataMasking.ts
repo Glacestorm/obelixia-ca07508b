@@ -50,7 +50,7 @@ export function useHRDataMasking(companyId: string | undefined) {
 
     const strValue = String(value);
 
-    switch (rule.masking_type) {
+    switch (rule.masking_strategy) {
       case 'full':
         return '●●●●●●';
       case 'partial':
