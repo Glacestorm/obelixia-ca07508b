@@ -110,6 +110,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'sla-dashboard', label: 'SLA Dashboard', icon: Timer },
         { id: 'compensation-suite', label: 'Compensation Suite', icon: Coins },
         { id: 'talent-intelligence', label: 'Talent Intelligence', icon: Brain },
+        { id: 'compliance-enterprise', label: 'Compliance Enterprise', icon: Shield },
       ]
     },
     {
