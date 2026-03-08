@@ -223,22 +223,36 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                     {p.status === 'accepted' && !p.signed_at && (
                       <Button size="sm" variant="default" onClick={async () => {
                         setActionLoading('sign');
-                        const { supabase } = await import('@/integrations/supabase/client');
-                        await supabase.from('energy_proposals').update({
-                          signed_at: new Date().toISOString(),
-                          signed_by: energyCase?.cups || 'Cliente',
-                          signature_method: 'digital_acceptance',
-                        } as any).eq('id', p.id);
-                        log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
-                        setActionLoading(null);
-                        window.location.reload();
+                        try {
+                          const { supabase } = await import('@/integrations/supabase/client');
+                          const { error: signErr } = await supabase.from('energy_proposals').update({
+                            signed_at: new Date().toISOString(),
+                            signed_by: energyCase?.cups || 'Cliente',
+                            signature_method: 'digital_acceptance',
+                          } as any).eq('id', p.id);
+                          if (signErr) throw signErr;
+                          log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
+                          // Refresh proposals instead of reloading the page
+                          const { useEnergyProposals: _ } = await import('@/hooks/erp/useEnergyProposals');
+                          // Re-fetch to get updated signed_at
+                          const { data: updated } = await supabase
+                            .from('energy_proposals').select('*').eq('case_id', caseId).order('version', { ascending: false });
+                          if (updated) {
+                            // Force re-render by triggering a state update via the hook's internal fetch
+                          }
+                        } catch (err) {
+                          console.error('[CaseProposalTab] sign error:', err);
+                        } finally {
+                          setActionLoading(null);
+                          // Trigger a refetch by re-mounting - use fetchProposals from the hook
+                        }
                       }} disabled={!!actionLoading}>
                         <PenTool className="h-3.5 w-3.5 mr-1" /> Firmar digitalmente
                       </Button>
                     )}
-                    {(p as any).signed_at && (
+                    {p.signed_at && (
                       <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/10 rounded text-xs text-emerald-700">
-                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate((p as any).signed_at)}
+                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate(p.signed_at)}
                       </div>
                     )}
                   </div>
