@@ -70,11 +70,11 @@ import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButt
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell, Clock, HeartPulse, Download } from 'lucide-react';
+import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell, Clock, HeartPulse, Download, HelpCircle } from 'lucide-react';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
-import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel } from './hr/premium-dashboard';
+import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter } from './hr/premium-dashboard';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -691,6 +691,10 @@ function ERPModularDashboardContent() {
                   <Database className="h-4 w-4" />
                   Re-Seed
                 </TabsTrigger>
+                <TabsTrigger value="premium-help" className="gap-2">
+                  <HelpCircle className="h-4 w-4" />
+                  Ayuda
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="premium-dash">
@@ -731,6 +735,10 @@ function ERPModularDashboardContent() {
 
               <TabsContent value="premium-seed">
                 <PremiumReseedPanel companyId={currentCompany?.id} />
+              </TabsContent>
+
+              <TabsContent value="premium-help">
+                <HRPremiumHelpCenter />
               </TabsContent>
             </Tabs>
           </div>
