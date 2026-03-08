@@ -77,6 +77,7 @@ import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } 
 import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel, HRAnalyticsBIPremiumPanel } from './hr/premium-dashboard';
 import { HRReportingEnginePanel } from './hr/reporting-engine';
 import { ComplianceReportingPanel } from './hr/regulatory-reporting';
+import { PremiumAPIWebhooksPanel } from './hr/premium-api';
 import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -709,6 +710,9 @@ function ERPModularDashboardContent() {
             )}
             {utilitySection === 'regulatory-reporting' && currentCompany?.id && (
               <ComplianceReportingPanel companyId={currentCompany.id} />
+            )}
+            {utilitySection === 'premium-api-webhooks' && currentCompany?.id && (
+              <PremiumAPIWebhooksPanel companyId={currentCompany.id} />
             )}
           </div>
         </TabsContent>
