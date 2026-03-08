@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   RefreshCw, Sparkles, FileText, BookOpen, ShieldCheck, Scale,
   AlertTriangle, CheckCircle, XCircle, Database, FileSignature,
-  Maximize2, Minimize2, Clock, Tag
+  Maximize2, Minimize2, Clock, Tag, Cloud
 } from 'lucide-react';
 import { useHRLegalEngine } from '@/hooks/admin/hr/useHRLegalEngine';
 import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
