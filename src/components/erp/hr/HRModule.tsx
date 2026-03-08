@@ -60,6 +60,7 @@ import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligenc
 import { HRTimeClockPanel } from './HRTimeClockPanel';
 import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard } from './enterprise';
 import { HRCompensationSuitePanel } from './compensation';
+import { HRTalentIntelligencePanel } from './talent/HRTalentIntelligencePanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');

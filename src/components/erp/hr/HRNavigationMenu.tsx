@@ -109,6 +109,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox },
         { id: 'sla-dashboard', label: 'SLA Dashboard', icon: Timer },
         { id: 'compensation-suite', label: 'Compensation Suite', icon: Coins },
+        { id: 'talent-intelligence', label: 'Talent Intelligence', icon: Brain },
       ]
     },
     {
