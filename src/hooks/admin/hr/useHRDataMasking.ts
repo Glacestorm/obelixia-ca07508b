@@ -73,7 +73,7 @@ export function useHRDataMasking(companyId: string | undefined) {
   }, [config]);
 
   const shouldMask = useCallback((fieldName: string): boolean => {
-    return config.rules.some(r => r.field_name === fieldName);
+    return config.rules.some(r => r.field_path === fieldName);
   }, [config]);
 
   const getMaskingLevel = useCallback((fieldName: string): string | null => {
