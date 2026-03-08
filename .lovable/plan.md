@@ -46,7 +46,10 @@
 - Edge Function: mesh-sync-engine
 - UI: tab "Federación" con mapa de nodos, conflictos, métricas sync
 
-### Fase 4 — Marketplace de Extensiones
-- Tablas: marketplace_extensions, marketplace_developers, marketplace_purchases, marketplace_reviews
-- Edge Function: marketplace-manager
-- UI: catálogo, detalle, panel developer, revenue dashboard
+### Fase 4 — Marketplace de Extensiones ✅
+- **Tablas**: `marketplace_extensions` (8 seeds), `marketplace_developers`, `marketplace_purchases`, `extension_reviews`
+- **Edge Function `marketplace-manager`**: 9 acciones (list_extensions, get_extension, install_extension, uninstall_extension, publish_extension, register_developer, developer_dashboard, process_payment con revenue split 70/30, submit_review, get_stats)
+- **Hook `useMarketplaceExtensions`**: catálogo con filtros, instalación, compra con revenue split, reviews, stats
+- **UI `MarketplaceExtensionsPanel`**: 3 tabs (Catálogo con búsqueda/filtros por categoría, Destacadas, Revenue dashboard con modelo 70/30)
+- **Dialog de detalle**: info completa, tags, revenue split, reseñas, botón instalar/comprar
+- **Tab "Extensions"** en InstallationDetailPanel (10 tabs total)
