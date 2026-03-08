@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const RATE_LIMIT_CONFIG = {
+  burstPerMinute: 8,
+  perDay: 30,
+  functionName: 'hr-board-pack',
 };
 
 interface BoardPackRequest {
@@ -17,29 +24,7 @@ interface BoardPackRequest {
   reviewerName?: string;
 }
 
-const SECTION_LABELS: Record<string, string> = {
-  headcount: 'Headcount y Estructura Organizativa',
-  workforce_planning: 'Workforce Planning y Gaps',
-  fairness: 'Fairness / Brecha Salarial / Auditoría Retributiva',
-  compliance: 'Compliance y Cumplimiento Normativo',
-  legal: 'Legal / Contratos / Evidencias',
-  security: 'Security & Segregación de Funciones',
-  ai_governance: 'AI Governance',
-  cnae: 'CNAE / Riesgo Sectorial',
-  digital_twin: 'Digital Twin / Escenarios',
-  alerts: 'Alertas e Incidencias Críticas',
-  regulatory: 'Reporting Regulatorio',
-  integrations: 'Estado de Integraciones Externas',
-};
-
-const AUDIENCE_LABELS: Record<string, string> = {
-  board_directors: 'Consejo de Administración',
-  executive_committee: 'Comité de Dirección',
-  audit_committee: 'Comité de Auditoría',
-  risk_committee: 'Comité de Riesgos',
-  compliance_committee: 'Comité de Compliance',
-  hr_strategic: 'Comité Estratégico RRHH',
-};
+// ... keep existing code (SECTION_LABELS, AUDIENCE_LABELS)
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -60,6 +45,15 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Rate limit for expensive actions (generate_pack)
+    if (action === 'generate_pack') {
+      const burstResult = checkBurstLimit(companyId, RATE_LIMIT_CONFIG);
+      if (!burstResult.allowed) {
+        console.warn(`[hr-board-pack] Rate limited: company=${companyId}`);
+        return rateLimitResponse(burstResult, corsHeaders);
+      }
     }
 
     console.log(`[hr-board-pack] action=${action} company=${companyId}`);

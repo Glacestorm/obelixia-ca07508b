@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
+import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -117,6 +117,14 @@ serve(async (req) => {
     if (authError || !user) throw new Error('Unauthorized');
 
     const { action, company_id, params } = await req.json();
+
+    // Rate limit expensive generation actions
+    if (action === 'generate_regulatory_report') {
+      const burstResult = checkBurstLimit(company_id || user.id, { burstPerMinute: 5, perDay: 30, functionName: 'hr-regulatory-reporting' });
+      if (!burstResult.allowed) {
+        return rateLimitResponse(burstResult, corsHeaders);
+      }
+    }
 
     switch (action) {
       // === SEED REGULATORY TEMPLATES ===
