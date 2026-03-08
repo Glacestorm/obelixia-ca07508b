@@ -1,5 +1,4 @@
 
-
 # Plan: Módulo de Instalación ERP — Sistema Completo de Distribución, Licenciamiento y Monetización
 
 ## Estado de Implementación
@@ -7,55 +6,50 @@
 | Fase | Estado | Detalles |
 |------|--------|----------|
 | 1 | ✅ Completada | Tablas DB + Edge Function + UI Wizard |
-| 2 | 📋 Pendiente | Instalación modular incremental |
-| 3 | 📋 Pendiente | Control de versiones y actualizaciones |
-| 4 | 📋 Pendiente | Integración sistema de licencias |
+| 2 | ✅ Completada | Hot-add módulos, resolución dependencias, compatibilidad |
+| 3 | ✅ Completada | Canales stable/beta/canary, timeline updates, rollback |
+| 4 | ✅ Completada | Vinculación licencias, entitlements por módulo |
 | 5 | 📋 Pendiente | Monetización pay-per-use |
 | 6 | 📋 Pendiente | Generador de artefactos por plataforma |
 
-## Fase 1 — Implementado
+## Implementado
 
-### Base de datos
-- `client_installations` — extendida con campos: platform, deployment_type, core_version, status, update_channel, license_id, etc.
-- `installation_modules` — relación N:N instalación-módulo con versionado individual y health_status
-- `installation_updates` — historial de actualizaciones con rollback support
-- `usage_billing_rules` — reglas de facturación por uso (preparado para Fase 5)
+### Fase 1 — Infraestructura
+- Tablas: `client_installations` (extendida), `installation_modules`, `installation_updates`, `usage_billing_rules`
+- Edge Function: `installation-manager` (8 acciones)
+- UI: Wizard 4 pasos en `/store/installation`
 
-### Edge Function: `installation-manager`
-- Acciones: register_instance, add_module, remove_module, check_updates, apply_update, get_installation_status, generate_script, heartbeat
-- Generación de scripts para: Docker, Windows, Linux, macOS, Proxmox, Kubernetes, AWS, Azure, GCP
+### Fase 2 — Instalación Modular Incremental
+- `resolveDependencies()` — resolución transitiva de dependencias
+- `getDependents()` — detecta módulos que dependen de uno dado
+- `checkCompatibility()` — verifica versión core y dependencias
+- Panel "Añadir Módulo" con verificación de compatibilidad en tiempo real
+- Botón deshabilitar módulo con protección de dependencias
+- Hot-add de módulos sin reinstalación
 
-### UI: `/store/installation`
-- Wizard de 4 pasos: Plataforma → Módulos → Configuración → Script generado
-- 10 plataformas soportadas (Docker, K8s, Windows, Linux, macOS, Proxmox, AWS, Azure, GCP, Bare Metal)
-- 14 módulos ERP seleccionables con resolución automática de dependencias
-- Panel "Mis Instalaciones" con estado en tiempo real
-- Acceso desde StoreNavbar → Productos → Plataforma → Instalación
+### Fase 3 — Control de Versiones
+- 3 canales: stable (producción), beta (pre-release), canary (experimental)
+- Timeline visual de actualizaciones con iconos de estado
+- Botón "Actualizar" por módulo con versión target
+- `applyUpdate()` con registro from→to y rollback_version
+- Selector de canal por instalación
+- Historial completo con changelog
 
----
+### Fase 4 — Integración Licencias
+- Vinculación license→installation via `linkLicense()`
+- Panel de licencias disponibles con botón vincular/desvincular
+- Vista de entitlements por módulo (licenciado/sin licencia)
+- Integración con tabla `licenses` existente
+- Badge de licencia en listado de instalaciones
 
-## Fases Pendientes (2-6)
-
-### FASE 2 — Instalación Modular Incremental
-- module_manifest.json por módulo
-- Motor de dependencias
-- Hot-add sin downtime
-
-### FASE 3 — Control de Versiones
-- Canales: stable, beta, canary
-- Differential updates
-- Auto-rollback
-
-### FASE 4 — Integración Licencias
-- Vincular licenses → client_installations
-- Licencia per_module
-- Entitlements por módulo ERP
+## Pendiente
 
 ### FASE 5 — Monetización Pay-per-Use
-- usage_billing_rules ya creada
-- Edge Function usage-billing
+- `usage_billing_rules` ya creada
+- Edge Function `usage-billing`
+- Dashboard de consumo
 - Stripe integration
 
 ### FASE 6 — Artefactos por Plataforma
 - Docker Compose, Helm charts, CloudFormation, etc.
-- Edge Function generate-installation-artifact
+- Edge Function `generate-installation-artifact`
