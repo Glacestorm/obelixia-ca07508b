@@ -30,6 +30,7 @@ const emptyForm = {
   end_date: undefined as Date | undefined,
   has_renewal: false, has_permanence: false,
   early_exit_penalty_text: '', notes: '',
+  contract_text: '',
 };
 
 export function CaseContractsTab({ caseId }: Props) {
