@@ -36,7 +36,8 @@ import {
   UserCog,
   Scale,
   Landmark,
-  GraduationCap
+  GraduationCap,
+  Activity
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
 import { useHRActiveRoleExperience } from '@/hooks/admin/hr/useHRActiveRoleExperience';
@@ -73,6 +74,7 @@ import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Data
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
+import { HRPremiumExecutiveDashboard } from './hr/premium-dashboard';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -651,9 +653,12 @@ function ERPModularDashboardContent() {
               <Wrench className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
             </div>
-            
-            <Tabs defaultValue="audit" className="space-y-4">
-              <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <Tabs defaultValue="premium-dash" className="space-y-4">
+              <TabsList className="grid w-full max-w-2xl grid-cols-4">
+                <TabsTrigger value="premium-dash" className="gap-2">
+                  <Activity className="h-4 w-4" />
+                  Premium HR
+                </TabsTrigger>
                 <TabsTrigger value="audit" className="gap-2">
                   <FileText className="h-4 w-4" />
                   Auditorías
@@ -664,10 +669,14 @@ function ERPModularDashboardContent() {
                 </TabsTrigger>
                 <TabsTrigger value="premium-seed" className="gap-2">
                   <Database className="h-4 w-4" />
-                  Re-Seed Premium
+                  Re-Seed
                 </TabsTrigger>
               </TabsList>
-              
+
+              <TabsContent value="premium-dash">
+                <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
+              </TabsContent>
+
               <TabsContent value="audit" className="space-y-4">
                 <p className="text-muted-foreground">
                   Generador unificado de informes de auditoría para ERP, CRM o Suite Integral.
