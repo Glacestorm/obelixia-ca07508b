@@ -33,7 +33,7 @@ export function useHRDataMasking(companyId: string | undefined) {
           .eq('company_id', companyId)
           .eq('is_active', true);
 
-        setConfig({ rules: (data as MaskingRule[]) || [], loaded: true });
+        setConfig({ rules: (data as unknown as MaskingRule[]) || [], loaded: true });
       } catch {
         setConfig({ rules: [], loaded: true });
       }
