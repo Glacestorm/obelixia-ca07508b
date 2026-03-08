@@ -37,6 +37,7 @@ import {
   Heart,
   GraduationCap,
   CreditCard,
+  Download,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -130,6 +131,16 @@ export const headerNavigation: NavItem[] = [
         icon: Globe,
         description: 'Opciones de instalación',
         descriptionKey: 'nav.deployment.desc',
+      },
+      {
+        id: 'installation',
+        label: 'Instalación',
+        labelKey: 'nav.installation',
+        href: '/store/installation',
+        icon: Download,
+        description: 'Centro de instalación ERP',
+        descriptionKey: 'nav.installation.desc',
+        badge: 'Nuevo',
       },
     ],
   },

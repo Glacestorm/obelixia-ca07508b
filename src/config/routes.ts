@@ -35,6 +35,7 @@ const StoreLanding = lazy(() => import('@/pages/store/StoreLanding'));
 const StoreModules = lazy(() => import('@/pages/store/StoreModules'));
 const StoreModuleDetail = lazy(() => import('@/pages/store/StoreModuleDetail'));
 const StoreDeployment = lazy(() => import('@/pages/store/StoreDeployment'));
+const StoreInstallation = lazy(() => import('@/pages/store/StoreInstallation'));
 const StoreCheckout = lazy(() => import('@/pages/store/StoreCheckout'));
 const CheckoutSuccess = lazy(() => import('@/pages/store/CheckoutSuccess'));
 
@@ -174,6 +175,7 @@ export const publicRoutes: RouteConfig[] = [
   { path: '/store/modules', component: StoreModules, layout: 'public', priority: 'high', meta: { title: 'Módulos' } },
   { path: '/store/modules/:moduleKey', component: StoreModuleDetail, layout: 'public', priority: 'high' },
   { path: '/store/deployment', component: StoreDeployment, layout: 'public', priority: 'high' },
+  { path: '/store/installation', component: StoreInstallation, layout: 'none', priority: 'high', meta: { title: 'Instalación ERP' } },
   { path: '/store/checkout', component: StoreCheckout, layout: 'public', priority: 'high' },
   { path: '/store/success', component: CheckoutSuccess, layout: 'public', priority: 'high' },
   

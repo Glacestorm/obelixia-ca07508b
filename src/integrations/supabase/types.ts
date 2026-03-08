@@ -6566,55 +6566,112 @@ export type Database = {
       }
       client_installations: {
         Row: {
+          architecture: string | null
+          auto_update: boolean | null
           company_id: string | null
+          core_version: string | null
           created_at: string
+          deployment_type: string | null
+          device_fingerprint_hash: string | null
+          environment: string | null
+          hostname: string | null
           id: string
           installation_config: Json | null
           installation_key: string
           installation_name: string
+          installed_at: string | null
+          ip_address: string | null
           is_active: boolean
+          last_heartbeat_at: string | null
           last_sync_at: string | null
+          last_update_check_at: string | null
+          license_id: string | null
+          metadata: Json | null
+          notes: string | null
+          organization_id: string | null
+          os_version: string | null
+          platform: string | null
           preferred_locale: string
           remote_access_allowed: boolean
           remote_access_pin: string | null
           remote_access_pin_expires_at: string | null
           secondary_locales: string[] | null
+          status: string | null
+          update_channel: string | null
           updated_at: string
           user_id: string | null
           version: string | null
         }
         Insert: {
+          architecture?: string | null
+          auto_update?: boolean | null
           company_id?: string | null
+          core_version?: string | null
           created_at?: string
+          deployment_type?: string | null
+          device_fingerprint_hash?: string | null
+          environment?: string | null
+          hostname?: string | null
           id?: string
           installation_config?: Json | null
           installation_key?: string
           installation_name: string
+          installed_at?: string | null
+          ip_address?: string | null
           is_active?: boolean
+          last_heartbeat_at?: string | null
           last_sync_at?: string | null
+          last_update_check_at?: string | null
+          license_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          organization_id?: string | null
+          os_version?: string | null
+          platform?: string | null
           preferred_locale?: string
           remote_access_allowed?: boolean
           remote_access_pin?: string | null
           remote_access_pin_expires_at?: string | null
           secondary_locales?: string[] | null
+          status?: string | null
+          update_channel?: string | null
           updated_at?: string
           user_id?: string | null
           version?: string | null
         }
         Update: {
+          architecture?: string | null
+          auto_update?: boolean | null
           company_id?: string | null
+          core_version?: string | null
           created_at?: string
+          deployment_type?: string | null
+          device_fingerprint_hash?: string | null
+          environment?: string | null
+          hostname?: string | null
           id?: string
           installation_config?: Json | null
           installation_key?: string
           installation_name?: string
+          installed_at?: string | null
+          ip_address?: string | null
           is_active?: boolean
+          last_heartbeat_at?: string | null
           last_sync_at?: string | null
+          last_update_check_at?: string | null
+          license_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          organization_id?: string | null
+          os_version?: string | null
+          platform?: string | null
           preferred_locale?: string
           remote_access_allowed?: boolean
           remote_access_pin?: string | null
           remote_access_pin_expires_at?: string | null
           secondary_locales?: string[] | null
+          status?: string | null
+          update_channel?: string | null
           updated_at?: string
           user_id?: string | null
           version?: string | null
@@ -6625,6 +6682,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_installations_license_id_fkey"
+            columns: ["license_id"]
+            isOneToOne: false
+            referencedRelation: "licenses"
             referencedColumns: ["id"]
           },
           {
@@ -44091,6 +44155,139 @@ export type Database = {
           },
         ]
       }
+      installation_modules: {
+        Row: {
+          config: Json | null
+          created_at: string
+          dependencies: string[] | null
+          health_status: string | null
+          id: string
+          installation_id: string
+          installed_at: string | null
+          last_health_check_at: string | null
+          last_updated_at: string | null
+          module_key: string
+          module_name: string
+          module_version: string
+          status: string
+          target_version: string | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          dependencies?: string[] | null
+          health_status?: string | null
+          id?: string
+          installation_id: string
+          installed_at?: string | null
+          last_health_check_at?: string | null
+          last_updated_at?: string | null
+          module_key: string
+          module_name: string
+          module_version?: string
+          status?: string
+          target_version?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          dependencies?: string[] | null
+          health_status?: string | null
+          id?: string
+          installation_id?: string
+          installed_at?: string | null
+          last_health_check_at?: string | null
+          last_updated_at?: string | null
+          module_key?: string
+          module_name?: string
+          module_version?: string
+          status?: string
+          target_version?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_modules_installation_id_fkey"
+            columns: ["installation_id"]
+            isOneToOne: false
+            referencedRelation: "client_installations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_updates: {
+        Row: {
+          applied_by: string | null
+          changelog: string | null
+          checksum: string | null
+          completed_at: string | null
+          created_at: string
+          download_url: string | null
+          error_message: string | null
+          file_size_bytes: number | null
+          from_version: string
+          id: string
+          installation_id: string
+          metadata: Json | null
+          module_key: string | null
+          rollback_version: string | null
+          started_at: string | null
+          status: string
+          to_version: string
+          update_type: string
+        }
+        Insert: {
+          applied_by?: string | null
+          changelog?: string | null
+          checksum?: string | null
+          completed_at?: string | null
+          created_at?: string
+          download_url?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          from_version: string
+          id?: string
+          installation_id: string
+          metadata?: Json | null
+          module_key?: string | null
+          rollback_version?: string | null
+          started_at?: string | null
+          status?: string
+          to_version: string
+          update_type?: string
+        }
+        Update: {
+          applied_by?: string | null
+          changelog?: string | null
+          checksum?: string | null
+          completed_at?: string | null
+          created_at?: string
+          download_url?: string | null
+          error_message?: string | null
+          file_size_bytes?: number | null
+          from_version?: string
+          id?: string
+          installation_id?: string
+          metadata?: Json | null
+          module_key?: string | null
+          rollback_version?: string | null
+          started_at?: string | null
+          status?: string
+          to_version?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_updates_installation_id_fkey"
+            columns: ["installation_id"]
+            isOneToOne: false
+            referencedRelation: "client_installations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       installed_modules: {
         Row: {
           auto_update_translations: boolean | null
@@ -63325,6 +63522,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      usage_billing_rules: {
+        Row: {
+          action_key: string
+          action_name: string
+          created_at: string
+          currency: string
+          description: string | null
+          free_tier_limit: number | null
+          id: string
+          is_active: boolean
+          module_key: string
+          reset_period: string | null
+          tier_pricing: Json | null
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          action_key: string
+          action_name: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          free_tier_limit?: number | null
+          id?: string
+          is_active?: boolean
+          module_key: string
+          reset_period?: string | null
+          tier_pricing?: Json | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          action_key?: string
+          action_name?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          free_tier_limit?: number | null
+          id?: string
+          is_active?: boolean
+          module_key?: string
+          reset_period?: string | null
+          tier_pricing?: Json | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_alert_channels: {
         Row: {
