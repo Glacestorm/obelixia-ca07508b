@@ -108,6 +108,7 @@ export function useHRWorkforcePlanning(companyId: string) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null);
   const [stats, setStats] = useState<WorkforcePlanningStats | null>(null);
+  const [realHeadcount, setRealHeadcount] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<Record<string, unknown> | null>(null);
