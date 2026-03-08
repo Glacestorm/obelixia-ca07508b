@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingCart, Menu, X, ChevronDown, ArrowRight,
   Package, Boxes, DollarSign, Landmark, ShieldCheck, ShoppingBag, Factory,
-  Store, Code, BarChart3, MessageSquare, BookOpen, Rocket,
+  Store, Code, BarChart3, MessageSquare, BookOpen, Rocket, Download,
   Heart, Users, GraduationCap, Globe, CreditCard, Briefcase, Award
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
