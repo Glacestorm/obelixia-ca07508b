@@ -1,7 +1,6 @@
 /**
- * ElectricalNavigationMenu - Navegación completa del módulo Consultoría Eléctrica
- * 12 secciones: Resumen, Expedientes, Clientes, Suministros, Facturas, Contratos,
- * Consumo, Comparador, Recomendaciones, Informes, Seguimiento, Ajustes
+ * ElectricalNavigationMenu - Energy 360 Navigation
+ * Supports electricity, gas, solar and unified energy views
  */
 
 import { useState } from 'react';
@@ -11,7 +10,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   LayoutDashboard, FolderOpen, Zap, FileText, FileSignature, Users,
   BarChart3, Gauge, Lightbulb, FileBarChart, Eye, Settings,
-  ChevronDown, ChevronRight, BoltIcon, GitCompareArrows, Building2, Plug
+  ChevronDown, ChevronRight, BoltIcon, GitCompareArrows, Building2, Plug,
+  Flame, Sun, Activity, TrendingUp, Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -55,7 +55,7 @@ export function ElectricalNavigationMenu({
       label: 'Resumen',
       icon: BoltIcon,
       items: [
-        { id: 'dashboard', label: 'Resumen General', icon: LayoutDashboard, description: 'Vista ejecutiva del módulo' },
+        { id: 'dashboard', label: 'Resumen General', icon: LayoutDashboard, description: 'Vista ejecutiva energética' },
         { id: 'operacional', label: 'Panel Operativo', icon: BarChart3, description: 'KPIs operativos y alertas' },
       ]
     },
@@ -65,9 +65,9 @@ export function ElectricalNavigationMenu({
       icon: FolderOpen,
       badge: stats.expedientesActivos,
       items: [
-        { id: 'expedientes', label: 'Expedientes', icon: FolderOpen, description: 'Alta y gestión de expedientes', badge: stats.expedientesActivos },
+        { id: 'expedientes', label: 'Expedientes', icon: FolderOpen, description: 'Expedientes energéticos (elec/gas/solar)', badge: stats.expedientesActivos },
         { id: 'clientes', label: 'Clientes Energéticos', icon: Users, description: 'Particulares y empresas' },
-        { id: 'suministros', label: 'Suministros & CUPS', icon: Zap, description: 'Puntos de suministro y códigos CUPS' },
+        { id: 'suministros', label: 'Suministros & CUPS', icon: Zap, description: 'Puntos de suministro eléctricos y gas' },
       ]
     },
     {
@@ -75,8 +75,18 @@ export function ElectricalNavigationMenu({
       label: 'Documentos',
       icon: FileText,
       items: [
-        { id: 'facturas', label: 'Facturas', icon: FileText, description: 'Subida y análisis de facturas eléctricas' },
-        { id: 'contratos', label: 'Contratos', icon: FileSignature, description: 'Gestión de contratos de suministro' },
+        { id: 'facturas', label: 'Facturas', icon: FileText, description: 'Facturas eléctricas y de gas' },
+        { id: 'contratos', label: 'Contratos', icon: FileSignature, description: 'Contratos de suministro y autoconsumo' },
+      ]
+    },
+    {
+      id: 'mercado',
+      label: 'Mercado',
+      icon: Activity,
+      items: [
+        { id: 'mercado-energetico', label: 'Mercado Energético', icon: TrendingUp, description: 'Precios luz y gas en tiempo real' },
+        { id: 'precios-indexados', label: 'Precios Indexados', icon: BarChart3, description: 'Precios horarios OMIE, Peajes y PVPC' },
+        { id: 'catalogo', label: 'Catálogo Tarifas', icon: FileText, description: 'Catálogo de tarifas del mercado' },
       ]
     },
     {
@@ -84,11 +94,10 @@ export function ElectricalNavigationMenu({
       label: 'Análisis',
       icon: BarChart3,
       items: [
-        { id: 'consumo', label: 'Análisis de Consumo', icon: BarChart3, description: 'Consumo por periodos tarifarios P1-P6' },
-        { id: 'catalogo', label: 'Catálogo Tarifas', icon: FileText, description: 'Gestión del catálogo de tarifas del mercado' },
+        { id: 'consumo', label: 'Análisis de Consumo', icon: BarChart3, description: 'Consumo por periodos tarifarios' },
         { id: 'comparador', label: 'Simulador', icon: GitCompareArrows, description: 'Simulador y comparador de tarifas' },
-        { id: 'precios-indexados', label: 'Precios Indexados', icon: BarChart3, description: 'Precios horarios OMIE, Peajes y PVPC' },
-        { id: 'recomendaciones', label: 'Recomendaciones', icon: Lightbulb, description: 'Tarifa y potencia óptima' },
+        { id: 'recomendaciones', label: 'Recomendaciones', icon: Lightbulb, description: 'Tarifa y potencia óptima multi-energía' },
+        { id: 'analitica-avanzada', label: 'Analítica Avanzada', icon: Layers, description: 'Gráficos multi-energía y KPIs premium' },
       ]
     },
     {
@@ -97,7 +106,7 @@ export function ElectricalNavigationMenu({
       icon: FileBarChart,
       badge: stats.informesPendientes,
       items: [
-        { id: 'informes', label: 'Informes Finales', icon: FileBarChart, description: 'Generación de informes de optimización', badge: stats.informesPendientes },
+        { id: 'informes', label: 'Informes Finales', icon: FileBarChart, description: 'Informes de optimización energética', badge: stats.informesPendientes },
         { id: 'seguimiento', label: 'Seguimiento', icon: Eye, description: 'Seguimiento posterior al informe' },
         { id: 'ejecutivo', label: 'Dashboard Ejecutivo', icon: Building2, description: 'KPIs multiempresa y exportación' },
       ]
@@ -107,8 +116,8 @@ export function ElectricalNavigationMenu({
       label: 'Ajustes',
       icon: Settings,
       items: [
-        { id: 'integraciones', label: 'Integraciones', icon: Plug, description: 'Datadis, OMIE, REE y más' },
-        { id: 'ajustes', label: 'Configuración', icon: Settings, description: 'Parámetros del módulo eléctrico' },
+        { id: 'integraciones', label: 'Integraciones', icon: Plug, description: 'Datadis, OMIE, MIBGAS, REE y más' },
+        { id: 'ajustes', label: 'Configuración', icon: Settings, description: 'Parámetros del módulo energético' },
       ]
     },
   ];

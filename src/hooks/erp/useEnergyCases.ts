@@ -17,6 +17,13 @@ export interface EnergyCase {
   contract_end_date: string | null;
   estimated_monthly_savings: number | null;
   estimated_annual_savings: number | null;
+  energy_type: string;
+  estimated_gas_savings: number | null;
+  estimated_solar_savings: number | null;
+  validated_annual_savings: number | null;
+  validated_gas_savings: number | null;
+  validated_solar_savings: number | null;
+  risk_level: string | null;
   created_at: string;
   updated_at: string;
 }
