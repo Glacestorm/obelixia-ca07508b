@@ -29231,6 +29231,69 @@ export type Database = {
           },
         ]
       }
+      erp_hr_equity_action_plans: {
+        Row: {
+          actions: Json | null
+          baseline_value: number | null
+          budget: number | null
+          company_id: string
+          created_at: string
+          current_value: number | null
+          end_date: string | null
+          id: string
+          impact_assessment: Json | null
+          plan_name: string
+          plan_type: string
+          progress_percentage: number | null
+          responsible_id: string | null
+          start_date: string | null
+          status: string
+          target_metric: string | null
+          target_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json | null
+          baseline_value?: number | null
+          budget?: number | null
+          company_id: string
+          created_at?: string
+          current_value?: number | null
+          end_date?: string | null
+          id?: string
+          impact_assessment?: Json | null
+          plan_name: string
+          plan_type?: string
+          progress_percentage?: number | null
+          responsible_id?: string | null
+          start_date?: string | null
+          status?: string
+          target_metric?: string | null
+          target_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json | null
+          baseline_value?: number | null
+          budget?: number | null
+          company_id?: string
+          created_at?: string
+          current_value?: number | null
+          end_date?: string | null
+          id?: string
+          impact_assessment?: Json | null
+          plan_name?: string
+          plan_type?: string
+          progress_percentage?: number | null
+          responsible_id?: string | null
+          start_date?: string | null
+          status?: string
+          target_metric?: string | null
+          target_value?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_esg_social_kpis: {
         Row: {
           category: string
@@ -29451,6 +29514,105 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_fairness_audit_trail: {
+        Row: {
+          action: string
+          actor_id: string | null
+          company_id: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          event_type: string
+          fairness_impact: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          company_id: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          event_type?: string
+          fairness_impact?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          company_id?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          event_type?: string
+          fairness_impact?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      erp_hr_fairness_metrics: {
+        Row: {
+          company_id: string
+          created_at: string
+          department: string | null
+          disparate_impact_ratio: number | null
+          four_fifths_compliant: boolean | null
+          group_a_label: string
+          group_a_value: number | null
+          group_b_label: string
+          group_b_value: number | null
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          period_end: string | null
+          period_start: string | null
+          protected_attribute: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          department?: string | null
+          disparate_impact_ratio?: number | null
+          four_fifths_compliant?: boolean | null
+          group_a_label?: string
+          group_a_value?: number | null
+          group_b_label?: string
+          group_b_value?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type?: string
+          period_end?: string | null
+          period_start?: string | null
+          protected_attribute?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          department?: string | null
+          disparate_impact_ratio?: number | null
+          four_fifths_compliant?: boolean | null
+          group_a_label?: string
+          group_a_value?: number | null
+          group_b_label?: string
+          group_b_value?: number | null
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          period_end?: string | null
+          period_start?: string | null
+          protected_attribute?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       erp_hr_family_relations: {
         Row: {
@@ -30982,6 +31144,75 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_justice_cases: {
+        Row: {
+          assigned_to: string | null
+          case_number: string
+          case_type: string
+          company_id: string
+          complainant_id: string | null
+          created_at: string
+          days_to_resolve: number | null
+          department: string | null
+          description: string | null
+          id: string
+          is_anonymous: boolean | null
+          metadata: Json | null
+          priority: string
+          regulatory_reference: string | null
+          resolution: string | null
+          resolution_date: string | null
+          respondent_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          case_number: string
+          case_type?: string
+          company_id: string
+          complainant_id?: string | null
+          created_at?: string
+          days_to_resolve?: number | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          metadata?: Json | null
+          priority?: string
+          regulatory_reference?: string | null
+          resolution?: string | null
+          resolution_date?: string | null
+          respondent_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          case_number?: string
+          case_type?: string
+          company_id?: string
+          complainant_id?: string | null
+          created_at?: string
+          days_to_resolve?: number | null
+          department?: string | null
+          description?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          metadata?: Json | null
+          priority?: string
+          regulatory_reference?: string | null
+          resolution?: string | null
+          resolution_date?: string | null
+          respondent_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_kpi_alerts: {
         Row: {
           alert_name: string
@@ -32432,6 +32663,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_pay_equity_analyses: {
+        Row: {
+          affected_employees: number | null
+          analysis_name: string
+          analysis_type: string
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string
+          gap_percentage: number | null
+          id: string
+          overall_equity_score: number | null
+          performed_by: string | null
+          regulatory_reference: string | null
+          remediation_cost: number | null
+          results: Json | null
+          scope: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affected_employees?: number | null
+          analysis_name: string
+          analysis_type?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string
+          gap_percentage?: number | null
+          id?: string
+          overall_equity_score?: number | null
+          performed_by?: string | null
+          regulatory_reference?: string | null
+          remediation_cost?: number | null
+          results?: Json | null
+          scope?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affected_employees?: number | null
+          analysis_name?: string
+          analysis_type?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string
+          gap_percentage?: number | null
+          id?: string
+          overall_equity_score?: number | null
+          performed_by?: string | null
+          regulatory_reference?: string | null
+          remediation_cost?: number | null
+          results?: Json | null
+          scope?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       erp_hr_pay_equity_snapshots: {
         Row: {
