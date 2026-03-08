@@ -214,6 +214,7 @@ function ERPModularDashboardContent() {
               {activeTab === 'legal' && <><Scale className="h-4 w-4" /> Jurídico</>}
               {activeTab === 'galia' && <><Landmark className="h-4 w-4" /> LEADER</>}
               {activeTab === 'academia' && <><GraduationCap className="h-4 w-4" /> Academia</>}
+              {activeTab === 'electrical' && <><Zap className="h-4 w-4" /> C. Eléctrica</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
             </Badge>
           )}
