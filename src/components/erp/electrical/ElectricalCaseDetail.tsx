@@ -11,6 +11,7 @@ import { CaseConsumptionTab } from './CaseConsumptionTab';
 import { CaseInvoicesTab } from './CaseInvoicesTab';
 import { CaseContractsTab } from './CaseContractsTab';
 import { CaseRecommendationTab } from './CaseRecommendationTab';
+import { CaseReportTab } from './CaseReportTab';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
