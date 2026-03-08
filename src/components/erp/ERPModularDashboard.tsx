@@ -271,7 +271,7 @@ function ERPModularDashboardContent() {
                   GALIA
                 </TabsTrigger>
               )}
-              {hasPermission('admin.all') && (
+              {canShowModule('academia', 'admin.all') && (
                 <TabsTrigger value="academia" className="gap-2">
                   <GraduationCap className="h-4 w-4" />
                   Academia
