@@ -3,19 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowRight, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Clock, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { useEnergyWorkflow, WORKFLOW_STATUSES, WorkflowStatus } from '@/hooks/erp/useEnergyWorkflow';
+import { useEnergyAuditLog } from '@/hooks/erp/useEnergyAuditLog';
 import { PermissionGate } from './PermissionGate';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-interface Props { caseId: string; }
+interface Props { caseId: string; companyId: string; }
 
-export function CaseWorkflowTab({ caseId }: Props) {
-  const { history, currentStatus, loading, transition, getAvailableTransitions } = useEnergyWorkflow(caseId);
+export function CaseWorkflowTab({ caseId, companyId }: Props) {
+  const { history, currentStatus, loading, error, transition, getAvailableTransitions } = useEnergyWorkflow(caseId);
+  const { log } = useEnergyAuditLog(companyId, caseId);
   const [showTransition, setShowTransition] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<WorkflowStatus | ''>('');
   const [comments, setComments] = useState('');
@@ -27,20 +28,30 @@ export function CaseWorkflowTab({ caseId }: Props) {
   const handleTransition = useCallback(async () => {
     if (!selectedStatus) return;
     setTransitioning(true);
-    await transition(selectedStatus as WorkflowStatus, comments);
+    await transition(selectedStatus as WorkflowStatus, comments, log);
     setTransitioning(false);
     setShowTransition(false);
     setSelectedStatus('');
     setComments('');
-  }, [selectedStatus, comments, transition]);
+  }, [selectedStatus, comments, transition, log]);
 
-  // Build full timeline from all statuses
   const allStatuses = Object.entries(WORKFLOW_STATUSES).sort((a, b) => a[1].order - b[1].order);
   const currentOrder = currentInfo.order;
 
+  if (error) {
+    return (
+      <Card className="border-destructive/50">
+        <CardContent className="py-6 text-center">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => window.location.reload()}>Reintentar</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {/* Current status + action */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -54,54 +65,59 @@ export function CaseWorkflowTab({ caseId }: Props) {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Visual progress bar */}
-          <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2">
-            {allStatuses.filter(([k]) => k !== 'cancelado').map(([key, info]) => {
-              const isDone = info.order < currentOrder;
-              const isCurrent = key === currentStatus;
-              const isFuture = info.order > currentOrder;
-              return (
-                <div key={key} className="flex items-center gap-1 shrink-0">
-                  <div className={cn(
-                    "h-3 w-3 rounded-full border-2 transition-all",
-                    isDone && "bg-emerald-500 border-emerald-500",
-                    isCurrent && `${info.color} border-current scale-125`,
-                    isFuture && "bg-muted border-border",
-                  )} />
-                  <span className={cn(
-                    "text-[9px] whitespace-nowrap",
-                    isCurrent ? "font-bold text-foreground" : "text-muted-foreground",
-                  )}>{info.label}</span>
-                  {info.order < 9 && <ArrowRight className="h-3 w-3 text-muted-foreground/30 shrink-0" />}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Action buttons */}
-          <PermissionGate action="edit_cases">
-            {available.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {available.map(t => (
-                  <Button
-                    key={t.status}
-                    variant={t.status === 'cancelado' ? 'destructive' : 'outline'}
-                    size="sm"
-                    onClick={() => { setSelectedStatus(t.status); setShowTransition(true); }}
-                  >
-                    <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                    {t.label}
-                  </Button>
-                ))}
+          {loading ? (
+            <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando workflow...
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2">
+                {allStatuses.filter(([k]) => k !== 'cancelado').map(([key, info]) => {
+                  const isDone = info.order < currentOrder;
+                  const isCurrent = key === currentStatus;
+                  const isFuture = info.order > currentOrder;
+                  return (
+                    <div key={key} className="flex items-center gap-1 shrink-0">
+                      <div className={cn(
+                        "h-3 w-3 rounded-full border-2 transition-all",
+                        isDone && "bg-emerald-500 border-emerald-500",
+                        isCurrent && `${info.color} border-current scale-125`,
+                        isFuture && "bg-muted border-border",
+                      )} />
+                      <span className={cn(
+                        "text-[9px] whitespace-nowrap",
+                        isCurrent ? "font-bold text-foreground" : "text-muted-foreground",
+                      )}>{info.label}</span>
+                      {info.order < 9 && <ArrowRight className="h-3 w-3 text-muted-foreground/30 shrink-0" />}
+                    </div>
+                  );
+                })}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Este expediente está en estado final.</p>
-            )}
-          </PermissionGate>
+
+              <PermissionGate action="edit_cases">
+                {available.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {available.map(t => (
+                      <Button
+                        key={t.status}
+                        variant={t.status === 'cancelado' ? 'destructive' : 'outline'}
+                        size="sm"
+                        onClick={() => { setSelectedStatus(t.status); setShowTransition(true); }}
+                      >
+                        <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                        {t.label}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Este expediente está en estado final.</p>
+                )}
+              </PermissionGate>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* History timeline */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Historial de cambios</CardTitle>
@@ -136,7 +152,6 @@ export function CaseWorkflowTab({ caseId }: Props) {
         </CardContent>
       </Card>
 
-      {/* Transition dialog */}
       <Dialog open={showTransition} onOpenChange={setShowTransition}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -168,7 +183,7 @@ export function CaseWorkflowTab({ caseId }: Props) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTransition(false)}>Cancelar</Button>
             <Button onClick={handleTransition} disabled={transitioning || !selectedStatus}>
-              {transitioning ? 'Guardando...' : 'Confirmar cambio'}
+              {transitioning ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Guardando...</> : 'Confirmar cambio'}
             </Button>
           </DialogFooter>
         </DialogContent>

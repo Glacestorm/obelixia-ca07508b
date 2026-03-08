@@ -31,7 +31,7 @@ export interface WorkflowState {
   created_at: string;
 }
 
-// Valid transitions
+// Valid transitions — strict matrix
 const TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
   pendiente_propuesta: ['propuesta_enviada', 'cancelado'],
   propuesta_enviada: ['propuesta_aceptada', 'pendiente_propuesta', 'cancelado'],
@@ -46,22 +46,28 @@ const TRANSITIONS: Record<WorkflowStatus, WorkflowStatus[]> = {
   cancelado: ['pendiente_propuesta'],
 };
 
+export function isValidTransition(from: WorkflowStatus, to: WorkflowStatus): boolean {
+  return (TRANSITIONS[from] || []).includes(to);
+}
+
 export function useEnergyWorkflow(caseId: string | null) {
   const [history, setHistory] = useState<WorkflowState[]>([]);
   const [currentStatus, setCurrentStatus] = useState<WorkflowStatus>('pendiente_propuesta');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   const fetchHistory = useCallback(async () => {
     if (!caseId) return;
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchErr } = await supabase
         .from('energy_workflow_states')
         .select('*')
         .eq('case_id', caseId)
         .order('changed_at', { ascending: true });
-      if (error) throw error;
+      if (fetchErr) throw fetchErr;
       const states = (data || []) as WorkflowState[];
       setHistory(states);
       if (states.length > 0) {
@@ -70,23 +76,32 @@ export function useEnergyWorkflow(caseId: string | null) {
         setCurrentStatus('pendiente_propuesta');
       }
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al cargar workflow';
+      setError(msg);
       console.error('[useEnergyWorkflow] fetch error:', err);
     } finally {
       setLoading(false);
     }
   }, [caseId]);
 
-  const transition = useCallback(async (newStatus: WorkflowStatus, comments?: string) => {
-    if (!caseId || !user?.id) return null;
+  const transition = useCallback(async (
+    newStatus: WorkflowStatus,
+    comments?: string,
+    onAuditLog?: (action: string, entityType: string, entityId?: string | null, details?: Record<string, unknown>) => void
+  ) => {
+    if (!caseId || !user?.id) {
+      toast.error('Debes iniciar sesión para cambiar estado');
+      return null;
+    }
 
-    const allowed = TRANSITIONS[currentStatus] || [];
-    if (!allowed.includes(newStatus)) {
+    // Strict validation
+    if (!isValidTransition(currentStatus, newStatus)) {
       toast.error(`Transición no permitida: ${WORKFLOW_STATUSES[currentStatus].label} → ${WORKFLOW_STATUSES[newStatus].label}`);
       return null;
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error: insertErr } = await supabase
         .from('energy_workflow_states')
         .insert([{
           case_id: caseId,
@@ -97,15 +112,26 @@ export function useEnergyWorkflow(caseId: string | null) {
         }] as any)
         .select()
         .single();
-      if (error) throw error;
+      if (insertErr) throw insertErr;
       const state = data as WorkflowState;
       setHistory(prev => [...prev, state]);
       setCurrentStatus(newStatus);
       toast.success(`Estado: ${WORKFLOW_STATUSES[newStatus].label}`);
+
+      // Audit log integration
+      if (onAuditLog) {
+        onAuditLog('workflow_transition', 'energy_workflow_states', state.id, {
+          from: currentStatus,
+          to: newStatus,
+          comments: comments || null,
+        });
+      }
+
       return state;
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al cambiar estado';
       console.error('[useEnergyWorkflow] transition error:', err);
-      toast.error('Error al cambiar estado');
+      toast.error(msg);
       return null;
     }
   }, [caseId, currentStatus, user?.id]);
@@ -120,7 +146,8 @@ export function useEnergyWorkflow(caseId: string | null) {
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
   return {
-    history, currentStatus, loading,
+    history, currentStatus, loading, error,
     transition, getAvailableTransitions, fetchHistory,
+    isValidTransition,
   };
 }
