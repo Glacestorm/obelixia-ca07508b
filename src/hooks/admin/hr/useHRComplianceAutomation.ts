@@ -184,7 +184,7 @@ export function useHRComplianceAutomation(companyId?: string) {
     if (!template) return null;
 
     try {
-      const { data, error } = await supabase.from('erp_hr_compliance_frameworks').insert({
+      const { data, error } = await supabase.from('erp_hr_compliance_frameworks' as any).insert({
         company_id: companyId,
         name: template.name,
         code: template.code,
