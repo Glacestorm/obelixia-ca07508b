@@ -285,7 +285,7 @@ export function useHRComplianceAutomation(companyId?: string) {
     const score = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     await supabase
-      .from('erp_hr_compliance_frameworks')
+      .from('erp_hr_compliance_frameworks' as any)
       .update({
         met_requirements: completed,
         compliance_score: score,
