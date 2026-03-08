@@ -70,6 +70,7 @@ import { HRWorkforcePlanningPanel } from './workforce-planning/HRWorkforcePlanni
 import { HRFairnessEnginePanel } from './fairness-engine/HRFairnessEnginePanel';
 import { HRDigitalTwinPanel } from './digital-twin/HRDigitalTwinPanel';
 import { HRLegalEnginePanel } from './legal-engine/HRLegalEnginePanel';
+import { HRCNAEIntelligencePanel } from './cnae-intelligence/HRCNAEIntelligencePanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
