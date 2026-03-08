@@ -654,7 +654,11 @@ function ERPModularDashboardContent() {
             </div>
             
             <Tabs defaultValue="audit" className="space-y-4">
-              <TabsList className="grid w-full max-w-lg grid-cols-3">
+              <TabsList className="grid w-full max-w-2xl grid-cols-4">
+                <TabsTrigger value="premium-dash" className="gap-2">
+                  <Activity className="h-4 w-4" />
+                  Premium HR
+                </TabsTrigger>
                 <TabsTrigger value="audit" className="gap-2">
                   <FileText className="h-4 w-4" />
                   Auditorías
@@ -665,7 +669,7 @@ function ERPModularDashboardContent() {
                 </TabsTrigger>
                 <TabsTrigger value="premium-seed" className="gap-2">
                   <Database className="h-4 w-4" />
-                  Re-Seed Premium
+                  Re-Seed
                 </TabsTrigger>
               </TabsList>
               
