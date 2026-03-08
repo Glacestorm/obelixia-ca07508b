@@ -37,6 +37,7 @@ import {
   Heart,
   GraduationCap,
   CreditCard,
+  Download,
   type LucideIcon,
 } from 'lucide-react';
 
