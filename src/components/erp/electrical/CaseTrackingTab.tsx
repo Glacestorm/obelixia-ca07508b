@@ -13,6 +13,7 @@ import {
   CalendarIcon, Save, Eye, CheckCircle2, Clock, ArrowRight,
   FileText, Phone, TrendingUp, AlertTriangle, Plus
 } from 'lucide-react';
+import { PermissionGate } from './PermissionGate';
 import { useEnergyTracking } from '@/hooks/erp/useEnergyTracking';
 import { useEnergyTasks, TASK_TYPES, TASK_STATUSES, EnergyTask } from '@/hooks/erp/useEnergyTasks';
 import { cn } from '@/lib/utils';
@@ -215,12 +216,14 @@ export function CaseTrackingTab({ caseId }: Props) {
               placeholder="Observaciones del seguimiento..." rows={3} />
           </div>
 
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1.5" />
-              {saving ? 'Guardando...' : 'Guardar seguimiento'}
-            </Button>
-          </div>
+          <PermissionGate action="close_case">
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={saving}>
+                <Save className="h-4 w-4 mr-1.5" />
+                {saving ? 'Guardando...' : 'Guardar seguimiento'}
+              </Button>
+            </div>
+          </PermissionGate>
         </CardContent>
       </Card>
 
@@ -232,9 +235,11 @@ export function CaseTrackingTab({ caseId }: Props) {
               <CardTitle className="text-base">Tareas del expediente</CardTitle>
               <CardDescription>{tasks.length} tareas</CardDescription>
             </div>
-            <Button size="sm" onClick={() => setShowTaskDialog(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Nueva tarea
-            </Button>
+            <PermissionGate action="manage_tasks">
+              <Button size="sm" onClick={() => setShowTaskDialog(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Nueva tarea
+              </Button>
+            </PermissionGate>
           </div>
         </CardHeader>
         <CardContent>

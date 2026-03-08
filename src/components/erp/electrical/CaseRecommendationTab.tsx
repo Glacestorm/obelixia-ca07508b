@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Sparkles, Save, Zap, AlertTriangle, ShieldCheck, Loader2, Info, BrainCircuit } from 'lucide-react';
+import { PermissionGate } from './PermissionGate';
 import { useEnergyRecommendation, generateRecommendation, RecommendationInput } from '@/hooks/erp/useEnergyRecommendation';
 import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { useEnergyInvoices } from '@/hooks/erp/useEnergyInvoices';
@@ -218,18 +219,24 @@ export function CaseRecommendationTab({ caseId }: Props) {
               <CardDescription>Editable manualmente, generada por reglas o con asistencia de IA.</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleAutoGenerate}>
-                <Zap className="h-3.5 w-3.5 mr-1" /> Reglas
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleAiGenerate} disabled={aiGenerating}
-                className="border-primary/30 text-primary hover:bg-primary/5">
-                {aiGenerating
-                  ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generando...</>
-                  : <><BrainCircuit className="h-3.5 w-3.5 mr-1" /> IA Borrador</>}
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                <Save className="h-3.5 w-3.5 mr-1" /> {saving ? 'Guardando...' : 'Guardar'}
-              </Button>
+              <PermissionGate action="approve_recommendation">
+                <Button variant="outline" size="sm" onClick={handleAutoGenerate}>
+                  <Zap className="h-3.5 w-3.5 mr-1" /> Reglas
+                </Button>
+              </PermissionGate>
+              <PermissionGate action="ai_analysis">
+                <Button variant="outline" size="sm" onClick={handleAiGenerate} disabled={aiGenerating}
+                  className="border-primary/30 text-primary hover:bg-primary/5">
+                  {aiGenerating
+                    ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generando...</>
+                    : <><BrainCircuit className="h-3.5 w-3.5 mr-1" /> IA Borrador</>}
+                </Button>
+              </PermissionGate>
+              <PermissionGate action="approve_recommendation">
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  <Save className="h-3.5 w-3.5 mr-1" /> {saving ? 'Guardando...' : 'Guardar'}
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </CardHeader>

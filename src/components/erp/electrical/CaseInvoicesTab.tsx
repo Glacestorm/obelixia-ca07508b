@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FileText, Plus, Trash2, Upload, CalendarIcon, RefreshCw, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { useEnergyInvoices, EnergyInvoice } from '@/hooks/erp/useEnergyInvoices';
+import { PermissionGate } from './PermissionGate';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -111,9 +112,11 @@ export function CaseInvoicesTab({ caseId }: Props) {
               <Button variant="outline" size="sm" onClick={() => fetchInvoices()}>
                 <RefreshCw className="h-3.5 w-3.5 mr-1" /> Recargar
               </Button>
-              <Button size="sm" onClick={openNew}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Nueva factura
-              </Button>
+              <PermissionGate action="edit_cases">
+                <Button size="sm" onClick={openNew}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Nueva factura
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </CardHeader>
