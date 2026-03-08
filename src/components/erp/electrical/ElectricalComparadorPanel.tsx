@@ -21,7 +21,9 @@ import {
 } from 'lucide-react';
 import { ElectricalBreadcrumb } from './ElectricalBreadcrumb';
 import { useEnergySimulations, SimulationConsumptionData, SimulationPowerData, SimulationResult } from '@/hooks/erp/useEnergySimulations';
-import { cn } from '@/lib/utils';
+import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
+import { useEnergyInvoices } from '@/hooks/erp/useEnergyInvoices';
+import { PermissionGate } from './PermissionGate';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
