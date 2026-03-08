@@ -117,6 +117,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'security-governance', label: 'Security & SoD', icon: ShieldAlert },
         { id: 'ai-governance', label: 'AI Governance', icon: Brain },
         { id: 'workforce-planning', label: 'Workforce Planning', icon: Target },
+        { id: 'fairness-engine', label: 'Fairness & Justice', icon: Scale },
       ]
     },
     {
