@@ -1,7 +1,7 @@
 /**
- * useEnergySolarInstallations - CRUD for solar/self-consumption installations
+ * useEnergySolarInstallations - Full CRUD + analytics for solar/self-consumption
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -30,6 +30,23 @@ export interface SolarInstallation {
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SolarAnalytics {
+  totalPowerKwp: number;
+  totalEstSavingsMonth: number;
+  totalRealSavingsMonth: number;
+  totalSelfConsumptionKwh: number;
+  totalSurplusKwh: number;
+  totalCompensationEur: number;
+  avgGridDependency: number;
+  totalMaintenanceCost: number;
+  installationsWithBattery: number;
+  totalBatteryCapacity: number;
+  savingsEfficiency: number; // real/estimated ratio
+  selfConsumptionRatio: number; // self/(self+surplus)
+  annualEstSavings: number;
+  annualRealSavings: number;
 }
 
 export function useEnergySolarInstallations(caseId: string | null, companyId?: string) {
@@ -103,7 +120,51 @@ export function useEnergySolarInstallations(caseId: string | null, companyId?: s
     }
   }, []);
 
+  // === ANALYTICS ===
+  const analytics: SolarAnalytics = useMemo(() => {
+    const totalPowerKwp = installations.reduce((s, i) => s + (i.installed_power_kwp || 0), 0);
+    const totalEstSavingsMonth = installations.reduce((s, i) => s + (i.monthly_estimated_savings || 0), 0);
+    const totalRealSavingsMonth = installations.reduce((s, i) => s + (i.monthly_real_savings || 0), 0);
+    const totalSelfConsumptionKwh = installations.reduce((s, i) => s + (i.annual_self_consumption_kwh || 0), 0);
+    const totalSurplusKwh = installations.reduce((s, i) => s + (i.annual_surplus_kwh || 0), 0);
+    const totalCompensationEur = installations.reduce((s, i) => s + (i.annual_compensation_eur || 0), 0);
+    const avgGridDependency = installations.length > 0
+      ? installations.reduce((s, i) => s + (i.grid_dependency_pct || 0), 0) / installations.length
+      : 100;
+    const totalMaintenanceCost = installations.reduce((s, i) => s + (i.maintenance_cost_annual || 0), 0);
+    const installationsWithBattery = installations.filter(i => i.has_battery).length;
+    const totalBatteryCapacity = installations.reduce((s, i) => s + (i.battery_capacity_kwh || 0), 0);
+    const savingsEfficiency = totalEstSavingsMonth > 0 ? (totalRealSavingsMonth / totalEstSavingsMonth) * 100 : 0;
+    const totalEnergy = totalSelfConsumptionKwh + totalSurplusKwh;
+    const selfConsumptionRatio = totalEnergy > 0 ? (totalSelfConsumptionKwh / totalEnergy) * 100 : 0;
+
+    return {
+      totalPowerKwp,
+      totalEstSavingsMonth,
+      totalRealSavingsMonth,
+      totalSelfConsumptionKwh,
+      totalSurplusKwh,
+      totalCompensationEur,
+      avgGridDependency,
+      totalMaintenanceCost,
+      installationsWithBattery,
+      totalBatteryCapacity,
+      savingsEfficiency,
+      selfConsumptionRatio,
+      annualEstSavings: totalEstSavingsMonth * 12,
+      annualRealSavings: totalRealSavingsMonth * 12,
+    };
+  }, [installations]);
+
   useEffect(() => { fetchInstallations(); }, [fetchInstallations]);
 
-  return { installations, loading, fetchInstallations, createInstallation, updateInstallation, deleteInstallation };
+  return {
+    installations,
+    loading,
+    analytics,
+    fetchInstallations,
+    createInstallation,
+    updateInstallation,
+    deleteInstallation,
+  };
 }
