@@ -169,3 +169,10 @@ export type {
   HRCriticalEvent,
   HREnterpriseStats
 } from './useHREnterprise';
+
+// Phase Enterprise - Workflow Engine
+export { useHRWorkflowEngine } from './useHRWorkflowEngine';
+export type {
+  WorkflowDefinition, WorkflowStep, WorkflowInstance,
+  WorkflowDecision, SLATracking, WorkflowStats
+} from './useHRWorkflowEngine';

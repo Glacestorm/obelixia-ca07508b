@@ -34110,6 +34110,370 @@ export type Database = {
           },
         ]
       }
+      erp_hr_workflow_decisions: {
+        Row: {
+          attachments: Json | null
+          comment: string | null
+          decided_at: string | null
+          decided_by: string
+          decision: string
+          decision_time_seconds: number | null
+          id: string
+          instance_id: string
+          metadata: Json | null
+          step_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          comment?: string | null
+          decided_at?: string | null
+          decided_by: string
+          decision: string
+          decision_time_seconds?: number | null
+          id?: string
+          instance_id: string
+          metadata?: Json | null
+          step_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          comment?: string | null
+          decided_at?: string | null
+          decided_by?: string
+          decision?: string
+          decision_time_seconds?: number | null
+          id?: string
+          instance_id?: string
+          metadata?: Json | null
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_workflow_decisions_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_workflow_decisions_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_workflow_definitions: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          process_type: string
+          trigger_conditions: Json | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          process_type: string
+          trigger_conditions?: Json | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          process_type?: string
+          trigger_conditions?: Json | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_workflow_definitions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_workflow_delegations: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          delegate_user_id: string
+          delegator_user_id: string
+          id: string
+          is_active: boolean | null
+          reason: string | null
+          scope_process_types: string[] | null
+          valid_from: string
+          valid_to: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          delegate_user_id: string
+          delegator_user_id: string
+          id?: string
+          is_active?: boolean | null
+          reason?: string | null
+          scope_process_types?: string[] | null
+          valid_from?: string
+          valid_to: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          delegate_user_id?: string
+          delegator_user_id?: string
+          id?: string
+          is_active?: boolean | null
+          reason?: string | null
+          scope_process_types?: string[] | null
+          valid_from?: string
+          valid_to?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_workflow_delegations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_workflow_instances: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          current_step_id: string | null
+          current_step_order: number | null
+          definition_id: string
+          entity_id: string
+          entity_summary: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          priority: string | null
+          started_at: string | null
+          started_by: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_step_id?: string | null
+          current_step_order?: number | null
+          definition_id: string
+          entity_id: string
+          entity_summary?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          started_at?: string | null
+          started_by: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_step_id?: string | null
+          current_step_order?: number | null
+          definition_id?: string
+          entity_id?: string
+          entity_summary?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          started_at?: string | null
+          started_by?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_workflow_instances_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_workflow_instances_current_step_id_fkey"
+            columns: ["current_step_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_workflow_instances_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_workflow_sla_tracking: {
+        Row: {
+          assigned_role: string | null
+          assigned_to: string | null
+          breached: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          due_at: string
+          escalated: boolean | null
+          escalation_at: string | null
+          id: string
+          instance_id: string
+          reminder_sent: boolean | null
+          step_id: string
+        }
+        Insert: {
+          assigned_role?: string | null
+          assigned_to?: string | null
+          breached?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_at: string
+          escalated?: boolean | null
+          escalation_at?: string | null
+          id?: string
+          instance_id: string
+          reminder_sent?: boolean | null
+          step_id: string
+        }
+        Update: {
+          assigned_role?: string | null
+          assigned_to?: string | null
+          breached?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_at?: string
+          escalated?: boolean | null
+          escalation_at?: string | null
+          id?: string
+          instance_id?: string
+          reminder_sent?: boolean | null
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_workflow_sla_tracking_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_workflow_sla_tracking_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_workflow_steps: {
+        Row: {
+          approver_role: string | null
+          approver_user_id: string | null
+          auto_approve_conditions: Json | null
+          comments_required: boolean | null
+          conditions: Json | null
+          created_at: string | null
+          definition_id: string
+          delegation_enabled: boolean | null
+          description: string | null
+          escalation_hours: number | null
+          escalation_to_role: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          notification_template: string | null
+          sla_hours: number | null
+          step_order: number
+          step_type: string
+        }
+        Insert: {
+          approver_role?: string | null
+          approver_user_id?: string | null
+          auto_approve_conditions?: Json | null
+          comments_required?: boolean | null
+          conditions?: Json | null
+          created_at?: string | null
+          definition_id: string
+          delegation_enabled?: boolean | null
+          description?: string | null
+          escalation_hours?: number | null
+          escalation_to_role?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          notification_template?: string | null
+          sla_hours?: number | null
+          step_order: number
+          step_type?: string
+        }
+        Update: {
+          approver_role?: string | null
+          approver_user_id?: string | null
+          auto_approve_conditions?: Json | null
+          comments_required?: boolean | null
+          conditions?: Json | null
+          created_at?: string | null
+          definition_id?: string
+          delegation_enabled?: boolean | null
+          description?: string | null
+          escalation_hours?: number | null
+          escalation_to_role?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          notification_template?: string | null
+          sla_hours?: number | null
+          step_order?: number
+          step_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_workflow_steps_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_inventory_count_lines: {
         Row: {
           count_id: string

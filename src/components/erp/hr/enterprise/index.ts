@@ -5,3 +5,6 @@ export { HROrgStructurePanel } from './HROrgStructurePanel';
 export { HRCalendarsPanel } from './HRCalendarsPanel';
 export { HRRolesPermissionsPanel } from './HRRolesPermissionsPanel';
 export { HRAuditTrailPanel } from './HRAuditTrailPanel';
+export { HRWorkflowDesigner } from './HRWorkflowDesigner';
+export { HRApprovalInbox } from './HRApprovalInbox';
+export { HRSLADashboard } from './HRSLADashboard';

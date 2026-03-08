@@ -58,7 +58,7 @@ import { HRInternalMarketplacePanel } from './talent/HRInternalMarketplacePanel'
 import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
 import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
 import { HRTimeClockPanel } from './HRTimeClockPanel';
-import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel } from './enterprise';
+import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard } from './enterprise';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -312,6 +312,9 @@ export function HRModule() {
         {activeModule === 'work-calendars' && <HRCalendarsPanel companyId={demoCompanyId} />}
         {activeModule === 'enterprise-roles' && <HRRolesPermissionsPanel companyId={demoCompanyId} />}
         {activeModule === 'audit-trail' && <HRAuditTrailPanel companyId={demoCompanyId} />}
+        {activeModule === 'workflow-designer' && <HRWorkflowDesigner companyId={demoCompanyId} />}
+        {activeModule === 'approval-inbox' && <HRApprovalInbox companyId={demoCompanyId} />}
+        {activeModule === 'sla-dashboard' && <HRSLADashboard companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
