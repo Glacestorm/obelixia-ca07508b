@@ -200,6 +200,66 @@ FORMATO JSON estricto:
   "remediation_actions": [{ "action": "string", "priority": "high|medium|low", "expected_improvement": number }]
 }`;
       userPrompt = `Audita sesgo del modelo: ${JSON.stringify(params)}`;
+    } else if (action === 'fairness_seed_demo') {
+      // Seed fairness demo data
+      const metricsData = [
+        { company_id, metric_name: 'Tasa de promoción por género', metric_type: 'promotion_rate', protected_attribute: 'gender', group_a_label: 'Mujeres', group_a_value: 12.5, group_b_label: 'Hombres', group_b_value: 18.3, disparate_impact_ratio: 0.68, four_fifths_compliant: false, department: 'Engineering' },
+        { company_id, metric_name: 'Ratio salarial por género', metric_type: 'salary_ratio', protected_attribute: 'gender', group_a_label: 'Mujeres', group_a_value: 42500, group_b_label: 'Hombres', group_b_value: 48200, disparate_impact_ratio: 0.88, four_fifths_compliant: true, department: 'General' },
+        { company_id, metric_name: 'Acceso formación por edad', metric_type: 'training_access', protected_attribute: 'age', group_a_label: '+50 años', group_a_value: 22, group_b_label: '<50 años', group_b_value: 45, disparate_impact_ratio: 0.49, four_fifths_compliant: false, department: 'General' },
+        { company_id, metric_name: 'Tasa contratación diversidad', metric_type: 'hiring_rate', protected_attribute: 'ethnicity', group_a_label: 'Minorías', group_a_value: 8.2, group_b_label: 'Mayoría', group_b_value: 15.6, disparate_impact_ratio: 0.53, four_fifths_compliant: false },
+        { company_id, metric_name: 'Bonus por antigüedad', metric_type: 'bonus_distribution', protected_attribute: 'tenure', group_a_label: '<2 años', group_a_value: 1200, group_b_label: '>2 años', group_b_value: 3400, disparate_impact_ratio: 0.35, four_fifths_compliant: false },
+      ];
+      await supabase.from('erp_hr_fairness_metrics').insert(metricsData);
+
+      const casesData = [
+        { company_id, case_number: 'JC-2026-001', case_type: 'pay_dispute', status: 'investigating', priority: 'high', title: 'Brecha salarial en departamento IT', description: 'Se detecta diferencia salarial >15% en mismo rol por género', department: 'IT', is_anonymous: false },
+        { company_id, case_number: 'JC-2026-002', case_type: 'promotion_dispute', status: 'open', priority: 'medium', title: 'Sesgo en proceso de promoción Q1', description: 'Candidatas con mejores evaluaciones no promovidas frente a candidatos con evaluaciones inferiores', department: 'Sales' },
+        { company_id, case_number: 'JC-2026-003', case_type: 'accommodation_request', status: 'resolved', priority: 'medium', title: 'Solicitud adaptación puesto - discapacidad', resolution: 'Puesto adaptado con equipamiento ergonómico y horario flexible', days_to_resolve: 12, department: 'Operations' },
+      ];
+      await supabase.from('erp_hr_justice_cases').insert(casesData);
+
+      const plansData = [
+        { company_id, plan_name: 'Plan Igualdad Retributiva 2026', plan_type: 'systemic', status: 'active', target_metric: 'salary_ratio', baseline_value: 0.88, target_value: 0.95, current_value: 0.90, progress_percentage: 28, budget: 125000, actions: [{ action: 'Auditoría salarial completa', status: 'completed' }, { action: 'Ajuste salarial fase 1', status: 'in_progress' }, { action: 'Política transparencia salarial', status: 'pending' }] },
+        { company_id, plan_name: 'Formación Anti-Sesgo Hiring', plan_type: 'preventive', status: 'active', target_metric: 'hiring_rate', baseline_value: 0.53, target_value: 0.85, current_value: 0.62, progress_percentage: 45, budget: 35000, actions: [{ action: 'Training reclutadores', status: 'completed' }, { action: 'CV anonimizado', status: 'in_progress' }] },
+      ];
+      await supabase.from('erp_hr_equity_action_plans').insert(plansData as any);
+
+      return json({ success: true, data: { message: 'Fairness demo data seeded' } });
+
+    } else if (action === 'ai_fairness_analysis') {
+      systemPrompt = `Eres un experto en equidad organizacional, justicia laboral, RD 902/2020 (igualdad retributiva), y Directiva UE 2023/970 (transparencia salarial).
+Analiza la situación de equidad de la organización y genera un diagnóstico integral.
+
+FORMATO JSON estricto:
+{
+  "overall_fairness_index": 0-100,
+  "pay_equity_summary": { "gender_gap": number, "age_gap": number, "remediation_needed": boolean },
+  "disparate_impact_alerts": [{ "metric": "string", "attribute": "string", "ratio": number, "description": "string", "severity": "high|critical" }],
+  "intersectional_risks": [{ "groups": ["string"], "risk": "string", "recommendation": "string" }],
+  "regulatory_compliance": { "rd_902_2020": { "score": 0-100, "gaps": ["string"] }, "eu_directive_2023_970": { "score": 0-100, "gaps": ["string"] } },
+  "action_priorities": [{ "priority": 1, "action": "string", "impact": "high|critical", "expected_outcome": "string", "timeline": "string" }],
+  "executive_summary": "string"
+}`;
+      userPrompt = `Analiza la equidad organizacional: ${JSON.stringify(params)}`;
+
+    } else if (action === 'ai_pay_equity_analysis') {
+      systemPrompt = `Eres un auditor de equidad retributiva especializado en RD 902/2020 y la Directiva UE 2023/970 de transparencia salarial.
+Genera un análisis de equidad retributiva para el tipo solicitado.
+
+FORMATO JSON estricto:
+{
+  "overall_equity_score": 0-100,
+  "gap_percentage": number,
+  "affected_employees": number,
+  "remediation_cost": number,
+  "findings": [{ "category": "string", "finding": "string", "severity": "low|medium|high|critical", "affected_count": number }],
+  "salary_bands_analysis": [{ "band": "string", "gap": number, "compliant": boolean }],
+  "recommendations": [{ "action": "string", "priority": "high|medium|low", "cost_estimate": number, "timeline": "string" }],
+  "legal_obligations": ["string"],
+  "summary": "string"
+}`;
+      userPrompt = `Análisis de equidad retributiva tipo: ${params?.analysis_type || 'comprehensive'}. Contexto: ${JSON.stringify(params)}`;
+
     } else if (action === 'ai_security_analysis') {
       systemPrompt = `Eres un CISO experto en seguridad de RRHH enterprise, GDPR, LOPDGDD, ISO 27001 y SOX.
 Analiza la postura de seguridad de la organización y genera un informe ejecutivo.

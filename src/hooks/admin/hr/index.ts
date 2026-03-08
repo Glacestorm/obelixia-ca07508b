@@ -237,6 +237,14 @@ export type {
 
 // Premium Phase 3 - Workforce Planning & Scenario Studio
 export { useHRWorkforcePlanning } from './useHRWorkforcePlanning';
+
+// Premium Phase 4 - Fairness / Justice Engine
+export { useHRFairnessEngine } from './useHRFairnessEngine';
+export type {
+  AnalysisType, MetricType, ProtectedAttribute, CaseType, CaseStatus,
+  PayEquityAnalysis, FairnessMetric, JusticeCase, EquityActionPlan,
+  FairnessStats, FairnessAnalysis
+} from './useHRFairnessEngine';
 export type {
   WorkforcePlan as StrategicWorkforcePlan, HeadcountModel, Scenario, SkillGapForecast,
   CostProjection, WorkforcePlanningStats, PlanDetail
