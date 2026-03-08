@@ -715,6 +715,9 @@ function ERPModularDashboardContent() {
             {utilitySection === 'premium-api-webhooks' && currentCompany?.id && (
               <PremiumAPIWebhooksPanel companyId={currentCompany.id} />
             )}
+            {utilitySection === 'enterprise-integrations' && currentCompany?.id && (
+              <EnterpriseIntegrationsPanel companyId={currentCompany.id} />
+            )}
           </div>
         </TabsContent>
       </Tabs>
