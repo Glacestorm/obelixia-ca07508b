@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import {
   Activity, ArrowRightLeft, Bell, Clock, Settings, FileText,
   Brain, HeartPulse, Download, Database, HelpCircle,
-  Wrench, ChevronLeft, Sparkles, Shield, BarChart3
+  Wrench, ChevronLeft, Sparkles, Shield, BarChart3, ExternalLink
 } from 'lucide-react';
 
 export type UtilitySection =
@@ -25,7 +25,8 @@ export type UtilitySection =
   | 'analytics-bi'
   | 'reporting-engine'
   | 'regulatory-reporting'
-  | 'premium-api-webhooks';
+  | 'premium-api-webhooks'
+  | 'enterprise-integrations';
 
 interface UtilityItem {
   id: UtilitySection;
@@ -77,6 +78,7 @@ const CATEGORIES: UtilityCategory[] = [
     color: 'from-amber-500/15 to-amber-500/5 border-amber-500/20',
     items: [
       { id: 'premium-api-webhooks' as UtilitySection, label: 'API & Webhooks', description: 'Integración enterprise: API, webhooks y eventos', icon: <ArrowRightLeft className="h-4 w-4" /> },
+      { id: 'enterprise-integrations' as UtilitySection, label: 'Integraciones Enterprise', description: 'BI Export, DMS Documental, Firma Electrónica', icon: <ExternalLink className="h-4 w-4" /> },
       { id: 'premium-settings', label: 'Configuración', description: 'Ajustes de módulos Premium', icon: <Settings className="h-4 w-4" /> },
       { id: 'premium-export', label: 'Exportar', description: 'Exportación masiva de datos y reportes', icon: <Download className="h-4 w-4" /> },
       { id: 'premium-seed', label: 'Seed Data', description: 'Regenerar datos demo Premium', icon: <Database className="h-4 w-4" /> },

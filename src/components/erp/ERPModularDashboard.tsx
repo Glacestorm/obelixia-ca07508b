@@ -78,6 +78,7 @@ import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFee
 import { HRReportingEnginePanel } from './hr/reporting-engine';
 import { ComplianceReportingPanel } from './hr/regulatory-reporting';
 import { PremiumAPIWebhooksPanel } from './hr/premium-api';
+import { EnterpriseIntegrationsPanel } from './hr/enterprise-integrations';
 import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -713,6 +714,9 @@ function ERPModularDashboardContent() {
             )}
             {utilitySection === 'premium-api-webhooks' && currentCompany?.id && (
               <PremiumAPIWebhooksPanel companyId={currentCompany.id} />
+            )}
+            {utilitySection === 'enterprise-integrations' && currentCompany?.id && (
+              <EnterpriseIntegrationsPanel companyId={currentCompany.id} />
             )}
           </div>
         </TabsContent>
