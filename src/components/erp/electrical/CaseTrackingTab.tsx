@@ -13,6 +13,7 @@ import {
   CalendarIcon, Save, Eye, CheckCircle2, Clock, ArrowRight,
   FileText, Phone, TrendingUp, AlertTriangle, Plus
 } from 'lucide-react';
+import { PermissionGate } from './PermissionGate';
 import { useEnergyTracking } from '@/hooks/erp/useEnergyTracking';
 import { useEnergyTasks, TASK_TYPES, TASK_STATUSES, EnergyTask } from '@/hooks/erp/useEnergyTasks';
 import { cn } from '@/lib/utils';
