@@ -117,12 +117,12 @@ export function useHRActiveRoleExperience(companyId: string | undefined): Active
         .maybeSingle();
 
       if (profileData) {
-        const parsed: RoleExperienceProfile = {
+        const parsed = {
           ...profileData,
           visible_modules: Array.isArray(profileData.visible_modules) ? profileData.visible_modules : [],
           quick_actions: Array.isArray(profileData.quick_actions) ? profileData.quick_actions : [],
           kpi_widgets: Array.isArray(profileData.kpi_widgets) ? profileData.kpi_widgets : [],
-        } as RoleExperienceProfile;
+        } as unknown as RoleExperienceProfile;
         setProfile(parsed);
 
         // 2. Fetch dashboards for this profile
