@@ -305,4 +305,4 @@ export type { ModuleEmitHelpers } from './useHROrchestrationBridge';
 
 // P11 - Compliance Automation Engine
 export { useHRComplianceAutomation } from './useHRComplianceAutomation';
-export type { ComplianceFramework, ComplianceChecklistItem, ComplianceAudit, ComplianceAlert, ComplianceStats } from './useHRComplianceAutomation';
+export type { ComplianceFramework, ComplianceChecklistItem, ComplianceAudit as P11ComplianceAudit, ComplianceAlert, ComplianceStats as P11ComplianceStats } from './useHRComplianceAutomation';
