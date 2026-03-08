@@ -310,6 +310,15 @@ export function CaseRecommendationTab({ caseId, onOpenSimulator }: Props) {
                 </p>
               </div>
             </div>
+            {savingsVerification.insufficientData && (
+              <div className="mt-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Datos insuficientes para una comparación fiable (mín. 2 facturas pre y post). Resultado orientativo.
+                  Costes normalizados a 30 días para compensar periodos de facturación diferentes.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
