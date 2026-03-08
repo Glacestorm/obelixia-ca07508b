@@ -23,7 +23,8 @@ export type UtilitySection =
   | 'premium-seed' | 'premium-help'
   | 'compliance-automation'
   | 'analytics-bi'
-  | 'reporting-engine';
+  | 'reporting-engine'
+  | 'regulatory-reporting';
 
 interface UtilityItem {
   id: UtilitySection;
