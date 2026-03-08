@@ -152,7 +152,7 @@ export function EnergyAdvancedAnalytics({ companyId }: Props) {
           return acc;
         }, {} as Record<string, { current: number; count: number }>);
 
-      const costCompData = Object.entries(costComp).slice(0, 6).map(([caseName, d]) => {
+      const costCompData = Object.entries(costComp).slice(0, 6).map(([caseName, d]: [string, { current: number; count: number }]) => {
         const savings = recs.find(r => cases.find(c => c.title?.startsWith(caseName) && c.id === r.case_id))?.monthly_savings_estimate || d.current * 0.15;
         return {
           case: caseName,
