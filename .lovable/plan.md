@@ -1,68 +1,61 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium
 
-## Plan: Integrar Utilidades RRHH dentro del módulo HRModule
+## Estado de Implementación
 
-### Problema actual
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-Las ~18 utilidades HR-specific (Dashboard Premium, Orquestación, Analytics BI, Reporting Engine, Regulatory Reporting, Board Packs, API/Webhooks, Integraciones Enterprise, Compliance Automation, etc.) viven en una pestaña "Utilidades" a nivel del **ERP general** (`ERPModularDashboard.tsx`, líneas 656-726). No son accesibles desde dentro del módulo RRHH (`HRModule.tsx`), lo cual es inconsistente: un usuario dentro de RRHH tiene que salir al nivel ERP para acceder a herramientas que son exclusivamente de RRHH.
+## Premium Phases — Enterprise Differentiators
 
-### Propuesta por fases
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
----
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-**Fase 1 — Mover la navegación y el rendering al HRModule**
+## FASE 2 — Completada ✅
 
-- Añadir una nueva categoría en `HRNavigationMenu.tsx` (mega-menu) llamada **"Utilidades"** o **"Premium & Operaciones"** que contenga los 3 grupos ya definidos en `HRUtilitiesNavigation`: Centro de Mando, Inteligencia & Análisis, Administración.
-- Registrar todas las `UtilitySection` como módulos válidos dentro de `HRModule.tsx` (añadir los renderizados condicionales que hoy están en `ERPModularDashboard`).
-- Mover los imports de los componentes de utilidad (HRPremiumExecutiveDashboard, HROrchestrationPanel, HRAnalyticsBIPremiumPanel, HRReportingEnginePanel, ComplianceReportingPanel, HRBoardPackPanel, PremiumAPIWebhooksPanel, EnterpriseIntegrationsPanel, etc.) desde `ERPModularDashboard.tsx` a `HRModule.tsx`.
-- Mantener `HRUtilitiesNavigation` como componente reutilizable para la vista de grid cuando el usuario entra en la categoría "Utilidades" desde el mega-menu.
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-**Resultado:** Todas las utilidades HR son accesibles directamente dentro del módulo RRHH.
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
----
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-**Fase 2 — Limpiar ERPModularDashboard**
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-- Eliminar la pestaña `utilities` del `TabsList` y su `TabsContent` completo en `ERPModularDashboard.tsx`.
-- Eliminar los imports de componentes HR premium/utility que ya no se usan a nivel ERP.
-- Eliminar el state `utilitySection` y el componente `PremiumReseedPanel` si solo se usa ahí (o moverlo también al HRModule).
-- Reducir el acoplamiento: `ERPModularDashboard` deja de conocer los internos de RRHH.
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-**Resultado:** ERPModularDashboard queda más limpio, sin lógica HR-specific.
-
----
-
-**Fase 3 — Filtrar utilidades no-HR (si aplica)**
-
-- Revisar si alguna de las 18 utilidades es realmente cross-módulo (ej: "IA Híbrida" / `AIUnifiedDashboard`, "Auditorías" / `UnifiedAuditGenerator`). Estas podrían quedarse a nivel ERP o duplicar acceso.
-- Las que son puramente HR (Reporting Engine, Regulatory Reporting, Board Packs, API/Webhooks, Enterprise Integrations, Compliance Automation, Analytics BI, Orchestration, Alerts, Feed, Health Check, Export, Seed, Settings, Help) se integran exclusivamente en HRModule.
-- Las cross-módulo (IA Híbrida, Auditoría unificada) se mantienen accesibles desde ambos niveles o solo desde ERP.
-
-**Resultado:** Separación limpia entre utilidades HR-only y utilidades ERP-wide.
-
----
-
-**Fase 4 — Ajuste de UX y breadcrumbs**
-
-- Adaptar `HRUtilitiesNavigation` para que funcione correctamente dentro del contexto de `HRModule` (breadcrumbs coherentes, botón "volver" apunte a la categoría correcta dentro del mega-menu HR).
-- Verificar que la navegación del mega-menu refleje el estado activo cuando se está en una utilidad.
-- Test manual de flujos de navegación dentro del módulo.
-
-**Resultado:** Experiencia de usuario coherente sin saltos de contexto.
-
----
-
-### Resumen de cambios por archivo
-
-| Archivo | Acción |
-|---|---|
-| `HRNavigationMenu.tsx` | Añadir categoría "Utilidades" con los 3 sub-grupos |
-| `HRModule.tsx` | Añadir ~18 renderizados condicionales + imports |
-| `ERPModularDashboard.tsx` | Eliminar tab "utilities", imports, state `utilitySection`, `PremiumReseedPanel` |
-| `HRUtilitiesNavigation.tsx` | Ajustar breadcrumbs para contexto intra-módulo |
-
-### Riesgos
-
-- Componentes cross-módulo (IA Híbrida, Auditoría) necesitan decisión explícita sobre dónde viven.
-- `HRModule.tsx` ya tiene ~70 módulos renderizados; añadir 18 más lo hace más grande pero sigue el patrón existente.
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard

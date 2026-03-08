@@ -65,76 +65,16 @@ import { GaliaDashboard } from '@/components/verticals/galia';
 import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
-import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
-import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell, Clock, HeartPulse, Download, HelpCircle } from 'lucide-react';
-import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
-import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel, HRAnalyticsBIPremiumPanel } from './hr/premium-dashboard';
-import { HRReportingEnginePanel } from './hr/reporting-engine';
-import { ComplianceReportingPanel } from './hr/regulatory-reporting';
-import { PremiumAPIWebhooksPanel } from './hr/premium-api';
-import { EnterpriseIntegrationsPanel } from './hr/enterprise-integrations';
-import { HRBoardPackPanel } from './hr/board-pack';
-import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
-
-function PremiumReseedPanel({ companyId }: { companyId?: string }) {
-  const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
-
-  const statusIcon = (s: SeedPhase['status']) => {
-    if (s === 'done') return <Check2 className="h-4 w-4 text-green-500" />;
-    if (s === 'running') return <Spin className="h-4 w-4 animate-spin text-primary" />;
-    if (s === 'error') return <AlertC className="h-4 w-4 text-destructive" />;
-    return <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />;
-  };
-
-  return (
-    <div className="space-y-4">
-      <p className="text-muted-foreground text-sm">
-        Regenera los datos demo de las 8 fases Premium HR con company_id UUID correcto.
-        Este proceso es idempotente y seguro para ejecutar múltiples veces.
-      </p>
-      <div className="flex items-center gap-3">
-        <Button
-          onClick={() => companyId && runReseed(companyId)}
-          disabled={isRunning || !companyId}
-          className="gap-2"
-        >
-          {isRunning ? <Spin className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          {isRunning ? 'Ejecutando...' : 'Ejecutar Re-Seed Premium'}
-        </Button>
-        {!isRunning && phases.some(p => p.status !== 'pending') && (
-          <Button variant="outline" size="sm" onClick={reset}>Reset</Button>
-        )}
-      </div>
-      {(isRunning || phases.some(p => p.status !== 'pending')) && (
-        <>
-          <Progress value={progress} className="h-2" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {phases.map(phase => (
-              <div key={phase.id} className="flex items-center gap-2 p-2 rounded-lg border bg-card text-sm">
-                {statusIcon(phase.status)}
-                <span className={phase.status === 'error' ? 'text-destructive' : ''}>{phase.label}</span>
-                {phase.error && <span className="text-xs text-destructive truncate ml-auto max-w-[150px]" title={phase.error}>{phase.error}</span>}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+import { ArrowRightLeft } from 'lucide-react';
 
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
   const [activeTab, setActiveTab] = useState('overview');
   const [needsSetup, setNeedsSetup] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
-  const [utilitySection, setUtilitySection] = useState<UtilitySection | null>(null);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // P9.5 — Role Experience Activation
@@ -152,7 +92,7 @@ function ERPModularDashboardContent() {
   }, [roleExperience.trackModuleUsage]);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
-  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'migration', 'utilities'];
+  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'migration'];
   
   // Detectar si estamos dentro de un módulo específico
   const isInsideModule = moduleTabIds.includes(activeTab);
@@ -357,7 +297,7 @@ function ERPModularDashboardContent() {
               {activeTab === 'galia' && <><Landmark className="h-4 w-4" /> LEADER</>}
               {activeTab === 'academia' && <><GraduationCap className="h-4 w-4" /> Academia</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
-              {activeTab === 'utilities' && <><Wrench className="h-4 w-4" /> Utilidades</>}
+              {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
             </Badge>
           )}
           
@@ -404,12 +344,6 @@ function ERPModularDashboardContent() {
             <TabsTrigger value="migration" className="gap-2">
               <ArrowRightLeft className="h-4 w-4" />
               Migración
-            </TabsTrigger>
-          )}
-          {hasPermission('admin.all') && (
-            <TabsTrigger value="utilities" className="gap-2">
-              <Wrench className="h-4 w-4" />
-              Utilidades
             </TabsTrigger>
           )}
         </TabsList>
@@ -653,77 +587,6 @@ function ERPModularDashboardContent() {
           <ERPMigrationDashboard />
         </TabsContent>
 
-        {/* Utilities Tab - With Sub-navigation for Audit + AI Hybrid */}
-        <TabsContent value="utilities">
-          <div className="space-y-6">
-            <HRUtilitiesNavigation
-              activeSection={utilitySection}
-              onSectionChange={setUtilitySection}
-            />
-
-            {/* Section Content */}
-            {utilitySection === 'premium-dash' && (
-              <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'orchestration' && (
-              <HROrchestrationPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'premium-alerts' && (
-              <HRPremiumAlertsPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'premium-feed' && (
-              <HRPremiumActivityFeed companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'premium-settings' && (
-              <HRPremiumSettingsPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'audit' && (
-              <div className="space-y-4">
-                <p className="text-muted-foreground">
-                  Generador unificado de informes de auditoría para ERP, CRM o Suite Integral.
-                  Selecciona el alcance y nivel de detalle para generar PDFs profesionales.
-                </p>
-                <UnifiedAuditGenerator defaultScope="erp" />
-              </div>
-            )}
-            {utilitySection === 'ai-hybrid' && (
-              <AIUnifiedDashboard />
-            )}
-            {utilitySection === 'premium-health' && (
-              <HRPremiumHealthCheckPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'premium-export' && (
-              <HRPremiumExportPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'premium-seed' && (
-              <PremiumReseedPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'premium-help' && (
-              <HRPremiumHelpCenter />
-            )}
-            {utilitySection === 'compliance-automation' && (
-              <HRComplianceAutomationPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'analytics-bi' && (
-              <HRAnalyticsBIPremiumPanel companyId={currentCompany?.id} />
-            )}
-            {utilitySection === 'reporting-engine' && currentCompany?.id && (
-              <HRReportingEnginePanel companyId={currentCompany.id} />
-            )}
-            {utilitySection === 'regulatory-reporting' && currentCompany?.id && (
-              <ComplianceReportingPanel companyId={currentCompany.id} />
-            )}
-            {utilitySection === 'premium-api-webhooks' && currentCompany?.id && (
-              <PremiumAPIWebhooksPanel companyId={currentCompany.id} />
-            )}
-            {utilitySection === 'enterprise-integrations' && currentCompany?.id && (
-              <EnterpriseIntegrationsPanel companyId={currentCompany.id} />
-            )}
-            {utilitySection === 'board-pack' && currentCompany?.id && (
-              <HRBoardPackPanel companyId={currentCompany.id} />
-            )}
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );

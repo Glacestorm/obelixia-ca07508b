@@ -1,9 +1,8 @@
 /**
- * HRUtilitiesNavigation — Modern grouped navigation for Utilidades del Sistema
- * Replaces the overflowing horizontal tabs with a category-based layout
+ * HRUtilitiesNavigation — In-module utility navigation for HRModule
+ * Displays category grid when no utility is active, breadcrumbs when one is selected
  */
 
-import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,23 +10,24 @@ import { cn } from '@/lib/utils';
 import {
   Activity, ArrowRightLeft, Bell, Clock, Settings, FileText,
   Brain, HeartPulse, Download, Database, HelpCircle,
-  Wrench, ChevronLeft, Sparkles, Shield, BarChart3, ExternalLink
+  Wrench, ChevronLeft, Sparkles, Shield, BarChart3, ExternalLink,
+  Briefcase, Zap, Gauge
 } from 'lucide-react';
 
 export type UtilitySection =
-  | 'premium-dash' | 'orchestration'
-  | 'premium-alerts' | 'premium-feed'
-  | 'premium-settings'
-  | 'audit' | 'ai-hybrid'
-  | 'premium-health' | 'premium-export'
-  | 'premium-seed' | 'premium-help'
-  | 'compliance-automation'
-  | 'analytics-bi'
-  | 'reporting-engine'
-  | 'regulatory-reporting'
-  | 'premium-api-webhooks'
-  | 'enterprise-integrations'
-  | 'board-pack';
+  | 'util-premium-dash' | 'util-orchestration'
+  | 'util-alerts' | 'util-feed'
+  | 'util-settings'
+  | 'util-audit' | 'util-ai-hybrid'
+  | 'util-health' | 'util-export'
+  | 'util-seed' | 'util-help'
+  | 'util-compliance'
+  | 'util-analytics-bi'
+  | 'util-reporting'
+  | 'util-regulatory'
+  | 'util-api-webhooks'
+  | 'util-integrations'
+  | 'util-board-pack';
 
 interface UtilityItem {
   id: UtilitySection;
@@ -51,10 +51,10 @@ const CATEGORIES: UtilityCategory[] = [
     icon: <Sparkles className="h-5 w-5" />,
     color: 'from-primary/15 to-primary/5 border-primary/20',
     items: [
-      { id: 'premium-dash', label: 'Dashboard Premium', description: 'Vista ejecutiva con KPIs de los 8 módulos', icon: <Activity className="h-4 w-4" /> },
-      { id: 'orchestration', label: 'Orquestación', description: 'Reglas reactivas inter-módulo', icon: <ArrowRightLeft className="h-4 w-4" /> },
-      { id: 'premium-alerts', label: 'Alertas', description: 'Centro de alertas y notificaciones críticas', icon: <Bell className="h-4 w-4" /> },
-      { id: 'premium-feed', label: 'Actividad', description: 'Timeline de actividad en tiempo real', icon: <Clock className="h-4 w-4" /> },
+      { id: 'util-premium-dash', label: 'Dashboard Premium', description: 'Vista ejecutiva con KPIs de los 8 módulos', icon: <Activity className="h-4 w-4" /> },
+      { id: 'util-orchestration', label: 'Orquestación', description: 'Reglas reactivas inter-módulo', icon: <ArrowRightLeft className="h-4 w-4" /> },
+      { id: 'util-alerts', label: 'Alertas', description: 'Centro de alertas y notificaciones críticas', icon: <Bell className="h-4 w-4" /> },
+      { id: 'util-feed', label: 'Actividad', description: 'Timeline de actividad en tiempo real', icon: <Clock className="h-4 w-4" /> },
     ],
   },
   {
@@ -63,14 +63,14 @@ const CATEGORIES: UtilityCategory[] = [
     icon: <Brain className="h-5 w-5" />,
     color: 'from-violet-500/15 to-violet-500/5 border-violet-500/20',
     items: [
-      { id: 'analytics-bi', label: 'Analytics BI', description: 'Dashboard ejecutivo cross-module con IA predictiva', icon: <BarChart3 className="h-4 w-4" /> },
-      { id: 'reporting-engine' as UtilitySection, label: 'Reporting Engine', description: 'Reportes ejecutivos avanzados con datos reales', icon: <FileText className="h-4 w-4" /> },
-      { id: 'regulatory-reporting' as UtilitySection, label: 'Compliance Regulatorio', description: 'Informes regulatorios: Igualdad, GDPR, EU AI Act, Auditoría', icon: <Shield className="h-4 w-4" /> },
-      { id: 'board-pack' as UtilitySection, label: 'Board Pack / Comité', description: 'Packs ejecutivos consolidados para consejos y comités de dirección', icon: <FileText className="h-4 w-4" /> },
-      { id: 'ai-hybrid', label: 'IA Híbrida', description: 'Dashboard unificado de inteligencia artificial', icon: <Brain className="h-4 w-4" /> },
-      { id: 'compliance-automation', label: 'Cumplimiento', description: 'Motor automatizado: GDPR, LOPDGDD, Igualdad, EU AI Act', icon: <Shield className="h-4 w-4" /> },
-      { id: 'audit', label: 'Auditorías', description: 'Generador de informes de auditoría', icon: <FileText className="h-4 w-4" /> },
-      { id: 'premium-health', label: 'Health Check', description: 'Diagnóstico de salud del sistema', icon: <HeartPulse className="h-4 w-4" /> },
+      { id: 'util-analytics-bi', label: 'Analytics BI', description: 'Dashboard ejecutivo cross-module con IA predictiva', icon: <BarChart3 className="h-4 w-4" /> },
+      { id: 'util-reporting', label: 'Reporting Engine', description: 'Reportes ejecutivos avanzados con datos reales', icon: <FileText className="h-4 w-4" /> },
+      { id: 'util-regulatory', label: 'Compliance Regulatorio', description: 'Informes regulatorios: Igualdad, GDPR, EU AI Act, Auditoría', icon: <Shield className="h-4 w-4" /> },
+      { id: 'util-board-pack', label: 'Board Pack / Comité', description: 'Packs ejecutivos consolidados para consejos y comités', icon: <Briefcase className="h-4 w-4" /> },
+      { id: 'util-ai-hybrid', label: 'IA Híbrida', description: 'Dashboard unificado de inteligencia artificial', icon: <Brain className="h-4 w-4" /> },
+      { id: 'util-compliance', label: 'Cumplimiento', description: 'Motor automatizado: GDPR, LOPDGDD, Igualdad, EU AI Act', icon: <Shield className="h-4 w-4" /> },
+      { id: 'util-audit', label: 'Auditorías', description: 'Generador de informes de auditoría', icon: <FileText className="h-4 w-4" /> },
+      { id: 'util-health', label: 'Health Check', description: 'Diagnóstico de salud del sistema', icon: <HeartPulse className="h-4 w-4" /> },
     ],
   },
   {
@@ -79,19 +79,19 @@ const CATEGORIES: UtilityCategory[] = [
     icon: <Settings className="h-5 w-5" />,
     color: 'from-amber-500/15 to-amber-500/5 border-amber-500/20',
     items: [
-      { id: 'premium-api-webhooks' as UtilitySection, label: 'API & Webhooks', description: 'Integración enterprise: API, webhooks y eventos', icon: <ArrowRightLeft className="h-4 w-4" /> },
-      { id: 'enterprise-integrations' as UtilitySection, label: 'Integraciones Enterprise', description: 'BI Export, DMS Documental, Firma Electrónica', icon: <ExternalLink className="h-4 w-4" /> },
-      { id: 'premium-settings', label: 'Configuración', description: 'Ajustes de módulos Premium', icon: <Settings className="h-4 w-4" /> },
-      { id: 'premium-export', label: 'Exportar', description: 'Exportación masiva de datos y reportes', icon: <Download className="h-4 w-4" /> },
-      { id: 'premium-seed', label: 'Seed Data', description: 'Regenerar datos demo Premium', icon: <Database className="h-4 w-4" /> },
-      { id: 'premium-help', label: 'Centro de Ayuda', description: 'Documentación y soporte', icon: <HelpCircle className="h-4 w-4" /> },
+      { id: 'util-api-webhooks', label: 'API & Webhooks', description: 'Integración enterprise: API, webhooks y eventos', icon: <Zap className="h-4 w-4" /> },
+      { id: 'util-integrations', label: 'Integraciones Enterprise', description: 'BI Export, DMS Documental, Firma Electrónica', icon: <ExternalLink className="h-4 w-4" /> },
+      { id: 'util-settings', label: 'Configuración', description: 'Ajustes de módulos Premium', icon: <Settings className="h-4 w-4" /> },
+      { id: 'util-export', label: 'Exportar', description: 'Exportación masiva de datos y reportes', icon: <Download className="h-4 w-4" /> },
+      { id: 'util-seed', label: 'Seed Data', description: 'Regenerar datos demo Premium', icon: <Database className="h-4 w-4" /> },
+      { id: 'util-help', label: 'Centro de Ayuda', description: 'Documentación y soporte', icon: <HelpCircle className="h-4 w-4" /> },
     ],
   },
 ];
 
 interface Props {
   activeSection: UtilitySection | null;
-  onSectionChange: (section: UtilitySection) => void;
+  onSectionChange: (section: UtilitySection | null) => void;
   className?: string;
 }
 
@@ -103,12 +103,11 @@ export function HRUtilitiesNavigation({ activeSection, onSectionChange, classNam
 
     return (
       <div className={cn("space-y-3", className)}>
-        {/* Breadcrumb bar */}
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onSectionChange(null as any)}
+            onClick={() => onSectionChange(null)}
             className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -126,7 +125,6 @@ export function HRUtilitiesNavigation({ activeSection, onSectionChange, classNam
             <span className="text-sm font-medium">{current?.label}</span>
           </div>
 
-          {/* Quick-switch pills */}
           <div className="ml-auto flex items-center gap-1 overflow-x-auto">
             {category?.items.filter(i => i.id !== activeSection).map(item => (
               <Button
@@ -146,11 +144,10 @@ export function HRUtilitiesNavigation({ activeSection, onSectionChange, classNam
     );
   }
 
-  // Category grid view
   return (
     <div className={cn("space-y-5", className)}>
       <div className="flex items-center gap-2">
-        <Wrench className="h-5 w-5 text-primary" />
+        <Gauge className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
         <Badge variant="secondary" className="ml-2 text-[10px]">
           {CATEGORIES.reduce((a, c) => a + c.items.length, 0)} herramientas

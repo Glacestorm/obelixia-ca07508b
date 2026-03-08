@@ -72,6 +72,59 @@ import { HRDigitalTwinPanel } from './digital-twin/HRDigitalTwinPanel';
 import { HRLegalEnginePanel } from './legal-engine/HRLegalEnginePanel';
 import { HRCNAEIntelligencePanel } from './cnae-intelligence/HRCNAEIntelligencePanel';
 import { HRRoleExperiencePanel } from './role-experience/HRRoleExperiencePanel';
+import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel, HRAnalyticsBIPremiumPanel } from './premium-dashboard';
+import { HRReportingEnginePanel } from './reporting-engine';
+import { ComplianceReportingPanel } from './regulatory-reporting';
+import { PremiumAPIWebhooksPanel } from './premium-api';
+import { EnterpriseIntegrationsPanel } from './enterprise-integrations';
+import { HRBoardPackPanel } from './board-pack';
+import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
+import { Progress } from '@/components/ui/progress';
+import { CheckCircle2, Loader2 as Spin, AlertCircle as AlertC, Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
+import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
+import { HRUtilitiesNavigation, type UtilitySection } from './premium-dashboard/HRUtilitiesNavigation';
+
+function PremiumReseedPanel({ companyId }: { companyId?: string }) {
+  const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
+  const statusIcon = (s: SeedPhase['status']) => {
+    if (s === 'done') return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+    if (s === 'running') return <Spin className="h-4 w-4 animate-spin text-primary" />;
+    if (s === 'error') return <AlertC className="h-4 w-4 text-destructive" />;
+    return <div className="h-4 w-4 rounded-full border border-muted-foreground/30" />;
+  };
+  return (
+    <div className="space-y-4">
+      <p className="text-muted-foreground text-sm">
+        Regenera los datos demo de las 8 fases Premium HR con company_id UUID correcto.
+      </p>
+      <div className="flex items-center gap-3">
+        <Button onClick={() => companyId && runReseed(companyId)} disabled={isRunning || !companyId} className="gap-2">
+          {isRunning ? <Spin className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {isRunning ? 'Ejecutando...' : 'Ejecutar Re-Seed Premium'}
+        </Button>
+        {!isRunning && phases.some(p => p.status !== 'pending') && (
+          <Button variant="outline" size="sm" onClick={reset}>Reset</Button>
+        )}
+      </div>
+      {(isRunning || phases.some(p => p.status !== 'pending')) && (
+        <>
+          <Progress value={progress} className="h-2" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {phases.map(phase => (
+              <div key={phase.id} className="flex items-center gap-2 p-2 rounded-lg border bg-card text-sm">
+                {statusIcon(phase.status)}
+                <span className={phase.status === 'error' ? 'text-destructive' : ''}>{phase.label}</span>
+                {phase.error && <span className="text-xs text-destructive truncate ml-auto max-w-[150px]" title={phase.error}>{phase.error}</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -358,6 +411,52 @@ export function HRModule() {
         {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={companyId} />}
         {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={companyId} />}
         {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={companyId} />}
+
+        {/* Utilidades — grid de navegación */}
+        {activeModule === 'util-grid' && (
+          <HRUtilitiesNavigation
+            activeSection={null}
+            onSectionChange={(section) => {
+              if (section) setActiveModule(section);
+            }}
+          />
+        )}
+
+        {/* Utilidades Premium — con breadcrumbs */}
+        {activeModule.startsWith('util-') && activeModule !== 'util-grid' && (
+          <HRUtilitiesNavigation
+            activeSection={activeModule as UtilitySection}
+            onSectionChange={(section) => {
+              setActiveModule(section ? section : 'util-grid');
+            }}
+          />
+        )}
+
+        {activeModule === 'util-premium-dash' && <HRPremiumExecutiveDashboard companyId={companyId} />}
+        {activeModule === 'util-orchestration' && <HROrchestrationPanel companyId={companyId} />}
+        {activeModule === 'util-alerts' && <HRPremiumAlertsPanel companyId={companyId} />}
+        {activeModule === 'util-feed' && <HRPremiumActivityFeed companyId={companyId} />}
+        {activeModule === 'util-settings' && <HRPremiumSettingsPanel companyId={companyId} />}
+        {activeModule === 'util-audit' && (
+          <div className="space-y-4">
+            <p className="text-muted-foreground">
+              Generador unificado de informes de auditoría para ERP, CRM o Suite Integral.
+            </p>
+            <UnifiedAuditGenerator defaultScope="erp" />
+          </div>
+        )}
+        {activeModule === 'util-ai-hybrid' && <AIUnifiedDashboard />}
+        {activeModule === 'util-health' && <HRPremiumHealthCheckPanel companyId={companyId} />}
+        {activeModule === 'util-export' && <HRPremiumExportPanel companyId={companyId} />}
+        {activeModule === 'util-seed' && <PremiumReseedPanel companyId={companyId} />}
+        {activeModule === 'util-help' && <HRPremiumHelpCenter />}
+        {activeModule === 'util-compliance' && <HRComplianceAutomationPanel companyId={companyId} />}
+        {activeModule === 'util-analytics-bi' && <HRAnalyticsBIPremiumPanel companyId={companyId} />}
+        {activeModule === 'util-reporting' && <HRReportingEnginePanel companyId={companyId} />}
+        {activeModule === 'util-regulatory' && <ComplianceReportingPanel companyId={companyId} />}
+        {activeModule === 'util-api-webhooks' && <PremiumAPIWebhooksPanel companyId={companyId} />}
+        {activeModule === 'util-integrations' && <EnterpriseIntegrationsPanel companyId={companyId} />}
+        {activeModule === 'util-board-pack' && <HRBoardPackPanel companyId={companyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
