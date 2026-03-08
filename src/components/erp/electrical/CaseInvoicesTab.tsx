@@ -102,6 +102,16 @@ export function CaseInvoicesTab({ caseId }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }, [uploadPdf]);
 
+  // Check for potential duplicate invoice
+  const isDuplicate = useCallback((billingStart: string | null, billingEnd: string | null, totalAmount: number | null): boolean => {
+    if (!billingStart || !billingEnd) return false;
+    return invoices.some(inv =>
+      inv.billing_start === billingStart &&
+      inv.billing_end === billingEnd &&
+      inv.total_amount === totalAmount
+    );
+  }, [invoices]);
+
   // PDF parse: upload → parse → pre-fill form → create invoice
   const handleParsePdf = useCallback(async () => {
     const file = parseFileRef.current?.files?.[0];
@@ -125,12 +135,24 @@ export function CaseInvoicesTab({ caseId }: Props) {
       if (error) throw error;
 
       if (!data?.success || data?.data?.parseError) {
-        throw new Error('No se pudo parsear el PDF');
+        throw new Error('No se pudo parsear el PDF. Puede ser un PDF escaneado o con formato no estándar.');
       }
 
       const p = data.data;
+      const confidence = p.confidence || 0;
+      const warnings: string[] = p.warnings || [];
 
-      // 3. Create invoice with parsed data
+      // 3. Duplicate check
+      if (isDuplicate(p.billing_start, p.billing_end, p.total_amount)) {
+        toast.warning('⚠️ Posible factura duplicada detectada (mismo periodo y importe). Revisa antes de continuar.');
+      }
+
+      // 4. Low confidence warning
+      if (confidence < 50) {
+        toast.warning(`⚠️ Confianza baja (${confidence}%). Revisa todos los campos manualmente.`);
+      }
+
+      // 5. Create invoice with parsed data
       const invoicePayload: any = {
         billing_start: p.billing_start || null,
         billing_end: p.billing_end || null,
@@ -152,24 +174,25 @@ export function CaseInvoicesTab({ caseId }: Props) {
 
       const inv = await createInvoice(invoicePayload);
       if (inv) {
-        const confidence = p.confidence || 0;
-        const warnings = p.warnings?.length || 0;
-        toast.success(`Factura extraída (confianza: ${confidence}%${warnings > 0 ? `, ${warnings} alertas` : ''}). Revisa los datos.`);
-
-        // Also update supply if power data detected
-        if (p.contracted_power_p1_kw || p.contracted_power_p2_kw) {
-          // Open the created invoice for review
-          openEdit({ ...inv, ...invoicePayload });
-        }
+        toast.success(`Factura extraída (confianza: ${confidence}%${warnings.length > 0 ? `, ${warnings.length} alertas` : ''}). Revisa los datos.`);
+        // Always open for review after parsing
+        openEdit({ ...inv, ...invoicePayload });
       }
     } catch (err: any) {
       console.error('[CaseInvoicesTab] parse error:', err);
-      toast.error('Error parseando factura: ' + (err.message || 'Error desconocido'));
+      const msg = err?.message || 'Error desconocido';
+      if (msg.includes('429') || msg.includes('Rate limit')) {
+        toast.error('Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.');
+      } else if (msg.includes('402') || msg.includes('Payment')) {
+        toast.error('Créditos de IA insuficientes. Contacta al administrador.');
+      } else {
+        toast.error('Error parseando factura: ' + msg);
+      }
     } finally {
       setParsing(false);
       if (parseFileRef.current) parseFileRef.current.value = '';
     }
-  }, [caseId, createInvoice]);
+  }, [caseId, createInvoice, isDuplicate]);
 
   if (loading && invoices.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Cargando facturas...</div>;
 

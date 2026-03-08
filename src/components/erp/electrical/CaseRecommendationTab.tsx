@@ -106,24 +106,36 @@ export function CaseRecommendationTab({ caseId, onOpenSimulator }: Props) {
   }, [energyCase, contracts]);
 
   // Savings verification: estimated vs real (from tracking)
+  // Normalizes costs to 30-day periods to compare apples to apples
   const savingsVerification = useMemo(() => {
     if (!recommendation) return null;
 
-    // Get post-recommendation invoices (after recommendation created)
     const recDate = new Date(recommendation.created_at);
     const preInvoices = invoices.filter(i => i.billing_start && new Date(i.billing_start) < recDate);
     const postInvoices = invoices.filter(i => i.billing_start && new Date(i.billing_start) >= recDate);
 
     if (preInvoices.length === 0 || postInvoices.length === 0) return null;
 
-    const avgPreCost = preInvoices.reduce((s, i) => s + (i.total_amount || 0), 0) / preInvoices.length;
-    const avgPostCost = postInvoices.reduce((s, i) => s + (i.total_amount || 0), 0) / postInvoices.length;
+    // Normalize each invoice to cost per 30 days to handle different billing periods
+    const normalizeTo30Days = (inv: typeof invoices[0]) => {
+      const days = inv.days || 30;
+      const amount = inv.total_amount || 0;
+      return days > 0 ? (amount / days) * 30 : amount;
+    };
+
+    const preNormalized = preInvoices.map(normalizeTo30Days);
+    const postNormalized = postInvoices.map(normalizeTo30Days);
+
+    const avgPreCost = preNormalized.reduce((s, v) => s + v, 0) / preNormalized.length;
+    const avgPostCost = postNormalized.reduce((s, v) => s + v, 0) / postNormalized.length;
     const realMonthlySavings = Math.round((avgPreCost - avgPostCost) * 100) / 100;
     const estimatedMonthlySavings = recommendation.monthly_savings_estimate || 0;
 
     const deviation = estimatedMonthlySavings > 0
       ? Math.round(((realMonthlySavings - estimatedMonthlySavings) / estimatedMonthlySavings) * 100)
       : 0;
+
+    const insufficientData = preInvoices.length < 2 || postInvoices.length < 2;
 
     return {
       preAvg: Math.round(avgPreCost * 100) / 100,
@@ -133,6 +145,7 @@ export function CaseRecommendationTab({ caseId, onOpenSimulator }: Props) {
       deviation,
       preCount: preInvoices.length,
       postCount: postInvoices.length,
+      insufficientData,
     };
   }, [recommendation, invoices]);
 
@@ -297,6 +310,15 @@ export function CaseRecommendationTab({ caseId, onOpenSimulator }: Props) {
                 </p>
               </div>
             </div>
+            {savingsVerification.insufficientData && (
+              <div className="mt-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Datos insuficientes para una comparación fiable (mín. 2 facturas pre y post). Resultado orientativo.
+                  Costes normalizados a 30 días para compensar periodos de facturación diferentes.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
