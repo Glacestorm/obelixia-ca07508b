@@ -39,6 +39,7 @@ export function InstallationWizardPage() {
   const [installationName, setInstallationName] = useState('');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('wizard');
+  const [viewingInstallation, setViewingInstallation] = useState<any | null>(null);
 
   const {
     isLoading,
