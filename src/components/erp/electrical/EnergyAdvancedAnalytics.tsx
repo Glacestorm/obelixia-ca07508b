@@ -49,10 +49,10 @@ export function EnergyAdvancedAnalytics({ companyId }: Props) {
     powerAnalysis: [] as { case: string; contracted: number; demand: number; optimal: number }[],
     costComparison: [] as { case: string; current: number; recommended: number; savings: number }[],
     statusFunnel: [] as { stage: string; count: number }[],
-    totalEstimated: number;
-    totalValidated: number;
-    validationRate: number;
-    totalCases: number;
+    totalEstimated: 0,
+    totalValidated: 0,
+    validationRate: 0,
+    totalCases: 0,
   });
 
   const fetchAnalytics = useCallback(async () => {
