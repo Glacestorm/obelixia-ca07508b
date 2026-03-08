@@ -207,27 +207,45 @@ export function useRegulatoryWatch(companyId?: string) {
     if (!companyId) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('erp_hr_regulatory_watch_config')
-        .upsert({
-          company_id: companyId,
-          ...updates,
-          updated_at: new Date().toISOString()
-        } as never)
-        .select()
-        .single();
+      // Check if config exists first
+      if (config?.id) {
+        // Update existing
+        const { data, error } = await supabase
+          .from('erp_hr_regulatory_watch_config')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+          } as never)
+          .eq('id', config.id)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        setConfig(data as unknown as RegulatoryWatchConfig);
+      } else {
+        // Insert new
+        const { data, error } = await supabase
+          .from('erp_hr_regulatory_watch_config')
+          .insert({
+            company_id: companyId,
+            ...updates,
+            updated_at: new Date().toISOString()
+          } as never)
+          .select()
+          .single();
 
-      setConfig(data as unknown as RegulatoryWatchConfig);
+        if (error) throw error;
+        setConfig(data as unknown as RegulatoryWatchConfig);
+      }
+
       toast.success('Configuración actualizada');
-      return data;
+      return config;
     } catch (error) {
       console.error('[useRegulatoryWatch] updateConfig error:', error);
       toast.error('Error al actualizar configuración');
       return null;
     }
-  }, [companyId]);
+  }, [companyId, config]);
 
   // === RUN MANUAL CHECK ===
   const runManualCheck = useCallback(async () => {
