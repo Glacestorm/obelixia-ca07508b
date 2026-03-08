@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import {
   Activity, ArrowRightLeft, Bell, Clock, Settings, FileText,
   Brain, HeartPulse, Download, Database, HelpCircle,
-  Wrench, ChevronLeft, Sparkles, Shield, BarChart3
+  Wrench, ChevronLeft, Sparkles, Shield, BarChart3, ExternalLink
 } from 'lucide-react';
 
 export type UtilitySection =
