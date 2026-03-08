@@ -88,14 +88,14 @@ export function ElectricalComparadorPanel({ companyId, caseId }: Props) {
 
   const handleCreate = useCallback(async () => {
     if (!newSimName.trim()) return;
-    const sim = await createSimulation(newSimName.trim());
+    const sim = await createSimulation(newSimName.trim(), caseId);
     if (sim) {
       setSelectedSim(sim.id);
       setActiveTab('configure');
       setShowNewDialog(false);
       setNewSimName('');
     }
-  }, [newSimName, createSimulation]);
+  }, [newSimName, createSimulation, caseId]);
 
   const handleRun = useCallback(async () => {
     if (!selectedSim) return;
@@ -126,6 +126,7 @@ export function ElectricalComparadorPanel({ companyId, caseId }: Props) {
           </h2>
           <p className="text-sm text-muted-foreground">
             Introduce los datos de consumo y compara tarifas del mercado eléctrico ordenadas por coste total.
+            {caseId && <Badge variant="secondary" className="ml-2 text-[10px]">Vinculado a expediente</Badge>}
           </p>
         </div>
         <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>

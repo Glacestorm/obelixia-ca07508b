@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { PermissionGate } from './PermissionGate';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -86,23 +87,20 @@ export function CaseContractsTab({ caseId }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }, [uploadPdf]);
 
-  // AI Contract Analysis — uses structured data + contract_text
+  // AI Contract Analysis — sends structured data + PDF URL for server-side extraction
   const handleAiAnalysis = useCallback(async (contract: EnergyContract) => {
     const contractTextContent = (contract as any).contract_text || '';
     const hasStructuredData = contract.supplier || contract.tariff_name || contract.start_date;
+    const hasPdfUrl = !!contract.signed_document_url;
     
-    if (!contractTextContent && !hasStructuredData) {
-      toast.error('Introduce datos del contrato o pega el texto del contrato antes de analizar con IA');
+    if (!contractTextContent && !hasStructuredData && !hasPdfUrl) {
+      toast.error('Introduce datos del contrato, pega el texto, o sube un PDF antes de analizar con IA');
       return;
-    }
-
-    if (!contractTextContent) {
-      toast.warning('Sin texto del contrato — el análisis se basará solo en los metadatos estructurados. Para mejores resultados, pega el texto del contrato en el campo correspondiente.');
     }
 
     setAnalyzing(contract.id);
     try {
-      const contractText = [
+      const structuredText = [
         `DATOS ESTRUCTURADOS DEL CONTRATO:`,
         `Comercializadora: ${contract.supplier || 'No especificada'}`,
         `Tarifa: ${contract.tariff_name || 'No especificada'}`,
@@ -116,7 +114,10 @@ export function CaseContractsTab({ caseId }: Props) {
       ].filter(Boolean).join('\n');
 
       const { data, error } = await supabase.functions.invoke('energy-contract-analyzer', {
-        body: { contractText }
+        body: { 
+          contractText: structuredText,
+          contractUrl: hasPdfUrl ? contract.signed_document_url : undefined,
+        }
       });
 
       if (error) throw error;
@@ -156,9 +157,11 @@ export function CaseContractsTab({ caseId }: Props) {
               <Button variant="outline" size="sm" onClick={() => fetchContracts()}>
                 <RefreshCw className="h-3.5 w-3.5 mr-1" /> Recargar
               </Button>
-              <Button size="sm" onClick={openNew}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Nuevo contrato
-              </Button>
+              <PermissionGate action="edit_cases">
+                <Button size="sm" onClick={openNew}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Nuevo contrato
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </CardHeader>
@@ -186,12 +189,14 @@ export function CaseContractsTab({ caseId }: Props) {
                         <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Ver
                       </Button>
                     ) : (
-                      <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
-                        disabled={analyzing === c.id || !c.signed_document_url}
-                        onClick={e => { e.stopPropagation(); handleAiAnalysis(c); }}>
-                        {analyzing === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                        {analyzing === c.id ? '...' : 'Analizar'}
-                      </Button>
+                      <PermissionGate action="ai_analysis">
+                        <Button variant="ghost" size="sm" className="h-6 text-xs gap-1"
+                          disabled={analyzing === c.id || (!c.signed_document_url && !c.supplier && !c.tariff_name)}
+                          onClick={e => { e.stopPropagation(); handleAiAnalysis(c); }}>
+                          {analyzing === c.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          {analyzing === c.id ? '...' : 'Analizar'}
+                        </Button>
+                      </PermissionGate>
                     )}
                   </span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100">
@@ -200,9 +205,11 @@ export function CaseContractsTab({ caseId }: Props) {
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); deleteContract(c.id); }}>
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
+                    <PermissionGate action="edit_cases">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); deleteContract(c.id); }}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ))}
