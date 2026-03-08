@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { 
   LayoutDashboard, FolderOpen, Zap, FileText, FileSignature, Users,
   BarChart3, Gauge, Lightbulb, FileBarChart, Eye, Settings,
-  ChevronDown, ChevronRight, BoltIcon, GitCompareArrows
+  ChevronDown, ChevronRight, BoltIcon, GitCompareArrows, Building2, Plug
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
