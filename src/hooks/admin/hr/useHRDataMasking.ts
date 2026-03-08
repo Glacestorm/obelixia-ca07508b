@@ -45,7 +45,7 @@ export function useHRDataMasking(companyId: string | undefined) {
   const maskValue = useCallback((fieldName: string, value: unknown): string => {
     if (!config.loaded || value === null || value === undefined) return String(value ?? '');
 
-    const rule = config.rules.find(r => r.field_name === fieldName);
+    const rule = config.rules.find(r => r.field_path === fieldName);
     if (!rule) return String(value);
 
     const strValue = String(value);
