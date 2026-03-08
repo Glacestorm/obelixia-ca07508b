@@ -52,7 +52,17 @@ export function HROrchestrationPanel({ companyId, className }: Props) {
     moduleLabels, templates,
   } = useHROrchestration(companyId);
 
+  const { getChainStatus, isEmitting } = useHROrchestrationEmitter(companyId || null);
   const [activeTab, setActiveTab] = useState('rules');
+  const [chainStatus, setChainStatus] = useState<any>(null);
+  const [chainLoading, setChainLoading] = useState(false);
+
+  const loadChainStatus = useCallback(async () => {
+    setChainLoading(true);
+    const status = await getChainStatus();
+    setChainStatus(status);
+    setChainLoading(false);
+  }, [getChainStatus]);
 
   if (!companyId) {
     return (
