@@ -8,13 +8,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Save, RefreshCw, TrendingUp, AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
+import { Sparkles, Save, Zap, AlertTriangle, ShieldCheck, Loader2, Info, BrainCircuit } from 'lucide-react';
 import { useEnergyRecommendation, generateRecommendation, RecommendationInput } from '@/hooks/erp/useEnergyRecommendation';
 import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { useEnergyInvoices } from '@/hooks/erp/useEnergyInvoices';
 import { useEnergyContracts } from '@/hooks/erp/useEnergyContracts';
+import { useEnergyConsumptionProfile } from '@/hooks/erp/useEnergyConsumptionProfile';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
+import { useEnergyTariffCatalog } from '@/hooks/erp/useEnergyTariffCatalog';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Props { caseId: string; }
 
@@ -25,12 +29,16 @@ const RISK_MAP: Record<string, { label: string; color: string; icon: typeof Shie
 };
 
 export function CaseRecommendationTab({ caseId }: Props) {
-  const { recommendation, loading, saveRecommendation, fetchRecommendation } = useEnergyRecommendation(caseId);
+  const { recommendation, loading, saveRecommendation } = useEnergyRecommendation(caseId);
   const { supply } = useEnergySupply(caseId);
   const { invoices } = useEnergyInvoices(caseId);
   const { contracts } = useEnergyContracts(caseId);
+  const { profile: consumptionProfile } = useEnergyConsumptionProfile(caseId);
   const { energyCase } = useEnergyCase(caseId);
+  const { tariffs } = useEnergyTariffCatalog();
   const [saving, setSaving] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiReasoning, setAiReasoning] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     recommended_supplier: '',
@@ -61,16 +69,13 @@ export function CaseRecommendationTab({ caseId }: Props) {
   }, [recommendation]);
 
   const handleAutoGenerate = useCallback(() => {
-    // Aggregate invoice data
     const totalP1 = invoices.reduce((s, i) => s + (i.consumption_p1_kwh || 0), 0);
     const totalP2 = invoices.reduce((s, i) => s + (i.consumption_p2_kwh || 0), 0);
     const totalP3 = invoices.reduce((s, i) => s + (i.consumption_p3_kwh || 0), 0);
     const hasPermanence = contracts.some(c => c.has_permanence);
 
     const input: RecommendationInput = {
-      consumptionP1: totalP1,
-      consumptionP2: totalP2,
-      consumptionP3: totalP3,
+      consumptionP1: totalP1, consumptionP2: totalP2, consumptionP3: totalP3,
       contractedPowerP1: supply?.contracted_power_p1 || 0,
       contractedPowerP2: supply?.contracted_power_p2 || 0,
       maxDemandP1: supply?.max_demand_p1 || 0,
@@ -92,7 +97,53 @@ export function CaseRecommendationTab({ caseId }: Props) {
       confidence_score: result.confidence_score,
       implementation_notes: result.implementation_notes,
     });
+    setAiReasoning(null);
   }, [invoices, supply, contracts, energyCase]);
+
+  const handleAiGenerate = useCallback(async () => {
+    setAiGenerating(true);
+    setAiReasoning(null);
+    try {
+      const activeTariffs = tariffs.filter(t => t.is_active);
+
+      const { data, error } = await supabase.functions.invoke('energy-ai-recommendation', {
+        body: {
+          caseData: energyCase,
+          supply,
+          invoices,
+          contracts,
+          consumptionProfile,
+          tariffCatalog: activeTariffs,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.data && !data.data.parseError) {
+        const r = data.data;
+        setForm({
+          recommended_supplier: r.recommended_supplier || '',
+          recommended_tariff: r.recommended_tariff || '',
+          recommended_power_p1: r.recommended_power_p1?.toString() || '',
+          recommended_power_p2: r.recommended_power_p2?.toString() || '',
+          monthly_savings_estimate: r.monthly_savings_estimate?.toString() || '',
+          annual_savings_estimate: r.annual_savings_estimate?.toString() || '',
+          risk_level: r.risk_level || 'low',
+          confidence_score: r.confidence_score ?? 70,
+          implementation_notes: r.implementation_notes || '',
+        });
+        setAiReasoning(r.reasoning_summary || null);
+        toast.success('Borrador IA generado — revisa y edita antes de guardar');
+      } else {
+        throw new Error(data?.error || 'Respuesta IA no válida');
+      }
+    } catch (err: any) {
+      console.error('[AI Recommendation] error:', err);
+      toast.error('Error generando borrador IA: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setAiGenerating(false);
+    }
+  }, [energyCase, supply, invoices, contracts, consumptionProfile, tariffs]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -145,6 +196,17 @@ export function CaseRecommendationTab({ caseId }: Props) {
         </Card>
       </div>
 
+      {/* AI reasoning banner */}
+      {aiReasoning && (
+        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 flex items-start gap-2">
+          <BrainCircuit className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-medium text-primary mb-1">Resumen del análisis IA (borrador)</p>
+            <p className="text-sm text-muted-foreground">{aiReasoning}</p>
+          </div>
+        </div>
+      )}
+
       {/* Main form */}
       <Card>
         <CardHeader>
@@ -153,11 +215,17 @@ export function CaseRecommendationTab({ caseId }: Props) {
               <CardTitle className="text-base flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" /> Recomendación de optimización
               </CardTitle>
-              <CardDescription>Editable manualmente o generada automáticamente a partir de los datos del expediente.</CardDescription>
+              <CardDescription>Editable manualmente, generada por reglas o con asistencia de IA.</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleAutoGenerate}>
-                <Zap className="h-3.5 w-3.5 mr-1" /> Auto-generar
+                <Zap className="h-3.5 w-3.5 mr-1" /> Reglas
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleAiGenerate} disabled={aiGenerating}
+                className="border-primary/30 text-primary hover:bg-primary/5">
+                {aiGenerating
+                  ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Generando...</>
+                  : <><BrainCircuit className="h-3.5 w-3.5 mr-1" /> IA Borrador</>}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 <Save className="h-3.5 w-3.5 mr-1" /> {saving ? 'Guardando...' : 'Guardar'}
@@ -166,6 +234,24 @@ export function CaseRecommendationTab({ caseId }: Props) {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {aiGenerating && (
+            <div className="p-4 rounded-lg bg-muted/50 border border-dashed flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analizando expediente con IA...</p>
+                <p className="text-xs text-muted-foreground">Evaluando facturas, consumo, contratos y catálogo de tarifas</p>
+              </div>
+            </div>
+          )}
+
+          {/* Disclaimer */}
+          <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+            <Info className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-[11px] text-muted-foreground">
+              Esta recomendación es un <strong>borrador editable</strong>. El analista debe revisar y validar antes de incluirla en el informe.
+            </p>
+          </div>
+
           {/* Supplier & tariff */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="grid gap-2">
@@ -234,7 +320,7 @@ export function CaseRecommendationTab({ caseId }: Props) {
           <div className="grid gap-2">
             <Label>Observaciones de implementación</Label>
             <Textarea value={form.implementation_notes} onChange={e => setForm(f => ({ ...f, implementation_notes: e.target.value }))}
-              placeholder="Notas sobre permanencia, riesgos, plazos de cambio, etc." rows={4} />
+              placeholder="Notas sobre permanencia, riesgos, plazos de cambio, etc." rows={6} />
           </div>
         </CardContent>
       </Card>
