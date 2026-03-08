@@ -70,17 +70,7 @@ import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButt
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell, Clock, HeartPulse, Download, HelpCircle } from 'lucide-react';
-import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
-import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel, HRAnalyticsBIPremiumPanel } from './hr/premium-dashboard';
-import { HRReportingEnginePanel } from './hr/reporting-engine';
-import { ComplianceReportingPanel } from './hr/regulatory-reporting';
-import { PremiumAPIWebhooksPanel } from './hr/premium-api';
-import { EnterpriseIntegrationsPanel } from './hr/enterprise-integrations';
-import { HRBoardPackPanel } from './hr/board-pack';
-import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
+import { ArrowRightLeft, Wrench } from 'lucide-react';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
