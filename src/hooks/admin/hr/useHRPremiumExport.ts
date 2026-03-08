@@ -37,7 +37,7 @@ const EXPORTABLE_TABLES: ExportableTable[] = [
   { module: 'legal', table: 'erp_hr_legal_contracts', label: 'Contratos legales' },
   { module: 'legal', table: 'erp_hr_legal_clauses', label: 'Biblioteca de cláusulas' },
   { module: 'legal', table: 'erp_hr_legal_templates', label: 'Plantillas legales' },
-  { module: 'cnae', table: 'erp_hr_cnae_profiles', label: 'Perfiles CNAE' },
+  { module: 'cnae', table: 'erp_hr_cnae_sector_profiles', label: 'Perfiles CNAE' },
   { module: 'cnae', table: 'erp_hr_cnae_risk_assessments', label: 'Evaluaciones de riesgo' },
   { module: 'cnae', table: 'erp_hr_cnae_benchmarks', label: 'Benchmarks CNAE' },
   { module: 'role_experience', table: 'erp_hr_role_dashboards', label: 'Dashboards de rol' },
