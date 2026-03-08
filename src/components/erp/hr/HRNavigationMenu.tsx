@@ -9,36 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import {
-  TrendingUp,
-  Users,
-  UserPlus,
-  UserMinus,
-  Award,
-  DollarSign,
-  Landmark,
-  Calendar,
-  FileText,
-  UserCog,
-  FolderOpen,
-  Building2,
-  Gift,
-  Shield,
-  GraduationCap,
-  BarChart3,
-  Brain,
-  Newspaper,
-  BookOpen,
-  HelpCircle,
-  Rocket,
-  ChevronRight,
-  ChevronDown,
-  Calculator,
-  Link2,
-  Database,
-  MapPin,
-  Network,
-  Lock,
-  ClipboardList
+  TrendingUp, Users, UserPlus, UserMinus, Award, DollarSign, Landmark, Calendar,
+  FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
+  Brain, Newspaper, BookOpen, HelpCircle, Rocket, ChevronRight, ChevronDown,
+  Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
+  Inbox, Timer
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
