@@ -30,6 +30,7 @@ const emptyForm = {
   end_date: undefined as Date | undefined,
   has_renewal: false, has_permanence: false,
   early_exit_penalty_text: '', notes: '',
+  contract_text: '',
 };
 
 export function CaseContractsTab({ caseId }: Props) {
@@ -55,6 +56,7 @@ export function CaseContractsTab({ caseId }: Props) {
       has_permanence: c.has_permanence ?? false,
       early_exit_penalty_text: c.early_exit_penalty_text || '',
       notes: c.notes || '',
+      contract_text: (c as any).contract_text || '',
     });
     setShowDialog(true);
   };
@@ -84,16 +86,34 @@ export function CaseContractsTab({ caseId }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }, [uploadPdf]);
 
-  // AI Contract Analysis
+  // AI Contract Analysis — uses structured data + contract_text
   const handleAiAnalysis = useCallback(async (contract: EnergyContract) => {
-    if (!contract.signed_document_url) {
-      toast.error('Sube un PDF del contrato antes de analizarlo con IA');
+    const contractTextContent = (contract as any).contract_text || '';
+    const hasStructuredData = contract.supplier || contract.tariff_name || contract.start_date;
+    
+    if (!contractTextContent && !hasStructuredData) {
+      toast.error('Introduce datos del contrato o pega el texto del contrato antes de analizar con IA');
       return;
+    }
+
+    if (!contractTextContent) {
+      toast.warning('Sin texto del contrato — el análisis se basará solo en los metadatos estructurados. Para mejores resultados, pega el texto del contrato en el campo correspondiente.');
     }
 
     setAnalyzing(contract.id);
     try {
-      const contractText = `Contrato de ${contract.supplier || 'comercializadora desconocida'}, tarifa ${contract.tariff_name || 'desconocida'}. Inicio: ${contract.start_date || 'no especificado'}, Fin: ${contract.end_date || 'no especificado'}. Renovación tácita: ${contract.has_renewal ? 'Sí' : 'No'}. Permanencia: ${contract.has_permanence ? 'Sí' : 'No'}. Penalización: ${contract.early_exit_penalty_text || 'No especificada'}. Notas: ${contract.notes || 'Ninguna'}. Documento PDF disponible en: ${contract.signed_document_url}`;
+      const contractText = [
+        `DATOS ESTRUCTURADOS DEL CONTRATO:`,
+        `Comercializadora: ${contract.supplier || 'No especificada'}`,
+        `Tarifa: ${contract.tariff_name || 'No especificada'}`,
+        `Fecha inicio: ${contract.start_date || 'No especificada'}`,
+        `Fecha fin: ${contract.end_date || 'No especificada'}`,
+        `Renovación tácita: ${contract.has_renewal ? 'Sí' : 'No'}`,
+        `Permanencia: ${contract.has_permanence ? 'Sí' : 'No'}`,
+        `Penalización salida: ${contract.early_exit_penalty_text || 'No especificada'}`,
+        `Notas del analista: ${contract.notes || 'Ninguna'}`,
+        contractTextContent ? `\nTEXTO COMPLETO DEL CONTRATO:\n${contractTextContent}` : '',
+      ].filter(Boolean).join('\n');
 
       const { data, error } = await supabase.functions.invoke('energy-contract-analyzer', {
         body: { contractText }

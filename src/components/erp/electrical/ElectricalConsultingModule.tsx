@@ -3,12 +3,13 @@
  * Gestión integral de expedientes de optimización de factura eléctrica
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   Zap, FolderOpen, FileText, BarChart3, Gauge, TrendingUp,
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp';
+import { supabase } from '@/integrations/supabase/client';
 import { ElectricalNavigationMenu } from './ElectricalNavigationMenu';
 import { ElectricalDashboard } from './ElectricalDashboard';
 import { ElectricalExpedientesPanel } from './ElectricalExpedientesPanel';
@@ -31,7 +32,8 @@ import { ElectricalAjustesPanel } from './ElectricalAjustesPanel';
 type SubView = 
   | { type: 'list' }
   | { type: 'new' }
-  | { type: 'detail'; caseId: string };
+  | { type: 'detail'; caseId: string }
+  | { type: 'simulate'; caseId: string };
 
 export function ElectricalConsultingModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -51,17 +53,52 @@ export function ElectricalConsultingModule() {
   // Reset subView when switching modules
   useEffect(() => { setSubView({ type: 'list' }); }, [activeModule]);
 
-  useEffect(() => {
+  // Fetch real stats from Supabase
+  const fetchStats = useCallback(async () => {
     if (!companyId) return;
-    setStats({
-      expedientesActivos: 12,
-      suministrosGestionados: 34,
-      facturasAnalizadas: 89,
-      ahorroEstimado: 15420,
-      informesPendientes: 3,
-      seguimientosActivos: 8
-    });
+    try {
+      // Fetch cases
+      const { data: cases } = await supabase
+        .from('energy_cases')
+        .select('id, status, estimated_annual_savings')
+        .eq('company_id', companyId);
+
+      if (!cases) { return; }
+
+      const activeCases = cases.filter(c => !['completed', 'cancelled'].includes(c.status));
+      const totalSavings = cases.reduce((s, c) => s + (c.estimated_annual_savings || 0), 0);
+      const caseIds = cases.map(c => c.id);
+
+      // Parallel counts
+      const [suppliesRes, invoicesRes, trackingRes, reportsRes] = await Promise.all([
+        caseIds.length > 0
+          ? supabase.from('energy_supplies').select('id', { count: 'exact', head: true }).in('case_id', caseIds)
+          : Promise.resolve({ count: 0 }),
+        caseIds.length > 0
+          ? supabase.from('energy_invoices').select('id', { count: 'exact', head: true }).in('case_id', caseIds)
+          : Promise.resolve({ count: 0 }),
+        caseIds.length > 0
+          ? supabase.from('energy_tracking').select('id', { count: 'exact', head: true }).in('case_id', caseIds)
+          : Promise.resolve({ count: 0 }),
+        caseIds.length > 0
+          ? supabase.from('energy_reports').select('id', { count: 'exact', head: true }).in('case_id', caseIds)
+          : Promise.resolve({ count: 0 }),
+      ]);
+
+      setStats({
+        expedientesActivos: activeCases.length,
+        suministrosGestionados: (suppliesRes as any).count || 0,
+        facturasAnalizadas: (invoicesRes as any).count || 0,
+        ahorroEstimado: totalSavings,
+        informesPendientes: (reportsRes as any).count || 0,
+        seguimientosActivos: (trackingRes as any).count || 0,
+      });
+    } catch (err) {
+      console.error('[ElectricalConsultingModule] stats error:', err);
+    }
   }, [companyId]);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   if (!companyId) {
     return (
@@ -76,6 +113,11 @@ export function ElectricalConsultingModule() {
       </div>
     );
   }
+
+  const handleOpenSimulator = (caseId: string) => {
+    setActiveModule('comparador');
+    setSubView({ type: 'simulate', caseId });
+  };
 
   const renderExpedientes = () => {
     if (subView.type === 'new') {
@@ -93,6 +135,7 @@ export function ElectricalConsultingModule() {
           caseId={subView.caseId}
           companyId={companyId}
           onBack={() => setSubView({ type: 'list' })}
+          onOpenSimulator={handleOpenSimulator}
         />
       );
     }
@@ -107,7 +150,7 @@ export function ElectricalConsultingModule() {
 
   return (
     <div className="space-y-4">
-      {/* Header con estadísticas rápidas */}
+      {/* Header con estadísticas reales */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/20">
           <CardContent className="p-3">
@@ -192,7 +235,12 @@ export function ElectricalConsultingModule() {
         {activeModule === 'contratos' && <ElectricalContratosPanel companyId={companyId} />}
         {activeModule === 'consumo' && <ElectricalConsumoPanel companyId={companyId} />}
         {activeModule === 'catalogo' && <ElectricalTariffCatalogPanel companyId={companyId} />}
-        {activeModule === 'comparador' && <ElectricalComparadorPanel companyId={companyId} />}
+        {activeModule === 'comparador' && (
+          <ElectricalComparadorPanel 
+            companyId={companyId} 
+            caseId={subView.type === 'simulate' ? subView.caseId : undefined}
+          />
+        )}
         {activeModule === 'precios-indexados' && <ElectricalIndexedPricesPanel />}
         {activeModule === 'potencia' && <ElectricalPotenciaPanel companyId={companyId} />}
         {activeModule === 'recomendaciones' && <ElectricalRecomendacionesPanel companyId={companyId} />}
