@@ -115,13 +115,16 @@ export function useUsageBilling() {
   }) => {
     try {
       // Get pricing rule
-      const { data: rule } = await supabase
+      const { data: ruleData } = await supabase
         .from('usage_billing_rules')
-        .select('unit_price, currency, free_tier_limit')
+        .select('*')
         .eq('module_key', params.module_key)
         .eq('event_type', params.event_name)
         .eq('is_active', true)
-        .single();
+        .limit(1)
+        .maybeSingle();
+      
+      const rule = ruleData as any;
 
       const unitPrice = rule?.unit_price || 0;
       const quantity = params.quantity || 1;
