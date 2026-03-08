@@ -26744,6 +26744,155 @@ export type Database = {
           },
         ]
       }
+      erp_hr_copilot_actions: {
+        Row: {
+          action_type: string
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          description: string
+          executed_at: string | null
+          id: string
+          result: Json | null
+          session_id: string | null
+          status: string
+          target_entity: string | null
+          target_id: string | null
+        }
+        Insert: {
+          action_type: string
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          description: string
+          executed_at?: string | null
+          id?: string
+          result?: Json | null
+          session_id?: string | null
+          status?: string
+          target_entity?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          description?: string
+          executed_at?: string | null
+          id?: string
+          result?: Json | null
+          session_id?: string | null
+          status?: string
+          target_entity?: string | null
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_copilot_actions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_copilot_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_copilot_kpis: {
+        Row: {
+          company_id: string
+          created_at: string
+          current_value: number
+          id: string
+          kpi_category: string
+          kpi_name: string
+          period_end: string | null
+          period_start: string | null
+          previous_value: number | null
+          target_value: number | null
+          trend: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string
+          created_at?: string
+          current_value?: number
+          id?: string
+          kpi_category: string
+          kpi_name: string
+          period_end?: string | null
+          period_start?: string | null
+          previous_value?: number | null
+          target_value?: number | null
+          trend?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          current_value?: number
+          id?: string
+          kpi_category?: string
+          kpi_name?: string
+          period_end?: string | null
+          period_start?: string | null
+          previous_value?: number | null
+          target_value?: number | null
+          trend?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      erp_hr_copilot_sessions: {
+        Row: {
+          actions_taken: Json | null
+          autonomy_level: string
+          company_id: string
+          context: Json | null
+          created_at: string
+          id: string
+          messages: Json
+          satisfaction_score: number | null
+          session_type: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          actions_taken?: Json | null
+          autonomy_level?: string
+          company_id?: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          satisfaction_score?: number | null
+          session_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          actions_taken?: Json | null
+          autonomy_level?: string
+          company_id?: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          messages?: Json
+          satisfaction_score?: number | null
+          session_type?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_critical_events: {
         Row: {
           action_taken: string | null
@@ -27032,6 +27181,116 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_digital_twin_simulations: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          impact_analysis: Json | null
+          parameters: Json
+          recommendation: string | null
+          results: Json | null
+          risk_score: number | null
+          simulation_name: string
+          simulation_type: string
+          snapshot_id: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          impact_analysis?: Json | null
+          parameters?: Json
+          recommendation?: string | null
+          results?: Json | null
+          risk_score?: number | null
+          simulation_name: string
+          simulation_type: string
+          snapshot_id?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          impact_analysis?: Json | null
+          parameters?: Json
+          recommendation?: string | null
+          results?: Json | null
+          risk_score?: number | null
+          simulation_name?: string
+          simulation_type?: string
+          snapshot_id?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_digital_twin_simulations_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_digital_twin_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_digital_twin_snapshots: {
+        Row: {
+          company_id: string
+          compliance_status: Json | null
+          created_at: string
+          divergence_score: number | null
+          id: string
+          last_sync_at: string | null
+          org_structure: Json | null
+          payroll_snapshot: Json | null
+          snapshot_name: string
+          snapshot_type: string
+          status: string
+          updated_at: string
+          wellness_metrics: Json | null
+          workforce_metrics: Json | null
+        }
+        Insert: {
+          company_id?: string
+          compliance_status?: Json | null
+          created_at?: string
+          divergence_score?: number | null
+          id?: string
+          last_sync_at?: string | null
+          org_structure?: Json | null
+          payroll_snapshot?: Json | null
+          snapshot_name: string
+          snapshot_type?: string
+          status?: string
+          updated_at?: string
+          wellness_metrics?: Json | null
+          workforce_metrics?: Json | null
+        }
+        Update: {
+          company_id?: string
+          compliance_status?: Json | null
+          created_at?: string
+          divergence_score?: number | null
+          id?: string
+          last_sync_at?: string | null
+          org_structure?: Json | null
+          payroll_snapshot?: Json | null
+          snapshot_name?: string
+          snapshot_type?: string
+          status?: string
+          updated_at?: string
+          wellness_metrics?: Json | null
+          workforce_metrics?: Json | null
+        }
+        Relationships: []
       }
       erp_hr_disconnection_policies: {
         Row: {
