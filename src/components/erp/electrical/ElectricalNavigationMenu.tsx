@@ -1,7 +1,7 @@
 /**
- * ElectricalNavigationMenu - Navegación agrupada del módulo Consultoría Eléctrica
- * Categorías: Panel Principal, Gestión, Análisis, Informes & Seguimiento
- * Sigue el patrón de LegalNavigationMenu con Popover anclado
+ * ElectricalNavigationMenu - Navegación completa del módulo Consultoría Eléctrica
+ * 12 secciones: Resumen, Expedientes, Clientes, Suministros, Facturas, Contratos,
+ * Consumo, Comparador, Recomendaciones, Informes, Seguimiento, Ajustes
  */
 
 import { useState } from 'react';
@@ -9,19 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
-  LayoutDashboard,
-  FolderOpen,
-  Zap,
-  FileText,
-  Upload,
-  BarChart3,
-  Gauge,
-  Lightbulb,
-  FileBarChart,
-  Eye,
-  ChevronDown,
-  ChevronRight,
-  BoltIcon
+  LayoutDashboard, FolderOpen, Zap, FileText, FileSignature, Users,
+  BarChart3, Gauge, Lightbulb, FileBarChart, Eye, Settings,
+  ChevronDown, ChevronRight, BoltIcon, GitCompareArrows
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -62,10 +52,10 @@ export function ElectricalNavigationMenu({
   const categories: NavCategory[] = [
     {
       id: 'principal',
-      label: 'Panel',
+      label: 'Resumen',
       icon: BoltIcon,
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Vista general del módulo' },
+        { id: 'dashboard', label: 'Resumen General', icon: LayoutDashboard, description: 'Vista ejecutiva del módulo' },
       ]
     },
     {
@@ -75,8 +65,17 @@ export function ElectricalNavigationMenu({
       badge: stats.expedientesActivos,
       items: [
         { id: 'expedientes', label: 'Expedientes', icon: FolderOpen, description: 'Alta y gestión de expedientes', badge: stats.expedientesActivos },
+        { id: 'clientes', label: 'Clientes Energéticos', icon: Users, description: 'Particulares y empresas' },
         { id: 'suministros', label: 'Suministros & CUPS', icon: Zap, description: 'Puntos de suministro y códigos CUPS' },
-        { id: 'facturas', label: 'Facturas & Contratos', icon: FileText, description: 'Subida y gestión documental' },
+      ]
+    },
+    {
+      id: 'documentos',
+      label: 'Documentos',
+      icon: FileText,
+      items: [
+        { id: 'facturas', label: 'Facturas', icon: FileText, description: 'Subida y análisis de facturas eléctricas' },
+        { id: 'contratos', label: 'Contratos', icon: FileSignature, description: 'Gestión de contratos de suministro' },
       ]
     },
     {
@@ -84,8 +83,8 @@ export function ElectricalNavigationMenu({
       label: 'Análisis',
       icon: BarChart3,
       items: [
-        { id: 'consumo', label: 'Análisis de Consumo', icon: BarChart3, description: 'Consumo por periodos tarifarios' },
-        { id: 'potencia', label: 'Análisis de Potencia', icon: Gauge, description: 'Potencia contratada vs máxima demandada' },
+        { id: 'consumo', label: 'Análisis de Consumo', icon: BarChart3, description: 'Consumo por periodos tarifarios P1-P6' },
+        { id: 'comparador', label: 'Comparador', icon: GitCompareArrows, description: 'Comparativa de tarifas y comercializadoras' },
         { id: 'recomendaciones', label: 'Recomendaciones', icon: Lightbulb, description: 'Tarifa y potencia óptima' },
       ]
     },
@@ -99,9 +98,16 @@ export function ElectricalNavigationMenu({
         { id: 'seguimiento', label: 'Seguimiento', icon: Eye, description: 'Seguimiento posterior al informe' },
       ]
     },
+    {
+      id: 'config',
+      label: 'Ajustes',
+      icon: Settings,
+      items: [
+        { id: 'ajustes', label: 'Configuración', icon: Settings, description: 'Parámetros del módulo eléctrico' },
+      ]
+    },
   ];
 
-  // Find active category
   const getActiveCategory = () => {
     for (const cat of categories) {
       if (cat.items.some(item => item.id === activeModule)) {
@@ -120,7 +126,6 @@ export function ElectricalNavigationMenu({
         const isActiveCategory = activeCategoryId === category.id;
         const hasOnlyOneItem = category.items.length === 1;
 
-        // Si la categoría solo tiene un item, actuar como botón directo
         if (hasOnlyOneItem) {
           const item = category.items[0];
           const ItemIcon = item.icon;

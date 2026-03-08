@@ -1,40 +1,36 @@
 /**
  * Módulo Consultoría Eléctrica ERP
  * Gestión integral de expedientes de optimización de factura eléctrica
- * para clientes particulares y empresas.
- * 
- * Funcionalidades: Alta expedientes, suministros/CUPS, facturas/contratos,
- * análisis consumo/potencia, recomendaciones tarifa, informes, seguimiento.
+ * 12 secciones: Resumen, Expedientes, Clientes, Suministros, Facturas,
+ * Contratos, Consumo, Comparador, Recomendaciones, Informes, Seguimiento, Ajustes
  */
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
-  Zap, 
-  FolderOpen, 
-  FileText, 
-  BarChart3, 
-  Gauge, 
-  TrendingUp,
+  Zap, FolderOpen, FileText, BarChart3, Gauge, TrendingUp,
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp';
 import { ElectricalNavigationMenu } from './ElectricalNavigationMenu';
 import { ElectricalDashboard } from './ElectricalDashboard';
 import { ElectricalExpedientesPanel } from './ElectricalExpedientesPanel';
+import { ElectricalClientesPanel } from './ElectricalClientesPanel';
 import { ElectricalSuministrosPanel } from './ElectricalSuministrosPanel';
 import { ElectricalFacturasPanel } from './ElectricalFacturasPanel';
+import { ElectricalContratosPanel } from './ElectricalContratosPanel';
 import { ElectricalConsumoPanel } from './ElectricalConsumoPanel';
+import { ElectricalComparadorPanel } from './ElectricalComparadorPanel';
 import { ElectricalPotenciaPanel } from './ElectricalPotenciaPanel';
 import { ElectricalRecomendacionesPanel } from './ElectricalRecomendacionesPanel';
 import { ElectricalInformesPanel } from './ElectricalInformesPanel';
 import { ElectricalSeguimientoPanel } from './ElectricalSeguimientoPanel';
+import { ElectricalAjustesPanel } from './ElectricalAjustesPanel';
 
 export function ElectricalConsultingModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { currentCompany } = useERPContext();
   const companyId = currentCompany?.id;
 
-  // Stats dinámicas
   const [stats, setStats] = useState({
     expedientesActivos: 0,
     suministrosGestionados: 0,
@@ -46,7 +42,6 @@ export function ElectricalConsultingModule() {
 
   useEffect(() => {
     if (!companyId) return;
-    // Fallback demo data until backend is connected
     setStats({
       expedientesActivos: 12,
       suministrosGestionados: 34,
@@ -148,7 +143,7 @@ export function ElectricalConsultingModule() {
         </Card>
       </div>
 
-      {/* Navegación agrupada */}
+      {/* Navegación con 12 secciones */}
       <ElectricalNavigationMenu
         activeModule={activeModule}
         onModuleChange={setActiveModule}
@@ -162,13 +157,17 @@ export function ElectricalConsultingModule() {
       <div className="mt-4">
         {activeModule === 'dashboard' && <ElectricalDashboard companyId={companyId} />}
         {activeModule === 'expedientes' && <ElectricalExpedientesPanel companyId={companyId} />}
+        {activeModule === 'clientes' && <ElectricalClientesPanel companyId={companyId} />}
         {activeModule === 'suministros' && <ElectricalSuministrosPanel companyId={companyId} />}
         {activeModule === 'facturas' && <ElectricalFacturasPanel companyId={companyId} />}
+        {activeModule === 'contratos' && <ElectricalContratosPanel companyId={companyId} />}
         {activeModule === 'consumo' && <ElectricalConsumoPanel companyId={companyId} />}
+        {activeModule === 'comparador' && <ElectricalComparadorPanel companyId={companyId} />}
         {activeModule === 'potencia' && <ElectricalPotenciaPanel companyId={companyId} />}
         {activeModule === 'recomendaciones' && <ElectricalRecomendacionesPanel companyId={companyId} />}
         {activeModule === 'informes' && <ElectricalInformesPanel companyId={companyId} />}
         {activeModule === 'seguimiento' && <ElectricalSeguimientoPanel companyId={companyId} />}
+        {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
       </div>
     </div>
   );
