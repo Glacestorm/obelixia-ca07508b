@@ -32,7 +32,7 @@ const emptyForm = {
 };
 
 export function CaseInvoicesTab({ caseId }: Props) {
-  const { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice, uploadPdf } = useEnergyInvoices(caseId);
+  const { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice, uploadPdf, getSignedUrl } = useEnergyInvoices(caseId);
   const { supply } = useEnergySupply(caseId);
   const [showDialog, setShowDialog] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
