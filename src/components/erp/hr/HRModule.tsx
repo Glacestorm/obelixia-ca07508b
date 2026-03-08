@@ -339,6 +339,7 @@ export function HRModule() {
         {activeModule === 'fairness-engine' && <HRFairnessEnginePanel companyId={demoCompanyId} />}
         {activeModule === 'digital-twin' && <HRDigitalTwinPanel companyId={demoCompanyId} />}
         {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={demoCompanyId} />}
+        {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}

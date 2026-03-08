@@ -263,3 +263,10 @@ export type {
   LegalTemplate, LegalClause, LegalContract,
   ComplianceCheck, LegalStats, LegalAIAnalysis
 } from './useHRLegalEngine';
+
+// Premium Phase 7 - CNAE-Specific HR Intelligence
+export { useHRCNAEIntelligence } from './useHRCNAEIntelligence';
+export type {
+  CNAESectorProfile, CNAEComplianceRule, CNAEBenchmark,
+  CNAERiskAssessment, CNAEIntelligenceStats, CNAEIntelligenceAnalysis
+} from './useHRCNAEIntelligence';
