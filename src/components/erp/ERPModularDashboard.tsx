@@ -63,6 +63,7 @@ import { HRModule } from './hr/HRModule';
 import { LegalModule } from './legal';
 import { GaliaDashboard } from '@/components/verticals/galia';
 import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
+import { ElectricalConsultingModule } from './electrical';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
