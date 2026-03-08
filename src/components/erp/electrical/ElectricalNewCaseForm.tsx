@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -10,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarIcon, ArrowLeft } from 'lucide-react';
 import { ElectricalBreadcrumb } from './ElectricalBreadcrumb';
 import { useEnergyCases } from '@/hooks/erp/useEnergyCases';
+import { useEnergyCustomers } from '@/hooks/erp/useEnergyCustomers';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -35,6 +35,7 @@ const PRIORITY_OPTIONS = [
 
 export function ElectricalNewCaseForm({ companyId, onCreated, onCancel }: Props) {
   const { createCase } = useEnergyCases(companyId);
+  const { customers } = useEnergyCustomers(companyId);
   const [saving, setSaving] = useState(false);
   const [contractEndDate, setContractEndDate] = useState<Date | undefined>();
 
@@ -56,9 +57,6 @@ export function ElectricalNewCaseForm({ companyId, onCreated, onCancel }: Props)
     const e: Record<string, string> = {};
     if (!form.title.trim()) e.title = 'El título es obligatorio';
     if (form.title.length > 200) e.title = 'Máximo 200 caracteres';
-    if (form.cups && !/^ES\d{16,22}$/i.test(form.cups.replace(/\s/g, '')) && form.cups.length > 0) {
-      // Soft validation - just warn but don't block
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   }, [form]);
@@ -88,6 +86,22 @@ export function ElectricalNewCaseForm({ companyId, onCreated, onCancel }: Props)
     if (errors[field]) setErrors(e => { const n = { ...e }; delete n[field]; return n; });
   };
 
+  // Auto-fill from selected customer
+  const handleCustomerSelect = (customerId: string) => {
+    updateField('customer_id', customerId);
+    if (customerId) {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        if (!form.title && customer.name) {
+          updateField('title', `Optimización eléctrica - ${customer.name}`);
+        }
+        if (!form.address && customer.address) {
+          updateField('address', [customer.address, customer.city, customer.province].filter(Boolean).join(', '));
+        }
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <ElectricalBreadcrumb section="Expedientes" subsection="Nuevo expediente" />
@@ -103,6 +117,24 @@ export function ElectricalNewCaseForm({ companyId, onCreated, onCancel }: Props)
       <Card>
         <CardHeader><CardTitle className="text-base">Datos del expediente</CardTitle></CardHeader>
         <CardContent className="space-y-6">
+          {/* Customer selector */}
+          <div className="grid gap-2">
+            <Label>Cliente energético</Label>
+            <Select value={form.customer_id} onValueChange={handleCustomerSelect}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar cliente (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Sin cliente asignado</SelectItem>
+                {customers.filter(c => c.is_active).map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}{c.tax_id ? ` (${c.tax_id})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Row 1: Title */}
           <div className="grid gap-2">
             <Label htmlFor="title">Título del expediente *</Label>
