@@ -17778,6 +17778,50 @@ export type Database = {
         }
         Relationships: []
       }
+      energy_audit_log: {
+        Row: {
+          action: string
+          case_id: string | null
+          company_id: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          performed_at: string
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          case_id?: string | null
+          company_id: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          case_id?: string | null
+          company_id?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_audit_log_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energy_cases: {
         Row: {
           address: string | null
@@ -17846,6 +17890,56 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "energy_customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_checklists: {
+        Row: {
+          case_id: string
+          checked: boolean
+          checked_at: string | null
+          checked_by: string | null
+          created_at: string
+          id: string
+          item_key: string
+          label: string
+          notes: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          checked?: boolean
+          checked_at?: string | null
+          checked_by?: string | null
+          created_at?: string
+          id?: string
+          item_key: string
+          label: string
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          checked?: boolean
+          checked_at?: string | null
+          checked_by?: string | null
+          created_at?: string
+          id?: string
+          item_key?: string
+          label?: string
+          notes?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_checklists_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
             referencedColumns: ["id"]
           },
         ]
@@ -18207,6 +18301,102 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_proposals: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          case_id: string
+          conditions: string | null
+          created_at: string
+          created_by: string | null
+          cups: string | null
+          current_annual_cost: number | null
+          current_supplier: string | null
+          current_tariff: string | null
+          customer_id: string | null
+          estimated_annual_cost: number | null
+          estimated_annual_savings: number | null
+          id: string
+          issued_at: string | null
+          observations: string | null
+          recommended_supplier: string | null
+          recommended_tariff: string | null
+          rejected_at: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          valid_until: string | null
+          version: number
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          case_id: string
+          conditions?: string | null
+          created_at?: string
+          created_by?: string | null
+          cups?: string | null
+          current_annual_cost?: number | null
+          current_supplier?: string | null
+          current_tariff?: string | null
+          customer_id?: string | null
+          estimated_annual_cost?: number | null
+          estimated_annual_savings?: number | null
+          id?: string
+          issued_at?: string | null
+          observations?: string | null
+          recommended_supplier?: string | null
+          recommended_tariff?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+          version?: number
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          case_id?: string
+          conditions?: string | null
+          created_at?: string
+          created_by?: string | null
+          cups?: string | null
+          current_annual_cost?: number | null
+          current_supplier?: string | null
+          current_tariff?: string | null
+          customer_id?: string | null
+          estimated_annual_cost?: number | null
+          estimated_annual_savings?: number | null
+          id?: string
+          issued_at?: string | null
+          observations?: string | null
+          recommended_supplier?: string | null
+          recommended_tariff?: string | null
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_proposals_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energy_proposals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "energy_customers"
             referencedColumns: ["id"]
           },
         ]
@@ -18604,6 +18794,50 @@ export type Database = {
             foreignKeyName: "energy_tracking_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: true
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_workflow_states: {
+        Row: {
+          assigned_user_id: string | null
+          case_id: string
+          changed_at: string
+          changed_by: string | null
+          comments: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          status: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          case_id: string
+          changed_at?: string
+          changed_by?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          status?: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          case_id?: string
+          changed_at?: string
+          changed_by?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_workflow_states_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
             referencedRelation: "energy_cases"
             referencedColumns: ["id"]
           },
