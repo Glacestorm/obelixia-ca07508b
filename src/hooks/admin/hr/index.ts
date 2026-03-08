@@ -282,3 +282,7 @@ export type {
 // P9.5 - Role Experience Activation (Active role for current user)
 export { useHRActiveRoleExperience } from './useHRActiveRoleExperience';
 export type { ActiveRoleExperience } from './useHRActiveRoleExperience';
+
+// P9.6 - Centralized Premium Re-Seed
+export { useHRPremiumReseed } from './useHRPremiumReseed';
+export type { SeedPhase } from './useHRPremiumReseed';
