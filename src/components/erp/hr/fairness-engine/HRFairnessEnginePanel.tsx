@@ -30,9 +30,15 @@ export function HRFairnessEnginePanel({ companyId }: Props) {
   const {
     analyses, metrics, cases, plans, stats, aiAnalysis,
     loading, aiLoading, fetchAll, runFairnessAnalysis, runPayEquityAI, seedDemo,
+    realPayEquityData, realDataLoading, fetchRealPayEquityData,
   } = useHRFairnessEngine();
 
-  useEffect(() => { fetchAll(companyId); }, [companyId, fetchAll]);
+  const hasRealData = !!(realPayEquityData && Object.keys(realPayEquityData).length > 0);
+
+  useEffect(() => {
+    fetchAll(companyId);
+    fetchRealPayEquityData(companyId);
+  }, [companyId, fetchAll, fetchRealPayEquityData]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-emerald-500';
