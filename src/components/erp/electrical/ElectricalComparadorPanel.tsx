@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-interface Props { companyId: string; }
+interface Props { companyId: string; caseId?: string; }
 
 const ACCESS_TARIFFS = [
   { value: '2.0TD', label: '2.0TD (≤15kW)' },

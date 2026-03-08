@@ -22,6 +22,7 @@ interface Props {
   caseId: string;
   companyId: string;
   onBack: () => void;
+  onOpenSimulator?: (caseId: string) => void;
 }
 
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
