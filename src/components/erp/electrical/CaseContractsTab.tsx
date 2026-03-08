@@ -205,9 +205,11 @@ export function CaseContractsTab({ caseId }: Props) {
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); deleteContract(c.id); }}>
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
+                    <PermissionGate action="edit_cases">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); deleteContract(c.id); }}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ))}
