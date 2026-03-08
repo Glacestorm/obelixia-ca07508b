@@ -1,57 +1,71 @@
 
-# Plan: Ideas Estratosféricas — 5 Fases de Innovación Disruptiva
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases
 
 ## Estado de Implementación
 
 | Fase | Estado | Detalles |
 |------|--------|----------|
-| 1 - Self-Healing | ✅ Completada | Tablas DB + Edge Function + Hook + UI Panel |
-| 2 - Federated Mesh | ✅ Completada | Tablas DB + Edge Function + Hook + UI Panel |
-| 3 - AI Pricing | ✅ Completada | Tablas DB + Edge Function + Hook + UI Panel |
-| 4 - Marketplace | ✅ Completada | Tablas DB + Edge Function + Hook + UI Panel |
-| 5 - Digital Twin | ✅ Completada | Tablas DB + Edge Function + Hook + UI Panel |
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas DB + Edge Function + Hook + 7 UI Panels + Navegación + Seed Data |
+| 2 - Workflow Engine | 📋 Pendiente | — |
+| 3 - Compensation Suite | 📋 Pendiente | — |
+| 4 - Talent Intelligence | 📋 Pendiente | — |
+| 5 - Compliance Enterprise | 📋 Pendiente | — |
+| 6 - Wellbeing Enterprise | 📋 Pendiente | — |
+| 7 - ESG Social + Self-Service | 📋 Pendiente | — |
+| 8 - Copilot + Digital Twin | 📋 Pendiente | — |
 
-## Implementado
+## FASE 1 — Completada ✅
 
-### Fase 1 — Self-Healing Installations
-- **Tablas**: `installation_health_checks`, `installation_incidents`
-- **Columnas en `client_installations`**: `health_score`, `self_healing_enabled`, `health_thresholds`
-- **Edge Function `self-healing-monitor`**: 6 acciones (analyze_health, detect_degradation, decide_action, execute_remediation, get_health_history, configure_thresholds)
-- **Hook `useSelfHealing`**: auto-monitoring, análisis IA, diagnóstico, ejecución remediación
-- **UI `SelfHealingPanel`**: Gauge 0-100, trends, predicciones IA, incidentes, umbrales
-- **Tab "Salud"** en InstallationDetailPanel
+### Tablas creadas:
+- `erp_hr_legal_entities` — Entidades legales (CIF, jurisdicción, tipo societario, CCC patronal, CNAE)
+- `erp_hr_work_centers` — Centros de trabajo (dirección, CCC, capacidad, sede central)
+- `erp_hr_org_units` — Unidades organizativas jerárquicas (división→área→departamento→sección→equipo)
+- `erp_hr_work_calendars` — Calendarios laborales por jurisdicción/centro
+- `erp_hr_calendar_entries` — Festivos y días especiales
+- `erp_hr_enterprise_roles` — Roles HR enterprise (7 roles predefinidos)
+- `erp_hr_enterprise_permissions` — Catálogo de permisos (13 módulos × 6 acciones = 78 permisos)
+- `erp_hr_role_permissions` — Permisos por rol
+- `erp_hr_role_assignments` — Asignación usuario-rol con scope (global, entidad, centro, departamento)
+- `erp_hr_field_permissions` — Permisos a nivel de campo
+- `erp_hr_data_access_rules` — Reglas ABAC dinámicas
+- `erp_hr_audit_log` — Log inmutable con 7 índices optimizados
+- `erp_hr_critical_events` — Eventos críticos con resolución
 
-### Fase 3 — Usage-Based AI Pricing
-- **Tablas**: `ai_usage_pricing` (14 reglas predefinidas), `ai_usage_invoices`
-- **Columnas extendidas en `usage_billing_events`**: `ai_model_used`, `tokens_consumed`, `decision_type`, `ai_latency_ms`, `prompt_tokens`, `completion_tokens`
-- **Edge Function `ai-usage-billing`**: 6 acciones (record_decision, get_usage_summary, generate_invoice, get_pricing_rules, simulate_cost, get_invoices)
-- **Hook `useAIUsagePricing`**: recordAIDecision, fetchUsageSummary, generateInvoice, simulateCost
-- **UI `AIUsagePricingPanel`**: 4 tabs (Resumen con gráficos Recharts, Precios con 14 reglas, Simulador de costes interactivo, Facturas con generación)
-- **Tab "IA"** en InstallationDetailPanel (8 tabs total)
-- **14 tipos de decisión IA** con pricing granular
+### Columnas añadidas:
+- `erp_hr_employees`: `legal_entity_id`, `work_center_id`, `org_unit_id`, `work_calendar_id`
+- `erp_hr_departments`: `legal_entity_id`, `work_center_id`
+- `erp_hr_collective_agreements`: `legal_entity_id`, `work_center_id`
 
-### Fase 5 — Digital Twin de Instalación
-- **Tablas**: `digital_twins`, `twin_snapshots`, `twin_simulations`
-- **Edge Function `digital-twin-engine`**: 5 acciones (create_twin, sync_twin, simulate_update, run_diagnostic, compare_states)
-- **Hook `useDigitalTwin`**: createTwin, syncTwin, simulateUpdate, runDiagnostic, compareStates
-- **UI `DigitalTwinPanel`**: 4 tabs (Estado con métricas y comparación, Simular updates, Snapshots timeline, Diagnóstico remoto completo)
-- **Tab "Twin"** en InstallationDetailPanel (9 tabs total)
-- **Métricas**: CPU, RAM, Disco, Latencia, Divergencia twin↔producción
-- **Diagnóstico remoto**: salud general, seguridad, cuellos de botella, optimizaciones
+### Functions DB:
+- `hr_check_permission(user_id, company_id, module, action, resource)` — SECURITY DEFINER
+- `hr_log_audit(company_id, user_id, action, table, record_id, old, new, category, severity)` — SECURITY DEFINER con auto-creación de eventos críticos
 
-### Fase 2 — Federated Module Mesh ✅
-- **Tablas**: `mesh_federations`, `mesh_federation_nodes`, `mesh_sync_log`, `mesh_conflict_resolutions`
-- **Edge Function `mesh-sync-engine`**: 7 acciones (create_federation, add_node, sync_nodes con IA CRDT, resolve_conflict, get_federation_status, list_federations, update_sync_policy)
-- **Hook `useFederatedMesh`**: gestión completa de federaciones, nodos, sync automático, resolución de conflictos
-- **UI `FederatedMeshPanel`**: 4 tabs (Nodos con status/heartbeat/latencia, Conflictos con resolución LWW/Merge/Manual, Sync Log con historial, Config con políticas por tipo de dato y vector clocks)
-- **Tab "Mesh"** en InstallationDetailPanel (11 tabs total)
-- **Resolución IA**: datos financieros=manual, RRHH=LWW, inventario=merge, logs=merge
+### Edge Function: `erp-hr-enterprise-admin`
+- 15 acciones: CRUD entidades, centros, org units, calendarios, roles, permisos, audit queries, critical events, stats, seed data
 
-## ✅ TODAS LAS FASES COMPLETADAS
-### Fase 4 — Marketplace de Extensiones ✅
-- **Tablas**: `marketplace_extensions` (8 seeds), `marketplace_developers`, `marketplace_purchases`, `extension_reviews`
-- **Edge Function `marketplace-manager`**: 9 acciones (list_extensions, get_extension, install_extension, uninstall_extension, publish_extension, register_developer, developer_dashboard, process_payment con revenue split 70/30, submit_review, get_stats)
-- **Hook `useMarketplaceExtensions`**: catálogo con filtros, instalación, compra con revenue split, reviews, stats
-- **UI `MarketplaceExtensionsPanel`**: 3 tabs (Catálogo con búsqueda/filtros por categoría, Destacadas, Revenue dashboard con modelo 70/30)
-- **Dialog de detalle**: info completa, tags, revenue split, reseñas, botón instalar/comprar
-- **Tab "Extensions"** en InstallationDetailPanel (10 tabs total)
+### Hook: `useHREnterprise`
+- Gestión completa de estructura organizativa, RBAC/ABAC, audit trail
+
+### UI (7 paneles):
+- `HREnterpriseDashboard` — Command Center con 6 KPIs + eventos críticos
+- `HRLegalEntitiesPanel` — CRUD completo con 9 jurisdicciones
+- `HRWorkCentersPanel` — CRUD con vinculación a entidad legal
+- `HROrgStructurePanel` — Organigrama visual jerárquico con 5 tipos de unidad
+- `HRCalendarsPanel` — Calendarios con festivos expandibles
+- `HRRolesPermissionsPanel` — Matriz RBAC visual por rol/módulo
+- `HRAuditTrailPanel` — Visor con filtros + eventos críticos
+
+### Navegación:
+- Nueva categoría "Enterprise" en HRNavigationMenu con 7 items
+
+### Seed Data:
+- 3 entidades legales (Madrid, Barcelona, Andorra)
+- 4 centros de trabajo
+- 6 unidades organizativas
+- Calendario España 2026 con 13 festivos
+- 7 roles enterprise con matriz de permisos completa
+- 78 permisos catalogados (13 módulos × 6 acciones)
+
+### RLS:
+- 14 policies aplicadas a todas las tablas nuevas
+- Basadas en `user_has_erp_company_access()`
