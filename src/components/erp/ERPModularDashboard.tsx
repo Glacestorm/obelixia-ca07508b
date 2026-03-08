@@ -69,7 +69,8 @@ import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButt
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain } from 'lucide-react';
+import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database } from 'lucide-react';
+import { useHRPremiumReseed } from '@/hooks/admin/hr/useHRPremiumReseed';
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
   const [activeTab, setActiveTab] = useState('overview');
