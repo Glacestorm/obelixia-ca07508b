@@ -703,6 +703,9 @@ function ERPModularDashboardContent() {
             {utilitySection === 'analytics-bi' && (
               <HRAnalyticsBIPremiumPanel companyId={currentCompany?.id} />
             )}
+            {utilitySection === 'reporting-engine' && currentCompany?.id && (
+              <HRReportingEnginePanel companyId={currentCompany.id} />
+            )}
           </div>
         </TabsContent>
       </Tabs>
