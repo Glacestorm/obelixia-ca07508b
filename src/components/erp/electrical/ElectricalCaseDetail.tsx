@@ -158,7 +158,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
         </TabsContent>
 
         <TabsContent value="workflow" className="mt-4">
-          <CaseWorkflowTab caseId={caseId} />
+          <CaseWorkflowTab caseId={caseId} companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="checklist" className="mt-4">
