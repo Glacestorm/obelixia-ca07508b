@@ -118,6 +118,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'ai-governance', label: 'AI Governance', icon: Brain },
         { id: 'workforce-planning', label: 'Workforce Planning', icon: Target },
         { id: 'fairness-engine', label: 'Fairness & Justice', icon: Scale },
+        { id: 'digital-twin', label: 'Digital Twin Completo', icon: Layers },
       ]
     },
     {

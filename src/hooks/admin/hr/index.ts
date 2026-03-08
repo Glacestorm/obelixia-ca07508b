@@ -249,3 +249,10 @@ export type {
   WorkforcePlan as StrategicWorkforcePlan, HeadcountModel, Scenario, SkillGapForecast,
   CostProjection, WorkforcePlanningStats, PlanDetail
 } from './useHRWorkforcePlanning';
+
+// Premium Phase 5 - Organizational Digital Twin
+export { useHRDigitalTwin } from './useHRDigitalTwin';
+export type {
+  TwinInstance, TwinModuleSnapshot, TwinMetric,
+  TwinExperiment, TwinAlert, TwinStats
+} from './useHRDigitalTwin';
