@@ -291,10 +291,10 @@ export function useHRCrossModuleIntegration(companyId: string) {
         action: 'CROSS_MODULE_INTEGRATION',
         table_name: `${sourceModule}→${targetModule}`,
         record_id: eventType,
-        new_data: payload,
+        new_data: payload as any,
         category: 'integration',
         severity: 'info',
-        metadata: { source_module: sourceModule, target_module: targetModule, event_type: eventType }
+        metadata: { source_module: sourceModule, target_module: targetModule, event_type: eventType } as any
       }]);
     } catch (err) {
       console.error('[CrossModule] logIntegrationEvent error:', err);
