@@ -1,101 +1,155 @@
 
 
-# Plan: OCR, Actualización y Enriquecimiento del Curso Contabilidad Empresarial 360
+# Plan: Módulo de Instalación ERP — Sistema Completo de Distribución, Licenciamiento y Monetización
 
-## Contenido extraido de los PDFs
+## Contexto Actual
 
-Se han procesado 10+ documentos PDF escaneados que contienen un curso completo de contabilidad de la "Sociedad Europea para el Desarrollo Empresarial", organizado en **19 sesiones** (18 originales + 1 extraordinaria) con tres tipos de material cada una:
+Tu proyecto **ya tiene** una infraestructura sólida que reutilizaremos:
 
-| Sesiones | Contenido principal |
-|----------|-------------------|
-| 1 | Definicion contabilidad, Balance, Activo/Pasivo, Capital, Reservas, Fondos Propios |
-| 2 | Plan General Contabilidad, grupos/subgrupos, Inmovilizado Material, Amortizaciones, Provisiones, Principios contables |
-| 3 | Existencias, Deudores, Clientes, IVA soportado/repercutido, Tesoreria |
-| 4 | Pasivo Fijo/Circulante, Fondos Propios, Capital Social, Reservas, Resultados Negativos, Subvenciones Capital, Proveedores, Acreedores, Hacienda Publica, Emprestitos, Deudas CP, Descuento de Efectos |
-| 5 | Inmovilizado Inmaterial, Gastos de Establecimiento, Gastos a Distribuir, Provisiones para Riesgos, Fianzas, Inversiones Financieras, Provisiones por Depreciacion |
-| 6-7 | Balances completos (Activo/Pasivo), operaciones mensuales empresa ALFA, asientos, cuenta como instrumento contable |
-| 8 | Cuentas como instrumento contable, Debe/Haber, funcionamiento cuentas Activo/Pasivo, asientos contables, fichas de cuenta |
-| 9 | Gastos: compras, servicios exteriores, tributos, personal, gastos financieros, descuento de efectos, gastos extraordinarios |
-| 10 | Ingresos: ventas, subvenciones oficiales/privadas, ingresos financieros, arrendamientos, comisiones, Cuenta de Perdidas y Ganancias, Impuesto sobre Beneficios |
-| 11 | Regularizacion contable, cierre del ejercicio, Balance final, Cuentas Anuales, asiento de regularizacion y cierre |
-| 12 | Memoria completa (8 apartados), informacion complementaria, modelos oficiales de Cuentas Anuales, distribucion de beneficios |
-| 13 | **[IA-generada]** Contabilidad analitica y de costes: costes directos/indirectos, centros de coste, margenes de contribucion, punto de equilibrio, ABC costing, costes estandar vs reales |
-| 14 | Comprobaciones contables, conciliaciones bancarias, arqueo de caja |
-| 15 | **[IA-generada]** Auditoria y control interno: principios de auditoria, control interno COSO, revision de cuentas anuales, informe de auditoria, compliance contable, prevencion de fraude |
-| 16 | Analisis de Balances, masas patrimoniales, Fondo de Maniobra, Origen/Aplicacion de Fondos |
-| 17 | Ratios financieros, analisis de tendencias, representacion grafica |
-| 18 | Analisis economico: rentabilidad, rotacion existencias, supervivencia, mecanizacion |
-| 19 | **[EXTRAORDINARIA]** Contabilidad Digital 2026: IA generativa aplicada a contabilidad, blockchain contable y trazabilidad inmutable, automatizacion fiscal (VeriFactu/TicketBAI/SII), contabilidad predictiva con machine learning, smart contracts y facturacion programable, ESG/CSRD reporting automatizado, ciberseguridad contable |
-| 20 | Previsiones de tesorería: cobros/pagos pendientes, pagos fijos mensuales/anuales, compras y ventas previstas, cuadro resumen 4 meses |
-| 21 | Análisis Fondo de Maniobra necesario vs real, determinación capital necesario, punto de equilibrio (comercial e industrial), apalancamiento operativo |
-| 22 | Análisis económico-financiero completo: rentabilidad fondos propios, ratios solvencia/tesorería/liquidez/endeudamiento, plan de acción CP/MP/LP |
-
-Cada sesion incluye: **Texto teorico** + **Tests V/F** (14-30 preguntas) + **Ejercicios practicos** (balances, asientos, calculos).
+- **Sistema de Licencias completo** (`license-manager` Edge Function, 7 tablas: `licenses`, `license_plans`, `device_activations`, `license_entitlements`, `license_usage_logs`, `license_validations`, `license_anomaly_alerts`)
+- **Versionado de módulos** (`module_versions` table + `useModuleVersioning` hook)
+- **Página de Deployment** (`StoreDeployment` con opciones SaaS/On-Premise/Híbrido)
+- **Device Fingerprinting** (`useDeviceFingerprint` hook con Ed25519)
+- **ERP Multi-empresa** confirmado (todo filtrado por `company_id`)
 
 ---
 
-## Correspondencia con el curso existente
+## FASE 1 — Infraestructura de Instalación y Registro de Instancias
+**Objetivo**: Base de datos y backend para gestionar instalaciones cliente.
 
-El curso "Contabilidad Empresarial 360" ya tiene 6 bloques y 22 lecciones en la base de datos. El contenido de los PDFs se mapea asi:
+### Base de datos (migración SQL)
+- Tabla `client_installations`: registro de cada instancia desplegada (OS, tipo de despliegue, módulos instalados, versión, estado, `license_id` FK)
+- Tabla `installation_modules`: relación N:N entre instalación y módulos ERP con versión individual por módulo
+- Tabla `installation_updates`: historial de actualizaciones aplicadas (from_version, to_version, status, applied_at)
 
-| Bloque existente | Sesiones PDF relevantes |
-|-----------------|------------------------|
-| Bloque 0 - Fundamentos estrategicos (4 lecciones) | Sesiones 1, 2 (teoria base) |
-| Bloque I - Estructura contable (4 lecciones) | Sesiones 2, 7 (PGC, asientos, partida doble) |
-| Bloque II - Operativa diaria (5 lecciones) | Sesiones 3, 14 (existencias, IVA, tesoreria, conciliaciones) |
-| Bloque III - Activos y financiacion (4 lecciones) | Sesiones 2, 4, 6 (inmovilizado, amortizaciones, financiacion) |
-| Bloque IV - Ajustes y cierre (3 lecciones) | Sesiones 14 (comprobaciones, cierre) |
-| Bloque V - Avanzada y estrategica (2 lecciones) | Sesiones 16, 17, 18 (analisis, ratios, tendencias) |
+### Edge Function `installation-manager`
+- Acciones: `register_instance`, `add_module`, `remove_module`, `check_updates`, `apply_update`, `get_installation_status`
+- Genera artefactos de instalación (scripts/configs) según plataforma destino
 
----
-
-## Fases de implementacion
-
-### FASE 1: Creacion de la Edge Function de procesamiento OCR-IA
-- Crear edge function `academia-content-enricher` que recibe el contenido OCR extraido y lo transforma en contenido pedagogico moderno
-- La IA actualizara: pesetas a euros, PGC 1990 a PGC 2007/2025, referencias a SII/TicketBAI/VeriFactu, normativa vigente 2026
-- Generara contenido Markdown estructurado con ejemplos actualizados, notas de actualizacion normativa, y llamadas a la accion
-
-### FASE 2: Enriquecimiento del contenido de las 22 lecciones
-- Invocar la edge function para cada leccion, pasando el contenido OCR correspondiente como contexto
-- Actualizar el campo `content` (Markdown) de cada leccion en `academia_lessons` con el contenido enriquecido
-- Cada leccion incluira: teoria original actualizada + ejemplos con euros + referencias PGC 2007/2025 + tips practicos + enlaces al ERP
-
-### FASE 3: Generacion de tests y ejercicios actualizados
-- Usar el contenido OCR de los tests V/F para crear/actualizar los quizzes en `academia_quizzes` + `academia_quiz_questions`
-- Actualizar las 110 preguntas existentes con el material real de los PDFs, adaptado a normativa 2026
-- Anadir ejercicios practicos como recursos descargables en `academia_course_resources` (plantillas Excel, CSV de asientos)
-
-### FASE 4: Creacion de recursos complementarios
-- Insertar en `academia_course_resources` plantillas y material descargable derivado de los ejercicios de los PDFs:
-  - Plantilla de Balance (sesion 1)
-  - Hoja de Conciliacion Bancaria (sesion 14)
-  - Plantilla de Arqueo de Caja (sesion 14)
-  - Calculadora de Ratios Financieros (sesiones 17-18)
-  - Hoja de Fondo de Maniobra (sesion 16)
-- Cada recurso vinculado a la leccion correspondiente
-
-### FASE 5: Integracion con el modulo ERP
-- Crear enlaces cruzados entre las lecciones del curso y los modulos del ERP (contabilidad, tesoreria, fiscal)
-- En cada leccion relevante, anadir seccion "Practica en tu ERP" con instrucciones para usar el simulador contable existente
-- Actualizar los `academia_simulator_datasets` con escenarios basados en los ejercicios de los PDFs (empresa ALFA, panadero, alfarero)
-
-### FASE 6: Verificacion y ajustes
-- Verificar que las 22 lecciones tienen contenido actualizado
-- Comprobar que los 22 quizzes reflejan el material real de los PDFs
-- Validar que los recursos se descargan correctamente
-- Test end-to-end del flujo: Catalogo → Detalle → Leccion → Quiz → Recursos
+### UI: Pestaña "Instalación" en Store
+- Wizard de instalación paso a paso
+- Selector de plataforma: Windows, macOS, Linux, Docker, Proxmox VM, Kubernetes, AWS/Azure/GCP
+- Selector de módulos (checkboxes): RRHH, Contabilidad, Tesorería, Compras, Inventario, Fiscal, Legal, ESG, Logística, etc.
+- Generador de scripts de instalación personalizados por plataforma
+- Panel de estado de instalaciones existentes
 
 ---
 
-## Actualizaciones normativas a aplicar
+## FASE 2 — Instalación Modular Incremental
+**Objetivo**: Instalar un módulo hoy, añadir otro mañana sin romper nada.
 
-El material original data de los anos 90 (usa pesetas, referencia al PGC de 1990). Se actualizara a:
+### Arquitectura modular
+- Cada módulo ERP tiene un `module_manifest.json` con dependencias, versión mínima de core, y requisitos de sistema
+- Motor de resolución de dependencias (si instalo Nóminas, requiere RRHH core)
+- Proceso de "hot-add": añadir módulo a instalación existente sin downtime
+- Migración automática de BD al añadir módulo (scripts delta por módulo)
 
-- **Moneda**: Pesetas → Euros (conversion 1€ = 166,386 ptas)
-- **PGC**: Real Decreto 1643/90 → PGC 2007 (RD 1514/2007) + reformas 2021-2025
-- **IVA**: Modelo actual con SII, Ley Crea y Crece, factura electronica obligatoria
-- **Digital**: Contabilidad manual → ERP, digitalizacion obligatoria, VeriFactu/TicketBAI
-- **Normativa**: NIIF-UE, Ley 11/2023 digitalizacion, normas de sostenibilidad (CSRD/ESRS)
-- **Ejemplos**: Actualizados a contexto empresarial 2026
+### UI
+- Panel "Mis Instalaciones" mostrando módulos activos por instancia
+- Botón "Añadir Módulo" que verifica compatibilidad y dependencias antes de instalar
+- Indicador visual de dependencias resueltas/pendientes
+
+---
+
+## FASE 3 — Sistema de Control de Versiones y Actualizaciones
+**Objetivo**: OTA updates con rollback automático.
+
+### Reutilización
+- Se reutiliza `module_versions` (ya existe) y `useModuleVersioning` hook
+- Se extiende con canales de actualización: `stable`, `beta`, `canary`
+
+### Nuevas funcionalidades
+- **Update channels** por instalación (producción=stable, staging=beta)
+- **Differential updates**: solo descargar cambios, no el módulo completo
+- **Pre-flight checks**: verificar compatibilidad antes de aplicar
+- **Auto-rollback**: si health-check falla post-update, revertir automáticamente
+- **Update policies**: actualizaciones automáticas vs. aprobación manual (configurable por cliente)
+
+### UI
+- Dashboard de versiones con timeline visual
+- Comparador de versiones (changelog entre v1.2 → v1.5)
+- Botón "Actualizar" / "Programar actualización" con ventana de mantenimiento
+
+---
+
+## FASE 4 — Integración del Sistema de Licencias Existente
+**Objetivo**: Vincular licencias a instalaciones y módulos.
+
+### Reutilización completa
+- `license-manager` Edge Function ya soporta: activar, validar, heartbeat, revocar, device fingerprint
+- `license_plans` ya define planes con features y límites
+- `license_entitlements` ya tiene `usage_limit` y `usage_current` con `reset_period`
+
+### Extensiones
+- Vincular `licenses.id` → `client_installations.license_id`
+- Añadir tipo de licencia `per_module` a los planes existentes (licencia por módulo individual)
+- Ampliar `license_entitlements` para mapear features a módulos ERP específicos (ej: `feature_key = 'erp.hr'`, `'erp.accounting'`)
+- Panel de activación de licencia integrado en el wizard de instalación
+
+---
+
+## FASE 5 — Monetización por Uso (Pay-per-Use)
+**Objetivo**: Cobrar X€ por nómina/mes/empleado.
+
+### Modelo de negocio
+- Usar `license_usage_logs` (ya existe) para registrar cada nómina generada
+- Usar `license_entitlements` con `reset_period = 'monthly'` para controlar cuotas
+- Crear `usage_billing_rules`: tabla con reglas de facturación (ej: "0.50€/nómina/empleado/mes", "primeras 50 gratis", tier pricing)
+
+### Edge Function `usage-billing`
+- Calcula coste mensual por instalación según uso real
+- Genera factura proforma automática
+- Integra con Stripe para cobro automático (ya tienes Stripe conectado)
+
+### UI
+- Dashboard de consumo: gráfico de nóminas generadas por mes, coste acumulado
+- Alertas de umbral (80%, 90%, 100% de cuota)
+- Configurador de pricing por módulo para admin
+
+---
+
+## FASE 6 — Generador de Artefactos por Plataforma
+**Objetivo**: Scripts reales de instalación.
+
+### Plantillas de instalación
+- **Docker**: `docker-compose.yml` + `Dockerfile` personalizados con solo los módulos seleccionados
+- **Windows**: Script PowerShell con instalador `.msi`
+- **macOS**: Script shell con `.dmg` builder
+- **Linux**: Scripts `.sh` con soporte apt/yum/pacman
+- **Proxmox VM**: Template de VM con imagen preconfigurada (`.ova`/`.qcow2`)
+- **Kubernetes**: Helm charts con valores dinámicos por módulo
+- **AWS/Azure/GCP**: Templates CloudFormation/ARM/Terraform
+
+### Edge Function `generate-installation-artifact`
+- Genera configuración personalizada según plataforma + módulos seleccionados
+- Incluye license key embebida en el artefacto
+
+---
+
+## Ideas Estratosféricas
+
+1. **Self-Healing Installations**: Monitoreo con IA que detecta degradación de rendimiento post-update y ejecuta rollback o hotfix automático sin intervención humana.
+
+2. **Federated Module Mesh**: Múltiples instalaciones de un mismo cliente (ej: oficina Madrid + Barcelona) se sincronizan en tiempo real via CRDT, funcionando offline y reconciliando al reconectar.
+
+3. **Usage-Based AI Pricing**: No solo cobrar por nómina, sino por "decisión IA asistida" — cada vez que el sistema usa IA para recalcular IRPF, sugerir sucesión, o analizar competencias, se registra como unidad de consumo facturable.
+
+4. **Marketplace de Extensiones de Terceros**: Permitir que partners desarrollen plugins/extensiones para módulos específicos, con revenue sharing automático vía Stripe Connect.
+
+5. **Digital Twin de Instalación**: Réplica virtual de cada instalación cliente en tu cloud para diagnóstico remoto, testing de updates antes de desplegar, y soporte técnico sin acceso directo al sistema del cliente.
+
+---
+
+## Resumen Técnico
+
+| Fase | Tablas nuevas | Edge Functions | Componentes UI | Reutiliza |
+|------|--------------|----------------|----------------|-----------|
+| 1 | 3 | 1 | 3 | — |
+| 2 | 0 | 0 (extiende F1) | 2 | module_versions |
+| 3 | 0 (extiende) | 0 (extiende F1) | 3 | useModuleVersioning |
+| 4 | 0 | 0 (extiende license-manager) | 2 | Todo el sistema de licencias |
+| 5 | 1 | 1 | 3 | license_usage_logs, Stripe |
+| 6 | 0 | 1 | 1 | — |
+
+**Total**: ~4 tablas nuevas, ~3 Edge Functions, ~14 componentes UI, reutilización masiva de infraestructura existente.
 
