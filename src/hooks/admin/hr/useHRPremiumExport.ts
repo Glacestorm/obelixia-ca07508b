@@ -27,7 +27,7 @@ const EXPORTABLE_TABLES: ExportableTable[] = [
   { module: 'ai_governance', table: 'erp_hr_ai_decisions', label: 'Decisiones IA' },
   { module: 'ai_governance', table: 'erp_hr_ai_bias_audits', label: 'Auditorías de sesgo' },
   { module: 'workforce', table: 'erp_hr_workforce_plans', label: 'Planes de workforce' },
-  { module: 'workforce', table: 'erp_hr_workforce_scenarios', label: 'Escenarios' },
+  { module: 'workforce', table: 'erp_hr_scenarios', label: 'Escenarios' },
   { module: 'fairness', table: 'erp_hr_justice_cases', label: 'Casos de justicia' },
   { module: 'fairness', table: 'erp_hr_equity_analyses', label: 'Análisis de equidad' },
   { module: 'fairness', table: 'erp_hr_pay_equity_rules', label: 'Reglas pay equity' },
