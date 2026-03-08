@@ -128,7 +128,7 @@ export function useHRAnalyticsBIPremium() {
       db.from('erp_hr_justice_cases').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
       // Digital Twin
       db.from('erp_hr_twin_instances').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      db.from('erp_hr_twin_experiments').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_twin_experiments').select('id', { count: 'exact', head: true }),
       // Legal Engine
       db.from('erp_hr_legal_templates').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_legal_contracts').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
