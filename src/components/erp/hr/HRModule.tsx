@@ -68,6 +68,7 @@ import { HRSecurityGovernancePanel } from './security-governance/HRSecurityGover
 import { HRAIGovernancePanel } from './ai-governance/HRAIGovernancePanel';
 import { HRWorkforcePlanningPanel } from './workforce-planning/HRWorkforcePlanningPanel';
 import { HRFairnessEnginePanel } from './fairness-engine/HRFairnessEnginePanel';
+import { HRDigitalTwinPanel } from './digital-twin/HRDigitalTwinPanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
