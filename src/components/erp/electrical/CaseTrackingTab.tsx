@@ -216,12 +216,14 @@ export function CaseTrackingTab({ caseId }: Props) {
               placeholder="Observaciones del seguimiento..." rows={3} />
           </div>
 
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="h-4 w-4 mr-1.5" />
-              {saving ? 'Guardando...' : 'Guardar seguimiento'}
-            </Button>
-          </div>
+          <PermissionGate action="close_case">
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={saving}>
+                <Save className="h-4 w-4 mr-1.5" />
+                {saving ? 'Guardando...' : 'Guardar seguimiento'}
+              </Button>
+            </div>
+          </PermissionGate>
         </CardContent>
       </Card>
 
