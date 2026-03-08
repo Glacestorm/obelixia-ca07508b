@@ -312,6 +312,7 @@ export function HRModule() {
         {activeModule === 'work-calendars' && <HRCalendarsPanel companyId={demoCompanyId} />}
         {activeModule === 'enterprise-roles' && <HRRolesPermissionsPanel companyId={demoCompanyId} />}
         {activeModule === 'audit-trail' && <HRAuditTrailPanel companyId={demoCompanyId} />}
+      </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
       <HRPayrollEntryDialog
