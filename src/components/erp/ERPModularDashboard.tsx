@@ -36,7 +36,8 @@ import {
   UserCog,
   Scale,
   Landmark,
-  GraduationCap
+  GraduationCap,
+  Activity
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
 import { useHRActiveRoleExperience } from '@/hooks/admin/hr/useHRActiveRoleExperience';
