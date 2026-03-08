@@ -1,3 +1,4 @@
 export { HRPremiumExecutiveDashboard } from './HRPremiumExecutiveDashboard';
 export { HRPremiumAlertsPanel } from './HRPremiumAlertsPanel';
 export { HRPremiumActivityFeed } from './HRPremiumActivityFeed';
+export { HRPremiumSettingsPanel } from './HRPremiumSettingsPanel';
