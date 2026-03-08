@@ -176,3 +176,10 @@ export type {
   WorkflowDefinition, WorkflowStep, WorkflowInstance,
   WorkflowDecision, SLATracking, WorkflowStats
 } from './useHRWorkflowEngine';
+
+// Phase Enterprise - Compensation Suite
+export { useHRCompensationSuite } from './useHRCompensationSuite';
+export type {
+  MeritCycle, MeritProposal, BonusCycle, SalaryLetter,
+  PayEquitySnapshot, CompensationStats
+} from './useHRCompensationSuite';

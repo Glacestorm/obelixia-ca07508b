@@ -24495,6 +24495,86 @@ export type Database = {
           },
         ]
       }
+      erp_hr_bonus_cycles: {
+        Row: {
+          actual_pool: number | null
+          approved_at: string | null
+          approved_by: string | null
+          bonus_type: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          distribution_method: string | null
+          fiscal_year: number
+          guidelines: Json | null
+          id: string
+          metadata: Json | null
+          name: string
+          payment_date: string | null
+          performance_weight: number | null
+          period_end: string
+          period_start: string
+          status: string
+          target_pool: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_pool?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bonus_type?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          distribution_method?: string | null
+          fiscal_year: number
+          guidelines?: Json | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          payment_date?: string | null
+          performance_weight?: number | null
+          period_end: string
+          period_start: string
+          status?: string
+          target_pool?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_pool?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          bonus_type?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          distribution_method?: string | null
+          fiscal_year?: number
+          guidelines?: Json | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          payment_date?: string | null
+          performance_weight?: number | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          target_pool?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_bonus_cycles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_calendar_entries: {
         Row: {
           calendar_id: string
@@ -29887,6 +29967,185 @@ export type Database = {
           },
         ]
       }
+      erp_hr_merit_cycles: {
+        Row: {
+          approval_workflow_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          budget_amount: number | null
+          budget_percent: number | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          effective_date: string | null
+          end_date: string
+          fiscal_year: number
+          guidelines: Json | null
+          id: string
+          metadata: Json | null
+          name: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_workflow_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_amount?: number | null
+          budget_percent?: number | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          effective_date?: string | null
+          end_date: string
+          fiscal_year: number
+          guidelines?: Json | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_workflow_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_amount?: number | null
+          budget_percent?: number | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          effective_date?: string | null
+          end_date?: string
+          fiscal_year?: number
+          guidelines?: Json | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_merit_cycles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_merit_proposals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string
+          current_band: string | null
+          current_compa_ratio: number | null
+          current_salary: number
+          cycle_id: string
+          department: string | null
+          effective_date: string | null
+          employee_id: string
+          employee_name: string | null
+          hr_comments: string | null
+          id: string
+          increase_percent: number | null
+          manager_justification: string | null
+          merit_type: string | null
+          metadata: Json | null
+          performance_rating: string | null
+          position_title: string | null
+          proposed_compa_ratio: number | null
+          proposed_salary: number
+          salary_increase: number | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string
+          current_band?: string | null
+          current_compa_ratio?: number | null
+          current_salary: number
+          cycle_id: string
+          department?: string | null
+          effective_date?: string | null
+          employee_id: string
+          employee_name?: string | null
+          hr_comments?: string | null
+          id?: string
+          increase_percent?: number | null
+          manager_justification?: string | null
+          merit_type?: string | null
+          metadata?: Json | null
+          performance_rating?: string | null
+          position_title?: string | null
+          proposed_compa_ratio?: number | null
+          proposed_salary: number
+          salary_increase?: number | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string
+          current_band?: string | null
+          current_compa_ratio?: number | null
+          current_salary?: number
+          cycle_id?: string
+          department?: string | null
+          effective_date?: string | null
+          employee_id?: string
+          employee_name?: string | null
+          hr_comments?: string | null
+          id?: string
+          increase_percent?: number | null
+          manager_justification?: string | null
+          merit_type?: string | null
+          metadata?: Json | null
+          performance_rating?: string | null
+          position_title?: string | null
+          proposed_compa_ratio?: number | null
+          proposed_salary?: number
+          salary_increase?: number | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_merit_proposals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_merit_proposals_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_merit_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_obligation_deadlines: {
         Row: {
           ai_reminded: boolean | null
@@ -30358,6 +30617,89 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_org_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_pay_equity_snapshots: {
+        Row: {
+          ai_narrative: string | null
+          analysis_date: string
+          anomalies_detail: Json | null
+          anomalies_detected: number | null
+          band_distribution: Json | null
+          compa_ratio_distribution: Json | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          gender_gap_adjusted: number | null
+          gender_gap_percent: number | null
+          id: string
+          mean_female_salary: number | null
+          mean_male_salary: number | null
+          median_female_salary: number | null
+          median_male_salary: number | null
+          metadata: Json | null
+          recommendations: Json | null
+          salary_compression_score: number | null
+          scope: string | null
+          scope_id: string | null
+          total_employees_analyzed: number | null
+        }
+        Insert: {
+          ai_narrative?: string | null
+          analysis_date?: string
+          anomalies_detail?: Json | null
+          anomalies_detected?: number | null
+          band_distribution?: Json | null
+          compa_ratio_distribution?: Json | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          gender_gap_adjusted?: number | null
+          gender_gap_percent?: number | null
+          id?: string
+          mean_female_salary?: number | null
+          mean_male_salary?: number | null
+          median_female_salary?: number | null
+          median_male_salary?: number | null
+          metadata?: Json | null
+          recommendations?: Json | null
+          salary_compression_score?: number | null
+          scope?: string | null
+          scope_id?: string | null
+          total_employees_analyzed?: number | null
+        }
+        Update: {
+          ai_narrative?: string | null
+          analysis_date?: string
+          anomalies_detail?: Json | null
+          anomalies_detected?: number | null
+          band_distribution?: Json | null
+          compa_ratio_distribution?: Json | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          gender_gap_adjusted?: number | null
+          gender_gap_percent?: number | null
+          id?: string
+          mean_female_salary?: number | null
+          mean_male_salary?: number | null
+          median_female_salary?: number | null
+          median_male_salary?: number | null
+          metadata?: Json | null
+          recommendations?: Json | null
+          salary_compression_score?: number | null
+          scope?: string | null
+          scope_id?: string | null
+          total_employees_analyzed?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_pay_equity_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -31931,6 +32273,83 @@ export type Database = {
           },
         ]
       }
+      erp_hr_salary_letters: {
+        Row: {
+          acknowledged_at: string | null
+          change_percent: number | null
+          company_id: string
+          components: Json | null
+          created_at: string
+          document_url: string | null
+          effective_date: string
+          employee_id: string
+          employee_name: string | null
+          id: string
+          letter_type: string
+          merit_proposal_id: string | null
+          metadata: Json | null
+          new_salary: number
+          previous_salary: number | null
+          sent_at: string | null
+          signed_at: string | null
+          status: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          change_percent?: number | null
+          company_id: string
+          components?: Json | null
+          created_at?: string
+          document_url?: string | null
+          effective_date: string
+          employee_id: string
+          employee_name?: string | null
+          id?: string
+          letter_type?: string
+          merit_proposal_id?: string | null
+          metadata?: Json | null
+          new_salary: number
+          previous_salary?: number | null
+          sent_at?: string | null
+          signed_at?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          change_percent?: number | null
+          company_id?: string
+          components?: Json | null
+          created_at?: string
+          document_url?: string | null
+          effective_date?: string
+          employee_id?: string
+          employee_name?: string | null
+          id?: string
+          letter_type?: string
+          merit_proposal_id?: string | null
+          metadata?: Json | null
+          new_salary?: number
+          previous_salary?: number | null
+          sent_at?: string | null
+          signed_at?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_salary_letters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_sanction_alerts: {
         Row: {
           alert_level: string | null
@@ -33180,6 +33599,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "erp_hr_time_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_total_rewards_config: {
+        Row: {
+          calculation_formula: string | null
+          calculation_type: string | null
+          color: string | null
+          company_id: string
+          component_category: string
+          component_name: string
+          created_at: string
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_monetary: boolean | null
+          is_visible: boolean | null
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          calculation_formula?: string | null
+          calculation_type?: string | null
+          color?: string | null
+          company_id: string
+          component_category: string
+          component_name: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_monetary?: boolean | null
+          is_visible?: boolean | null
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          calculation_formula?: string | null
+          calculation_type?: string | null
+          color?: string | null
+          company_id?: string
+          component_category?: string
+          component_name?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_monetary?: boolean | null
+          is_visible?: boolean | null
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_total_rewards_config_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
