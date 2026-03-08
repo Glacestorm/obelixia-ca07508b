@@ -70,11 +70,11 @@ import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButt
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell, Clock } from 'lucide-react';
+import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell, Clock, HeartPulse } from 'lucide-react';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
-import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel } from './hr/premium-dashboard';
+import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel } from './hr/premium-dashboard';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -679,6 +679,10 @@ function ERPModularDashboardContent() {
                   <Brain className="h-4 w-4" />
                   IA Híbrida
                 </TabsTrigger>
+                <TabsTrigger value="premium-health" className="gap-2">
+                  <HeartPulse className="h-4 w-4" />
+                  Health
+                </TabsTrigger>
                 <TabsTrigger value="premium-seed" className="gap-2">
                   <Database className="h-4 w-4" />
                   Re-Seed
@@ -711,6 +715,10 @@ function ERPModularDashboardContent() {
               
               <TabsContent value="ai-hybrid">
                 <AIUnifiedDashboard />
+              </TabsContent>
+
+              <TabsContent value="premium-health">
+                <HRPremiumHealthCheckPanel companyId={currentCompany?.id} />
               </TabsContent>
 
               <TabsContent value="premium-seed">
