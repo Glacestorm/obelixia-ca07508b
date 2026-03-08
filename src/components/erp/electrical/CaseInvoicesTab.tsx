@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { FileText, Plus, Trash2, Upload, CalendarIcon, RefreshCw, ExternalLink, CheckCircle, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import { useEnergyInvoices, EnergyInvoice } from '@/hooks/erp/useEnergyInvoices';
+import { useAuth } from '@/hooks/useAuth';
 import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { PermissionGate } from './PermissionGate';
 import { CaseConsumptionCharts } from './CaseConsumptionCharts';
