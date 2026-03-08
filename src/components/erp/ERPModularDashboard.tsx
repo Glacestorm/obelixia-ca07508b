@@ -39,6 +39,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
+import { useHRActiveRoleExperience } from '@/hooks/admin/hr/useHRActiveRoleExperience';
 import { ERPCompanySelector } from './config/ERPCompanySelector';
 import { ERPCompaniesManager } from './config/ERPCompaniesManager';
 import { ERPFiscalYearsManager } from './config/ERPFiscalYearsManager';
