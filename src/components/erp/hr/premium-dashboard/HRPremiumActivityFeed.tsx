@@ -137,17 +137,7 @@ export function HRPremiumActivityFeed({ companyId, className }: Props) {
                   {filteredEntries.map((entry) => (
                     <div key={entry.id} className="relative flex items-start gap-3 pl-10 py-2 group">
                       {/* Dot */}
-                      <div className={cn(
-                        "absolute left-[11px] top-3 h-2.5 w-2.5 rounded-full border-2 border-background",
-                        MODULE_COLORS[entry.module].includes('destructive') ? 'bg-destructive' :
-                        MODULE_COLORS[entry.module].includes('violet') ? 'bg-violet-500' :
-                        MODULE_COLORS[entry.module].includes('blue') ? 'bg-blue-500' :
-                        MODULE_COLORS[entry.module].includes('emerald') ? 'bg-emerald-500' :
-                        MODULE_COLORS[entry.module].includes('cyan') ? 'bg-cyan-500' :
-                        MODULE_COLORS[entry.module].includes('amber') ? 'bg-amber-500' :
-                        MODULE_COLORS[entry.module].includes('orange') ? 'bg-orange-500' :
-                        'bg-pink-500'
-                      )} />
+                      <div className="absolute left-[11px] top-3 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary" />
 
                       <div className="flex-1 min-w-0 rounded-lg p-2.5 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-2 flex-wrap">

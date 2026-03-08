@@ -143,7 +143,7 @@ export function useHRPremiumActivityFeed(companyId?: string) {
 
           if (data && data.length > 0) {
             for (const row of data) {
-              const r = row as Record<string, unknown>;
+              const r = row as unknown as Record<string, unknown>;
               results.push({
                 id: `${cfg.table}-${r.id || Math.random()}`,
                 module: cfg.module,
