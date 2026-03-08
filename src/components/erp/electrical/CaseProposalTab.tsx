@@ -232,19 +232,11 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                           } as any).eq('id', p.id);
                           if (signErr) throw signErr;
                           log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
-                          // Refresh proposals instead of reloading the page
-                          const { useEnergyProposals: _ } = await import('@/hooks/erp/useEnergyProposals');
-                          // Re-fetch to get updated signed_at
-                          const { data: updated } = await supabase
-                            .from('energy_proposals').select('*').eq('case_id', caseId).order('version', { ascending: false });
-                          if (updated) {
-                            // Force re-render by triggering a state update via the hook's internal fetch
-                          }
+                          await fetchProposals();
                         } catch (err) {
                           console.error('[CaseProposalTab] sign error:', err);
                         } finally {
                           setActionLoading(null);
-                          // Trigger a refetch by re-mounting - use fetchProposals from the hook
                         }
                       }} disabled={!!actionLoading}>
                         <PenTool className="h-3.5 w-3.5 mr-1" /> Firmar digitalmente
