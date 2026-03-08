@@ -31648,6 +31648,108 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_legal_audit_trail: {
+        Row: {
+          action: string
+          company_id: string
+          details: Json | null
+          entity_id: string
+          entity_type: string
+          id: string
+          ip_address: string | null
+          performed_by: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          action: string
+          company_id: string
+          details?: Json | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          performed_by?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          details?: Json | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          performed_by?: string | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_legal_clauses: {
+        Row: {
+          ai_review_notes: string | null
+          applies_to_types: string[] | null
+          category: string
+          clause_name: string
+          clause_type: string
+          company_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_mandatory: boolean | null
+          is_negotiable: boolean | null
+          jurisdiction: string
+          language: string
+          legal_basis: string | null
+          risk_level: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          ai_review_notes?: string | null
+          applies_to_types?: string[] | null
+          category?: string
+          clause_name: string
+          clause_type?: string
+          company_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          is_negotiable?: boolean | null
+          jurisdiction?: string
+          language?: string
+          legal_basis?: string | null
+          risk_level?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          ai_review_notes?: string | null
+          applies_to_types?: string[] | null
+          category?: string
+          clause_name?: string
+          clause_type?: string
+          company_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          is_negotiable?: boolean | null
+          jurisdiction?: string
+          language?: string
+          legal_basis?: string | null
+          risk_level?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
       erp_hr_legal_communications: {
         Row: {
           acknowledged_at: string | null
@@ -31738,6 +31840,160 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_legal_compliance_checks: {
+        Row: {
+          auto_fixable: boolean | null
+          check_type: string
+          checked_at: string | null
+          company_id: string
+          contract_id: string | null
+          details: string | null
+          id: string
+          passed: boolean
+          regulation_reference: string | null
+          remediation_suggestion: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          rule_description: string | null
+          rule_name: string
+          severity: string | null
+        }
+        Insert: {
+          auto_fixable?: boolean | null
+          check_type?: string
+          checked_at?: string | null
+          company_id: string
+          contract_id?: string | null
+          details?: string | null
+          id?: string
+          passed?: boolean
+          regulation_reference?: string | null
+          remediation_suggestion?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          rule_description?: string | null
+          rule_name: string
+          severity?: string | null
+        }
+        Update: {
+          auto_fixable?: boolean | null
+          check_type?: string
+          checked_at?: string | null
+          company_id?: string
+          contract_id?: string | null
+          details?: string | null
+          id?: string
+          passed?: boolean
+          regulation_reference?: string | null
+          remediation_suggestion?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          rule_description?: string | null
+          rule_name?: string
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_legal_compliance_checks_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_legal_contracts: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          clauses_included: string[] | null
+          company_id: string
+          compliance_issues: Json | null
+          compliance_score: number | null
+          contract_number: string
+          contract_type: string
+          created_at: string | null
+          custom_clauses: Json | null
+          effective_date: string | null
+          employee_id: string | null
+          employee_name: string | null
+          expiration_date: string | null
+          generated_by: string | null
+          generated_content: Json | null
+          id: string
+          metadata: Json | null
+          pdf_url: string | null
+          risk_assessment: Json | null
+          signed_at: string | null
+          status: string
+          template_id: string | null
+          updated_at: string | null
+          variables_used: Json | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clauses_included?: string[] | null
+          company_id: string
+          compliance_issues?: Json | null
+          compliance_score?: number | null
+          contract_number: string
+          contract_type?: string
+          created_at?: string | null
+          custom_clauses?: Json | null
+          effective_date?: string | null
+          employee_id?: string | null
+          employee_name?: string | null
+          expiration_date?: string | null
+          generated_by?: string | null
+          generated_content?: Json | null
+          id?: string
+          metadata?: Json | null
+          pdf_url?: string | null
+          risk_assessment?: Json | null
+          signed_at?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string | null
+          variables_used?: Json | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clauses_included?: string[] | null
+          company_id?: string
+          compliance_issues?: Json | null
+          compliance_score?: number | null
+          contract_number?: string
+          contract_type?: string
+          created_at?: string | null
+          custom_clauses?: Json | null
+          effective_date?: string | null
+          employee_id?: string | null
+          employee_name?: string | null
+          expiration_date?: string | null
+          generated_by?: string | null
+          generated_content?: Json | null
+          id?: string
+          metadata?: Json | null
+          pdf_url?: string | null
+          risk_assessment?: Json | null
+          signed_at?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string | null
+          variables_used?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_legal_contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_legal_entities: {
         Row: {
           address: string | null
@@ -31814,6 +32070,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_legal_templates: {
+        Row: {
+          applicable_regulations: string[] | null
+          approval_required: boolean | null
+          category: string
+          company_id: string
+          content_template: Json
+          created_at: string | null
+          created_by: string | null
+          id: string
+          jurisdiction: string
+          language: string
+          optional_variables: string[] | null
+          required_variables: string[]
+          status: string
+          template_name: string
+          template_type: string
+          updated_at: string | null
+          updated_by: string | null
+          usage_count: number | null
+          valid_from: string | null
+          valid_until: string | null
+          version: number
+        }
+        Insert: {
+          applicable_regulations?: string[] | null
+          approval_required?: boolean | null
+          category?: string
+          company_id: string
+          content_template?: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          jurisdiction?: string
+          language?: string
+          optional_variables?: string[] | null
+          required_variables?: string[]
+          status?: string
+          template_name: string
+          template_type?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          usage_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+          version?: number
+        }
+        Update: {
+          applicable_regulations?: string[] | null
+          approval_required?: boolean | null
+          category?: string
+          company_id?: string
+          content_template?: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          jurisdiction?: string
+          language?: string
+          optional_variables?: string[] | null
+          required_variables?: string[]
+          status?: string
+          template_name?: string
+          template_type?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          usage_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+          version?: number
+        }
+        Relationships: []
       }
       erp_hr_market_benchmarks: {
         Row: {
