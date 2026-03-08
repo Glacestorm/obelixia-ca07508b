@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const RATE_LIMIT_CONFIG = {
+  burstPerMinute: 10,
+  perDay: 200,
+  functionName: 'hr-orchestration-engine',
 };
 
 interface OrchestrationEvent {
@@ -45,7 +52,14 @@ serve(async (req) => {
       });
     }
 
-    console.log(`[hr-orchestration-engine] ${action} from ${trigger_module}:${trigger_event} by ${userId}`);
+    // Rate limit check
+    const burstResult = checkBurstLimit(company_id, RATE_LIMIT_CONFIG);
+    if (!burstResult.allowed) {
+      console.warn(`[hr-orchestration-engine] Rate limited: company=${company_id}`);
+      return rateLimitResponse(burstResult, corsHeaders);
+    }
+
+    console.log(`[hr-orchestration-engine] ${action} from ${trigger_module}:${trigger_event} by ${userId} remaining=${burstResult.remaining}`);
 
     switch (action) {
       // ── Emit Event: find matching rules and execute them ──

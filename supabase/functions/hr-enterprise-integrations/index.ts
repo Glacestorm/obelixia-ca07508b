@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const RATE_LIMIT_CONFIG = {
+  burstPerMinute: 8,
+  perDay: 60,
+  functionName: 'hr-enterprise-integrations',
 };
 
 interface FunctionRequest {
@@ -23,7 +30,14 @@ serve(async (req) => {
     const { action, companyId, params } = await req.json() as FunctionRequest;
     if (!companyId) throw new Error('companyId is required');
 
-    console.log(`[hr-enterprise-integrations] Action: ${action}, Company: ${companyId}`);
+    // Rate limit check
+    const burstResult = checkBurstLimit(companyId, RATE_LIMIT_CONFIG);
+    if (!burstResult.allowed) {
+      console.warn(`[hr-enterprise-integrations] Rate limited: company=${companyId}`);
+      return rateLimitResponse(burstResult, corsHeaders);
+    }
+
+    console.log(`[hr-enterprise-integrations] Action: ${action}, Company: ${companyId}, remaining=${burstResult.remaining}`);
 
     let systemPrompt = '';
     let userPrompt = '';
