@@ -226,3 +226,11 @@ export type {
   DataClassification, MaskingRule, SoDRule, SoDViolation,
   SecurityIncident, SecurityStats, SecurityAnalysis
 } from './useHRSecurityGovernance';
+
+// Premium Phase 2 - AI Governance Layer
+export { useHRAIGovernance } from './useHRAIGovernance';
+export type {
+  AIModelStatus, AIRiskLevel, DecisionOutcome, BiasAuditType, PolicyType,
+  AIModelEntry, AIDecision, AIBiasAudit, AIGovernancePolicy,
+  AIExplainabilityReport, AIGovernanceStats, AIGovernanceAnalysis
+} from './useHRAIGovernance';

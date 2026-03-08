@@ -131,11 +131,76 @@ serve(async (req) => {
       return json({ success: true, data: { message: 'Demo data seeded', classifications: classData?.length || 0 } });
     }
 
+    // === AI GOVERNANCE NON-AI ACTIONS ===
+    if (action === 'ai_governance_stats') {
+      const [modelsRes, highRes, decisionsRes, overridesRes, policiesRes, auditsRes] = await Promise.all([
+        supabase.from('erp_hr_ai_model_registry').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
+        supabase.from('erp_hr_ai_model_registry').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('risk_level', 'high'),
+        supabase.from('erp_hr_ai_decisions').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
+        supabase.from('erp_hr_ai_decisions').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('human_override', true),
+        supabase.from('erp_hr_ai_governance_policies').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+        supabase.from('erp_hr_ai_bias_audits').select('overall_fairness_score').eq('company_id', company_id).not('overall_fairness_score', 'is', null),
+      ]);
+      const scores = (auditsRes.data || []).map((a: any) => Number(a.overall_fairness_score));
+      const avgFairness = scores.length > 0 ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : 0;
+      return json({ success: true, data: {
+        total_models: modelsRes.count || 0, active_models: modelsRes.count || 0,
+        high_risk_models: highRes.count || 0, total_decisions: decisionsRes.count || 0,
+        overridden_decisions: overridesRes.count || 0, pending_audits: 0,
+        active_policies: policiesRes.count || 0, avg_fairness_score: avgFairness,
+      }});
+    }
+
+    if (action === 'ai_governance_seed') {
+      // Seed sample decisions
+      const { data: modelData } = await supabase.from('erp_hr_ai_model_registry').select('id, model_name').eq('company_id', company_id).limit(3);
+      if (modelData && modelData.length > 0) {
+        const decisions = [
+          { company_id, model_id: modelData[0].id, decision_type: 'turnover_prediction', input_data: { employee_id: 'emp-001', tenure_months: 14, satisfaction: 3.2 }, output_data: { risk_score: 0.78, risk_level: 'high' }, confidence_score: 0.78, risk_level: 'high', explanation: 'Alto riesgo de rotación: baja satisfacción combinada con tenure < 18 meses', outcome_status: 'accepted', processing_time_ms: 1200 },
+          { company_id, model_id: modelData[0].id, decision_type: 'turnover_prediction', input_data: { employee_id: 'emp-002', tenure_months: 48, satisfaction: 4.5 }, output_data: { risk_score: 0.12, risk_level: 'low' }, confidence_score: 0.92, risk_level: 'low', explanation: 'Bajo riesgo: alta satisfacción y tenure estable', outcome_status: 'accepted', processing_time_ms: 980 },
+          { company_id, model_id: modelData[1]?.id || modelData[0].id, decision_type: 'salary_equity_check', input_data: { department: 'Engineering', role: 'Senior Developer' }, output_data: { gap_detected: true, gap_percentage: 8.3 }, confidence_score: 0.85, risk_level: 'medium', explanation: 'Brecha salarial de 8.3% detectada en rol Senior Developer por género', human_override: true, override_reason: 'Se validó manualmente y se confirmó ajuste pendiente en ciclo Q2', outcome_status: 'overridden', processing_time_ms: 2100 },
+        ];
+        await supabase.from('erp_hr_ai_decisions').insert(decisions as any);
+      }
+      return json({ success: true, data: { message: 'AI Governance demo data seeded' } });
+    }
+
     // === AI ACTIONS ===
     let systemPrompt = '';
     let userPrompt = '';
 
-    if (action === 'ai_security_analysis') {
+    if (action === 'ai_governance_analysis') {
+      systemPrompt = `Eres un experto en gobernanza de IA, EU AI Act (Regulation 2024/1689), y ética algorítmica en RRHH.
+Analiza la madurez de gobernanza IA de esta organización.
+
+FORMATO JSON estricto:
+{
+  "governance_maturity": 0-100,
+  "eu_ai_act_compliance": { "score": 0-100, "gaps": ["string"] },
+  "model_risk_distribution": { "minimal": number, "limited": number, "high": number },
+  "bias_risk_summary": { "models_at_risk": ["string"], "recommended_actions": ["string"] },
+  "transparency_score": 0-100,
+  "accountability_score": 0-100,
+  "recommendations": [{ "priority": 1, "action": "string", "impact": "high|critical" }],
+  "executive_summary": "string"
+}`;
+      userPrompt = `Analiza gobernanza IA: ${JSON.stringify(params)}`;
+    } else if (action === 'ai_bias_audit') {
+      systemPrompt = `Eres un auditor de sesgo algorítmico especializado en RRHH y EU AI Act.
+Ejecuta una auditoría de sesgo para el modelo indicado.
+
+FORMATO JSON estricto:
+{
+  "protected_attributes": ["gender", "age", "ethnicity", "disability"],
+  "fairness_metrics": { "demographic_parity": number, "equalized_odds": number, "calibration": number },
+  "overall_fairness_score": 0-100,
+  "bias_detected": boolean,
+  "bias_details": { "attribute": "string", "metric": "string", "value": number, "threshold": number },
+  "disparate_impact_ratios": { "gender": number, "age": number },
+  "remediation_actions": [{ "action": "string", "priority": "high|medium|low", "expected_improvement": number }]
+}`;
+      userPrompt = `Audita sesgo del modelo: ${JSON.stringify(params)}`;
+    } else if (action === 'ai_security_analysis') {
       systemPrompt = `Eres un CISO experto en seguridad de RRHH enterprise, GDPR, LOPDGDD, ISO 27001 y SOX.
 Analiza la postura de seguridad de la organización y genera un informe ejecutivo.
 

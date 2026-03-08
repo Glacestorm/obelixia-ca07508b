@@ -23914,6 +23914,379 @@ export type Database = {
           },
         ]
       }
+      erp_hr_ai_bias_audits: {
+        Row: {
+          approved_by: string | null
+          audit_type: string
+          audited_by: string | null
+          bias_details: Json | null
+          bias_detected: boolean | null
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          demographic_parity: Json | null
+          disparate_impact_ratios: Json | null
+          equal_opportunity_diff: Json | null
+          fairness_metrics: Json
+          id: string
+          model_id: string | null
+          overall_fairness_score: number | null
+          protected_attributes: string[]
+          regulatory_framework: string | null
+          remediation_actions: Json | null
+          remediation_status: string | null
+          statistical_parity: Json | null
+        }
+        Insert: {
+          approved_by?: string | null
+          audit_type?: string
+          audited_by?: string | null
+          bias_details?: Json | null
+          bias_detected?: boolean | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          demographic_parity?: Json | null
+          disparate_impact_ratios?: Json | null
+          equal_opportunity_diff?: Json | null
+          fairness_metrics?: Json
+          id?: string
+          model_id?: string | null
+          overall_fairness_score?: number | null
+          protected_attributes?: string[]
+          regulatory_framework?: string | null
+          remediation_actions?: Json | null
+          remediation_status?: string | null
+          statistical_parity?: Json | null
+        }
+        Update: {
+          approved_by?: string | null
+          audit_type?: string
+          audited_by?: string | null
+          bias_details?: Json | null
+          bias_detected?: boolean | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          demographic_parity?: Json | null
+          disparate_impact_ratios?: Json | null
+          equal_opportunity_diff?: Json | null
+          fairness_metrics?: Json
+          id?: string
+          model_id?: string | null
+          overall_fairness_score?: number | null
+          protected_attributes?: string[]
+          regulatory_framework?: string | null
+          remediation_actions?: Json | null
+          remediation_status?: string | null
+          statistical_parity?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_ai_bias_audits_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_ai_model_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_ai_decisions: {
+        Row: {
+          affected_employees: string[] | null
+          affected_entity: string | null
+          company_id: string
+          confidence_score: number | null
+          created_at: string
+          decision_type: string
+          escalated_to: string | null
+          explanation: string | null
+          feedback_comment: string | null
+          feedback_score: number | null
+          human_override: boolean | null
+          id: string
+          input_data: Json
+          lime_weights: Json | null
+          model_id: string | null
+          outcome_status: string | null
+          output_data: Json
+          override_by: string | null
+          override_reason: string | null
+          processing_time_ms: number | null
+          risk_level: string | null
+          shap_values: Json | null
+          token_usage: Json | null
+        }
+        Insert: {
+          affected_employees?: string[] | null
+          affected_entity?: string | null
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string
+          decision_type: string
+          escalated_to?: string | null
+          explanation?: string | null
+          feedback_comment?: string | null
+          feedback_score?: number | null
+          human_override?: boolean | null
+          id?: string
+          input_data?: Json
+          lime_weights?: Json | null
+          model_id?: string | null
+          outcome_status?: string | null
+          output_data?: Json
+          override_by?: string | null
+          override_reason?: string | null
+          processing_time_ms?: number | null
+          risk_level?: string | null
+          shap_values?: Json | null
+          token_usage?: Json | null
+        }
+        Update: {
+          affected_employees?: string[] | null
+          affected_entity?: string | null
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          decision_type?: string
+          escalated_to?: string | null
+          explanation?: string | null
+          feedback_comment?: string | null
+          feedback_score?: number | null
+          human_override?: boolean | null
+          id?: string
+          input_data?: Json
+          lime_weights?: Json | null
+          model_id?: string | null
+          outcome_status?: string | null
+          output_data?: Json
+          override_by?: string | null
+          override_reason?: string | null
+          processing_time_ms?: number | null
+          risk_level?: string | null
+          shap_values?: Json | null
+          token_usage?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_ai_decisions_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_ai_model_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_ai_explainability_reports: {
+        Row: {
+          audience: string | null
+          company_id: string
+          confidence_intervals: Json | null
+          counterfactuals: Json | null
+          created_at: string
+          decision_id: string | null
+          explanation_method: string
+          feature_importance: Json | null
+          generated_by: string | null
+          id: string
+          model_id: string | null
+          natural_language_explanation: string | null
+          report_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          visualization_data: Json | null
+        }
+        Insert: {
+          audience?: string | null
+          company_id: string
+          confidence_intervals?: Json | null
+          counterfactuals?: Json | null
+          created_at?: string
+          decision_id?: string | null
+          explanation_method?: string
+          feature_importance?: Json | null
+          generated_by?: string | null
+          id?: string
+          model_id?: string | null
+          natural_language_explanation?: string | null
+          report_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          visualization_data?: Json | null
+        }
+        Update: {
+          audience?: string | null
+          company_id?: string
+          confidence_intervals?: Json | null
+          counterfactuals?: Json | null
+          created_at?: string
+          decision_id?: string | null
+          explanation_method?: string
+          feature_importance?: Json | null
+          generated_by?: string | null
+          id?: string
+          model_id?: string | null
+          natural_language_explanation?: string | null
+          report_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          visualization_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_ai_explainability_reports_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_ai_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_ai_explainability_reports_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_ai_model_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_ai_governance_policies: {
+        Row: {
+          applies_to_models: string[] | null
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          enforcement_level: string | null
+          id: string
+          is_active: boolean | null
+          next_review_at: string | null
+          policy_name: string
+          policy_type: string
+          regulatory_reference: string | null
+          review_frequency_days: number | null
+          rules: Json
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          applies_to_models?: string[] | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          enforcement_level?: string | null
+          id?: string
+          is_active?: boolean | null
+          next_review_at?: string | null
+          policy_name: string
+          policy_type: string
+          regulatory_reference?: string | null
+          review_frequency_days?: number | null
+          rules?: Json
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          applies_to_models?: string[] | null
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          enforcement_level?: string | null
+          id?: string
+          is_active?: boolean | null
+          next_review_at?: string | null
+          policy_name?: string
+          policy_type?: string
+          regulatory_reference?: string | null
+          review_frequency_days?: number | null
+          rules?: Json
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
+      erp_hr_ai_model_registry: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          bias_metrics: Json | null
+          company_id: string
+          created_at: string
+          data_sources: string[] | null
+          eu_ai_act_category: string | null
+          id: string
+          input_schema: Json | null
+          last_audit_at: string | null
+          metadata: Json | null
+          model_name: string
+          model_type: string
+          model_version: string
+          next_audit_due: string | null
+          output_schema: Json | null
+          performance_metrics: Json | null
+          provider: string
+          purpose: string
+          responsible_team: string | null
+          risk_level: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          bias_metrics?: Json | null
+          company_id: string
+          created_at?: string
+          data_sources?: string[] | null
+          eu_ai_act_category?: string | null
+          id?: string
+          input_schema?: Json | null
+          last_audit_at?: string | null
+          metadata?: Json | null
+          model_name: string
+          model_type?: string
+          model_version?: string
+          next_audit_due?: string | null
+          output_schema?: Json | null
+          performance_metrics?: Json | null
+          provider?: string
+          purpose: string
+          responsible_team?: string | null
+          risk_level?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          bias_metrics?: Json | null
+          company_id?: string
+          created_at?: string
+          data_sources?: string[] | null
+          eu_ai_act_category?: string | null
+          id?: string
+          input_schema?: Json | null
+          last_audit_at?: string | null
+          metadata?: Json | null
+          model_name?: string
+          model_type?: string
+          model_version?: string
+          next_audit_due?: string | null
+          output_schema?: Json | null
+          performance_metrics?: Json | null
+          provider?: string
+          purpose?: string
+          responsible_team?: string | null
+          risk_level?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_alert_preferences: {
         Row: {
           advance_days: number | null
