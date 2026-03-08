@@ -12,12 +12,13 @@ import { Label } from '@/components/ui/label';
 import {
   Package, Plus, Trash2, RefreshCw, ArrowUpCircle, Shield, Activity,
   CheckCircle2, Clock, AlertTriangle, XCircle, History, Key, Link2, Settings2,
-  DollarSign, FileCode, HeartPulse, Brain
+  DollarSign, FileCode, HeartPulse, Brain, Copy
 } from 'lucide-react';
 import { UsageBillingPanel } from './UsageBillingPanel';
 import { ArtifactGeneratorPanel } from './ArtifactGeneratorPanel';
 import { SelfHealingPanel } from './SelfHealingPanel';
 import { AIUsagePricingPanel } from './AIUsagePricingPanel';
+import { DigitalTwinPanel } from './DigitalTwinPanel';
 import {
   type Installation,
   type InstallationModule,
@@ -151,9 +152,10 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-8 mb-4">
+          <TabsList className="grid w-full grid-cols-9 mb-4">
             <TabsTrigger value="modules" className="text-xs gap-1"><Package className="h-3 w-3" /> Módulos</TabsTrigger>
             <TabsTrigger value="health" className="text-xs gap-1"><HeartPulse className="h-3 w-3" /> Salud</TabsTrigger>
+            <TabsTrigger value="twin" className="text-xs gap-1"><Copy className="h-3 w-3" /> Twin</TabsTrigger>
             <TabsTrigger value="updates" className="text-xs gap-1"><ArrowUpCircle className="h-3 w-3" /> Versiones</TabsTrigger>
             <TabsTrigger value="license" className="text-xs gap-1"><Key className="h-3 w-3" /> Licencia</TabsTrigger>
             <TabsTrigger value="billing" className="text-xs gap-1"><DollarSign className="h-3 w-3" /> Consumo</TabsTrigger>
@@ -293,6 +295,20 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
           {/* === HEALTH / SELF-HEALING TAB === */}
           <TabsContent value="health">
             <SelfHealingPanel installation={installation} />
+          </TabsContent>
+
+          {/* === DIGITAL TWIN TAB === */}
+          <TabsContent value="twin">
+            <DigitalTwinPanel
+              installationId={installation.id}
+              installationData={{
+                installation_name: installation.installation_name,
+                core_version: installation.core_version,
+                platform: installation.platform,
+                environment: installation.environment,
+                update_channel: installation.update_channel,
+              }}
+            />
           </TabsContent>
 
           {/* === UPDATES/VERSIONS TAB === */}

@@ -17322,6 +17322,65 @@ export type Database = {
         }
         Relationships: []
       }
+      digital_twins: {
+        Row: {
+          auto_sync_enabled: boolean | null
+          created_at: string | null
+          created_by: string | null
+          divergence_score: number | null
+          id: string
+          installation_id: string
+          last_sync_at: string | null
+          snapshot_config: Json | null
+          snapshot_metrics: Json | null
+          snapshot_modules: Json | null
+          status: string
+          sync_interval_minutes: number | null
+          twin_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          auto_sync_enabled?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          divergence_score?: number | null
+          id?: string
+          installation_id: string
+          last_sync_at?: string | null
+          snapshot_config?: Json | null
+          snapshot_metrics?: Json | null
+          snapshot_modules?: Json | null
+          status?: string
+          sync_interval_minutes?: number | null
+          twin_name?: string
+          updated_at?: string | null
+        }
+        Update: {
+          auto_sync_enabled?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          divergence_score?: number | null
+          id?: string
+          installation_id?: string
+          last_sync_at?: string | null
+          snapshot_config?: Json | null
+          snapshot_metrics?: Json | null
+          snapshot_modules?: Json | null
+          status?: string
+          sync_interval_minutes?: number | null
+          twin_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_twins_installation_id_fkey"
+            columns: ["installation_id"]
+            isOneToOne: true
+            referencedRelation: "client_installations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discount_rules: {
         Row: {
           company_id: string
@@ -63771,6 +63830,118 @@ export type Database = {
             columns: ["device_fingerprint_id"]
             isOneToOne: false
             referencedRelation: "user_device_fingerprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      twin_simulations: {
+        Row: {
+          ai_analysis: string | null
+          ai_recommendation: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          duration_ms: number | null
+          id: string
+          input_params: Json | null
+          result_data: Json | null
+          result_status: string
+          risk_factors: Json | null
+          risk_score: number | null
+          simulation_name: string
+          simulation_type: string
+          started_at: string | null
+          twin_id: string
+        }
+        Insert: {
+          ai_analysis?: string | null
+          ai_recommendation?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          id?: string
+          input_params?: Json | null
+          result_data?: Json | null
+          result_status?: string
+          risk_factors?: Json | null
+          risk_score?: number | null
+          simulation_name: string
+          simulation_type?: string
+          started_at?: string | null
+          twin_id: string
+        }
+        Update: {
+          ai_analysis?: string | null
+          ai_recommendation?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          id?: string
+          input_params?: Json | null
+          result_data?: Json | null
+          result_status?: string
+          risk_factors?: Json | null
+          risk_score?: number | null
+          simulation_name?: string
+          simulation_type?: string
+          started_at?: string | null
+          twin_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "twin_simulations_twin_id_fkey"
+            columns: ["twin_id"]
+            isOneToOne: false
+            referencedRelation: "digital_twins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      twin_snapshots: {
+        Row: {
+          config_snapshot: Json | null
+          created_at: string | null
+          created_by: string | null
+          health_score: number | null
+          id: string
+          metrics_snapshot: Json | null
+          modules_snapshot: Json | null
+          notes: string | null
+          snapshot_type: string
+          twin_id: string
+        }
+        Insert: {
+          config_snapshot?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          health_score?: number | null
+          id?: string
+          metrics_snapshot?: Json | null
+          modules_snapshot?: Json | null
+          notes?: string | null
+          snapshot_type?: string
+          twin_id: string
+        }
+        Update: {
+          config_snapshot?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          health_score?: number | null
+          id?: string
+          metrics_snapshot?: Json | null
+          modules_snapshot?: Json | null
+          notes?: string | null
+          snapshot_type?: string
+          twin_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "twin_snapshots_twin_id_fkey"
+            columns: ["twin_id"]
+            isOneToOne: false
+            referencedRelation: "digital_twins"
             referencedColumns: ["id"]
           },
         ]
