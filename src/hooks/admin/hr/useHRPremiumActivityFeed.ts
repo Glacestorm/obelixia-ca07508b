@@ -75,7 +75,7 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Caso "${r.title || r.case_type || 'equidad'}" — ${r.status || 'abierto'}`,
   },
   {
-    module: 'fairness', table: 'erp_hr_equity_analyses',
+    module: 'fairness', table: 'erp_hr_pay_equity_analyses',
     actionLabel: 'Análisis de equidad',
     descriptionFn: (r) => `Análisis ${r.analysis_type || 'salarial'} — score: ${r.equity_score ?? 'N/A'}`,
   },
