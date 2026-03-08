@@ -34,7 +34,11 @@ import {
   ChevronDown,
   Calculator,
   Link2,
-  Database
+  Database,
+  MapPin,
+  Network,
+  Lock,
+  ClipboardList
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
