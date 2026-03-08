@@ -41,7 +41,7 @@ const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   critical: { label: 'Crítica', color: 'text-destructive' },
 };
 
-export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
+export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulator }: Props) {
   const { energyCase, loading } = useEnergyCase(caseId);
   const [activeTab, setActiveTab] = useState('resumen');
 
