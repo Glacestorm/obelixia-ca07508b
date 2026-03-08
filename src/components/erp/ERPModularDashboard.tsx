@@ -717,6 +717,10 @@ function ERPModularDashboardContent() {
                 <AIUnifiedDashboard />
               </TabsContent>
 
+              <TabsContent value="premium-health">
+                <HRPremiumHealthCheckPanel companyId={currentCompany?.id} />
+              </TabsContent>
+
               <TabsContent value="premium-seed">
                 <PremiumReseedPanel companyId={currentCompany?.id} />
               </TabsContent>
