@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FileText, Plus, Trash2, Upload, CalendarIcon, RefreshCw, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
 import { useEnergyInvoices, EnergyInvoice } from '@/hooks/erp/useEnergyInvoices';
+import { PermissionGate } from './PermissionGate';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
