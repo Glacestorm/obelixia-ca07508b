@@ -679,6 +679,10 @@ function ERPModularDashboardContent() {
                   <Brain className="h-4 w-4" />
                   IA Híbrida
                 </TabsTrigger>
+                <TabsTrigger value="premium-health" className="gap-2">
+                  <HeartPulse className="h-4 w-4" />
+                  Health
+                </TabsTrigger>
                 <TabsTrigger value="premium-seed" className="gap-2">
                   <Database className="h-4 w-4" />
                   Re-Seed
