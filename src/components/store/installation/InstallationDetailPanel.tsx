@@ -11,8 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Package, Plus, Trash2, RefreshCw, ArrowUpCircle, Shield, Activity,
-  CheckCircle2, Clock, AlertTriangle, XCircle, History, Key, Link2, Settings2
+  CheckCircle2, Clock, AlertTriangle, XCircle, History, Key, Link2, Settings2,
+  DollarSign, FileCode
 } from 'lucide-react';
+import { UsageBillingPanel } from './UsageBillingPanel';
+import { ArtifactGeneratorPanel } from './ArtifactGeneratorPanel';
 import {
   type Installation,
   type InstallationModule,
@@ -146,10 +149,12 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-6 mb-4">
             <TabsTrigger value="modules" className="text-xs gap-1"><Package className="h-3 w-3" /> Módulos</TabsTrigger>
             <TabsTrigger value="updates" className="text-xs gap-1"><ArrowUpCircle className="h-3 w-3" /> Versiones</TabsTrigger>
             <TabsTrigger value="license" className="text-xs gap-1"><Key className="h-3 w-3" /> Licencia</TabsTrigger>
+            <TabsTrigger value="billing" className="text-xs gap-1"><DollarSign className="h-3 w-3" /> Consumo</TabsTrigger>
+            <TabsTrigger value="artifacts" className="text-xs gap-1"><FileCode className="h-3 w-3" /> Artefactos</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings2 className="h-3 w-3" /> Config</TabsTrigger>
           </TabsList>
 
