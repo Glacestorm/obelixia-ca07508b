@@ -16,6 +16,7 @@ import {
   Maximize2, Minimize2, Clock, Tag
 } from 'lucide-react';
 import { useHRLegalEngine } from '@/hooks/admin/hr/useHRLegalEngine';
+import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
