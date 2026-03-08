@@ -56,6 +56,7 @@ export function CaseContractsTab({ caseId }: Props) {
       has_permanence: c.has_permanence ?? false,
       early_exit_penalty_text: c.early_exit_penalty_text || '',
       notes: c.notes || '',
+      contract_text: (c as any).contract_text || '',
     });
     setShowDialog(true);
   };
