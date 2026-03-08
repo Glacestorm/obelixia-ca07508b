@@ -75,6 +75,7 @@ import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiu
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
 import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel } from './hr/premium-dashboard';
+import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -128,6 +129,7 @@ function ERPModularDashboardContent() {
   const [activeTab, setActiveTab] = useState('overview');
   const [needsSetup, setNeedsSetup] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
+  const [utilitySection, setUtilitySection] = useState<UtilitySection | null>(null);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // P9.5 — Role Experience Activation
@@ -649,106 +651,51 @@ function ERPModularDashboardContent() {
         {/* Utilities Tab - With Sub-navigation for Audit + AI Hybrid */}
         <TabsContent value="utilities">
           <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
-            </div>
-            <Tabs defaultValue="premium-dash" className="space-y-4">
-              <TabsList className="flex w-full max-w-5xl overflow-x-auto">
-                <TabsTrigger value="premium-dash" className="gap-2">
-                  <Activity className="h-4 w-4" />
-                  Premium
-                </TabsTrigger>
-                <TabsTrigger value="orchestration" className="gap-2">
-                  <ArrowRightLeft className="h-4 w-4" />
-                  Orquestación
-                </TabsTrigger>
-                <TabsTrigger value="premium-alerts" className="gap-2">
-                  <Bell className="h-4 w-4" />
-                  Alertas
-                </TabsTrigger>
-                <TabsTrigger value="premium-feed" className="gap-2">
-                  <Clock className="h-4 w-4" />
-                  Actividad
-                </TabsTrigger>
-                <TabsTrigger value="premium-settings" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Config
-                </TabsTrigger>
-                <TabsTrigger value="audit" className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Auditorías
-                </TabsTrigger>
-                <TabsTrigger value="ai-hybrid" className="gap-2">
-                  <Brain className="h-4 w-4" />
-                  IA
-                </TabsTrigger>
-                <TabsTrigger value="premium-health" className="gap-2">
-                  <HeartPulse className="h-4 w-4" />
-                  Health
-                </TabsTrigger>
-                <TabsTrigger value="premium-export" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Export
-                </TabsTrigger>
-                <TabsTrigger value="premium-seed" className="gap-2">
-                  <Database className="h-4 w-4" />
-                  Seed
-                </TabsTrigger>
-                <TabsTrigger value="premium-help" className="gap-2">
-                  <HelpCircle className="h-4 w-4" />
-                  Ayuda
-                </TabsTrigger>
-              </TabsList>
+            <HRUtilitiesNavigation
+              activeSection={utilitySection}
+              onSectionChange={setUtilitySection}
+            />
 
-              <TabsContent value="premium-dash">
-                <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="orchestration">
-                <HROrchestrationPanel companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="premium-alerts">
-                <HRPremiumAlertsPanel companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="premium-feed">
-                <HRPremiumActivityFeed companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="premium-settings">
-                <HRPremiumSettingsPanel companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="audit" className="space-y-4">
+            {/* Section Content */}
+            {utilitySection === 'premium-dash' && (
+              <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'orchestration' && (
+              <HROrchestrationPanel companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'premium-alerts' && (
+              <HRPremiumAlertsPanel companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'premium-feed' && (
+              <HRPremiumActivityFeed companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'premium-settings' && (
+              <HRPremiumSettingsPanel companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'audit' && (
+              <div className="space-y-4">
                 <p className="text-muted-foreground">
                   Generador unificado de informes de auditoría para ERP, CRM o Suite Integral.
                   Selecciona el alcance y nivel de detalle para generar PDFs profesionales.
                 </p>
                 <UnifiedAuditGenerator defaultScope="erp" />
-              </TabsContent>
-              
-              <TabsContent value="ai-hybrid">
-                <AIUnifiedDashboard />
-              </TabsContent>
-
-              <TabsContent value="premium-health">
-                <HRPremiumHealthCheckPanel companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="premium-export">
-                <HRPremiumExportPanel companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="premium-seed">
-                <PremiumReseedPanel companyId={currentCompany?.id} />
-              </TabsContent>
-
-              <TabsContent value="premium-help">
-                <HRPremiumHelpCenter />
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
+            {utilitySection === 'ai-hybrid' && (
+              <AIUnifiedDashboard />
+            )}
+            {utilitySection === 'premium-health' && (
+              <HRPremiumHealthCheckPanel companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'premium-export' && (
+              <HRPremiumExportPanel companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'premium-seed' && (
+              <PremiumReseedPanel companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'premium-help' && (
+              <HRPremiumHelpCenter />
+            )}
           </div>
         </TabsContent>
       </Tabs>
