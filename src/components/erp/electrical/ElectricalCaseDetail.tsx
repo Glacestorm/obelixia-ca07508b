@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Zap, MapPin, GitCompareArrows } from 'lucide-react';
+import { ArrowLeft, Zap, MapPin, GitCompareArrows, Flame, Sun, Layers } from 'lucide-react';
 import { ElectricalBreadcrumb } from './ElectricalBreadcrumb';
 import { CaseSupplyTab } from './CaseSupplyTab';
 import { CaseConsumptionTab } from './CaseConsumptionTab';
@@ -18,6 +18,9 @@ import { CaseChecklistPanel } from './CaseChecklistPanel';
 import { CaseProposalTab } from './CaseProposalTab';
 import { CaseAuditLog } from './CaseAuditLog';
 import { ClientPortalManager } from './ClientPortalManager';
+import { CaseGasTab } from './CaseGasTab';
+import { CaseSolarTab } from './CaseSolarTab';
+import { CaseEnergySummaryTab } from './CaseEnergySummaryTab';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -46,9 +49,16 @@ const PRIORITY_MAP: Record<string, { label: string; color: string }> = {
   critical: { label: 'Crítica', color: 'text-destructive' },
 };
 
+const ENERGY_TYPE_MAP: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  electricity: { label: 'Electricidad', icon: Zap, color: 'text-amber-500' },
+  gas: { label: 'Gas', icon: Flame, color: 'text-blue-500' },
+  solar: { label: 'Solar', icon: Sun, color: 'text-orange-400' },
+  mixed: { label: 'Mixto', icon: Layers, color: 'text-purple-500' },
+};
+
 export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulator }: Props) {
   const { energyCase, loading } = useEnergyCase(caseId);
-  const [activeTab, setActiveTab] = useState('resumen');
+  const [activeTab, setActiveTab] = useState('energia-360');
 
   const formatDate = (d: string | null) => {
     if (!d) return '—';
@@ -74,6 +84,10 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
 
   const status = STATUS_MAP[energyCase.status] || { label: energyCase.status, variant: 'outline' as const };
   const priority = PRIORITY_MAP[energyCase.priority] || { label: energyCase.priority, color: '' };
+  const energyTypeInfo = ENERGY_TYPE_MAP[energyCase.energy_type] || ENERGY_TYPE_MAP.electricity;
+  const EnergyIcon = energyTypeInfo.icon;
+
+  const totalEstSavings = (energyCase.estimated_annual_savings || 0) + (energyCase.estimated_gas_savings || 0) + (energyCase.estimated_solar_savings || 0);
 
   return (
     <div className="space-y-4">
@@ -87,7 +101,13 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
         <div className="flex-1 space-y-3">
           <div className="flex items-start justify-between flex-wrap gap-2">
             <div>
-              <h2 className="text-xl font-bold">{energyCase.title}</h2>
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                {energyCase.title}
+                <Badge variant="outline" className={cn("text-xs", energyTypeInfo.color)}>
+                  <EnergyIcon className="h-3 w-3 mr-1" />
+                  {energyTypeInfo.label}
+                </Badge>
+              </h2>
               <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {energyCase.cups || 'Sin CUPS'}</span>
                 <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {energyCase.address || 'Sin dirección'}</span>
@@ -100,12 +120,13 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
           </div>
 
           {/* Info cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
             {[
               { label: 'Comercializadora', value: energyCase.current_supplier || '—' },
               { label: 'Tarifa', value: energyCase.current_tariff || '—' },
-              { label: 'Ahorro mensual est.', value: formatCurrency(energyCase.estimated_monthly_savings), highlight: true },
-              { label: 'Ahorro anual est.', value: formatCurrency(energyCase.estimated_annual_savings), highlight: true },
+              { label: 'Ahorro total est.', value: formatCurrency(totalEstSavings), highlight: true },
+              { label: 'Ahorro elec.', value: formatCurrency(energyCase.estimated_annual_savings) },
+              { label: 'Ahorro gas', value: formatCurrency(energyCase.estimated_gas_savings) },
               { label: 'Fin contrato', value: formatDate(energyCase.contract_end_date) },
               { label: 'Creado', value: formatDate(energyCase.created_at) },
             ].map((item) => (
@@ -122,14 +143,16 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
 
       <Separator />
 
-      {/* Tabs - expanded with new Phase 3 tabs */}
+      {/* Tabs - Energy 360 */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap gap-1 h-auto p-1">
-          <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
+          <TabsTrigger value="energia-360" className="text-xs">⚡ Energía 360</TabsTrigger>
           <TabsTrigger value="workflow" className="text-xs">Workflow</TabsTrigger>
           <TabsTrigger value="checklist" className="text-xs">Checklist</TabsTrigger>
           <TabsTrigger value="propuesta" className="text-xs">Propuesta</TabsTrigger>
-          <TabsTrigger value="contrato" className="text-xs">Contrato</TabsTrigger>
+          <TabsTrigger value="contrato" className="text-xs">Contratos elec.</TabsTrigger>
+          <TabsTrigger value="gas" className="text-xs">🔥 Gas</TabsTrigger>
+          <TabsTrigger value="solar" className="text-xs">☀️ Solar</TabsTrigger>
           <TabsTrigger value="facturas" className="text-xs">Facturas</TabsTrigger>
           <TabsTrigger value="consumo" className="text-xs">Consumo</TabsTrigger>
           <TabsTrigger value="potencia" className="text-xs">Suministro</TabsTrigger>
@@ -140,23 +163,8 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
           <TabsTrigger value="auditoria" className="text-xs">Auditoría</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="resumen" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">Resumen del expediente</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div><span className="text-muted-foreground">Título:</span> <span className="font-medium ml-1">{energyCase.title}</span></div>
-                <div><span className="text-muted-foreground">CUPS:</span> <span className="font-mono ml-1">{energyCase.cups || '—'}</span></div>
-                <div><span className="text-muted-foreground">Dirección:</span> <span className="ml-1">{energyCase.address || '—'}</span></div>
-                <div><span className="text-muted-foreground">Comercializadora:</span> <span className="ml-1">{energyCase.current_supplier || '—'}</span></div>
-                <div><span className="text-muted-foreground">Tarifa:</span> <span className="ml-1">{energyCase.current_tariff || '—'}</span></div>
-                <div><span className="text-muted-foreground">Fin contrato:</span> <span className="ml-1">{formatDate(energyCase.contract_end_date)}</span></div>
-                <div><span className="text-muted-foreground">Estado:</span> <Badge variant={status.variant} className="ml-1 text-[10px]">{status.label}</Badge></div>
-                <div><span className="text-muted-foreground">Prioridad:</span> <span className={cn("ml-1 font-medium", priority.color)}>{priority.label}</span></div>
-                <div><span className="text-muted-foreground">Ahorro mensual:</span> <span className="ml-1 font-semibold text-emerald-600">{formatCurrency(energyCase.estimated_monthly_savings)}</span></div>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="energia-360" className="mt-4">
+          <CaseEnergySummaryTab caseId={caseId} companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="workflow" className="mt-4">
@@ -173,6 +181,14 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
 
         <TabsContent value="contrato" className="mt-4">
           <CaseContractsTab caseId={caseId} />
+        </TabsContent>
+
+        <TabsContent value="gas" className="mt-4">
+          <CaseGasTab caseId={caseId} />
+        </TabsContent>
+
+        <TabsContent value="solar" className="mt-4">
+          <CaseSolarTab caseId={caseId} companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="facturas" className="mt-4">

@@ -1,12 +1,12 @@
 /**
- * Módulo Consultoría Eléctrica ERP - Phase 3
- * Gestión integral + capa operativa de consultoría eléctrica profesional
+ * Módulo Consultoría Energética 360 - Energy Consulting Module
+ * Gestión integral de electricidad, gas y autoconsumo solar
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
-  Zap, FolderOpen, FileText, BarChart3, Gauge, TrendingUp,
+  Zap, FolderOpen, FileText, BarChart3, Gauge, TrendingUp, Flame, Sun
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,8 @@ import { ElectricalAjustesPanel } from './ElectricalAjustesPanel';
 import { ElectricalExecutiveDashboard } from './ElectricalExecutiveDashboard';
 import { ExternalIntegrationsPanel } from './ExternalIntegrationsPanel';
 import { NotificationsPanel } from './NotificationsPanel';
+import { EnergyMarketPanel } from './EnergyMarketPanel';
+import { EnergyAdvancedAnalytics } from './EnergyAdvancedAnalytics';
 
 type SubView = 
   | { type: 'list' }
@@ -50,6 +52,8 @@ export function ElectricalConsultingModule() {
     suministrosGestionados: 0,
     facturasAnalizadas: 0,
     ahorroEstimado: 0,
+    ahorroGas: 0,
+    ahorroSolar: 0,
     informesPendientes: 0,
     seguimientosActivos: 0
   });
@@ -63,13 +67,15 @@ export function ElectricalConsultingModule() {
     try {
       const { data: cases } = await supabase
         .from('energy_cases')
-        .select('id, status, estimated_annual_savings')
+        .select('id, status, estimated_annual_savings, estimated_gas_savings, estimated_solar_savings')
         .eq('company_id', companyId);
 
       if (!cases) { return; }
 
       const activeCases = cases.filter(c => !['completed', 'cancelled'].includes(c.status));
-      const totalSavings = cases.reduce((s, c) => s + (c.estimated_annual_savings || 0), 0);
+      const totalSavings = cases.reduce((s, c) => s + ((c as any).estimated_annual_savings || 0), 0);
+      const totalGas = cases.reduce((s, c) => s + ((c as any).estimated_gas_savings || 0), 0);
+      const totalSolar = cases.reduce((s, c) => s + ((c as any).estimated_solar_savings || 0), 0);
       const caseIds = cases.map(c => c.id);
 
       const [suppliesRes, invoicesRes, trackingRes, reportsRes] = await Promise.all([
@@ -92,6 +98,8 @@ export function ElectricalConsultingModule() {
         suministrosGestionados: (suppliesRes as any).count || 0,
         facturasAnalizadas: (invoicesRes as any).count || 0,
         ahorroEstimado: totalSavings,
+        ahorroGas: totalGas,
+        ahorroSolar: totalSolar,
         informesPendientes: (reportsRes as any).count || 0,
         seguimientosActivos: (trackingRes as any).count || 0,
       });
@@ -109,7 +117,7 @@ export function ElectricalConsultingModule() {
           <Zap className="h-12 w-12 mx-auto text-muted-foreground/40" />
           <h3 className="text-lg font-semibold text-foreground">Selecciona una empresa</h3>
           <p className="text-sm text-muted-foreground max-w-md">
-            Para acceder al módulo de Consultoría Eléctrica, selecciona una empresa desde el selector superior.
+            Para acceder al módulo de Consultoría Energética 360, selecciona una empresa desde el selector superior.
           </p>
         </div>
       </div>
@@ -155,13 +163,15 @@ export function ElectricalConsultingModule() {
     );
   };
 
+  const totalSavings = stats.ahorroEstimado + stats.ahorroGas + stats.ahorroSolar;
+
   return (
     <div className="space-y-4">
       {/* Header con estadísticas reales + notifications */}
       <div className="flex items-center justify-end mb-1">
         <NotificationsPanel companyId={companyId} onNavigateToCase={handleNavigateToCase} />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -200,19 +210,19 @@ export function ElectricalConsultingModule() {
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               <div>
-                <p className="text-xs text-muted-foreground">Ahorro €</p>
-                <p className="text-lg font-bold">{stats.ahorroEstimado.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Ahorro total</p>
+                <p className="text-lg font-bold">{totalSavings.toLocaleString()} €</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-orange-500" />
+              <Zap className="h-4 w-4 text-amber-500" />
               <div>
-                <p className="text-xs text-muted-foreground">Informes</p>
-                <p className="text-lg font-bold">{stats.informesPendientes}</p>
+                <p className="text-xs text-muted-foreground">Ahorro elec.</p>
+                <p className="text-lg font-bold">{stats.ahorroEstimado.toLocaleString()} €</p>
               </div>
             </div>
           </CardContent>
@@ -220,10 +230,32 @@ export function ElectricalConsultingModule() {
         <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
-              <Gauge className="h-4 w-4 text-cyan-500" />
+              <Flame className="h-4 w-4 text-cyan-500" />
               <div>
-                <p className="text-xs text-muted-foreground">Seguimiento</p>
-                <p className="text-lg font-bold">{stats.seguimientosActivos}</p>
+                <p className="text-xs text-muted-foreground">Ahorro gas</p>
+                <p className="text-lg font-bold">{stats.ahorroGas.toLocaleString()} €</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Sun className="h-4 w-4 text-orange-500" />
+              <div>
+                <p className="text-xs text-muted-foreground">Ahorro solar</p>
+                <p className="text-lg font-bold">{stats.ahorroSolar.toLocaleString()} €</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-purple-500" />
+              <div>
+                <p className="text-xs text-muted-foreground">Informes</p>
+                <p className="text-lg font-bold">{stats.informesPendientes}</p>
               </div>
             </div>
           </CardContent>
@@ -254,9 +286,11 @@ export function ElectricalConsultingModule() {
             caseId={subView.type === 'simulate' ? subView.caseId : undefined}
           />
         )}
+        {activeModule === 'mercado-energetico' && <EnergyMarketPanel />}
         {activeModule === 'precios-indexados' && <ElectricalIndexedPricesPanel />}
         {activeModule === 'potencia' && <ElectricalPotenciaPanel companyId={companyId} />}
         {activeModule === 'recomendaciones' && <ElectricalRecomendacionesPanel companyId={companyId} />}
+        {activeModule === 'analitica-avanzada' && <EnergyAdvancedAnalytics companyId={companyId} />}
         {activeModule === 'informes' && <ElectricalInformesPanel companyId={companyId} />}
         {activeModule === 'seguimiento' && <ElectricalSeguimientoPanel companyId={companyId} />}
         {activeModule === 'ejecutivo' && <ElectricalExecutiveDashboard onNavigateToCase={handleNavigateToCase} />}
