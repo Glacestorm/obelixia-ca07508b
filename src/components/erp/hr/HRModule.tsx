@@ -331,6 +331,7 @@ export function HRModule() {
         {activeModule === 'copilot-twin' && <HRCopilotTwinPanel companyId={demoCompanyId} />}
         {activeModule === 'security-governance' && <HRSecurityGovernancePanel companyId={demoCompanyId} />}
         {activeModule === 'ai-governance' && <HRAIGovernancePanel companyId={demoCompanyId} />}
+        {activeModule === 'workforce-planning' && <HRWorkforcePlanningPanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
