@@ -70,10 +70,27 @@ export function ElectricalSeguimientoPanel({ companyId }: Props) {
       setTrackings(items);
 
       const totalSavings = items.reduce((s, i) => s + (i.observed_real_savings || 0), 0);
+
+      // Calculate real precision: ratio of observed savings vs estimated
+      let avgPrecision = 0;
+      const withBoth = items.filter(i => {
+        const c = cases.find(cs => cs.id === i.case_id);
+        return i.observed_real_savings && c?.estimated_monthly_savings;
+      });
+      if (withBoth.length > 0) {
+        const totalPrecision = withBoth.reduce((s, i) => {
+          const c = cases.find(cs => cs.id === i.case_id);
+          const estimated = c?.estimated_monthly_savings || 1;
+          const ratio = Math.min((i.observed_real_savings || 0) / estimated, 1.5);
+          return s + ratio * 100;
+        }, 0);
+        avgPrecision = Math.round(totalPrecision / withBoth.length);
+      }
+
       setStats({
         total: items.length,
         totalSavings,
-        avgPrecision: items.length > 0 ? 92 : 0,
+        avgPrecision,
       });
     } catch (err) {
       console.error('[ElectricalSeguimientoPanel] error:', err);
