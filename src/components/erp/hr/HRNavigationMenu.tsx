@@ -417,7 +417,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
 
               {/* Grid */}
               <ScrollArea className="max-h-[480px]">
-                <div className={cn("grid gap-0 p-2", `grid-cols-${menu.columns}`)}>
+                <div className={cn("grid gap-0 p-2", menu.columns === 2 ? "grid-cols-2" : "grid-cols-3")}>
                   {menu.subGroups.map((group) => {
                     const GroupIcon = group.icon;
                     return (
