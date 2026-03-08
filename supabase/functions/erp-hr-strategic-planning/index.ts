@@ -157,6 +157,49 @@ FORMATO JSON estricto:
   "executive_summary": "string"
 }`;
       userPrompt = `Analiza brechas de skills: ${JSON.stringify(params)}`;
+    } else if (action === 'twin_sync') {
+      systemPrompt = `Eres un motor de sincronización de Digital Twin organizacional.
+Compara el estado actual de los módulos HR del twin con producción y genera métricas actualizadas.
+
+FORMATO JSON estricto:
+{
+  "divergence_score": 0-100,
+  "health_score": 0-100,
+  "synced_modules": number,
+  "diverged_modules": number,
+  "sync_details": [{"module": "string", "status": "synced|diverged", "divergence_pct": number, "detail": "string"}],
+  "recommendations": ["string"]
+}`;
+      userPrompt = `Sincroniza twin con producción: ${JSON.stringify(params)}`;
+    } else if (action === 'twin_experiment') {
+      systemPrompt = `Eres un simulador de escenarios What-If sobre un Digital Twin organizacional de RRHH.
+Simula el impacto del experimento descrito sin afectar producción. Evalúa riesgos, costes y beneficios.
+
+FORMATO JSON estricto:
+{
+  "impact_analysis": {"cost_impact": number, "retention_delta_pct": number, "productivity_delta_pct": number, "satisfaction_delta": number, "legal_risk": "low|medium|high", "implementation_months": number},
+  "result_snapshot": {"affected_employees": number, "departments_impacted": ["string"], "budget_change_annual": number},
+  "risk_score": 0-100,
+  "recommendation": "proceed|caution|abort",
+  "detailed_findings": ["string"],
+  "rollback_plan": "string"
+}`;
+      userPrompt = `Ejecuta experimento en twin: ${JSON.stringify(params)}`;
+    } else if (action === 'twin_ai_analysis') {
+      systemPrompt = `Eres un analista senior de Digital Twin organizacional de RRHH.
+Evalúa la salud general del twin, identifica divergencias con producción, y sugiere mejoras y experimentos.
+
+FORMATO JSON estricto:
+{
+  "overall_assessment": "string",
+  "health_insights": [{"area": "string", "status": "healthy|warning|critical", "detail": "string"}],
+  "divergence_analysis": "string",
+  "critical_issues": [{"issue": "string", "severity": "low|medium|high|critical", "action": "string"}],
+  "recommendations": [{"title": "string", "priority": "high|medium|low", "impact": "string", "effort": "string"}],
+  "experiment_suggestions": [{"name": "string", "type": "what_if|stress_test|optimization", "description": "string", "expected_insight": "string"}],
+  "maturity_score": 0-100
+}`;
+      userPrompt = `Analiza Digital Twin completo: ${JSON.stringify(params)}`;
     } else {
       throw new Error(`Acción no soportada: ${action}`);
     }

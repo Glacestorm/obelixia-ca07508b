@@ -36829,6 +36829,281 @@ export type Database = {
           },
         ]
       }
+      erp_hr_twin_alerts: {
+        Row: {
+          actual_value: number | null
+          alert_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_resolved: boolean | null
+          metric_key: string | null
+          module_key: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          threshold_value: number | null
+          title: string
+          twin_id: string
+        }
+        Insert: {
+          actual_value?: number | null
+          alert_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          metric_key?: string | null
+          module_key?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          threshold_value?: number | null
+          title: string
+          twin_id: string
+        }
+        Update: {
+          actual_value?: number | null
+          alert_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          metric_key?: string | null
+          module_key?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          threshold_value?: number | null
+          title?: string
+          twin_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_twin_alerts_twin_id_fkey"
+            columns: ["twin_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_twin_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_twin_experiments: {
+        Row: {
+          baseline_snapshot: Json | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          experiment_name: string
+          experiment_type: string
+          id: string
+          impact_analysis: Json | null
+          parameters: Json | null
+          recommendation: string | null
+          result_snapshot: Json | null
+          risk_score: number | null
+          started_at: string | null
+          status: string | null
+          twin_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          baseline_snapshot?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          experiment_name: string
+          experiment_type?: string
+          id?: string
+          impact_analysis?: Json | null
+          parameters?: Json | null
+          recommendation?: string | null
+          result_snapshot?: Json | null
+          risk_score?: number | null
+          started_at?: string | null
+          status?: string | null
+          twin_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          baseline_snapshot?: Json | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          experiment_name?: string
+          experiment_type?: string
+          id?: string
+          impact_analysis?: Json | null
+          parameters?: Json | null
+          recommendation?: string | null
+          result_snapshot?: Json | null
+          risk_score?: number | null
+          started_at?: string | null
+          status?: string | null
+          twin_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_twin_experiments_twin_id_fkey"
+            columns: ["twin_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_twin_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_twin_instances: {
+        Row: {
+          company_id: string
+          config: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          divergence_score: number | null
+          health_score: number | null
+          id: string
+          last_sync_at: string | null
+          source_entity_id: string | null
+          source_type: string
+          status: string
+          sync_frequency_minutes: number | null
+          twin_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          divergence_score?: number | null
+          health_score?: number | null
+          id?: string
+          last_sync_at?: string | null
+          source_entity_id?: string | null
+          source_type?: string
+          status?: string
+          sync_frequency_minutes?: number | null
+          twin_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          divergence_score?: number | null
+          health_score?: number | null
+          id?: string
+          last_sync_at?: string | null
+          source_entity_id?: string | null
+          source_type?: string
+          status?: string
+          sync_frequency_minutes?: number | null
+          twin_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_twin_metrics_history: {
+        Row: {
+          dimension: string | null
+          id: string
+          metadata: Json | null
+          metric_key: string
+          metric_type: string
+          metric_value: number
+          recorded_at: string | null
+          twin_id: string
+          unit: string | null
+        }
+        Insert: {
+          dimension?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_key: string
+          metric_type: string
+          metric_value: number
+          recorded_at?: string | null
+          twin_id: string
+          unit?: string | null
+        }
+        Update: {
+          dimension?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_key?: string
+          metric_type?: string
+          metric_value?: number
+          recorded_at?: string | null
+          twin_id?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_twin_metrics_history_twin_id_fkey"
+            columns: ["twin_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_twin_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_twin_module_snapshots: {
+        Row: {
+          created_at: string | null
+          divergence_details: Json | null
+          id: string
+          last_sync_at: string | null
+          metrics: Json | null
+          module_key: string
+          module_name: string
+          snapshot_data: Json | null
+          status: string | null
+          twin_id: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          divergence_details?: Json | null
+          id?: string
+          last_sync_at?: string | null
+          metrics?: Json | null
+          module_key: string
+          module_name: string
+          snapshot_data?: Json | null
+          status?: string | null
+          twin_id: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          divergence_details?: Json | null
+          id?: string
+          last_sync_at?: string | null
+          metrics?: Json | null
+          module_key?: string
+          module_name?: string
+          snapshot_data?: Json | null
+          status?: string | null
+          twin_id?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_twin_module_snapshots_twin_id_fkey"
+            columns: ["twin_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_twin_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_union_memberships: {
         Row: {
           company_id: string
