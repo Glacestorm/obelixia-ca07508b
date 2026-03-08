@@ -34,7 +34,7 @@ import { ExternalIntegrationsPanel } from './ExternalIntegrationsPanel';
 import { NotificationsPanel } from './NotificationsPanel';
 import { EnergyMarketPanel } from './EnergyMarketPanel';
 import { EnergyAdvancedAnalytics } from './EnergyAdvancedAnalytics';
-
+import { EnergyMultiVectorComparator } from './EnergyMultiVectorComparator';
 type SubView = 
   | { type: 'list' }
   | { type: 'new' }
