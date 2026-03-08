@@ -75557,12 +75557,40 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: boolean
       }
+      user_has_erp_board_pack_access: {
+        Args: { p_pack_id: string }
+        Returns: boolean
+      }
       user_has_erp_company_access: {
         Args: { p_company_id: string }
         Returns: boolean
       }
+      user_has_erp_compensation_access: {
+        Args: { p_component_id: string }
+        Returns: boolean
+      }
+      user_has_erp_employee_access: {
+        Args: { p_employee_id: string }
+        Returns: boolean
+      }
       user_has_erp_premium_access: {
         Args: { p_company_id: string }
+        Returns: boolean
+      }
+      user_has_erp_twin_sub_access: {
+        Args: { p_twin_id: string }
+        Returns: boolean
+      }
+      user_has_erp_wellbeing_access: {
+        Args: { p_entity_id: string }
+        Returns: boolean
+      }
+      user_has_erp_wellbeing_survey_access: {
+        Args: { p_survey_id: string }
+        Returns: boolean
+      }
+      user_has_erp_wellness_program_access: {
+        Args: { p_program_id: string }
         Returns: boolean
       }
       user_is_chat_participant: {
