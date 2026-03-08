@@ -17778,6 +17778,526 @@ export type Database = {
         }
         Relationships: []
       }
+      energy_cases: {
+        Row: {
+          address: string | null
+          assigned_user_id: string | null
+          company_id: string
+          contract_end_date: string | null
+          created_at: string
+          cups: string | null
+          current_supplier: string | null
+          current_tariff: string | null
+          customer_id: string | null
+          estimated_annual_savings: number | null
+          estimated_monthly_savings: number | null
+          id: string
+          priority: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          assigned_user_id?: string | null
+          company_id: string
+          contract_end_date?: string | null
+          created_at?: string
+          cups?: string | null
+          current_supplier?: string | null
+          current_tariff?: string | null
+          customer_id?: string | null
+          estimated_annual_savings?: number | null
+          estimated_monthly_savings?: number | null
+          id?: string
+          priority?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          assigned_user_id?: string | null
+          company_id?: string
+          contract_end_date?: string | null
+          created_at?: string
+          cups?: string | null
+          current_supplier?: string | null
+          current_tariff?: string | null
+          customer_id?: string | null
+          estimated_annual_savings?: number | null
+          estimated_monthly_savings?: number | null
+          id?: string
+          priority?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_cases_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_consumption_profiles: {
+        Row: {
+          case_id: string
+          created_at: string
+          has_ac_inverter: boolean | null
+          has_acs_aerothermal: boolean | null
+          has_ev: boolean | null
+          has_freezer: boolean | null
+          has_heat_pump: boolean | null
+          has_induction: boolean | null
+          household_size: number | null
+          id: string
+          notes: string | null
+          shiftable_load_pct: number | null
+          showers_end_time: string | null
+          showers_start_time: string | null
+          updated_at: string
+          work_from_home: boolean | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          has_ac_inverter?: boolean | null
+          has_acs_aerothermal?: boolean | null
+          has_ev?: boolean | null
+          has_freezer?: boolean | null
+          has_heat_pump?: boolean | null
+          has_induction?: boolean | null
+          household_size?: number | null
+          id?: string
+          notes?: string | null
+          shiftable_load_pct?: number | null
+          showers_end_time?: string | null
+          showers_start_time?: string | null
+          updated_at?: string
+          work_from_home?: boolean | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          has_ac_inverter?: boolean | null
+          has_acs_aerothermal?: boolean | null
+          has_ev?: boolean | null
+          has_freezer?: boolean | null
+          has_heat_pump?: boolean | null
+          has_induction?: boolean | null
+          household_size?: number | null
+          id?: string
+          notes?: string | null
+          shiftable_load_pct?: number | null
+          showers_end_time?: string | null
+          showers_start_time?: string | null
+          updated_at?: string
+          work_from_home?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_consumption_profiles_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_contracts: {
+        Row: {
+          case_id: string
+          created_at: string
+          early_exit_penalty_text: string | null
+          end_date: string | null
+          has_permanence: boolean | null
+          has_renewal: boolean | null
+          id: string
+          notes: string | null
+          signed_document_url: string | null
+          start_date: string | null
+          supplier: string | null
+          tariff_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          early_exit_penalty_text?: string | null
+          end_date?: string | null
+          has_permanence?: boolean | null
+          has_renewal?: boolean | null
+          id?: string
+          notes?: string | null
+          signed_document_url?: string | null
+          start_date?: string | null
+          supplier?: string | null
+          tariff_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          early_exit_penalty_text?: string | null
+          end_date?: string | null
+          has_permanence?: boolean | null
+          has_renewal?: boolean | null
+          id?: string
+          notes?: string | null
+          signed_document_url?: string | null
+          start_date?: string | null
+          supplier?: string | null
+          tariff_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_contracts_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_invoices: {
+        Row: {
+          billing_end: string | null
+          billing_start: string | null
+          case_id: string
+          consumption_p1_kwh: number | null
+          consumption_p2_kwh: number | null
+          consumption_p3_kwh: number | null
+          consumption_total_kwh: number | null
+          created_at: string
+          days: number | null
+          document_url: string | null
+          electricity_tax: number | null
+          energy_cost: number | null
+          id: string
+          is_validated: boolean | null
+          meter_rental: number | null
+          other_costs: number | null
+          power_cost: number | null
+          total_amount: number | null
+          updated_at: string
+          vat: number | null
+        }
+        Insert: {
+          billing_end?: string | null
+          billing_start?: string | null
+          case_id: string
+          consumption_p1_kwh?: number | null
+          consumption_p2_kwh?: number | null
+          consumption_p3_kwh?: number | null
+          consumption_total_kwh?: number | null
+          created_at?: string
+          days?: number | null
+          document_url?: string | null
+          electricity_tax?: number | null
+          energy_cost?: number | null
+          id?: string
+          is_validated?: boolean | null
+          meter_rental?: number | null
+          other_costs?: number | null
+          power_cost?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          vat?: number | null
+        }
+        Update: {
+          billing_end?: string | null
+          billing_start?: string | null
+          case_id?: string
+          consumption_p1_kwh?: number | null
+          consumption_p2_kwh?: number | null
+          consumption_p3_kwh?: number | null
+          consumption_total_kwh?: number | null
+          created_at?: string
+          days?: number | null
+          document_url?: string | null
+          electricity_tax?: number | null
+          energy_cost?: number | null
+          id?: string
+          is_validated?: boolean | null
+          meter_rental?: number | null
+          other_costs?: number | null
+          power_cost?: number | null
+          total_amount?: number | null
+          updated_at?: string
+          vat?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_invoices_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_recommendations: {
+        Row: {
+          annual_savings_estimate: number | null
+          case_id: string
+          confidence_score: number | null
+          created_at: string
+          id: string
+          implementation_notes: string | null
+          monthly_savings_estimate: number | null
+          recommended_power_p1: number | null
+          recommended_power_p2: number | null
+          recommended_supplier: string | null
+          recommended_tariff: string | null
+          risk_level: string | null
+          updated_at: string
+        }
+        Insert: {
+          annual_savings_estimate?: number | null
+          case_id: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          implementation_notes?: string | null
+          monthly_savings_estimate?: number | null
+          recommended_power_p1?: number | null
+          recommended_power_p2?: number | null
+          recommended_supplier?: string | null
+          recommended_tariff?: string | null
+          risk_level?: string | null
+          updated_at?: string
+        }
+        Update: {
+          annual_savings_estimate?: number | null
+          case_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          implementation_notes?: string | null
+          monthly_savings_estimate?: number | null
+          recommended_power_p1?: number | null
+          recommended_power_p2?: number | null
+          recommended_supplier?: string | null
+          recommended_tariff?: string | null
+          risk_level?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_recommendations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_reports: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          pdf_url: string | null
+          report_type: string | null
+          summary: string | null
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          pdf_url?: string | null
+          report_type?: string | null
+          summary?: string | null
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          pdf_url?: string | null
+          report_type?: string | null
+          summary?: string | null
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_reports_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_supplies: {
+        Row: {
+          case_id: string
+          contracted_power_p1: number | null
+          contracted_power_p2: number | null
+          created_at: string
+          cups: string | null
+          distributor: string | null
+          id: string
+          max_demand_p1: number | null
+          max_demand_p2: number | null
+          notes: string | null
+          tariff_access: string | null
+          updated_at: string
+          voltage_type: string | null
+        }
+        Insert: {
+          case_id: string
+          contracted_power_p1?: number | null
+          contracted_power_p2?: number | null
+          created_at?: string
+          cups?: string | null
+          distributor?: string | null
+          id?: string
+          max_demand_p1?: number | null
+          max_demand_p2?: number | null
+          notes?: string | null
+          tariff_access?: string | null
+          updated_at?: string
+          voltage_type?: string | null
+        }
+        Update: {
+          case_id?: string
+          contracted_power_p1?: number | null
+          contracted_power_p2?: number | null
+          created_at?: string
+          cups?: string | null
+          distributor?: string | null
+          id?: string
+          max_demand_p1?: number | null
+          max_demand_p2?: number | null
+          notes?: string | null
+          tariff_access?: string | null
+          updated_at?: string
+          voltage_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_supplies_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_tariff_catalog: {
+        Row: {
+          access_tariff: string | null
+          created_at: string
+          has_permanence: boolean | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          price_p1_energy: number | null
+          price_p1_power: number | null
+          price_p2_energy: number | null
+          price_p2_power: number | null
+          price_p3_energy: number | null
+          supplier: string
+          tariff_name: string
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          access_tariff?: string | null
+          created_at?: string
+          has_permanence?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          price_p1_energy?: number | null
+          price_p1_power?: number | null
+          price_p2_energy?: number | null
+          price_p2_power?: number | null
+          price_p3_energy?: number | null
+          supplier: string
+          tariff_name: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          access_tariff?: string | null
+          created_at?: string
+          has_permanence?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          price_p1_energy?: number | null
+          price_p1_power?: number | null
+          price_p2_energy?: number | null
+          price_p2_power?: number | null
+          price_p3_energy?: number | null
+          supplier?: string
+          tariff_name?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: []
+      }
+      energy_tasks: {
+        Row: {
+          assigned_user_id: string | null
+          case_id: string
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string | null
+          task_type: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_user_id?: string | null
+          case_id: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string | null
+          task_type?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_user_id?: string | null
+          case_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string | null
+          task_type?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_tasks_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enriched_transactions: {
         Row: {
           amount: number
