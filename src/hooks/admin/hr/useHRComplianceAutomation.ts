@@ -140,10 +140,10 @@ export function useHRComplianceAutomation(companyId?: string) {
     setIsLoading(true);
     try {
       const [fwRes, clRes, auRes, alRes] = await Promise.all([
-        supabase.from('erp_hr_compliance_frameworks').select('*').eq('company_id', companyId).order('name'),
-        supabase.from('erp_hr_compliance_checklist').select('*').eq('company_id', companyId).order('priority'),
-        supabase.from('erp_hr_compliance_audits').select('*').eq('company_id', companyId).order('scheduled_date', { ascending: false }),
-        supabase.from('erp_hr_compliance_alerts').select('*').eq('company_id', companyId).order('created_at', { ascending: false }),
+        supabase.from('erp_hr_compliance_frameworks' as any).select('*').eq('company_id', companyId).order('name'),
+        supabase.from('erp_hr_compliance_checklist' as any).select('*').eq('company_id', companyId).order('priority'),
+        supabase.from('erp_hr_compliance_audits' as any).select('*').eq('company_id', companyId).order('scheduled_date', { ascending: false }),
+        supabase.from('erp_hr_compliance_alerts' as any).select('*').eq('company_id', companyId).order('created_at', { ascending: false }),
       ]);
 
       const fw = (fwRes.data || []) as unknown as ComplianceFramework[];
