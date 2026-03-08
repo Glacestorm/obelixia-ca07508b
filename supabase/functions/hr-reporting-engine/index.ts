@@ -1,9 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const RATE_LIMIT_CONFIG = {
+  burstPerMinute: 10,
+  perDay: 100,
+  functionName: 'hr-reporting-engine',
 };
 
 serve(async (req) => {
@@ -25,6 +32,15 @@ serve(async (req) => {
     if (authError || !user) throw new Error('Unauthorized');
 
     const { action, company_id, params } = await req.json();
+
+    // Rate limit expensive operations
+    if (action === 'generate_report') {
+      const burstResult = checkBurstLimit(company_id || user.id, RATE_LIMIT_CONFIG);
+      if (!burstResult.allowed) {
+        console.warn(`[hr-reporting-engine] Rate limited: company=${company_id}`);
+        return rateLimitResponse(burstResult, corsHeaders);
+      }
+    }
 
     switch (action) {
       // === LIST TEMPLATES ===
