@@ -30,7 +30,7 @@ const EXPORTABLE_TABLES: ExportableTable[] = [
   { module: 'workforce', table: 'erp_hr_scenarios', label: 'Escenarios' },
   { module: 'fairness', table: 'erp_hr_justice_cases', label: 'Casos de justicia' },
   { module: 'fairness', table: 'erp_hr_pay_equity_analyses', label: 'Análisis de equidad' },
-  { module: 'fairness', table: 'erp_hr_pay_equity_rules', label: 'Reglas pay equity' },
+  { module: 'fairness', table: 'erp_hr_pay_equity_snapshots', label: 'Snapshots pay equity' },
   { module: 'twin', table: 'erp_hr_twin_snapshots', label: 'Snapshots Twin' },
   { module: 'twin', table: 'erp_hr_twin_alerts', label: 'Alertas Twin' },
   { module: 'twin', table: 'erp_hr_twin_experiments', label: 'Experimentos Twin' },
