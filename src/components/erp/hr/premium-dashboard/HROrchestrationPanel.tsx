@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   ArrowRightLeft, Plus, Play, Trash2, RefreshCw, Shield, Brain, Users, Scale,
   Layers, FileText, BarChart3, UserCog, Inbox, CheckCircle, XCircle,
-  AlertTriangle, Clock, Zap, ArrowRight, Loader2
+  AlertTriangle, Clock, Zap, ArrowRight, Loader2, Activity
 } from 'lucide-react';
 import { useHROrchestration, type ModuleKey, type OrchestrationRule } from '@/hooks/admin/hr/useHROrchestration';
 import { useHROrchestrationEmitter } from '@/hooks/admin/hr/useHROrchestrationEmitter';
