@@ -157,9 +157,11 @@ export function CaseContractsTab({ caseId }: Props) {
               <Button variant="outline" size="sm" onClick={() => fetchContracts()}>
                 <RefreshCw className="h-3.5 w-3.5 mr-1" /> Recargar
               </Button>
-              <Button size="sm" onClick={openNew}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Nuevo contrato
-              </Button>
+              <PermissionGate action="edit_cases">
+                <Button size="sm" onClick={openNew}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Nuevo contrato
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </CardHeader>
