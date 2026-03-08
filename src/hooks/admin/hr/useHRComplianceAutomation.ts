@@ -316,7 +316,7 @@ export function useHRComplianceAutomation(companyId?: string) {
       if (error) throw error;
 
       if (data?.success && data?.audit) {
-        const { error: insertError } = await supabase.from('erp_hr_compliance_audits').insert({
+        const { error: insertError } = await supabase.from('erp_hr_compliance_audits' as any).insert({
           company_id: companyId,
           framework_id: frameworkId || null,
           audit_name: data.audit.name || 'Auditoría IA Automatizada',
