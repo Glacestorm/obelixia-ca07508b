@@ -12,11 +12,12 @@ import { Label } from '@/components/ui/label';
 import {
   Package, Plus, Trash2, RefreshCw, ArrowUpCircle, Shield, Activity,
   CheckCircle2, Clock, AlertTriangle, XCircle, History, Key, Link2, Settings2,
-  DollarSign, FileCode, HeartPulse
+  DollarSign, FileCode, HeartPulse, Brain
 } from 'lucide-react';
 import { UsageBillingPanel } from './UsageBillingPanel';
 import { ArtifactGeneratorPanel } from './ArtifactGeneratorPanel';
 import { SelfHealingPanel } from './SelfHealingPanel';
+import { AIUsagePricingPanel } from './AIUsagePricingPanel';
 import {
   type Installation,
   type InstallationModule,
@@ -150,12 +151,13 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-7 mb-4">
+          <TabsList className="grid w-full grid-cols-8 mb-4">
             <TabsTrigger value="modules" className="text-xs gap-1"><Package className="h-3 w-3" /> Módulos</TabsTrigger>
             <TabsTrigger value="health" className="text-xs gap-1"><HeartPulse className="h-3 w-3" /> Salud</TabsTrigger>
             <TabsTrigger value="updates" className="text-xs gap-1"><ArrowUpCircle className="h-3 w-3" /> Versiones</TabsTrigger>
             <TabsTrigger value="license" className="text-xs gap-1"><Key className="h-3 w-3" /> Licencia</TabsTrigger>
             <TabsTrigger value="billing" className="text-xs gap-1"><DollarSign className="h-3 w-3" /> Consumo</TabsTrigger>
+            <TabsTrigger value="ai-pricing" className="text-xs gap-1"><Brain className="h-3 w-3" /> IA</TabsTrigger>
             <TabsTrigger value="artifacts" className="text-xs gap-1"><FileCode className="h-3 w-3" /> Artefactos</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings2 className="h-3 w-3" /> Config</TabsTrigger>
           </TabsList>
@@ -458,6 +460,11 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
           {/* === BILLING TAB === */}
           <TabsContent value="billing">
             <UsageBillingPanel installation={installation} />
+          </TabsContent>
+
+          {/* === AI PRICING TAB === */}
+          <TabsContent value="ai-pricing">
+            <AIUsagePricingPanel installation={installation} />
           </TabsContent>
 
           {/* === ARTIFACTS TAB === */}

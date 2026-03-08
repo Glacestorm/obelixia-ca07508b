@@ -4157,6 +4157,83 @@ export type Database = {
           },
         ]
       }
+      ai_usage_invoices: {
+        Row: {
+          created_at: string
+          currency: string | null
+          discount_amount: number | null
+          id: string
+          installation_id: string
+          invoice_number: string
+          issued_at: string | null
+          line_items: Json | null
+          metadata: Json | null
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          status: string | null
+          stripe_invoice_id: string | null
+          subtotal: number | null
+          tax_amount: number | null
+          total_amount: number | null
+          total_decisions: number | null
+          total_tokens: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          discount_amount?: number | null
+          id?: string
+          installation_id: string
+          invoice_number: string
+          issued_at?: string | null
+          line_items?: Json | null
+          metadata?: Json | null
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          status?: string | null
+          stripe_invoice_id?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          total_decisions?: number | null
+          total_tokens?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          discount_amount?: number | null
+          id?: string
+          installation_id?: string
+          invoice_number?: string
+          issued_at?: string | null
+          line_items?: Json | null
+          metadata?: Json | null
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string | null
+          stripe_invoice_id?: string | null
+          subtotal?: number | null
+          tax_amount?: number | null
+          total_amount?: number | null
+          total_decisions?: number | null
+          total_tokens?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_invoices_installation_id_fkey"
+            columns: ["installation_id"]
+            isOneToOne: false
+            referencedRelation: "client_installations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_usage_logs: {
         Row: {
           company_id: string | null
@@ -4330,6 +4407,54 @@ export type Database = {
           total_tokens?: number
           user_id?: string | null
           was_anonymized?: boolean
+        }
+        Relationships: []
+      }
+      ai_usage_pricing: {
+        Row: {
+          base_price_per_unit: number
+          created_at: string
+          currency: string
+          decision_type: string
+          description: string | null
+          display_name: string
+          free_tier_units: number | null
+          id: string
+          is_active: boolean | null
+          module_key: string | null
+          price_per_1k_tokens: number | null
+          tier_multipliers: Json | null
+          updated_at: string
+        }
+        Insert: {
+          base_price_per_unit?: number
+          created_at?: string
+          currency?: string
+          decision_type: string
+          description?: string | null
+          display_name: string
+          free_tier_units?: number | null
+          id?: string
+          is_active?: boolean | null
+          module_key?: string | null
+          price_per_1k_tokens?: number | null
+          tier_multipliers?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          base_price_per_unit?: number
+          created_at?: string
+          currency?: string
+          decision_type?: string
+          description?: string | null
+          display_name?: string
+          free_tier_units?: number | null
+          id?: string
+          is_active?: boolean | null
+          module_key?: string | null
+          price_per_1k_tokens?: number | null
+          tier_multipliers?: Json | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -63652,12 +63777,16 @@ export type Database = {
       }
       usage_billing_events: {
         Row: {
+          ai_latency_ms: number | null
+          ai_model_used: string | null
           billed: boolean
           billed_at: string | null
           billing_period_end: string | null
           billing_period_start: string | null
+          completion_tokens: number | null
           created_at: string
           currency: string
+          decision_type: string | null
           event_name: string
           event_type: string
           id: string
@@ -63665,18 +63794,24 @@ export type Database = {
           invoice_id: string | null
           metadata: Json | null
           module_key: string
+          prompt_tokens: number | null
           quantity: number
+          tokens_consumed: number | null
           total_amount: number | null
           unit_price: number | null
           user_id: string | null
         }
         Insert: {
+          ai_latency_ms?: number | null
+          ai_model_used?: string | null
           billed?: boolean
           billed_at?: string | null
           billing_period_end?: string | null
           billing_period_start?: string | null
+          completion_tokens?: number | null
           created_at?: string
           currency?: string
+          decision_type?: string | null
           event_name: string
           event_type?: string
           id?: string
@@ -63684,18 +63819,24 @@ export type Database = {
           invoice_id?: string | null
           metadata?: Json | null
           module_key: string
+          prompt_tokens?: number | null
           quantity?: number
+          tokens_consumed?: number | null
           total_amount?: number | null
           unit_price?: number | null
           user_id?: string | null
         }
         Update: {
+          ai_latency_ms?: number | null
+          ai_model_used?: string | null
           billed?: boolean
           billed_at?: string | null
           billing_period_end?: string | null
           billing_period_start?: string | null
+          completion_tokens?: number | null
           created_at?: string
           currency?: string
+          decision_type?: string | null
           event_name?: string
           event_type?: string
           id?: string
@@ -63703,7 +63844,9 @@ export type Database = {
           invoice_id?: string | null
           metadata?: Json | null
           module_key?: string
+          prompt_tokens?: number | null
           quantity?: number
+          tokens_consumed?: number | null
           total_amount?: number | null
           unit_price?: number | null
           user_id?: string | null
