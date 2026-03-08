@@ -725,6 +725,10 @@ function ERPModularDashboardContent() {
                 <HRPremiumHealthCheckPanel companyId={currentCompany?.id} />
               </TabsContent>
 
+              <TabsContent value="premium-export">
+                <HRPremiumExportPanel companyId={currentCompany?.id} />
+              </TabsContent>
+
               <TabsContent value="premium-seed">
                 <PremiumReseedPanel companyId={currentCompany?.id} />
               </TabsContent>
