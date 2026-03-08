@@ -111,6 +111,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'compensation-suite', label: 'Compensation Suite', icon: Coins },
         { id: 'talent-intelligence', label: 'Talent Intelligence', icon: Brain },
         { id: 'compliance-enterprise', label: 'Compliance Enterprise', icon: Shield },
+        { id: 'wellbeing-enterprise', label: 'Wellbeing Enterprise', icon: Heart },
       ]
     },
     {
