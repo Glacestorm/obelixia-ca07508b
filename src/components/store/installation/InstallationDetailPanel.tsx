@@ -301,6 +301,11 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
             <MarketplaceExtensionsPanel installationId={installation.id} />
           </TabsContent>
 
+          {/* === FEDERATED MESH TAB === */}
+          <TabsContent value="mesh">
+            <FederatedMeshPanel installationId={installation.id} />
+          </TabsContent>
+
           {/* === HEALTH / SELF-HEALING TAB === */}
           <TabsContent value="health">
             <SelfHealingPanel installation={installation} />
