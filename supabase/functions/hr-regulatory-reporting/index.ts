@@ -118,6 +118,14 @@ serve(async (req) => {
 
     const { action, company_id, params } = await req.json();
 
+    // Rate limit expensive generation actions
+    if (action === 'generate_regulatory_report') {
+      const burstResult = checkBurstLimit(company_id || user.id, { burstPerMinute: 5, perDay: 30, functionName: 'hr-regulatory-reporting' });
+      if (!burstResult.allowed) {
+        return rateLimitResponse(burstResult, corsHeaders);
+      }
+    }
+
     switch (action) {
       // === SEED REGULATORY TEMPLATES ===
       case 'seed_regulatory_templates': {
