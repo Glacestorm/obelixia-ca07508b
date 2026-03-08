@@ -22,7 +22,8 @@ export type UtilitySection =
   | 'premium-health' | 'premium-export'
   | 'premium-seed' | 'premium-help'
   | 'compliance-automation'
-  | 'analytics-bi';
+  | 'analytics-bi'
+  | 'reporting-engine';
 
 interface UtilityItem {
   id: UtilitySection;
