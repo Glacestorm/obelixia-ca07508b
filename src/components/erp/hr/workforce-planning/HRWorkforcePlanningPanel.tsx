@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useHRWorkforcePlanning } from '@/hooks/admin/hr/useHRWorkforcePlanning';
 import type { Scenario, HeadcountModel, SkillGapForecast } from '@/hooks/admin/hr/useHRWorkforcePlanning';
+import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -30,12 +31,14 @@ export function HRWorkforcePlanningPanel({ companyId }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
-    plans, scenarios, selectedPlan, stats,
+    plans, scenarios, selectedPlan, stats, realHeadcount,
     loading, aiLoading, aiResult,
     fetchPlanDetail, fetchStats,
     simulateScenario, runWorkforceAnalysis, runSkillGapStrategy,
     setSelectedPlan, setAiResult,
   } = useHRWorkforcePlanning(companyId);
+
+  const hasRealData = !!(realHeadcount && Object.keys(realHeadcount).length > 0);
 
   const riskColor = (level: string) => {
     switch (level) {
@@ -72,9 +75,12 @@ export function HRWorkforcePlanningPanel({ companyId }: Props) {
             </div>
             <div>
               <CardTitle className="text-base">Workforce Planning & Scenario Studio</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Planificación estratégica de plantilla con simulación IA
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Planificación estratégica de plantilla con simulación IA
+                </p>
+                <DataSourceBadge source={resolveDataSource(hasRealData)} lastUpdated={new Date()} compact />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -128,6 +134,36 @@ export function HRWorkforcePlanningPanel({ companyId }: Props) {
                       <p className="text-xs text-muted-foreground">brechas identificadas</p>
                     </Card>
                   </div>
+
+                  {/* Real Headcount Data */}
+                  {hasRealData && realHeadcount && (
+                    <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-semibold flex items-center gap-2">
+                          <Users className="h-4 w-4 text-emerald-600" /> Plantilla Real (ERP)
+                        </h3>
+                        <DataSourceBadge source="real" compact />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total</p>
+                          <p className="font-bold">{(realHeadcount as any).total_employees ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Coste Total</p>
+                          <p className="font-bold">€{((realHeadcount as any).total_salary_cost ?? 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Departamentos</p>
+                          <p className="font-bold">{((realHeadcount as any).by_department ?? []).length}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Salario Medio</p>
+                          <p className="font-bold">€{((realHeadcount as any).avg_salary ?? 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
 
                   {/* Scenarios Summary */}
                   <Card className="p-4">

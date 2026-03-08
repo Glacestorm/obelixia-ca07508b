@@ -16,6 +16,7 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight, Minus, Gavel
 } from 'lucide-react';
 import { useHRFairnessEngine } from '@/hooks/admin/hr/useHRFairnessEngine';
+import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -29,9 +30,15 @@ export function HRFairnessEnginePanel({ companyId }: Props) {
   const {
     analyses, metrics, cases, plans, stats, aiAnalysis,
     loading, aiLoading, fetchAll, runFairnessAnalysis, runPayEquityAI, seedDemo,
+    realPayEquityData, realDataLoading, fetchRealPayEquityData,
   } = useHRFairnessEngine();
 
-  useEffect(() => { fetchAll(companyId); }, [companyId, fetchAll]);
+  const hasRealData = !!(realPayEquityData && Object.keys(realPayEquityData).length > 0);
+
+  useEffect(() => {
+    fetchAll(companyId);
+    fetchRealPayEquityData(companyId);
+  }, [companyId, fetchAll, fetchRealPayEquityData]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-emerald-500';
@@ -74,7 +81,10 @@ export function HRFairnessEnginePanel({ companyId }: Props) {
               </div>
               <div>
                 <CardTitle className="text-lg">Fairness & Justice Engine</CardTitle>
-                <p className="text-xs text-muted-foreground">Equidad retributiva · Métricas de justicia · Casos · Planes de acción</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">Equidad retributiva · Métricas de justicia · Casos · Planes de acción</p>
+                  <DataSourceBadge source={resolveDataSource(hasRealData)} lastUpdated={new Date()} compact />
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -140,14 +150,57 @@ export function HRFairnessEnginePanel({ companyId }: Props) {
               <TabsTrigger value="ai" className="text-xs">IA Analysis</TabsTrigger>
             </TabsList>
 
-            {/* OVERVIEW */}
+             {/* OVERVIEW */}
             <TabsContent value="overview" className="mt-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Real Pay Equity Data */}
+                {hasRealData && realPayEquityData && (
+                  <Card className="md:col-span-2 border-emerald-500/30 bg-emerald-500/5">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-emerald-600" /> Equidad Salarial Real (ERP)
+                        </span>
+                        <DataSourceBadge source="real" compact />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Brecha M/F</p>
+                          <p className="text-xl font-bold text-violet-500">
+                            {((realPayEquityData as any).gender_gap?.gap_percentage ?? 0).toFixed(1)}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Empleados Analizados</p>
+                          <p className="text-xl font-bold">
+                            {(realPayEquityData as any).total_employees ?? 0}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Salario Medio M</p>
+                          <p className="text-xl font-bold">
+                            €{((realPayEquityData as any).gender_gap?.avg_salary_female ?? 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Salario Medio H</p>
+                          <p className="text-xl font-bold">
+                            €{((realPayEquityData as any).gender_gap?.avg_salary_male ?? 0).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Recent analyses */}
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-violet-500" /> Análisis Recientes
+                      <DataSourceBadge source={resolveDataSource(hasRealData)} compact />
                     </CardTitle>
                   </CardHeader>
                   <CardContent>

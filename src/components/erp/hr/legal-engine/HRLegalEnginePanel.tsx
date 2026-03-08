@@ -13,9 +13,10 @@ import { Progress } from '@/components/ui/progress';
 import {
   RefreshCw, Sparkles, FileText, BookOpen, ShieldCheck, Scale,
   AlertTriangle, CheckCircle, XCircle, Database, FileSignature,
-  Maximize2, Minimize2, Clock, Tag
+  Maximize2, Minimize2, Clock, Tag, Cloud
 } from 'lucide-react';
 import { useHRLegalEngine } from '@/hooks/admin/hr/useHRLegalEngine';
+import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -32,9 +33,15 @@ export function HRLegalEnginePanel({ companyId }: Props) {
     templates, clauses, contracts, stats, aiAnalysis,
     loading, aiLoading,
     loadAll, seedDemo, aiComplianceAnalysis, aiClauseReview, aiGenerateContract,
+    realContracts, realDataLoading, fetchRealContracts, syncRealContractsToLegal,
   } = useHRLegalEngine();
 
-  useEffect(() => { loadAll(companyId); }, [companyId, loadAll]);
+  const hasRealData = !!(realContracts && Object.keys(realContracts).length > 0);
+
+  useEffect(() => {
+    loadAll(companyId);
+    fetchRealContracts(companyId);
+  }, [companyId, loadAll, fetchRealContracts]);
 
   const handleSeed = useCallback(() => seedDemo(companyId), [companyId, seedDemo]);
   const handleRefresh = useCallback(() => loadAll(companyId), [companyId, loadAll]);
@@ -81,7 +88,10 @@ export function HRLegalEnginePanel({ companyId }: Props) {
             </div>
             <div>
               <CardTitle className="text-base">Legal Engine Premium</CardTitle>
-              <p className="text-xs text-muted-foreground">Generación contractual + Biblioteca cláusulas + Compliance</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">Generación contractual + Biblioteca cláusulas + Compliance</p>
+                <DataSourceBadge source={resolveDataSource(hasRealData)} lastUpdated={new Date()} compact />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -90,6 +100,9 @@ export function HRLegalEnginePanel({ companyId }: Props) {
                 <Database className="h-3 w-3" /> Demo
               </Button>
             )}
+            <Button variant="outline" size="sm" onClick={() => syncRealContractsToLegal(companyId)} disabled={realDataLoading} className="gap-1 text-xs">
+              <Cloud className="h-3 w-3" /> Sync Contratos
+            </Button>
             <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={loading} className="h-8 w-8">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </Button>

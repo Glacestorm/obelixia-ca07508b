@@ -14,6 +14,7 @@ import {
   TrendingDown, Minus, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import { useHRPremiumDashboard, type PremiumModuleStatus, type PremiumKPI } from '@/hooks/admin/hr/useHRPremiumDashboard';
+import { RoleAwareDashboard } from '@/components/erp/hr/shared/RoleAwareDashboard';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -122,6 +123,11 @@ export function HRPremiumExecutiveDashboard({ companyId, className }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Role-Aware Dashboard */}
+      {companyId && (
+        <RoleAwareDashboard companyId={companyId} />
+      )}
 
       {/* KPIs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
