@@ -673,7 +673,11 @@ function ERPModularDashboardContent() {
                   Re-Seed
                 </TabsTrigger>
               </TabsList>
-              
+
+              <TabsContent value="premium-dash">
+                <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
+              </TabsContent>
+
               <TabsContent value="audit" className="space-y-4">
                 <p className="text-muted-foreground">
                   Generador unificado de informes de auditoría para ERP, CRM o Suite Integral.
