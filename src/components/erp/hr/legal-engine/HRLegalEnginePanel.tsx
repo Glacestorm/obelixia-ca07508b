@@ -100,6 +100,9 @@ export function HRLegalEnginePanel({ companyId }: Props) {
                 <Database className="h-3 w-3" /> Demo
               </Button>
             )}
+            <Button variant="outline" size="sm" onClick={() => syncRealContractsToLegal(companyId)} disabled={realDataLoading} className="gap-1 text-xs">
+              <Cloud className="h-3 w-3" /> Sync Contratos
+            </Button>
             <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={loading} className="h-8 w-8">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </Button>
