@@ -711,6 +711,9 @@ function ERPModularDashboardContent() {
             {utilitySection === 'regulatory-reporting' && currentCompany?.id && (
               <ComplianceReportingPanel companyId={currentCompany.id} />
             )}
+            {utilitySection === 'premium-api-webhooks' && currentCompany?.id && (
+              <PremiumAPIWebhooksPanel companyId={currentCompany.id} />
+            )}
           </div>
         </TabsContent>
       </Tabs>
