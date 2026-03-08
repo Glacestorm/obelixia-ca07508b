@@ -51,18 +51,10 @@ export function useEnergyCases(companyId: string) {
         .eq('company_id', companyId)
         .order('created_at', { ascending: false });
 
-      if (filters.status !== 'all') {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.priority !== 'all') {
-        query = query.eq('priority', filters.priority);
-      }
-      if (filters.supplier !== 'all') {
-        query = query.eq('current_supplier', filters.supplier);
-      }
-      if (filters.assignedUser !== 'all') {
-        query = query.eq('assigned_user_id', filters.assignedUser);
-      }
+      if (filters.status !== 'all') query = query.eq('status', filters.status);
+      if (filters.priority !== 'all') query = query.eq('priority', filters.priority);
+      if (filters.supplier !== 'all') query = query.eq('current_supplier', filters.supplier);
+      if (filters.assignedUser !== 'all') query = query.eq('assigned_user_id', filters.assignedUser);
       if (filters.search) {
         query = query.or(
           `title.ilike.%${filters.search}%,cups.ilike.%${filters.search}%,current_supplier.ilike.%${filters.search}%,address.ilike.%${filters.search}%`
@@ -98,6 +90,26 @@ export function useEnergyCases(companyId: string) {
     }
   }, [companyId]);
 
+  const updateCase = useCallback(async (id: string, updates: Partial<EnergyCase>) => {
+    try {
+      const { data, error } = await supabase
+        .from('energy_cases')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      const updated = data as EnergyCase;
+      setCases(prev => prev.map(c => c.id === id ? updated : c));
+      toast.success('Expediente actualizado');
+      return updated;
+    } catch (err) {
+      console.error('[useEnergyCases] update error:', err);
+      toast.error('Error al actualizar expediente');
+      return null;
+    }
+  }, []);
+
   const deleteCase = useCallback(async (id: string) => {
     try {
       const { error } = await supabase.from('energy_cases').delete().eq('id', id);
@@ -113,19 +125,61 @@ export function useEnergyCases(companyId: string) {
     if (companyId) fetchCases();
   }, [fetchCases, companyId]);
 
-  // Extract unique values for filter dropdowns
   const uniqueSuppliers = [...new Set(cases.map(c => c.current_supplier).filter(Boolean))] as string[];
   const uniqueStatuses = [...new Set(cases.map(c => c.status).filter(Boolean))] as string[];
 
   return {
-    cases,
-    loading,
-    filters,
-    setFilters,
-    fetchCases,
-    createCase,
-    deleteCase,
-    uniqueSuppliers,
-    uniqueStatuses,
+    cases, loading, filters, setFilters,
+    fetchCases, createCase, updateCase, deleteCase,
+    uniqueSuppliers, uniqueStatuses,
   };
+}
+
+/** Hook for a single energy case by ID */
+export function useEnergyCase(caseId: string | null) {
+  const [energyCase, setEnergyCase] = useState<EnergyCase | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchCase = useCallback(async () => {
+    if (!caseId) { setEnergyCase(null); return; }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('energy_cases')
+        .select('*')
+        .eq('id', caseId)
+        .single();
+      if (error) throw error;
+      setEnergyCase(data as EnergyCase);
+    } catch (err) {
+      console.error('[useEnergyCase] fetch error:', err);
+      toast.error('Error al cargar expediente');
+    } finally {
+      setLoading(false);
+    }
+  }, [caseId]);
+
+  const updateCase = useCallback(async (updates: Partial<EnergyCase>) => {
+    if (!caseId) return null;
+    try {
+      const { data, error } = await supabase
+        .from('energy_cases')
+        .update(updates)
+        .eq('id', caseId)
+        .select()
+        .single();
+      if (error) throw error;
+      const updated = data as EnergyCase;
+      setEnergyCase(updated);
+      toast.success('Expediente actualizado');
+      return updated;
+    } catch (err) {
+      toast.error('Error al actualizar');
+      return null;
+    }
+  }, [caseId]);
+
+  useEffect(() => { fetchCase(); }, [fetchCase]);
+
+  return { energyCase, loading, fetchCase, updateCase };
 }

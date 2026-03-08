@@ -1,8 +1,6 @@
 /**
  * Módulo Consultoría Eléctrica ERP
  * Gestión integral de expedientes de optimización de factura eléctrica
- * 12 secciones: Resumen, Expedientes, Clientes, Suministros, Facturas,
- * Contratos, Consumo, Comparador, Recomendaciones, Informes, Seguimiento, Ajustes
  */
 
 import { useState, useEffect } from 'react';
@@ -14,6 +12,8 @@ import { useERPContext } from '@/hooks/erp';
 import { ElectricalNavigationMenu } from './ElectricalNavigationMenu';
 import { ElectricalDashboard } from './ElectricalDashboard';
 import { ElectricalExpedientesPanel } from './ElectricalExpedientesPanel';
+import { ElectricalNewCaseForm } from './ElectricalNewCaseForm';
+import { ElectricalCaseDetail } from './ElectricalCaseDetail';
 import { ElectricalClientesPanel } from './ElectricalClientesPanel';
 import { ElectricalSuministrosPanel } from './ElectricalSuministrosPanel';
 import { ElectricalFacturasPanel } from './ElectricalFacturasPanel';
@@ -26,8 +26,14 @@ import { ElectricalInformesPanel } from './ElectricalInformesPanel';
 import { ElectricalSeguimientoPanel } from './ElectricalSeguimientoPanel';
 import { ElectricalAjustesPanel } from './ElectricalAjustesPanel';
 
+type SubView = 
+  | { type: 'list' }
+  | { type: 'new' }
+  | { type: 'detail'; caseId: string };
+
 export function ElectricalConsultingModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [subView, setSubView] = useState<SubView>({ type: 'list' });
   const { currentCompany } = useERPContext();
   const companyId = currentCompany?.id;
 
@@ -39,6 +45,9 @@ export function ElectricalConsultingModule() {
     informesPendientes: 0,
     seguimientosActivos: 0
   });
+
+  // Reset subView when switching modules
+  useEffect(() => { setSubView({ type: 'list' }); }, [activeModule]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -66,6 +75,34 @@ export function ElectricalConsultingModule() {
     );
   }
 
+  const renderExpedientes = () => {
+    if (subView.type === 'new') {
+      return (
+        <ElectricalNewCaseForm
+          companyId={companyId}
+          onCreated={(caseId) => setSubView({ type: 'detail', caseId })}
+          onCancel={() => setSubView({ type: 'list' })}
+        />
+      );
+    }
+    if (subView.type === 'detail') {
+      return (
+        <ElectricalCaseDetail
+          caseId={subView.caseId}
+          companyId={companyId}
+          onBack={() => setSubView({ type: 'list' })}
+        />
+      );
+    }
+    return (
+      <ElectricalExpedientesPanel
+        companyId={companyId}
+        onNewCase={() => setSubView({ type: 'new' })}
+        onViewCase={(caseId) => setSubView({ type: 'detail', caseId })}
+      />
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Header con estadísticas rápidas */}
@@ -81,7 +118,6 @@ export function ElectricalConsultingModule() {
             </div>
           </CardContent>
         </Card>
-        
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -93,7 +129,6 @@ export function ElectricalConsultingModule() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -105,7 +140,6 @@ export function ElectricalConsultingModule() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -117,7 +151,6 @@ export function ElectricalConsultingModule() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -129,7 +162,6 @@ export function ElectricalConsultingModule() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -143,20 +175,15 @@ export function ElectricalConsultingModule() {
         </Card>
       </div>
 
-      {/* Navegación con 12 secciones */}
       <ElectricalNavigationMenu
         activeModule={activeModule}
         onModuleChange={setActiveModule}
-        stats={{
-          informesPendientes: stats.informesPendientes,
-          expedientesActivos: stats.expedientesActivos
-        }}
+        stats={{ informesPendientes: stats.informesPendientes, expedientesActivos: stats.expedientesActivos }}
       />
 
-      {/* Contenido de los módulos */}
       <div className="mt-4">
         {activeModule === 'dashboard' && <ElectricalDashboard companyId={companyId} />}
-        {activeModule === 'expedientes' && <ElectricalExpedientesPanel companyId={companyId} />}
+        {activeModule === 'expedientes' && renderExpedientes()}
         {activeModule === 'clientes' && <ElectricalClientesPanel companyId={companyId} />}
         {activeModule === 'suministros' && <ElectricalSuministrosPanel companyId={companyId} />}
         {activeModule === 'facturas' && <ElectricalFacturasPanel companyId={companyId} />}
