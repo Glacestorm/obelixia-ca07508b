@@ -1,0 +1,1 @@
+export { HRAIGovernancePanel } from './HRAIGovernancePanel';
