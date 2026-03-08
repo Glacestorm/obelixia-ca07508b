@@ -114,6 +114,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'wellbeing-enterprise', label: 'Wellbeing Enterprise', icon: Heart },
         { id: 'esg-selfservice', label: 'ESG Social & Self-Service', icon: Leaf },
         { id: 'copilot-twin', label: 'Copilot + Digital Twin', icon: Bot },
+        { id: 'security-governance', label: 'Security & SoD', icon: ShieldAlert },
       ]
     },
     {
