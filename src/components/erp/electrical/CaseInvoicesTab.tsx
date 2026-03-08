@@ -7,14 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { FileText, Plus, Trash2, Upload, CalendarIcon, RefreshCw, ExternalLink, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { FileText, Plus, Trash2, Upload, CalendarIcon, RefreshCw, ExternalLink, CheckCircle, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import { useEnergyInvoices, EnergyInvoice } from '@/hooks/erp/useEnergyInvoices';
+import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { PermissionGate } from './PermissionGate';
+import { CaseConsumptionCharts } from './CaseConsumptionCharts';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface Props { caseId: string; }
 
@@ -28,11 +32,14 @@ const emptyForm = {
 
 export function CaseInvoicesTab({ caseId }: Props) {
   const { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice, uploadPdf } = useEnergyInvoices(caseId);
+  const { supply } = useEnergySupply(caseId);
   const [showDialog, setShowDialog] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const parseFileRef = useRef<HTMLInputElement>(null);
 
   const openNew = () => { setEditId(null); setForm(emptyForm); setShowDialog(true); };
   const openEdit = (inv: EnergyInvoice) => {
@@ -95,10 +102,79 @@ export function CaseInvoicesTab({ caseId }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }, [uploadPdf]);
 
+  // PDF parse: upload → parse → pre-fill form → create invoice
+  const handleParsePdf = useCallback(async () => {
+    const file = parseFileRef.current?.files?.[0];
+    if (!file) { toast.error('Selecciona un PDF'); return; }
+    if (!file.name.endsWith('.pdf')) { toast.error('Solo se admiten archivos PDF'); return; }
+
+    setParsing(true);
+    try {
+      // 1. Upload to temp path
+      const tempPath = `invoices/${caseId}/temp_${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('energy-documents').upload(tempPath, file, { upsert: true });
+      if (uploadError) throw new Error('Error subiendo PDF');
+
+      const { data: urlData } = supabase.storage.from('energy-documents').getPublicUrl(tempPath);
+
+      // 2. Call parser
+      const { data, error } = await supabase.functions.invoke('energy-invoice-parser', {
+        body: { documentUrl: urlData.publicUrl },
+      });
+      if (error) throw error;
+
+      if (!data?.success || data?.data?.parseError) {
+        throw new Error('No se pudo parsear el PDF');
+      }
+
+      const p = data.data;
+
+      // 3. Create invoice with parsed data
+      const invoicePayload: any = {
+        billing_start: p.billing_start || null,
+        billing_end: p.billing_end || null,
+        days: p.days || null,
+        consumption_total_kwh: p.consumption_total_kwh || null,
+        consumption_p1_kwh: p.consumption_p1_kwh || null,
+        consumption_p2_kwh: p.consumption_p2_kwh || null,
+        consumption_p3_kwh: p.consumption_p3_kwh || null,
+        energy_cost: p.energy_cost || null,
+        power_cost: p.power_cost || null,
+        meter_rental: p.meter_rental || null,
+        electricity_tax: p.electricity_tax || null,
+        vat: p.vat || null,
+        other_costs: p.other_costs || null,
+        total_amount: p.total_amount || null,
+        document_url: urlData.publicUrl,
+        is_validated: false,
+      };
+
+      const inv = await createInvoice(invoicePayload);
+      if (inv) {
+        const confidence = p.confidence || 0;
+        const warnings = p.warnings?.length || 0;
+        toast.success(`Factura extraída (confianza: ${confidence}%${warnings > 0 ? `, ${warnings} alertas` : ''}). Revisa los datos.`);
+
+        // Also update supply if power data detected
+        if (p.contracted_power_p1_kw || p.contracted_power_p2_kw) {
+          // Open the created invoice for review
+          openEdit({ ...inv, ...invoicePayload });
+        }
+      }
+    } catch (err: any) {
+      console.error('[CaseInvoicesTab] parse error:', err);
+      toast.error('Error parseando factura: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setParsing(false);
+      if (parseFileRef.current) parseFileRef.current.value = '';
+    }
+  }, [caseId, createInvoice]);
+
   if (loading && invoices.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Cargando facturas...</div>;
 
   return (
-    <>
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -114,12 +190,34 @@ export function CaseInvoicesTab({ caseId }: Props) {
               </Button>
               <PermissionGate action="edit_cases">
                 <Button size="sm" onClick={openNew}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Nueva factura
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Manual
                 </Button>
               </PermissionGate>
             </div>
           </div>
         </CardHeader>
+
+        {/* PDF Parser section */}
+        <PermissionGate action="edit_cases">
+          <div className="px-6 pb-4">
+            <div className="p-3 rounded-lg border border-dashed bg-muted/30 flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-primary shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Importar factura desde PDF</p>
+                <p className="text-xs text-muted-foreground">Sube un PDF de factura eléctrica y se extraerán los campos automáticamente</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input type="file" accept=".pdf" ref={parseFileRef} className="w-48 text-xs" />
+                <Button size="sm" onClick={handleParsePdf} disabled={parsing}
+                  className="bg-primary hover:bg-primary/90">
+                  {parsing ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Extrayendo...</>
+                    : <><Sparkles className="h-3.5 w-3.5 mr-1" /> Parsear PDF</>}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </PermissionGate>
+
         <CardContent className="p-0">
           <ScrollArea className="w-full">
             <div className="min-w-[800px]">
@@ -146,9 +244,11 @@ export function CaseInvoicesTab({ caseId }: Props) {
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); deleteInvoice(inv.id); }}>
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
+                    <PermissionGate action="edit_cases">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); deleteInvoice(inv.id); }}>
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ))}
@@ -156,6 +256,17 @@ export function CaseInvoicesTab({ caseId }: Props) {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* Consumption charts from real invoices */}
+      {invoices.length > 0 && (
+        <CaseConsumptionCharts
+          invoices={invoices}
+          contractedPowerP1={supply?.contracted_power_p1}
+          contractedPowerP2={supply?.contracted_power_p2}
+          maxDemandP1={supply?.max_demand_p1}
+          maxDemandP2={supply?.max_demand_p2}
+        />
+      )}
 
       {/* Invoice form dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
@@ -254,7 +365,7 @@ export function CaseInvoicesTab({ caseId }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
 

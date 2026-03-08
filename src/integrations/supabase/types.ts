@@ -17841,6 +17841,13 @@ export type Database = {
             referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "energy_cases_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "energy_customers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       energy_consumption_profiles: {
@@ -17966,6 +17973,71 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_customers: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_id: string
+          contact_person: string | null
+          created_at: string
+          customer_type: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+          postal_code: string | null
+          province: string | null
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_id: string
+          contact_person?: string | null
+          created_at?: string
+          customer_type?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_id?: string
+          contact_person?: string | null
+          created_at?: string
+          customer_type?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
