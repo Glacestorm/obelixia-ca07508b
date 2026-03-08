@@ -27266,6 +27266,66 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_cost_projections: {
+        Row: {
+          amount: number
+          category: string
+          company_id: string
+          created_at: string
+          currency: string | null
+          id: string
+          notes: string | null
+          period: string
+          plan_id: string | null
+          scenario_id: string | null
+          updated_at: string
+          variance_vs_budget: number | null
+        }
+        Insert: {
+          amount?: number
+          category: string
+          company_id: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          period: string
+          plan_id?: string | null
+          scenario_id?: string | null
+          updated_at?: string
+          variance_vs_budget?: number | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          company_id?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          period?: string
+          plan_id?: string | null
+          scenario_id?: string | null
+          updated_at?: string
+          variance_vs_budget?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_cost_projections_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workforce_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_cost_projections_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_critical_events: {
         Row: {
           action_taken: string | null
@@ -29904,6 +29964,68 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_headcount_models: {
+        Row: {
+          avg_time_to_fill_days: number | null
+          company_id: string
+          created_at: string
+          current_headcount: number
+          department: string
+          estimated_cost_per_hire: number | null
+          gap: number | null
+          hiring_priority: string | null
+          id: string
+          notes: string | null
+          plan_id: string | null
+          projected_headcount: number
+          role_title: string
+          skill_requirements: Json | null
+          updated_at: string
+        }
+        Insert: {
+          avg_time_to_fill_days?: number | null
+          company_id: string
+          created_at?: string
+          current_headcount?: number
+          department: string
+          estimated_cost_per_hire?: number | null
+          gap?: number | null
+          hiring_priority?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          projected_headcount?: number
+          role_title: string
+          skill_requirements?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          avg_time_to_fill_days?: number | null
+          company_id?: string
+          created_at?: string
+          current_headcount?: number
+          department?: string
+          estimated_cost_per_hire?: number | null
+          gap?: number | null
+          hiring_priority?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string | null
+          projected_headcount?: number
+          role_title?: string
+          skill_requirements?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_headcount_models_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workforce_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -34248,6 +34370,74 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_scenarios: {
+        Row: {
+          assumptions: Json | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          impact_summary: string | null
+          plan_id: string | null
+          probability: number | null
+          results: Json | null
+          risk_level: string | null
+          scenario_name: string
+          scenario_type: string
+          simulated_at: string | null
+          status: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          assumptions?: Json | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          impact_summary?: string | null
+          plan_id?: string | null
+          probability?: number | null
+          results?: Json | null
+          risk_level?: string | null
+          scenario_name: string
+          scenario_type?: string
+          simulated_at?: string | null
+          status?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          assumptions?: Json | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          impact_summary?: string | null
+          plan_id?: string | null
+          probability?: number | null
+          results?: Json | null
+          risk_level?: string | null
+          scenario_name?: string
+          scenario_type?: string
+          simulated_at?: string | null
+          status?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_scenarios_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workforce_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_security_incidents: {
         Row: {
           affected_records: number | null
@@ -34688,6 +34878,65 @@ export type Database = {
             columns: ["legal_validated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_skill_gap_forecasts: {
+        Row: {
+          company_id: string
+          created_at: string
+          criticality: string | null
+          current_supply: number
+          estimated_resolution_months: number | null
+          gap: number | null
+          id: string
+          market_availability: string | null
+          mitigation_strategy: string | null
+          plan_id: string | null
+          projected_demand: number
+          skill_category: string | null
+          skill_name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          criticality?: string | null
+          current_supply?: number
+          estimated_resolution_months?: number | null
+          gap?: number | null
+          id?: string
+          market_availability?: string | null
+          mitigation_strategy?: string | null
+          plan_id?: string | null
+          projected_demand?: number
+          skill_category?: string | null
+          skill_name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          criticality?: string | null
+          current_supply?: number
+          estimated_resolution_months?: number | null
+          gap?: number | null
+          id?: string
+          market_availability?: string | null
+          mitigation_strategy?: string | null
+          plan_id?: string | null
+          projected_demand?: number
+          skill_category?: string | null
+          skill_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_skill_gap_forecasts_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workforce_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -37494,6 +37743,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_workforce_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          budget_total: number | null
+          budget_used: number | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          metadata: Json | null
+          plan_name: string
+          start_date: string
+          status: string
+          time_horizon: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_total?: number | null
+          budget_used?: number | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          metadata?: Json | null
+          plan_name: string
+          start_date?: string
+          status?: string
+          time_horizon?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_total?: number | null
+          budget_used?: number | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          metadata?: Json | null
+          plan_name?: string
+          start_date?: string
+          status?: string
+          time_horizon?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       erp_inventory_count_lines: {
         Row: {

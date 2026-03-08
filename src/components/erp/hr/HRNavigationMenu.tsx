@@ -13,7 +13,7 @@ import {
   FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
   Brain, Newspaper, BookOpen, HelpCircle, Rocket, ChevronRight, ChevronDown,
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
-  Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert
+  Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -116,6 +116,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'copilot-twin', label: 'Copilot + Digital Twin', icon: Bot },
         { id: 'security-governance', label: 'Security & SoD', icon: ShieldAlert },
         { id: 'ai-governance', label: 'AI Governance', icon: Brain },
+        { id: 'workforce-planning', label: 'Workforce Planning', icon: Target },
       ]
     },
     {

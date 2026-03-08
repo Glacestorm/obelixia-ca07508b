@@ -66,6 +66,7 @@ import { HRESGSelfServicePanel } from './esg-selfservice/HRESGSelfServicePanel';
 import { HRCopilotTwinPanel } from './copilot-twin/HRCopilotTwinPanel';
 import { HRSecurityGovernancePanel } from './security-governance/HRSecurityGovernancePanel';
 import { HRAIGovernancePanel } from './ai-governance/HRAIGovernancePanel';
+import { HRWorkforcePlanningPanel } from './workforce-planning/HRWorkforcePlanningPanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -330,6 +331,7 @@ export function HRModule() {
         {activeModule === 'copilot-twin' && <HRCopilotTwinPanel companyId={demoCompanyId} />}
         {activeModule === 'security-governance' && <HRSecurityGovernancePanel companyId={demoCompanyId} />}
         {activeModule === 'ai-governance' && <HRAIGovernancePanel companyId={demoCompanyId} />}
+        {activeModule === 'workforce-planning' && <HRWorkforcePlanningPanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}

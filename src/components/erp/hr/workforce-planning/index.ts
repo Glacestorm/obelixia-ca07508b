@@ -1,0 +1,1 @@
+export { HRWorkforcePlanningPanel } from './HRWorkforcePlanningPanel';

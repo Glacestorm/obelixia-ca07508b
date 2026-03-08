@@ -234,3 +234,10 @@ export type {
   AIModelEntry, AIDecision, AIBiasAudit, AIGovernancePolicy,
   AIExplainabilityReport, AIGovernanceStats, AIGovernanceAnalysis
 } from './useHRAIGovernance';
+
+// Premium Phase 3 - Workforce Planning & Scenario Studio
+export { useHRWorkforcePlanning } from './useHRWorkforcePlanning';
+export type {
+  WorkforcePlan as StrategicWorkforcePlan, HeadcountModel, Scenario, SkillGapForecast,
+  CostProjection, WorkforcePlanningStats, PlanDetail
+} from './useHRWorkforcePlanning';
