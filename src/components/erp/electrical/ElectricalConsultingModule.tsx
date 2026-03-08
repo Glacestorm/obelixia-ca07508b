@@ -20,6 +20,7 @@ import { ElectricalFacturasPanel } from './ElectricalFacturasPanel';
 import { ElectricalContratosPanel } from './ElectricalContratosPanel';
 import { ElectricalConsumoPanel } from './ElectricalConsumoPanel';
 import { ElectricalComparadorPanel } from './ElectricalComparadorPanel';
+import { ElectricalTariffCatalogPanel } from './ElectricalTariffCatalogPanel';
 import { ElectricalPotenciaPanel } from './ElectricalPotenciaPanel';
 import { ElectricalRecomendacionesPanel } from './ElectricalRecomendacionesPanel';
 import { ElectricalInformesPanel } from './ElectricalInformesPanel';
