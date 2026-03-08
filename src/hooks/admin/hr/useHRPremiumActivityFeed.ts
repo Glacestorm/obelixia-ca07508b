@@ -80,7 +80,7 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Análisis ${r.analysis_type || 'salarial'} — score: ${r.equity_score ?? 'N/A'}`,
   },
   {
-    module: 'twin', table: 'erp_hr_twin_snapshots',
+    module: 'twin', table: 'erp_hr_twin_module_snapshots',
     actionLabel: 'Snapshot Digital Twin',
     descriptionFn: (r) => `Snapshot organizacional — ${r.snapshot_type || 'completo'}`,
   },
