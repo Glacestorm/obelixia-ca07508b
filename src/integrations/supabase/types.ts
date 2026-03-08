@@ -41022,6 +41022,56 @@ export type Database = {
           },
         ]
       }
+      extension_reviews: {
+        Row: {
+          content: string | null
+          created_at: string
+          extension_id: string
+          helpful_count: number
+          id: string
+          is_verified_purchase: boolean
+          rating: number
+          title: string | null
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          extension_id: string
+          helpful_count?: number
+          id?: string
+          is_verified_purchase?: boolean
+          rating: number
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          extension_id?: string
+          helpful_count?: number
+          id?: string
+          is_verified_purchase?: boolean
+          rating?: number
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extension_reviews_extension_id_fkey"
+            columns: ["extension_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_extensions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faq_categories: {
         Row: {
           color: string | null
@@ -47696,6 +47746,167 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_developers: {
+        Row: {
+          bio: string | null
+          company_name: string | null
+          created_at: string
+          developer_name: string
+          email: string
+          id: string
+          is_verified: boolean
+          logo_url: string | null
+          status: string
+          stripe_connect_account_id: string | null
+          stripe_connect_status: string | null
+          total_downloads: number
+          total_extensions: number
+          total_revenue: number
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string
+          developer_name: string
+          email: string
+          id?: string
+          is_verified?: boolean
+          logo_url?: string | null
+          status?: string
+          stripe_connect_account_id?: string | null
+          stripe_connect_status?: string | null
+          total_downloads?: number
+          total_extensions?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string
+          developer_name?: string
+          email?: string
+          id?: string
+          is_verified?: boolean
+          logo_url?: string | null
+          status?: string
+          stripe_connect_account_id?: string | null
+          stripe_connect_status?: string | null
+          total_downloads?: number
+          total_extensions?: number
+          total_revenue?: number
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      marketplace_extensions: {
+        Row: {
+          author_id: string | null
+          author_name: string
+          category: string
+          changelog: string | null
+          compatibility_info: Json | null
+          created_at: string
+          description: string | null
+          developer_id: string | null
+          download_count: number
+          extension_key: string
+          extension_name: string
+          icon_url: string | null
+          id: string
+          is_featured: boolean
+          is_free: boolean
+          is_published: boolean
+          is_verified: boolean
+          price: number
+          rating_average: number
+          rating_count: number
+          requirements: Json | null
+          revenue_share_percent: number
+          screenshots: string[] | null
+          short_description: string | null
+          tags: string[] | null
+          target_module: string | null
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name: string
+          category?: string
+          changelog?: string | null
+          compatibility_info?: Json | null
+          created_at?: string
+          description?: string | null
+          developer_id?: string | null
+          download_count?: number
+          extension_key: string
+          extension_name: string
+          icon_url?: string | null
+          id?: string
+          is_featured?: boolean
+          is_free?: boolean
+          is_published?: boolean
+          is_verified?: boolean
+          price?: number
+          rating_average?: number
+          rating_count?: number
+          requirements?: Json | null
+          revenue_share_percent?: number
+          screenshots?: string[] | null
+          short_description?: string | null
+          tags?: string[] | null
+          target_module?: string | null
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string
+          category?: string
+          changelog?: string | null
+          compatibility_info?: Json | null
+          created_at?: string
+          description?: string | null
+          developer_id?: string | null
+          download_count?: number
+          extension_key?: string
+          extension_name?: string
+          icon_url?: string | null
+          id?: string
+          is_featured?: boolean
+          is_free?: boolean
+          is_published?: boolean
+          is_verified?: boolean
+          price?: number
+          rating_average?: number
+          rating_count?: number
+          requirements?: Json | null
+          revenue_share_percent?: number
+          screenshots?: string[] | null
+          short_description?: string | null
+          tags?: string[] | null
+          target_module?: string | null
+          updated_at?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_extension_developer"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_developers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_installations: {
         Row: {
           application_id: string | null
@@ -47754,6 +47965,62 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "partner_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_purchases: {
+        Row: {
+          amount_paid: number
+          buyer_email: string
+          buyer_user_id: string | null
+          created_at: string
+          developer_payout: number
+          expires_at: string | null
+          extension_id: string
+          id: string
+          installation_id: string | null
+          platform_fee: number
+          purchased_at: string
+          status: string
+          stripe_payment_id: string | null
+        }
+        Insert: {
+          amount_paid?: number
+          buyer_email: string
+          buyer_user_id?: string | null
+          created_at?: string
+          developer_payout?: number
+          expires_at?: string | null
+          extension_id: string
+          id?: string
+          installation_id?: string | null
+          platform_fee?: number
+          purchased_at?: string
+          status?: string
+          stripe_payment_id?: string | null
+        }
+        Update: {
+          amount_paid?: number
+          buyer_email?: string
+          buyer_user_id?: string | null
+          created_at?: string
+          developer_payout?: number
+          expires_at?: string | null
+          extension_id?: string
+          id?: string
+          installation_id?: string | null
+          platform_fee?: number
+          purchased_at?: string
+          status?: string
+          stripe_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_purchases_extension_id_fkey"
+            columns: ["extension_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_extensions"
             referencedColumns: ["id"]
           },
         ]

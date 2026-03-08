@@ -12,13 +12,14 @@ import { Label } from '@/components/ui/label';
 import {
   Package, Plus, Trash2, RefreshCw, ArrowUpCircle, Shield, Activity,
   CheckCircle2, Clock, AlertTriangle, XCircle, History, Key, Link2, Settings2,
-  DollarSign, FileCode, HeartPulse, Brain, Copy
+  DollarSign, FileCode, HeartPulse, Brain, Copy, Puzzle
 } from 'lucide-react';
 import { UsageBillingPanel } from './UsageBillingPanel';
 import { ArtifactGeneratorPanel } from './ArtifactGeneratorPanel';
 import { SelfHealingPanel } from './SelfHealingPanel';
 import { AIUsagePricingPanel } from './AIUsagePricingPanel';
 import { DigitalTwinPanel } from './DigitalTwinPanel';
+import { MarketplaceExtensionsPanel } from './MarketplaceExtensionsPanel';
 import {
   type Installation,
   type InstallationModule,
@@ -152,8 +153,9 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-9 mb-4">
+          <TabsList className="grid w-full grid-cols-10 mb-4">
             <TabsTrigger value="modules" className="text-xs gap-1"><Package className="h-3 w-3" /> Módulos</TabsTrigger>
+            <TabsTrigger value="extensions" className="text-xs gap-1"><Puzzle className="h-3 w-3" /> Extensions</TabsTrigger>
             <TabsTrigger value="health" className="text-xs gap-1"><HeartPulse className="h-3 w-3" /> Salud</TabsTrigger>
             <TabsTrigger value="twin" className="text-xs gap-1"><Copy className="h-3 w-3" /> Twin</TabsTrigger>
             <TabsTrigger value="updates" className="text-xs gap-1"><ArrowUpCircle className="h-3 w-3" /> Versiones</TabsTrigger>
@@ -290,6 +292,11 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
                 })}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          {/* === EXTENSIONS MARKETPLACE TAB === */}
+          <TabsContent value="extensions">
+            <MarketplaceExtensionsPanel installationId={installation.id} />
           </TabsContent>
 
           {/* === HEALTH / SELF-HEALING TAB === */}
