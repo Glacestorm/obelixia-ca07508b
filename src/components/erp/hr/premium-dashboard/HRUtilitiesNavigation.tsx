@@ -20,7 +20,8 @@ export type UtilitySection =
   | 'premium-settings'
   | 'audit' | 'ai-hybrid'
   | 'premium-health' | 'premium-export'
-  | 'premium-seed' | 'premium-help';
+  | 'premium-seed' | 'premium-help'
+  | 'compliance-automation';
 
 interface UtilityItem {
   id: UtilitySection;
