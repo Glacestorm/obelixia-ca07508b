@@ -88,7 +88,10 @@ export function HRLegalEnginePanel({ companyId }: Props) {
             </div>
             <div>
               <CardTitle className="text-base">Legal Engine Premium</CardTitle>
-              <p className="text-xs text-muted-foreground">Generación contractual + Biblioteca cláusulas + Compliance</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">Generación contractual + Biblioteca cláusulas + Compliance</p>
+                <DataSourceBadge source={resolveDataSource(hasRealData)} lastUpdated={new Date()} compact />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
