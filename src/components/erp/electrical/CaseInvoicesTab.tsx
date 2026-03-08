@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { FileText, Plus, Trash2, Upload, CalendarIcon, RefreshCw, ExternalLink, CheckCircle, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import { useEnergyInvoices, EnergyInvoice } from '@/hooks/erp/useEnergyInvoices';
+import { useAuth } from '@/hooks/useAuth';
 import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { PermissionGate } from './PermissionGate';
 import { CaseConsumptionCharts } from './CaseConsumptionCharts';
@@ -31,7 +32,7 @@ const emptyForm = {
 };
 
 export function CaseInvoicesTab({ caseId }: Props) {
-  const { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice, uploadPdf } = useEnergyInvoices(caseId);
+  const { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice, uploadPdf, getSignedUrl } = useEnergyInvoices(caseId);
   const { supply } = useEnergySupply(caseId);
   const [showDialog, setShowDialog] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -112,25 +113,27 @@ export function CaseInvoicesTab({ caseId }: Props) {
     );
   }, [invoices]);
 
-  // PDF parse: upload → parse → pre-fill form → create invoice
+  // PDF parse: read file as base64 → send to edge function → create invoice
   const handleParsePdf = useCallback(async () => {
     const file = parseFileRef.current?.files?.[0];
     if (!file) { toast.error('Selecciona un PDF'); return; }
-    if (!file.name.endsWith('.pdf')) { toast.error('Solo se admiten archivos PDF'); return; }
+    if (!file.name.toLowerCase().endsWith('.pdf')) { toast.error('Solo se admiten archivos PDF'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('PDF demasiado grande (máx. 5MB)'); return; }
 
     setParsing(true);
     try {
-      // 1. Upload to temp path
-      const tempPath = `invoices/${caseId}/temp_${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('energy-documents').upload(tempPath, file, { upsert: true });
-      if (uploadError) throw new Error('Error subiendo PDF');
+      // 1. Read file as base64 client-side (no storage URL needed)
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      let binary = '';
+      for (let i = 0; i < uint8.length; i++) {
+        binary += String.fromCharCode(uint8[i]);
+      }
+      const pdfBase64 = btoa(binary);
 
-      const { data: urlData } = supabase.storage.from('energy-documents').getPublicUrl(tempPath);
-
-      // 2. Call parser
+      // 2. Call parser with base64 payload
       const { data, error } = await supabase.functions.invoke('energy-invoice-parser', {
-        body: { documentUrl: urlData.publicUrl },
+        body: { pdfBase64 },
       });
       if (error) throw error;
 
@@ -152,7 +155,7 @@ export function CaseInvoicesTab({ caseId }: Props) {
         toast.warning(`⚠️ Confianza baja (${confidence}%). Revisa todos los campos manualmente.`);
       }
 
-      // 5. Create invoice with parsed data
+      // 5. Create invoice with parsed data (no document_url yet - will upload after)
       const invoicePayload: any = {
         billing_start: p.billing_start || null,
         billing_end: p.billing_end || null,
@@ -168,14 +171,14 @@ export function CaseInvoicesTab({ caseId }: Props) {
         vat: p.vat || null,
         other_costs: p.other_costs || null,
         total_amount: p.total_amount || null,
-        document_url: urlData.publicUrl,
         is_validated: false,
       };
 
       const inv = await createInvoice(invoicePayload);
       if (inv) {
+        // 6. Upload the PDF linked to the new invoice
+        await uploadPdf(file, inv.id);
         toast.success(`Factura extraída (confianza: ${confidence}%${warnings.length > 0 ? `, ${warnings.length} alertas` : ''}). Revisa los datos.`);
-        // Always open for review after parsing
         openEdit({ ...inv, ...invoicePayload });
       }
     } catch (err: any) {
@@ -192,7 +195,14 @@ export function CaseInvoicesTab({ caseId }: Props) {
       setParsing(false);
       if (parseFileRef.current) parseFileRef.current.value = '';
     }
-  }, [caseId, createInvoice, isDuplicate]);
+  }, [caseId, createInvoice, uploadPdf, isDuplicate]);
+
+  // Open document with signed URL
+  const handleOpenDocument = useCallback(async (docPath: string) => {
+    const url = await getSignedUrl(docPath);
+    if (url) window.open(url, '_blank');
+    else toast.error('No se pudo obtener acceso al documento');
+  }, [getSignedUrl]);
 
   if (loading && invoices.length === 0) return <div className="p-8 text-center text-sm text-muted-foreground">Cargando facturas...</div>;
 
@@ -263,7 +273,7 @@ export function CaseInvoicesTab({ caseId }: Props) {
                   <span>{inv.is_validated ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}</span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100">
                     {inv.document_url && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); window.open(inv.document_url!, '_blank'); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); handleOpenDocument(inv.document_url!); }}>
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}

@@ -35,7 +35,7 @@ const emptyForm = {
 };
 
 export function CaseContractsTab({ caseId }: Props) {
-  const { contracts, loading, fetchContracts, createContract, updateContract, deleteContract, uploadPdf } = useEnergyContracts(caseId);
+  const { contracts, loading, fetchContracts, createContract, updateContract, deleteContract, uploadPdf, getSignedUrl } = useEnergyContracts(caseId);
   const [showDialog, setShowDialog] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -87,7 +87,14 @@ export function CaseContractsTab({ caseId }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }, [uploadPdf]);
 
-  // AI Contract Analysis — sends structured data + PDF URL for server-side extraction
+  // Open document with signed URL
+  const handleOpenDocument = useCallback(async (filePath: string) => {
+    const url = await getSignedUrl(filePath);
+    if (url) window.open(url, '_blank');
+    else toast.error('No se pudo obtener acceso al documento');
+  }, [getSignedUrl]);
+
+  // AI Contract Analysis — sends structured data + PDF for server-side extraction
   const handleAiAnalysis = useCallback(async (contract: EnergyContract) => {
     const contractTextContent = (contract as any).contract_text || '';
     const hasStructuredData = contract.supplier || contract.tariff_name || contract.start_date;
@@ -113,10 +120,17 @@ export function CaseContractsTab({ caseId }: Props) {
         contractTextContent ? `\nTEXTO COMPLETO DEL CONTRATO:\n${contractTextContent}` : '',
       ].filter(Boolean).join('\n');
 
+      // If there's a PDF, get a signed URL for server-side download
+      let contractSignedUrl: string | undefined;
+      if (hasPdfUrl && contract.signed_document_url) {
+        const signedUrl = await getSignedUrl(contract.signed_document_url);
+        if (signedUrl) contractSignedUrl = signedUrl;
+      }
+
       const { data, error } = await supabase.functions.invoke('energy-contract-analyzer', {
         body: { 
           contractText: structuredText,
-          contractUrl: hasPdfUrl ? contract.signed_document_url : undefined,
+          contractUrl: contractSignedUrl,
         }
       });
 
@@ -201,7 +215,7 @@ export function CaseContractsTab({ caseId }: Props) {
                   </span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100">
                     {c.signed_document_url && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); window.open(c.signed_document_url!, '_blank'); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); handleOpenDocument(c.signed_document_url!); }}>
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}

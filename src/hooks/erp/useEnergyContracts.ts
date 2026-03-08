@@ -81,16 +81,43 @@ export function useEnergyContracts(caseId: string | null) {
   }, []);
 
   const uploadPdf = useCallback(async (file: File, contractId: string) => {
+    if (!caseId) return null;
     const path = `contracts/${caseId}/${contractId}/${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('energy-documents').upload(path, file, { upsert: true });
     if (uploadError) { toast.error('Error subiendo PDF'); return null; }
-    const { data: urlData } = supabase.storage.from('energy-documents').getPublicUrl(path);
-    await updateContract(contractId, { signed_document_url: urlData.publicUrl });
-    return urlData.publicUrl;
+
+    // Store the internal path (not a public URL)
+    await updateContract(contractId, { signed_document_url: path } as any);
+
+    // Register in document audit trail
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('energy_document_registry' as any).insert([{
+      case_id: caseId,
+      document_type: 'contract',
+      file_path: path,
+      file_name: file.name,
+      file_size_bytes: file.size,
+      mime_type: file.type || 'application/pdf',
+      uploaded_by: user?.id,
+      linked_entity_id: contractId,
+      linked_entity_type: 'energy_contracts',
+      status: 'active',
+    }]);
+
+    return path;
   }, [caseId, updateContract]);
+
+  /** Get a short-lived signed URL for a document */
+  const getSignedUrl = useCallback(async (filePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from('energy-documents')
+      .createSignedUrl(filePath, 300); // 5 min expiry
+    if (error) { console.error('[getSignedUrl] error:', error); return null; }
+    return data.signedUrl;
+  }, []);
 
   useEffect(() => { fetchContracts(); }, [fetchContracts]);
 
-  return { contracts, loading, fetchContracts, createContract, updateContract, deleteContract, uploadPdf };
+  return { contracts, loading, fetchContracts, createContract, updateContract, deleteContract, uploadPdf, getSignedUrl };
 }

@@ -18042,6 +18042,62 @@ export type Database = {
           },
         ]
       }
+      energy_document_registry: {
+        Row: {
+          case_id: string
+          created_at: string
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size_bytes: number | null
+          id: string
+          linked_entity_id: string | null
+          linked_entity_type: string | null
+          mime_type: string | null
+          status: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size_bytes?: number | null
+          id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          mime_type?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          id?: string
+          linked_entity_id?: string | null
+          linked_entity_type?: string | null
+          mime_type?: string | null
+          status?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_document_registry_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energy_indexed_prices: {
         Row: {
           created_at: string
@@ -75544,6 +75600,10 @@ export type Database = {
         }
         Returns: string
       }
+      energy_doc_path_to_case_id: {
+        Args: { file_path: string }
+        Returns: string
+      }
       erp_account_balance: {
         Args: {
           p_account_id: string
@@ -76326,6 +76386,10 @@ export type Database = {
       }
       user_belongs_to_org: {
         Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_can_access_energy_document: {
+        Args: { file_path: string }
         Returns: boolean
       }
       user_has_crm_workspace_access: {
