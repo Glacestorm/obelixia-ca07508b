@@ -9,7 +9,7 @@
 | 2 - Federated Mesh | 🔲 Pendiente | Sincronización CRDT Multi-Sede |
 | 3 - AI Pricing | ✅ Completada | Tablas DB + Edge Function + Hook + UI Panel |
 | 4 - Marketplace | 🔲 Pendiente | Extensiones de Terceros |
-| 5 - Digital Twin | 🔲 Pendiente | Réplica Virtual de Instalación |
+| 5 - Digital Twin | ✅ Completada | Tablas DB + Edge Function + Hook + UI Panel |
 
 ## Implementado
 
@@ -28,7 +28,16 @@
 - **Hook `useAIUsagePricing`**: recordAIDecision, fetchUsageSummary, generateInvoice, simulateCost
 - **UI `AIUsagePricingPanel`**: 4 tabs (Resumen con gráficos Recharts, Precios con 14 reglas, Simulador de costes interactivo, Facturas con generación)
 - **Tab "IA"** en InstallationDetailPanel (8 tabs total)
-- **14 tipos de decisión IA** con pricing granular: recálculo IRPF, optimización nómina, análisis competencias, sucesión, churn, forecast, anomalías, compliance, documentos, ventas, inventario, lead scoring, ESG, asistente general
+- **14 tipos de decisión IA** con pricing granular
+
+### Fase 5 — Digital Twin de Instalación
+- **Tablas**: `digital_twins`, `twin_snapshots`, `twin_simulations`
+- **Edge Function `digital-twin-engine`**: 5 acciones (create_twin, sync_twin, simulate_update, run_diagnostic, compare_states)
+- **Hook `useDigitalTwin`**: createTwin, syncTwin, simulateUpdate, runDiagnostic, compareStates
+- **UI `DigitalTwinPanel`**: 4 tabs (Estado con métricas y comparación, Simular updates, Snapshots timeline, Diagnóstico remoto completo)
+- **Tab "Twin"** en InstallationDetailPanel (9 tabs total)
+- **Métricas**: CPU, RAM, Disco, Latencia, Divergencia twin↔producción
+- **Diagnóstico remoto**: salud general, seguridad, cuellos de botella, optimizaciones
 
 ## Pendiente
 
@@ -41,8 +50,3 @@
 - Tablas: marketplace_extensions, marketplace_developers, marketplace_purchases, marketplace_reviews
 - Edge Function: marketplace-manager
 - UI: catálogo, detalle, panel developer, revenue dashboard
-
-### Fase 5 — Digital Twin
-- Tablas: digital_twins, twin_snapshots, twin_simulations
-- Edge Function: digital-twin-engine
-- UI: vista comparativa, simulador de updates, diagnóstico remoto

@@ -297,6 +297,20 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
             <SelfHealingPanel installation={installation} />
           </TabsContent>
 
+          {/* === DIGITAL TWIN TAB === */}
+          <TabsContent value="twin">
+            <DigitalTwinPanel
+              installationId={installation.id}
+              installationData={{
+                installation_name: installation.installation_name,
+                core_version: installation.core_version,
+                platform: installation.platform,
+                environment: installation.environment,
+                update_channel: installation.update_channel,
+              }}
+            />
+          </TabsContent>
+
           {/* === UPDATES/VERSIONS TAB === */}
           <TabsContent value="updates">
             <div className="flex items-center justify-between mb-4">
