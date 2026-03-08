@@ -126,21 +126,23 @@ export function useUsageBilling() {
       const unitPrice = rule?.unit_price || 0;
       const quantity = params.quantity || 1;
 
+      const insertData: Record<string, unknown> = {
+        installation_id: params.installation_id,
+        module_key: params.module_key,
+        event_type: 'usage',
+        event_name: params.event_name,
+        quantity,
+        unit_price: unitPrice,
+        total_amount: unitPrice * quantity,
+        currency: rule?.currency || 'EUR',
+        billing_period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+        billing_period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
+        metadata: params.metadata || {},
+      };
+
       const { error } = await supabase
         .from('usage_billing_events')
-        .insert({
-          installation_id: params.installation_id,
-          module_key: params.module_key,
-          event_type: 'usage',
-          event_name: params.event_name,
-          quantity,
-          unit_price: unitPrice,
-          total_amount: unitPrice * quantity,
-          currency: rule?.currency || 'EUR',
-          billing_period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-          billing_period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
-          metadata: params.metadata || {},
-        } as any);
+        .insert(insertData as any);
 
       if (error) throw error;
       return true;
