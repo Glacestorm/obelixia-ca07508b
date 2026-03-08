@@ -5,3 +5,4 @@ export { HRPremiumSettingsPanel } from './HRPremiumSettingsPanel';
 export { HRPremiumHealthCheckPanel } from './HRPremiumHealthCheckPanel';
 export { HRPremiumExportPanel } from './HRPremiumExportPanel';
 export { HRPremiumHelpCenter } from './HRPremiumHelpCenter';
+export { HROrchestrationPanel } from './HROrchestrationPanel';
