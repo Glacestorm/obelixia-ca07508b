@@ -75,9 +75,12 @@ export function HRWorkforcePlanningPanel({ companyId }: Props) {
             </div>
             <div>
               <CardTitle className="text-base">Workforce Planning & Scenario Studio</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Planificación estratégica de plantilla con simulación IA
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Planificación estratégica de plantilla con simulación IA
+                </p>
+                <DataSourceBadge source={resolveDataSource(hasRealData)} lastUpdated={new Date()} compact />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
