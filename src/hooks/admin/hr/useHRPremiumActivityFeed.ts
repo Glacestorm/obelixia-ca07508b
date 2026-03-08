@@ -95,7 +95,7 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Contrato "${r.title || r.contract_type || ''}" — ${r.status || 'generado'}`,
   },
   {
-    module: 'legal', table: 'erp_hr_legal_clause_library',
+    module: 'legal', table: 'erp_hr_legal_clauses',
     actionLabel: 'Cláusula legal',
     descriptionFn: (r) => `Cláusula "${r.name || r.title || ''}" añadida a la biblioteca`,
   },
