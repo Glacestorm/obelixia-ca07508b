@@ -58,7 +58,7 @@ import { HRInternalMarketplacePanel } from './talent/HRInternalMarketplacePanel'
 import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
 import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
 import { HRTimeClockPanel } from './HRTimeClockPanel';
-import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel } from './enterprise';
+import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard } from './enterprise';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
