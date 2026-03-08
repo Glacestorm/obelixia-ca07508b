@@ -24575,6 +24575,65 @@ export type Database = {
           },
         ]
       }
+      erp_hr_burnout_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          contributing_factors: Json | null
+          created_at: string | null
+          employee_id: string
+          entity_id: string | null
+          id: string
+          recommended_actions: Json | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          risk_level: string
+          risk_score: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          contributing_factors?: Json | null
+          created_at?: string | null
+          employee_id: string
+          entity_id?: string | null
+          id?: string
+          recommended_actions?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          risk_level?: string
+          risk_score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          contributing_factors?: Json | null
+          created_at?: string | null
+          employee_id?: string
+          entity_id?: string | null
+          id?: string
+          recommended_actions?: Json | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          risk_level?: string
+          risk_score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_burnout_alerts_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_calendar_entries: {
         Row: {
           calendar_id: string
@@ -35104,6 +35163,369 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_wellbeing_assessments: {
+        Row: {
+          assessed_by: string | null
+          assessment_type: string
+          burnout_risk: string | null
+          created_at: string | null
+          dimensions: Json | null
+          employee_id: string
+          engagement_level: number | null
+          entity_id: string | null
+          id: string
+          notes: string | null
+          overall_score: number | null
+          satisfaction_level: number | null
+          stress_level: number | null
+          updated_at: string | null
+          work_life_balance: number | null
+        }
+        Insert: {
+          assessed_by?: string | null
+          assessment_type?: string
+          burnout_risk?: string | null
+          created_at?: string | null
+          dimensions?: Json | null
+          employee_id: string
+          engagement_level?: number | null
+          entity_id?: string | null
+          id?: string
+          notes?: string | null
+          overall_score?: number | null
+          satisfaction_level?: number | null
+          stress_level?: number | null
+          updated_at?: string | null
+          work_life_balance?: number | null
+        }
+        Update: {
+          assessed_by?: string | null
+          assessment_type?: string
+          burnout_risk?: string | null
+          created_at?: string | null
+          dimensions?: Json | null
+          employee_id?: string
+          engagement_level?: number | null
+          entity_id?: string | null
+          id?: string
+          notes?: string | null
+          overall_score?: number | null
+          satisfaction_level?: number | null
+          stress_level?: number | null
+          updated_at?: string | null
+          work_life_balance?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_wellbeing_assessments_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_wellbeing_kpis: {
+        Row: {
+          absenteeism_rate: number | null
+          avg_satisfaction: number | null
+          avg_stress: number | null
+          avg_work_life_balance: number | null
+          burnout_rate: number | null
+          calculated_at: string | null
+          created_at: string | null
+          engagement_index: number | null
+          enps_score: number | null
+          entity_id: string | null
+          id: string
+          period: string
+          survey_participation: number | null
+          top_concerns: Json | null
+          trends: Json | null
+          voluntary_turnover: number | null
+          wellness_adoption: number | null
+        }
+        Insert: {
+          absenteeism_rate?: number | null
+          avg_satisfaction?: number | null
+          avg_stress?: number | null
+          avg_work_life_balance?: number | null
+          burnout_rate?: number | null
+          calculated_at?: string | null
+          created_at?: string | null
+          engagement_index?: number | null
+          enps_score?: number | null
+          entity_id?: string | null
+          id?: string
+          period: string
+          survey_participation?: number | null
+          top_concerns?: Json | null
+          trends?: Json | null
+          voluntary_turnover?: number | null
+          wellness_adoption?: number | null
+        }
+        Update: {
+          absenteeism_rate?: number | null
+          avg_satisfaction?: number | null
+          avg_stress?: number | null
+          avg_work_life_balance?: number | null
+          burnout_rate?: number | null
+          calculated_at?: string | null
+          created_at?: string | null
+          engagement_index?: number | null
+          enps_score?: number | null
+          entity_id?: string | null
+          id?: string
+          period?: string
+          survey_participation?: number | null
+          top_concerns?: Json | null
+          trends?: Json | null
+          voluntary_turnover?: number | null
+          wellness_adoption?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_wellbeing_kpis_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_wellbeing_survey_responses: {
+        Row: {
+          answers: Json | null
+          completion_time_seconds: number | null
+          created_at: string | null
+          id: string
+          respondent_id: string | null
+          sentiment_score: number | null
+          submitted_at: string | null
+          survey_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          completion_time_seconds?: number | null
+          created_at?: string | null
+          id?: string
+          respondent_id?: string | null
+          sentiment_score?: number | null
+          submitted_at?: string | null
+          survey_id: string
+        }
+        Update: {
+          answers?: Json | null
+          completion_time_seconds?: number | null
+          created_at?: string | null
+          id?: string
+          respondent_id?: string | null
+          sentiment_score?: number | null
+          submitted_at?: string | null
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_wellbeing_survey_responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_wellbeing_surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_wellbeing_surveys: {
+        Row: {
+          anonymized: boolean | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          entity_id: string | null
+          frequency: string | null
+          id: string
+          questions: Json | null
+          response_rate: number | null
+          results_summary: Json | null
+          starts_at: string | null
+          status: string | null
+          survey_type: string
+          target_departments: string[] | null
+          target_roles: string[] | null
+          title: string
+          total_responses: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          anonymized?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          entity_id?: string | null
+          frequency?: string | null
+          id?: string
+          questions?: Json | null
+          response_rate?: number | null
+          results_summary?: Json | null
+          starts_at?: string | null
+          status?: string | null
+          survey_type?: string
+          target_departments?: string[] | null
+          target_roles?: string[] | null
+          title: string
+          total_responses?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          anonymized?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          entity_id?: string | null
+          frequency?: string | null
+          id?: string
+          questions?: Json | null
+          response_rate?: number | null
+          results_summary?: Json | null
+          starts_at?: string | null
+          status?: string | null
+          survey_type?: string
+          target_departments?: string[] | null
+          target_roles?: string[] | null
+          title?: string
+          total_responses?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_wellbeing_surveys_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_wellness_enrollments: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          employee_id: string
+          enrolled_at: string | null
+          feedback: string | null
+          id: string
+          program_id: string
+          rating: number | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          employee_id: string
+          enrolled_at?: string | null
+          feedback?: string | null
+          id?: string
+          program_id: string
+          rating?: number | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          employee_id?: string
+          enrolled_at?: string | null
+          feedback?: string | null
+          id?: string
+          program_id?: string
+          rating?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_wellness_enrollments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_wellness_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_wellness_programs: {
+        Row: {
+          benefits: Json | null
+          budget: number | null
+          category: string
+          created_at: string | null
+          currency: string | null
+          current_participants: number | null
+          description: string | null
+          ends_at: string | null
+          entity_id: string | null
+          id: string
+          kpis: Json | null
+          max_participants: number | null
+          name: string
+          provider: string | null
+          satisfaction_score: number | null
+          schedule: Json | null
+          starts_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          benefits?: Json | null
+          budget?: number | null
+          category?: string
+          created_at?: string | null
+          currency?: string | null
+          current_participants?: number | null
+          description?: string | null
+          ends_at?: string | null
+          entity_id?: string | null
+          id?: string
+          kpis?: Json | null
+          max_participants?: number | null
+          name: string
+          provider?: string | null
+          satisfaction_score?: number | null
+          schedule?: Json | null
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          benefits?: Json | null
+          budget?: number | null
+          category?: string
+          created_at?: string | null
+          currency?: string | null
+          current_participants?: number | null
+          description?: string | null
+          ends_at?: string | null
+          entity_id?: string | null
+          id?: string
+          kpis?: Json | null
+          max_participants?: number | null
+          name?: string
+          provider?: string | null
+          satisfaction_score?: number | null
+          schedule?: Json | null
+          starts_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_wellness_programs_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
             referencedColumns: ["id"]
           },
         ]
