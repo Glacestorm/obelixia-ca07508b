@@ -318,6 +318,7 @@ export function HRModule() {
         {activeModule === 'approval-inbox' && <HRApprovalInbox companyId={demoCompanyId} />}
         {activeModule === 'sla-dashboard' && <HRSLADashboard companyId={demoCompanyId} />}
         {activeModule === 'compensation-suite' && <HRCompensationSuitePanel companyId={demoCompanyId} />}
+        {activeModule === 'talent-intelligence' && <HRTalentIntelligencePanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
