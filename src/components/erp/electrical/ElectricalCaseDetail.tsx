@@ -166,7 +166,16 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
         </TabsContent>
 
         <TabsContent value="recomendacion" className="mt-4">
-          <CaseRecommendationTab caseId={caseId} />
+          <div className="space-y-3">
+            {onOpenSimulator && (
+              <div className="flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => onOpenSimulator(caseId)} className="gap-1.5">
+                  <GitCompareArrows className="h-4 w-4" /> Simular tarifas con datos del expediente
+                </Button>
+              </div>
+            )}
+            <CaseRecommendationTab caseId={caseId} />
+          </div>
         </TabsContent>
 
         <TabsContent value="informe" className="mt-4">
