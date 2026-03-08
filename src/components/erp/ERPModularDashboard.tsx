@@ -65,12 +65,10 @@ import { GaliaDashboard } from '@/components/verticals/galia';
 import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
-import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
-import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench } from 'lucide-react';
+import { ArrowRightLeft } from 'lucide-react';
 
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
