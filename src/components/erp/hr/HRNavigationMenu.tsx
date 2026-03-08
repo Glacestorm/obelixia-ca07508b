@@ -119,6 +119,20 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
       ]
     },
     {
+      id: 'enterprise',
+      label: 'Enterprise',
+      icon: Building2,
+      items: [
+        { id: 'enterprise-dashboard', label: 'Command Center', icon: TrendingUp },
+        { id: 'legal-entities', label: 'Entidades Legales', icon: Building2 },
+        { id: 'work-centers', label: 'Centros de Trabajo', icon: MapPin },
+        { id: 'org-structure', label: 'Organigrama', icon: Network },
+        { id: 'work-calendars', label: 'Calendarios', icon: Calendar },
+        { id: 'enterprise-roles', label: 'Roles y Permisos', icon: Lock },
+        { id: 'audit-trail', label: 'Auditoría', icon: ClipboardList },
+      ]
+    },
+    {
       id: 'tools',
       label: 'Herramientas',
       icon: Brain,
