@@ -338,7 +338,7 @@ export function useHRComplianceAutomation(companyId?: string) {
         // Create alerts for critical findings
         if (data.audit.findings) {
           for (const finding of data.audit.findings.filter((f: any) => f.severity === 'critical' || f.severity === 'high')) {
-            await supabase.from('erp_hr_compliance_alerts').insert({
+            await supabase.from('erp_hr_compliance_alerts' as any).insert({
               company_id: companyId,
               framework_id: frameworkId || null,
               alert_type: 'audit_finding',
