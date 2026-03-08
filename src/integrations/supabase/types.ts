@@ -63523,6 +63523,74 @@ export type Database = {
           },
         ]
       }
+      usage_billing_events: {
+        Row: {
+          billed: boolean
+          billed_at: string | null
+          billing_period_end: string | null
+          billing_period_start: string | null
+          created_at: string
+          currency: string
+          event_name: string
+          event_type: string
+          id: string
+          installation_id: string
+          invoice_id: string | null
+          metadata: Json | null
+          module_key: string
+          quantity: number
+          total_amount: number | null
+          unit_price: number | null
+          user_id: string | null
+        }
+        Insert: {
+          billed?: boolean
+          billed_at?: string | null
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          created_at?: string
+          currency?: string
+          event_name: string
+          event_type?: string
+          id?: string
+          installation_id: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          module_key: string
+          quantity?: number
+          total_amount?: number | null
+          unit_price?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          billed?: boolean
+          billed_at?: string | null
+          billing_period_end?: string | null
+          billing_period_start?: string | null
+          created_at?: string
+          currency?: string
+          event_name?: string
+          event_type?: string
+          id?: string
+          installation_id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          module_key?: string
+          quantity?: number
+          total_amount?: number | null
+          unit_price?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_billing_events_installation_id_fkey"
+            columns: ["installation_id"]
+            isOneToOne: false
+            referencedRelation: "client_installations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_billing_rules: {
         Row: {
           action_key: string
@@ -66337,6 +66405,21 @@ export type Database = {
           sanction_max: number
           sanction_type: string
           status: string
+        }[]
+      }
+      get_usage_billing_summary: {
+        Args: {
+          p_installation_id: string
+          p_period_end?: string
+          p_period_start?: string
+        }
+        Returns: {
+          currency: string
+          event_count: number
+          event_name: string
+          module_key: string
+          total_amount: number
+          total_quantity: number
         }[]
       }
       get_user_oficina: { Args: { _user_id: string }; Returns: string }
