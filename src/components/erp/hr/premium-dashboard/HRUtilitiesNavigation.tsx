@@ -66,6 +66,7 @@ const CATEGORIES: UtilityCategory[] = [
       { id: 'analytics-bi', label: 'Analytics BI', description: 'Dashboard ejecutivo cross-module con IA predictiva', icon: <BarChart3 className="h-4 w-4" /> },
       { id: 'reporting-engine' as UtilitySection, label: 'Reporting Engine', description: 'Reportes ejecutivos avanzados con datos reales', icon: <FileText className="h-4 w-4" /> },
       { id: 'regulatory-reporting' as UtilitySection, label: 'Compliance Regulatorio', description: 'Informes regulatorios: Igualdad, GDPR, EU AI Act, Auditoría', icon: <Shield className="h-4 w-4" /> },
+      { id: 'board-pack' as UtilitySection, label: 'Board Pack / Comité', description: 'Packs ejecutivos consolidados para consejos y comités de dirección', icon: <FileText className="h-4 w-4" /> },
       { id: 'ai-hybrid', label: 'IA Híbrida', description: 'Dashboard unificado de inteligencia artificial', icon: <Brain className="h-4 w-4" /> },
       { id: 'compliance-automation', label: 'Cumplimiento', description: 'Motor automatizado: GDPR, LOPDGDD, Igualdad, EU AI Act', icon: <Shield className="h-4 w-4" /> },
       { id: 'audit', label: 'Auditorías', description: 'Generador de informes de auditoría', icon: <FileText className="h-4 w-4" /> },
