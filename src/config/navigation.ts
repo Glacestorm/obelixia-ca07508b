@@ -131,6 +131,16 @@ export const headerNavigation: NavItem[] = [
         description: 'Opciones de instalación',
         descriptionKey: 'nav.deployment.desc',
       },
+      {
+        id: 'installation',
+        label: 'Instalación',
+        labelKey: 'nav.installation',
+        href: '/store/installation',
+        icon: Download,
+        description: 'Centro de instalación ERP',
+        descriptionKey: 'nav.installation.desc',
+        badge: 'Nuevo',
+      },
     ],
   },
   {
