@@ -26293,6 +26293,75 @@ export type Database = {
           },
         ]
       }
+      erp_hr_compliance_alerts: {
+        Row: {
+          alert_type: string
+          checklist_item_id: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          framework_id: string | null
+          id: string
+          regulation_reference: string | null
+          remediation_action: string | null
+          remediation_deadline: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          title: string
+        }
+        Insert: {
+          alert_type?: string
+          checklist_item_id?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          framework_id?: string | null
+          id?: string
+          regulation_reference?: string | null
+          remediation_action?: string | null
+          remediation_deadline?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          checklist_item_id?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          framework_id?: string | null
+          id?: string
+          regulation_reference?: string | null
+          remediation_action?: string | null
+          remediation_deadline?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_compliance_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_compliance_alerts_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_compliance_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_compliance_audits: {
         Row: {
           actual_end: string | null
@@ -26378,41 +26447,71 @@ export type Database = {
       }
       erp_hr_compliance_checklist: {
         Row: {
+          auto_check_function: string | null
+          auto_check_result: Json | null
           communication_id: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string | null
+          due_date: string | null
+          evidence_description: string | null
+          evidence_required: boolean | null
+          evidence_urls: string[] | null
+          framework_id: string | null
           id: string
           is_mandatory: boolean | null
           item_order: number | null
           item_text: string
+          last_auto_check_at: string | null
           notes: string | null
+          requirement_code: string | null
+          responsible_role: string | null
           status: string | null
           template_id: string | null
         }
         Insert: {
+          auto_check_function?: string | null
+          auto_check_result?: Json | null
           communication_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string | null
+          due_date?: string | null
+          evidence_description?: string | null
+          evidence_required?: boolean | null
+          evidence_urls?: string[] | null
+          framework_id?: string | null
           id?: string
           is_mandatory?: boolean | null
           item_order?: number | null
           item_text: string
+          last_auto_check_at?: string | null
           notes?: string | null
+          requirement_code?: string | null
+          responsible_role?: string | null
           status?: string | null
           template_id?: string | null
         }
         Update: {
+          auto_check_function?: string | null
+          auto_check_result?: Json | null
           communication_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string | null
+          due_date?: string | null
+          evidence_description?: string | null
+          evidence_required?: boolean | null
+          evidence_urls?: string[] | null
+          framework_id?: string | null
           id?: string
           is_mandatory?: boolean | null
           item_order?: number | null
           item_text?: string
+          last_auto_check_at?: string | null
           notes?: string | null
+          requirement_code?: string | null
+          responsible_role?: string | null
           status?: string | null
           template_id?: string | null
         }
@@ -26425,10 +26524,88 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "erp_hr_compliance_checklist_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_compliance_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "erp_hr_compliance_checklist_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_communication_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_compliance_frameworks: {
+        Row: {
+          category: string
+          code: string
+          company_id: string
+          compliance_score: number
+          created_at: string
+          description: string | null
+          effective_date: string | null
+          expiry_date: string | null
+          id: string
+          is_active: boolean
+          jurisdiction: string
+          last_assessed_at: string | null
+          met_requirements: number
+          name: string
+          source_url: string | null
+          total_requirements: number
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          category?: string
+          code: string
+          company_id: string
+          compliance_score?: number
+          created_at?: string
+          description?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          jurisdiction?: string
+          last_assessed_at?: string | null
+          met_requirements?: number
+          name: string
+          source_url?: string | null
+          total_requirements?: number
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          category?: string
+          code?: string
+          company_id?: string
+          compliance_score?: number
+          created_at?: string
+          description?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          jurisdiction?: string
+          last_assessed_at?: string | null
+          met_requirements?: number
+          name?: string
+          source_url?: string | null
+          total_requirements?: number
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_compliance_frameworks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
