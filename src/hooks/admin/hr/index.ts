@@ -302,3 +302,7 @@ export { useHROrchestrationEmitter } from './useHROrchestrationEmitter';
 export type { EmitResult } from './useHROrchestrationEmitter';
 export { useHROrchestrationBridge } from './useHROrchestrationBridge';
 export type { ModuleEmitHelpers } from './useHROrchestrationBridge';
+
+// P11 - Compliance Automation Engine
+export { useHRComplianceAutomation } from './useHRComplianceAutomation';
+export type { ComplianceFramework, ComplianceChecklistItem, ComplianceAudit, ComplianceAlert, ComplianceStats } from './useHRComplianceAutomation';
