@@ -70,11 +70,11 @@ import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButt
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database } from 'lucide-react';
+import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell } from 'lucide-react';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
-import { HRPremiumExecutiveDashboard } from './hr/premium-dashboard';
+import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel } from './hr/premium-dashboard';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -654,10 +654,14 @@ function ERPModularDashboardContent() {
               <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
             </div>
             <Tabs defaultValue="premium-dash" className="space-y-4">
-              <TabsList className="grid w-full max-w-2xl grid-cols-4">
+              <TabsList className="grid w-full max-w-3xl grid-cols-5">
                 <TabsTrigger value="premium-dash" className="gap-2">
                   <Activity className="h-4 w-4" />
                   Premium HR
+                </TabsTrigger>
+                <TabsTrigger value="premium-alerts" className="gap-2">
+                  <Bell className="h-4 w-4" />
+                  Alertas
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="gap-2">
                   <FileText className="h-4 w-4" />
@@ -675,6 +679,10 @@ function ERPModularDashboardContent() {
 
               <TabsContent value="premium-dash">
                 <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
+              </TabsContent>
+
+              <TabsContent value="premium-alerts">
+                <HRPremiumAlertsPanel companyId={currentCompany?.id} />
               </TabsContent>
 
               <TabsContent value="audit" className="space-y-4">

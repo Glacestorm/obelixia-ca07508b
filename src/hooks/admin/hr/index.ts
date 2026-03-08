@@ -290,3 +290,7 @@ export type { SeedPhase } from './useHRPremiumReseed';
 // P9.7 - Premium Executive Dashboard
 export { useHRPremiumDashboard } from './useHRPremiumDashboard';
 export type { PremiumModuleStatus, PremiumKPI, PremiumDashboardData } from './useHRPremiumDashboard';
+
+// P9.8 - Premium Alerts Engine
+export { useHRPremiumAlerts } from './useHRPremiumAlerts';
+export type { AlertSeverity, AlertSource, AlertStatus, PremiumAlert, AlertStats } from './useHRPremiumAlerts';
