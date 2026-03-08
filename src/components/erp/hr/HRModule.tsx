@@ -312,6 +312,9 @@ export function HRModule() {
         {activeModule === 'work-calendars' && <HRCalendarsPanel companyId={demoCompanyId} />}
         {activeModule === 'enterprise-roles' && <HRRolesPermissionsPanel companyId={demoCompanyId} />}
         {activeModule === 'audit-trail' && <HRAuditTrailPanel companyId={demoCompanyId} />}
+        {activeModule === 'workflow-designer' && <HRWorkflowDesigner companyId={demoCompanyId} />}
+        {activeModule === 'approval-inbox' && <HRApprovalInbox companyId={demoCompanyId} />}
+        {activeModule === 'sla-dashboard' && <HRSLADashboard companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
