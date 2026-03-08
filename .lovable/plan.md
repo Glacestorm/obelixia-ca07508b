@@ -8,7 +8,7 @@
 | 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
 | 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
 | 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 4 - Talent Intelligence | 📋 Pendiente | — |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
 | 5 - Compliance Enterprise | 📋 Pendiente | — |
 | 6 - Wellbeing Enterprise | 📋 Pendiente | — |
 | 7 - ESG Social + Self-Service | 📋 Pendiente | — |

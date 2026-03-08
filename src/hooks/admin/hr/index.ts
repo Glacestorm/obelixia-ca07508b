@@ -183,3 +183,10 @@ export type {
   MeritCycle, MeritProposal, BonusCycle, SalaryLetter,
   PayEquitySnapshot, CompensationStats
 } from './useHRCompensationSuite';
+
+// Phase Enterprise - Talent Intelligence
+export { useHRTalentIntelligence } from './useHRTalentIntelligence';
+export type {
+  SkillNode, CareerPath as TalentCareerPath, TalentPool, MentoringMatch,
+  GigAssignment, TalentAnalysis, TalentStats
+} from './useHRTalentIntelligence';
