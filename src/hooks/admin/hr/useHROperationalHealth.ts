@@ -74,6 +74,9 @@ const HR_EDGE_FUNCTIONS = [
   'hr-orchestration-engine',
 ];
 
+// Use untyped client for tables not yet in generated types
+const db = supabase as any;
+
 export function useHROperationalHealth(companyId?: string) {
   const [health, setHealth] = useState<HRHealthStatus>({
     edgeFunctions: HR_EDGE_FUNCTIONS.map(name => ({ name, status: 'unknown' as const })),
@@ -92,10 +95,10 @@ export function useHROperationalHealth(companyId?: string) {
   const [isLoading, setIsLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const checkWebhookFailures = useCallback(async () => {
+  const checkWebhookFailures = useCallback(async (): Promise<WebhookFailure[]> => {
     try {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const query = supabase
+      let query = db
         .from('erp_hr_webhook_deliveries')
         .select('id, webhook_url, event_type, error_message, delivered_at, retry_count')
         .eq('status', 'failed')
@@ -103,7 +106,7 @@ export function useHROperationalHealth(companyId?: string) {
         .order('delivered_at', { ascending: false })
         .limit(20);
 
-      if (companyId) query.eq('company_id', companyId);
+      if (companyId) query = query.eq('company_id', companyId);
       const { data } = await query;
 
       return (data || []).map((d: any) => ({
@@ -119,7 +122,7 @@ export function useHROperationalHealth(companyId?: string) {
     }
   }, [companyId]);
 
-  const checkRateLimits = useCallback(async () => {
+  const checkRateLimits = useCallback(async (): Promise<RateLimitSnapshot[]> => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const limits: Record<string, number> = {
@@ -135,13 +138,13 @@ export function useHROperationalHealth(companyId?: string) {
 
       const results: RateLimitSnapshot[] = [];
       for (const [fn, limit] of Object.entries(limits)) {
-        const query = supabase
+        let query = db
           .from('erp_hr_api_access_log')
           .select('id', { count: 'exact', head: true })
           .eq('endpoint', fn)
           .gte('created_at', `${today}T00:00:00Z`);
 
-        if (companyId) query.eq('company_id', companyId);
+        if (companyId) query = query.eq('company_id', companyId);
         const { count } = await query;
 
         const used = count || 0;
@@ -158,15 +161,15 @@ export function useHROperationalHealth(companyId?: string) {
     }
   }, [companyId]);
 
-  const checkIntegrations = useCallback(async () => {
+  const checkIntegrations = useCallback(async (): Promise<IntegrationHealth[]> => {
     try {
-      const query = supabase
+      let query = db
         .from('erp_hr_integration_configs')
         .select('id, integration_name, provider, status, last_sync_at, error_count')
         .order('updated_at', { ascending: false })
         .limit(20);
 
-      if (companyId) query.eq('company_id', companyId);
+      if (companyId) query = query.eq('company_id', companyId);
       const { data } = await query;
 
       return (data || []).map((d: any) => ({
@@ -190,40 +193,37 @@ export function useHROperationalHealth(companyId?: string) {
     };
 
     try {
-      // Reports
-      const { count: pendingR } = await supabase
+      const { count: pendingR } = await db
         .from('erp_hr_executive_reports')
         .select('id', { count: 'exact', head: true })
         .in('status', ['draft', 'generating']);
       result.pendingReports = pendingR || 0;
 
-      const { count: failedR } = await supabase
+      const { count: failedR } = await db
         .from('erp_hr_executive_reports')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'failed');
       result.failedReports = failedR || 0;
 
-      // Board Packs
-      const { count: pendingBP } = await supabase
+      const { count: pendingBP } = await db
         .from('erp_hr_board_packs')
         .select('id', { count: 'exact', head: true })
         .in('status', ['draft', 'generating']);
       result.pendingBoardPacks = pendingBP || 0;
 
-      const { count: failedBP } = await supabase
+      const { count: failedBP } = await db
         .from('erp_hr_board_packs')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'failed');
       result.failedBoardPacks = failedBP || 0;
 
-      // Regulatory
-      const { count: pendingReg } = await supabase
+      const { count: pendingReg } = await db
         .from('erp_hr_regulatory_reports')
         .select('id', { count: 'exact', head: true })
         .in('status', ['draft', 'generating']);
       result.pendingRegulatory = pendingReg || 0;
 
-      const { count: failedReg } = await supabase
+      const { count: failedReg } = await db
         .from('erp_hr_regulatory_reports')
         .select('id', { count: 'exact', head: true })
         .eq('status', 'failed');
@@ -238,7 +238,7 @@ export function useHROperationalHealth(companyId?: string) {
   const checkOrchestratorErrors = useCallback(async (): Promise<OperationalError[]> => {
     try {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data } = await supabase
+      const { data } = await db
         .from('erp_hr_orchestration_logs')
         .select('id, event_type, details, status, created_at')
         .eq('status', 'error')
@@ -249,7 +249,7 @@ export function useHROperationalHealth(companyId?: string) {
       return (data || []).map((d: any) => ({
         id: d.id,
         source: 'orchestration',
-        message: d.details?.error || d.event_type || 'Unknown error',
+        message: typeof d.details === 'object' && d.details?.error ? d.details.error : (d.event_type || 'Unknown error'),
         severity: 'error' as const,
         timestamp: d.created_at,
         count: 1,
@@ -270,7 +270,6 @@ export function useHROperationalHealth(companyId?: string) {
         checkOrchestratorErrors(),
       ]);
 
-      // Determine overall health
       const hasFailedReports = reporting.failedReports > 0 || reporting.failedBoardPacks > 0 || reporting.failedRegulatory > 0;
       const hasHighRateLimit = rateLimits.some(r => r.percentUsed > 80);
       const hasManyWebhookFailures = webhookFailures.length > 5;
