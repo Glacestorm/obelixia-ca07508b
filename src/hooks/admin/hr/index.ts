@@ -270,3 +270,11 @@ export type {
   CNAESectorProfile, CNAEComplianceRule, CNAEBenchmark,
   CNAERiskAssessment, CNAEIntelligenceStats, CNAEIntelligenceAnalysis
 } from './useHRCNAEIntelligence';
+
+// Premium Phase 8 - Role-Based Experience Ecosystem
+export { useHRRoleExperience } from './useHRRoleExperience';
+export type {
+  RoleExperienceProfile, QuickAction, KPIWidget, RoleDashboard,
+  DashboardWidget, RoleOnboardingStep, UserExperience, RoleAnalytics,
+  RoleExperienceStats, RoleExperienceAnalysis
+} from './useHRRoleExperience';

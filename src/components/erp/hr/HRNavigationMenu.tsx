@@ -121,6 +121,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'digital-twin', label: 'Digital Twin Completo', icon: Layers },
         { id: 'legal-engine', label: 'Legal Engine', icon: Gavel },
         { id: 'cnae-intelligence', label: 'CNAE Intelligence', icon: Building2 },
+        { id: 'role-experience', label: 'Role Experience', icon: UserCog },
       ]
     },
     {

@@ -228,6 +228,78 @@ FORMATO JSON estricto:
 }`;
       userPrompt = `Analiza benchmarks del sector CNAE ${params?.cnae_code}: ${JSON.stringify(params?.current_benchmarks || [])}`;
 
+    } else if (action === 'ai_role_experience') {
+      systemPrompt = `Eres un experto en UX empresarial y diseño de experiencias por rol organizacional. Analizas la madurez de personalización UX en plataformas HR enterprise.
+
+FORMATO JSON estricto:
+{
+  "ux_maturity": "basic|intermediate|advanced|expert",
+  "role_coverage": 0-100,
+  "personalization_depth": "minimal|moderate|deep|comprehensive",
+  "recommendations": [{ "area": "string", "suggestion": "string", "impact": "high|medium|low" }],
+  "adoption_insights": [{ "role": "string", "adoption_rate": 0-100, "top_modules": ["string"] }],
+  "executive_summary": "string"
+}`;
+      userPrompt = `Analiza el ecosistema de experiencia por rol:
+- Perfiles configurados: ${params?.profiles_count || 0} (activos: ${params?.active_count || 0})
+- Roles: ${JSON.stringify(params?.roles || [])}
+- Analytics de uso: ${JSON.stringify(params?.analytics_summary || [])}`;
+
+    } else if (action === 'role_experience_seed_demo') {
+      const profilesData = [
+        { company_id, role_key: 'ceo', role_label: 'CEO / Director General', description: 'Vista ejecutiva con KPIs estratégicos y decisiones de alto nivel', is_active: true, visible_modules: ['dashboard', 'analytics-intelligence', 'workforce-planning', 'compensation-suite', 'esg-selfservice', 'digital-twin', 'fairness-engine'], quick_actions: [{ id: 'qa1', label: 'KPIs Ejecutivos', icon: 'TrendingUp', module: 'dashboard' }, { id: 'qa2', label: 'Workforce Planning', icon: 'Target', module: 'workforce-planning' }, { id: 'qa3', label: 'ESG Report', icon: 'Leaf', module: 'esg-selfservice' }], kpi_widgets: [{ id: 'kpi1', label: 'Headcount', metric_key: 'total_employees', format: 'number' }, { id: 'kpi2', label: 'Rotación', metric_key: 'turnover_rate', format: 'percentage' }, { id: 'kpi3', label: 'Coste Laboral', metric_key: 'labor_cost', format: 'currency' }] },
+        { company_id, role_key: 'hr_director', role_label: 'Director/a de RRHH', description: 'Gestión integral del departamento con acceso a todos los módulos enterprise', is_active: true, visible_modules: ['dashboard', 'employees', 'payroll', 'contracts', 'recruitment', 'performance', 'training', 'analytics', 'compliance-enterprise', 'wellbeing-enterprise', 'compensation-suite', 'talent-intelligence', 'security-governance', 'ai-governance'], quick_actions: [{ id: 'qa1', label: 'Aprobar Nóminas', icon: 'DollarSign', module: 'payroll' }, { id: 'qa2', label: 'Compliance', icon: 'Shield', module: 'compliance-enterprise' }, { id: 'qa3', label: 'Talent Review', icon: 'Users', module: 'talent-intelligence' }, { id: 'qa4', label: 'Wellbeing', icon: 'Heart', module: 'wellbeing-enterprise' }], kpi_widgets: [{ id: 'kpi1', label: 'Pendientes', metric_key: 'pending_approvals', format: 'number' }, { id: 'kpi2', label: 'Compliance', metric_key: 'compliance_score', format: 'percentage' }, { id: 'kpi3', label: 'Satisfacción', metric_key: 'satisfaction', format: 'percentage' }, { id: 'kpi4', label: 'Vacantes', metric_key: 'open_positions', format: 'number' }] },
+        { company_id, role_key: 'hr_manager', role_label: 'Responsable de RRHH', description: 'Operaciones diarias de RRHH con foco en gestión de personas', is_active: true, visible_modules: ['dashboard', 'employees', 'payroll', 'vacations', 'contracts', 'onboarding', 'offboarding', 'documents', 'time-clock', 'departments'], quick_actions: [{ id: 'qa1', label: 'Fichajes', icon: 'Calendar', module: 'time-clock' }, { id: 'qa2', label: 'Vacaciones', icon: 'Calendar', module: 'vacations' }, { id: 'qa3', label: 'Contratos', icon: 'FileText', module: 'contracts' }], kpi_widgets: [{ id: 'kpi1', label: 'Empleados', metric_key: 'total_employees', format: 'number' }, { id: 'kpi2', label: 'Vacaciones Pend.', metric_key: 'pending_vacations', format: 'number' }] },
+        { company_id, role_key: 'team_lead', role_label: 'Team Lead / Responsable de Equipo', description: 'Vista de equipo con foco en rendimiento y disponibilidad', is_active: true, visible_modules: ['dashboard', 'vacations', 'performance', 'training', 'time-clock'], quick_actions: [{ id: 'qa1', label: 'Mi Equipo', icon: 'Users', module: 'employees' }, { id: 'qa2', label: 'Aprobar Vacaciones', icon: 'Calendar', module: 'vacations' }], kpi_widgets: [{ id: 'kpi1', label: 'Equipo', metric_key: 'team_size', format: 'number' }, { id: 'kpi2', label: 'Disponibilidad', metric_key: 'team_availability', format: 'percentage' }] },
+        { company_id, role_key: 'employee', role_label: 'Empleado/a', description: 'Portal de autoservicio con acceso a datos propios', is_active: true, visible_modules: ['vacations', 'documents', 'time-clock', 'training', 'benefits'], quick_actions: [{ id: 'qa1', label: 'Solicitar Vacaciones', icon: 'Calendar', module: 'vacations' }, { id: 'qa2', label: 'Mis Documentos', icon: 'FolderOpen', module: 'documents' }, { id: 'qa3', label: 'Fichar', icon: 'Clock', module: 'time-clock' }], kpi_widgets: [{ id: 'kpi1', label: 'Días Vacaciones', metric_key: 'vacation_days', format: 'number' }, { id: 'kpi2', label: 'Formación', metric_key: 'training_hours', format: 'number' }] },
+        { company_id, role_key: 'auditor', role_label: 'Auditor/a', description: 'Acceso de solo lectura para auditoría y compliance', is_active: true, visible_modules: ['audit-trail', 'compliance-enterprise', 'security-governance', 'ai-governance', 'legal-engine', 'cnae-intelligence'], quick_actions: [{ id: 'qa1', label: 'Audit Trail', icon: 'ClipboardList', module: 'audit-trail' }, { id: 'qa2', label: 'Compliance', icon: 'Shield', module: 'compliance-enterprise' }], kpi_widgets: [{ id: 'kpi1', label: 'Hallazgos', metric_key: 'audit_findings', format: 'number' }, { id: 'kpi2', label: 'Compliance', metric_key: 'compliance_score', format: 'percentage' }] },
+      ];
+      await supabase.from('erp_hr_role_experience_profiles').insert(profilesData as any);
+
+      // Fetch inserted profiles to get IDs
+      const { data: inserted } = await supabase.from('erp_hr_role_experience_profiles').select('id, role_key').eq('company_id', company_id);
+      const profileMap: Record<string, string> = {};
+      (inserted || []).forEach((p: any) => { profileMap[p.role_key] = p.id; });
+
+      // Dashboards
+      const dashboardsData = [
+        { company_id, role_profile_id: profileMap['ceo'], dashboard_name: 'Executive Overview', dashboard_type: 'main', is_default: true, sort_order: 1, widgets: [{ id: 'w1', type: 'kpi', title: 'Headcount Total', config: {} }, { id: 'w2', type: 'chart', title: 'Evolución Plantilla', config: {} }, { id: 'w3', type: 'kpi', title: 'Coste Laboral', config: {} }, { id: 'w4', type: 'alerts', title: 'Alertas Críticas', config: {} }] },
+        { company_id, role_profile_id: profileMap['hr_director'], dashboard_name: 'HR Command Center', dashboard_type: 'main', is_default: true, sort_order: 1, widgets: [{ id: 'w1', type: 'kpi', title: 'Aprobaciones Pendientes', config: {} }, { id: 'w2', type: 'list', title: 'Tareas Urgentes', config: {} }, { id: 'w3', type: 'chart', title: 'Métricas Clave', config: {} }, { id: 'w4', type: 'calendar', title: 'Agenda HR', config: {} }, { id: 'w5', type: 'actions', title: 'Acciones Rápidas', config: {} }] },
+        { company_id, role_profile_id: profileMap['employee'], dashboard_name: 'Mi Portal', dashboard_type: 'self_service', is_default: true, sort_order: 1, widgets: [{ id: 'w1', type: 'kpi', title: 'Días Vacaciones', config: {} }, { id: 'w2', type: 'actions', title: 'Autoservicio', config: {} }, { id: 'w3', type: 'list', title: 'Mis Documentos', config: {} }] },
+      ].filter(d => d.role_profile_id);
+      if (dashboardsData.length > 0) await supabase.from('erp_hr_role_dashboards').insert(dashboardsData as any);
+
+      // Onboarding steps
+      const onboardingData = [
+        ...(profileMap['employee'] ? [
+          { company_id, role_profile_id: profileMap['employee'], step_order: 1, step_title: 'Bienvenida al Portal', step_description: 'Descubre tu portal de autoservicio personalizado', step_type: 'info', is_required: true, estimated_minutes: 2 },
+          { company_id, role_profile_id: profileMap['employee'], step_order: 2, step_title: 'Fichar tu Jornada', step_description: 'Aprende a registrar tu entrada y salida', step_type: 'action', target_module: 'time-clock', is_required: true, estimated_minutes: 3 },
+          { company_id, role_profile_id: profileMap['employee'], step_order: 3, step_title: 'Solicitar Vacaciones', step_description: 'Consulta tu saldo y realiza solicitudes', step_type: 'action', target_module: 'vacations', is_required: false, estimated_minutes: 5 },
+          { company_id, role_profile_id: profileMap['employee'], step_order: 4, step_title: 'Documentos y Nóminas', step_description: 'Accede a tus recibos de nómina y documentos', step_type: 'action', target_module: 'documents', is_required: false, estimated_minutes: 3 },
+        ] : []),
+        ...(profileMap['hr_manager'] ? [
+          { company_id, role_profile_id: profileMap['hr_manager'], step_order: 1, step_title: 'Tu Panel de Gestión', step_description: 'Conoce el dashboard con tus KPIs principales', step_type: 'info', is_required: true, estimated_minutes: 3 },
+          { company_id, role_profile_id: profileMap['hr_manager'], step_order: 2, step_title: 'Gestión de Empleados', step_description: 'Altas, bajas y modificaciones de personal', step_type: 'action', target_module: 'employees', is_required: true, estimated_minutes: 5 },
+          { company_id, role_profile_id: profileMap['hr_manager'], step_order: 3, step_title: 'Aprobación de Vacaciones', step_description: 'Gestiona las solicitudes de tu equipo', step_type: 'action', target_module: 'vacations', is_required: true, estimated_minutes: 3 },
+        ] : []),
+      ];
+      if (onboardingData.length > 0) await supabase.from('erp_hr_role_onboarding').insert(onboardingData as any);
+
+      // Analytics seed
+      const analyticsData = [
+        { company_id, role_key: 'hr_director', module_id: 'dashboard', action_type: 'view', usage_count: 245, avg_time_seconds: 120, period: '2026-03' },
+        { company_id, role_key: 'hr_director', module_id: 'payroll', action_type: 'view', usage_count: 180, avg_time_seconds: 300, period: '2026-03' },
+        { company_id, role_key: 'hr_director', module_id: 'compliance-enterprise', action_type: 'view', usage_count: 95, avg_time_seconds: 200, period: '2026-03' },
+        { company_id, role_key: 'hr_manager', module_id: 'employees', action_type: 'view', usage_count: 320, avg_time_seconds: 180, period: '2026-03' },
+        { company_id, role_key: 'hr_manager', module_id: 'vacations', action_type: 'approve', usage_count: 85, avg_time_seconds: 45, period: '2026-03' },
+        { company_id, role_key: 'employee', module_id: 'time-clock', action_type: 'clock_in', usage_count: 480, avg_time_seconds: 5, period: '2026-03' },
+        { company_id, role_key: 'employee', module_id: 'documents', action_type: 'download', usage_count: 156, avg_time_seconds: 30, period: '2026-03' },
+        { company_id, role_key: 'ceo', module_id: 'analytics-intelligence', action_type: 'view', usage_count: 42, avg_time_seconds: 240, period: '2026-03' },
+      ];
+      await supabase.from('erp_hr_role_analytics').insert(analyticsData as any);
+
+      return json({ success: true, data: { message: 'Role Experience demo data seeded' } });
+
     } else {
       throw new Error(`Acción no soportada: ${action}`);
     }
