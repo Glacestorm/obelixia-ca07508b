@@ -89,17 +89,43 @@ export function useEnergyInvoices(caseId: string | null) {
   }, []);
 
   const uploadPdf = useCallback(async (file: File, invoiceId: string) => {
+    if (!caseId) return null;
     const path = `invoices/${caseId}/${invoiceId}/${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from('energy-documents').upload(path, file, { upsert: true });
     if (uploadError) { toast.error('Error subiendo PDF'); return null; }
-    const { data: urlData } = supabase.storage.from('energy-documents').getPublicUrl(path);
-    const publicUrl = urlData.publicUrl;
-    await updateInvoice(invoiceId, { document_url: publicUrl });
-    return publicUrl;
+
+    // Store internal path (not a public URL)
+    await updateInvoice(invoiceId, { document_url: path });
+
+    // Register in document audit trail
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('energy_document_registry' as any).insert([{
+      case_id: caseId,
+      document_type: 'invoice',
+      file_path: path,
+      file_name: file.name,
+      file_size_bytes: file.size,
+      mime_type: file.type || 'application/pdf',
+      uploaded_by: user?.id,
+      linked_entity_id: invoiceId,
+      linked_entity_type: 'energy_invoices',
+      status: 'active',
+    }]);
+
+    return path;
   }, [caseId, updateInvoice]);
+
+  /** Get a short-lived signed URL for a document */
+  const getSignedUrl = useCallback(async (filePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from('energy-documents')
+      .createSignedUrl(filePath, 300); // 5 min expiry
+    if (error) { console.error('[getSignedUrl] error:', error); return null; }
+    return data.signedUrl;
+  }, []);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
-  return { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice, uploadPdf };
+  return { invoices, loading, fetchInvoices, createInvoice, updateInvoice, deleteInvoice, uploadPdf, getSignedUrl };
 }

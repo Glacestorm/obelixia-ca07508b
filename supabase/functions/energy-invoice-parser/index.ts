@@ -14,33 +14,16 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
-    const authHeader = req.headers.get('authorization') || '';
-    const { documentUrl } = await req.json();
+    const { pdfBase64 } = await req.json();
 
-    if (!documentUrl) {
-      throw new Error('Se requiere documentUrl');
+    if (!pdfBase64) {
+      throw new Error('Se requiere pdfBase64');
     }
 
-    // Download PDF
-    const pdfResponse = await fetch(documentUrl, {
-      headers: { 'Authorization': authHeader },
-    });
-
-    if (!pdfResponse.ok) {
-      throw new Error(`No se pudo descargar el PDF: ${pdfResponse.status}`);
-    }
-
-    const pdfBytes = await pdfResponse.arrayBuffer();
-    if (pdfBytes.byteLength > 5 * 1024 * 1024) {
+    // Validate size (~5MB in base64 ≈ 6.67MB string)
+    if (pdfBase64.length > 7 * 1024 * 1024) {
       throw new Error('PDF demasiado grande (máx. 5MB)');
     }
-
-    const uint8 = new Uint8Array(pdfBytes);
-    let binary = '';
-    for (let i = 0; i < uint8.length; i++) {
-      binary += String.fromCharCode(uint8[i]);
-    }
-    const base64Pdf = btoa(binary);
 
     const systemPrompt = `Eres un parser de facturas eléctricas españolas. Extrae TODOS los datos numéricos de la factura.
 
@@ -80,7 +63,7 @@ REGLAS:
 - Si no encuentras un campo, pon null
 - El campo confidence indica tu confianza global en la extracción`;
 
-    console.log('[energy-invoice-parser] Parsing invoice PDF');
+    console.log('[energy-invoice-parser] Parsing invoice PDF (base64 client-side)');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -96,7 +79,7 @@ REGLAS:
             role: 'user',
             content: [
               { type: 'text', text: 'Extrae todos los datos de esta factura eléctrica española.' },
-              { type: 'image_url', image_url: { url: `data:application/pdf;base64,${base64Pdf}` } },
+              { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfBase64}` } },
             ],
           },
         ],
