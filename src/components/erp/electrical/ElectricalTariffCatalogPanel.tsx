@@ -75,7 +75,9 @@ export function ElectricalTariffCatalogPanel({ companyId }: Props) {
             Tarifas de mercado con precios de energía y potencia. {tariffs.length} tarifas registradas.
           </p>
         </div>
-        <Button onClick={openCreate} size="sm"><Plus className="h-4 w-4 mr-1" /> Nueva tarifa</Button>
+        <PermissionGate action="edit_tariff_catalog">
+          <Button onClick={openCreate} size="sm"><Plus className="h-4 w-4 mr-1" /> Nueva tarifa</Button>
+        </PermissionGate>
       </div>
 
       {/* Filters */}
