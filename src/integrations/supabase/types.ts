@@ -33485,6 +33485,143 @@ export type Database = {
           },
         ]
       }
+      erp_hr_orchestration_log: {
+        Row: {
+          action_module: string
+          action_result: Json | null
+          action_type: string
+          company_id: string
+          created_at: string
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          rule_id: string
+          status: string
+          trigger_data: Json | null
+          trigger_event: string
+          trigger_module: string
+        }
+        Insert: {
+          action_module: string
+          action_result?: Json | null
+          action_type: string
+          company_id: string
+          created_at?: string
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          rule_id: string
+          status?: string
+          trigger_data?: Json | null
+          trigger_event: string
+          trigger_module: string
+        }
+        Update: {
+          action_module?: string
+          action_result?: Json | null
+          action_type?: string
+          company_id?: string
+          created_at?: string
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          rule_id?: string
+          status?: string
+          trigger_data?: Json | null
+          trigger_event?: string
+          trigger_module?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_orchestration_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_orchestration_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_orchestration_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_orchestration_rules: {
+        Row: {
+          action_config: Json | null
+          action_module: string
+          action_type: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          execution_count: number
+          id: string
+          is_active: boolean
+          last_error: string | null
+          last_executed_at: string | null
+          name: string
+          priority: number
+          trigger_conditions: Json | null
+          trigger_event: string
+          trigger_module: string
+          trigger_table: string
+          updated_at: string
+        }
+        Insert: {
+          action_config?: Json | null
+          action_module: string
+          action_type: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          execution_count?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_executed_at?: string | null
+          name: string
+          priority?: number
+          trigger_conditions?: Json | null
+          trigger_event: string
+          trigger_module: string
+          trigger_table: string
+          updated_at?: string
+        }
+        Update: {
+          action_config?: Json | null
+          action_module?: string
+          action_type?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          execution_count?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_executed_at?: string | null
+          name?: string
+          priority?: number
+          trigger_conditions?: Json | null
+          trigger_event?: string
+          trigger_module?: string
+          trigger_table?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_orchestration_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_org_units: {
         Row: {
           code: string
