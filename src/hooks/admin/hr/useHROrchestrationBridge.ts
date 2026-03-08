@@ -109,7 +109,7 @@ export function useHROrchestrationBridge(companyId: string | null) {
     },
     workforce: {
       onPlanCreated: createEmitter(e, 'workforce', 'record_created'),
-      onScenarioCompleted: createEmitter(e, 'workforce', 'status_changed', 'erp_hr_workforce_scenarios'),
+      onScenarioCompleted: createEmitter(e, 'workforce', 'status_changed', 'erp_hr_scenarios'),
       onGapThresholdExceeded: createEmitter(e, 'workforce', 'threshold_exceeded'),
       onBudgetChanged: createEmitter(e, 'workforce', 'record_updated'),
     },

@@ -133,7 +133,7 @@ export function useHRAnalyticsBIPremium() {
       db.from('erp_hr_legal_templates').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_legal_contracts').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // CNAE
-      db.from('erp_hr_cnae_profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_cnae_sector_profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Compliance
       db.from('erp_hr_compliance_frameworks').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_compliance_audits').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
