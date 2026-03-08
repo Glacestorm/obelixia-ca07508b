@@ -46,7 +46,7 @@ const TABLE_CHECKS: TableCheck[] = [
   { module: 'ai_governance', table: 'erp_hr_ai_bias_audits', label: 'Auditorías de sesgo', description: 'Auditorías de sesgo algorítmico' },
   // P3 Workforce
   { module: 'workforce', table: 'erp_hr_workforce_plans', label: 'Planes de workforce', description: 'Planes estratégicos de fuerza laboral', minExpected: 1 },
-  { module: 'workforce', table: 'erp_hr_workforce_scenarios', label: 'Escenarios', description: 'Escenarios de simulación' },
+  { module: 'workforce', table: 'erp_hr_scenarios', label: 'Escenarios', description: 'Escenarios de simulación' },
   // P4 Fairness
   { module: 'fairness', table: 'erp_hr_justice_cases', label: 'Casos de justicia', description: 'Casos del motor de equidad' },
   { module: 'fairness', table: 'erp_hr_equity_analyses', label: 'Análisis de equidad', description: 'Análisis salariales y de equidad' },
