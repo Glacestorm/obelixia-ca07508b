@@ -66,7 +66,7 @@ export function useEnergyDocumentIntegrity(companyId: string) {
         supabase.from('energy_document_registry' as any).select('id, file_path, linked_entity_id, linked_entity_type, status').in('case_id', caseIds),
       ]);
 
-      const registry = (registryRes.data || []) as Array<{ id: string; file_path: string; linked_entity_id: string; linked_entity_type: string; status: string }>;
+      const registry = ((registryRes.data || []) as unknown) as Array<{ id: string; file_path: string; linked_entity_id: string; linked_entity_type: string; status: string }>;
       const registryByEntity = new Map<string, typeof registry[0]>();
       registry.forEach(r => { if (r.linked_entity_id) registryByEntity.set(r.linked_entity_id, r); });
 
