@@ -349,6 +349,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
   });
 
   const getActiveCategory = () => {
+    if (activeModule === 'util-grid') return 'utilities';
     for (const [catId, ids] of Object.entries(allIds)) {
       if (ids.includes(activeModule)) return catId;
     }
