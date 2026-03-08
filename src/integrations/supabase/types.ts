@@ -23989,6 +23989,13 @@ export type Database = {
             referencedRelation: "erp_hr_ai_model_registry"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_ai_bias"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_ai_decisions: {
@@ -24075,6 +24082,13 @@ export type Database = {
             referencedRelation: "erp_hr_ai_model_registry"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_ai_dec"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_ai_explainability_reports: {
@@ -24147,6 +24161,13 @@ export type Database = {
             referencedRelation: "erp_hr_ai_model_registry"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_ai_xai"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_ai_governance_policies: {
@@ -24207,7 +24228,15 @@ export type Database = {
           updated_at?: string
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_ai_gov"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_ai_model_registry: {
         Row: {
@@ -24285,7 +24314,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_ai_mod"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_alert_preferences: {
         Row: {
@@ -25330,7 +25367,15 @@ export type Database = {
           sector_p75?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_cnae_bench"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_cnae_compliance_rules: {
         Row: {
@@ -25387,7 +25432,15 @@ export type Database = {
           updated_at?: string | null
           validation_criteria?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_cnae_comp"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_cnae_intelligence_log: {
         Row: {
@@ -25426,7 +25479,15 @@ export type Database = {
           performed_by?: string | null
           recommendations_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_cnae_log"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_cnae_risk_assessments: {
         Row: {
@@ -25486,7 +25547,15 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_cnae_risk"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_cnae_sector_profiles: {
         Row: {
@@ -25534,7 +25603,15 @@ export type Database = {
           specific_requirements?: Json | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_cnae_sec"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_cno_catalog: {
         Row: {
@@ -26289,7 +26366,15 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_comp_aud"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_compliance_checklist: {
         Row: {
@@ -26418,7 +26503,15 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_comp_inc"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_compliance_kpis: {
         Row: {
@@ -26463,7 +26556,15 @@ export type Database = {
           trend?: string | null
           unit?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_comp_kpi"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_compliance_policies: {
         Row: {
@@ -26538,7 +26639,15 @@ export type Database = {
           updated_at?: string | null
           version?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_comp_pol"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_compliance_risk_assessments: {
         Row: {
@@ -26598,7 +26707,15 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_comp_rsk"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_compliance_training: {
         Row: {
@@ -26667,7 +26784,15 @@ export type Database = {
           training_type?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_comp_trn"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_contingent_assignments: {
         Row: {
@@ -27395,7 +27520,7 @@ export type Database = {
         }
         Insert: {
           action_type: string
-          company_id?: string
+          company_id: string
           confidence_score?: number | null
           created_at?: string
           description: string
@@ -27429,6 +27554,13 @@ export type Database = {
             referencedRelation: "erp_hr_copilot_sessions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_cop_act"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_copilot_kpis: {
@@ -27448,7 +27580,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          company_id?: string
+          company_id: string
           created_at?: string
           current_value?: number
           id?: string
@@ -27477,7 +27609,15 @@ export type Database = {
           unit?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_cop_kpi"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_copilot_sessions: {
         Row: {
@@ -27498,7 +27638,7 @@ export type Database = {
         Insert: {
           actions_taken?: Json | null
           autonomy_level?: string
-          company_id?: string
+          company_id: string
           context?: Json | null
           created_at?: string
           id?: string
@@ -27525,7 +27665,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_cop_ses"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_cost_projections: {
         Row: {
@@ -27583,6 +27731,13 @@ export type Database = {
             columns: ["scenario_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_p92_cost"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -27708,7 +27863,15 @@ export type Database = {
           user_id?: string | null
           was_masked?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_dal"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_data_access_rules: {
         Row: {
@@ -27819,7 +27982,15 @@ export type Database = {
           table_name?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_data_class"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_department_managers: {
         Row: {
@@ -28002,7 +28173,7 @@ export type Database = {
           status: string
         }
         Insert: {
-          company_id?: string
+          company_id: string
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -28041,6 +28212,13 @@ export type Database = {
             referencedRelation: "erp_hr_digital_twin_snapshots"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_dt_sim"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_digital_twin_snapshots: {
@@ -28061,7 +28239,7 @@ export type Database = {
           workforce_metrics: Json | null
         }
         Insert: {
-          company_id?: string
+          company_id: string
           compliance_status?: Json | null
           created_at?: string
           divergence_score?: number | null
@@ -28092,7 +28270,15 @@ export type Database = {
           wellness_metrics?: Json | null
           workforce_metrics?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_dt_snap"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_disconnection_policies: {
         Row: {
@@ -28239,7 +28425,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          company_id?: string
+          company_id: string
           created_at?: string | null
           document_type: string
           document_url?: string | null
@@ -28264,7 +28450,15 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_doc_req"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_document_templates: {
         Row: {
@@ -29553,7 +29747,15 @@ export type Database = {
           target_value?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_eq_act"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_esg_social_kpis: {
         Row: {
@@ -29575,7 +29777,7 @@ export type Database = {
         }
         Insert: {
           category: string
-          company_id?: string
+          company_id: string
           created_at?: string | null
           current_value?: number | null
           framework?: string | null
@@ -29607,7 +29809,15 @@ export type Database = {
           unit?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_esg_kpi"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_esg_social_metrics: {
         Row: {
@@ -29629,7 +29839,7 @@ export type Database = {
         Insert: {
           benchmark_value?: number | null
           category?: string
-          company_id?: string
+          company_id: string
           created_at?: string | null
           id?: string
           metadata?: Json | null
@@ -29658,7 +29868,15 @@ export type Database = {
           unit?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_esg_met"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_esg_social_surveys: {
         Row: {
@@ -29680,7 +29898,7 @@ export type Database = {
         }
         Insert: {
           avg_score?: number | null
-          company_id?: string
+          company_id: string
           created_at?: string | null
           description?: string | null
           ends_at?: string | null
@@ -29712,7 +29930,15 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_esg_surv"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_evaluation_cycles: {
         Row: {
@@ -29813,7 +30039,15 @@ export type Database = {
           fairness_impact?: string | null
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_fair_aud"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_fairness_metrics: {
         Row: {
@@ -29873,7 +30107,15 @@ export type Database = {
           protected_attribute?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_fair_met"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_family_relations: {
         Row: {
@@ -30449,6 +30691,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_workforce_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_p92_hc_mod"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -31472,7 +31721,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_just"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_kpi_alerts: {
         Row: {
@@ -31943,7 +32200,15 @@ export type Database = {
           performed_by?: string | null
           timestamp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_leg_aud"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_legal_clauses: {
         Row: {
@@ -32009,7 +32274,15 @@ export type Database = {
           updated_at?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_leg_cl"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_legal_communications: {
         Row: {
@@ -32161,6 +32434,13 @@ export type Database = {
             referencedRelation: "erp_hr_legal_contracts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_leg_chk"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_legal_contracts: {
@@ -32251,6 +32531,13 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_legal_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_p92_leg_con"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -32402,7 +32689,15 @@ export type Database = {
           valid_until?: string | null
           version?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_leg_tmpl"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_market_benchmarks: {
         Row: {
@@ -32518,6 +32813,13 @@ export type Database = {
             columns: ["classification_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_data_classifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_p92_mask"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -33311,7 +33613,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_pay_eq"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_pay_equity_snapshots: {
         Row: {
@@ -34646,7 +34956,15 @@ export type Database = {
           satisfaction_score?: number | null
           usage_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_role_ana"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_role_assignments: {
         Row: {
@@ -34759,6 +35077,13 @@ export type Database = {
             referencedRelation: "erp_hr_role_experience_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_role_dash"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_role_experience_profiles: {
@@ -34810,7 +35135,15 @@ export type Database = {
           updated_at?: string | null
           visible_modules?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_role_prof"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_role_onboarding: {
         Row: {
@@ -34861,6 +35194,13 @@ export type Database = {
             columns: ["role_profile_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_role_experience_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_p92_role_onb"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -35512,6 +35852,13 @@ export type Database = {
             referencedRelation: "erp_hr_workforce_plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_scen"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_security_incidents: {
@@ -35584,7 +35931,15 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_sec_inc"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_self_service_faq: {
         Row: {
@@ -35603,7 +35958,7 @@ export type Database = {
         Insert: {
           answer: string
           category: string
-          company_id?: string
+          company_id: string
           created_at?: string | null
           helpful_count?: number | null
           id?: string
@@ -35626,7 +35981,15 @@ export type Database = {
           updated_at?: string | null
           view_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_ss_faq"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_self_service_requests: {
         Row: {
@@ -35652,7 +36015,7 @@ export type Database = {
           assigned_to?: string | null
           attachments?: Json | null
           category?: string
-          company_id?: string
+          company_id: string
           created_at?: string | null
           description?: string | null
           employee_id: string
@@ -35686,7 +36049,15 @@ export type Database = {
           submitted_at?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_ss_req"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_settlement_history: {
         Row: {
@@ -36015,6 +36386,13 @@ export type Database = {
             referencedRelation: "erp_hr_workforce_plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_p92_skill"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
         ]
       }
       erp_hr_skill_graph: {
@@ -36221,7 +36599,15 @@ export type Database = {
           severity?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_sod"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_sod_violations: {
         Row: {
@@ -36281,6 +36667,13 @@ export type Database = {
             columns: ["rule_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_sod_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_p92_sod_viol"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -37793,7 +38186,15 @@ export type Database = {
           twin_name?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_twin"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_twin_metrics_history: {
         Row: {
@@ -38028,6 +38429,13 @@ export type Database = {
             columns: ["role_profile_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_role_experience_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_p92_user_exp"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -39203,7 +39611,15 @@ export type Database = {
           time_horizon?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_p92_wf_plan"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_inventory_count_lines: {
         Row: {
@@ -73608,10 +74024,6 @@ export type Database = {
       }
       user_has_erp_premium_access: {
         Args: { p_company_id: string }
-        Returns: boolean
-      }
-      user_has_erp_twin_access: {
-        Args: { p_twin_id: string }
         Returns: boolean
       }
       user_is_chat_participant: {
