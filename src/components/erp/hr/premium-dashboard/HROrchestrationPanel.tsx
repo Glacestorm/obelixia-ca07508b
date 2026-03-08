@@ -17,6 +17,7 @@ import {
   AlertTriangle, Clock, Zap, ArrowRight, Loader2
 } from 'lucide-react';
 import { useHROrchestration, type ModuleKey, type OrchestrationRule } from '@/hooks/admin/hr/useHROrchestration';
+import { useHROrchestrationEmitter } from '@/hooks/admin/hr/useHROrchestrationEmitter';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
