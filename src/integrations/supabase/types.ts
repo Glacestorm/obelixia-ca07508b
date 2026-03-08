@@ -25523,6 +25523,81 @@ export type Database = {
           },
         ]
       }
+      erp_hr_compliance_audits: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          audit_team: string[] | null
+          audit_type: string
+          company_id: string
+          created_at: string | null
+          critical_findings: number | null
+          description: string | null
+          findings: Json | null
+          findings_count: number | null
+          id: string
+          lead_auditor: string | null
+          metadata: Json | null
+          overall_score: number | null
+          planned_end: string | null
+          planned_start: string | null
+          recommendations: Json | null
+          report_url: string | null
+          scope: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          audit_team?: string[] | null
+          audit_type?: string
+          company_id: string
+          created_at?: string | null
+          critical_findings?: number | null
+          description?: string | null
+          findings?: Json | null
+          findings_count?: number | null
+          id?: string
+          lead_auditor?: string | null
+          metadata?: Json | null
+          overall_score?: number | null
+          planned_end?: string | null
+          planned_start?: string | null
+          recommendations?: Json | null
+          report_url?: string | null
+          scope?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          audit_team?: string[] | null
+          audit_type?: string
+          company_id?: string
+          created_at?: string | null
+          critical_findings?: number | null
+          description?: string | null
+          findings?: Json | null
+          findings_count?: number | null
+          id?: string
+          lead_auditor?: string | null
+          metadata?: Json | null
+          overall_score?: number | null
+          planned_end?: string | null
+          planned_start?: string | null
+          recommendations?: Json | null
+          report_url?: string | null
+          scope?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_compliance_checklist: {
         Row: {
           communication_id: string | null
@@ -25579,6 +25654,327 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_compliance_incidents: {
+        Row: {
+          affected_regulations: string[] | null
+          assigned_to: string | null
+          category: string
+          company_id: string
+          corrective_actions: Json | null
+          created_at: string | null
+          description: string | null
+          financial_impact: number | null
+          id: string
+          incident_code: string
+          metadata: Json | null
+          preventive_actions: Json | null
+          reported_at: string | null
+          reported_by: string | null
+          resolution: string | null
+          resolved_at: string | null
+          root_cause: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          affected_regulations?: string[] | null
+          assigned_to?: string | null
+          category?: string
+          company_id: string
+          corrective_actions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          financial_impact?: number | null
+          id?: string
+          incident_code: string
+          metadata?: Json | null
+          preventive_actions?: Json | null
+          reported_at?: string | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          affected_regulations?: string[] | null
+          assigned_to?: string | null
+          category?: string
+          company_id?: string
+          corrective_actions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          financial_impact?: number | null
+          id?: string
+          incident_code?: string
+          metadata?: Json | null
+          preventive_actions?: Json | null
+          reported_at?: string | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_compliance_kpis: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string | null
+          current_value: number | null
+          id: string
+          kpi_name: string
+          measured_at: string | null
+          metadata: Json | null
+          period: string | null
+          target_value: number | null
+          trend: string | null
+          unit: string | null
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string | null
+          current_value?: number | null
+          id?: string
+          kpi_name: string
+          measured_at?: string | null
+          metadata?: Json | null
+          period?: string | null
+          target_value?: number | null
+          trend?: string | null
+          unit?: string | null
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          current_value?: number | null
+          id?: string
+          kpi_name?: string
+          measured_at?: string | null
+          metadata?: Json | null
+          period?: string | null
+          target_value?: number | null
+          trend?: string | null
+          unit?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_compliance_policies: {
+        Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          category: string
+          code: string
+          company_id: string
+          content: Json | null
+          created_at: string | null
+          description: string | null
+          effective_date: string | null
+          id: string
+          jurisdictions: string[] | null
+          metadata: Json | null
+          owner_role: string | null
+          regulation_reference: string | null
+          review_date: string | null
+          risk_level: string | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string
+          code: string
+          company_id: string
+          content?: Json | null
+          created_at?: string | null
+          description?: string | null
+          effective_date?: string | null
+          id?: string
+          jurisdictions?: string[] | null
+          metadata?: Json | null
+          owner_role?: string | null
+          regulation_reference?: string | null
+          review_date?: string | null
+          risk_level?: string | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string
+          code?: string
+          company_id?: string
+          content?: Json | null
+          created_at?: string | null
+          description?: string | null
+          effective_date?: string | null
+          id?: string
+          jurisdictions?: string[] | null
+          metadata?: Json | null
+          owner_role?: string | null
+          regulation_reference?: string | null
+          review_date?: string | null
+          risk_level?: string | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_compliance_risk_assessments: {
+        Row: {
+          assessment_name: string
+          assessment_type: string | null
+          assessor: string | null
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          mitigation_plan: Json | null
+          next_review_date: string | null
+          overall_risk_score: number | null
+          risk_areas: Json | null
+          risk_level: string | null
+          scope: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assessment_name: string
+          assessment_type?: string | null
+          assessor?: string | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          mitigation_plan?: Json | null
+          next_review_date?: string | null
+          overall_risk_score?: number | null
+          risk_areas?: Json | null
+          risk_level?: string | null
+          scope?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assessment_name?: string
+          assessment_type?: string | null
+          assessor?: string | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          mitigation_plan?: Json | null
+          next_review_date?: string | null
+          overall_risk_score?: number | null
+          risk_areas?: Json | null
+          risk_level?: string | null
+          scope?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_compliance_training: {
+        Row: {
+          certification_required: boolean | null
+          company_id: string
+          completion_rate: number | null
+          content_url: string | null
+          created_at: string | null
+          deadline: string | null
+          description: string | null
+          duration_hours: number | null
+          format: string | null
+          id: string
+          metadata: Json | null
+          recurrence_months: number | null
+          regulation_area: string
+          status: string | null
+          target_roles: string[] | null
+          title: string
+          total_completed: number | null
+          total_enrolled: number | null
+          training_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          certification_required?: boolean | null
+          company_id: string
+          completion_rate?: number | null
+          content_url?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          format?: string | null
+          id?: string
+          metadata?: Json | null
+          recurrence_months?: number | null
+          regulation_area: string
+          status?: string | null
+          target_roles?: string[] | null
+          title: string
+          total_completed?: number | null
+          total_enrolled?: number | null
+          training_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          certification_required?: boolean | null
+          company_id?: string
+          completion_rate?: number | null
+          content_url?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          format?: string | null
+          id?: string
+          metadata?: Json | null
+          recurrence_months?: number | null
+          regulation_area?: string
+          status?: string | null
+          target_roles?: string[] | null
+          title?: string
+          total_completed?: number | null
+          total_enrolled?: number | null
+          training_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       erp_hr_contingent_assignments: {
         Row: {
