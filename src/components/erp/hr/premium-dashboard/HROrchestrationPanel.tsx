@@ -125,7 +125,7 @@ export function HROrchestrationPanel({ companyId, className }: Props) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-lg grid-cols-4">
           <TabsTrigger value="rules" className="gap-1.5">
             <Zap className="h-3.5 w-3.5" />
             Reglas ({rules.length})
@@ -137,6 +137,10 @@ export function HROrchestrationPanel({ companyId, className }: Props) {
           <TabsTrigger value="logs" className="gap-1.5">
             <Clock className="h-3.5 w-3.5" />
             Log ({logs.length})
+          </TabsTrigger>
+          <TabsTrigger value="chain" className="gap-1.5" onClick={loadChainStatus}>
+            <Activity className="h-3.5 w-3.5" />
+            Cadena
           </TabsTrigger>
         </TabsList>
 
