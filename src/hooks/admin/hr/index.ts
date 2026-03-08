@@ -219,3 +219,10 @@ export type {
   CopilotSession, CopilotAction, TwinSnapshot,
   TwinSimulation, CopilotKPI
 } from './useHRCopilotTwin';
+
+// Premium Phase 1 - Enterprise Security, Data Masking & SoD
+export { useHRSecurityGovernance } from './useHRSecurityGovernance';
+export type {
+  DataClassification, MaskingRule, SoDRule, SoDViolation,
+  SecurityIncident, SecurityStats, SecurityAnalysis
+} from './useHRSecurityGovernance';
