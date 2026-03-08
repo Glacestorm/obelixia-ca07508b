@@ -26962,6 +26962,60 @@ export type Database = {
           },
         ]
       }
+      erp_hr_data_access_log: {
+        Row: {
+          access_granted: boolean | null
+          access_type: string
+          accessed_at: string | null
+          classification: string | null
+          company_id: string
+          denial_reason: string | null
+          field_accessed: string | null
+          id: string
+          ip_address: string | null
+          record_id: string | null
+          session_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+          was_masked: boolean | null
+        }
+        Insert: {
+          access_granted?: boolean | null
+          access_type?: string
+          accessed_at?: string | null
+          classification?: string | null
+          company_id: string
+          denial_reason?: string | null
+          field_accessed?: string | null
+          id?: string
+          ip_address?: string | null
+          record_id?: string | null
+          session_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+          was_masked?: boolean | null
+        }
+        Update: {
+          access_granted?: boolean | null
+          access_type?: string
+          accessed_at?: string | null
+          classification?: string | null
+          company_id?: string
+          denial_reason?: string | null
+          field_accessed?: string | null
+          id?: string
+          ip_address?: string | null
+          record_id?: string | null
+          session_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+          was_masked?: boolean | null
+        }
+        Relationships: []
+      }
       erp_hr_data_access_rules: {
         Row: {
           applies_to_tables: string[] | null
@@ -27018,6 +27072,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_data_classifications: {
+        Row: {
+          classification: string
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          field_path: string
+          gdpr_category: string | null
+          id: string
+          legal_basis: string | null
+          requires_consent: boolean | null
+          requires_encryption: boolean | null
+          retention_days: number | null
+          sensitivity_level: number
+          table_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          classification?: string
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          field_path: string
+          gdpr_category?: string | null
+          id?: string
+          legal_basis?: string | null
+          requires_consent?: boolean | null
+          requires_encryption?: boolean | null
+          retention_days?: number | null
+          sensitivity_level?: number
+          table_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          classification?: string
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          field_path?: string
+          gdpr_category?: string | null
+          id?: string
+          legal_basis?: string | null
+          requires_consent?: boolean | null
+          requires_encryption?: boolean | null
+          retention_days?: number | null
+          sensitivity_level?: number
+          table_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       erp_hr_department_managers: {
         Row: {
@@ -31040,6 +31148,65 @@ export type Database = {
           },
         ]
       }
+      erp_hr_masking_rules: {
+        Row: {
+          applies_to_api: boolean | null
+          applies_to_export: boolean | null
+          applies_to_ui: boolean | null
+          classification_id: string | null
+          company_id: string
+          created_at: string | null
+          field_path: string
+          id: string
+          is_active: boolean | null
+          masking_pattern: string | null
+          masking_type: string
+          table_name: string
+          updated_at: string | null
+          visible_to_roles: string[] | null
+        }
+        Insert: {
+          applies_to_api?: boolean | null
+          applies_to_export?: boolean | null
+          applies_to_ui?: boolean | null
+          classification_id?: string | null
+          company_id: string
+          created_at?: string | null
+          field_path: string
+          id?: string
+          is_active?: boolean | null
+          masking_pattern?: string | null
+          masking_type?: string
+          table_name: string
+          updated_at?: string | null
+          visible_to_roles?: string[] | null
+        }
+        Update: {
+          applies_to_api?: boolean | null
+          applies_to_export?: boolean | null
+          applies_to_ui?: boolean | null
+          classification_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          field_path?: string
+          id?: string
+          is_active?: boolean | null
+          masking_pattern?: string | null
+          masking_type?: string
+          table_name?: string
+          updated_at?: string | null
+          visible_to_roles?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_masking_rules_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_data_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_mentoring_matches: {
         Row: {
           ai_match_reason: string | null
@@ -33708,6 +33875,78 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_security_incidents: {
+        Row: {
+          affected_records: number | null
+          affected_tables: string[] | null
+          assigned_to: string | null
+          company_id: string
+          contained_at: string | null
+          containment_actions: Json | null
+          created_at: string | null
+          description: string | null
+          detected_at: string | null
+          id: string
+          incident_type: string
+          metadata: Json | null
+          reported_by: string | null
+          resolution: string | null
+          resolved_at: string | null
+          root_cause: string | null
+          severity: string
+          source: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          affected_records?: number | null
+          affected_tables?: string[] | null
+          assigned_to?: string | null
+          company_id: string
+          contained_at?: string | null
+          containment_actions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          detected_at?: string | null
+          id?: string
+          incident_type: string
+          metadata?: Json | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          affected_records?: number | null
+          affected_tables?: string[] | null
+          assigned_to?: string | null
+          company_id?: string
+          contained_at?: string | null
+          containment_actions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          detected_at?: string | null
+          id?: string
+          incident_type?: string
+          metadata?: Json | null
+          reported_by?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity?: string
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_self_service_faq: {
         Row: {
           answer: string
@@ -34231,6 +34470,119 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_sod_rules: {
+        Row: {
+          company_id: string
+          conflicting_permissions: string[]
+          conflicting_roles: string[] | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          mitigation_control: string | null
+          name: string
+          regulatory_reference: string | null
+          rule_type: string
+          severity: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          conflicting_permissions: string[]
+          conflicting_roles?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mitigation_control?: string | null
+          name: string
+          regulatory_reference?: string | null
+          rule_type?: string
+          severity?: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          conflicting_permissions?: string[]
+          conflicting_roles?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mitigation_control?: string | null
+          name?: string
+          regulatory_reference?: string | null
+          rule_type?: string
+          severity?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_sod_violations: {
+        Row: {
+          company_id: string
+          conflicting_action_a: string
+          conflicting_action_b: string
+          created_at: string | null
+          detected_at: string | null
+          id: string
+          metadata: Json | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_score: number | null
+          rule_id: string | null
+          status: string
+          user_id: string | null
+          violation_type: string
+        }
+        Insert: {
+          company_id: string
+          conflicting_action_a: string
+          conflicting_action_b: string
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          metadata?: Json | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_score?: number | null
+          rule_id?: string | null
+          status?: string
+          user_id?: string | null
+          violation_type: string
+        }
+        Update: {
+          company_id?: string
+          conflicting_action_a?: string
+          conflicting_action_b?: string
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          metadata?: Json | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_score?: number | null
+          rule_id?: string | null
+          status?: string
+          user_id?: string | null
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_sod_violations_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_sod_rules"
             referencedColumns: ["id"]
           },
         ]
