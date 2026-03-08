@@ -1,0 +1,1 @@
+export { HRDigitalTwinPanel } from './HRDigitalTwinPanel';
