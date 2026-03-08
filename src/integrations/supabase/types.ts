@@ -75581,6 +75581,10 @@ export type Database = {
         Args: { p_twin_id: string }
         Returns: boolean
       }
+      user_has_erp_webhook_log_access: {
+        Args: { p_subscription_id: string }
+        Returns: boolean
+      }
       user_has_erp_wellbeing_access: {
         Args: { p_entity_id: string }
         Returns: boolean
