@@ -60,7 +60,7 @@ const TABLE_CHECKS: TableCheck[] = [
   { module: 'legal', table: 'erp_hr_legal_clauses', label: 'Biblioteca de cláusulas', description: 'Cláusulas legales reutilizables', minExpected: 1 },
   { module: 'legal', table: 'erp_hr_legal_templates', label: 'Plantillas legales', description: 'Plantillas de documentos legales', minExpected: 1 },
   // P7 CNAE
-  { module: 'cnae', table: 'erp_hr_cnae_profiles', label: 'Perfiles CNAE', description: 'Perfiles sectoriales configurados', minExpected: 1 },
+  { module: 'cnae', table: 'erp_hr_cnae_sector_profiles', label: 'Perfiles CNAE', description: 'Perfiles sectoriales configurados', minExpected: 1 },
   { module: 'cnae', table: 'erp_hr_cnae_risk_assessments', label: 'Evaluaciones riesgo', description: 'Evaluaciones de riesgo sectorial' },
   { module: 'cnae', table: 'erp_hr_cnae_benchmarks', label: 'Benchmarks CNAE', description: 'Benchmarks sectoriales' },
   // P8 Role Experience
