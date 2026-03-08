@@ -24772,6 +24772,77 @@ export type Database = {
           },
         ]
       }
+      erp_hr_career_paths: {
+        Row: {
+          avg_time_months: number | null
+          certification_required: Json | null
+          company_id: string
+          created_at: string
+          department: string | null
+          from_role: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          path_type: string | null
+          required_experience_years: number | null
+          required_skills: Json | null
+          requirements: Json | null
+          to_role: string
+          training_required: Json | null
+          typical_salary_increase_percent: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_time_months?: number | null
+          certification_required?: Json | null
+          company_id: string
+          created_at?: string
+          department?: string | null
+          from_role: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          path_type?: string | null
+          required_experience_years?: number | null
+          required_skills?: Json | null
+          requirements?: Json | null
+          to_role: string
+          training_required?: Json | null
+          typical_salary_increase_percent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_time_months?: number | null
+          certification_required?: Json | null
+          company_id?: string
+          created_at?: string
+          department?: string | null
+          from_role?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          path_type?: string | null
+          required_experience_years?: number | null
+          required_skills?: Json | null
+          requirements?: Json | null
+          to_role?: string
+          training_required?: Json | null
+          typical_salary_increase_percent?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_career_paths_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_cno_catalog: {
         Row: {
           code: string
@@ -28268,6 +28339,93 @@ export type Database = {
           },
         ]
       }
+      erp_hr_gig_assignments: {
+        Row: {
+          actual_hours: number | null
+          assigned_employee_id: string | null
+          assigned_employee_name: string | null
+          company_id: string
+          created_at: string
+          deliverables: Json | null
+          department: string | null
+          description: string | null
+          end_date: string | null
+          estimated_hours: number | null
+          feedback: string | null
+          gig_type: string | null
+          id: string
+          metadata: Json | null
+          opportunity_id: string | null
+          rating: number | null
+          required_skills: Json | null
+          start_date: string | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_employee_id?: string | null
+          assigned_employee_name?: string | null
+          company_id: string
+          created_at?: string
+          deliverables?: Json | null
+          department?: string | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          feedback?: string | null
+          gig_type?: string | null
+          id?: string
+          metadata?: Json | null
+          opportunity_id?: string | null
+          rating?: number | null
+          required_skills?: Json | null
+          start_date?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_employee_id?: string | null
+          assigned_employee_name?: string | null
+          company_id?: string
+          created_at?: string
+          deliverables?: Json | null
+          department?: string | null
+          description?: string | null
+          end_date?: string | null
+          estimated_hours?: number | null
+          feedback?: string | null
+          gig_type?: string | null
+          id?: string
+          metadata?: Json | null
+          opportunity_id?: string | null
+          rating?: number | null
+          required_skills?: Json | null
+          start_date?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_gig_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_gig_assignments_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_harassment_protocols: {
         Row: {
           communicated_at: string | null
@@ -29963,6 +30121,83 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_mentoring_matches: {
+        Row: {
+          ai_match_reason: string | null
+          company_id: string
+          compatibility_score: number | null
+          created_at: string
+          end_date: string | null
+          feedback: Json | null
+          focus_areas: Json | null
+          goals: Json | null
+          id: string
+          mentee_employee_id: string
+          mentee_name: string | null
+          mentor_employee_id: string
+          mentor_name: string | null
+          metadata: Json | null
+          next_session_date: string | null
+          program_name: string | null
+          sessions_completed: number | null
+          start_date: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_match_reason?: string | null
+          company_id: string
+          compatibility_score?: number | null
+          created_at?: string
+          end_date?: string | null
+          feedback?: Json | null
+          focus_areas?: Json | null
+          goals?: Json | null
+          id?: string
+          mentee_employee_id: string
+          mentee_name?: string | null
+          mentor_employee_id: string
+          mentor_name?: string | null
+          metadata?: Json | null
+          next_session_date?: string | null
+          program_name?: string | null
+          sessions_completed?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_match_reason?: string | null
+          company_id?: string
+          compatibility_score?: number | null
+          created_at?: string
+          end_date?: string | null
+          feedback?: Json | null
+          focus_areas?: Json | null
+          goals?: Json | null
+          id?: string
+          mentee_employee_id?: string
+          mentee_name?: string | null
+          mentor_employee_id?: string
+          mentor_name?: string | null
+          metadata?: Json | null
+          next_session_date?: string | null
+          program_name?: string | null
+          sessions_completed?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_mentoring_matches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -32013,6 +32248,63 @@ export type Database = {
           },
         ]
       }
+      erp_hr_role_skill_mapping: {
+        Row: {
+          company_id: string
+          created_at: string
+          department: string | null
+          id: string
+          importance: string | null
+          notes: string | null
+          required_level: number
+          role_name: string
+          skill_id: string | null
+          skill_name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          department?: string | null
+          id?: string
+          importance?: string | null
+          notes?: string | null
+          required_level?: number
+          role_name: string
+          skill_id?: string | null
+          skill_name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          department?: string | null
+          id?: string
+          importance?: string | null
+          notes?: string | null
+          required_level?: number
+          role_name?: string
+          skill_id?: string | null
+          skill_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_role_skill_mapping_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_role_skill_mapping_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_skill_graph"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_safety_incidents: {
         Row: {
           area: string | null
@@ -32771,6 +33063,81 @@ export type Database = {
           },
         ]
       }
+      erp_hr_skill_graph: {
+        Row: {
+          category: string
+          color: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_core: boolean | null
+          level: number | null
+          market_demand: string | null
+          metadata: Json | null
+          name: string
+          obsolescence_risk: string | null
+          parent_id: string | null
+          skill_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          color?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_core?: boolean | null
+          level?: number | null
+          market_demand?: string | null
+          metadata?: Json | null
+          name: string
+          obsolescence_risk?: string | null
+          parent_id?: string | null
+          skill_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          color?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_core?: boolean | null
+          level?: number | null
+          market_demand?: string | null
+          metadata?: Json | null
+          name?: string
+          obsolescence_risk?: string | null
+          parent_id?: string | null
+          skill_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_skill_graph_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_skill_graph_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_skill_graph"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_social_benefits: {
         Row: {
           annual_limit: number | null
@@ -33099,6 +33466,71 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_talent_pools: {
+        Row: {
+          company_id: string
+          created_at: string
+          criteria: Json | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_reviewed_at: string | null
+          member_count: number | null
+          members: Json | null
+          metadata: Json | null
+          name: string
+          owner_id: string | null
+          pool_type: string
+          review_frequency: string | null
+          target_roles: Json | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          criteria?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_reviewed_at?: string | null
+          member_count?: number | null
+          members?: Json | null
+          metadata?: Json | null
+          name: string
+          owner_id?: string | null
+          pool_type?: string
+          review_frequency?: string | null
+          target_roles?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          criteria?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_reviewed_at?: string | null
+          member_count?: number | null
+          members?: Json | null
+          metadata?: Json | null
+          name?: string
+          owner_id?: string | null
+          pool_type?: string
+          review_frequency?: string | null
+          target_roles?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_talent_pools_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
