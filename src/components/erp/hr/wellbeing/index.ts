@@ -4,3 +4,4 @@
  */
 
 export { HRWellbeingDashboard } from './HRWellbeingDashboard';
+export { HRWellbeingEnterprisePanel } from './HRWellbeingEnterprisePanel';
