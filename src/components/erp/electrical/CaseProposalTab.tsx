@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  Plus, FileText, CheckCircle2, XCircle, Send, Loader2, AlertTriangle
+  Plus, FileText, CheckCircle2, XCircle, Send, Loader2, AlertTriangle, Download, Upload, PenTool
 } from 'lucide-react';
 import { useEnergyProposals, PROPOSAL_STATUSES, EnergyProposal } from '@/hooks/erp/useEnergyProposals';
+import { useEnergyProposalPDF } from '@/hooks/erp/useEnergyProposalPDF';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { useEnergyAuditLog } from '@/hooks/erp/useEnergyAuditLog';
 import { PermissionGate } from './PermissionGate';
