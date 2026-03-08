@@ -26,7 +26,8 @@ export type UtilitySection =
   | 'reporting-engine'
   | 'regulatory-reporting'
   | 'premium-api-webhooks'
-  | 'enterprise-integrations';
+  | 'enterprise-integrations'
+  | 'board-pack';
 
 interface UtilityItem {
   id: UtilitySection;
