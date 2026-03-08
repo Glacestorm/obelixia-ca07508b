@@ -255,7 +255,7 @@ export function useHRComplianceAutomation(companyId?: string) {
         : { status: 'pending', completed_at: null };
 
       const { error } = await supabase
-        .from('erp_hr_compliance_checklist')
+        .from('erp_hr_compliance_checklist' as any)
         .update(updates)
         .eq('id', itemId);
 
