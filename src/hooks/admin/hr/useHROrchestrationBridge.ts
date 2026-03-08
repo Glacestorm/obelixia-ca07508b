@@ -103,7 +103,7 @@ export function useHROrchestrationBridge(companyId: string | null) {
     },
     ai_governance: {
       onBiasDetected: createEmitter(e, 'ai_governance', 'threshold_exceeded', 'erp_hr_ai_bias_audits'),
-      onModelStatusChanged: createEmitter(e, 'ai_governance', 'status_changed', 'erp_hr_ai_models'),
+      onModelStatusChanged: createEmitter(e, 'ai_governance', 'status_changed', 'erp_hr_ai_model_registry'),
       onPolicyViolation: createEmitter(e, 'ai_governance', 'threshold_exceeded', 'erp_hr_ai_governance_policies'),
       onDecisionLogged: createEmitter(e, 'ai_governance', 'record_created', 'erp_hr_ai_decisions'),
     },
