@@ -52,7 +52,14 @@ serve(async (req) => {
       });
     }
 
-    console.log(`[hr-orchestration-engine] ${action} from ${trigger_module}:${trigger_event} by ${userId}`);
+    // Rate limit check
+    const burstResult = checkBurstLimit(company_id, RATE_LIMIT_CONFIG);
+    if (!burstResult.allowed) {
+      console.warn(`[hr-orchestration-engine] Rate limited: company=${company_id}`);
+      return rateLimitResponse(burstResult, corsHeaders);
+    }
+
+    console.log(`[hr-orchestration-engine] ${action} from ${trigger_module}:${trigger_event} by ${userId} remaining=${burstResult.remaining}`);
 
     switch (action) {
       // ── Emit Event: find matching rules and execute them ──
