@@ -120,6 +120,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'fairness-engine', label: 'Fairness & Justice', icon: Scale },
         { id: 'digital-twin', label: 'Digital Twin Completo', icon: Layers },
         { id: 'legal-engine', label: 'Legal Engine', icon: Gavel },
+        { id: 'cnae-intelligence', label: 'CNAE Intelligence', icon: Building2 },
       ]
     },
     {
