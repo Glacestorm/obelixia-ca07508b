@@ -65,9 +65,11 @@ export function ElectricalExpedientesPanel({ companyId, onNewCase, onViewCase }:
           <Button variant="outline" size="sm" onClick={() => fetchCases()} disabled={loading}>
             <RefreshCw className={cn("h-4 w-4 mr-1", loading && "animate-spin")} /> Actualizar
           </Button>
-          <Button size="sm" onClick={onNewCase}>
-            <Plus className="h-4 w-4 mr-1" /> Nuevo Expediente
-          </Button>
+          <PermissionGate action="edit_cases">
+            <Button size="sm" onClick={onNewCase}>
+              <Plus className="h-4 w-4 mr-1" /> Nuevo Expediente
+            </Button>
+          </PermissionGate>
         </div>
       </div>
 
