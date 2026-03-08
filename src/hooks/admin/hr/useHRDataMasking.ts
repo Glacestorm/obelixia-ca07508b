@@ -8,10 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface MaskingRule {
   id: string;
-  field_name: string;
-  field_category: string;
-  masking_type: string;
-  classification_level: string;
+  field_path: string;
+  masking_strategy: string;
+  classification_id: string;
   is_active: boolean;
 }
 
