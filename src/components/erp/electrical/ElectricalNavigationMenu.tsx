@@ -56,6 +56,7 @@ export function ElectricalNavigationMenu({
       icon: BoltIcon,
       items: [
         { id: 'dashboard', label: 'Resumen General', icon: LayoutDashboard, description: 'Vista ejecutiva del módulo' },
+        { id: 'operacional', label: 'Panel Operativo', icon: BarChart3, description: 'KPIs operativos y alertas' },
       ]
     },
     {

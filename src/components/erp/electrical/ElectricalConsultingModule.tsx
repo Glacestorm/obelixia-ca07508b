@@ -1,6 +1,6 @@
 /**
- * Módulo Consultoría Eléctrica ERP
- * Gestión integral de expedientes de optimización de factura eléctrica
+ * Módulo Consultoría Eléctrica ERP - Phase 3
+ * Gestión integral + capa operativa de consultoría eléctrica profesional
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,6 +12,7 @@ import { useERPContext } from '@/hooks/erp';
 import { supabase } from '@/integrations/supabase/client';
 import { ElectricalNavigationMenu } from './ElectricalNavigationMenu';
 import { ElectricalDashboard } from './ElectricalDashboard';
+import { ElectricalOperationalDashboard } from './ElectricalOperationalDashboard';
 import { ElectricalExpedientesPanel } from './ElectricalExpedientesPanel';
 import { ElectricalNewCaseForm } from './ElectricalNewCaseForm';
 import { ElectricalCaseDetail } from './ElectricalCaseDetail';
@@ -57,7 +58,6 @@ export function ElectricalConsultingModule() {
   const fetchStats = useCallback(async () => {
     if (!companyId) return;
     try {
-      // Fetch cases
       const { data: cases } = await supabase
         .from('energy_cases')
         .select('id, status, estimated_annual_savings')
@@ -69,7 +69,6 @@ export function ElectricalConsultingModule() {
       const totalSavings = cases.reduce((s, c) => s + (c.estimated_annual_savings || 0), 0);
       const caseIds = cases.map(c => c.id);
 
-      // Parallel counts
       const [suppliesRes, invoicesRes, trackingRes, reportsRes] = await Promise.all([
         caseIds.length > 0
           ? supabase.from('energy_supplies').select('id', { count: 'exact', head: true }).in('case_id', caseIds)
@@ -117,6 +116,11 @@ export function ElectricalConsultingModule() {
   const handleOpenSimulator = (caseId: string) => {
     setActiveModule('comparador');
     setSubView({ type: 'simulate', caseId });
+  };
+
+  const handleNavigateToCase = (caseId: string) => {
+    setActiveModule('expedientes');
+    setSubView({ type: 'detail', caseId });
   };
 
   const renderExpedientes = () => {
@@ -228,6 +232,9 @@ export function ElectricalConsultingModule() {
 
       <div className="mt-4">
         {activeModule === 'dashboard' && <ElectricalDashboard companyId={companyId} />}
+        {activeModule === 'operacional' && (
+          <ElectricalOperationalDashboard companyId={companyId} onNavigateToCase={handleNavigateToCase} />
+        )}
         {activeModule === 'expedientes' && renderExpedientes()}
         {activeModule === 'clientes' && <ElectricalClientesPanel companyId={companyId} />}
         {activeModule === 'suministros' && <ElectricalSuministrosPanel companyId={companyId} />}

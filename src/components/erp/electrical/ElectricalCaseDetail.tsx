@@ -13,6 +13,10 @@ import { CaseContractsTab } from './CaseContractsTab';
 import { CaseRecommendationTab } from './CaseRecommendationTab';
 import { CaseReportTab } from './CaseReportTab';
 import { CaseTrackingTab } from './CaseTrackingTab';
+import { CaseWorkflowTab } from './CaseWorkflowTab';
+import { CaseChecklistPanel } from './CaseChecklistPanel';
+import { CaseProposalTab } from './CaseProposalTab';
+import { CaseAuditLog } from './CaseAuditLog';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -117,10 +121,13 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
 
       <Separator />
 
-      {/* Tabs */}
+      {/* Tabs - expanded with new Phase 3 tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1">
           <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
+          <TabsTrigger value="workflow" className="text-xs">Workflow</TabsTrigger>
+          <TabsTrigger value="checklist" className="text-xs">Checklist</TabsTrigger>
+          <TabsTrigger value="propuesta" className="text-xs">Propuesta</TabsTrigger>
           <TabsTrigger value="contrato" className="text-xs">Contrato</TabsTrigger>
           <TabsTrigger value="facturas" className="text-xs">Facturas</TabsTrigger>
           <TabsTrigger value="consumo" className="text-xs">Consumo</TabsTrigger>
@@ -128,6 +135,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
           <TabsTrigger value="recomendacion" className="text-xs">Recomendación</TabsTrigger>
           <TabsTrigger value="informe" className="text-xs">Informe</TabsTrigger>
           <TabsTrigger value="seguimiento" className="text-xs">Seguimiento</TabsTrigger>
+          <TabsTrigger value="auditoria" className="text-xs">Auditoría</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen" className="mt-4">
@@ -147,6 +155,18 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="workflow" className="mt-4">
+          <CaseWorkflowTab caseId={caseId} />
+        </TabsContent>
+
+        <TabsContent value="checklist" className="mt-4">
+          <CaseChecklistPanel caseId={caseId} />
+        </TabsContent>
+
+        <TabsContent value="propuesta" className="mt-4">
+          <CaseProposalTab caseId={caseId} />
         </TabsContent>
 
         <TabsContent value="contrato" className="mt-4">
@@ -184,6 +204,10 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
 
         <TabsContent value="seguimiento" className="mt-4">
           <CaseTrackingTab caseId={caseId} />
+        </TabsContent>
+
+        <TabsContent value="auditoria" className="mt-4">
+          <CaseAuditLog companyId={companyId} caseId={caseId} />
         </TabsContent>
       </Tabs>
     </div>
