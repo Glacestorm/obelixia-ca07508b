@@ -120,10 +120,17 @@ export function CaseContractsTab({ caseId }: Props) {
         contractTextContent ? `\nTEXTO COMPLETO DEL CONTRATO:\n${contractTextContent}` : '',
       ].filter(Boolean).join('\n');
 
+      // If there's a PDF, get a signed URL for server-side download
+      let contractSignedUrl: string | undefined;
+      if (hasPdfUrl && contract.signed_document_url) {
+        const signedUrl = await getSignedUrl(contract.signed_document_url);
+        if (signedUrl) contractSignedUrl = signedUrl;
+      }
+
       const { data, error } = await supabase.functions.invoke('energy-contract-analyzer', {
         body: { 
           contractText: structuredText,
-          contractUrl: hasPdfUrl ? contract.signed_document_url : undefined,
+          contractUrl: contractSignedUrl,
         }
       });
 
