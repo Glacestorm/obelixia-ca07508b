@@ -8,7 +8,7 @@ const mockInvoke = vi.mocked(supabase.functions.invoke);
 describe('useHRCompensationSuite', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    mockInvoke.mockResolvedValue({ data: { success: true, data: [] }, error: null });
   });
 
   it('initializes with empty state', () => {
@@ -35,7 +35,7 @@ describe('useHRCompensationSuite', () => {
     }));
   });
 
-  it('createMeritCycle handles success', async () => {
+  it('upsertMeritCycle handles success', async () => {
     mockInvoke.mockResolvedValue({
       data: { success: true, data: { id: 'new-mc', name: 'Merit 2026' } },
       error: null,
@@ -44,9 +44,9 @@ describe('useHRCompensationSuite', () => {
     const { result } = renderHook(() => useHRCompensationSuite());
     let res: any;
     await act(async () => {
-      res = await result.current.createMeritCycle({
+      res = await result.current.upsertMeritCycle({
         name: 'Merit 2026',
-        year: 2026,
+        fiscal_year: 2026,
         company_id: 'company-1',
         budget_pool: 50000,
       });
@@ -55,19 +55,19 @@ describe('useHRCompensationSuite', () => {
     expect(res).toBeTruthy();
   });
 
-  it('analyzPayEquity calls AI edge function', async () => {
+  it('fetchPayEquity calls edge function', async () => {
     mockInvoke.mockResolvedValue({
-      data: { success: true, data: { gap_percentage: 3.2, recommendations: [] } },
+      data: { success: true, data: [{ gap_percentage: 3.2 }] },
       error: null,
     });
 
     const { result } = renderHook(() => useHRCompensationSuite());
     await act(async () => {
-      await result.current.analyzePayEquity('company-1');
+      await result.current.fetchPayEquity('company-1');
     });
 
     expect(mockInvoke).toHaveBeenCalledWith('erp-hr-compensation-suite', expect.objectContaining({
-      body: expect.objectContaining({ action: 'analyze_pay_equity' }),
+      body: expect.objectContaining({ action: 'list_pay_equity' }),
     }));
   });
 
@@ -81,5 +81,18 @@ describe('useHRCompensationSuite', () => {
 
     // Should not throw, just log error
     expect(result.current.loading).toBe(false);
+  });
+
+  it('fetchStats returns compensation stats', async () => {
+    mockInvoke.mockResolvedValue({
+      data: { success: true, data: { total_employees: 150, avg_salary: 45000 } },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useHRCompensationSuite());
+    await act(async () => {
+      const stats = await result.current.fetchStats('company-1');
+      expect(stats).toBeTruthy();
+    });
   });
 });
