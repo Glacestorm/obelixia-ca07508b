@@ -48090,6 +48090,249 @@ export type Database = {
           },
         ]
       }
+      mesh_conflict_resolutions: {
+        Row: {
+          conflict_type: string
+          created_at: string
+          data_type: string
+          destination_value: Json | null
+          federation_id: string
+          id: string
+          origin_value: Json | null
+          record_id: string | null
+          resolution_status: string
+          resolution_strategy: string
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_value: Json | null
+          sync_log_id: string | null
+          table_name: string | null
+        }
+        Insert: {
+          conflict_type?: string
+          created_at?: string
+          data_type?: string
+          destination_value?: Json | null
+          federation_id: string
+          id?: string
+          origin_value?: Json | null
+          record_id?: string | null
+          resolution_status?: string
+          resolution_strategy?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_value?: Json | null
+          sync_log_id?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          conflict_type?: string
+          created_at?: string
+          data_type?: string
+          destination_value?: Json | null
+          federation_id?: string
+          id?: string
+          origin_value?: Json | null
+          record_id?: string | null
+          resolution_status?: string
+          resolution_strategy?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_value?: Json | null
+          sync_log_id?: string | null
+          table_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mesh_conflict_resolutions_federation_id_fkey"
+            columns: ["federation_id"]
+            isOneToOne: false
+            referencedRelation: "mesh_federations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mesh_conflict_resolutions_sync_log_id_fkey"
+            columns: ["sync_log_id"]
+            isOneToOne: false
+            referencedRelation: "mesh_sync_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mesh_federation_nodes: {
+        Row: {
+          connection_status: string
+          created_at: string
+          federation_id: string
+          id: string
+          installation_id: string | null
+          last_heartbeat: string | null
+          metadata: Json | null
+          node_name: string
+          node_role: string
+          pending_operations: number
+          sync_latency_ms: number | null
+          updated_at: string
+          vector_clock: Json | null
+        }
+        Insert: {
+          connection_status?: string
+          created_at?: string
+          federation_id: string
+          id?: string
+          installation_id?: string | null
+          last_heartbeat?: string | null
+          metadata?: Json | null
+          node_name: string
+          node_role?: string
+          pending_operations?: number
+          sync_latency_ms?: number | null
+          updated_at?: string
+          vector_clock?: Json | null
+        }
+        Update: {
+          connection_status?: string
+          created_at?: string
+          federation_id?: string
+          id?: string
+          installation_id?: string | null
+          last_heartbeat?: string | null
+          metadata?: Json | null
+          node_name?: string
+          node_role?: string
+          pending_operations?: number
+          sync_latency_ms?: number | null
+          updated_at?: string
+          vector_clock?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mesh_federation_nodes_federation_id_fkey"
+            columns: ["federation_id"]
+            isOneToOne: false
+            referencedRelation: "mesh_federations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mesh_federations: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          description: string | null
+          federation_name: string
+          id: string
+          last_sync_at: string | null
+          node_count: number
+          status: string
+          sync_policy: Json | null
+          total_conflicts: number
+          total_syncs: number
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          federation_name: string
+          id?: string
+          last_sync_at?: string | null
+          node_count?: number
+          status?: string
+          sync_policy?: Json | null
+          total_conflicts?: number
+          total_syncs?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          federation_name?: string
+          id?: string
+          last_sync_at?: string | null
+          node_count?: number
+          status?: string
+          sync_policy?: Json | null
+          total_conflicts?: number
+          total_syncs?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mesh_sync_log: {
+        Row: {
+          completed_at: string | null
+          conflicts_detected: number
+          conflicts_resolved: number
+          destination_node_id: string | null
+          duration_ms: number | null
+          error_message: string | null
+          federation_id: string
+          id: string
+          origin_node_id: string | null
+          records_synced: number
+          started_at: string
+          status: string
+          sync_metadata: Json | null
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          conflicts_detected?: number
+          conflicts_resolved?: number
+          destination_node_id?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          federation_id: string
+          id?: string
+          origin_node_id?: string | null
+          records_synced?: number
+          started_at?: string
+          status?: string
+          sync_metadata?: Json | null
+          sync_type?: string
+        }
+        Update: {
+          completed_at?: string | null
+          conflicts_detected?: number
+          conflicts_resolved?: number
+          destination_node_id?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          federation_id?: string
+          id?: string
+          origin_node_id?: string | null
+          records_synced?: number
+          started_at?: string
+          status?: string
+          sync_metadata?: Json | null
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mesh_sync_log_destination_node_id_fkey"
+            columns: ["destination_node_id"]
+            isOneToOne: false
+            referencedRelation: "mesh_federation_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mesh_sync_log_federation_id_fkey"
+            columns: ["federation_id"]
+            isOneToOne: false
+            referencedRelation: "mesh_federations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mesh_sync_log_origin_node_id_fkey"
+            columns: ["origin_node_id"]
+            isOneToOne: false
+            referencedRelation: "mesh_federation_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mfa_requirements: {
         Row: {
           created_at: string | null
