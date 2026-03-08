@@ -13,7 +13,7 @@ import {
   FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
   Brain, Newspaper, BookOpen, HelpCircle, Rocket, ChevronRight, ChevronDown,
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
-  Inbox, Timer, Coins, Heart, Leaf
+  Inbox, Timer, Coins, Heart, Leaf, Bot, Layers
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
