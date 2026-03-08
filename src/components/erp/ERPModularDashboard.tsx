@@ -719,6 +719,9 @@ function ERPModularDashboardContent() {
             {utilitySection === 'enterprise-integrations' && currentCompany?.id && (
               <EnterpriseIntegrationsPanel companyId={currentCompany.id} />
             )}
+            {utilitySection === 'board-pack' && currentCompany?.id && (
+              <HRBoardPackPanel companyId={currentCompany.id} />
+            )}
           </div>
         </TabsContent>
       </Tabs>
