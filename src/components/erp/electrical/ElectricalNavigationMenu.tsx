@@ -99,6 +99,7 @@ export function ElectricalNavigationMenu({
       items: [
         { id: 'informes', label: 'Informes Finales', icon: FileBarChart, description: 'Generación de informes de optimización', badge: stats.informesPendientes },
         { id: 'seguimiento', label: 'Seguimiento', icon: Eye, description: 'Seguimiento posterior al informe' },
+        { id: 'ejecutivo', label: 'Dashboard Ejecutivo', icon: Building2, description: 'KPIs multiempresa y exportación' },
       ]
     },
     {
@@ -106,6 +107,7 @@ export function ElectricalNavigationMenu({
       label: 'Ajustes',
       icon: Settings,
       items: [
+        { id: 'integraciones', label: 'Integraciones', icon: Plug, description: 'Datadis, OMIE, REE y más' },
         { id: 'ajustes', label: 'Configuración', icon: Settings, description: 'Parámetros del módulo eléctrico' },
       ]
     },
