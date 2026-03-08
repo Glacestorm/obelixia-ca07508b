@@ -278,3 +278,7 @@ export type {
   DashboardWidget, RoleOnboardingStep, UserExperience, RoleAnalytics,
   RoleExperienceStats, RoleExperienceAnalysis
 } from './useHRRoleExperience';
+
+// P9.5 - Role Experience Activation (Active role for current user)
+export { useHRActiveRoleExperience } from './useHRActiveRoleExperience';
+export type { ActiveRoleExperience } from './useHRActiveRoleExperience';

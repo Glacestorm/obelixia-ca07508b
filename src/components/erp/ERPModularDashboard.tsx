@@ -3,7 +3,7 @@
  * @version 2.1.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
+import { useHRActiveRoleExperience } from '@/hooks/admin/hr/useHRActiveRoleExperience';
 import { ERPCompanySelector } from './config/ERPCompanySelector';
 import { ERPCompaniesManager } from './config/ERPCompaniesManager';
 import { ERPFiscalYearsManager } from './config/ERPFiscalYearsManager';
@@ -75,6 +76,20 @@ function ERPModularDashboardContent() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
+
+  // P9.5 — Role Experience Activation
+  const roleExperience = useHRActiveRoleExperience(currentCompany?.id);
+
+  // Wrap hasPermission + role visibility
+  const canShowModule = useCallback((moduleId: string, permissionKey: string) => {
+    return hasPermission(permissionKey) && roleExperience.isModuleVisible(moduleId);
+  }, [hasPermission, roleExperience.isModuleVisible]);
+
+  // Track module usage on tab change
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    roleExperience.trackModuleUsage(tab);
+  }, [roleExperience.trackModuleUsage]);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
   const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'migration', 'utilities'];
@@ -153,7 +168,7 @@ function ERPModularDashboardContent() {
     { id: 'academia', name: 'Academia', icon: GraduationCap, permission: 'admin.all', color: 'bg-amber-500' },
   ];
 
-  const availableModules = modules.filter(m => hasPermission(m.permission));
+  const availableModules = modules.filter(m => canShowModule(m.id, m.permission));
 
   return (
     <div className="space-y-6">
@@ -174,7 +189,7 @@ function ERPModularDashboardContent() {
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="overview" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
@@ -184,79 +199,79 @@ function ERPModularDashboardContent() {
           {/* Módulos ERP - Solo visibles en overview */}
           {!isInsideModule && (
             <>
-              {hasPermission('masters.read') && (
+              {canShowModule('masters', 'masters.read') && (
                 <TabsTrigger value="maestros" className="gap-2">
                   <BookOpen className="h-4 w-4" />
                   Maestros
                 </TabsTrigger>
               )}
-              {hasPermission('sales.read') && (
+              {canShowModule('sales', 'sales.read') && (
                 <TabsTrigger value="sales" className="gap-2">
                   <ShoppingCart className="h-4 w-4" />
                   Ventas
                 </TabsTrigger>
               )}
-              {hasPermission('purchases.read') && (
+              {canShowModule('purchases', 'purchases.read') && (
                 <TabsTrigger value="purchases" className="gap-2">
                   <Package className="h-4 w-4" />
                   Compras
                 </TabsTrigger>
               )}
-              {hasPermission('inventory.read') && (
+              {canShowModule('inventory', 'inventory.read') && (
                 <TabsTrigger value="inventory" className="gap-2">
                   <Package className="h-4 w-4" />
                   Almacén
                 </TabsTrigger>
               )}
-              {hasPermission('accounting.read') && (
+              {canShowModule('accounting', 'accounting.read') && (
                 <TabsTrigger value="accounting" className="gap-2">
                   <Calculator className="h-4 w-4" />
                   Contabilidad
                 </TabsTrigger>
               )}
-              {hasPermission('treasury.read') && (
+              {canShowModule('treasury', 'treasury.read') && (
                 <TabsTrigger value="treasury" className="gap-2">
                   <Wallet className="h-4 w-4" />
                   Tesorería
                 </TabsTrigger>
               )}
-              {hasPermission('trade.read') && (
+              {canShowModule('trade', 'trade.read') && (
                 <TabsTrigger value="trade" className="gap-2">
                   <Globe className="h-4 w-4" />
                   Comercio
                 </TabsTrigger>
               )}
-              {hasPermission('logistics.read') && (
+              {canShowModule('logistics', 'logistics.read') && (
                 <TabsTrigger value="logistics" className="gap-2">
                   <Truck className="h-4 w-4" />
                   Logística
                 </TabsTrigger>
               )}
-              {hasPermission('tax.read') && (
+              {canShowModule('tax', 'tax.read') && (
                 <TabsTrigger value="tax" className="gap-2">
                   <Receipt className="h-4 w-4" />
                   Fiscal
                 </TabsTrigger>
               )}
-              {hasPermission('hr.read') && (
+              {canShowModule('hr', 'hr.read') && (
                 <TabsTrigger value="hr" className="gap-2">
                   <UserCog className="h-4 w-4" />
                   RRHH
                 </TabsTrigger>
               )}
-              {hasPermission('legal.read') && (
+              {canShowModule('legal', 'legal.read') && (
                 <TabsTrigger value="legal" className="gap-2">
                   <Scale className="h-4 w-4" />
                   Jurídico
                 </TabsTrigger>
               )}
-              {hasPermission('admin.all') && (
+              {canShowModule('galia', 'admin.all') && (
                 <TabsTrigger value="galia" className="gap-2">
                   <Landmark className="h-4 w-4" />
                   GALIA
                 </TabsTrigger>
               )}
-              {hasPermission('admin.all') && (
+              {canShowModule('academia', 'admin.all') && (
                 <TabsTrigger value="academia" className="gap-2">
                   <GraduationCap className="h-4 w-4" />
                   Academia
@@ -399,7 +414,7 @@ function ERPModularDashboardContent() {
                           "cursor-pointer hover:shadow-md transition-shadow",
                           isInstalled && "ring-1 ring-green-500/30"
                         )}
-                        onClick={() => isInstalled && setActiveTab(module.id === 'masters' ? 'maestros' : module.id)}
+                        onClick={() => isInstalled && handleTabChange(module.id === 'masters' ? 'maestros' : module.id)}
                       >
                         <CardContent className="p-4 text-center">
                           <div className={cn("w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center", module.color)}>
