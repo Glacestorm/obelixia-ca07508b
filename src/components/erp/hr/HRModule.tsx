@@ -64,6 +64,7 @@ import { HRTalentIntelligencePanel } from './talent/HRTalentIntelligencePanel';
 import { HRWellbeingEnterprisePanel } from './wellbeing/HRWellbeingEnterprisePanel';
 import { HRESGSelfServicePanel } from './esg-selfservice/HRESGSelfServicePanel';
 import { HRCopilotTwinPanel } from './copilot-twin/HRCopilotTwinPanel';
+import { HRSecurityGovernancePanel } from './security-governance/HRSecurityGovernancePanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
