@@ -49,7 +49,7 @@ const TABLE_CHECKS: TableCheck[] = [
   { module: 'workforce', table: 'erp_hr_scenarios', label: 'Escenarios', description: 'Escenarios de simulación' },
   // P4 Fairness
   { module: 'fairness', table: 'erp_hr_justice_cases', label: 'Casos de justicia', description: 'Casos del motor de equidad' },
-  { module: 'fairness', table: 'erp_hr_equity_analyses', label: 'Análisis de equidad', description: 'Análisis salariales y de equidad' },
+  { module: 'fairness', table: 'erp_hr_pay_equity_analyses', label: 'Análisis de equidad', description: 'Análisis salariales y de equidad' },
   { module: 'fairness', table: 'erp_hr_pay_equity_rules', label: 'Reglas pay equity', description: 'Reglas de equidad salarial configuradas', minExpected: 1 },
   // P5 Twin
   { module: 'twin', table: 'erp_hr_twin_snapshots', label: 'Snapshots Twin', description: 'Snapshots del gemelo digital' },
