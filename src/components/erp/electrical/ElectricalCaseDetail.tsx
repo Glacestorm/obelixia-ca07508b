@@ -7,6 +7,10 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Zap, User, Building2, MapPin, Calendar, TrendingUp } from 'lucide-react';
 import { ElectricalBreadcrumb } from './ElectricalBreadcrumb';
 import { CaseSupplyTab } from './CaseSupplyTab';
+import { CaseConsumptionTab } from './CaseConsumptionTab';
+import { CaseInvoicesTab } from './CaseInvoicesTab';
+import { CaseContractsTab } from './CaseContractsTab';
+import { CaseRecommendationTab } from './CaseRecommendationTab';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -164,21 +168,15 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="contrato" className="mt-4">
-          <Card><CardHeader><CardTitle className="text-base">Contrato vigente</CardTitle></CardHeader>
-            <CardContent><p className="text-sm text-muted-foreground">Datos del contrato eléctrico actual asociados a este expediente. Conecta la tabla energy_contracts para gestionar contratos.</p></CardContent>
-          </Card>
+          <CaseContractsTab caseId={caseId} />
         </TabsContent>
 
         <TabsContent value="facturas" className="mt-4">
-          <Card><CardHeader><CardTitle className="text-base">Facturas eléctricas</CardTitle></CardHeader>
-            <CardContent><p className="text-sm text-muted-foreground">Historial de facturas del suministro. Conecta la tabla energy_invoices para análisis de costes.</p></CardContent>
-          </Card>
+          <CaseInvoicesTab caseId={caseId} />
         </TabsContent>
 
         <TabsContent value="consumo" className="mt-4">
-          <Card><CardHeader><CardTitle className="text-base">Perfil de consumo</CardTitle></CardHeader>
-            <CardContent><p className="text-sm text-muted-foreground">Análisis de consumo energético por periodos. Conecta energy_consumption_profiles.</p></CardContent>
-          </Card>
+          <CaseConsumptionTab caseId={caseId} />
         </TabsContent>
 
         <TabsContent value="potencia" className="mt-4">
@@ -186,9 +184,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="recomendacion" className="mt-4">
-          <Card><CardHeader><CardTitle className="text-base">Recomendación de optimización</CardTitle></CardHeader>
-            <CardContent><p className="text-sm text-muted-foreground">Propuestas de ahorro generadas. Conecta energy_recommendations.</p></CardContent>
-          </Card>
+          <CaseRecommendationTab caseId={caseId} />
         </TabsContent>
 
         <TabsContent value="informe" className="mt-4">
