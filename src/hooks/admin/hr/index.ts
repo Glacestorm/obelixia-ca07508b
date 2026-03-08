@@ -294,3 +294,11 @@ export type { PremiumModuleStatus, PremiumKPI, PremiumDashboardData } from './us
 // P9.8 - Premium Alerts Engine
 export { useHRPremiumAlerts } from './useHRPremiumAlerts';
 export type { AlertSeverity, AlertSource, AlertStatus, PremiumAlert, AlertStats } from './useHRPremiumAlerts';
+
+// P10 - Inter-Module Orchestration
+export { useHROrchestration } from './useHROrchestration';
+export type { ModuleKey, TriggerEvent, ActionType, OrchestrationRule, OrchestrationLogEntry } from './useHROrchestration';
+export { useHROrchestrationEmitter } from './useHROrchestrationEmitter';
+export type { EmitResult } from './useHROrchestrationEmitter';
+export { useHROrchestrationBridge } from './useHROrchestrationBridge';
+export type { ModuleEmitHelpers } from './useHROrchestrationBridge';
