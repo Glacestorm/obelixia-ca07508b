@@ -34609,6 +34609,45 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_role_analytics: {
+        Row: {
+          action_type: string | null
+          avg_time_seconds: number | null
+          company_id: string
+          created_at: string | null
+          id: string
+          module_id: string
+          period: string
+          role_key: string
+          satisfaction_score: number | null
+          usage_count: number | null
+        }
+        Insert: {
+          action_type?: string | null
+          avg_time_seconds?: number | null
+          company_id: string
+          created_at?: string | null
+          id?: string
+          module_id: string
+          period: string
+          role_key: string
+          satisfaction_score?: number | null
+          usage_count?: number | null
+        }
+        Update: {
+          action_type?: string | null
+          avg_time_seconds?: number | null
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          module_id?: string
+          period?: string
+          role_key?: string
+          satisfaction_score?: number | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       erp_hr_role_assignments: {
         Row: {
           assigned_by: string | null
@@ -34665,6 +34704,163 @@ export type Database = {
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_enterprise_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_role_dashboards: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          dashboard_name: string
+          dashboard_type: string | null
+          filters_config: Json | null
+          id: string
+          is_default: boolean | null
+          layout_config: Json | null
+          role_profile_id: string | null
+          sort_order: number | null
+          updated_at: string | null
+          widgets: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          dashboard_name: string
+          dashboard_type?: string | null
+          filters_config?: Json | null
+          id?: string
+          is_default?: boolean | null
+          layout_config?: Json | null
+          role_profile_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          widgets?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          dashboard_name?: string
+          dashboard_type?: string | null
+          filters_config?: Json | null
+          id?: string
+          is_default?: boolean | null
+          layout_config?: Json | null
+          role_profile_id?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+          widgets?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_role_dashboards_role_profile_id_fkey"
+            columns: ["role_profile_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_role_experience_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_role_experience_profiles: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          dashboard_layout: Json | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          kpi_widgets: Json | null
+          notification_preferences: Json | null
+          quick_actions: Json | null
+          role_key: string
+          role_label: string
+          theme_overrides: Json | null
+          updated_at: string | null
+          visible_modules: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          dashboard_layout?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          kpi_widgets?: Json | null
+          notification_preferences?: Json | null
+          quick_actions?: Json | null
+          role_key: string
+          role_label: string
+          theme_overrides?: Json | null
+          updated_at?: string | null
+          visible_modules?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          dashboard_layout?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          kpi_widgets?: Json | null
+          notification_preferences?: Json | null
+          quick_actions?: Json | null
+          role_key?: string
+          role_label?: string
+          theme_overrides?: Json | null
+          updated_at?: string | null
+          visible_modules?: Json | null
+        }
+        Relationships: []
+      }
+      erp_hr_role_onboarding: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          estimated_minutes: number | null
+          id: string
+          is_required: boolean | null
+          role_profile_id: string | null
+          step_description: string | null
+          step_order: number | null
+          step_title: string
+          step_type: string | null
+          target_action: string | null
+          target_module: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          is_required?: boolean | null
+          role_profile_id?: string | null
+          step_description?: string | null
+          step_order?: number | null
+          step_title: string
+          step_type?: string | null
+          target_action?: string | null
+          target_module?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          is_required?: boolean | null
+          role_profile_id?: string | null
+          step_description?: string | null
+          step_order?: number | null
+          step_title?: string
+          step_type?: string | null
+          target_action?: string | null
+          target_module?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_role_onboarding_role_profile_id_fkey"
+            columns: ["role_profile_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_role_experience_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -37779,6 +37975,59 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_user_experience: {
+        Row: {
+          company_id: string
+          completed_onboarding: Json | null
+          created_at: string | null
+          custom_layout: Json | null
+          id: string
+          last_active_module: string | null
+          pinned_modules: Json | null
+          preferences: Json | null
+          recent_modules: Json | null
+          role_profile_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          completed_onboarding?: Json | null
+          created_at?: string | null
+          custom_layout?: Json | null
+          id?: string
+          last_active_module?: string | null
+          pinned_modules?: Json | null
+          preferences?: Json | null
+          recent_modules?: Json | null
+          role_profile_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          completed_onboarding?: Json | null
+          created_at?: string | null
+          custom_layout?: Json | null
+          id?: string
+          last_active_module?: string | null
+          pinned_modules?: Json | null
+          preferences?: Json | null
+          recent_modules?: Json | null
+          role_profile_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_user_experience_role_profile_id_fkey"
+            columns: ["role_profile_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_role_experience_profiles"
             referencedColumns: ["id"]
           },
         ]

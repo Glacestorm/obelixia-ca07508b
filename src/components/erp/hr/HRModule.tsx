@@ -71,6 +71,7 @@ import { HRFairnessEnginePanel } from './fairness-engine/HRFairnessEnginePanel';
 import { HRDigitalTwinPanel } from './digital-twin/HRDigitalTwinPanel';
 import { HRLegalEnginePanel } from './legal-engine/HRLegalEnginePanel';
 import { HRCNAEIntelligencePanel } from './cnae-intelligence/HRCNAEIntelligencePanel';
+import { HRRoleExperiencePanel } from './role-experience/HRRoleExperiencePanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -340,6 +341,7 @@ export function HRModule() {
         {activeModule === 'digital-twin' && <HRDigitalTwinPanel companyId={demoCompanyId} />}
         {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={demoCompanyId} />}
         {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={demoCompanyId} />}
+        {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
