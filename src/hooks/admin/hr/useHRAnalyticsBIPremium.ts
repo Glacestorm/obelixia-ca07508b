@@ -111,34 +111,36 @@ export function useHRAnalyticsBIPremium() {
   // ── Fetch real counts from DB tables ───────────────────────────
 
   const fetchRealMetrics = useCallback(async (companyId: string) => {
+    // Use (supabase as any) for premium tables not yet in generated types
+    const db = supabase as any;
     const queries = await Promise.allSettled([
       // Security
-      supabase.from('erp_hr_data_classifications').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_sod_violations').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
+      db.from('erp_hr_data_classifications').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_sod_violations').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
       // AI Governance
-      supabase.from('erp_hr_ai_models').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_ai_decisions').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_ai_models').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_ai_decisions').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Workforce
-      supabase.from('erp_hr_workforce_plans').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_workforce_scenarios').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_workforce_plans').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_workforce_scenarios').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Fairness
-      supabase.from('erp_hr_pay_equity_analyses').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_justice_cases').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
+      db.from('erp_hr_pay_equity_analyses').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_justice_cases').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
       // Digital Twin
-      supabase.from('erp_hr_twin_instances').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_twin_experiments').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_twin_instances').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_twin_experiments').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Legal Engine
-      supabase.from('erp_hr_legal_templates').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_legal_contracts').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_legal_templates').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_legal_contracts').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // CNAE
-      supabase.from('erp_hr_cnae_profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_cnae_profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Compliance
-      supabase.from('erp_hr_compliance_frameworks').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_compliance_audits').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      supabase.from('erp_hr_compliance_alerts').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
+      db.from('erp_hr_compliance_frameworks').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_compliance_audits').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_compliance_alerts').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
       // Orchestration
-      supabase.from('erp_hr_orchestration_rules').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
-      supabase.from('erp_hr_orchestration_log').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_orchestration_rules').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
+      db.from('erp_hr_orchestration_log').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
     ]);
 
     const counts = queries.map(r => {
