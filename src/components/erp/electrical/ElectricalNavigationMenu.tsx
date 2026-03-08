@@ -84,6 +84,7 @@ export function ElectricalNavigationMenu({
       icon: BarChart3,
       items: [
         { id: 'consumo', label: 'Análisis de Consumo', icon: BarChart3, description: 'Consumo por periodos tarifarios P1-P6' },
+        { id: 'catalogo', label: 'Catálogo Tarifas', icon: FileText, description: 'Gestión del catálogo de tarifas del mercado' },
         { id: 'comparador', label: 'Comparador', icon: GitCompareArrows, description: 'Comparativa de tarifas y comercializadoras' },
         { id: 'recomendaciones', label: 'Recomendaciones', icon: Lightbulb, description: 'Tarifa y potencia óptima' },
       ]

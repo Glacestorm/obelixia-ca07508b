@@ -11,6 +11,7 @@ import { CaseConsumptionTab } from './CaseConsumptionTab';
 import { CaseInvoicesTab } from './CaseInvoicesTab';
 import { CaseContractsTab } from './CaseContractsTab';
 import { CaseRecommendationTab } from './CaseRecommendationTab';
+import { CaseReportTab } from './CaseReportTab';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -188,9 +189,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="informe" className="mt-4">
-          <Card><CardHeader><CardTitle className="text-base">Informe de optimización</CardTitle></CardHeader>
-            <CardContent><p className="text-sm text-muted-foreground">Documentos PDF de informe generados. Conecta energy_reports.</p></CardContent>
-          </Card>
+          <CaseReportTab caseId={caseId} />
         </TabsContent>
 
         <TabsContent value="seguimiento" className="mt-4">

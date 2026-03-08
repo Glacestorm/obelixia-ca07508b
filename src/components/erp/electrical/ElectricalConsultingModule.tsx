@@ -20,6 +20,7 @@ import { ElectricalFacturasPanel } from './ElectricalFacturasPanel';
 import { ElectricalContratosPanel } from './ElectricalContratosPanel';
 import { ElectricalConsumoPanel } from './ElectricalConsumoPanel';
 import { ElectricalComparadorPanel } from './ElectricalComparadorPanel';
+import { ElectricalTariffCatalogPanel } from './ElectricalTariffCatalogPanel';
 import { ElectricalPotenciaPanel } from './ElectricalPotenciaPanel';
 import { ElectricalRecomendacionesPanel } from './ElectricalRecomendacionesPanel';
 import { ElectricalInformesPanel } from './ElectricalInformesPanel';
@@ -189,6 +190,7 @@ export function ElectricalConsultingModule() {
         {activeModule === 'facturas' && <ElectricalFacturasPanel companyId={companyId} />}
         {activeModule === 'contratos' && <ElectricalContratosPanel companyId={companyId} />}
         {activeModule === 'consumo' && <ElectricalConsumoPanel companyId={companyId} />}
+        {activeModule === 'catalogo' && <ElectricalTariffCatalogPanel companyId={companyId} />}
         {activeModule === 'comparador' && <ElectricalComparadorPanel companyId={companyId} />}
         {activeModule === 'potencia' && <ElectricalPotenciaPanel companyId={companyId} />}
         {activeModule === 'recomendaciones' && <ElectricalRecomendacionesPanel companyId={companyId} />}
