@@ -25,7 +25,12 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, companyId = 'demo-company-id', params } = await req.json() as FunctionRequest;
+    const { action, companyId, params } = await req.json() as FunctionRequest;
+    if (!companyId || companyId === 'demo-company-id') {
+      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     console.log(`[erp-hr-copilot-twin] Action: ${action}`);
 
     // Non-AI actions

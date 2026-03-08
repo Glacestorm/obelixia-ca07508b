@@ -81,7 +81,6 @@ const [implementing, setImplementing] = useState<string | null>(null);
       const { data, error } = await supabase.functions.invoke('erp-hr-innovation-discovery', {
         body: {
           action: 'implement_feature',
-          company_id: 'demo-company-id',
           feature_code: trend.id,
           config: {
             feature_name: trend.title,

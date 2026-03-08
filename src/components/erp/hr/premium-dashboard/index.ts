@@ -10,3 +10,4 @@ export { HRUtilitiesNavigation } from './HRUtilitiesNavigation';
 export type { UtilitySection } from './HRUtilitiesNavigation';
 export { HRComplianceAutomationPanel } from './HRComplianceAutomationPanel';
 export { HRAnalyticsBIPremiumPanel } from './HRAnalyticsBIPremiumPanel';
+export { HRUnifiedAuditPanel } from './HRUnifiedAuditPanel';

@@ -43,7 +43,7 @@ import { LegalComplianceAPIPanel } from './LegalComplianceAPIPanel';
 export function LegalModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { currentCompany } = useERPContext();
-  const companyId = currentCompany?.id || 'demo-company-id';
+  const companyId = currentCompany?.id;
 
   // Stats dinámicas
   const [stats, setStats] = useState({
@@ -56,6 +56,7 @@ export function LegalModule() {
   });
 
   useEffect(() => {
+    if (!companyId) return;
     const fetchStats = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('legal-ai-advisor', {
@@ -103,6 +104,20 @@ export function LegalModule() {
 
     fetchStats();
   }, [companyId]);
+
+  if (!companyId) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <Scale className="h-12 w-12 mx-auto text-muted-foreground/40" />
+          <h3 className="text-lg font-semibold text-foreground">Selecciona una empresa</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Para acceder al módulo Jurídico, selecciona una empresa desde el selector superior.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

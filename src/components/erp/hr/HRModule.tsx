@@ -76,7 +76,7 @@ import { HRRoleExperiencePanel } from './role-experience/HRRoleExperiencePanel';
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { currentCompany } = useERPContext();
-  const demoCompanyId = currentCompany?.id || 'demo-company-id';
+  const companyId = currentCompany?.id;
   
   // Estados para dialogs
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
@@ -86,7 +86,6 @@ export function HRModule() {
 
   // Navegación desde HelpIndex
   const handleHelpNavigate = useCallback((section: string) => {
-    // Mapear códigos de sección a tabs
     const tabMapping: Record<string, string> = {
       'dashboard': 'dashboard',
       'nominas': 'payroll',
@@ -127,13 +126,15 @@ export function HRModule() {
   });
 
   useEffect(() => {
+    if (!companyId) return;
+
     const fetchStatsDirectly = async () => {
       try {
         const [empRes, contractRes, vacRes, payRes] = await Promise.all([
-          supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'active'),
-          supabase.from('erp_hr_contracts').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('is_active', true),
-          supabase.from('erp_hr_leave_requests').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'pending_dept'),
-          supabase.from('erp_hr_payrolls').select('id', { count: 'exact', head: true }).eq('company_id', demoCompanyId).eq('status', 'draft'),
+          supabase.from('erp_hr_employees').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'active'),
+          supabase.from('erp_hr_contracts').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
+          supabase.from('erp_hr_leave_requests').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'pending_dept'),
+          supabase.from('erp_hr_payrolls').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'draft'),
         ]);
         setStats({
           totalEmployees: empRes.count || 0,
@@ -153,7 +154,7 @@ export function HRModule() {
         const { data, error } = await supabase.functions.invoke('erp-hr-ai-agent', {
           body: {
             action: 'get_dashboard_stats',
-            context: { companyId: demoCompanyId }
+            context: { companyId }
           }
         });
 
@@ -178,7 +179,22 @@ export function HRModule() {
     };
 
     fetchStats();
-  }, [demoCompanyId]);
+  }, [companyId]);
+
+  // Guard: no company selected (after all hooks)
+  if (!companyId) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <Users className="h-12 w-12 mx-auto text-muted-foreground/40" />
+          <h3 className="text-lg font-semibold text-foreground">Selecciona una empresa</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Para acceder al módulo de RRHH, selecciona una empresa desde el selector superior.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -272,33 +288,33 @@ export function HRModule() {
       <div className="mt-4">
 
         {/* Renderizado condicional de contenido */}
-        {activeModule === 'dashboard' && <HRExecutiveDashboard companyId={demoCompanyId} />}
-        {activeModule === 'employees' && <HREmployeesPanel companyId={demoCompanyId} />}
-        {activeModule === 'recruitment' && <HRRecruitmentPanel companyId={demoCompanyId} />}
-        {activeModule === 'onboarding' && <HROnboardingPanel companyId={demoCompanyId} />}
-        {activeModule === 'offboarding' && <HROffboardingPanel companyId={demoCompanyId} />}
-        {activeModule === 'performance' && <HRPerformancePanel companyId={demoCompanyId} />}
-        {activeModule === 'training' && <HRTrainingPanel companyId={demoCompanyId} />}
-        {activeModule === 'analytics' && <HRAdvancedAnalyticsPanel companyId={demoCompanyId} />}
-        {activeModule === 'alerts' && <HRAlertsPanel companyId={demoCompanyId} />}
-        {activeModule === 'payroll' && <HRPayrollPanel companyId={demoCompanyId} />}
-        {activeModule === 'payroll-recalc' && <HRPayrollRecalculationPanel companyId={demoCompanyId} />}
-        {activeModule === 'settlements' && <HRSettlementsPanel companyId={demoCompanyId} />}
-        {activeModule === 'time-clock' && <HRTimeClockPanel companyId={demoCompanyId} />}
-        {activeModule === 'ss' && <HRSocialSecurityPanel companyId={demoCompanyId} />}
-        {activeModule === 'vacations' && <HRVacationsPanel companyId={demoCompanyId} />}
-        {activeModule === 'contracts' && <HRContractsPanel companyId={demoCompanyId} />}
-        {activeModule === 'unions' && <HRUnionsPanel companyId={demoCompanyId} />}
-        {activeModule === 'documents' && <HREmployeeDocumentsPanel companyId={demoCompanyId} />}
-        {activeModule === 'departments' && <HRDepartmentsPanel companyId={demoCompanyId} />}
-        {activeModule === 'benefits' && <HRSocialBenefitsPanel companyId={demoCompanyId} />}
-        {activeModule === 'safety' && <HRSafetyPanel companyId={demoCompanyId} />}
-        {activeModule === 'agent' && <HRAIAgentPanel companyId={demoCompanyId} />}
-        {activeModule === 'news' && <HRNewsPanel companyId={demoCompanyId} />}
-        {activeModule === 'knowledge' && <HRKnowledgeUploader companyId={demoCompanyId} />}
+        {activeModule === 'dashboard' && <HRExecutiveDashboard companyId={companyId} />}
+        {activeModule === 'employees' && <HREmployeesPanel companyId={companyId} />}
+        {activeModule === 'recruitment' && <HRRecruitmentPanel companyId={companyId} />}
+        {activeModule === 'onboarding' && <HROnboardingPanel companyId={companyId} />}
+        {activeModule === 'offboarding' && <HROffboardingPanel companyId={companyId} />}
+        {activeModule === 'performance' && <HRPerformancePanel companyId={companyId} />}
+        {activeModule === 'training' && <HRTrainingPanel companyId={companyId} />}
+        {activeModule === 'analytics' && <HRAdvancedAnalyticsPanel companyId={companyId} />}
+        {activeModule === 'alerts' && <HRAlertsPanel companyId={companyId} />}
+        {activeModule === 'payroll' && <HRPayrollPanel companyId={companyId} />}
+        {activeModule === 'payroll-recalc' && <HRPayrollRecalculationPanel companyId={companyId} />}
+        {activeModule === 'settlements' && <HRSettlementsPanel companyId={companyId} />}
+        {activeModule === 'time-clock' && <HRTimeClockPanel companyId={companyId} />}
+        {activeModule === 'ss' && <HRSocialSecurityPanel companyId={companyId} />}
+        {activeModule === 'vacations' && <HRVacationsPanel companyId={companyId} />}
+        {activeModule === 'contracts' && <HRContractsPanel companyId={companyId} />}
+        {activeModule === 'unions' && <HRUnionsPanel companyId={companyId} />}
+        {activeModule === 'documents' && <HREmployeeDocumentsPanel companyId={companyId} />}
+        {activeModule === 'departments' && <HRDepartmentsPanel companyId={companyId} />}
+        {activeModule === 'benefits' && <HRSocialBenefitsPanel companyId={companyId} />}
+        {activeModule === 'safety' && <HRSafetyPanel companyId={companyId} />}
+        {activeModule === 'agent' && <HRAIAgentPanel companyId={companyId} />}
+        {activeModule === 'news' && <HRNewsPanel companyId={companyId} />}
+        {activeModule === 'knowledge' && <HRKnowledgeUploader companyId={companyId} />}
         {activeModule === 'help' && (
           <HRHelpIndex 
-            companyId={demoCompanyId} 
+            companyId={companyId} 
             onNavigate={handleHelpNavigate}
             onOpenPayrollDialog={() => setShowPayrollDialog(true)}
             onOpenVacationDialog={() => setShowVacationDialog(true)}
@@ -310,64 +326,64 @@ export function HRModule() {
           />
         )}
         {activeModule === 'trends' && <HRTrends2026Panel />}
-        {activeModule === 'regulatory-watch' && <HRRegulatoryWatchPanel companyId={demoCompanyId} />}
-        {activeModule === 'legal-compliance' && <HRLegalComplianceDashboard companyId={demoCompanyId} />}
-        {activeModule === 'integration' && <HRIntegrationDashboard companyId={demoCompanyId} />}
-        {activeModule === 'demo-seed' && <HRDemoSeedPanel companyId={demoCompanyId} />}
-        {activeModule === 'skills-matrix' && <HRSkillsMatrixPanel companyId={demoCompanyId} />}
-        {activeModule === 'marketplace' && <HRInternalMarketplacePanel companyId={demoCompanyId} />}
-        {activeModule === 'succession' && <HRSuccessionPlanningPanel companyId={demoCompanyId} />}
-        {activeModule === 'analytics-intelligence' && <HRAnalyticsIntelligencePanel companyId={demoCompanyId} />}
-        {activeModule === 'enterprise-dashboard' && <HREnterpriseDashboard companyId={demoCompanyId} />}
-        {activeModule === 'legal-entities' && <HRLegalEntitiesPanel companyId={demoCompanyId} />}
-        {activeModule === 'work-centers' && <HRWorkCentersPanel companyId={demoCompanyId} />}
-        {activeModule === 'org-structure' && <HROrgStructurePanel companyId={demoCompanyId} />}
-        {activeModule === 'work-calendars' && <HRCalendarsPanel companyId={demoCompanyId} />}
-        {activeModule === 'enterprise-roles' && <HRRolesPermissionsPanel companyId={demoCompanyId} />}
-        {activeModule === 'audit-trail' && <HRAuditTrailPanel companyId={demoCompanyId} />}
-        {activeModule === 'workflow-designer' && <HRWorkflowDesigner companyId={demoCompanyId} />}
-        {activeModule === 'approval-inbox' && <HRApprovalInbox companyId={demoCompanyId} />}
-        {activeModule === 'sla-dashboard' && <HRSLADashboard companyId={demoCompanyId} />}
-        {activeModule === 'compensation-suite' && <HRCompensationSuitePanel companyId={demoCompanyId} />}
-        {activeModule === 'talent-intelligence' && <HRTalentIntelligencePanel companyId={demoCompanyId} />}
-        {activeModule === 'compliance-enterprise' && <HRComplianceEnterprisePanel companyId={demoCompanyId} />}
-        {activeModule === 'wellbeing-enterprise' && <HRWellbeingEnterprisePanel companyId={demoCompanyId} />}
-        {activeModule === 'esg-selfservice' && <HRESGSelfServicePanel companyId={demoCompanyId} />}
-        {activeModule === 'copilot-twin' && <HRCopilotTwinPanel companyId={demoCompanyId} />}
-        {activeModule === 'security-governance' && <HRSecurityGovernancePanel companyId={demoCompanyId} />}
-        {activeModule === 'ai-governance' && <HRAIGovernancePanel companyId={demoCompanyId} />}
-        {activeModule === 'workforce-planning' && <HRWorkforcePlanningPanel companyId={demoCompanyId} />}
-        {activeModule === 'fairness-engine' && <HRFairnessEnginePanel companyId={demoCompanyId} />}
-        {activeModule === 'digital-twin' && <HRDigitalTwinPanel companyId={demoCompanyId} />}
-        {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={demoCompanyId} />}
-        {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={demoCompanyId} />}
-        {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={demoCompanyId} />}
+        {activeModule === 'regulatory-watch' && <HRRegulatoryWatchPanel companyId={companyId} />}
+        {activeModule === 'legal-compliance' && <HRLegalComplianceDashboard companyId={companyId} />}
+        {activeModule === 'integration' && <HRIntegrationDashboard companyId={companyId} />}
+        {activeModule === 'demo-seed' && <HRDemoSeedPanel companyId={companyId} />}
+        {activeModule === 'skills-matrix' && <HRSkillsMatrixPanel companyId={companyId} />}
+        {activeModule === 'marketplace' && <HRInternalMarketplacePanel companyId={companyId} />}
+        {activeModule === 'succession' && <HRSuccessionPlanningPanel companyId={companyId} />}
+        {activeModule === 'analytics-intelligence' && <HRAnalyticsIntelligencePanel companyId={companyId} />}
+        {activeModule === 'enterprise-dashboard' && <HREnterpriseDashboard companyId={companyId} />}
+        {activeModule === 'legal-entities' && <HRLegalEntitiesPanel companyId={companyId} />}
+        {activeModule === 'work-centers' && <HRWorkCentersPanel companyId={companyId} />}
+        {activeModule === 'org-structure' && <HROrgStructurePanel companyId={companyId} />}
+        {activeModule === 'work-calendars' && <HRCalendarsPanel companyId={companyId} />}
+        {activeModule === 'enterprise-roles' && <HRRolesPermissionsPanel companyId={companyId} />}
+        {activeModule === 'audit-trail' && <HRAuditTrailPanel companyId={companyId} />}
+        {activeModule === 'workflow-designer' && <HRWorkflowDesigner companyId={companyId} />}
+        {activeModule === 'approval-inbox' && <HRApprovalInbox companyId={companyId} />}
+        {activeModule === 'sla-dashboard' && <HRSLADashboard companyId={companyId} />}
+        {activeModule === 'compensation-suite' && <HRCompensationSuitePanel companyId={companyId} />}
+        {activeModule === 'talent-intelligence' && <HRTalentIntelligencePanel companyId={companyId} />}
+        {activeModule === 'compliance-enterprise' && <HRComplianceEnterprisePanel companyId={companyId} />}
+        {activeModule === 'wellbeing-enterprise' && <HRWellbeingEnterprisePanel companyId={companyId} />}
+        {activeModule === 'esg-selfservice' && <HRESGSelfServicePanel companyId={companyId} />}
+        {activeModule === 'copilot-twin' && <HRCopilotTwinPanel companyId={companyId} />}
+        {activeModule === 'security-governance' && <HRSecurityGovernancePanel companyId={companyId} />}
+        {activeModule === 'ai-governance' && <HRAIGovernancePanel companyId={companyId} />}
+        {activeModule === 'workforce-planning' && <HRWorkforcePlanningPanel companyId={companyId} />}
+        {activeModule === 'fairness-engine' && <HRFairnessEnginePanel companyId={companyId} />}
+        {activeModule === 'digital-twin' && <HRDigitalTwinPanel companyId={companyId} />}
+        {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={companyId} />}
+        {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={companyId} />}
+        {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={companyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
       <HRPayrollEntryDialog
         open={showPayrollDialog}
         onOpenChange={setShowPayrollDialog}
-        companyId={demoCompanyId}
+        companyId={companyId}
         month="2026-02"
       />
 
       <HRVacationRequestDialog
         open={showVacationDialog}
         onOpenChange={setShowVacationDialog}
-        companyId={demoCompanyId}
+        companyId={companyId}
       />
 
       <HRSeveranceCalculatorDialog
         open={showSeveranceDialog}
         onOpenChange={setShowSeveranceDialog}
-        companyId={demoCompanyId}
+        companyId={companyId}
       />
 
       <HRIndemnizationCalculatorDialog
         open={showIndemnizationDialog}
         onOpenChange={setShowIndemnizationDialog}
-        companyId={demoCompanyId}
+        companyId={companyId}
       />
     </div>
   );
