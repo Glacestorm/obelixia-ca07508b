@@ -27163,6 +27163,48 @@ export type Database = {
           },
         ]
       }
+      erp_hr_document_requests: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          document_type: string
+          document_url: string | null
+          employee_id: string
+          generated_at: string | null
+          id: string
+          notes: string | null
+          purpose: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string
+          created_at?: string | null
+          document_type: string
+          document_url?: string | null
+          employee_id: string
+          generated_at?: string | null
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          document_type?: string
+          document_url?: string | null
+          employee_id?: string
+          generated_at?: string | null
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_document_templates: {
         Row: {
           applicable_contract_types: string[] | null
@@ -28388,6 +28430,165 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_esg_social_kpis: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string | null
+          current_value: number | null
+          framework: string | null
+          gri_disclosure: string | null
+          id: string
+          kpi_code: string
+          kpi_name: string
+          period: string
+          previous_value: number | null
+          status: string | null
+          target_value: number | null
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          company_id?: string
+          created_at?: string | null
+          current_value?: number | null
+          framework?: string | null
+          gri_disclosure?: string | null
+          id?: string
+          kpi_code: string
+          kpi_name: string
+          period: string
+          previous_value?: number | null
+          status?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          current_value?: number | null
+          framework?: string | null
+          gri_disclosure?: string | null
+          id?: string
+          kpi_code?: string
+          kpi_name?: string
+          period?: string
+          previous_value?: number | null
+          status?: string | null
+          target_value?: number | null
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_esg_social_metrics: {
+        Row: {
+          benchmark_value: number | null
+          category: string
+          company_id: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_value: number
+          period: string
+          source: string | null
+          target_value: number | null
+          trend: string | null
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_value?: number | null
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_value?: number
+          period: string
+          source?: string | null
+          target_value?: number | null
+          trend?: string | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_value?: number | null
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_value?: number
+          period?: string
+          source?: string | null
+          target_value?: number | null
+          trend?: string | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_esg_social_surveys: {
+        Row: {
+          avg_score: number | null
+          company_id: string
+          created_at: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          questions: Json | null
+          response_count: number | null
+          results: Json | null
+          starts_at: string | null
+          status: string | null
+          survey_type: string | null
+          target_audience: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          avg_score?: number | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          questions?: Json | null
+          response_count?: number | null
+          results?: Json | null
+          starts_at?: string | null
+          status?: string | null
+          survey_type?: string | null
+          target_audience?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          avg_score?: number | null
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          questions?: Json | null
+          response_count?: number | null
+          results?: Json | null
+          starts_at?: string | null
+          status?: string | null
+          survey_type?: string | null
+          target_audience?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       erp_hr_evaluation_cycles: {
         Row: {
@@ -33245,6 +33446,108 @@ export type Database = {
           sanction_min_major?: number | null
           sanction_min_medium?: number | null
           sanction_min_minor?: number | null
+        }
+        Relationships: []
+      }
+      erp_hr_self_service_faq: {
+        Row: {
+          answer: string
+          category: string
+          company_id: string
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          is_published: boolean | null
+          question: string
+          tags: string[] | null
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          answer: string
+          category: string
+          company_id?: string
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_published?: boolean | null
+          question: string
+          tags?: string[] | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          answer?: string
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_published?: boolean | null
+          question?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      erp_hr_self_service_requests: {
+        Row: {
+          assigned_to: string | null
+          attachments: Json | null
+          category: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          employee_id: string
+          id: string
+          metadata: Json | null
+          priority: string | null
+          request_type: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string | null
+          subject: string
+          submitted_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          attachments?: Json | null
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          employee_id: string
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          request_type: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          subject: string
+          submitted_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          attachments?: Json | null
+          category?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          employee_id?: string
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          request_type?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string | null
+          subject?: string
+          submitted_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

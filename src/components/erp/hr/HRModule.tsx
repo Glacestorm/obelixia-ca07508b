@@ -62,6 +62,7 @@ import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgS
 import { HRCompensationSuitePanel } from './compensation';
 import { HRTalentIntelligencePanel } from './talent/HRTalentIntelligencePanel';
 import { HRWellbeingEnterprisePanel } from './wellbeing/HRWellbeingEnterprisePanel';
+import { HRESGSelfServicePanel } from './esg-selfservice/HRESGSelfServicePanel';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -322,6 +323,7 @@ export function HRModule() {
         {activeModule === 'talent-intelligence' && <HRTalentIntelligencePanel companyId={demoCompanyId} />}
         {activeModule === 'compliance-enterprise' && <HRComplianceEnterprisePanel companyId={demoCompanyId} />}
         {activeModule === 'wellbeing-enterprise' && <HRWellbeingEnterprisePanel companyId={demoCompanyId} />}
+        {activeModule === 'esg-selfservice' && <HRESGSelfServicePanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}

@@ -13,7 +13,7 @@ import {
   FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
   Brain, Newspaper, BookOpen, HelpCircle, Rocket, ChevronRight, ChevronDown,
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
-  Inbox, Timer, Coins, Heart
+  Inbox, Timer, Coins, Heart, Leaf
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -112,6 +112,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'talent-intelligence', label: 'Talent Intelligence', icon: Brain },
         { id: 'compliance-enterprise', label: 'Compliance Enterprise', icon: Shield },
         { id: 'wellbeing-enterprise', label: 'Wellbeing Enterprise', icon: Heart },
+        { id: 'esg-selfservice', label: 'ESG Social & Self-Service', icon: Leaf },
       ]
     },
     {

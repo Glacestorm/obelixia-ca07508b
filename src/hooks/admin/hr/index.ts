@@ -205,3 +205,10 @@ export type {
   ComplianceTraining, ComplianceRiskAssessment, ComplianceKPI,
   RiskAnalysis, GapAnalysis, ComplianceStats
 } from './useHRComplianceEnterprise';
+
+// Phase 7 - ESG Social + Self-Service
+export { useHRESGSelfService } from './useHRESGSelfService';
+export type {
+  ESGSocialMetric, ESGSocialKPI, SelfServiceRequest,
+  FAQ, ESGSurvey, DocumentRequest, ESGSocialAnalysis
+} from './useHRESGSelfService';
