@@ -291,6 +291,7 @@ export function ElectricalConsultingModule() {
         {activeModule === 'potencia' && <ElectricalPotenciaPanel companyId={companyId} />}
         {activeModule === 'recomendaciones' && <ElectricalRecomendacionesPanel companyId={companyId} />}
         {activeModule === 'analitica-avanzada' && <EnergyAdvancedAnalytics companyId={companyId} />}
+        {activeModule === 'motor-recomendacion' && <EnergyMultiVectorComparator companyId={companyId} />}
         {activeModule === 'informes' && <ElectricalInformesPanel companyId={companyId} />}
         {activeModule === 'seguimiento' && <ElectricalSeguimientoPanel companyId={companyId} />}
         {activeModule === 'ejecutivo' && <ElectricalExecutiveDashboard onNavigateToCase={handleNavigateToCase} />}
