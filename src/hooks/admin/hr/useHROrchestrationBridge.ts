@@ -68,7 +68,7 @@ export interface ModuleEmitHelpers {
 /** Map of module → table names for default trigger_table values */
 const MODULE_TABLES: Record<ModuleKey, string> = {
   security: 'erp_hr_masking_rules',
-  ai_governance: 'erp_hr_ai_models',
+  ai_governance: 'erp_hr_ai_model_registry',
   workforce: 'erp_hr_workforce_plans',
   fairness: 'erp_hr_justice_cases',
   twin: 'erp_hr_twin_instances',
@@ -103,13 +103,13 @@ export function useHROrchestrationBridge(companyId: string | null) {
     },
     ai_governance: {
       onBiasDetected: createEmitter(e, 'ai_governance', 'threshold_exceeded', 'erp_hr_ai_bias_audits'),
-      onModelStatusChanged: createEmitter(e, 'ai_governance', 'status_changed', 'erp_hr_ai_models'),
+      onModelStatusChanged: createEmitter(e, 'ai_governance', 'status_changed', 'erp_hr_ai_model_registry'),
       onPolicyViolation: createEmitter(e, 'ai_governance', 'threshold_exceeded', 'erp_hr_ai_governance_policies'),
       onDecisionLogged: createEmitter(e, 'ai_governance', 'record_created', 'erp_hr_ai_decisions'),
     },
     workforce: {
       onPlanCreated: createEmitter(e, 'workforce', 'record_created'),
-      onScenarioCompleted: createEmitter(e, 'workforce', 'status_changed', 'erp_hr_workforce_scenarios'),
+      onScenarioCompleted: createEmitter(e, 'workforce', 'status_changed', 'erp_hr_scenarios'),
       onGapThresholdExceeded: createEmitter(e, 'workforce', 'threshold_exceeded'),
       onBudgetChanged: createEmitter(e, 'workforce', 'record_updated'),
     },

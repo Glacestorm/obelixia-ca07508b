@@ -65,7 +65,7 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Plan "${r.name || r.title || 'Sin nombre'}" — ${r.status || 'creado'}`,
   },
   {
-    module: 'workforce', table: 'erp_hr_workforce_scenarios',
+    module: 'workforce', table: 'erp_hr_scenarios',
     actionLabel: 'Escenario simulado',
     descriptionFn: (r) => `Escenario "${r.name || r.title || ''}" — ${r.scenario_type || 'análisis'}`,
   },
@@ -75,12 +75,12 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Caso "${r.title || r.case_type || 'equidad'}" — ${r.status || 'abierto'}`,
   },
   {
-    module: 'fairness', table: 'erp_hr_equity_analyses',
+    module: 'fairness', table: 'erp_hr_pay_equity_analyses',
     actionLabel: 'Análisis de equidad',
     descriptionFn: (r) => `Análisis ${r.analysis_type || 'salarial'} — score: ${r.equity_score ?? 'N/A'}`,
   },
   {
-    module: 'twin', table: 'erp_hr_twin_snapshots',
+    module: 'twin', table: 'erp_hr_twin_module_snapshots',
     actionLabel: 'Snapshot Digital Twin',
     descriptionFn: (r) => `Snapshot organizacional — ${r.snapshot_type || 'completo'}`,
   },
@@ -95,12 +95,12 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Contrato "${r.title || r.contract_type || ''}" — ${r.status || 'generado'}`,
   },
   {
-    module: 'legal', table: 'erp_hr_legal_clause_library',
+    module: 'legal', table: 'erp_hr_legal_clauses',
     actionLabel: 'Cláusula legal',
     descriptionFn: (r) => `Cláusula "${r.name || r.title || ''}" añadida a la biblioteca`,
   },
   {
-    module: 'cnae', table: 'erp_hr_cnae_profiles',
+    module: 'cnae', table: 'erp_hr_cnae_sector_profiles',
     actionLabel: 'Perfil CNAE',
     descriptionFn: (r) => `Perfil sectorial ${r.cnae_code || ''} — ${r.sector_name || 'configurado'}`,
   },

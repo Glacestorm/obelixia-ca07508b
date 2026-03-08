@@ -1,99 +1,61 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium
 
-# Stabilization Sprint / Fix & Harden — HR Premium Suite
+## Estado de Implementación
 
-## Scope
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-Fix all table name mismatches causing 404/400 errors, verify RLS on P11, and ensure all premium panels render without errors.
+## Premium Phases — Enterprise Differentiators
 
----
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-## 1. Table Name Bugs (9 mismatches confirmed via DB inspection)
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-The audit found **9 wrong table names** (not 4 as previously estimated):
+## FASE 2 — Completada ✅
 
-```text
-WRONG NAME IN CODE                → CORRECT TABLE IN DB
-─────────────────────────────────────────────────────────
-erp_hr_ai_models                  → erp_hr_ai_model_registry
-erp_hr_workforce_scenarios        → erp_hr_scenarios
-erp_hr_cnae_profiles              → erp_hr_cnae_sector_profiles
-erp_hr_equity_analyses            → erp_hr_pay_equity_analyses
-erp_hr_legal_clause_library       → erp_hr_legal_clauses
-erp_hr_twin_snapshots             → erp_hr_twin_module_snapshots
-erp_hr_pay_equity_rules           → erp_hr_pay_equity_snapshots (closest match)
-erp_hr_role_widgets               → (table doesn't exist, remove ref)
-erp_hr_twin_experiments.company_id→ no company_id column; filter via twin_id join
-```
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-### Files to fix (8 hooks):
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
-| File | Fixes needed |
-|------|-------------|
-| `useHRAnalyticsBIPremium.ts` | ai_models, workforce_scenarios, cnae_profiles, twin_experiments query |
-| `useHRPremiumDashboard.ts` | ai_models |
-| `useHROrchestrationBridge.ts` | ai_models, workforce_scenarios |
-| `useHRPremiumActivityFeed.ts` | workforce_scenarios, cnae_profiles, equity_analyses, legal_clause_library, twin_snapshots |
-| `useHRPremiumHealthCheck.ts` | workforce_scenarios, cnae_profiles, equity_analyses, legal_clause_library, twin_snapshots, twin_experiments, pay_equity_rules |
-| `useHRPremiumExport.ts` | workforce_scenarios, cnae_profiles, equity_analyses, legal_clause_library, twin_snapshots, twin_experiments, pay_equity_rules |
-| `useHROrchestration.ts` | workforce_scenarios, cnae_profiles, equity_analyses, legal_clause_library, twin_snapshots, pay_equity_rules, role_widgets |
-| `useHRReseed.ts` | Verify edge function action names still match |
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-### twin_experiments special fix:
-In `useHRAnalyticsBIPremium.ts`, the query `.eq('company_id', companyId)` on `erp_hr_twin_experiments` fails because this table uses `twin_id` (FK to `erp_hr_twin_instances`). Fix: remove direct count or join through `twin_instances` which does have `company_id`.
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
----
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-## 2. RLS Hardening for P11
-
-DB inspection shows P11 tables **already have** `user_has_erp_premium_access(company_id)` RLS policies:
-- `erp_hr_compliance_frameworks` — `compliance_frameworks_access` (ALL)
-- `erp_hr_compliance_audits` — `p92_sel`, `p92_ins`, `p92_upd` + `compliance_audits_p11_access` (ALL)
-- `erp_hr_compliance_alerts` — `compliance_alerts_p11_access` (ALL)
-
-**Finding**: P11 RLS is already hardened. The previous audit was wrong on this point. However, `compliance_audits` has overlapping policies (both `p92_*` and `p11_access`). I will clean up the duplicate policy on `compliance_audits` to avoid confusion.
-
----
-
-## 3. Plan of Changes
-
-### Step 1: Fix all 9 table name mismatches across 7 hook files
-Simple find-and-replace in each file:
-- `erp_hr_ai_models` → `erp_hr_ai_model_registry`
-- `erp_hr_workforce_scenarios` → `erp_hr_scenarios`
-- `erp_hr_cnae_profiles` → `erp_hr_cnae_sector_profiles`
-- `erp_hr_equity_analyses` → `erp_hr_pay_equity_analyses`
-- `erp_hr_legal_clause_library` → `erp_hr_legal_clauses`
-- `erp_hr_twin_snapshots` → `erp_hr_twin_module_snapshots`
-- `erp_hr_pay_equity_rules` → `erp_hr_pay_equity_snapshots`
-- `erp_hr_role_widgets` → `erp_hr_role_dashboards` (use existing table)
-
-### Step 2: Fix twin_experiments company_id query
-In `useHRAnalyticsBIPremium.ts`, replace the direct `erp_hr_twin_experiments` count with a query that first gets `twin_id`s from `erp_hr_twin_instances` for the company, then counts experiments for those twins. Or simply remove the broken count and rely on `twin_instances` count only.
-
-### Step 3: DB migration to clean up duplicate RLS policy
-Remove the redundant `compliance_audits_p11_access` ALL policy since `p92_*` granular policies already cover SELECT/INSERT/UPDATE.
-
-### Step 4: Smoke validation
-After fixes, verify all network requests return 200 (no more 404/400) by checking:
-- P2 AI Governance panel loads
-- P3 Workforce scenarios count > 0
-- P5 Digital Twin experiments load
-- P7 CNAE profiles load
-- P12 Analytics BI dashboard shows non-zero data for all modules
-- HealthCheck, ActivityFeed, Export panels work without errors
-
----
-
-## 4. No New Screens or Modules
-Zero new UI components. Zero new tables. Only corrections to existing hooks.
-
----
-
-## 5. Deliverables Summary
-
-- **9 table name bugs fixed** across 7-8 files
-- **1 query logic fix** (twin_experiments company_id → twin_id join)
-- **1 migration** (cleanup duplicate RLS policy)
-- **Final validation table** panel-by-panel
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard

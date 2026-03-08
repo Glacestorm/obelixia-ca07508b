@@ -118,22 +118,22 @@ export function useHRAnalyticsBIPremium() {
       db.from('erp_hr_data_classifications').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_sod_violations').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
       // AI Governance
-      db.from('erp_hr_ai_models').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_ai_model_registry').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_ai_decisions').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Workforce
       db.from('erp_hr_workforce_plans').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      db.from('erp_hr_workforce_scenarios').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_scenarios').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Fairness
       db.from('erp_hr_pay_equity_analyses').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_justice_cases').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
       // Digital Twin
       db.from('erp_hr_twin_instances').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      db.from('erp_hr_twin_experiments').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_twin_experiments').select('id', { count: 'exact', head: true }),
       // Legal Engine
       db.from('erp_hr_legal_templates').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_legal_contracts').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // CNAE
-      db.from('erp_hr_cnae_profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_cnae_sector_profiles').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Compliance
       db.from('erp_hr_compliance_frameworks').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_compliance_audits').select('id', { count: 'exact', head: true }).eq('company_id', companyId),

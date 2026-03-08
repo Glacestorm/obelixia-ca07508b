@@ -35,7 +35,7 @@ export interface PremiumDashboardData {
 
 const PREMIUM_MODULES = [
   { id: 'p1', label: 'Security & Data Masking', phase: 'P1', table: 'erp_hr_masking_rules' },
-  { id: 'p2', label: 'AI Governance', phase: 'P2', table: 'erp_hr_ai_models' },
+  { id: 'p2', label: 'AI Governance', phase: 'P2', table: 'erp_hr_ai_model_registry' },
   { id: 'p3', label: 'Workforce Planning', phase: 'P3', table: 'erp_hr_workforce_plans' },
   { id: 'p4', label: 'Fairness Engine', phase: 'P4', table: 'erp_hr_pay_equity_analyses' },
   { id: 'p5', label: 'Digital Twin', phase: 'P5', table: 'erp_hr_twin_instances' },

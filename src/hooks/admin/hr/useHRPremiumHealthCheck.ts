@@ -46,26 +46,26 @@ const TABLE_CHECKS: TableCheck[] = [
   { module: 'ai_governance', table: 'erp_hr_ai_bias_audits', label: 'Auditorías de sesgo', description: 'Auditorías de sesgo algorítmico' },
   // P3 Workforce
   { module: 'workforce', table: 'erp_hr_workforce_plans', label: 'Planes de workforce', description: 'Planes estratégicos de fuerza laboral', minExpected: 1 },
-  { module: 'workforce', table: 'erp_hr_workforce_scenarios', label: 'Escenarios', description: 'Escenarios de simulación' },
+  { module: 'workforce', table: 'erp_hr_scenarios', label: 'Escenarios', description: 'Escenarios de simulación' },
   // P4 Fairness
   { module: 'fairness', table: 'erp_hr_justice_cases', label: 'Casos de justicia', description: 'Casos del motor de equidad' },
-  { module: 'fairness', table: 'erp_hr_equity_analyses', label: 'Análisis de equidad', description: 'Análisis salariales y de equidad' },
-  { module: 'fairness', table: 'erp_hr_pay_equity_rules', label: 'Reglas pay equity', description: 'Reglas de equidad salarial configuradas', minExpected: 1 },
+  { module: 'fairness', table: 'erp_hr_pay_equity_analyses', label: 'Análisis de equidad', description: 'Análisis salariales y de equidad' },
+  { module: 'fairness', table: 'erp_hr_pay_equity_snapshots', label: 'Snapshots pay equity', description: 'Snapshots de equidad salarial' },
   // P5 Twin
-  { module: 'twin', table: 'erp_hr_twin_snapshots', label: 'Snapshots Twin', description: 'Snapshots del gemelo digital' },
+  { module: 'twin', table: 'erp_hr_twin_module_snapshots', label: 'Snapshots Twin', description: 'Snapshots del gemelo digital' },
   { module: 'twin', table: 'erp_hr_twin_alerts', label: 'Alertas Twin', description: 'Alertas de divergencia organizacional' },
   { module: 'twin', table: 'erp_hr_twin_experiments', label: 'Experimentos Twin', description: 'Experimentos what-if del gemelo' },
   // P6 Legal
   { module: 'legal', table: 'erp_hr_legal_contracts', label: 'Contratos legales', description: 'Contratos generados por el motor legal' },
-  { module: 'legal', table: 'erp_hr_legal_clause_library', label: 'Biblioteca de cláusulas', description: 'Cláusulas legales reutilizables', minExpected: 1 },
+  { module: 'legal', table: 'erp_hr_legal_clauses', label: 'Biblioteca de cláusulas', description: 'Cláusulas legales reutilizables', minExpected: 1 },
   { module: 'legal', table: 'erp_hr_legal_templates', label: 'Plantillas legales', description: 'Plantillas de documentos legales', minExpected: 1 },
   // P7 CNAE
-  { module: 'cnae', table: 'erp_hr_cnae_profiles', label: 'Perfiles CNAE', description: 'Perfiles sectoriales configurados', minExpected: 1 },
+  { module: 'cnae', table: 'erp_hr_cnae_sector_profiles', label: 'Perfiles CNAE', description: 'Perfiles sectoriales configurados', minExpected: 1 },
   { module: 'cnae', table: 'erp_hr_cnae_risk_assessments', label: 'Evaluaciones riesgo', description: 'Evaluaciones de riesgo sectorial' },
   { module: 'cnae', table: 'erp_hr_cnae_benchmarks', label: 'Benchmarks CNAE', description: 'Benchmarks sectoriales' },
   // P8 Role Experience
   { module: 'role_experience', table: 'erp_hr_role_dashboards', label: 'Dashboards de rol', description: 'Configuraciones de dashboard por rol', minExpected: 1 },
-  { module: 'role_experience', table: 'erp_hr_role_widgets', label: 'Widgets de rol', description: 'Widgets personalizados por rol' },
+  { module: 'role_experience', table: 'erp_hr_role_analytics', label: 'Analytics de rol', description: 'Analíticas por rol' },
 ];
 
 const MODULE_LABELS: Record<PremiumModule, string> = {

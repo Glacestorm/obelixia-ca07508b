@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "compliance_audits_p11_access" ON public.erp_hr_compliance_audits;
