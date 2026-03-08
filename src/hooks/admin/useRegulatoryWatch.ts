@@ -116,33 +116,26 @@ export function useRegulatoryWatch(companyId?: string) {
 
     setIsLoading(true);
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-      let url = `${supabaseUrl}/rest/v1/erp_hr_regulatory_watch?or=(company_id.eq.${companyId},company_id.is.null)&order=detected_at.desc`;
+      let query = supabase
+        .from('erp_hr_regulatory_watch')
+        .select('*')
+        .or(`company_id.eq.${companyId},company_id.is.null`)
+        .order('detected_at', { ascending: false });
 
       if (filters?.status) {
-        url += `&approval_status=eq.${filters.status}`;
+        query = query.eq('approval_status', filters.status);
       }
       if (filters?.category) {
-        url += `&category=eq.${filters.category}`;
+        query = query.eq('category', filters.category);
       }
       if (filters?.jurisdiction) {
-        url += `&jurisdiction=eq.${filters.jurisdiction}`;
+        query = query.eq('jurisdiction', filters.jurisdiction);
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { data, error } = await query;
 
-      if (!response.ok) throw new Error('Error fetching regulatory items');
-
-      const data = await response.json();
-      setItems(data as RegulatoryWatchItem[]);
+      if (error) throw error;
+      setItems((data || []) as unknown as RegulatoryWatchItem[]);
     } catch (error) {
       console.error('[useRegulatoryWatch] fetchItems error:', error);
       toast.error('Error al cargar normativas');
@@ -156,27 +149,21 @@ export function useRegulatoryWatch(companyId?: string) {
     if (!companyId) return;
 
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      let query = supabase
+        .from('erp_hr_regulatory_alerts')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('is_dismissed', false)
+        .order('created_at', { ascending: false });
 
-      let url = `${supabaseUrl}/rest/v1/erp_hr_regulatory_alerts?company_id=eq.${companyId}&is_dismissed=eq.false&order=created_at.desc`;
-      
       if (unreadOnly) {
-        url += '&is_read=eq.false';
+        query = query.eq('is_read', false);
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const { data, error } = await query;
 
-      if (!response.ok) throw new Error('Error fetching alerts');
-
-      const data = await response.json();
-      setAlerts(data as RegulatoryAlert[]);
+      if (error) throw error;
+      setAlerts((data || []) as unknown as RegulatoryAlert[]);
     } catch (error) {
       console.error('[useRegulatoryWatch] fetchAlerts error:', error);
     }
@@ -220,27 +207,45 @@ export function useRegulatoryWatch(companyId?: string) {
     if (!companyId) return null;
 
     try {
-      const { data, error } = await supabase
-        .from('erp_hr_regulatory_watch_config')
-        .upsert({
-          company_id: companyId,
-          ...updates,
-          updated_at: new Date().toISOString()
-        } as never)
-        .select()
-        .single();
+      // Check if config exists first
+      if (config?.id) {
+        // Update existing
+        const { data, error } = await supabase
+          .from('erp_hr_regulatory_watch_config')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+          } as never)
+          .eq('id', config.id)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
+        setConfig(data as unknown as RegulatoryWatchConfig);
+      } else {
+        // Insert new
+        const { data, error } = await supabase
+          .from('erp_hr_regulatory_watch_config')
+          .insert({
+            company_id: companyId,
+            ...updates,
+            updated_at: new Date().toISOString()
+          } as never)
+          .select()
+          .single();
 
-      setConfig(data as unknown as RegulatoryWatchConfig);
+        if (error) throw error;
+        setConfig(data as unknown as RegulatoryWatchConfig);
+      }
+
       toast.success('Configuración actualizada');
-      return data;
+      return config;
     } catch (error) {
       console.error('[useRegulatoryWatch] updateConfig error:', error);
       toast.error('Error al actualizar configuración');
       return null;
     }
-  }, [companyId]);
+  }, [companyId, config]);
 
   // === RUN MANUAL CHECK ===
   const runManualCheck = useCallback(async () => {
