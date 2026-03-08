@@ -9,8 +9,8 @@
 | 2 | ✅ Completada | Hot-add módulos, resolución dependencias, compatibilidad |
 | 3 | ✅ Completada | Canales stable/beta/canary, timeline updates, rollback |
 | 4 | ✅ Completada | Vinculación licencias, entitlements por módulo |
-| 5 | 📋 Pendiente | Monetización pay-per-use |
-| 6 | 📋 Pendiente | Generador de artefactos por plataforma |
+| 5 | ✅ Completada | Monetización pay-per-use, billing events, reglas de facturación |
+| 6 | ✅ Completada | Generador de artefactos multi-plataforma (10 tipos) |
 
 ## Implementado
 
@@ -42,14 +42,19 @@
 - Integración con tabla `licenses` existente
 - Badge de licencia en listado de instalaciones
 
-## Pendiente
+### Fase 5 — Monetización Pay-per-Use
+- Tabla `usage_billing_events` con tracking de consumo por módulo
+- Función `get_usage_billing_summary` para resumen mensual
+- Hook `useUsageBilling` con recordUsage, fetchSummary, saveRule
+- Panel de facturación con 3 tabs: Resumen, Eventos, Reglas
+- Configurador de reglas de pricing (precio unitario, free tier, moneda)
+- Integración en tab "Consumo" del panel de instalación
 
-### FASE 5 — Monetización Pay-per-Use
-- `usage_billing_rules` ya creada
-- Edge Function `usage-billing`
-- Dashboard de consumo
-- Stripe integration
+### Fase 6 — Generador de Artefactos
+- 10 tipos de artefactos: Docker Compose, Dockerfile, Helm Chart, K8s Manifests, PowerShell, Bash, Proxmox, CloudFormation, Terraform, ARM Template
+- Generación dinámica basada en módulos instalados + installation key
+- Descarga directa de archivos generados
+- Panel integrado en tab "Artefactos" del panel de instalación
+- Filtrado de artefactos por plataforma seleccionada
 
-### FASE 6 — Artefactos por Plataforma
-- Docker Compose, Helm charts, CloudFormation, etc.
-- Edge Function `generate-installation-artifact`
+## ✅ PLAN COMPLETADO — Todas las 6 fases implementadas
