@@ -196,90 +196,6 @@ function ERPModularDashboardContent() {
             Resumen
           </TabsTrigger>
           
-          {/* Módulos ERP - Solo visibles en overview */}
-          {!isInsideModule && (
-            <>
-              {canShowModule('masters', 'masters.read') && (
-                <TabsTrigger value="maestros" className="gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Maestros
-                </TabsTrigger>
-              )}
-              {canShowModule('sales', 'sales.read') && (
-                <TabsTrigger value="sales" className="gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Ventas
-                </TabsTrigger>
-              )}
-              {canShowModule('purchases', 'purchases.read') && (
-                <TabsTrigger value="purchases" className="gap-2">
-                  <Package className="h-4 w-4" />
-                  Compras
-                </TabsTrigger>
-              )}
-              {canShowModule('inventory', 'inventory.read') && (
-                <TabsTrigger value="inventory" className="gap-2">
-                  <Package className="h-4 w-4" />
-                  Almacén
-                </TabsTrigger>
-              )}
-              {canShowModule('accounting', 'accounting.read') && (
-                <TabsTrigger value="accounting" className="gap-2">
-                  <Calculator className="h-4 w-4" />
-                  Contabilidad
-                </TabsTrigger>
-              )}
-              {canShowModule('treasury', 'treasury.read') && (
-                <TabsTrigger value="treasury" className="gap-2">
-                  <Wallet className="h-4 w-4" />
-                  Tesorería
-                </TabsTrigger>
-              )}
-              {canShowModule('trade', 'trade.read') && (
-                <TabsTrigger value="trade" className="gap-2">
-                  <Globe className="h-4 w-4" />
-                  Comercio
-                </TabsTrigger>
-              )}
-              {canShowModule('logistics', 'logistics.read') && (
-                <TabsTrigger value="logistics" className="gap-2">
-                  <Truck className="h-4 w-4" />
-                  Logística
-                </TabsTrigger>
-              )}
-              {canShowModule('tax', 'tax.read') && (
-                <TabsTrigger value="tax" className="gap-2">
-                  <Receipt className="h-4 w-4" />
-                  Fiscal
-                </TabsTrigger>
-              )}
-              {canShowModule('hr', 'hr.read') && (
-                <TabsTrigger value="hr" className="gap-2">
-                  <UserCog className="h-4 w-4" />
-                  RRHH
-                </TabsTrigger>
-              )}
-              {canShowModule('legal', 'legal.read') && (
-                <TabsTrigger value="legal" className="gap-2">
-                  <Scale className="h-4 w-4" />
-                  Jurídico
-                </TabsTrigger>
-              )}
-              {canShowModule('galia', 'admin.all') && (
-                <TabsTrigger value="galia" className="gap-2">
-                  <Landmark className="h-4 w-4" />
-                  GALIA
-                </TabsTrigger>
-              )}
-              {canShowModule('academia', 'admin.all') && (
-                <TabsTrigger value="academia" className="gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  Academia
-                </TabsTrigger>
-              )}
-            </>
-          )}
-          
           {/* Indicador del módulo activo cuando estamos dentro de uno */}
           {isInsideModule && (
             <Badge variant="secondary" className="gap-2 px-3 py-1.5 text-sm font-medium">
@@ -297,11 +213,10 @@ function ERPModularDashboardContent() {
               {activeTab === 'galia' && <><Landmark className="h-4 w-4" /> LEADER</>}
               {activeTab === 'academia' && <><GraduationCap className="h-4 w-4" /> Academia</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
-              {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
             </Badge>
           )}
           
-          {/* Tabs de configuración - Siempre visibles */}
+          {/* Tabs de configuración y administración - Siempre visibles */}
           {hasPermission('admin.all') && (
             <>
               <TabsTrigger value="companies" className="gap-2">
