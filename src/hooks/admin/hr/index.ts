@@ -154,3 +154,18 @@ export type {
   EngagementPrediction,
   SkillsGapForecast
 } from './useHRAnalyticsIntelligence';
+
+// Phase Enterprise - Architecture Foundations
+export { useHREnterprise } from './useHREnterprise';
+export type {
+  HRLegalEntity,
+  HRWorkCenter,
+  HROrgUnit,
+  HRWorkCalendar,
+  HRCalendarEntry,
+  HREnterpriseRole,
+  HRPermission,
+  HRAuditLogEntry,
+  HRCriticalEvent,
+  HREnterpriseStats
+} from './useHREnterprise';

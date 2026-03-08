@@ -34,7 +34,11 @@ import {
   ChevronDown,
   Calculator,
   Link2,
-  Database
+  Database,
+  MapPin,
+  Network,
+  Lock,
+  ClipboardList
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -112,6 +116,20 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'analytics-intelligence', label: 'Analytics IA', icon: Brain },
         { id: 'benefits', label: 'Beneficios', icon: Gift },
         { id: 'safety', label: 'PRL', icon: Shield, badge: stats.safetyAlerts, badgeVariant: 'destructive' },
+      ]
+    },
+    {
+      id: 'enterprise',
+      label: 'Enterprise',
+      icon: Building2,
+      items: [
+        { id: 'enterprise-dashboard', label: 'Command Center', icon: TrendingUp },
+        { id: 'legal-entities', label: 'Entidades Legales', icon: Building2 },
+        { id: 'work-centers', label: 'Centros de Trabajo', icon: MapPin },
+        { id: 'org-structure', label: 'Organigrama', icon: Network },
+        { id: 'work-calendars', label: 'Calendarios', icon: Calendar },
+        { id: 'enterprise-roles', label: 'Roles y Permisos', icon: Lock },
+        { id: 'audit-trail', label: 'Auditoría', icon: ClipboardList },
       ]
     },
     {

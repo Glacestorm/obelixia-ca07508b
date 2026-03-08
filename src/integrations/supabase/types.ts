@@ -24058,6 +24058,71 @@ export type Database = {
           },
         ]
       }
+      erp_hr_audit_log: {
+        Row: {
+          action: string
+          category: string | null
+          changed_fields: string[] | null
+          company_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          session_id: string | null
+          severity: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          category?: string | null
+          changed_fields?: string[] | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          session_id?: string | null
+          severity?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          category?: string | null
+          changed_fields?: string[] | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          session_id?: string | null
+          severity?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_audit_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_benefit_valuations: {
         Row: {
           annual_company_cost: number | null
@@ -24430,6 +24495,56 @@ export type Database = {
           },
         ]
       }
+      erp_hr_calendar_entries: {
+        Row: {
+          calendar_id: string
+          created_at: string | null
+          description: string | null
+          entry_date: string
+          entry_type: string
+          hours_reduction: number | null
+          id: string
+          is_local: boolean | null
+          is_national: boolean | null
+          is_regional: boolean | null
+          name: string
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string | null
+          description?: string | null
+          entry_date: string
+          entry_type?: string
+          hours_reduction?: number | null
+          id?: string
+          is_local?: boolean | null
+          is_national?: boolean | null
+          is_regional?: boolean | null
+          name: string
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string | null
+          description?: string | null
+          entry_date?: string
+          entry_type?: string
+          hours_reduction?: number | null
+          id?: string
+          is_local?: boolean | null
+          is_national?: boolean | null
+          is_regional?: boolean | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_calendar_entries_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_work_calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_candidate_communications: {
         Row: {
           auto_generated: boolean | null
@@ -24720,6 +24835,7 @@ export type Database = {
           is_active: boolean | null
           is_system: boolean | null
           jurisdiction_code: string
+          legal_entity_id: string | null
           metadata: Json | null
           name: string
           night_shift_bonus: Json | null
@@ -24730,6 +24846,7 @@ export type Database = {
           union_obligations: Json | null
           updated_at: string | null
           vacation_days: number | null
+          work_center_id: string | null
           working_hours_week: number | null
         }
         Insert: {
@@ -24745,6 +24862,7 @@ export type Database = {
           is_active?: boolean | null
           is_system?: boolean | null
           jurisdiction_code?: string
+          legal_entity_id?: string | null
           metadata?: Json | null
           name: string
           night_shift_bonus?: Json | null
@@ -24755,6 +24873,7 @@ export type Database = {
           union_obligations?: Json | null
           updated_at?: string | null
           vacation_days?: number | null
+          work_center_id?: string | null
           working_hours_week?: number | null
         }
         Update: {
@@ -24770,6 +24889,7 @@ export type Database = {
           is_active?: boolean | null
           is_system?: boolean | null
           jurisdiction_code?: string
+          legal_entity_id?: string | null
           metadata?: Json | null
           name?: string
           night_shift_bonus?: Json | null
@@ -24780,6 +24900,7 @@ export type Database = {
           union_obligations?: Json | null
           updated_at?: string | null
           vacation_days?: number | null
+          work_center_id?: string | null
           working_hours_week?: number | null
         }
         Relationships: [
@@ -24788,6 +24909,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreements_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_collective_agreements_work_center_id_fkey"
+            columns: ["work_center_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_work_centers"
             referencedColumns: ["id"]
           },
         ]
@@ -26003,6 +26138,132 @@ export type Database = {
           },
         ]
       }
+      erp_hr_critical_events: {
+        Row: {
+          action_taken: string | null
+          affected_entity_id: string | null
+          affected_entity_type: string | null
+          audit_log_id: string | null
+          company_id: string | null
+          created_at: string | null
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          requires_action: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+          title: string
+        }
+        Insert: {
+          action_taken?: string | null
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          audit_log_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          requires_action?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          title: string
+        }
+        Update: {
+          action_taken?: string | null
+          affected_entity_id?: string | null
+          affected_entity_type?: string | null
+          audit_log_id?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          requires_action?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_critical_events_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_audit_log"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_critical_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_data_access_rules: {
+        Row: {
+          applies_to_tables: string[] | null
+          company_id: string
+          conditions: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          role_id: string | null
+          rule_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          applies_to_tables?: string[] | null
+          company_id: string
+          conditions?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          role_id?: string | null
+          rule_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          applies_to_tables?: string[] | null
+          company_id?: string
+          conditions?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          role_id?: string | null
+          rule_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_data_access_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_data_access_rules_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_department_managers: {
         Row: {
           can_approve_expenses: boolean | null
@@ -26080,6 +26341,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          legal_entity_id: string | null
           location: string | null
           manager_id: string | null
           metadata: Json | null
@@ -26087,6 +26349,7 @@ export type Database = {
           parent_id: string | null
           sort_order: number | null
           updated_at: string | null
+          work_center_id: string | null
         }
         Insert: {
           budget?: number | null
@@ -26097,6 +26360,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          legal_entity_id?: string | null
           location?: string | null
           manager_id?: string | null
           metadata?: Json | null
@@ -26104,6 +26368,7 @@ export type Database = {
           parent_id?: string | null
           sort_order?: number | null
           updated_at?: string | null
+          work_center_id?: string | null
         }
         Update: {
           budget?: number | null
@@ -26114,6 +26379,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          legal_entity_id?: string | null
           location?: string | null
           manager_id?: string | null
           metadata?: Json | null
@@ -26121,6 +26387,7 @@ export type Database = {
           parent_id?: string | null
           sort_order?: number | null
           updated_at?: string | null
+          work_center_id?: string | null
         }
         Relationships: [
           {
@@ -26131,10 +26398,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "erp_hr_departments_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "erp_hr_departments_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_departments_work_center_id_fkey"
+            columns: ["work_center_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_work_centers"
             referencedColumns: ["id"]
           },
           {
@@ -27027,8 +27308,10 @@ export type Database = {
           id: string
           job_title: string | null
           last_name: string
+          legal_entity_id: string | null
           metadata: Json | null
           national_id: string | null
+          org_unit_id: string | null
           phone: string | null
           position_id: string | null
           reports_to: string | null
@@ -27040,6 +27323,8 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
           weekly_hours: number | null
+          work_calendar_id: string | null
+          work_center_id: string | null
           work_schedule: string | null
         }
         Insert: {
@@ -27065,8 +27350,10 @@ export type Database = {
           id?: string
           job_title?: string | null
           last_name: string
+          legal_entity_id?: string | null
           metadata?: Json | null
           national_id?: string | null
+          org_unit_id?: string | null
           phone?: string | null
           position_id?: string | null
           reports_to?: string | null
@@ -27078,6 +27365,8 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           weekly_hours?: number | null
+          work_calendar_id?: string | null
+          work_center_id?: string | null
           work_schedule?: string | null
         }
         Update: {
@@ -27103,8 +27392,10 @@ export type Database = {
           id?: string
           job_title?: string | null
           last_name?: string
+          legal_entity_id?: string | null
           metadata?: Json | null
           national_id?: string | null
+          org_unit_id?: string | null
           phone?: string | null
           position_id?: string | null
           reports_to?: string | null
@@ -27116,6 +27407,8 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           weekly_hours?: number | null
+          work_calendar_id?: string | null
+          work_center_id?: string | null
           work_schedule?: string | null
         }
         Relationships: [
@@ -27134,10 +27427,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "erp_hr_employees_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employees_org_unit_id_fkey"
+            columns: ["org_unit_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_org_units"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "erp_hr_employees_reports_to_fkey"
             columns: ["reports_to"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employees_work_calendar_id_fkey"
+            columns: ["work_calendar_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_work_calendars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employees_work_center_id_fkey"
+            columns: ["work_center_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_work_centers"
             referencedColumns: ["id"]
           },
           {
@@ -27307,6 +27628,83 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      erp_hr_enterprise_permissions: {
+        Row: {
+          action: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_sensitive: boolean | null
+          module: string
+          resource: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          module: string
+          resource?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          module?: string
+          resource?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_enterprise_roles: {
+        Row: {
+          code: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          name: string
+          priority: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name: string
+          priority?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name?: string
+          priority?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_enterprise_roles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_equality_plans: {
         Row: {
@@ -27512,6 +27910,41 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_field_permissions: {
+        Row: {
+          access_level: string | null
+          created_at: string | null
+          field_name: string
+          id: string
+          role_id: string
+          table_name: string
+        }
+        Insert: {
+          access_level?: string | null
+          created_at?: string | null
+          field_name: string
+          id?: string
+          role_id: string
+          table_name: string
+        }
+        Update: {
+          access_level?: string | null
+          created_at?: string | null
+          field_name?: string
+          id?: string
+          role_id?: string
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_field_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_roles"
             referencedColumns: ["id"]
           },
         ]
@@ -29318,6 +29751,83 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_legal_entities: {
+        Row: {
+          address: string | null
+          city: string | null
+          cnae_code: string | null
+          company_id: string
+          country: string | null
+          created_at: string | null
+          email: string | null
+          entity_type: string | null
+          id: string
+          is_active: boolean | null
+          jurisdiction: string
+          legal_name: string
+          metadata: Json | null
+          name: string
+          phone: string | null
+          postal_code: string | null
+          registration_info: Json | null
+          ss_employer_code: string | null
+          tax_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          cnae_code?: string | null
+          company_id: string
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          entity_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          legal_name: string
+          metadata?: Json | null
+          name: string
+          phone?: string | null
+          postal_code?: string | null
+          registration_info?: Json | null
+          ss_employer_code?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          cnae_code?: string | null
+          company_id?: string
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          entity_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          jurisdiction?: string
+          legal_name?: string
+          metadata?: Json | null
+          name?: string
+          phone?: string | null
+          postal_code?: string | null
+          registration_info?: Json | null
+          ss_employer_code?: string | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_legal_entities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_market_benchmarks: {
         Row: {
           company_id: string | null
@@ -29778,6 +30288,76 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_org_units: {
+        Row: {
+          code: string
+          company_id: string
+          cost_center: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          legal_entity_id: string | null
+          manager_employee_id: string | null
+          metadata: Json | null
+          name: string
+          parent_id: string | null
+          unit_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          company_id: string
+          cost_center?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_entity_id?: string | null
+          manager_employee_id?: string | null
+          metadata?: Json | null
+          name: string
+          parent_id?: string | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          cost_center?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          legal_entity_id?: string | null
+          manager_employee_id?: string | null
+          metadata?: Json | null
+          name?: string
+          parent_id?: string | null
+          unit_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_org_units_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_org_units_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_org_units_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_org_units"
             referencedColumns: ["id"]
           },
         ]
@@ -30994,6 +31574,102 @@ export type Database = {
           viewed_at?: string | null
         }
         Relationships: []
+      }
+      erp_hr_role_assignments: {
+        Row: {
+          assigned_by: string | null
+          company_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          role_id: string
+          scope_entity_id: string | null
+          scope_type: string | null
+          updated_at: string | null
+          user_id: string
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          role_id: string
+          scope_entity_id?: string | null
+          scope_type?: string | null
+          updated_at?: string | null
+          user_id: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          role_id?: string
+          scope_entity_id?: string | null
+          scope_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_role_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_role_assignments_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_enterprise_roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_safety_incidents: {
         Row: {
@@ -33267,6 +33943,169 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_work_calendars: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          daily_hours: number | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          jurisdiction: string | null
+          legal_entity_id: string | null
+          metadata: Json | null
+          name: string
+          updated_at: string | null
+          weekly_hours: number | null
+          work_center_id: string | null
+          work_days: number[] | null
+          year: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          daily_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          jurisdiction?: string | null
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          name: string
+          updated_at?: string | null
+          weekly_hours?: number | null
+          work_center_id?: string | null
+          work_days?: number[] | null
+          year: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          daily_hours?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          jurisdiction?: string | null
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          name?: string
+          updated_at?: string | null
+          weekly_hours?: number | null
+          work_center_id?: string | null
+          work_days?: number[] | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_work_calendars_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_work_calendars_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_work_calendars_work_center_id_fkey"
+            columns: ["work_center_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_work_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_work_centers: {
+        Row: {
+          address: string | null
+          city: string | null
+          cnae_code: string | null
+          code: string
+          company_id: string
+          country: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          is_headquarters: boolean | null
+          jurisdiction: string | null
+          legal_entity_id: string | null
+          max_capacity: number | null
+          metadata: Json | null
+          name: string
+          phone: string | null
+          postal_code: string | null
+          province: string | null
+          ss_account_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          cnae_code?: string | null
+          code: string
+          company_id: string
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_headquarters?: boolean | null
+          jurisdiction?: string | null
+          legal_entity_id?: string | null
+          max_capacity?: number | null
+          metadata?: Json | null
+          name: string
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
+          ss_account_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          cnae_code?: string | null
+          code?: string
+          company_id?: string
+          country?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_headquarters?: boolean | null
+          jurisdiction?: string | null
+          legal_entity_id?: string | null
+          max_capacity?: number | null
+          metadata?: Json | null
+          name?: string
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
+          ss_account_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_work_centers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_work_centers_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -67406,6 +68245,30 @@ export type Database = {
         Returns: boolean
       }
       hash_license_key: { Args: { p_key: string }; Returns: string }
+      hr_check_permission: {
+        Args: {
+          _action: string
+          _company_id: string
+          _module: string
+          _resource?: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      hr_log_audit: {
+        Args: {
+          _action: string
+          _category?: string
+          _company_id: string
+          _new_data?: Json
+          _old_data?: Json
+          _record_id: string
+          _severity?: string
+          _table_name: string
+          _user_id: string
+        }
+        Returns: string
+      }
       increment_knowledge_article_view: {
         Args: { article_id: string }
         Returns: undefined
