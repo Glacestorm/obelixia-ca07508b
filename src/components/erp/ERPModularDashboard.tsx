@@ -167,6 +167,7 @@ function ERPModularDashboardContent() {
     { id: 'legal', name: 'Jurídico', icon: Scale, permission: 'legal.read', color: 'bg-indigo-600' },
     { id: 'galia', name: 'LEADER', icon: Landmark, permission: 'admin.all', color: 'bg-emerald-600' },
     { id: 'academia', name: 'Academia', icon: GraduationCap, permission: 'admin.all', color: 'bg-amber-500' },
+    { id: 'electrical', name: 'C. Eléctrica', icon: Zap, permission: 'admin.all', color: 'bg-yellow-500' },
   ];
 
   const availableModules = modules.filter(m => canShowModule(m.id, m.permission));
