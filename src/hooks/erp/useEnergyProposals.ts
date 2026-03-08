@@ -28,6 +28,10 @@ export interface EnergyProposal {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  signed_at: string | null;
+  signed_by: string | null;
+  signature_method: string | null;
+  pdf_path: string | null;
 }
 
 export const PROPOSAL_STATUSES: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
