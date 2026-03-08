@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import {
   Package, Plus, Trash2, RefreshCw, ArrowUpCircle, Shield, Activity,
   CheckCircle2, Clock, AlertTriangle, XCircle, History, Key, Link2, Settings2,
-  DollarSign, FileCode, HeartPulse, Brain, Copy, Puzzle
+  DollarSign, FileCode, HeartPulse, Brain, Copy, Puzzle, Network
 } from 'lucide-react';
 import { UsageBillingPanel } from './UsageBillingPanel';
 import { ArtifactGeneratorPanel } from './ArtifactGeneratorPanel';
