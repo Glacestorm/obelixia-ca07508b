@@ -654,10 +654,14 @@ function ERPModularDashboardContent() {
               <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
             </div>
             <Tabs defaultValue="premium-dash" className="space-y-4">
-              <TabsList className="grid w-full max-w-2xl grid-cols-4">
+              <TabsList className="grid w-full max-w-3xl grid-cols-5">
                 <TabsTrigger value="premium-dash" className="gap-2">
                   <Activity className="h-4 w-4" />
                   Premium HR
+                </TabsTrigger>
+                <TabsTrigger value="premium-alerts" className="gap-2">
+                  <Bell className="h-4 w-4" />
+                  Alertas
                 </TabsTrigger>
                 <TabsTrigger value="audit" className="gap-2">
                   <FileText className="h-4 w-4" />
@@ -675,6 +679,10 @@ function ERPModularDashboardContent() {
 
               <TabsContent value="premium-dash">
                 <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
+              </TabsContent>
+
+              <TabsContent value="premium-alerts">
+                <HRPremiumAlertsPanel companyId={currentCompany?.id} />
               </TabsContent>
 
               <TabsContent value="audit" className="space-y-4">
