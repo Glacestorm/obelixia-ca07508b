@@ -205,6 +205,28 @@ export function useHRFairnessEngine() {
     return null;
   }, [fetchAnalyses]);
 
+  // === DATA BRIDGE: Real pay equity data from ERP base ===
+  const [realPayEquityData, setRealPayEquityData] = useState<Record<string, unknown> | null>(null);
+  const [realDataLoading, setRealDataLoading] = useState(false);
+
+  const fetchRealPayEquityData = useCallback(async (companyId: string) => {
+    setRealDataLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('erp-hr-security-governance', {
+        body: { action: 'get_real_pay_equity_data', company_id: companyId }
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setRealPayEquityData(data.data);
+        return data.data;
+      }
+    } catch (err) {
+      console.error('fetchRealPayEquityData error:', err);
+      toast.error('Error cargando datos reales de equidad');
+    } finally { setRealDataLoading(false); }
+    return null;
+  }, []);
+
   // === SEED ===
   const seedDemo = useCallback(async (companyId: string) => {
     setLoading(true);
