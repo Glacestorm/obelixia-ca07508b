@@ -412,7 +412,26 @@ export function HRModule() {
         {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={companyId} />}
         {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={companyId} />}
 
-        {/* Utilidades Premium — migradas desde ERPModularDashboard */}
+        {/* Utilidades — grid de navegación */}
+        {activeModule === 'util-grid' && (
+          <HRUtilitiesNavigation
+            activeSection={null}
+            onSectionChange={(section) => {
+              if (section) setActiveModule(section);
+            }}
+          />
+        )}
+
+        {/* Utilidades Premium — con breadcrumbs */}
+        {activeModule.startsWith('util-') && activeModule !== 'util-grid' && (
+          <HRUtilitiesNavigation
+            activeSection={activeModule as UtilitySection}
+            onSectionChange={(section) => {
+              setActiveModule(section ? section : 'util-grid');
+            }}
+          />
+        )}
+
         {activeModule === 'util-premium-dash' && <HRPremiumExecutiveDashboard companyId={companyId} />}
         {activeModule === 'util-orchestration' && <HROrchestrationPanel companyId={companyId} />}
         {activeModule === 'util-alerts' && <HRPremiumAlertsPanel companyId={companyId} />}
