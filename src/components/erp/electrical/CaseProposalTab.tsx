@@ -23,6 +23,7 @@ interface Props { caseId: string; companyId: string; }
 
 export function CaseProposalTab({ caseId, companyId }: Props) {
   const { proposals, loading, error, createProposal, acceptProposal, rejectProposal, issueProposal } = useEnergyProposals(caseId);
+  const { downloadPDF, uploadPDF } = useEnergyProposalPDF();
   const { energyCase } = useEnergyCase(caseId);
   const { log } = useEnergyAuditLog(companyId, caseId);
 
