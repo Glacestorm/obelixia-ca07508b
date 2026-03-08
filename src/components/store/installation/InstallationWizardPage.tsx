@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download, Server, Monitor, Copy, Check, ChevronRight, ChevronLeft,
   Shield, RefreshCw, Activity, Package, Cloud, Container, Cpu,
-  HardDrive, Boxes, AlertTriangle, CheckCircle2, Clock, Sparkles
+  HardDrive, Boxes, AlertTriangle, CheckCircle2, Clock, Sparkles, Eye
 } from 'lucide-react';
 import StoreNavbar from '@/components/store/StoreNavbar';
 import UnifiedFooter from '@/components/layout/UnifiedFooter';
@@ -24,6 +24,7 @@ import {
   type PlatformType,
   type ERPModuleDefinition,
 } from '@/hooks/admin/useInstallationManager';
+import { InstallationDetailPanel } from './InstallationDetailPanel';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
