@@ -462,6 +462,11 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
             <UsageBillingPanel installation={installation} />
           </TabsContent>
 
+          {/* === AI PRICING TAB === */}
+          <TabsContent value="ai-pricing">
+            <AIUsagePricingPanel installation={installation} />
+          </TabsContent>
+
           {/* === ARTIFACTS TAB === */}
           <TabsContent value="artifacts">
             <ArtifactGeneratorPanel
