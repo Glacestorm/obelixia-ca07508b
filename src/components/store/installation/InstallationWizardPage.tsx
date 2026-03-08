@@ -537,79 +537,84 @@ export function InstallationWizardPage() {
           {/* Installations Status Tab */}
           <TabsContent value="status">
             <div className="max-w-5xl mx-auto">
-              <Card className="bg-slate-900/50 border-slate-700">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-primary" />
-                        Mis Instalaciones
-                      </CardTitle>
-                      <CardDescription>Gestiona y monitoriza todas tus instancias</CardDescription>
-                    </div>
-                    <Button onClick={fetchInstallations} variant="outline" size="sm" className="gap-2">
-                      <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                      Actualizar
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {installations.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Boxes className="h-12 w-12 mx-auto mb-4 text-slate-600" />
-                      <p className="text-slate-400 mb-4">No tienes instalaciones registradas</p>
-                      <Button onClick={() => { setActiveTab('wizard'); setStep('platform'); }}>
-                        Crear Primera Instalación
+              {viewingInstallation ? (
+                <InstallationDetailPanel
+                  installation={viewingInstallation}
+                  onClose={() => { setViewingInstallation(null); fetchInstallations(); }}
+                />
+              ) : (
+                <Card className="bg-slate-900/50 border-slate-700">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <Activity className="h-5 w-5 text-primary" />
+                          Mis Instalaciones
+                        </CardTitle>
+                        <CardDescription>Gestiona módulos, versiones, licencias y configuración</CardDescription>
+                      </div>
+                      <Button onClick={fetchInstallations} variant="outline" size="sm" className="gap-2">
+                        <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                        Actualizar
                       </Button>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {installations.map((inst) => {
-                        const platform = PLATFORMS.find(p => p.key === inst.platform);
-                        return (
-                          <div
-                            key={inst.id}
-                            className="flex items-center justify-between p-4 rounded-lg border border-slate-700 bg-slate-800/30 hover:bg-slate-800/60 transition-colors"
-                          >
-                            <div className="flex items-center gap-4">
-                              <span className="text-2xl">{platform?.icon || '🖥️'}</span>
-                              <div>
-                                <div className="font-medium text-white text-sm">{inst.installation_name}</div>
-                                <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
-                                  <span>{platform?.name || inst.platform}</span>
-                                  <span>•</span>
-                                  <span>v{inst.core_version}</span>
-                                  <span>•</span>
-                                  <span className="capitalize">{inst.environment}</span>
+                  </CardHeader>
+                  <CardContent>
+                    {installations.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Boxes className="h-12 w-12 mx-auto mb-4 text-slate-600" />
+                        <p className="text-slate-400 mb-4">No tienes instalaciones registradas</p>
+                        <Button onClick={() => { setActiveTab('wizard'); setStep('platform'); }}>
+                          Crear Primera Instalación
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {installations.map((inst) => {
+                          const platform = PLATFORMS.find(p => p.key === inst.platform);
+                          return (
+                            <button
+                              key={inst.id}
+                              onClick={() => setViewingInstallation(inst)}
+                              className="w-full flex items-center justify-between p-4 rounded-lg border border-slate-700 bg-slate-800/30 hover:bg-slate-800/60 hover:border-slate-600 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-4">
+                                <span className="text-2xl">{platform?.icon || '🖥️'}</span>
+                                <div>
+                                  <div className="font-medium text-white text-sm">{inst.installation_name}</div>
+                                  <div className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                                    <span>{platform?.name || inst.platform}</span>
+                                    <span>•</span>
+                                    <span>v{inst.core_version}</span>
+                                    <span>•</span>
+                                    <span className="capitalize">{inst.environment}</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Badge
-                                variant={inst.status === 'active' ? 'default' : 'secondary'}
-                                className={cn(
-                                  inst.status === 'active' && 'bg-green-500/20 text-green-400',
-                                  inst.status === 'installing' && 'bg-amber-500/20 text-amber-400',
-                                  inst.status === 'maintenance' && 'bg-blue-500/20 text-blue-400',
-                                )}
-                              >
-                                {inst.status === 'active' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                                {inst.status === 'installing' && <Clock className="h-3 w-3 mr-1" />}
-                                {inst.status}
-                              </Badge>
-                              {inst.last_heartbeat_at && (
-                                <span className="text-[10px] text-slate-500">
-                                  Heartbeat: {new Date(inst.last_heartbeat_at).toLocaleString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                              <div className="flex items-center gap-3">
+                                {inst.license_id && <Shield className="h-4 w-4 text-green-400" />}
+                                <Badge
+                                  variant={inst.status === 'active' ? 'default' : 'secondary'}
+                                  className={cn(
+                                    inst.status === 'active' && 'bg-green-500/20 text-green-400',
+                                    inst.status === 'installing' && 'bg-amber-500/20 text-amber-400',
+                                    inst.status === 'maintenance' && 'bg-blue-500/20 text-blue-400',
+                                  )}
+                                >
+                                  {inst.status === 'active' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                  {inst.status === 'installing' && <Clock className="h-3 w-3 mr-1" />}
+                                  {inst.status}
+                                </Badge>
+                                <Eye className="h-4 w-4 text-slate-500" />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
         </Tabs>
