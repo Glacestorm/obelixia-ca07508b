@@ -64,7 +64,7 @@ export function HRSkillsMatrixPanel({ companyId }: { companyId: string }) {
       try {
         const { data, error } = await supabase
           .from('erp_hr_employees')
-          .select('id, first_name, last_name, position, base_salary, erp_hr_departments!erp_hr_employees_department_id_fkey(name)')
+          .select('id, first_name, last_name, base_salary, erp_hr_departments!erp_hr_employees_department_id_fkey(name), erp_hr_positions!erp_hr_employees_position_id_fkey(name)')
           .eq('company_id', companyId)
           .eq('status', 'active')
           .order('last_name')
@@ -76,7 +76,7 @@ export function HRSkillsMatrixPanel({ companyId }: { companyId: string }) {
             first_name: e.first_name,
             last_name: e.last_name,
             department_name: e.erp_hr_departments?.name || '',
-            position: e.position || '',
+            position: e.erp_hr_positions?.name || '',
             base_salary: e.base_salary || 0,
           })));
         }
