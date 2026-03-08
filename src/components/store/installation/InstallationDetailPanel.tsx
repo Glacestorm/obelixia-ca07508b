@@ -448,6 +448,22 @@ export function InstallationDetailPanel({ installation, onClose }: InstallationD
             </div>
           </TabsContent>
 
+          {/* === BILLING TAB === */}
+          <TabsContent value="billing">
+            <UsageBillingPanel installation={installation} />
+          </TabsContent>
+
+          {/* === ARTIFACTS TAB === */}
+          <TabsContent value="artifacts">
+            <ArtifactGeneratorPanel
+              installation={installation}
+              modules={installationModules.filter(m => m.status === 'active').map(m => ({
+                module_key: m.module_key,
+                module_name: m.module_name,
+              }))}
+            />
+          </TabsContent>
+
           {/* === SETTINGS TAB === */}
           <TabsContent value="settings">
             <div className="space-y-4">
