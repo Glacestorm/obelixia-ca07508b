@@ -1,3 +1,6 @@
+/**
+ * useEnergyExecutiveReport - Multi-company executive KPIs with energy 360 support
+ */
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import jsPDF from 'jspdf';
@@ -15,6 +18,10 @@ export interface ExecutiveKPIs {
   contractsExpiring90: number;
   totalEstimatedSavings: number;
   totalValidatedSavings: number;
+  totalGasSavings: number;
+  totalSolarSavings: number;
+  totalValidatedGas: number;
+  totalValidatedSolar: number;
   closedCases: number;
   closeRate: number;
   avgCloseTimeDays: number;
@@ -36,29 +43,19 @@ export function useEnergyExecutiveReport() {
 
       const { data: cases } = await supabase
         .from('energy_cases')
-        .select('id, company_id, status, estimated_annual_savings, contract_end_date, created_at, updated_at')
+        .select('id, company_id, status, estimated_annual_savings, estimated_gas_savings, estimated_solar_savings, validated_annual_savings, validated_gas_savings, validated_solar_savings, contract_end_date, created_at, updated_at')
         .in('company_id', companyIds);
 
       if (!cases) { setLoading(false); return; }
 
-      const { data: companies } = await supabase
-        .from('erp_companies')
-        .select('id, name')
-        .in('id', companyIds);
-
+      const { data: companies } = await supabase.from('erp_companies').select('id, name').in('id', companyIds);
       const companyMap = new Map((companies || []).map(c => [c.id, c.name]));
       const caseIds = cases.map(c => c.id);
 
       const [proposalRes, workflowRes, trackingRes] = await Promise.all([
-        caseIds.length > 0
-          ? supabase.from('energy_proposals').select('case_id, status').in('case_id', caseIds).in('status', ['draft', 'issued', 'sent'])
-          : Promise.resolve({ data: [] }),
-        caseIds.length > 0
-          ? supabase.from('energy_workflow_states').select('case_id, status, changed_at').in('case_id', caseIds).order('changed_at', { ascending: false })
-          : Promise.resolve({ data: [] }),
-        caseIds.length > 0
-          ? supabase.from('energy_tracking').select('case_id, observed_real_savings').in('case_id', caseIds)
-          : Promise.resolve({ data: [] }),
+        caseIds.length > 0 ? supabase.from('energy_proposals').select('case_id, status').in('case_id', caseIds).in('status', ['draft', 'issued', 'sent']) : Promise.resolve({ data: [] }),
+        caseIds.length > 0 ? supabase.from('energy_workflow_states').select('case_id, status, changed_at').in('case_id', caseIds).order('changed_at', { ascending: false }) : Promise.resolve({ data: [] }),
+        caseIds.length > 0 ? supabase.from('energy_tracking').select('case_id, observed_real_savings').in('case_id', caseIds) : Promise.resolve({ data: [] }),
       ]);
 
       const statusCount: Record<string, number> = {};
@@ -67,19 +64,16 @@ export function useEnergyExecutiveReport() {
       const closedCases = cases.filter(c => c.status === 'completed');
       const acceptedProposals = cases.filter(c => ['proposal', 'implementation', 'completed'].includes(c.status));
 
-      // Avg close time
       let totalCloseDays = 0;
       closedCases.forEach(c => {
-        const days = Math.round((new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / 86400000);
-        totalCloseDays += days;
+        totalCloseDays += Math.round((new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()) / 86400000);
       });
 
-      // Company breakdown
       const byCompany = new Map<string, { cases: number; savings: number; closed: number }>();
       cases.forEach(c => {
         const entry = byCompany.get(c.company_id) || { cases: 0, savings: 0, closed: 0 };
         entry.cases++;
-        entry.savings += c.estimated_annual_savings || 0;
+        entry.savings += (c.estimated_annual_savings || 0) + (c.estimated_gas_savings || 0) + (c.estimated_solar_savings || 0);
         if (c.status === 'completed') entry.closed++;
         byCompany.set(c.company_id, entry);
       });
@@ -89,7 +83,6 @@ export function useEnergyExecutiveReport() {
         if (!latestWfByCase.has(w.case_id)) latestWfByCase.set(w.case_id, w.status);
       });
       const activeWf = [...latestWfByCase.values()].filter(s => !['cerrado', 'cancelado'].includes(s)).length;
-
       const validatedSavings = (trackingRes.data || []).reduce((s: number, t: any) => s + ((t.observed_real_savings || 0) * 12), 0);
 
       const result: ExecutiveKPIs = {
@@ -101,6 +94,10 @@ export function useEnergyExecutiveReport() {
         contractsExpiring90: cases.filter(c => c.contract_end_date && new Date(c.contract_end_date) <= in90 && new Date(c.contract_end_date) > now).length,
         totalEstimatedSavings: cases.reduce((s, c) => s + (c.estimated_annual_savings || 0), 0),
         totalValidatedSavings: validatedSavings,
+        totalGasSavings: cases.reduce((s, c) => s + (c.estimated_gas_savings || 0), 0),
+        totalSolarSavings: cases.reduce((s, c) => s + (c.estimated_solar_savings || 0), 0),
+        totalValidatedGas: cases.reduce((s, c) => s + (c.validated_gas_savings || 0), 0),
+        totalValidatedSolar: cases.reduce((s, c) => s + (c.validated_solar_savings || 0), 0),
         closedCases: closedCases.length,
         closeRate: cases.length > 0 ? Math.round((closedCases.length / cases.length) * 100) : 0,
         avgCloseTimeDays: closedCases.length > 0 ? Math.round(totalCloseDays / closedCases.length) : 0,
@@ -121,10 +118,12 @@ export function useEnergyExecutiveReport() {
   const exportPDF = useCallback((data: ExecutiveKPIs) => {
     const doc = new jsPDF();
     const today = format(new Date(), 'dd/MM/yyyy', { locale: es });
+    const totalAll = data.totalEstimatedSavings + (data.totalGasSavings || 0) + (data.totalSolarSavings || 0);
+    const totalValAll = data.totalValidatedSavings + (data.totalValidatedGas || 0) + (data.totalValidatedSolar || 0);
 
     doc.setFontSize(18);
     doc.setTextColor(30, 58, 95);
-    doc.text('INFORME EJECUTIVO · CONSULTORÍA ELÉCTRICA', 105, 20, { align: 'center' });
+    doc.text('INFORME EJECUTIVO · CONSULTORÍA ENERGÉTICA 360', 105, 20, { align: 'center' });
     doc.setFontSize(9);
     doc.setTextColor(100);
     doc.text(`Generado: ${today}`, 105, 27, { align: 'center' });
@@ -134,16 +133,16 @@ export function useEnergyExecutiveReport() {
       head: [['KPI', 'Valor']],
       body: [
         ['Total expedientes', String(data.totalCases)],
-        ['Expedientes cerrados', String(data.closedCases)],
+        ['Cerrados', String(data.closedCases)],
         ['Tasa de cierre', `${data.closeRate}%`],
-        ['Tasa de conversión', `${data.conversionRate}%`],
-        ['Tiempo medio de cierre', `${data.avgCloseTimeDays} días`],
-        ['Ahorro estimado total', `${data.totalEstimatedSavings.toLocaleString('es-ES')} €`],
-        ['Ahorro validado total', `${data.totalValidatedSavings.toLocaleString('es-ES')} €`],
+        ['Conversión', `${data.conversionRate}%`],
+        ['T. medio cierre', `${data.avgCloseTimeDays} días`],
+        ['Ahorro total estimado', `${totalAll.toLocaleString('es-ES')} €`],
+        ['  - Electricidad', `${data.totalEstimatedSavings.toLocaleString('es-ES')} €`],
+        ['  - Gas', `${(data.totalGasSavings || 0).toLocaleString('es-ES')} €`],
+        ['  - Solar', `${(data.totalSolarSavings || 0).toLocaleString('es-ES')} €`],
+        ['Ahorro total validado', `${totalValAll.toLocaleString('es-ES')} €`],
         ['Contratos < 30d', String(data.contractsExpiring30)],
-        ['Contratos < 90d', String(data.contractsExpiring90)],
-        ['Propuestas pendientes', String(data.pendingProposals)],
-        ['Workflows activos', String(data.activeWorkflows)],
       ],
       headStyles: { fillColor: [30, 58, 95] },
       styles: { fontSize: 9 },
@@ -153,7 +152,7 @@ export function useEnergyExecutiveReport() {
       const afterY = (doc as any).lastAutoTable?.finalY || 140;
       autoTable(doc, {
         startY: afterY + 10,
-        head: [['Empresa', 'Expedientes', 'Cerrados', 'Ahorro estimado']],
+        head: [['Empresa', 'Expedientes', 'Cerrados', 'Ahorro total']],
         body: data.companyBreakdown.map(c => [
           c.companyName, String(c.cases), String(c.closed), `${c.savings.toLocaleString('es-ES')} €`,
         ]),
@@ -162,11 +161,12 @@ export function useEnergyExecutiveReport() {
       });
     }
 
-    doc.save(`informe-ejecutivo-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`informe-ejecutivo-360-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   }, []);
 
   const exportExcel = useCallback((data: ExecutiveKPIs) => {
     const wb = XLSX.utils.book_new();
+    const totalAll = data.totalEstimatedSavings + (data.totalGasSavings || 0) + (data.totalSolarSavings || 0);
 
     const kpiRows = [
       ['KPI', 'Valor'],
@@ -174,25 +174,24 @@ export function useEnergyExecutiveReport() {
       ['Cerrados', data.closedCases],
       ['Tasa cierre %', data.closeRate],
       ['Conversión %', data.conversionRate],
-      ['Tiempo medio cierre (días)', data.avgCloseTimeDays],
-      ['Ahorro estimado €', data.totalEstimatedSavings],
-      ['Ahorro validado €', data.totalValidatedSavings],
+      ['T. medio cierre (días)', data.avgCloseTimeDays],
+      ['Ahorro total estimado €', totalAll],
+      ['Ahorro electricidad €', data.totalEstimatedSavings],
+      ['Ahorro gas €', data.totalGasSavings || 0],
+      ['Ahorro solar €', data.totalSolarSavings || 0],
+      ['Ahorro validado total €', data.totalValidatedSavings + (data.totalValidatedGas || 0) + (data.totalValidatedSolar || 0)],
       ['Contratos <30d', data.contractsExpiring30],
-      ['Contratos <90d', data.contractsExpiring90],
     ];
-    const ws1 = XLSX.utils.aoa_to_sheet(kpiRows);
-    XLSX.utils.book_append_sheet(wb, ws1, 'KPIs');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(kpiRows), 'KPIs');
 
     if (data.companyBreakdown.length > 0) {
-      const compRows = [
-        ['Empresa', 'Expedientes', 'Cerrados', 'Ahorro estimado'],
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+        ['Empresa', 'Expedientes', 'Cerrados', 'Ahorro total'],
         ...data.companyBreakdown.map(c => [c.companyName, c.cases, c.closed, c.savings]),
-      ];
-      const ws2 = XLSX.utils.aoa_to_sheet(compRows);
-      XLSX.utils.book_append_sheet(wb, ws2, 'Por empresa');
+      ]), 'Por empresa');
     }
 
-    XLSX.writeFile(wb, `informe-ejecutivo-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    XLSX.writeFile(wb, `informe-ejecutivo-360-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   }, []);
 
   return { kpis, loading, fetchMultiCompanyKPIs, exportPDF, exportExcel };
