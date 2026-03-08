@@ -19,6 +19,7 @@ import { ArtifactGeneratorPanel } from './ArtifactGeneratorPanel';
 import { SelfHealingPanel } from './SelfHealingPanel';
 import { AIUsagePricingPanel } from './AIUsagePricingPanel';
 import { DigitalTwinPanel } from './DigitalTwinPanel';
+import { MarketplaceExtensionsPanel } from './MarketplaceExtensionsPanel';
 import {
   type Installation,
   type InstallationModule,
