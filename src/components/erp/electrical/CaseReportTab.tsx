@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Download, Eye, Save, Printer, CheckCircle, AlertTriangle, TrendingDown, Zap, Building2, FileBarChart } from 'lucide-react';
+import { PermissionGate } from './PermissionGate';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { useEnergyRecommendation } from '@/hooks/erp/useEnergyRecommendation';
 import { useEnergyReports, EnergyReport } from '@/hooks/erp/useEnergyReports';
