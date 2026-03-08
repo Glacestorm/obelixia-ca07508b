@@ -136,6 +136,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
           <TabsTrigger value="recomendacion" className="text-xs">Recomendación</TabsTrigger>
           <TabsTrigger value="informe" className="text-xs">Informe</TabsTrigger>
           <TabsTrigger value="seguimiento" className="text-xs">Seguimiento</TabsTrigger>
+          <TabsTrigger value="portal" className="text-xs">Portal</TabsTrigger>
           <TabsTrigger value="auditoria" className="text-xs">Auditoría</TabsTrigger>
         </TabsList>
 
