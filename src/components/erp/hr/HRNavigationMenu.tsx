@@ -457,10 +457,23 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
                   <div className="p-1.5 rounded-md bg-primary/10">
                     <MenuIcon className="h-4 w-4 text-primary" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-semibold text-foreground">{menu.headerTitle}</p>
                     <p className="text-xs text-muted-foreground">{menu.headerDescription}</p>
                   </div>
+                  {menu.id === 'utilities' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7 gap-1"
+                      onClick={() => {
+                        onModuleChange('util-grid');
+                        setOpenCategory(null);
+                      }}
+                    >
+                      Ver todas
+                    </Button>
+                  )}
                 </div>
               </div>
 
