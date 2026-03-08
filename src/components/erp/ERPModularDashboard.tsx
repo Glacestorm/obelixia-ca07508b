@@ -691,6 +691,10 @@ function ERPModularDashboardContent() {
                   <Database className="h-4 w-4" />
                   Re-Seed
                 </TabsTrigger>
+                <TabsTrigger value="premium-help" className="gap-2">
+                  <HelpCircle className="h-4 w-4" />
+                  Ayuda
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="premium-dash">
