@@ -35,7 +35,7 @@ const EXPORTABLE_TABLES: ExportableTable[] = [
   { module: 'twin', table: 'erp_hr_twin_alerts', label: 'Alertas Twin' },
   { module: 'twin', table: 'erp_hr_twin_experiments', label: 'Experimentos Twin' },
   { module: 'legal', table: 'erp_hr_legal_contracts', label: 'Contratos legales' },
-  { module: 'legal', table: 'erp_hr_legal_clause_library', label: 'Biblioteca de cláusulas' },
+  { module: 'legal', table: 'erp_hr_legal_clauses', label: 'Biblioteca de cláusulas' },
   { module: 'legal', table: 'erp_hr_legal_templates', label: 'Plantillas legales' },
   { module: 'cnae', table: 'erp_hr_cnae_profiles', label: 'Perfiles CNAE' },
   { module: 'cnae', table: 'erp_hr_cnae_risk_assessments', label: 'Evaluaciones de riesgo' },
