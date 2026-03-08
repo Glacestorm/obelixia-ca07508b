@@ -228,7 +228,7 @@ export function useHRComplianceAutomation(companyId?: string) {
 
       if (data?.success && data?.checklist) {
         for (const item of data.checklist) {
-          await supabase.from('erp_hr_compliance_checklist').insert({
+          await supabase.from('erp_hr_compliance_checklist' as any).insert({
             company_id: companyId,
             framework_id: frameworkId,
             requirement_code: item.code,
