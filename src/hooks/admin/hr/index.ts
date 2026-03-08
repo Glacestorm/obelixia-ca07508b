@@ -190,3 +190,11 @@ export type {
   SkillNode, CareerPath as TalentCareerPath, TalentPool, MentoringMatch,
   GigAssignment, TalentAnalysis, TalentStats
 } from './useHRTalentIntelligence';
+
+// Phase 5 - Compliance Enterprise
+export { useHRComplianceEnterprise } from './useHRComplianceEnterprise';
+export type {
+  CompliancePolicy, ComplianceAudit, ComplianceIncident,
+  ComplianceTraining, ComplianceRiskAssessment, ComplianceKPI,
+  RiskAnalysis, GapAnalysis, ComplianceStats
+} from './useHRComplianceEnterprise';

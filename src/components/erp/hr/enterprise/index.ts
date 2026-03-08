@@ -8,3 +8,4 @@ export { HRAuditTrailPanel } from './HRAuditTrailPanel';
 export { HRWorkflowDesigner } from './HRWorkflowDesigner';
 export { HRApprovalInbox } from './HRApprovalInbox';
 export { HRSLADashboard } from './HRSLADashboard';
+export { HRComplianceEnterprisePanel } from './HRComplianceEnterprisePanel';
