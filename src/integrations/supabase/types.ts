@@ -6574,6 +6574,8 @@ export type Database = {
           deployment_type: string | null
           device_fingerprint_hash: string | null
           environment: string | null
+          health_score: number | null
+          health_thresholds: Json | null
           hostname: string | null
           id: string
           installation_config: Json | null
@@ -6596,6 +6598,7 @@ export type Database = {
           remote_access_pin: string | null
           remote_access_pin_expires_at: string | null
           secondary_locales: string[] | null
+          self_healing_enabled: boolean | null
           status: string | null
           update_channel: string | null
           updated_at: string
@@ -6611,6 +6614,8 @@ export type Database = {
           deployment_type?: string | null
           device_fingerprint_hash?: string | null
           environment?: string | null
+          health_score?: number | null
+          health_thresholds?: Json | null
           hostname?: string | null
           id?: string
           installation_config?: Json | null
@@ -6633,6 +6638,7 @@ export type Database = {
           remote_access_pin?: string | null
           remote_access_pin_expires_at?: string | null
           secondary_locales?: string[] | null
+          self_healing_enabled?: boolean | null
           status?: string | null
           update_channel?: string | null
           updated_at?: string
@@ -6648,6 +6654,8 @@ export type Database = {
           deployment_type?: string | null
           device_fingerprint_hash?: string | null
           environment?: string | null
+          health_score?: number | null
+          health_thresholds?: Json | null
           hostname?: string | null
           id?: string
           installation_config?: Json | null
@@ -6670,6 +6678,7 @@ export type Database = {
           remote_access_pin?: string | null
           remote_access_pin_expires_at?: string | null
           secondary_locales?: string[] | null
+          self_healing_enabled?: boolean | null
           status?: string | null
           update_channel?: string | null
           updated_at?: string
@@ -44151,6 +44160,124 @@ export type Database = {
             columns: ["module_id"]
             isOneToOne: false
             referencedRelation: "app_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_health_checks: {
+        Row: {
+          active_connections: number | null
+          checked_at: string
+          cpu_usage: number | null
+          created_at: string
+          disk_usage: number | null
+          error_rate: number | null
+          health_score: number | null
+          id: string
+          installation_id: string
+          memory_usage: number | null
+          metrics_raw: Json | null
+          response_latency_ms: number | null
+        }
+        Insert: {
+          active_connections?: number | null
+          checked_at?: string
+          cpu_usage?: number | null
+          created_at?: string
+          disk_usage?: number | null
+          error_rate?: number | null
+          health_score?: number | null
+          id?: string
+          installation_id: string
+          memory_usage?: number | null
+          metrics_raw?: Json | null
+          response_latency_ms?: number | null
+        }
+        Update: {
+          active_connections?: number | null
+          checked_at?: string
+          cpu_usage?: number | null
+          created_at?: string
+          disk_usage?: number | null
+          error_rate?: number | null
+          health_score?: number | null
+          id?: string
+          installation_id?: string
+          memory_usage?: number | null
+          metrics_raw?: Json | null
+          response_latency_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_health_checks_installation_id_fkey"
+            columns: ["installation_id"]
+            isOneToOne: false
+            referencedRelation: "client_installations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installation_incidents: {
+        Row: {
+          affected_modules: string[] | null
+          auto_resolved: boolean | null
+          created_at: string
+          description: string | null
+          detected_at: string
+          id: string
+          incident_type: string
+          installation_id: string
+          resolution_details: Json | null
+          resolution_type: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          trigger_metrics: Json | null
+          updated_at: string
+        }
+        Insert: {
+          affected_modules?: string[] | null
+          auto_resolved?: boolean | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          id?: string
+          incident_type?: string
+          installation_id: string
+          resolution_details?: Json | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title: string
+          trigger_metrics?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          affected_modules?: string[] | null
+          auto_resolved?: boolean | null
+          created_at?: string
+          description?: string | null
+          detected_at?: string
+          id?: string
+          incident_type?: string
+          installation_id?: string
+          resolution_details?: Json | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          trigger_metrics?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installation_incidents_installation_id_fkey"
+            columns: ["installation_id"]
+            isOneToOne: false
+            referencedRelation: "client_installations"
             referencedColumns: ["id"]
           },
         ]
