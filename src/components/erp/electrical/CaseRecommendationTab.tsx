@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Sparkles, Save, Zap, AlertTriangle, ShieldCheck, Loader2, Info, BrainCircuit } from 'lucide-react';
+import { PermissionGate } from './PermissionGate';
 import { useEnergyRecommendation, generateRecommendation, RecommendationInput } from '@/hooks/erp/useEnergyRecommendation';
 import { useEnergySupply } from '@/hooks/erp/useEnergySupply';
 import { useEnergyInvoices } from '@/hooks/erp/useEnergyInvoices';
