@@ -33,9 +33,15 @@ export function HRLegalEnginePanel({ companyId }: Props) {
     templates, clauses, contracts, stats, aiAnalysis,
     loading, aiLoading,
     loadAll, seedDemo, aiComplianceAnalysis, aiClauseReview, aiGenerateContract,
+    realContracts, realDataLoading, fetchRealContracts, syncRealContractsToLegal,
   } = useHRLegalEngine();
 
-  useEffect(() => { loadAll(companyId); }, [companyId, loadAll]);
+  const hasRealData = !!(realContracts && Object.keys(realContracts).length > 0);
+
+  useEffect(() => {
+    loadAll(companyId);
+    fetchRealContracts(companyId);
+  }, [companyId, loadAll, fetchRealContracts]);
 
   const handleSeed = useCallback(() => seedDemo(companyId), [companyId, seedDemo]);
   const handleRefresh = useCallback(() => loadAll(companyId), [companyId, loadAll]);
