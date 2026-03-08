@@ -29,6 +29,9 @@ import { ElectricalRecomendacionesPanel } from './ElectricalRecomendacionesPanel
 import { ElectricalInformesPanel } from './ElectricalInformesPanel';
 import { ElectricalSeguimientoPanel } from './ElectricalSeguimientoPanel';
 import { ElectricalAjustesPanel } from './ElectricalAjustesPanel';
+import { ElectricalExecutiveDashboard } from './ElectricalExecutiveDashboard';
+import { ExternalIntegrationsPanel } from './ExternalIntegrationsPanel';
+import { NotificationsPanel } from './NotificationsPanel';
 
 type SubView = 
   | { type: 'list' }
