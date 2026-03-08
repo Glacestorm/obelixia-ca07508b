@@ -57,7 +57,7 @@ const TABLE_CHECKS: TableCheck[] = [
   { module: 'twin', table: 'erp_hr_twin_experiments', label: 'Experimentos Twin', description: 'Experimentos what-if del gemelo' },
   // P6 Legal
   { module: 'legal', table: 'erp_hr_legal_contracts', label: 'Contratos legales', description: 'Contratos generados por el motor legal' },
-  { module: 'legal', table: 'erp_hr_legal_clause_library', label: 'Biblioteca de cláusulas', description: 'Cláusulas legales reutilizables', minExpected: 1 },
+  { module: 'legal', table: 'erp_hr_legal_clauses', label: 'Biblioteca de cláusulas', description: 'Cláusulas legales reutilizables', minExpected: 1 },
   { module: 'legal', table: 'erp_hr_legal_templates', label: 'Plantillas legales', description: 'Plantillas de documentos legales', minExpected: 1 },
   // P7 CNAE
   { module: 'cnae', table: 'erp_hr_cnae_profiles', label: 'Perfiles CNAE', description: 'Perfiles sectoriales configurados', minExpected: 1 },
