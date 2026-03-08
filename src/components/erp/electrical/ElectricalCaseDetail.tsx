@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Zap, User, Building2, MapPin, Calendar, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Zap, MapPin } from 'lucide-react';
 import { ElectricalBreadcrumb } from './ElectricalBreadcrumb';
 import { CaseSupplyTab } from './CaseSupplyTab';
 import { CaseConsumptionTab } from './CaseConsumptionTab';
@@ -12,6 +12,7 @@ import { CaseInvoicesTab } from './CaseInvoicesTab';
 import { CaseContractsTab } from './CaseContractsTab';
 import { CaseRecommendationTab } from './CaseRecommendationTab';
 import { CaseReportTab } from './CaseReportTab';
+import { CaseTrackingTab } from './CaseTrackingTab';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -74,14 +75,14 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
 
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" className="mt-1" onClick={onBack}>
+        <Button variant="ghost" size="icon" className="mt-1 shrink-0" onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 space-y-3">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between flex-wrap gap-2">
             <div>
               <h2 className="text-xl font-bold">{energyCase.title}</h2>
-              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {energyCase.cups || 'Sin CUPS'}</span>
                 <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {energyCase.address || 'Sin dirección'}</span>
               </div>
@@ -92,44 +93,23 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
             </div>
           </div>
 
-          {/* Info cards row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            <Card className="bg-muted/30">
-              <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Comercializadora</p>
-                <p className="text-sm font-medium truncate">{energyCase.current_supplier || '—'}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Tarifa</p>
-                <p className="text-sm font-medium">{energyCase.current_tariff || '—'}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ahorro mensual est.</p>
-                <p className="text-sm font-semibold text-emerald-600">{formatCurrency(energyCase.estimated_monthly_savings)}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ahorro anual est.</p>
-                <p className="text-sm font-semibold text-emerald-600">{formatCurrency(energyCase.estimated_annual_savings)}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Fin contrato</p>
-                <p className="text-sm font-medium">{formatDate(energyCase.contract_end_date)}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Creado</p>
-                <p className="text-sm font-medium">{formatDate(energyCase.created_at)}</p>
-              </CardContent>
-            </Card>
+          {/* Info cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { label: 'Comercializadora', value: energyCase.current_supplier || '—' },
+              { label: 'Tarifa', value: energyCase.current_tariff || '—' },
+              { label: 'Ahorro mensual est.', value: formatCurrency(energyCase.estimated_monthly_savings), highlight: true },
+              { label: 'Ahorro anual est.', value: formatCurrency(energyCase.estimated_annual_savings), highlight: true },
+              { label: 'Fin contrato', value: formatDate(energyCase.contract_end_date) },
+              { label: 'Creado', value: formatDate(energyCase.created_at) },
+            ].map((item) => (
+              <Card key={item.label} className="bg-muted/30">
+                <CardContent className="p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{item.label}</p>
+                  <p className={cn("text-sm font-medium truncate", item.highlight && "font-semibold text-emerald-600")}>{item.value}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
@@ -143,7 +123,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
           <TabsTrigger value="contrato" className="text-xs">Contrato</TabsTrigger>
           <TabsTrigger value="facturas" className="text-xs">Facturas</TabsTrigger>
           <TabsTrigger value="consumo" className="text-xs">Consumo</TabsTrigger>
-          <TabsTrigger value="potencia" className="text-xs">Potencia / Suministro</TabsTrigger>
+          <TabsTrigger value="potencia" className="text-xs">Suministro</TabsTrigger>
           <TabsTrigger value="recomendacion" className="text-xs">Recomendación</TabsTrigger>
           <TabsTrigger value="informe" className="text-xs">Informe</TabsTrigger>
           <TabsTrigger value="seguimiento" className="text-xs">Seguimiento</TabsTrigger>
@@ -193,9 +173,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack }: Props) {
         </TabsContent>
 
         <TabsContent value="seguimiento" className="mt-4">
-          <Card><CardHeader><CardTitle className="text-base">Seguimiento y tareas</CardTitle></CardHeader>
-            <CardContent><p className="text-sm text-muted-foreground">Tareas y seguimiento del expediente. Conecta energy_tasks.</p></CardContent>
-          </Card>
+          <CaseTrackingTab caseId={caseId} />
         </TabsContent>
       </Tabs>
     </div>

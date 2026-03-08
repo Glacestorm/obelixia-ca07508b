@@ -17910,6 +17910,8 @@ export type Database = {
       }
       energy_contracts: {
         Row: {
+          ai_analysis: Json | null
+          ai_analyzed_at: string | null
           case_id: string
           created_at: string
           early_exit_penalty_text: string | null
@@ -17925,6 +17927,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_analysis?: Json | null
+          ai_analyzed_at?: string | null
           case_id: string
           created_at?: string
           early_exit_penalty_text?: string | null
@@ -17940,6 +17944,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_analysis?: Json | null
+          ai_analyzed_at?: string | null
           case_id?: string
           created_at?: string
           early_exit_penalty_text?: string | null
@@ -18293,6 +18299,59 @@ export type Database = {
             foreignKeyName: "energy_tasks_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_tracking: {
+        Row: {
+          case_id: string
+          closure_status: string | null
+          created_at: string
+          first_invoice_review_date: string | null
+          id: string
+          observed_real_savings: number | null
+          proposal_accepted_date: string | null
+          proposal_sent_date: string | null
+          supplier_change_date: string | null
+          timeline_events: Json | null
+          tracking_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          closure_status?: string | null
+          created_at?: string
+          first_invoice_review_date?: string | null
+          id?: string
+          observed_real_savings?: number | null
+          proposal_accepted_date?: string | null
+          proposal_sent_date?: string | null
+          supplier_change_date?: string | null
+          timeline_events?: Json | null
+          tracking_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          closure_status?: string | null
+          created_at?: string
+          first_invoice_review_date?: string | null
+          id?: string
+          observed_real_savings?: number | null
+          proposal_accepted_date?: string | null
+          proposal_sent_date?: string | null
+          supplier_change_date?: string | null
+          timeline_events?: Json | null
+          tracking_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_tracking_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
             referencedRelation: "energy_cases"
             referencedColumns: ["id"]
           },
