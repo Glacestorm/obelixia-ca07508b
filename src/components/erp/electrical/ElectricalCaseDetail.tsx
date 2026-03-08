@@ -208,6 +208,10 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
           <CaseTrackingTab caseId={caseId} />
         </TabsContent>
 
+        <TabsContent value="portal" className="mt-4">
+          <ClientPortalManager caseId={caseId} companyId={companyId} />
+        </TabsContent>
+
         <TabsContent value="auditoria" className="mt-4">
           <CaseAuditLog companyId={companyId} caseId={caseId} />
         </TabsContent>
