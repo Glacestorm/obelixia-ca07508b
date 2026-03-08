@@ -168,7 +168,7 @@ function ERPModularDashboardContent() {
     { id: 'academia', name: 'Academia', icon: GraduationCap, permission: 'admin.all', color: 'bg-amber-500' },
   ];
 
-  const availableModules = modules.filter(m => hasPermission(m.permission));
+  const availableModules = modules.filter(m => canShowModule(m.id, m.permission));
 
   return (
     <div className="space-y-6">
