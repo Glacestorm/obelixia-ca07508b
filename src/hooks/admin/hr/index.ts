@@ -256,3 +256,10 @@ export type {
   TwinInstance, TwinModuleSnapshot, TwinMetric,
   TwinExperiment, TwinAlert, TwinStats
 } from './useHRDigitalTwin';
+
+// Premium Phase 6 - Documentary Legal Engine
+export { useHRLegalEngine } from './useHRLegalEngine';
+export type {
+  LegalTemplate, LegalClause, LegalContract,
+  ComplianceCheck, LegalStats, LegalAIAnalysis
+} from './useHRLegalEngine';

@@ -337,6 +337,7 @@ export function HRModule() {
         {activeModule === 'workforce-planning' && <HRWorkforcePlanningPanel companyId={demoCompanyId} />}
         {activeModule === 'fairness-engine' && <HRFairnessEnginePanel companyId={demoCompanyId} />}
         {activeModule === 'digital-twin' && <HRDigitalTwinPanel companyId={demoCompanyId} />}
+        {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
