@@ -1,60 +1,158 @@
 
-# Plan: Módulo de Instalación ERP — Sistema Completo de Distribución, Licenciamiento y Monetización
 
-## Estado de Implementación
+# Plan: Ideas Estratosféricas — 5 Fases de Innovación Disruptiva
 
-| Fase | Estado | Detalles |
-|------|--------|----------|
-| 1 | ✅ Completada | Tablas DB + Edge Function + UI Wizard |
-| 2 | ✅ Completada | Hot-add módulos, resolución dependencias, compatibilidad |
-| 3 | ✅ Completada | Canales stable/beta/canary, timeline updates, rollback |
-| 4 | ✅ Completada | Vinculación licencias, entitlements por módulo |
-| 5 | ✅ Completada | Monetización pay-per-use, billing events, reglas de facturación |
-| 6 | ✅ Completada | Generador de artefactos multi-plataforma (10 tipos) |
+## Infraestructura Existente Reutilizable
 
-## Implementado
+| Sistema | Reutilización |
+|---------|---------------|
+| `client_installations` + `installation_modules` | Base para Self-Healing y Digital Twin |
+| `usage_billing_events` + `usage_billing_rules` | Base para AI Pricing |
+| `useAICredits` + `ai_audit_logs` | Tracking de consumo IA |
+| `installation-manager` Edge Function | Extensible para health checks |
+| Stripe conectado | Base para Marketplace revenue sharing |
+| `useRealtimeChannel` + Supabase Realtime | Base para Federated Mesh |
+| `useAIOfflineMode` | Base para operación offline en Mesh |
 
-### Fase 1 — Infraestructura
-- Tablas: `client_installations` (extendida), `installation_modules`, `installation_updates`, `usage_billing_rules`
-- Edge Function: `installation-manager` (8 acciones)
-- UI: Wizard 4 pasos en `/store/installation`
+---
 
-### Fase 2 — Instalación Modular Incremental
-- `resolveDependencies()` — resolución transitiva de dependencias
-- `getDependents()` — detecta módulos que dependen de uno dado
-- `checkCompatibility()` — verifica versión core y dependencias
-- Panel "Añadir Módulo" con verificación de compatibilidad en tiempo real
-- Botón deshabilitar módulo con protección de dependencias
-- Hot-add de módulos sin reinstalación
+## FASE 1 — Self-Healing Installations (Monitoreo IA + Auto-Rollback)
 
-### Fase 3 — Control de Versiones
-- 3 canales: stable (producción), beta (pre-release), canary (experimental)
-- Timeline visual de actualizaciones con iconos de estado
-- Botón "Actualizar" por módulo con versión target
-- `applyUpdate()` con registro from→to y rollback_version
-- Selector de canal por instalación
-- Historial completo con changelog
+**Objetivo**: Cada instalación se auto-diagnostica y repara sin intervención humana.
 
-### Fase 4 — Integración Licencias
-- Vinculación license→installation via `linkLicense()`
-- Panel de licencias disponibles con botón vincular/desvincular
-- Vista de entitlements por módulo (licenciado/sin licencia)
-- Integración con tabla `licenses` existente
-- Badge de licencia en listado de instalaciones
+### Base de datos
+- Tabla `installation_health_checks`: métricas periódicas (CPU, memoria, latencia, errores, score 0-100)
+- Tabla `installation_incidents`: incidentes detectados con `severity`, `auto_resolved`, `resolution_type` (rollback/hotfix/restart/escalate)
+- Columna `health_score` en `client_installations` (actualizado por heartbeat)
 
-### Fase 5 — Monetización Pay-per-Use
-- Tabla `usage_billing_events` con tracking de consumo por módulo
-- Función `get_usage_billing_summary` para resumen mensual
-- Hook `useUsageBilling` con recordUsage, fetchSummary, saveRule
-- Panel de facturación con 3 tabs: Resumen, Eventos, Reglas
-- Configurador de reglas de pricing (precio unitario, free tier, moneda)
-- Integración en tab "Consumo" del panel de instalación
+### Edge Function `self-healing-monitor`
+- Acciones: `analyze_health`, `detect_degradation`, `decide_action`, `execute_remediation`
+- IA analiza métricas y decide: rollback automático, hotfix, reinicio de servicio, o escalado a humano
+- Usa `installation_updates` existente para ejecutar rollback (ya tiene `rollback_version`)
+- Umbrales configurables por instalación
 
-### Fase 6 — Generador de Artefactos
-- 10 tipos de artefactos: Docker Compose, Dockerfile, Helm Chart, K8s Manifests, PowerShell, Bash, Proxmox, CloudFormation, Terraform, ARM Template
-- Generación dinámica basada en módulos instalados + installation key
-- Descarga directa de archivos generados
-- Panel integrado en tab "Artefactos" del panel de instalación
-- Filtrado de artefactos por plataforma seleccionada
+### UI
+- Dashboard de salud por instalación con gauge de score (0-100)
+- Timeline de incidentes con resolución automática marcada
+- Configurador de umbrales y políticas de auto-reparación
+- Indicador visual: verde/amarillo/rojo con icono de "auto-healing activo"
 
-## ✅ PLAN COMPLETADO — Todas las 6 fases implementadas
+---
+
+## FASE 2 — Federated Module Mesh (Sincronización CRDT Multi-Sede)
+
+**Objetivo**: Múltiples sedes de un cliente sincronizan datos offline-first con reconciliación automática.
+
+### Base de datos
+- Tabla `mesh_federations`: agrupación de instalaciones de un mismo cliente (nombre, política de sync)
+- Tabla `mesh_sync_log`: registro de sincronizaciones (origin, destination, records_synced, conflicts_resolved)
+- Tabla `mesh_conflict_resolutions`: conflictos detectados con estrategia aplicada (LWW, merge, manual)
+
+### Edge Function `mesh-sync-engine`
+- Acciones: `create_federation`, `sync_nodes`, `resolve_conflicts`, `get_federation_status`
+- IA decide estrategia de resolución de conflictos según tipo de dato (financiero=manual, RRHH=LWW, logs=merge)
+- Vector clocks para ordenación causal de eventos
+- Cola de operaciones offline con reconciliación al reconectar
+
+### UI (tab "Federación" en InstallationDetailPanel)
+- Mapa visual de nodos federados con estado de conexión
+- Panel de conflictos pendientes de resolución manual
+- Métricas de sincronización: latencia, throughput, conflictos/día
+- Configurador de políticas por tipo de dato
+
+---
+
+## FASE 3 — Usage-Based AI Pricing (Facturación por Decisión IA)
+
+**Objetivo**: Cada invocación IA es una unidad facturable con pricing granular.
+
+### Base de datos
+- Tabla `ai_usage_pricing`: reglas de precio por tipo de decisión IA (recálculo IRPF, análisis competencias, predicción churn, etc.)
+- Extender `usage_billing_events` con `ai_model_used`, `tokens_consumed`, `decision_type`
+- Tabla `ai_usage_invoices`: facturas mensuales generadas por consumo IA
+
+### Edge Function `ai-usage-billing`
+- Intercepta todas las llamadas IA existentes y registra consumo
+- Calcula coste real basado en modelo usado + tokens + tipo de decisión
+- Genera resumen mensual con desglose por módulo y tipo de decisión
+- Integración con Stripe para facturación automática (metered billing)
+
+### Hook `useAIUsagePricing`
+- Wrapper sobre `useAICredits` existente que añade facturación
+- `recordAIDecision(type, model, tokens)` — registra cada uso
+- `getMonthlyInvoice(installationId)` — genera factura proforma
+
+### UI (tab "Consumo IA" en panel de instalación)
+- Gráfico de barras: decisiones IA por módulo/día
+- Tabla de precios configurables por tipo de decisión
+- Simulador de costes: "si usas X nóminas/mes con IA, costaría Y€"
+- Alertas de umbral de gasto IA
+
+---
+
+## FASE 4 — Marketplace de Extensiones de Terceros
+
+**Objetivo**: Ecosistema de plugins con revenue sharing automático.
+
+### Base de datos
+- Tabla `marketplace_extensions`: catálogo de extensiones (nombre, autor, módulo_target, versión, precio, rating, downloads)
+- Tabla `marketplace_developers`: partners registrados con Stripe Connect account_id
+- Tabla `marketplace_purchases`: compras/suscripciones de extensiones por instalación
+- Tabla `marketplace_reviews`: reseñas y ratings
+
+### Edge Function `marketplace-manager`
+- Acciones: `list_extensions`, `install_extension`, `uninstall_extension`, `publish_extension`, `process_payment`
+- Verificación de compatibilidad con módulos instalados (usa `checkCompatibility` existente)
+- Revenue split automático via Stripe Connect (ej: 70% developer / 30% plataforma)
+
+### UI (nueva sección "Marketplace" en Store)
+- Catálogo tipo app store con filtros por módulo, categoría, precio
+- Página de detalle con screenshots, changelog, reviews
+- Panel de developer para publicar extensiones
+- Dashboard de ingresos para developers (revenue sharing)
+- Botón "Instalar" que verifica compatibilidad antes de añadir
+
+---
+
+## FASE 5 — Digital Twin de Instalación
+
+**Objetivo**: Réplica virtual en cloud para diagnóstico y testing sin tocar producción.
+
+### Base de datos
+- Tabla `digital_twins`: réplica virtual vinculada a `client_installations` (status, last_sync, snapshot_at)
+- Tabla `twin_snapshots`: snapshots periódicos del estado de la instalación (config, módulos, métricas)
+- Tabla `twin_simulations`: simulaciones ejecutadas (update testing, stress test, etc.) con resultados
+
+### Edge Function `digital-twin-engine`
+- Acciones: `create_twin`, `sync_twin`, `simulate_update`, `run_diagnostic`, `compare_states`
+- IA analiza divergencias entre twin y producción
+- Simula aplicación de updates antes de desplegar en real
+- Genera informe de riesgo pre-deployment
+
+### UI (tab "Digital Twin" en InstallationDetailPanel)
+- Vista comparativa lado-a-lado: Twin vs Producción
+- Botón "Simular Update" que ejecuta en twin y muestra resultado
+- Panel de diagnóstico remoto sin acceso al sistema cliente
+- Timeline de snapshots con posibilidad de "viajar en el tiempo"
+- Indicador de divergencia twin↔producción
+
+---
+
+## Resumen Técnico
+
+| Fase | Tablas | Edge Functions | Componentes UI | Reutiliza |
+|------|--------|----------------|----------------|-----------|
+| 1 - Self-Healing | 2 | 1 | 3 | installation_updates, rollback |
+| 2 - Federated Mesh | 3 | 1 | 4 | useRealtimeChannel, useAIOfflineMode |
+| 3 - AI Pricing | 2 (+extend 1) | 1 | 3 | useAICredits, usage_billing_events, Stripe |
+| 4 - Marketplace | 4 | 1 | 5 | checkCompatibility, Stripe Connect |
+| 5 - Digital Twin | 3 | 1 | 4 | installation_health_checks (F1) |
+| **Total** | **14** | **5** | **19** | — |
+
+## Orden Recomendado
+1. **Self-Healing** primero (valor inmediato, reduce soporte)
+2. **AI Pricing** segundo (monetización rápida sobre infraestructura existente)
+3. **Digital Twin** tercero (complementa Self-Healing)
+4. **Marketplace** cuarto (requiere ecosistema maduro)
+5. **Federated Mesh** último (mayor complejidad técnica, CRDT)
+
