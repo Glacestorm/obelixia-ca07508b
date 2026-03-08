@@ -58,16 +58,16 @@ export function EnergyAdvancedAnalytics({ companyId }: Props) {
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const casesRes = await supabase.from('energy_cases')
+      const casesRes = await (supabase.from('energy_cases') as any)
         .select('id, title, status, energy_type, estimated_annual_savings, estimated_gas_savings, estimated_solar_savings, validated_annual_savings, validated_gas_savings, validated_solar_savings, created_at')
         .eq('company_id', companyId);
-      const invoicesRes = await supabase.from('energy_invoices')
+      const invoicesRes = await (supabase.from('energy_invoices') as any)
         .select('case_id, energy_type, total_amount, consumption_total_kwh, gas_consumption_kwh, billing_start')
         .eq('company_id', companyId).order('billing_start', { ascending: true });
-      const suppliesRes = await supabase.from('energy_supplies')
+      const suppliesRes = await (supabase.from('energy_supplies') as any)
         .select('case_id, contracted_power_p1, contracted_power_p2, max_demand_p1, max_demand_p2')
         .eq('company_id', companyId);
-      const recsRes = await supabase.from('energy_recommendations')
+      const recsRes = await (supabase.from('energy_recommendations') as any)
         .select('case_id, recommended_power_p1, recommended_power_p2, monthly_savings_estimate')
         .eq('company_id', companyId);
 
