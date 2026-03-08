@@ -215,7 +215,7 @@ export function CaseContractsTab({ caseId }: Props) {
                   </span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100">
                     {c.signed_document_url && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); window.open(c.signed_document_url!, '_blank'); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); handleOpenDocument(c.signed_document_url!); }}>
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}
