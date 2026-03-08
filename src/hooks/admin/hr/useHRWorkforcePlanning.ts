@@ -108,6 +108,7 @@ export function useHRWorkforcePlanning(companyId: string) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null);
   const [stats, setStats] = useState<WorkforcePlanningStats | null>(null);
+  const [realHeadcount, setRealHeadcount] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<Record<string, unknown> | null>(null);
@@ -223,6 +224,18 @@ export function useHRWorkforcePlanning(companyId: string) {
     }
   }, [invoke]);
 
+  // === DATA BRIDGE: Real headcount from ERP base ===
+  const fetchRealHeadcount = useCallback(async () => {
+    try {
+      const data = await invoke('get_real_headcount');
+      setRealHeadcount(data);
+      return data;
+    } catch (err) {
+      console.error('[useHRWorkforcePlanning] fetchRealHeadcount error:', err);
+      return null;
+    }
+  }, [invoke]);
+
   // Realtime for scenarios
   useEffect(() => {
     const channel = supabase
@@ -244,13 +257,14 @@ export function useHRWorkforcePlanning(companyId: string) {
       fetchPlans();
       fetchScenarios();
       fetchStats();
+      fetchRealHeadcount();
     }
-  }, [companyId, fetchPlans, fetchScenarios, fetchStats]);
+  }, [companyId, fetchPlans, fetchScenarios, fetchStats, fetchRealHeadcount]);
 
   return {
-    plans, scenarios, selectedPlan, stats,
+    plans, scenarios, selectedPlan, stats, realHeadcount,
     loading, aiLoading, aiResult,
-    fetchPlans, fetchPlanDetail, fetchScenarios, fetchStats,
+    fetchPlans, fetchPlanDetail, fetchScenarios, fetchStats, fetchRealHeadcount,
     simulateScenario, runWorkforceAnalysis, runSkillGapStrategy,
     setSelectedPlan, setAiResult,
   };

@@ -226,10 +226,58 @@ FORMATO JSON estricto:
 
       return json({ success: true, data: { message: 'Fairness demo data seeded' } });
 
-    } else if (action === 'ai_fairness_analysis') {
-      systemPrompt = `Eres un experto en equidad organizacional, justicia laboral, RD 902/2020 (igualdad retributiva), y Directiva UE 2023/970 (transparencia salarial).
-Analiza la situación de equidad de la organización y genera un diagnóstico integral.
+    // === DATA BRIDGE: Real payroll data for Fairness Engine ===
+    } else if (action === 'get_real_pay_equity_data') {
+      const { data: employees, error: empErr } = await supabase.from('erp_hr_employees').select('id, gender, department_id, job_title, category, base_salary, hire_date').eq('company_id', company_id).eq('status', 'active');
+      if (empErr) throw empErr;
+      const { data: departments } = await supabase.from('erp_hr_departments').select('id, name').eq('company_id', company_id);
+      const deptMap: Record<string, string> = {};
+      (departments || []).forEach((d: any) => { deptMap[d.id] = d.name; });
+      const { data: payrolls } = await supabase.from('erp_hr_payrolls').select('employee_id, gross_salary, base_salary').eq('company_id', company_id).order('period_year', { ascending: false }).order('period_month', { ascending: false }).limit(1000);
+      const payrollMap: Record<string, any> = {};
+      (payrolls || []).forEach((p: any) => { if (!payrollMap[p.employee_id]) payrollMap[p.employee_id] = p; });
 
+      const byGender: Record<string, { count: number; totalSalary: number }> = {};
+      const byDeptGender: Record<string, Record<string, { count: number; totalSalary: number }>> = {};
+      const byRoleGender: Record<string, Record<string, { count: number; totalSalary: number }>> = {};
+      (employees || []).forEach((emp: any) => {
+        const gender = emp.gender || 'unknown';
+        const deptName = deptMap[emp.department_id] || 'Sin departamento';
+        const role = emp.job_title || emp.category || 'Sin rol';
+        const salary = Number(emp.base_salary || 0);
+        if (!byGender[gender]) byGender[gender] = { count: 0, totalSalary: 0 };
+        byGender[gender].count++; byGender[gender].totalSalary += salary;
+        if (!byDeptGender[deptName]) byDeptGender[deptName] = {};
+        if (!byDeptGender[deptName][gender]) byDeptGender[deptName][gender] = { count: 0, totalSalary: 0 };
+        byDeptGender[deptName][gender].count++; byDeptGender[deptName][gender].totalSalary += salary;
+        if (!byRoleGender[role]) byRoleGender[role] = {};
+        if (!byRoleGender[role][gender]) byRoleGender[role][gender] = { count: 0, totalSalary: 0 };
+        byRoleGender[role][gender].count++; byRoleGender[role][gender].totalSalary += salary;
+      });
+      const genderGap = (byGender['F'] && byGender['M']) ? {
+        female_avg: Math.round(byGender['F'].totalSalary / byGender['F'].count), male_avg: Math.round(byGender['M'].totalSalary / byGender['M'].count),
+        gap_percentage: Math.round(((byGender['M'].totalSalary / byGender['M'].count) - (byGender['F'].totalSalary / byGender['F'].count)) / (byGender['M'].totalSalary / byGender['M'].count) * 10000) / 100,
+        female_count: byGender['F'].count, male_count: byGender['M'].count,
+      } : null;
+      const deptGaps = Object.entries(byDeptGender).map(([dept, genders]) => {
+        const f = genders['F'], m = genders['M'];
+        const fAvg = f ? f.totalSalary / f.count : 0, mAvg = m ? m.totalSalary / m.count : 0;
+        return { department: dept, gap_percentage: (f && m) ? Math.round((mAvg - fAvg) / mAvg * 10000) / 100 : null, female_avg: f ? Math.round(fAvg) : null, male_avg: m ? Math.round(mAvg) : null, female_count: f?.count || 0, male_count: m?.count || 0 };
+      });
+      const roleGaps = Object.entries(byRoleGender).filter(([_, g]) => g['F'] && g['M']).map(([role, genders]) => {
+        const fAvg = genders['F'].totalSalary / genders['F'].count, mAvg = genders['M'].totalSalary / genders['M'].count;
+        return { role, gap_percentage: Math.round((mAvg - fAvg) / mAvg * 10000) / 100, female_avg: Math.round(fAvg), male_avg: Math.round(mAvg), female_count: genders['F'].count, male_count: genders['M'].count };
+      });
+      return json({ success: true, data: { data_source: 'real', total_employees: (employees || []).length, with_payroll_data: Object.keys(payrollMap).length, gender_gap: genderGap, department_gaps: deptGaps, role_gaps: roleGaps, raw_gender_summary: byGender, timestamp: new Date().toISOString() } });
+
+    } else if (action === 'ai_fairness_analysis') {
+      const { data: realEmps } = await supabase.from('erp_hr_employees').select('gender, base_salary, department_id, job_title').eq('company_id', company_id).eq('status', 'active');
+      const genderStats: Record<string, { count: number; total: number }> = {};
+      (realEmps || []).forEach((e: any) => { const g = e.gender || 'unknown'; if (!genderStats[g]) genderStats[g] = { count: 0, total: 0 }; genderStats[g].count++; genderStats[g].total += Number(e.base_salary || 0); });
+      const realContext = { total_active_employees: (realEmps || []).length, gender_distribution: Object.entries(genderStats).map(([g, s]) => ({ gender: g, count: s.count, avg_salary: Math.round(s.total / s.count) })), data_source: 'real_erp_data' };
+
+      systemPrompt = `Eres un experto en equidad organizacional, justicia laboral, RD 902/2020 y Directiva UE 2023/970.
+Analiza la situación de equidad basándote en DATOS REALES de nómina proporcionados.
 FORMATO JSON estricto:
 {
   "overall_fairness_index": 0-100,
@@ -238,27 +286,28 @@ FORMATO JSON estricto:
   "intersectional_risks": [{ "groups": ["string"], "risk": "string", "recommendation": "string" }],
   "regulatory_compliance": { "rd_902_2020": { "score": 0-100, "gaps": ["string"] }, "eu_directive_2023_970": { "score": 0-100, "gaps": ["string"] } },
   "action_priorities": [{ "priority": 1, "action": "string", "impact": "high|critical", "expected_outcome": "string", "timeline": "string" }],
+  "data_source": "real",
   "executive_summary": "string"
 }`;
-      userPrompt = `Analiza la equidad organizacional: ${JSON.stringify(params)}`;
+      userPrompt = `Analiza la equidad organizacional con DATOS REALES: ${JSON.stringify({ ...params, real_data: realContext })}`;
 
     } else if (action === 'ai_pay_equity_analysis') {
-      systemPrompt = `Eres un auditor de equidad retributiva especializado en RD 902/2020 y la Directiva UE 2023/970 de transparencia salarial.
-Genera un análisis de equidad retributiva para el tipo solicitado.
+      const { data: realEmps } = await supabase.from('erp_hr_employees').select('gender, base_salary, department_id, job_title, category, hire_date').eq('company_id', company_id).eq('status', 'active');
+      const { data: depts } = await supabase.from('erp_hr_departments').select('id, name').eq('company_id', company_id);
+      const dm: Record<string, string> = {}; (depts || []).forEach((d: any) => { dm[d.id] = d.name; });
+      const enrichedEmps = (realEmps || []).map((e: any) => ({ gender: e.gender, base_salary: e.base_salary, department: dm[e.department_id] || 'N/A', job_title: e.job_title, category: e.category }));
 
+      systemPrompt = `Eres un auditor de equidad retributiva especializado en RD 902/2020 y Directiva UE 2023/970.
+Genera un análisis basado en DATOS REALES de ${enrichedEmps.length} empleados.
 FORMATO JSON estricto:
 {
-  "overall_equity_score": 0-100,
-  "gap_percentage": number,
-  "affected_employees": number,
-  "remediation_cost": number,
+  "overall_equity_score": 0-100, "gap_percentage": number, "affected_employees": number, "remediation_cost": number,
   "findings": [{ "category": "string", "finding": "string", "severity": "low|medium|high|critical", "affected_count": number }],
   "salary_bands_analysis": [{ "band": "string", "gap": number, "compliant": boolean }],
   "recommendations": [{ "action": "string", "priority": "high|medium|low", "cost_estimate": number, "timeline": "string" }],
-  "legal_obligations": ["string"],
-  "summary": "string"
+  "legal_obligations": ["string"], "data_source": "real", "summary": "string"
 }`;
-      userPrompt = `Análisis de equidad retributiva tipo: ${params?.analysis_type || 'comprehensive'}. Contexto: ${JSON.stringify(params)}`;
+      userPrompt = `Análisis equidad tipo: ${params?.analysis_type || 'comprehensive'}. DATOS REALES (${enrichedEmps.length} empleados, muestra): ${JSON.stringify(enrichedEmps.slice(0, 50))}. Distribución género: ${JSON.stringify(enrichedEmps.reduce((acc: any, e: any) => { acc[e.gender || 'N/A'] = (acc[e.gender || 'N/A'] || 0) + 1; return acc; }, {}))}. Media salarial: ${Math.round(enrichedEmps.reduce((s: number, e: any) => s + Number(e.base_salary || 0), 0) / (enrichedEmps.length || 1))}€`;
 
     } else if (action === 'ai_security_analysis') {
       systemPrompt = `Eres un CISO experto en seguridad de RRHH enterprise, GDPR, LOPDGDD, ISO 27001 y SOX.

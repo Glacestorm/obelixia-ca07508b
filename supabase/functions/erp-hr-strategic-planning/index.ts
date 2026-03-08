@@ -67,11 +67,14 @@ serve(async (req) => {
     }
 
     if (action === 'get_stats') {
-      const [plansRes, scenRes, hcRes, skillRes] = await Promise.all([
+      const [plansRes, scenRes, hcRes, skillRes, realEmpRes, realDeptRes] = await Promise.all([
         supabase.from('erp_hr_workforce_plans').select('id, status, budget_total, budget_used', { count: 'exact' }).eq('company_id', company_id),
         supabase.from('erp_hr_scenarios').select('id, status, risk_level', { count: 'exact' }).eq('company_id', company_id),
         supabase.from('erp_hr_headcount_models').select('current_headcount, projected_headcount, gap, hiring_priority').eq('company_id', company_id),
         supabase.from('erp_hr_skill_gap_forecasts').select('gap, criticality').eq('company_id', company_id),
+        // Real headcount from erp_hr_employees
+        supabase.from('erp_hr_employees').select('id, department_id, base_salary', { count: 'exact' }).eq('company_id', company_id).eq('status', 'active'),
+        supabase.from('erp_hr_departments').select('id, name, budget').eq('company_id', company_id).eq('is_active', true),
       ]);
       const hcData = hcRes.data || [];
       const totalCurrentHC = hcData.reduce((s: number, r: any) => s + (r.current_headcount || 0), 0);
@@ -81,6 +84,11 @@ serve(async (req) => {
       const criticalSkills = skillData.filter((r: any) => r.criticality === 'critical').length;
       const plans = plansRes.data || [];
       const totalBudget = plans.reduce((s: number, p: any) => s + Number(p.budget_total || 0), 0);
+      
+      // Real data enrichment
+      const realHeadcount = realEmpRes.count || 0;
+      const realTotalSalary = (realEmpRes.data || []).reduce((s: number, e: any) => s + Number(e.base_salary || 0), 0);
+      const realDepts = (realDeptRes.data || []).length;
 
       return json({ success: true, data: {
         total_plans: plansRes.count || 0,
@@ -93,7 +101,65 @@ serve(async (req) => {
         critical_hires: criticalHires,
         critical_skill_gaps: criticalSkills,
         total_budget: totalBudget,
+        // Real data from ERP base
+        real_data: {
+          source: 'erp_hr_employees',
+          real_headcount: realHeadcount,
+          real_total_salary_annual: realTotalSalary * 14,
+          real_avg_salary: realHeadcount > 0 ? Math.round(realTotalSalary / realHeadcount) : 0,
+          real_departments: realDepts,
+        },
       }});
+    }
+
+    // === DATA BRIDGE: Real headcount breakdown ===
+    if (action === 'get_real_headcount') {
+      const { data: employees } = await supabase
+        .from('erp_hr_employees')
+        .select('id, department_id, position_id, job_title, category, base_salary, contract_type, hire_date, status')
+        .eq('company_id', company_id)
+        .eq('status', 'active');
+      
+      const { data: departments } = await supabase
+        .from('erp_hr_departments')
+        .select('id, name, budget')
+        .eq('company_id', company_id)
+        .eq('is_active', true);
+      
+      const deptMap: Record<string, { name: string; budget: number }> = {};
+      (departments || []).forEach((d: any) => { deptMap[d.id] = { name: d.name, budget: Number(d.budget || 0) }; });
+
+      // Group by department
+      const byDept: Record<string, { count: number; totalSalary: number; contractTypes: Record<string, number> }> = {};
+      (employees || []).forEach((e: any) => {
+        const deptId = e.department_id || 'unassigned';
+        const deptName = deptMap[deptId]?.name || 'Sin departamento';
+        if (!byDept[deptName]) byDept[deptName] = { count: 0, totalSalary: 0, contractTypes: {} };
+        byDept[deptName].count++;
+        byDept[deptName].totalSalary += Number(e.base_salary || 0);
+        const ct = e.contract_type || 'unknown';
+        byDept[deptName].contractTypes[ct] = (byDept[deptName].contractTypes[ct] || 0) + 1;
+      });
+
+      const departmentBreakdown = Object.entries(byDept).map(([dept, data]) => ({
+        department: dept,
+        headcount: data.count,
+        avg_salary: Math.round(data.totalSalary / data.count),
+        total_cost_monthly: Math.round(data.totalSalary),
+        contract_types: data.contractTypes,
+        budget: deptMap[Object.keys(deptMap).find(k => deptMap[k].name === dept) || '']?.budget || null,
+      })).sort((a, b) => b.headcount - a.headcount);
+
+      return json({
+        success: true,
+        data: {
+          data_source: 'real',
+          total_headcount: (employees || []).length,
+          departments: departmentBreakdown,
+          total_salary_monthly: (employees || []).reduce((s: number, e: any) => s + Number(e.base_salary || 0), 0),
+          timestamp: new Date().toISOString(),
+        }
+      });
     }
 
     // === SEED ACTIONS (P9.6) ===

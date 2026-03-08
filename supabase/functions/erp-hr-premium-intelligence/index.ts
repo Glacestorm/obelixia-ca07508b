@@ -144,6 +144,111 @@ serve(async (req) => {
       return json({ success: true, data: { message: 'CNAE Intelligence demo data seeded' } });
     }
 
+    // === DATA BRIDGE: Real contracts for Legal Engine ===
+    if (action === 'get_real_contracts') {
+      const { data: realContracts, error: rcErr } = await supabase
+        .from('erp_hr_contracts')
+        .select('id, employee_id, contract_type, contract_code, start_date, end_date, base_salary, annual_salary, working_hours, workday_type, category, professional_group, is_active, termination_date, termination_type, collective_agreement_id, signed_at, signed_by_employee, signed_by_company, document_url')
+        .eq('company_id', company_id)
+        .order('start_date', { ascending: false })
+        .limit(200);
+      if (rcErr) throw rcErr;
+
+      // Enrich with employee names
+      const empIds = [...new Set((realContracts || []).map((c: any) => c.employee_id).filter(Boolean))];
+      const { data: empNames } = await supabase
+        .from('erp_hr_employees')
+        .select('id, first_name, last_name')
+        .in('id', empIds.length > 0 ? empIds : ['00000000-0000-0000-0000-000000000000']);
+      
+      const nameMap: Record<string, string> = {};
+      (empNames || []).forEach((e: any) => { nameMap[e.id] = `${e.first_name} ${e.last_name}`; });
+
+      const enriched = (realContracts || []).map((c: any) => ({
+        ...c,
+        employee_name: nameMap[c.employee_id] || 'N/A',
+        data_source: 'real',
+      }));
+
+      // Stats
+      const active = enriched.filter((c: any) => c.is_active);
+      const typeDistribution: Record<string, number> = {};
+      enriched.forEach((c: any) => {
+        typeDistribution[c.contract_type] = (typeDistribution[c.contract_type] || 0) + 1;
+      });
+
+      return json({
+        success: true,
+        data: {
+          data_source: 'real',
+          contracts: enriched,
+          stats: {
+            total: enriched.length,
+            active: active.length,
+            expired: enriched.length - active.length,
+            signed: enriched.filter((c: any) => c.signed_by_employee && c.signed_by_company).length,
+            type_distribution: typeDistribution,
+          },
+          timestamp: new Date().toISOString(),
+        }
+      });
+    }
+
+    if (action === 'sync_real_contracts_to_legal') {
+      // Import real contracts as legal contracts for premium analysis
+      const { data: realContracts } = await supabase
+        .from('erp_hr_contracts')
+        .select('id, employee_id, contract_type, contract_code, start_date, end_date, base_salary, annual_salary, is_active, category')
+        .eq('company_id', company_id)
+        .eq('is_active', true);
+
+      const { data: empNames } = await supabase
+        .from('erp_hr_employees')
+        .select('id, first_name, last_name')
+        .eq('company_id', company_id);
+      const nameMap: Record<string, string> = {};
+      (empNames || []).forEach((e: any) => { nameMap[e.id] = `${e.first_name} ${e.last_name}`; });
+
+      // Check existing legal contracts to avoid duplicates
+      const { data: existingLegal } = await supabase
+        .from('erp_hr_legal_contracts')
+        .select('contract_number')
+        .eq('company_id', company_id);
+      const existingCodes = new Set((existingLegal || []).map((c: any) => c.contract_number));
+
+      const toInsert = (realContracts || [])
+        .filter((c: any) => c.contract_code && !existingCodes.has(c.contract_code))
+        .map((c: any) => ({
+          company_id,
+          contract_number: c.contract_code || `REAL-${c.id.slice(0, 8)}`,
+          contract_type: c.contract_type === 'indefinido' ? 'employment' : c.contract_type === 'temporal' ? 'temporary' : 'employment',
+          status: 'active',
+          employee_name: nameMap[c.employee_id] || 'N/A',
+          employee_id: c.employee_id,
+          effective_date: c.start_date,
+          expiration_date: c.end_date,
+          compliance_score: 0, // Will be calculated by AI compliance check
+          compliance_issues: [],
+          variables_used: { salary: c.base_salary, annual_salary: c.annual_salary, category: c.category, data_source: 'real_erp_contract', source_contract_id: c.id },
+          generated_content: {},
+          risk_assessment: {},
+        }));
+
+      if (toInsert.length > 0) {
+        await supabase.from('erp_hr_legal_contracts').insert(toInsert as any);
+      }
+
+      return json({
+        success: true,
+        data: {
+          synced: toInsert.length,
+          skipped_duplicates: (realContracts || []).length - toInsert.length,
+          total_real_contracts: (realContracts || []).length,
+          message: `${toInsert.length} contratos reales sincronizados al Legal Engine`,
+        }
+      });
+    }
+
     // === AI ACTIONS ===
     let systemPrompt = '';
     let userPrompt = '';
