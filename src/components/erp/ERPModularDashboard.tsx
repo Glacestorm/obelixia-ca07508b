@@ -653,7 +653,7 @@ function ERPModularDashboardContent() {
               <Wrench className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
             </div>
-            
+            <Tabs defaultValue="premium-dash" className="space-y-4">
             <Tabs defaultValue="audit" className="space-y-4">
               <TabsList className="grid w-full max-w-2xl grid-cols-4">
                 <TabsTrigger value="premium-dash" className="gap-2">
