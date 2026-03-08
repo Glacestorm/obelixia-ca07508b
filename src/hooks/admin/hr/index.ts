@@ -193,6 +193,13 @@ export type {
 
 // Phase 5 - Compliance Enterprise
 export { useHRComplianceEnterprise } from './useHRComplianceEnterprise';
+
+// Phase 6 - Wellbeing Enterprise
+export { useHRWellbeingEnterprise } from './useHRWellbeingEnterprise';
+export type {
+  WellbeingAssessment, WellbeingSurvey, WellnessProgram,
+  BurnoutAlert, WellbeingKPI, WellbeingAIAnalysis, WellbeingStats
+} from './useHRWellbeingEnterprise';
 export type {
   CompliancePolicy, ComplianceAudit, ComplianceIncident,
   ComplianceTraining, ComplianceRiskAssessment, ComplianceKPI,
