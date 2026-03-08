@@ -1,0 +1,7 @@
+export { HREnterpriseDashboard } from './HREnterpriseDashboard';
+export { HRLegalEntitiesPanel } from './HRLegalEntitiesPanel';
+export { HRWorkCentersPanel } from './HRWorkCentersPanel';
+export { HROrgStructurePanel } from './HROrgStructurePanel';
+export { HRCalendarsPanel } from './HRCalendarsPanel';
+export { HRRolesPermissionsPanel } from './HRRolesPermissionsPanel';
+export { HRAuditTrailPanel } from './HRAuditTrailPanel';
