@@ -200,6 +200,47 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                         </Button>
                       </>
                     )}
+                    {/* PDF & Signature actions */}
+                    {['issued', 'sent', 'accepted'].includes(p.status) && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => downloadPDF(p, {
+                          caseTitle: energyCase?.title, customerName: energyCase?.cups || undefined, address: energyCase?.address || undefined,
+                        })}>
+                          <Download className="h-3.5 w-3.5 mr-1" /> Descargar PDF
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={async () => {
+                          setActionLoading('upload');
+                          await uploadPDF(p, {
+                            caseTitle: energyCase?.title, address: energyCase?.address || undefined,
+                          }, caseId);
+                          log('proposal_pdf_generated', 'energy_proposals', p.id, { version: p.version });
+                          setActionLoading(null);
+                        }} disabled={actionLoading === 'upload'}>
+                          {actionLoading === 'upload' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />} Guardar PDF
+                        </Button>
+                      </>
+                    )}
+                    {p.status === 'accepted' && !p.signed_at && (
+                      <Button size="sm" variant="default" onClick={async () => {
+                        setActionLoading('sign');
+                        const { supabase } = await import('@/integrations/supabase/client');
+                        await supabase.from('energy_proposals').update({
+                          signed_at: new Date().toISOString(),
+                          signed_by: energyCase?.cups || 'Cliente',
+                          signature_method: 'digital_acceptance',
+                        } as any).eq('id', p.id);
+                        log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
+                        setActionLoading(null);
+                        window.location.reload();
+                      }} disabled={!!actionLoading}>
+                        <PenTool className="h-3.5 w-3.5 mr-1" /> Firmar digitalmente
+                      </Button>
+                    )}
+                    {(p as any).signed_at && (
+                      <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/10 rounded text-xs text-emerald-700">
+                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate((p as any).signed_at)}
+                      </div>
+                    )}
                   </div>
                 </PermissionGate>
               </CardContent>
