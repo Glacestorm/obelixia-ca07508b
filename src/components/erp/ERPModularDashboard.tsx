@@ -348,12 +348,6 @@ function ERPModularDashboardContent() {
               Migración
             </TabsTrigger>
           )}
-          {hasPermission('admin.all') && (
-            <TabsTrigger value="utilities" className="gap-2">
-              <Wrench className="h-4 w-4" />
-              Utilidades
-            </TabsTrigger>
-          )}
         </TabsList>
 
         {/* Overview Tab */}
