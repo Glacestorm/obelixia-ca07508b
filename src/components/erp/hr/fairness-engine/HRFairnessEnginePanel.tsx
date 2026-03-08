@@ -81,7 +81,10 @@ export function HRFairnessEnginePanel({ companyId }: Props) {
               </div>
               <div>
                 <CardTitle className="text-lg">Fairness & Justice Engine</CardTitle>
-                <p className="text-xs text-muted-foreground">Equidad retributiva · Métricas de justicia · Casos · Planes de acción</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">Equidad retributiva · Métricas de justicia · Casos · Planes de acción</p>
+                  <DataSourceBadge source={resolveDataSource(hasRealData)} lastUpdated={new Date()} compact />
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
