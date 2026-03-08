@@ -24979,6 +24979,275 @@ export type Database = {
           },
         ]
       }
+      erp_hr_board_pack_distribution: {
+        Row: {
+          board_pack_id: string
+          channel: string
+          distributed_at: string | null
+          distributed_by: string | null
+          id: string
+          metadata: Json | null
+          recipient: string | null
+          status: string | null
+        }
+        Insert: {
+          board_pack_id: string
+          channel: string
+          distributed_at?: string | null
+          distributed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient?: string | null
+          status?: string | null
+        }
+        Update: {
+          board_pack_id?: string
+          channel?: string
+          distributed_at?: string | null
+          distributed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_board_pack_distribution_board_pack_id_fkey"
+            columns: ["board_pack_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_board_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_board_pack_reviews: {
+        Row: {
+          action: string
+          board_pack_id: string
+          comments: string | null
+          created_at: string | null
+          id: string
+          new_status: string | null
+          previous_status: string | null
+          reviewer_id: string | null
+          reviewer_name: string | null
+        }
+        Insert: {
+          action: string
+          board_pack_id: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+        }
+        Update: {
+          action?: string
+          board_pack_id?: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_board_pack_reviews_board_pack_id_fkey"
+            columns: ["board_pack_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_board_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_board_pack_sections: {
+        Row: {
+          alerts: Json | null
+          board_pack_id: string
+          content: Json | null
+          created_at: string | null
+          data_source: string | null
+          id: string
+          metrics: Json | null
+          narrative: string | null
+          order_index: number
+          recommendations: Json | null
+          section_key: string
+          title: string
+        }
+        Insert: {
+          alerts?: Json | null
+          board_pack_id: string
+          content?: Json | null
+          created_at?: string | null
+          data_source?: string | null
+          id?: string
+          metrics?: Json | null
+          narrative?: string | null
+          order_index?: number
+          recommendations?: Json | null
+          section_key: string
+          title: string
+        }
+        Update: {
+          alerts?: Json | null
+          board_pack_id?: string
+          content?: Json | null
+          created_at?: string | null
+          data_source?: string | null
+          id?: string
+          metrics?: Json | null
+          narrative?: string | null
+          order_index?: number
+          recommendations?: Json | null
+          section_key?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_board_pack_sections_board_pack_id_fkey"
+            columns: ["board_pack_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_board_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_board_pack_templates: {
+        Row: {
+          ai_narrative_enabled: boolean | null
+          audience: string
+          company_id: string
+          cover_config: Json | null
+          created_at: string | null
+          created_by: string | null
+          default_period: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sections: Json
+          updated_at: string | null
+        }
+        Insert: {
+          ai_narrative_enabled?: boolean | null
+          audience: string
+          company_id: string
+          cover_config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          default_period?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sections?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          ai_narrative_enabled?: boolean | null
+          audience?: string
+          company_id?: string
+          cover_config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          default_period?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sections?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_board_packs: {
+        Row: {
+          ai_narrative: Json | null
+          approved_at: string | null
+          approved_by: string | null
+          audience: string
+          company_id: string
+          created_at: string | null
+          data_sources: Json | null
+          disclaimers: string[] | null
+          executive_summary: string | null
+          filters_applied: Json | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          key_metrics: Json | null
+          modules_included: string[] | null
+          period_end: string
+          period_start: string
+          status: string
+          template_id: string | null
+          template_version: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          ai_narrative?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          audience: string
+          company_id: string
+          created_at?: string | null
+          data_sources?: Json | null
+          disclaimers?: string[] | null
+          executive_summary?: string | null
+          filters_applied?: Json | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          key_metrics?: Json | null
+          modules_included?: string[] | null
+          period_end: string
+          period_start: string
+          status?: string
+          template_id?: string | null
+          template_version?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          ai_narrative?: Json | null
+          approved_at?: string | null
+          approved_by?: string | null
+          audience?: string
+          company_id?: string
+          created_at?: string | null
+          data_sources?: Json | null
+          disclaimers?: string[] | null
+          executive_summary?: string | null
+          filters_applied?: Json | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          key_metrics?: Json | null
+          modules_included?: string[] | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          template_id?: string | null
+          template_version?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_board_packs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_board_pack_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_bonus_allocations: {
         Row: {
           adjusted_amount: number | null

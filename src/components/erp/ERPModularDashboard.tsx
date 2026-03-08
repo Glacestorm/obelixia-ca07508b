@@ -79,6 +79,7 @@ import { HRReportingEnginePanel } from './hr/reporting-engine';
 import { ComplianceReportingPanel } from './hr/regulatory-reporting';
 import { PremiumAPIWebhooksPanel } from './hr/premium-api';
 import { EnterpriseIntegrationsPanel } from './hr/enterprise-integrations';
+import { HRBoardPackPanel } from './hr/board-pack';
 import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -717,6 +718,9 @@ function ERPModularDashboardContent() {
             )}
             {utilitySection === 'enterprise-integrations' && currentCompany?.id && (
               <EnterpriseIntegrationsPanel companyId={currentCompany.id} />
+            )}
+            {utilitySection === 'board-pack' && currentCompany?.id && (
+              <HRBoardPackPanel companyId={currentCompany.id} />
             )}
           </div>
         </TabsContent>
