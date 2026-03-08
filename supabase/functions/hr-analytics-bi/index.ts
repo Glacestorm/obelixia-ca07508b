@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const RATE_LIMIT_CONFIG = {
+  burstPerMinute: 5,
+  perDay: 50,
+  functionName: 'hr-analytics-bi',
 };
 
 interface BIRequest {
@@ -24,7 +31,14 @@ serve(async (req) => {
 
     const { action, companyId, realMetrics, currentDashboard, focusArea } = await req.json() as BIRequest;
 
-    console.log(`[hr-analytics-bi] action=${action} company=${companyId}`);
+    // Rate limit check
+    const burstResult = checkBurstLimit(companyId || 'anonymous', RATE_LIMIT_CONFIG);
+    if (!burstResult.allowed) {
+      console.warn(`[hr-analytics-bi] Rate limited: company=${companyId}`);
+      return rateLimitResponse(burstResult, corsHeaders);
+    }
+
+    console.log(`[hr-analytics-bi] action=${action} company=${companyId} remaining=${burstResult.remaining}`);
 
     let systemPrompt = '';
     let userPrompt = '';
