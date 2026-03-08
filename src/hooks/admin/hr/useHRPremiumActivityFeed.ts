@@ -100,7 +100,7 @@ const FEED_CONFIGS: TableFeedConfig[] = [
     descriptionFn: (r) => `Cláusula "${r.name || r.title || ''}" añadida a la biblioteca`,
   },
   {
-    module: 'cnae', table: 'erp_hr_cnae_profiles',
+    module: 'cnae', table: 'erp_hr_cnae_sector_profiles',
     actionLabel: 'Perfil CNAE',
     descriptionFn: (r) => `Perfil sectorial ${r.cnae_code || ''} — ${r.sector_name || 'configurado'}`,
   },

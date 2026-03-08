@@ -118,7 +118,7 @@ export function useHRAnalyticsBIPremium() {
       db.from('erp_hr_data_classifications').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_sod_violations').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
       // AI Governance
-      db.from('erp_hr_ai_models').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_ai_model_registry').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_ai_decisions').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Workforce
       db.from('erp_hr_workforce_plans').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
