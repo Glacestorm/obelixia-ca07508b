@@ -124,6 +124,11 @@ export function HRPremiumExecutiveDashboard({ companyId, className }: Props) {
         </Card>
       </div>
 
+      {/* Role-Aware Dashboard */}
+      {companyId && (
+        <RoleAwareDashboard companyId={companyId} />
+      )}
+
       {/* KPIs Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {kpis.map((kpi) => (
