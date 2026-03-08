@@ -68,7 +68,7 @@ export interface ModuleEmitHelpers {
 /** Map of module → table names for default trigger_table values */
 const MODULE_TABLES: Record<ModuleKey, string> = {
   security: 'erp_hr_masking_rules',
-  ai_governance: 'erp_hr_ai_models',
+  ai_governance: 'erp_hr_ai_model_registry',
   workforce: 'erp_hr_workforce_plans',
   fairness: 'erp_hr_justice_cases',
   twin: 'erp_hr_twin_instances',
