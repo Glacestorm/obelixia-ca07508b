@@ -16,6 +16,7 @@ import {
   BarChart3, ArrowUpRight, ArrowDownRight, Minus, Gavel
 } from 'lucide-react';
 import { useHRFairnessEngine } from '@/hooks/admin/hr/useHRFairnessEngine';
+import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
