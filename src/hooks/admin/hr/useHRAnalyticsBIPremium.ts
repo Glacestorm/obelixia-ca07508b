@@ -122,7 +122,7 @@ export function useHRAnalyticsBIPremium() {
       db.from('erp_hr_ai_decisions').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Workforce
       db.from('erp_hr_workforce_plans').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-      db.from('erp_hr_workforce_scenarios').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+      db.from('erp_hr_scenarios').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       // Fairness
       db.from('erp_hr_pay_equity_analyses').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
       db.from('erp_hr_justice_cases').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open'),
