@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Plus, Pencil, Trash2, BookOpen, Check, X } from 'lucide-react';
+import { PermissionGate } from './PermissionGate';
 import { ElectricalBreadcrumb } from './ElectricalBreadcrumb';
 import { useEnergyTariffCatalog, EnergyTariff } from '@/hooks/erp/useEnergyTariffCatalog';
 
