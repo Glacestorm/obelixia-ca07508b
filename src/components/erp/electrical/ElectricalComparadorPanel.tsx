@@ -88,14 +88,14 @@ export function ElectricalComparadorPanel({ companyId, caseId }: Props) {
 
   const handleCreate = useCallback(async () => {
     if (!newSimName.trim()) return;
-    const sim = await createSimulation(newSimName.trim());
+    const sim = await createSimulation(newSimName.trim(), caseId);
     if (sim) {
       setSelectedSim(sim.id);
       setActiveTab('configure');
       setShowNewDialog(false);
       setNewSimName('');
     }
-  }, [newSimName, createSimulation]);
+  }, [newSimName, createSimulation, caseId]);
 
   const handleRun = useCallback(async () => {
     if (!selectedSim) return;

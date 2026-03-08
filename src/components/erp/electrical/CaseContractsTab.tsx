@@ -87,23 +87,20 @@ export function CaseContractsTab({ caseId }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }, [uploadPdf]);
 
-  // AI Contract Analysis — uses structured data + contract_text
+  // AI Contract Analysis — sends structured data + PDF URL for server-side extraction
   const handleAiAnalysis = useCallback(async (contract: EnergyContract) => {
     const contractTextContent = (contract as any).contract_text || '';
     const hasStructuredData = contract.supplier || contract.tariff_name || contract.start_date;
+    const hasPdfUrl = !!contract.signed_document_url;
     
-    if (!contractTextContent && !hasStructuredData) {
-      toast.error('Introduce datos del contrato o pega el texto del contrato antes de analizar con IA');
+    if (!contractTextContent && !hasStructuredData && !hasPdfUrl) {
+      toast.error('Introduce datos del contrato, pega el texto, o sube un PDF antes de analizar con IA');
       return;
-    }
-
-    if (!contractTextContent) {
-      toast.warning('Sin texto del contrato — el análisis se basará solo en los metadatos estructurados. Para mejores resultados, pega el texto del contrato en el campo correspondiente.');
     }
 
     setAnalyzing(contract.id);
     try {
-      const contractText = [
+      const structuredText = [
         `DATOS ESTRUCTURADOS DEL CONTRATO:`,
         `Comercializadora: ${contract.supplier || 'No especificada'}`,
         `Tarifa: ${contract.tariff_name || 'No especificada'}`,
@@ -117,7 +114,10 @@ export function CaseContractsTab({ caseId }: Props) {
       ].filter(Boolean).join('\n');
 
       const { data, error } = await supabase.functions.invoke('energy-contract-analyzer', {
-        body: { contractText }
+        body: { 
+          contractText: structuredText,
+          contractUrl: hasPdfUrl ? contract.signed_document_url : undefined,
+        }
       });
 
       if (error) throw error;
