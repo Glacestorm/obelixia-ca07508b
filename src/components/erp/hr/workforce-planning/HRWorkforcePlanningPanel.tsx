@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useHRWorkforcePlanning } from '@/hooks/admin/hr/useHRWorkforcePlanning';
 import type { Scenario, HeadcountModel, SkillGapForecast } from '@/hooks/admin/hr/useHRWorkforcePlanning';
+import { DataSourceBadge, resolveDataSource } from '@/components/erp/hr/shared/DataSourceBadge';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
