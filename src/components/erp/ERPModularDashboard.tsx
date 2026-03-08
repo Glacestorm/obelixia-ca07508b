@@ -70,7 +70,7 @@ import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButt
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database } from 'lucide-react';
+import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Database, Bell } from 'lucide-react';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
