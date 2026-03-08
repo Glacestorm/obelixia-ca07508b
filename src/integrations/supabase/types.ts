@@ -17970,6 +17970,42 @@ export type Database = {
           },
         ]
       }
+      energy_indexed_prices: {
+        Row: {
+          created_at: string
+          hour: number
+          id: string
+          omie_price: number | null
+          peajes_price: number | null
+          price_date: string
+          pvpc_price: number | null
+          source: string | null
+          tariff_zone: string | null
+        }
+        Insert: {
+          created_at?: string
+          hour: number
+          id?: string
+          omie_price?: number | null
+          peajes_price?: number | null
+          price_date: string
+          pvpc_price?: number | null
+          source?: string | null
+          tariff_zone?: string | null
+        }
+        Update: {
+          created_at?: string
+          hour?: number
+          id?: string
+          omie_price?: number | null
+          peajes_price?: number | null
+          price_date?: string
+          pvpc_price?: number | null
+          source?: string | null
+          tariff_zone?: string | null
+        }
+        Relationships: []
+      }
       energy_invoices: {
         Row: {
           billing_end: string | null
@@ -18140,6 +18176,94 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_simulations: {
+        Row: {
+          access_tariff: string | null
+          best_cost: number | null
+          best_tariff_id: string | null
+          billing_days: number | null
+          case_id: string | null
+          company_id: string
+          consumption_data: Json | null
+          created_at: string
+          created_by: string | null
+          current_cost: number | null
+          id: string
+          name: string
+          notes: string | null
+          power_data: Json | null
+          results: Json | null
+          savings: number | null
+          simulation_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_tariff?: string | null
+          best_cost?: number | null
+          best_tariff_id?: string | null
+          billing_days?: number | null
+          case_id?: string | null
+          company_id: string
+          consumption_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          current_cost?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          power_data?: Json | null
+          results?: Json | null
+          savings?: number | null
+          simulation_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_tariff?: string | null
+          best_cost?: number | null
+          best_tariff_id?: string | null
+          billing_days?: number | null
+          case_id?: string | null
+          company_id?: string
+          consumption_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          current_cost?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          power_data?: Json | null
+          results?: Json | null
+          savings?: number | null
+          simulation_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_simulations_best_tariff_id_fkey"
+            columns: ["best_tariff_id"]
+            isOneToOne: false
+            referencedRelation: "energy_tariff_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energy_simulations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energy_simulations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
