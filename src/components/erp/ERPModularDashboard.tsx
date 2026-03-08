@@ -657,7 +657,11 @@ function ERPModularDashboardContent() {
               <TabsList className="flex w-full max-w-5xl overflow-x-auto">
                 <TabsTrigger value="premium-dash" className="gap-2">
                   <Activity className="h-4 w-4" />
-                  Premium HR
+                  Premium
+                </TabsTrigger>
+                <TabsTrigger value="orchestration" className="gap-2">
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Orquestación
                 </TabsTrigger>
                 <TabsTrigger value="premium-alerts" className="gap-2">
                   <Bell className="h-4 w-4" />
@@ -677,7 +681,7 @@ function ERPModularDashboardContent() {
                 </TabsTrigger>
                 <TabsTrigger value="ai-hybrid" className="gap-2">
                   <Brain className="h-4 w-4" />
-                  IA Híbrida
+                  IA
                 </TabsTrigger>
                 <TabsTrigger value="premium-health" className="gap-2">
                   <HeartPulse className="h-4 w-4" />
@@ -689,7 +693,7 @@ function ERPModularDashboardContent() {
                 </TabsTrigger>
                 <TabsTrigger value="premium-seed" className="gap-2">
                   <Database className="h-4 w-4" />
-                  Re-Seed
+                  Seed
                 </TabsTrigger>
                 <TabsTrigger value="premium-help" className="gap-2">
                   <HelpCircle className="h-4 w-4" />
