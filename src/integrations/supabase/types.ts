@@ -25275,6 +25275,267 @@ export type Database = {
           },
         ]
       }
+      erp_hr_cnae_benchmarks: {
+        Row: {
+          benchmark_source: string | null
+          cnae_code: string
+          company_id: string
+          company_value: number | null
+          created_at: string | null
+          deviation_percentage: number | null
+          id: string
+          is_favorable: boolean | null
+          metric_category: string
+          metric_name: string
+          period: string | null
+          sector_average: number | null
+          sector_median: number | null
+          sector_p25: number | null
+          sector_p75: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_source?: string | null
+          cnae_code: string
+          company_id: string
+          company_value?: number | null
+          created_at?: string | null
+          deviation_percentage?: number | null
+          id?: string
+          is_favorable?: boolean | null
+          metric_category?: string
+          metric_name: string
+          period?: string | null
+          sector_average?: number | null
+          sector_median?: number | null
+          sector_p25?: number | null
+          sector_p75?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_source?: string | null
+          cnae_code?: string
+          company_id?: string
+          company_value?: number | null
+          created_at?: string | null
+          deviation_percentage?: number | null
+          id?: string
+          is_favorable?: boolean | null
+          metric_category?: string
+          metric_name?: string
+          period?: string | null
+          sector_average?: number | null
+          sector_median?: number | null
+          sector_p25?: number | null
+          sector_p75?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_cnae_compliance_rules: {
+        Row: {
+          applicable_from: string | null
+          applicable_until: string | null
+          cnae_code: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_mandatory: boolean | null
+          legal_basis: string | null
+          penalty_info: Json | null
+          rule_name: string
+          rule_type: string
+          severity: string
+          status: string | null
+          updated_at: string | null
+          validation_criteria: Json | null
+        }
+        Insert: {
+          applicable_from?: string | null
+          applicable_until?: string | null
+          cnae_code: string
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          legal_basis?: string | null
+          penalty_info?: Json | null
+          rule_name: string
+          rule_type?: string
+          severity?: string
+          status?: string | null
+          updated_at?: string | null
+          validation_criteria?: Json | null
+        }
+        Update: {
+          applicable_from?: string | null
+          applicable_until?: string | null
+          cnae_code?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_mandatory?: boolean | null
+          legal_basis?: string | null
+          penalty_info?: Json | null
+          rule_name?: string
+          rule_type?: string
+          severity?: string
+          status?: string | null
+          updated_at?: string | null
+          validation_criteria?: Json | null
+        }
+        Relationships: []
+      }
+      erp_hr_cnae_intelligence_log: {
+        Row: {
+          ai_result: Json | null
+          analysis_type: string
+          cnae_code: string | null
+          company_id: string
+          confidence_score: number | null
+          created_at: string | null
+          id: string
+          input_context: Json | null
+          performed_by: string | null
+          recommendations_count: number | null
+        }
+        Insert: {
+          ai_result?: Json | null
+          analysis_type: string
+          cnae_code?: string | null
+          company_id: string
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          input_context?: Json | null
+          performed_by?: string | null
+          recommendations_count?: number | null
+        }
+        Update: {
+          ai_result?: Json | null
+          analysis_type?: string
+          cnae_code?: string | null
+          company_id?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          id?: string
+          input_context?: Json | null
+          performed_by?: string | null
+          recommendations_count?: number | null
+        }
+        Relationships: []
+      }
+      erp_hr_cnae_risk_assessments: {
+        Row: {
+          assessed_at: string | null
+          assessed_by: string | null
+          assessment_type: string
+          cnae_code: string
+          company_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          impact_areas: Json | null
+          mitigation_actions: Json | null
+          next_review_date: string | null
+          regulatory_impact: string | null
+          risk_category: string
+          risk_level: string
+          risk_score: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assessed_at?: string | null
+          assessed_by?: string | null
+          assessment_type?: string
+          cnae_code: string
+          company_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          impact_areas?: Json | null
+          mitigation_actions?: Json | null
+          next_review_date?: string | null
+          regulatory_impact?: string | null
+          risk_category: string
+          risk_level?: string
+          risk_score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assessed_at?: string | null
+          assessed_by?: string | null
+          assessment_type?: string
+          cnae_code?: string
+          company_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          impact_areas?: Json | null
+          mitigation_actions?: Json | null
+          next_review_date?: string | null
+          regulatory_impact?: string | null
+          risk_category?: string
+          risk_level?: string
+          risk_score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      erp_hr_cnae_sector_profiles: {
+        Row: {
+          applicable_regulations: Json | null
+          cnae_code: string
+          cnae_description: string | null
+          collective_agreements: Json | null
+          company_id: string
+          created_at: string | null
+          id: string
+          last_updated_at: string | null
+          risk_profile: Json | null
+          sector_benchmarks: Json | null
+          sector_key: string | null
+          specific_requirements: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          applicable_regulations?: Json | null
+          cnae_code: string
+          cnae_description?: string | null
+          collective_agreements?: Json | null
+          company_id: string
+          created_at?: string | null
+          id?: string
+          last_updated_at?: string | null
+          risk_profile?: Json | null
+          sector_benchmarks?: Json | null
+          sector_key?: string | null
+          specific_requirements?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          applicable_regulations?: Json | null
+          cnae_code?: string
+          cnae_description?: string | null
+          collective_agreements?: Json | null
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          last_updated_at?: string | null
+          risk_profile?: Json | null
+          sector_benchmarks?: Json | null
+          sector_key?: string | null
+          specific_requirements?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_cno_catalog: {
         Row: {
           code: string
