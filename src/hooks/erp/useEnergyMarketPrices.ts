@@ -1,11 +1,12 @@
 /**
- * useEnergyMarketPrices - Hook for energy market price data (OMIE, REE, gas)
- * Supports real API integration or mock data fallback
- * Enhanced: distribution analysis, percentiles, trend detection
+ * useEnergyMarketPrices - Hook for energy market price data
+ * Real OMIE/REE via edge function → DB cache → mock fallback
+ * Features: stats, profiles, monthly, CSV export, alerts, prediction
  */
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format, eachDayOfInterval, startOfWeek } from 'date-fns';
+import { format, eachDayOfInterval, startOfWeek, startOfMonth } from 'date-fns';
+import { toast } from 'sonner';
 
 export type EnergyMarketSource = 'omie' | 'ree' | 'esios' | 'mibgas' | 'mock';
 export type MarketEnergyType = 'electricity' | 'gas';
@@ -35,6 +36,7 @@ export interface MarketStats {
   expensiveHours: number[];
   trend: 'up' | 'down' | 'stable';
   trendPct: number;
+  totalRecords: number;
 }
 
 export interface HourlyProfile {
@@ -43,6 +45,28 @@ export interface HourlyProfile {
   min: number;
   max: number;
   count: number;
+}
+
+export interface MonthlyAggregate {
+  month: string;
+  monthLabel: string;
+  avg: number;
+  min: number;
+  max: number;
+  days: number;
+}
+
+export interface PricePrediction {
+  hour: number;
+  predicted_price: number;
+  confidence: number;
+}
+
+export interface PriceAlert {
+  type: 'high_price' | 'low_price';
+  hour: number;
+  price: number;
+  message: string;
 }
 
 export interface MarketProvider {
@@ -54,18 +78,20 @@ export interface MarketProvider {
 }
 
 const PROVIDERS: MarketProvider[] = [
-  { id: 'omie', name: 'OMIE', status: 'stub', energyType: 'electricity', description: 'Operador del Mercado Ibérico de Energía' },
-  { id: 'ree', name: 'REE / ESIOS', status: 'stub', energyType: 'electricity', description: 'Red Eléctrica de España' },
-  { id: 'mibgas', name: 'MIBGAS', status: 'stub', energyType: 'gas', description: 'Mercado Ibérico del Gas' },
+  { id: 'omie', name: 'OMIE', status: 'stub', energyType: 'electricity', description: 'Operador del Mercado Ibérico de Energía — precios diarios del pool' },
+  { id: 'ree', name: 'REE / ESIOS', status: 'stub', energyType: 'electricity', description: 'Red Eléctrica de España — indicadores PVPC y mercado libre' },
+  { id: 'mibgas', name: 'MIBGAS', status: 'stub', energyType: 'gas', description: 'Mercado Ibérico del Gas — precios referencia PVB' },
 ];
 
 function generateMockPrices(dateStr: string, energyType: MarketEnergyType): MarketPrice[] {
   const basePrice = energyType === 'electricity' ? 85 : 35;
   const variation = energyType === 'electricity' ? 60 : 15;
   const seed = dateStr.split('-').reduce((a, b) => a + parseInt(b), 0);
-  // Day-of-week factor for realism
   const dow = new Date(dateStr).getDay();
   const dowFactor = dow === 0 || dow === 6 ? 0.82 : 1.0;
+  // Seasonal: summer higher, winter moderate
+  const monthNum = parseInt(dateStr.split('-')[1]);
+  const seasonFactor = monthNum >= 6 && monthNum <= 9 ? 1.15 : monthNum >= 11 || monthNum <= 2 ? 1.05 : 0.95;
 
   return Array.from({ length: 24 }, (_, hour) => {
     const hourFactor = energyType === 'electricity'
@@ -73,7 +99,7 @@ function generateMockPrices(dateStr: string, energyType: MarketEnergyType): Mark
       : (hour >= 6 && hour <= 9 ? 1.3 : hour >= 18 && hour <= 21 ? 1.2 : 0.85);
     const noise = Math.sin(seed * hour * 0.7) * variation * 0.3;
     const dayNoise = Math.cos(seed * 0.13) * variation * 0.15;
-    const price = Math.max(5, (basePrice + dayNoise) * hourFactor * dowFactor + noise);
+    const price = Math.max(5, (basePrice + dayNoise) * hourFactor * dowFactor * seasonFactor + noise);
     return {
       id: `mock-${dateStr}-${hour}-${energyType}`,
       price_date: dateStr,
@@ -81,13 +107,14 @@ function generateMockPrices(dateStr: string, energyType: MarketEnergyType): Mark
       energy_type: energyType,
       market_source: 'mock' as EnergyMarketSource,
       price_eur_mwh: Math.round(price * 100) / 100,
-      price_eur_kwh: Math.round(price / 10) / 100,
+      price_eur_kwh: Math.round(price / 1000 * 10000) / 10000,
       zone: 'peninsula',
     };
   });
 }
 
 function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
   const idx = (p / 100) * (sorted.length - 1);
   const lo = Math.floor(idx);
   const hi = Math.ceil(idx);
@@ -99,6 +126,9 @@ export function useEnergyMarketPrices() {
   const [prices, setPrices] = useState<MarketPrice[]>([]);
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState<EnergyMarketSource>('mock');
+  const [predictions, setPredictions] = useState<PricePrediction[]>([]);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [predictionLoading, setPredictionLoading] = useState(false);
 
   const fetchPrices = useCallback(async (
     startDate: string,
@@ -107,6 +137,7 @@ export function useEnergyMarketPrices() {
   ) => {
     setLoading(true);
     try {
+      // Try DB first
       const { data, error } = await supabase
         .from('energy_market_prices')
         .select('*')
@@ -118,10 +149,36 @@ export function useEnergyMarketPrices() {
 
       if (!error && data && data.length > 0) {
         setPrices(data as MarketPrice[]);
-        setSource(data[0].market_source as EnergyMarketSource);
+        setSource((data[0] as any).market_source as EnergyMarketSource);
         return data as MarketPrice[];
       }
 
+      // Try edge function to fetch from OMIE
+      try {
+        const { data: fnData } = await supabase.functions.invoke('energy-market-prices', {
+          body: { action: 'fetch_omie', start_date: startDate, energy_type: energyType },
+        });
+        if (fnData?.success && fnData?.source === 'omie') {
+          // Re-fetch from DB after insert
+          const { data: freshData } = await supabase
+            .from('energy_market_prices')
+            .select('*')
+            .eq('energy_type', energyType)
+            .gte('price_date', startDate)
+            .lte('price_date', endDate)
+            .order('price_date', { ascending: true })
+            .order('hour', { ascending: true });
+          if (freshData && freshData.length > 0) {
+            setPrices(freshData as MarketPrice[]);
+            setSource('omie');
+            return freshData as MarketPrice[];
+          }
+        }
+      } catch (fnErr) {
+        console.warn('[useEnergyMarketPrices] Edge function unavailable, using mock:', fnErr);
+      }
+
+      // Fallback to mock
       const start = new Date(startDate);
       const end = new Date(endDate);
       const days = eachDayOfInterval({ start, end });
@@ -134,6 +191,45 @@ export function useEnergyMarketPrices() {
       return [];
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchPredictions = useCallback(async (energyType: MarketEnergyType = 'electricity') => {
+    setPredictionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('energy-market-prices', {
+        body: { action: 'predict', energy_type: energyType },
+      });
+      if (!error && data?.success && data?.data?.predictions) {
+        setPredictions(data.data.predictions);
+        return data.data;
+      }
+      return null;
+    } catch (err) {
+      console.error('[useEnergyMarketPrices] prediction error:', err);
+      toast.error('Error al generar predicción');
+      return null;
+    } finally {
+      setPredictionLoading(false);
+    }
+  }, []);
+
+  const fetchAlerts = useCallback(async (
+    energyType: MarketEnergyType = 'electricity',
+    thresholds = { high: 150, low: 30 }
+  ) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('energy-market-prices', {
+        body: { action: 'alerts', energy_type: energyType, alert_thresholds: thresholds },
+      });
+      if (!error && data?.success) {
+        setAlerts(data.alerts || []);
+        return data.alerts;
+      }
+      return [];
+    } catch (err) {
+      console.error('[useEnergyMarketPrices] alerts error:', err);
+      return [];
     }
   }, []);
 
@@ -153,7 +249,6 @@ export function useEnergyMarketPrices() {
     const volatility = Math.sqrt(variance);
     const volatilityPct = avg > 0 ? (volatility / avg) * 100 : 0;
 
-    // Hour aggregates
     const hourAvg: Record<number, { sum: number; count: number }> = {};
     data.forEach(p => {
       if (!hourAvg[p.hour]) hourAvg[p.hour] = { sum: 0, count: 0 };
@@ -165,12 +260,11 @@ export function useEnergyMarketPrices() {
     const cheapestHours = hourPrices.slice(0, 3).map(h => h.hour);
     const expensiveHours = hourPrices.slice(-3).reverse().map(h => h.hour);
 
-    // Trend: compare first half vs second half
     const mid = Math.floor(values.length / 2);
     const firstHalf = values.slice(0, mid);
     const secondHalf = values.slice(mid);
-    const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-    const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+    const avgFirst = firstHalf.length > 0 ? firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length : avg;
+    const avgSecond = secondHalf.length > 0 ? secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length : avg;
     const trendPct = avgFirst > 0 ? ((avgSecond - avgFirst) / avgFirst) * 100 : 0;
     const trend = trendPct > 3 ? 'up' : trendPct < -3 ? 'down' : 'stable';
 
@@ -187,6 +281,7 @@ export function useEnergyMarketPrices() {
       expensiveHours,
       trend,
       trendPct: Math.round(trendPct * 10) / 10,
+      totalRecords: values.length,
     };
   }, []);
 
@@ -206,11 +301,7 @@ export function useEnergyMarketPrices() {
   }, []);
 
   const getHeatmapData = useCallback((data: MarketPrice[]) => {
-    return data.map(p => ({
-      date: p.price_date,
-      hour: p.hour,
-      value: p.price_eur_mwh ?? 0,
-    }));
+    return data.map(p => ({ date: p.price_date, hour: p.hour, value: p.price_eur_mwh ?? 0 }));
   }, []);
 
   const getHourlyProfile = useCallback((data: MarketPrice[]): HourlyProfile[] => {
@@ -232,16 +323,15 @@ export function useEnergyMarketPrices() {
   }, []);
 
   const getWeeklyAverages = useCallback((data: MarketPrice[]) => {
-    const byWeek: Record<string, { sum: number; count: number; min: number; max: number; vals: number[] }> = {};
+    const byWeek: Record<string, { sum: number; count: number; min: number; max: number }> = {};
     data.forEach(p => {
       const wk = format(startOfWeek(new Date(p.price_date), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-      if (!byWeek[wk]) byWeek[wk] = { sum: 0, count: 0, min: Infinity, max: -Infinity, vals: [] };
+      if (!byWeek[wk]) byWeek[wk] = { sum: 0, count: 0, min: Infinity, max: -Infinity };
       const v = p.price_eur_mwh ?? 0;
       byWeek[wk].sum += v;
       byWeek[wk].count++;
       byWeek[wk].min = Math.min(byWeek[wk].min, v);
       byWeek[wk].max = Math.max(byWeek[wk].max, v);
-      byWeek[wk].vals.push(v);
     });
     return Object.entries(byWeek).map(([week, v]) => ({
       week,
@@ -250,6 +340,48 @@ export function useEnergyMarketPrices() {
       min: v.min === Infinity ? 0 : Math.round(v.min * 100) / 100,
       max: v.max === -Infinity ? 0 : Math.round(v.max * 100) / 100,
     })).sort((a, b) => a.week.localeCompare(b.week));
+  }, []);
+
+  const getMonthlyAverages = useCallback((data: MarketPrice[]): MonthlyAggregate[] => {
+    const byMonth: Record<string, { sum: number; count: number; min: number; max: number; dates: Set<string> }> = {};
+    data.forEach(p => {
+      const m = format(startOfMonth(new Date(p.price_date)), 'yyyy-MM');
+      if (!byMonth[m]) byMonth[m] = { sum: 0, count: 0, min: Infinity, max: -Infinity, dates: new Set() };
+      const v = p.price_eur_mwh ?? 0;
+      byMonth[m].sum += v;
+      byMonth[m].count++;
+      byMonth[m].min = Math.min(byMonth[m].min, v);
+      byMonth[m].max = Math.max(byMonth[m].max, v);
+      byMonth[m].dates.add(p.price_date);
+    });
+    return Object.entries(byMonth).map(([month, v]) => ({
+      month,
+      monthLabel: format(new Date(month + '-01'), 'MMM yyyy', { locale: undefined }),
+      avg: Math.round((v.sum / v.count) * 100) / 100,
+      min: v.min === Infinity ? 0 : Math.round(v.min * 100) / 100,
+      max: v.max === -Infinity ? 0 : Math.round(v.max * 100) / 100,
+      days: v.dates.size,
+    })).sort((a, b) => a.month.localeCompare(b.month));
+  }, []);
+
+  const exportCSV = useCallback((data: MarketPrice[], filename?: string) => {
+    if (data.length === 0) {
+      toast.error('No hay datos para exportar');
+      return;
+    }
+    const header = 'Fecha,Hora,Precio €/MWh,Precio €/kWh,Tipo,Fuente,Zona\n';
+    const rows = data.map(p =>
+      `${p.price_date},${p.hour},${p.price_eur_mwh ?? ''},${p.price_eur_kwh ?? ''},${p.energy_type},${p.market_source},${p.zone}`
+    ).join('\n');
+    const csv = header + rows;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || `precios_mercado_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exportados ${data.length} registros`);
   }, []);
 
   const getPriceColor = useCallback((priceEurMwh: number): string => {
@@ -269,9 +401,10 @@ export function useEnergyMarketPrices() {
   }, []);
 
   return {
-    prices, loading, source,
+    prices, loading, source, predictions, alerts, predictionLoading,
     providers: PROVIDERS,
-    fetchPrices, computeStats, getDailyAverages, getHeatmapData, getPriceColor, getPriceHex,
-    getHourlyProfile, getWeeklyAverages,
+    fetchPrices, fetchPredictions, fetchAlerts,
+    computeStats, getDailyAverages, getHeatmapData, getPriceColor, getPriceHex,
+    getHourlyProfile, getWeeklyAverages, getMonthlyAverages, exportCSV,
   };
 }
