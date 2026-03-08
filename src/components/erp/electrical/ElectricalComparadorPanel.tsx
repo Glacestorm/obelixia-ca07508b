@@ -36,14 +36,17 @@ const ACCESS_TARIFFS = [
   { value: 'all', label: 'Todas las tarifas' },
 ];
 
-export function ElectricalComparadorPanel({ companyId }: Props) {
+export function ElectricalComparadorPanel({ companyId, caseId }: Props) {
   const { simulations, loading, createSimulation, deleteSimulation, runSimulation } = useEnergySimulations(companyId);
+  const { supply } = useEnergySupply(caseId || '');
+  const { invoices } = useEnergyInvoices(caseId || '');
   
   const [activeTab, setActiveTab] = useState('simulations');
   const [selectedSim, setSelectedSim] = useState<string | null>(null);
   const [newSimName, setNewSimName] = useState('');
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [preloaded, setPreloaded] = useState(false);
 
   // Simulation form state
   const [consumption, setConsumption] = useState<SimulationConsumptionData>({
@@ -55,6 +58,29 @@ export function ElectricalComparadorPanel({ companyId }: Props) {
   const [billingDays, setBillingDays] = useState(30);
   const [accessTariff, setAccessTariff] = useState('2.0TD');
   const [currentCost, setCurrentCost] = useState(0);
+
+  // Preload from case data when caseId is provided
+  useEffect(() => {
+    if (!caseId || preloaded) return;
+    const lastInvoice = invoices.length > 0 ? invoices[0] : null;
+    if (lastInvoice) {
+      setConsumption({
+        consumption_p1_kwh: lastInvoice.consumption_p1_kwh || 0,
+        consumption_p2_kwh: lastInvoice.consumption_p2_kwh || 0,
+        consumption_p3_kwh: lastInvoice.consumption_p3_kwh || 0,
+      });
+      setCurrentCost(lastInvoice.total_amount || 0);
+      if (lastInvoice.days) setBillingDays(lastInvoice.days);
+    }
+    if (supply) {
+      setPower({
+        power_p1_kw: supply.contracted_power_p1 || 4.6,
+        power_p2_kw: supply.contracted_power_p2 || 4.6,
+      });
+      if (supply.tariff_access) setAccessTariff(supply.tariff_access);
+    }
+    if (lastInvoice || supply) setPreloaded(true);
+  }, [caseId, invoices, supply, preloaded]);
 
   const activeSim = useMemo(() =>
     simulations.find(s => s.id === selectedSim), [simulations, selectedSim]);
