@@ -129,6 +129,7 @@ function ERPModularDashboardContent() {
   const [activeTab, setActiveTab] = useState('overview');
   const [needsSetup, setNeedsSetup] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
+  const [utilitySection, setUtilitySection] = useState<UtilitySection | null>(null);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
   // P9.5 — Role Experience Activation
