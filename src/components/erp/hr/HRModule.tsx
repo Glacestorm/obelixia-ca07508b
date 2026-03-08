@@ -59,6 +59,7 @@ import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
 import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
 import { HRTimeClockPanel } from './HRTimeClockPanel';
 import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard } from './enterprise';
+import { HRCompensationSuitePanel } from './compensation';
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -315,6 +316,7 @@ export function HRModule() {
         {activeModule === 'workflow-designer' && <HRWorkflowDesigner companyId={demoCompanyId} />}
         {activeModule === 'approval-inbox' && <HRApprovalInbox companyId={demoCompanyId} />}
         {activeModule === 'sla-dashboard' && <HRSLADashboard companyId={demoCompanyId} />}
+        {activeModule === 'compensation-suite' && <HRCompensationSuitePanel companyId={demoCompanyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}

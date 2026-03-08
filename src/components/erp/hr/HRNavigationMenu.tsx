@@ -13,7 +13,7 @@ import {
   FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
   Brain, Newspaper, BookOpen, HelpCircle, Rocket, ChevronRight, ChevronDown,
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
-  Inbox, Timer
+  Inbox, Timer, Coins
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -108,6 +108,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         { id: 'workflow-designer', label: 'Workflows', icon: GitBranch },
         { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox },
         { id: 'sla-dashboard', label: 'SLA Dashboard', icon: Timer },
+        { id: 'compensation-suite', label: 'Compensation Suite', icon: Coins },
       ]
     },
     {
