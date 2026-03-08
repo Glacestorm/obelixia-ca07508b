@@ -77,6 +77,20 @@ function ERPModularDashboardContent() {
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
 
+  // P9.5 — Role Experience Activation
+  const roleExperience = useHRActiveRoleExperience(currentCompany?.id);
+
+  // Wrap hasPermission + role visibility
+  const canShowModule = useCallback((moduleId: string, permissionKey: string) => {
+    return hasPermission(permissionKey) && roleExperience.isModuleVisible(moduleId);
+  }, [hasPermission, roleExperience.isModuleVisible]);
+
+  // Track module usage on tab change
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    roleExperience.trackModuleUsage(tab);
+  }, [roleExperience.trackModuleUsage]);
+
   // IDs de módulos que se ocultan cuando estamos dentro de uno
   const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'migration', 'utilities'];
   
