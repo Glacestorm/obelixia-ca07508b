@@ -414,7 +414,7 @@ function ERPModularDashboardContent() {
                           "cursor-pointer hover:shadow-md transition-shadow",
                           isInstalled && "ring-1 ring-green-500/30"
                         )}
-                        onClick={() => isInstalled && setActiveTab(module.id === 'masters' ? 'maestros' : module.id)}
+                        onClick={() => isInstalled && handleTabChange(module.id === 'masters' ? 'maestros' : module.id)}
                       >
                         <CardContent className="p-4 text-center">
                           <div className={cn("w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center", module.color)}>
