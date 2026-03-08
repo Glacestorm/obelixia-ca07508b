@@ -369,7 +369,7 @@ export function useHRComplianceAutomation(companyId?: string) {
   const resolveAlert = useCallback(async (alertId: string) => {
     try {
       const { error } = await supabase
-        .from('erp_hr_compliance_alerts')
+        .from('erp_hr_compliance_alerts' as any)
         .update({ status: 'resolved', resolved_at: new Date().toISOString() } as any)
         .eq('id', alertId);
 
