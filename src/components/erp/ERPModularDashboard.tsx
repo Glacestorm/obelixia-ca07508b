@@ -705,6 +705,10 @@ function ERPModularDashboardContent() {
                 <HRPremiumExecutiveDashboard companyId={currentCompany?.id} />
               </TabsContent>
 
+              <TabsContent value="orchestration">
+                <HROrchestrationPanel companyId={currentCompany?.id} />
+              </TabsContent>
+
               <TabsContent value="premium-alerts">
                 <HRPremiumAlertsPanel companyId={currentCompany?.id} />
               </TabsContent>
