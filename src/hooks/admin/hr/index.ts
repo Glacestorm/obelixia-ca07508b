@@ -197,7 +197,7 @@ export { useHRComplianceEnterprise } from './useHRComplianceEnterprise';
 // Phase 6 - Wellbeing Enterprise
 export { useHRWellbeingEnterprise } from './useHRWellbeingEnterprise';
 export type {
-  WellbeingAssessment, WellbeingSurvey, WellnessProgram,
+  WellbeingAssessment, WellbeingSurvey, WellnessProgram as WellnessEnterpriseProgram,
   BurnoutAlert, WellbeingKPI, WellbeingAIAnalysis, WellbeingStats
 } from './useHRWellbeingEnterprise';
 export type {
