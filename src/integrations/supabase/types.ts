@@ -17833,13 +17833,20 @@ export type Database = {
           current_supplier: string | null
           current_tariff: string | null
           customer_id: string | null
+          energy_type: string
           estimated_annual_savings: number | null
+          estimated_gas_savings: number | null
           estimated_monthly_savings: number | null
+          estimated_solar_savings: number | null
           id: string
           priority: string | null
+          risk_level: string | null
           status: string
           title: string
           updated_at: string
+          validated_annual_savings: number | null
+          validated_gas_savings: number | null
+          validated_solar_savings: number | null
         }
         Insert: {
           address?: string | null
@@ -17851,13 +17858,20 @@ export type Database = {
           current_supplier?: string | null
           current_tariff?: string | null
           customer_id?: string | null
+          energy_type?: string
           estimated_annual_savings?: number | null
+          estimated_gas_savings?: number | null
           estimated_monthly_savings?: number | null
+          estimated_solar_savings?: number | null
           id?: string
           priority?: string | null
+          risk_level?: string | null
           status?: string
           title: string
           updated_at?: string
+          validated_annual_savings?: number | null
+          validated_gas_savings?: number | null
+          validated_solar_savings?: number | null
         }
         Update: {
           address?: string | null
@@ -17869,13 +17883,20 @@ export type Database = {
           current_supplier?: string | null
           current_tariff?: string | null
           customer_id?: string | null
+          energy_type?: string
           estimated_annual_savings?: number | null
+          estimated_gas_savings?: number | null
           estimated_monthly_savings?: number | null
+          estimated_solar_savings?: number | null
           id?: string
           priority?: string | null
+          risk_level?: string | null
           status?: string
           title?: string
           updated_at?: string
+          validated_annual_savings?: number | null
+          validated_gas_savings?: number | null
+          validated_solar_savings?: number | null
         }
         Relationships: [
           {
@@ -18072,8 +18093,12 @@ export type Database = {
           ai_analyzed_at: string | null
           case_id: string
           created_at: string
+          distributor: string | null
           early_exit_penalty_text: string | null
           end_date: string | null
+          energy_type: string
+          gas_annual_consumption_kwh: number | null
+          gas_tariff: string | null
           has_permanence: boolean | null
           has_renewal: boolean | null
           id: string
@@ -18089,8 +18114,12 @@ export type Database = {
           ai_analyzed_at?: string | null
           case_id: string
           created_at?: string
+          distributor?: string | null
           early_exit_penalty_text?: string | null
           end_date?: string | null
+          energy_type?: string
+          gas_annual_consumption_kwh?: number | null
+          gas_tariff?: string | null
           has_permanence?: boolean | null
           has_renewal?: boolean | null
           id?: string
@@ -18106,8 +18135,12 @@ export type Database = {
           ai_analyzed_at?: string | null
           case_id?: string
           created_at?: string
+          distributor?: string | null
           early_exit_penalty_text?: string | null
           end_date?: string | null
+          energy_type?: string
+          gas_annual_consumption_kwh?: number | null
+          gas_tariff?: string | null
           has_permanence?: boolean | null
           has_renewal?: boolean | null
           id?: string
@@ -18299,6 +18332,10 @@ export type Database = {
           document_url: string | null
           electricity_tax: number | null
           energy_cost: number | null
+          energy_type: string
+          gas_consumption_kwh: number | null
+          gas_fixed_cost: number | null
+          gas_variable_cost: number | null
           id: string
           is_validated: boolean | null
           meter_rental: number | null
@@ -18321,6 +18358,10 @@ export type Database = {
           document_url?: string | null
           electricity_tax?: number | null
           energy_cost?: number | null
+          energy_type?: string
+          gas_consumption_kwh?: number | null
+          gas_fixed_cost?: number | null
+          gas_variable_cost?: number | null
           id?: string
           is_validated?: boolean | null
           meter_rental?: number | null
@@ -18343,6 +18384,10 @@ export type Database = {
           document_url?: string | null
           electricity_tax?: number | null
           energy_cost?: number | null
+          energy_type?: string
+          gas_consumption_kwh?: number | null
+          gas_fixed_cost?: number | null
+          gas_variable_cost?: number | null
           id?: string
           is_validated?: boolean | null
           meter_rental?: number | null
@@ -18362,11 +18407,48 @@ export type Database = {
           },
         ]
       }
+      energy_market_prices: {
+        Row: {
+          created_at: string
+          energy_type: string
+          hour: number
+          id: string
+          market_source: string
+          price_date: string
+          price_eur_kwh: number | null
+          price_eur_mwh: number | null
+          zone: string | null
+        }
+        Insert: {
+          created_at?: string
+          energy_type?: string
+          hour?: number
+          id?: string
+          market_source?: string
+          price_date: string
+          price_eur_kwh?: number | null
+          price_eur_mwh?: number | null
+          zone?: string | null
+        }
+        Update: {
+          created_at?: string
+          energy_type?: string
+          hour?: number
+          id?: string
+          market_source?: string
+          price_date?: string
+          price_eur_kwh?: number | null
+          price_eur_mwh?: number | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
       energy_notifications: {
         Row: {
           case_id: string | null
           company_id: string
           created_at: string
+          energy_type: string | null
           id: string
           is_read: boolean
           message: string | null
@@ -18380,6 +18462,7 @@ export type Database = {
           case_id?: string | null
           company_id: string
           created_at?: string
+          energy_type?: string | null
           id?: string
           is_read?: boolean
           message?: string | null
@@ -18393,6 +18476,7 @@ export type Database = {
           case_id?: string | null
           company_id?: string
           created_at?: string
+          energy_type?: string | null
           id?: string
           is_read?: boolean
           message?: string | null
@@ -18432,8 +18516,10 @@ export type Database = {
           current_supplier: string | null
           current_tariff: string | null
           customer_id: string | null
+          energy_type: string | null
           estimated_annual_cost: number | null
           estimated_annual_savings: number | null
+          gas_savings: number | null
           id: string
           issued_at: string | null
           observations: string | null
@@ -18445,6 +18531,7 @@ export type Database = {
           signature_method: string | null
           signed_at: string | null
           signed_by: string | null
+          solar_savings: number | null
           status: string
           updated_at: string
           valid_until: string | null
@@ -18462,8 +18549,10 @@ export type Database = {
           current_supplier?: string | null
           current_tariff?: string | null
           customer_id?: string | null
+          energy_type?: string | null
           estimated_annual_cost?: number | null
           estimated_annual_savings?: number | null
+          gas_savings?: number | null
           id?: string
           issued_at?: string | null
           observations?: string | null
@@ -18475,6 +18564,7 @@ export type Database = {
           signature_method?: string | null
           signed_at?: string | null
           signed_by?: string | null
+          solar_savings?: number | null
           status?: string
           updated_at?: string
           valid_until?: string | null
@@ -18492,8 +18582,10 @@ export type Database = {
           current_supplier?: string | null
           current_tariff?: string | null
           customer_id?: string | null
+          energy_type?: string | null
           estimated_annual_cost?: number | null
           estimated_annual_savings?: number | null
+          gas_savings?: number | null
           id?: string
           issued_at?: string | null
           observations?: string | null
@@ -18505,6 +18597,7 @@ export type Database = {
           signature_method?: string | null
           signed_at?: string | null
           signed_by?: string | null
+          solar_savings?: number | null
           status?: string
           updated_at?: string
           valid_until?: string | null
@@ -18531,46 +18624,70 @@ export type Database = {
         Row: {
           annual_savings_estimate: number | null
           case_id: string
+          confidence_level: string | null
           confidence_score: number | null
           created_at: string
+          energy_type: string | null
           id: string
           implementation_notes: string | null
+          missing_data: string[] | null
           monthly_savings_estimate: number | null
           recommended_power_p1: number | null
           recommended_power_p2: number | null
           recommended_supplier: string | null
           recommended_tariff: string | null
           risk_level: string | null
+          savings_energy_eur: number | null
+          savings_gas_eur: number | null
+          savings_power_eur: number | null
+          savings_solar_eur: number | null
+          savings_surplus_eur: number | null
           updated_at: string
         }
         Insert: {
           annual_savings_estimate?: number | null
           case_id: string
+          confidence_level?: string | null
           confidence_score?: number | null
           created_at?: string
+          energy_type?: string | null
           id?: string
           implementation_notes?: string | null
+          missing_data?: string[] | null
           monthly_savings_estimate?: number | null
           recommended_power_p1?: number | null
           recommended_power_p2?: number | null
           recommended_supplier?: string | null
           recommended_tariff?: string | null
           risk_level?: string | null
+          savings_energy_eur?: number | null
+          savings_gas_eur?: number | null
+          savings_power_eur?: number | null
+          savings_solar_eur?: number | null
+          savings_surplus_eur?: number | null
           updated_at?: string
         }
         Update: {
           annual_savings_estimate?: number | null
           case_id?: string
+          confidence_level?: string | null
           confidence_score?: number | null
           created_at?: string
+          energy_type?: string | null
           id?: string
           implementation_notes?: string | null
+          missing_data?: string[] | null
           monthly_savings_estimate?: number | null
           recommended_power_p1?: number | null
           recommended_power_p2?: number | null
           recommended_supplier?: string | null
           recommended_tariff?: string | null
           risk_level?: string | null
+          savings_energy_eur?: number | null
+          savings_gas_eur?: number | null
+          savings_power_eur?: number | null
+          savings_solar_eur?: number | null
+          savings_surplus_eur?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -18587,8 +18704,10 @@ export type Database = {
         Row: {
           case_id: string
           created_at: string
+          energy_type: string | null
           id: string
           pdf_url: string | null
+          report_subtype: string | null
           report_type: string | null
           summary: string | null
           updated_at: string
@@ -18597,8 +18716,10 @@ export type Database = {
         Insert: {
           case_id: string
           created_at?: string
+          energy_type?: string | null
           id?: string
           pdf_url?: string | null
+          report_subtype?: string | null
           report_type?: string | null
           summary?: string | null
           updated_at?: string
@@ -18607,8 +18728,10 @@ export type Database = {
         Update: {
           case_id?: string
           created_at?: string
+          energy_type?: string | null
           id?: string
           pdf_url?: string | null
+          report_subtype?: string | null
           report_type?: string | null
           summary?: string | null
           updated_at?: string
@@ -18721,6 +18844,7 @@ export type Database = {
           completed_by: string | null
           created_at: string
           description: string | null
+          energy_type: string | null
           estimated_savings: number | null
           id: string
           is_completed: boolean
@@ -18738,6 +18862,7 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           description?: string | null
+          energy_type?: string | null
           estimated_savings?: number | null
           id?: string
           is_completed?: boolean
@@ -18755,6 +18880,7 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           description?: string | null
+          energy_type?: string | null
           estimated_savings?: number | null
           id?: string
           is_completed?: boolean
@@ -18781,6 +18907,102 @@ export type Database = {
           },
         ]
       }
+      energy_solar_installations: {
+        Row: {
+          annual_compensation_eur: number | null
+          annual_self_consumption_kwh: number | null
+          annual_surplus_kwh: number | null
+          battery_capacity_kwh: number | null
+          case_id: string
+          company_id: string
+          created_at: string
+          financing_type: string | null
+          grid_dependency_pct: number | null
+          has_battery: boolean | null
+          id: string
+          installation_date: string | null
+          installed_power_kwp: number
+          installer_company: string | null
+          inverter_brand: string | null
+          inverter_power_kw: number | null
+          maintenance_contract: boolean | null
+          maintenance_cost_annual: number | null
+          modality: string | null
+          monthly_estimated_savings: number | null
+          monthly_real_savings: number | null
+          notes: string | null
+          supply_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          annual_compensation_eur?: number | null
+          annual_self_consumption_kwh?: number | null
+          annual_surplus_kwh?: number | null
+          battery_capacity_kwh?: number | null
+          case_id: string
+          company_id: string
+          created_at?: string
+          financing_type?: string | null
+          grid_dependency_pct?: number | null
+          has_battery?: boolean | null
+          id?: string
+          installation_date?: string | null
+          installed_power_kwp?: number
+          installer_company?: string | null
+          inverter_brand?: string | null
+          inverter_power_kw?: number | null
+          maintenance_contract?: boolean | null
+          maintenance_cost_annual?: number | null
+          modality?: string | null
+          monthly_estimated_savings?: number | null
+          monthly_real_savings?: number | null
+          notes?: string | null
+          supply_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          annual_compensation_eur?: number | null
+          annual_self_consumption_kwh?: number | null
+          annual_surplus_kwh?: number | null
+          battery_capacity_kwh?: number | null
+          case_id?: string
+          company_id?: string
+          created_at?: string
+          financing_type?: string | null
+          grid_dependency_pct?: number | null
+          has_battery?: boolean | null
+          id?: string
+          installation_date?: string | null
+          installed_power_kwp?: number
+          installer_company?: string | null
+          inverter_brand?: string | null
+          inverter_power_kw?: number | null
+          maintenance_contract?: boolean | null
+          maintenance_cost_annual?: number | null
+          modality?: string | null
+          monthly_estimated_savings?: number | null
+          monthly_real_savings?: number | null
+          notes?: string | null
+          supply_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_solar_installations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energy_solar_installations_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "energy_supplies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energy_supplies: {
         Row: {
           case_id: string
@@ -18789,6 +19011,9 @@ export type Database = {
           created_at: string
           cups: string | null
           distributor: string | null
+          energy_type: string
+          gas_annual_consumption_kwh: number | null
+          gas_pressure: string | null
           id: string
           max_demand_p1: number | null
           max_demand_p2: number | null
@@ -18804,6 +19029,9 @@ export type Database = {
           created_at?: string
           cups?: string | null
           distributor?: string | null
+          energy_type?: string
+          gas_annual_consumption_kwh?: number | null
+          gas_pressure?: string | null
           id?: string
           max_demand_p1?: number | null
           max_demand_p2?: number | null
@@ -18819,6 +19047,9 @@ export type Database = {
           created_at?: string
           cups?: string | null
           distributor?: string | null
+          energy_type?: string
+          gas_annual_consumption_kwh?: number | null
+          gas_pressure?: string | null
           id?: string
           max_demand_p1?: number | null
           max_demand_p2?: number | null
