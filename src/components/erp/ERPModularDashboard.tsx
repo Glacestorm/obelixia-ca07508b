@@ -74,7 +74,7 @@ import { ArrowRightLeft, Wrench, Sparkles as SparklesIcon, FileText, Brain, Data
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 as Check2, AlertCircle as AlertC, Loader2 as Spin, Play } from 'lucide-react';
-import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel } from './hr/premium-dashboard';
+import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel, HRAnalyticsBIPremiumPanel } from './hr/premium-dashboard';
 import { HRUtilitiesNavigation, type UtilitySection } from './hr/premium-dashboard/HRUtilitiesNavigation';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
@@ -698,6 +698,9 @@ function ERPModularDashboardContent() {
             )}
             {utilitySection === 'compliance-automation' && (
               <HRComplianceAutomationPanel companyId={currentCompany?.id} />
+            )}
+            {utilitySection === 'analytics-bi' && (
+              <HRAnalyticsBIPremiumPanel companyId={currentCompany?.id} />
             )}
           </div>
         </TabsContent>
