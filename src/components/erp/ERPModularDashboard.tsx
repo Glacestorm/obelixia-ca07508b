@@ -462,6 +462,11 @@ function ERPModularDashboardContent() {
           <AcademiaModuleDashboard />
         </TabsContent>
 
+        {/* Electrical Consulting Tab */}
+        <TabsContent value="electrical">
+          <ElectricalConsultingModule />
+        </TabsContent>
+
         {/* Companies Tab */}
         <TabsContent value="companies">
           <ERPCompaniesManager />
