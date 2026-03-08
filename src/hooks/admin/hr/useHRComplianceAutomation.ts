@@ -197,7 +197,7 @@ export function useHRComplianceAutomation(companyId?: string) {
       if (error) throw error;
 
       // Generate checklist via AI
-      await generateChecklist(data.id as string, template);
+      await generateChecklist((data as any).id as string, template);
 
       toast.success(`Marco ${template.code} instalado`);
       await fetchAll();
