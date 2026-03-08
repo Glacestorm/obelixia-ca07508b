@@ -17,6 +17,7 @@ import { CaseWorkflowTab } from './CaseWorkflowTab';
 import { CaseChecklistPanel } from './CaseChecklistPanel';
 import { CaseProposalTab } from './CaseProposalTab';
 import { CaseAuditLog } from './CaseAuditLog';
+import { ClientPortalManager } from './ClientPortalManager';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -135,6 +136,7 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
           <TabsTrigger value="recomendacion" className="text-xs">Recomendación</TabsTrigger>
           <TabsTrigger value="informe" className="text-xs">Informe</TabsTrigger>
           <TabsTrigger value="seguimiento" className="text-xs">Seguimiento</TabsTrigger>
+          <TabsTrigger value="portal" className="text-xs">Portal</TabsTrigger>
           <TabsTrigger value="auditoria" className="text-xs">Auditoría</TabsTrigger>
         </TabsList>
 
@@ -204,6 +206,10 @@ export function ElectricalCaseDetail({ caseId, companyId, onBack, onOpenSimulato
 
         <TabsContent value="seguimiento" className="mt-4">
           <CaseTrackingTab caseId={caseId} />
+        </TabsContent>
+
+        <TabsContent value="portal" className="mt-4">
+          <ClientPortalManager caseId={caseId} companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="auditoria" className="mt-4">

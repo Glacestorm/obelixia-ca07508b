@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  Plus, FileText, CheckCircle2, XCircle, Send, Loader2, AlertTriangle
+  Plus, FileText, CheckCircle2, XCircle, Send, Loader2, AlertTriangle, Download, Upload, PenTool
 } from 'lucide-react';
 import { useEnergyProposals, PROPOSAL_STATUSES, EnergyProposal } from '@/hooks/erp/useEnergyProposals';
+import { useEnergyProposalPDF } from '@/hooks/erp/useEnergyProposalPDF';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { useEnergyAuditLog } from '@/hooks/erp/useEnergyAuditLog';
 import { PermissionGate } from './PermissionGate';
@@ -22,6 +23,7 @@ interface Props { caseId: string; companyId: string; }
 
 export function CaseProposalTab({ caseId, companyId }: Props) {
   const { proposals, loading, error, createProposal, acceptProposal, rejectProposal, issueProposal } = useEnergyProposals(caseId);
+  const { downloadPDF, uploadPDF } = useEnergyProposalPDF();
   const { energyCase } = useEnergyCase(caseId);
   const { log } = useEnergyAuditLog(companyId, caseId);
 
@@ -197,6 +199,47 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                           <XCircle className="h-3.5 w-3.5 mr-1" /> Rechazar
                         </Button>
                       </>
+                    )}
+                    {/* PDF & Signature actions */}
+                    {['issued', 'sent', 'accepted'].includes(p.status) && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => downloadPDF(p, {
+                          caseTitle: energyCase?.title, customerName: energyCase?.cups || undefined, address: energyCase?.address || undefined,
+                        })}>
+                          <Download className="h-3.5 w-3.5 mr-1" /> Descargar PDF
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={async () => {
+                          setActionLoading('upload');
+                          await uploadPDF(p, {
+                            caseTitle: energyCase?.title, address: energyCase?.address || undefined,
+                          }, caseId);
+                          log('proposal_pdf_generated', 'energy_proposals', p.id, { version: p.version });
+                          setActionLoading(null);
+                        }} disabled={actionLoading === 'upload'}>
+                          {actionLoading === 'upload' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />} Guardar PDF
+                        </Button>
+                      </>
+                    )}
+                    {p.status === 'accepted' && !p.signed_at && (
+                      <Button size="sm" variant="default" onClick={async () => {
+                        setActionLoading('sign');
+                        const { supabase } = await import('@/integrations/supabase/client');
+                        await supabase.from('energy_proposals').update({
+                          signed_at: new Date().toISOString(),
+                          signed_by: energyCase?.cups || 'Cliente',
+                          signature_method: 'digital_acceptance',
+                        } as any).eq('id', p.id);
+                        log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
+                        setActionLoading(null);
+                        window.location.reload();
+                      }} disabled={!!actionLoading}>
+                        <PenTool className="h-3.5 w-3.5 mr-1" /> Firmar digitalmente
+                      </Button>
+                    )}
+                    {(p as any).signed_at && (
+                      <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/10 rounded text-xs text-emerald-700">
+                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate((p as any).signed_at)}
+                      </div>
                     )}
                   </div>
                 </PermissionGate>

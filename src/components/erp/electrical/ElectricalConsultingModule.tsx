@@ -29,6 +29,9 @@ import { ElectricalRecomendacionesPanel } from './ElectricalRecomendacionesPanel
 import { ElectricalInformesPanel } from './ElectricalInformesPanel';
 import { ElectricalSeguimientoPanel } from './ElectricalSeguimientoPanel';
 import { ElectricalAjustesPanel } from './ElectricalAjustesPanel';
+import { ElectricalExecutiveDashboard } from './ElectricalExecutiveDashboard';
+import { ExternalIntegrationsPanel } from './ExternalIntegrationsPanel';
+import { NotificationsPanel } from './NotificationsPanel';
 
 type SubView = 
   | { type: 'list' }
@@ -154,7 +157,10 @@ export function ElectricalConsultingModule() {
 
   return (
     <div className="space-y-4">
-      {/* Header con estadísticas reales */}
+      {/* Header con estadísticas reales + notifications */}
+      <div className="flex items-center justify-end mb-1">
+        <NotificationsPanel companyId={companyId} onNavigateToCase={handleNavigateToCase} />
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/20">
           <CardContent className="p-3">
@@ -253,6 +259,8 @@ export function ElectricalConsultingModule() {
         {activeModule === 'recomendaciones' && <ElectricalRecomendacionesPanel companyId={companyId} />}
         {activeModule === 'informes' && <ElectricalInformesPanel companyId={companyId} />}
         {activeModule === 'seguimiento' && <ElectricalSeguimientoPanel companyId={companyId} />}
+        {activeModule === 'ejecutivo' && <ElectricalExecutiveDashboard onNavigateToCase={handleNavigateToCase} />}
+        {activeModule === 'integraciones' && <ExternalIntegrationsPanel />}
         {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
       </div>
     </div>
