@@ -31,12 +31,14 @@ export function HRWorkforcePlanningPanel({ companyId }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
-    plans, scenarios, selectedPlan, stats,
+    plans, scenarios, selectedPlan, stats, realHeadcount,
     loading, aiLoading, aiResult,
     fetchPlanDetail, fetchStats,
     simulateScenario, runWorkforceAnalysis, runSkillGapStrategy,
     setSelectedPlan, setAiResult,
   } = useHRWorkforcePlanning(companyId);
+
+  const hasRealData = !!(realHeadcount && Object.keys(realHeadcount).length > 0);
 
   const riskColor = (level: string) => {
     switch (level) {
