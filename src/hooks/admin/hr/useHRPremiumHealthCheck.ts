@@ -65,7 +65,7 @@ const TABLE_CHECKS: TableCheck[] = [
   { module: 'cnae', table: 'erp_hr_cnae_benchmarks', label: 'Benchmarks CNAE', description: 'Benchmarks sectoriales' },
   // P8 Role Experience
   { module: 'role_experience', table: 'erp_hr_role_dashboards', label: 'Dashboards de rol', description: 'Configuraciones de dashboard por rol', minExpected: 1 },
-  { module: 'role_experience', table: 'erp_hr_role_widgets', label: 'Widgets de rol', description: 'Widgets personalizados por rol' },
+  { module: 'role_experience', table: 'erp_hr_role_analytics', label: 'Analytics de rol', description: 'Analíticas por rol' },
 ];
 
 const MODULE_LABELS: Record<PremiumModule, string> = {

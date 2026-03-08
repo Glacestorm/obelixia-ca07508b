@@ -70,12 +70,12 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
 const MODULE_TABLES: Record<ModuleKey, string[]> = {
   security: ['erp_hr_security_incidents', 'erp_hr_masking_rules', 'erp_hr_sod_rules', 'erp_hr_data_access_log'],
   ai_governance: ['erp_hr_ai_decisions', 'erp_hr_ai_model_registry', 'erp_hr_ai_bias_audits'],
-  workforce: ['erp_hr_workforce_plans', 'erp_hr_workforce_scenarios'],
-  fairness: ['erp_hr_justice_cases', 'erp_hr_equity_analyses', 'erp_hr_pay_equity_rules'],
-  twin: ['erp_hr_twin_snapshots', 'erp_hr_twin_alerts', 'erp_hr_twin_experiments'],
-  legal: ['erp_hr_legal_contracts', 'erp_hr_legal_clause_library', 'erp_hr_legal_templates'],
-  cnae: ['erp_hr_cnae_profiles', 'erp_hr_cnae_risk_assessments', 'erp_hr_cnae_benchmarks'],
-  role_experience: ['erp_hr_role_dashboards', 'erp_hr_role_widgets'],
+  workforce: ['erp_hr_workforce_plans', 'erp_hr_scenarios'],
+  fairness: ['erp_hr_justice_cases', 'erp_hr_pay_equity_analyses', 'erp_hr_pay_equity_snapshots'],
+  twin: ['erp_hr_twin_module_snapshots', 'erp_hr_twin_alerts', 'erp_hr_twin_experiments'],
+  legal: ['erp_hr_legal_contracts', 'erp_hr_legal_clauses', 'erp_hr_legal_templates'],
+  cnae: ['erp_hr_cnae_sector_profiles', 'erp_hr_cnae_risk_assessments', 'erp_hr_cnae_benchmarks'],
+  role_experience: ['erp_hr_role_dashboards', 'erp_hr_role_analytics'],
 };
 
 // Predefined orchestration templates

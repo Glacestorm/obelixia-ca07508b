@@ -41,7 +41,7 @@ const EXPORTABLE_TABLES: ExportableTable[] = [
   { module: 'cnae', table: 'erp_hr_cnae_risk_assessments', label: 'Evaluaciones de riesgo' },
   { module: 'cnae', table: 'erp_hr_cnae_benchmarks', label: 'Benchmarks CNAE' },
   { module: 'role_experience', table: 'erp_hr_role_dashboards', label: 'Dashboards de rol' },
-  { module: 'role_experience', table: 'erp_hr_role_widgets', label: 'Widgets de rol' },
+  { module: 'role_experience', table: 'erp_hr_role_analytics', label: 'Analytics de rol' },
 ];
 
 const MODULE_LABELS: Record<PremiumModuleKey, string> = {
