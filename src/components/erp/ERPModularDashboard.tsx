@@ -603,7 +603,7 @@ function ERPModularDashboardContent() {
             </div>
             
             <Tabs defaultValue="audit" className="space-y-4">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsList className="grid w-full max-w-lg grid-cols-3">
                 <TabsTrigger value="audit" className="gap-2">
                   <FileText className="h-4 w-4" />
                   Auditorías
@@ -611,6 +611,10 @@ function ERPModularDashboardContent() {
                 <TabsTrigger value="ai-hybrid" className="gap-2">
                   <Brain className="h-4 w-4" />
                   IA Híbrida
+                </TabsTrigger>
+                <TabsTrigger value="premium-seed" className="gap-2">
+                  <Database className="h-4 w-4" />
+                  Re-Seed Premium
                 </TabsTrigger>
               </TabsList>
               
@@ -624,6 +628,10 @@ function ERPModularDashboardContent() {
               
               <TabsContent value="ai-hybrid">
                 <AIUnifiedDashboard />
+              </TabsContent>
+
+              <TabsContent value="premium-seed">
+                <PremiumReseedPanel companyId={currentCompany?.id} />
               </TabsContent>
             </Tabs>
           </div>
