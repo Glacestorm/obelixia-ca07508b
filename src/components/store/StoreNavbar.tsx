@@ -120,6 +120,7 @@ const StoreNavbar: React.FC = () => {
               { id: 'marketplace', label: t('nav.marketplace'), href: '/marketplace', icon: Store, description: t('nav.marketplace.desc'), badge: t('badge.new') },
               { id: 'chat', label: t('nav.chat'), href: '/chat', icon: MessageSquare, description: t('nav.chat.desc'), badge: t('badge.ai') },
               { id: 'cdp', label: t('nav.cdp'), href: '/cdp', icon: BarChart3, description: t('nav.cdp.desc') },
+              { id: 'installation', label: language === 'es' ? 'Instalación' : 'Installation', href: '/store/installation', icon: Download, description: language === 'es' ? 'Centro de instalación ERP' : 'ERP Installation Center', badge: language === 'es' ? 'Nuevo' : 'New' },
             ],
           },
         ],
