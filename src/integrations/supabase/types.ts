@@ -30639,11 +30639,14 @@ export type Database = {
       }
       erp_hr_generated_reports: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           company_id: string
           completed_at: string | null
           content_snapshot: Json | null
           created_at: string
           data_sources: Json
+          disclaimer: string | null
           error_message: string | null
           file_size_bytes: number | null
           file_url: string | null
@@ -30654,17 +30657,25 @@ export type Database = {
           id: string
           metadata: Json
           modules_included: string[]
+          regulatory_framework: string | null
+          report_category: string | null
           report_name: string
           report_type: string
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           template_id: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           company_id: string
           completed_at?: string | null
           content_snapshot?: Json | null
           created_at?: string
           data_sources?: Json
+          disclaimer?: string | null
           error_message?: string | null
           file_size_bytes?: number | null
           file_url?: string | null
@@ -30675,17 +30686,25 @@ export type Database = {
           id?: string
           metadata?: Json
           modules_included?: string[]
+          regulatory_framework?: string | null
+          report_category?: string | null
           report_name: string
           report_type?: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           template_id?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           company_id?: string
           completed_at?: string | null
           content_snapshot?: Json | null
           created_at?: string
           data_sources?: Json
+          disclaimer?: string | null
           error_message?: string | null
           file_size_bytes?: number | null
           file_url?: string | null
@@ -30696,8 +30715,13 @@ export type Database = {
           id?: string
           metadata?: Json
           modules_included?: string[]
+          regulatory_framework?: string | null
+          report_category?: string | null
           report_name?: string
           report_type?: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           template_id?: string | null
         }
@@ -35022,6 +35046,97 @@ export type Database = {
           },
         ]
       }
+      erp_hr_regulatory_report_evidence: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          data_snapshot: Json | null
+          data_source_type: string | null
+          description: string | null
+          evidence_type: string
+          id: string
+          report_id: string
+          source_module: string | null
+          title: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          data_snapshot?: Json | null
+          data_source_type?: string | null
+          description?: string | null
+          evidence_type: string
+          id?: string
+          report_id: string
+          source_module?: string | null
+          title: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          data_snapshot?: Json | null
+          data_source_type?: string | null
+          description?: string | null
+          evidence_type?: string
+          id?: string
+          report_id?: string
+          source_module?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_regulatory_report_evidence_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_generated_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_regulatory_report_reviews: {
+        Row: {
+          action: string
+          comments: string | null
+          company_id: string
+          created_at: string | null
+          id: string
+          new_status: string | null
+          previous_status: string | null
+          report_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          action: string
+          comments?: string | null
+          company_id: string
+          created_at?: string | null
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          report_id: string
+          reviewer_id: string
+        }
+        Update: {
+          action?: string
+          comments?: string | null
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          new_status?: string | null
+          previous_status?: string | null
+          report_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_regulatory_report_reviews_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_generated_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_regulatory_watch: {
         Row: {
           affected_articles: string[] | null
@@ -35332,8 +35447,11 @@ export type Database = {
           filters_config: Json
           id: string
           is_active: boolean
+          is_regulatory: boolean | null
           kpi_definitions: Json
           layout_config: Json
+          legal_basis: string[] | null
+          regulatory_framework: string | null
           sections: Json
           supported_formats: string[]
           target_module: string | null
@@ -35351,8 +35469,11 @@ export type Database = {
           filters_config?: Json
           id?: string
           is_active?: boolean
+          is_regulatory?: boolean | null
           kpi_definitions?: Json
           layout_config?: Json
+          legal_basis?: string[] | null
+          regulatory_framework?: string | null
           sections?: Json
           supported_formats?: string[]
           target_module?: string | null
@@ -35370,8 +35491,11 @@ export type Database = {
           filters_config?: Json
           id?: string
           is_active?: boolean
+          is_regulatory?: boolean | null
           kpi_definitions?: Json
           layout_config?: Json
+          legal_basis?: string[] | null
+          regulatory_framework?: string | null
           sections?: Json
           supported_formats?: string[]
           target_module?: string | null
