@@ -150,15 +150,15 @@ export function EnergyAdvancedAnalytics({ companyId }: Props) {
           acc[key].current += inv.total_amount || 0;
           acc[key].count++;
           return acc;
-        }, {});
+        }, {} as Record<string, { current: number; count: number }>);
 
       const costCompData = Object.entries(costComp).slice(0, 6).map(([caseName, d]) => {
         const savings = recs.find(r => cases.find(c => c.title?.startsWith(caseName) && c.id === r.case_id))?.monthly_savings_estimate || d.current * 0.15;
         return {
           case: caseName,
           current: Math.round(d.current),
-          recommended: Math.round(d.current - savings * d.count),
-          savings: Math.round(savings * d.count),
+          recommended: Math.round(d.current - (savings as number) * d.count),
+          savings: Math.round((savings as number) * d.count),
         };
       });
 
