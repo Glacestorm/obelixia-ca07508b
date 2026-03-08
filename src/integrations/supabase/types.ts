@@ -24468,6 +24468,161 @@ export type Database = {
           },
         ]
       }
+      erp_hr_api_access_log: {
+        Row: {
+          client_id: string | null
+          company_id: string
+          created_at: string | null
+          endpoint: string
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          method: string
+          request_params: Json | null
+          response_time_ms: number | null
+          status_code: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          company_id: string
+          created_at?: string | null
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          method?: string
+          request_params?: Json | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          company_id?: string
+          created_at?: string | null
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          method?: string
+          request_params?: Json | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_api_access_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_api_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_api_access_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_api_clients: {
+        Row: {
+          allowed_ips: string[] | null
+          api_key_hash: string
+          api_key_prefix: string
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          name: string
+          rate_limit_per_minute: number | null
+          scopes: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_ips?: string[] | null
+          api_key_hash: string
+          api_key_prefix: string
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          name: string
+          rate_limit_per_minute?: number | null
+          scopes?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_ips?: string[] | null
+          api_key_hash?: string
+          api_key_prefix?: string
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          name?: string
+          rate_limit_per_minute?: number | null
+          scopes?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_api_clients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_api_event_catalog: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          event_type: string
+          example_payload: Json | null
+          id: string
+          is_active: boolean | null
+          payload_schema: Json | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          example_payload?: Json | null
+          id?: string
+          is_active?: boolean | null
+          payload_schema?: Json | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          example_payload?: Json | null
+          id?: string
+          is_active?: boolean | null
+          payload_schema?: Json | null
+        }
+        Relationships: []
+      }
       erp_hr_audit_log: {
         Row: {
           action: string
@@ -39170,6 +39325,124 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_webhook_delivery_log: {
+        Row: {
+          attempt_number: number | null
+          created_at: string | null
+          delivered_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          response_time_ms: number | null
+          status: string | null
+          subscription_id: string
+        }
+        Insert: {
+          attempt_number?: number | null
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          status?: string | null
+          subscription_id: string
+        }
+        Update: {
+          attempt_number?: number | null
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          response_time_ms?: number | null
+          status?: string | null
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_webhook_delivery_log_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_webhook_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_webhook_subscriptions: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          events: string[]
+          failure_count: number | null
+          filters: Json | null
+          headers: Json | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          retry_policy: Json | null
+          secret: string
+          success_count: number | null
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          events?: string[]
+          failure_count?: number | null
+          filters?: Json | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          retry_policy?: Json | null
+          secret: string
+          success_count?: number | null
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          events?: string[]
+          failure_count?: number | null
+          filters?: Json | null
+          headers?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          retry_policy?: Json | null
+          secret?: string
+          success_count?: number | null
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_webhook_subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
