@@ -30637,6 +30637,87 @@ export type Database = {
           },
         ]
       }
+      erp_hr_generated_reports: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          content_snapshot: Json | null
+          created_at: string
+          data_sources: Json
+          error_message: string | null
+          file_size_bytes: number | null
+          file_url: string | null
+          filters_applied: Json
+          format: string
+          generated_by: string
+          generation_time_ms: number | null
+          id: string
+          metadata: Json
+          modules_included: string[]
+          report_name: string
+          report_type: string
+          status: string
+          template_id: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          content_snapshot?: Json | null
+          created_at?: string
+          data_sources?: Json
+          error_message?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filters_applied?: Json
+          format?: string
+          generated_by: string
+          generation_time_ms?: number | null
+          id?: string
+          metadata?: Json
+          modules_included?: string[]
+          report_name: string
+          report_type?: string
+          status?: string
+          template_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          content_snapshot?: Json | null
+          created_at?: string
+          data_sources?: Json
+          error_message?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filters_applied?: Json
+          format?: string
+          generated_by?: string
+          generation_time_ms?: number | null
+          id?: string
+          metadata?: Json
+          modules_included?: string[]
+          report_name?: string
+          report_type?: string
+          status?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_generated_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_generated_reports_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_gig_assignments: {
         Row: {
           actual_hours: number | null
@@ -35166,6 +35247,146 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: true
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_report_schedules: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          cron_expression: string | null
+          delivery_method: string
+          filters: Json
+          format: string
+          frequency: string
+          id: string
+          is_active: boolean
+          last_run_at: string | null
+          next_run_at: string | null
+          recipients: Json
+          schedule_name: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          cron_expression?: string | null
+          delivery_method?: string
+          filters?: Json
+          format?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string | null
+          recipients?: Json
+          schedule_name: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          cron_expression?: string | null
+          delivery_method?: string
+          filters?: Json
+          format?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_run_at?: string | null
+          next_run_at?: string | null
+          recipients?: Json
+          schedule_name?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_report_schedules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_report_schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_report_templates: {
+        Row: {
+          category: string
+          company_id: string | null
+          created_at: string
+          description: string | null
+          filters_config: Json
+          id: string
+          is_active: boolean
+          kpi_definitions: Json
+          layout_config: Json
+          sections: Json
+          supported_formats: string[]
+          target_module: string | null
+          target_role: string | null
+          template_key: string
+          template_name: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          category?: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          filters_config?: Json
+          id?: string
+          is_active?: boolean
+          kpi_definitions?: Json
+          layout_config?: Json
+          sections?: Json
+          supported_formats?: string[]
+          target_module?: string | null
+          target_role?: string | null
+          template_key: string
+          template_name: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          category?: string
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          filters_config?: Json
+          id?: string
+          is_active?: boolean
+          kpi_definitions?: Json
+          layout_config?: Json
+          sections?: Json
+          supported_formats?: string[]
+          target_module?: string | null
+          target_role?: string | null
+          template_key?: string
+          template_name?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_report_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
