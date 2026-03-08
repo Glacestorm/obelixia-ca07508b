@@ -193,6 +193,7 @@ export function ElectricalConsultingModule() {
         {activeModule === 'consumo' && <ElectricalConsumoPanel companyId={companyId} />}
         {activeModule === 'catalogo' && <ElectricalTariffCatalogPanel companyId={companyId} />}
         {activeModule === 'comparador' && <ElectricalComparadorPanel companyId={companyId} />}
+        {activeModule === 'precios-indexados' && <ElectricalIndexedPricesPanel />}
         {activeModule === 'potencia' && <ElectricalPotenciaPanel companyId={companyId} />}
         {activeModule === 'recomendaciones' && <ElectricalRecomendacionesPanel companyId={companyId} />}
         {activeModule === 'informes' && <ElectricalInformesPanel companyId={companyId} />}

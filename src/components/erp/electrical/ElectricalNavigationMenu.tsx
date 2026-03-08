@@ -85,7 +85,8 @@ export function ElectricalNavigationMenu({
       items: [
         { id: 'consumo', label: 'Análisis de Consumo', icon: BarChart3, description: 'Consumo por periodos tarifarios P1-P6' },
         { id: 'catalogo', label: 'Catálogo Tarifas', icon: FileText, description: 'Gestión del catálogo de tarifas del mercado' },
-        { id: 'comparador', label: 'Comparador', icon: GitCompareArrows, description: 'Comparativa de tarifas y comercializadoras' },
+        { id: 'comparador', label: 'Simulador', icon: GitCompareArrows, description: 'Simulador y comparador de tarifas' },
+        { id: 'precios-indexados', label: 'Precios Indexados', icon: BarChart3, description: 'Precios horarios OMIE, Peajes y PVPC' },
         { id: 'recomendaciones', label: 'Recomendaciones', icon: Lightbulb, description: 'Tarifa y potencia óptima' },
       ]
     },
