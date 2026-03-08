@@ -1,5 +1,5 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium
 
 ## Estado de Implementación
 
@@ -13,6 +13,24 @@
 | 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
 | 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
 | 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
+
+## Premium Phases — Enterprise Differentiators
+
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | 🔲 Pendiente | Cross-cutting AI explainability, bias detection, model registry |
+| P3 - Workforce Planning & Scenario Studio | 🔲 Pendiente | Strategic planning, what-if scenarios, headcount modeling |
+| P4 - Fairness / Justice Engine | 🔲 Pendiente | Depends on AI Governance |
+| P5 - Organizational Digital Twin completo | 🔲 Pendiente | Extends existing twin |
+| P6 - Documentary Legal Engine premium | 🔲 Pendiente | Contract generation, clause library, compliance automation |
+| P7 - CNAE-Specific HR Intelligence | 🔲 Pendiente | Sector-specific regulations and benchmarks |
+| P8 - Role-Based Experience Ecosystem | 🔲 Pendiente | Personalized UX per role |
+
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
 ## FASE 2 — Completada ✅
 
