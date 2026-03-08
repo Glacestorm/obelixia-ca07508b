@@ -116,18 +116,14 @@ export function HRSocialBenefitsPanel({ companyId }: HRSocialBenefitsPanelProps)
   const fetchBenefits = useCallback(async () => {
     setLoading(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_social_benefits?company_id=eq.${companyId}&select=*&order=benefit_name`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        }
-      });
-      
-      if (response.ok) {
-        const data: Benefit[] = await response.json();
-        setBenefits(data);
-      }
+      const { data, error } = await supabase
+        .from('erp_hr_social_benefits')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('benefit_name');
+
+      if (error) throw error;
+      setBenefits((data || []) as unknown as Benefit[]);
     } catch (err) {
       console.error('Error fetching benefits:', err);
     } finally {
@@ -137,22 +133,18 @@ export function HRSocialBenefitsPanel({ companyId }: HRSocialBenefitsPanelProps)
 
   const fetchEnrollments = useCallback(async () => {
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employee_benefits?select=*,erp_hr_social_benefits(*),erp_hr_employees(first_name,last_name)&order=enrollment_date.desc&limit=100`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setEnrollments(data.map((e: any) => ({
-          ...e,
-          benefit: e.erp_hr_social_benefits,
-          employee: e.erp_hr_employees,
-        })));
-      }
+      const { data, error } = await supabase
+        .from('erp_hr_employee_benefits')
+        .select('*, erp_hr_social_benefits(*), erp_hr_employees(first_name, last_name)')
+        .order('enrollment_date', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setEnrollments((data || []).map((e: any) => ({
+        ...e,
+        benefit: e.erp_hr_social_benefits,
+        employee: e.erp_hr_employees,
+      })));
     } catch (err) {
       console.error('Error fetching enrollments:', err);
     }
