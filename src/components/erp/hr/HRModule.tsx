@@ -76,7 +76,22 @@ import { HRRoleExperiencePanel } from './role-experience/HRRoleExperiencePanel';
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { currentCompany } = useERPContext();
-  const demoCompanyId = currentCompany?.id || 'demo-company-id';
+  const companyId = currentCompany?.id;
+  
+  // Guard: no company selected
+  if (!companyId) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <Users className="h-12 w-12 mx-auto text-muted-foreground/40" />
+          <h3 className="text-lg font-semibold text-foreground">Selecciona una empresa</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Para acceder al módulo de RRHH, selecciona una empresa desde el selector superior.
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   // Estados para dialogs
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);

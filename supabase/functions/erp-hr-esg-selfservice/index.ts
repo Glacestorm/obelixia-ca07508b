@@ -26,7 +26,12 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     const { action, params, context } = await req.json() as FunctionRequest;
-    const companyId = (params?.companyId as string) || 'demo-company-id';
+    const companyId = params?.companyId as string;
+    if (!companyId || companyId === 'demo-company-id') {
+      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log(`[erp-hr-esg-selfservice] Action: ${action}`);
 
