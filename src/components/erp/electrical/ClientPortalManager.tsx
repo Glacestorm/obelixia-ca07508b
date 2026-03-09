@@ -43,10 +43,15 @@ export function ClientPortalManager({ caseId, companyId }: Props) {
     }
   };
 
+  const getPortalUrl = (token: string) => `${window.location.origin}/portal-cliente?portal_token=${token}`;
+
   const copyLink = (token: string) => {
-    const url = `${window.location.origin}/portal-cliente?portal_token=${token}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(getPortalUrl(token));
     toast.success('Enlace copiado al portapapeles');
+  };
+
+  const openPortal = (token: string) => {
+    window.open(getPortalUrl(token), '_blank', 'noopener,noreferrer');
   };
 
   const fmtDate = (d: string) => {
