@@ -157,8 +157,7 @@ serve(async (req) => {
         });
       }
 
-      const data = await response.json();
-      const values = data?.indicator?.values || [];
+      // values already populated from ESIOS or REE fallback above
 
       const prices = values.map((v: any) => {
         const dt = new Date(v.datetime);
