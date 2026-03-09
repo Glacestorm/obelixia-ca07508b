@@ -155,6 +155,28 @@ export function ClientPortalView() {
   const [activeTab, setActiveTab] = useState('resumen');
   const [downloading, setDownloading] = useState<string | null>(null);
   const [portalToken, setPortalToken] = useState<string | null>(null);
+  const [tabEnteredAt, setTabEnteredAt] = useState<number>(Date.now());
+
+  // === SECTION-LEVEL AUDIT TRACKING ===
+  const logPortalEvent = useCallback(async (action: string, details: Record<string, unknown> = {}) => {
+    if (!portalToken) return;
+    try {
+      await supabase.functions.invoke('energy-client-portal', {
+        body: { portalToken, action: 'audit', auditAction: action, details },
+      });
+    } catch { /* silent */ }
+  }, [portalToken]);
+
+  // Track tab changes with time spent
+  const handleTabChange = useCallback((newTab: string) => {
+    const timeSpent = Math.round((Date.now() - tabEnteredAt) / 1000);
+    if (timeSpent > 2) {
+      logPortalEvent('portal_time_spent', { section: activeTab, seconds: timeSpent });
+    }
+    logPortalEvent('portal_section_viewed', { section: newTab });
+    setTabEnteredAt(Date.now());
+    setActiveTab(newTab);
+  }, [activeTab, tabEnteredAt, logPortalEvent]);
 
   const loadPortalData = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
@@ -403,7 +425,7 @@ export function ClientPortalView() {
         )}
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
             <TabsTrigger value="ahorro" className="text-xs">Ahorro</TabsTrigger>

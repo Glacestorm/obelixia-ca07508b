@@ -1,86 +1,61 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium
 
-## Plan: Premium Roadmap Implementation + Fixes
+## Estado de Implementación
 
-### Current State
-- **ExternalIntegrationsPanel**: Credential buttons are `disabled` -- need to make them functional with a configuration dialog
-- **Portal access**: Already has "open in new tab" via Eye icon per token, but no dedicated tab in the energy navigation
-- **Audit log**: Basic action-level logging exists (`useEnergyAuditLog`), needs extension for section views, read time, portal access tracking
-- **Notifications**: Exist but only in-app, no email/WhatsApp
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-### Implementation Plan (5 tasks)
+## Premium Phases — Enterprise Differentiators
 
-#### Task 1: Fix Integration Credentials Configuration
-Make the "Configurar credenciales" buttons functional in `ExternalIntegrationsPanel.tsx`:
-- Add a Dialog for each integration (Datadis, e-sios REE) with fields for API key, username, NIF
-- On save, store credentials via `supabase.functions.invoke('external-integrations', { action: 'save_credentials', ... })`
-- Update status badge to reflect configured state
-- Add "Test connection" button per integration
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-#### Task 2: Add Portal Tab in Navigation + Portal Preview Page
-- Add a new nav item "Portal Cliente" under a new category or existing "Gestión" in `ElectricalNavigationMenu.tsx`
-- Create `EnergyPortalTab.tsx` component that:
-  - Lists all portal tokens across cases (reuse `useEnergyClientPortal`)
-  - Shows portal link with copy/open buttons
-  - Embeds an iframe preview of the portal (sandboxed)
-  - Allows generating new tokens from here
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-#### Task 3: Premium Alertas Proactivas (Prepared)
-- Create `EnergyAlertPreferencesPanel.tsx` with UI for:
-  - Per-client alert channel selection (email, WhatsApp, in-app)
-  - Alert types: contract expiry, price spike, savings opportunity, regulation change
-  - Frequency: immediate, daily digest, weekly
-- Create DB table `energy_alert_preferences` via migration
-- Create edge function `energy-alerts` stub that:
-  - Accepts `send_alert` action
-  - Logs the alert attempt
-  - Returns "integration pending" for email/WhatsApp channels
-  - In-app channel works immediately via `energy_notifications` table
+## FASE 2 — Completada ✅
 
-#### Task 4: Extended Audit (Section-level tracking)
-- Extend `useEnergyAuditLog` with new actions: `portal_section_viewed`, `portal_document_downloaded`, `portal_time_spent`
-- Add `AUDIT_ACTIONS` entries for new event types
-- In `ClientPortalView.tsx`, add `useEffect` hooks per tab that log section views and track time on each tab
-- Add a new "Auditoría Portal" sub-section in the admin case detail showing portal access analytics
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-#### Task 5: Scheduled Reports (Prepared) + Benchmarking Placeholder
-- Create `EnergyScheduledReportsPanel.tsx` with UI for:
-  - Report type selection (executive summary, savings report, contract status)
-  - Format (PDF/CSV)
-  - Schedule (weekly, monthly, quarterly)
-  - Recipients list
-- Store config in `energy_report_schedules` table
-- Create edge function `energy-scheduled-reports` stub that generates and stores reports (cron trigger TBD)
-- Add benchmarking placeholder card in Executive Dashboard showing "Sector benchmark coming soon" with mock comparison data
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
-### Files to Create
-1. `src/components/erp/electrical/EnergyPortalTab.tsx` - Portal management tab
-2. `src/components/erp/electrical/EnergyAlertPreferencesPanel.tsx` - Alert preferences UI
-3. `src/components/erp/electrical/EnergyScheduledReportsPanel.tsx` - Scheduled reports UI
-4. `supabase/functions/energy-alerts/index.ts` - Alert dispatch stub
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-### Files to Modify
-1. `src/components/erp/electrical/ExternalIntegrationsPanel.tsx` - Add credential config dialogs
-2. `src/components/erp/electrical/ElectricalNavigationMenu.tsx` - Add Portal + Premium tabs
-3. `src/components/erp/electrical/ElectricalConsultingModule.tsx` - Wire new components
-4. `src/components/erp/electrical/ClientPortalView.tsx` - Add section-level audit tracking
-5. `src/hooks/erp/useEnergyAuditLog.ts` - Add new audit action types
-6. `src/components/erp/electrical/ElectricalExecutiveDashboard.tsx` - Add benchmark placeholder
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-### DB Migrations
-1. `energy_alert_preferences` table (user_id, company_id, channel, alert_types, frequency)
-2. `energy_report_schedules` table (company_id, report_type, format, schedule, recipients)
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-### What Becomes Fully Functional
-- Integration credential configuration (Datadis, e-sios)
-- Portal tab with preview iframe and token management
-- Extended audit with portal section tracking
-- Alert preferences UI (in-app channel works, email/WhatsApp prepared)
-- Scheduled reports UI (configuration works, actual dispatch prepared)
-
-### What Remains External-Dependent
-- Email delivery: needs SendGrid/Resend connector
-- WhatsApp: needs Twilio/WhatsApp Business API
-- Cron jobs: needs pg_cron or external scheduler for report dispatch
-- Sector benchmarking: needs external data source (CNMC, REE)
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard

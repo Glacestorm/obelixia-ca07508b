@@ -37,6 +37,9 @@ import { EnergyAdvancedAnalytics } from './EnergyAdvancedAnalytics';
 import { EnergyMultiVectorComparator } from './EnergyMultiVectorComparator';
 import { EnergyNewsPanel } from './EnergyNewsPanel';
 import { EnergyRegulationsPanel } from './EnergyRegulationsPanel';
+import { EnergyPortalTab } from './EnergyPortalTab';
+import { EnergyAlertPreferencesPanel } from './EnergyAlertPreferencesPanel';
+import { EnergyScheduledReportsPanel } from './EnergyScheduledReportsPanel';
 type SubView = 
   | { type: 'list' }
   | { type: 'new' }
@@ -298,8 +301,12 @@ export function ElectricalConsultingModule() {
         {activeModule === 'seguimiento' && <ElectricalSeguimientoPanel companyId={companyId} />}
         {activeModule === 'ejecutivo' && <ElectricalExecutiveDashboard onNavigateToCase={handleNavigateToCase} />}
         {activeModule === 'integraciones' && <ExternalIntegrationsPanel />}
+        {activeModule === 'portal-cliente' && <EnergyPortalTab companyId={companyId} />}
+        {activeModule === 'alertas' && <EnergyAlertPreferencesPanel companyId={companyId} />}
+        {activeModule === 'reportes-programados' && <EnergyScheduledReportsPanel companyId={companyId} />}
         {activeModule === 'noticias-energia' && <EnergyNewsPanel companyId={companyId} />}
         {activeModule === 'normativa' && <EnergyRegulationsPanel />}
+        {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
         {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
       </div>
     </div>

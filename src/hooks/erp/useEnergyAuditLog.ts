@@ -26,6 +26,14 @@ export const AUDIT_ACTIONS: Record<string, { label: string; icon: string }> = {
   checklist_updated: { label: 'Checklist actualizado', icon: '☑️' },
   case_created: { label: 'Expediente creado', icon: '📁' },
   case_updated: { label: 'Expediente actualizado', icon: '✏️' },
+  // Extended audit - portal tracking
+  portal_section_viewed: { label: 'Sección portal vista', icon: '👁️' },
+  portal_document_downloaded: { label: 'Documento descargado (portal)', icon: '⬇️' },
+  portal_time_spent: { label: 'Tiempo en sección', icon: '⏱️' },
+  portal_accessed: { label: 'Portal accedido', icon: '🔗' },
+  alert_preference_updated: { label: 'Preferencia alerta actualizada', icon: '🔔' },
+  report_scheduled: { label: 'Reporte programado', icon: '📅' },
+  credentials_configured: { label: 'Credenciales configuradas', icon: '🔑' },
 };
 
 export function useEnergyAuditLog(companyId: string, caseId?: string | null) {

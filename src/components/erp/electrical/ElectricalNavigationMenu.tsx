@@ -11,7 +11,7 @@ import {
   LayoutDashboard, FolderOpen, Zap, FileText, FileSignature, Users,
   BarChart3, Gauge, Lightbulb, FileBarChart, Eye, Settings,
   ChevronDown, ChevronRight, BoltIcon, GitCompareArrows, Building2, Plug,
-  Flame, Sun, Activity, TrendingUp, Layers
+  Flame, Sun, Activity, TrendingUp, Layers, Shield, Bell, Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -119,6 +119,23 @@ export function ElectricalNavigationMenu({
       items: [
         { id: 'noticias-energia', label: 'Noticias Energía', icon: Activity, description: 'Noticias del sector energético' },
         { id: 'normativa', label: 'Normativa', icon: FileBarChart, description: 'Regulación local, estatal y europea' },
+      ]
+    },
+    {
+      id: 'portal',
+      label: 'Portal',
+      icon: Shield,
+      items: [
+        { id: 'portal-cliente', label: 'Portal Cliente', icon: Shield, description: 'Gestión de accesos y vista previa' },
+      ]
+    },
+    {
+      id: 'premium',
+      label: 'Premium',
+      icon: Bell,
+      items: [
+        { id: 'alertas', label: 'Alertas Proactivas', icon: Bell, description: 'Email, WhatsApp, in-app' },
+        { id: 'reportes-programados', label: 'Reportes Programados', icon: Calendar, description: 'PDF/CSV automáticos' },
       ]
     },
     {

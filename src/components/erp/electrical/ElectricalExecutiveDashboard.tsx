@@ -360,6 +360,7 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
           <TabsTrigger value="riesgo" className="text-xs">Riesgo</TabsTrigger>
           {kpis && kpis.companyBreakdown.length > 1 && <TabsTrigger value="empresas" className="text-xs">Empresas</TabsTrigger>}
           <TabsTrigger value="acciones" className="text-xs">Acciones</TabsTrigger>
+          <TabsTrigger value="benchmark" className="text-xs">Benchmark</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kpis" className="mt-4 space-y-4">
@@ -626,6 +627,56 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
           ) : (
             <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">Sin empresas asignadas</CardContent></Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="benchmark" className="mt-4 space-y-4">
+          <Card className="border-dashed">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" /> Benchmark sectorial
+              </CardTitle>
+              <CardDescription className="text-xs">Comparativa con datos agregados del sector energético español</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-muted/30">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Coste medio sector</p>
+                    <p className="text-2xl font-bold text-muted-foreground">0,142 €/kWh</p>
+                    <Badge variant="outline" className="mt-1 text-[10px]">Referencia CNMC 2025</Badge>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/30">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Ahorro medio consultoría</p>
+                    <p className="text-2xl font-bold text-muted-foreground">12-18%</p>
+                    <Badge variant="outline" className="mt-1 text-[10px]">Benchmark sectorial</Badge>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/30">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Tu rendimiento</p>
+                    <p className="text-2xl font-bold">{filteredCloseRate}%</p>
+                    <Badge variant={filteredCloseRate > 15 ? 'default' : 'secondary'} className="mt-1 text-[10px]">
+                      {filteredCloseRate > 15 ? 'Por encima' : 'En rango'}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="mt-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Datos de referencia</p>
+                    <p className="text-xs text-muted-foreground">
+                      Los datos de benchmark son referencias aproximadas basadas en publicaciones de CNMC y REE. 
+                      Para datos personalizados en tiempo real se requiere integración con fuentes externas del sector.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
