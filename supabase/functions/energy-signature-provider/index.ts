@@ -97,8 +97,10 @@ serve(async (req) => {
         let pdfBytes: Uint8Array;
         if (params.document_base64) {
           pdfBytes = base64Decode(params.document_base64);
+          console.log(`[energy-signature] Using provided PDF, size: ${pdfBytes.length} bytes`);
         } else {
           pdfBytes = generateMinimalPDF(docName, params.signer_name, params.case_id, params.proposal_id);
+          console.log(`[energy-signature] Generated minimal PDF, size: ${pdfBytes.length} bytes`);
         }
 
         // Use FormData API with File constructor
@@ -108,9 +110,11 @@ serve(async (req) => {
         formData.append('delivery_type', 'email');
         formData.append('name', docName);
 
-        // Attach PDF file - use File constructor for proper filename
-        const pdfFile = new File([pdfBytes], `${docName}.pdf`, { type: 'application/pdf' });
+        // Attach PDF file using File constructor
+        const pdfFile = new File([pdfBytes], `${docName.replace(/[^a-zA-Z0-9-_]/g, '_')}.pdf`, { type: 'application/pdf' });
         formData.append('files[0]', pdfFile);
+
+        console.log(`[energy-signature] FormData file size: ${pdfFile.size}, name: ${pdfFile.name}`);
 
         const response = await fetch(`${SIGNATURIT_BASE}/v3/signatures.json`, {
           method: 'POST',
