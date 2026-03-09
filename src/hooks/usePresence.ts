@@ -86,7 +86,7 @@ export function usePresence(options: UsePresenceOptions = {}) {
 
         profileDataRef.current = {
           full_name: profile?.full_name || user.email || 'Unknown',
-          role: roleData?.role || 'user',
+          role: highestRole,
           avatar_url: profile?.avatar_url,
           oficina: profile?.oficina,
         };
