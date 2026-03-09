@@ -80,7 +80,7 @@ serve(async (req) => {
 
     // ========== FETCH PVPC ==========
     if (action === 'fetch_pvpc') {
-      const indicatorId = 600; // PVPC
+      const indicatorId = 1001; // PVPC term facturación energía activa 2.0TD
       const startDate = `${targetDate}T00:00:00`;
       const endDate = `${targetDate}T23:59:59`;
 
