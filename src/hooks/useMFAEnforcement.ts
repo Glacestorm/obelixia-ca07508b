@@ -111,6 +111,8 @@ export function useMFAEnforcement(): UseMFAEnforcementReturn | null {
         .from('mfa_requirements')
         .select('*')
         .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle() as { data: any; error: any };
 
       if (error && error.code !== 'PGRST116') {
