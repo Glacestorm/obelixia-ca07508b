@@ -1,6 +1,7 @@
 /**
  * ElectricalExecutiveDashboard - Consolidated Energy 360 Executive Dashboard
  * Multi-company, multi-energy with filters, rankings, charts, export
+ * Integrated with real MIBGAS market data
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
