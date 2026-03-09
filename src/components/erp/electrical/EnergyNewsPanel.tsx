@@ -134,7 +134,7 @@ export function EnergyNewsPanel({ companyId }: Props) {
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input className="pl-8 h-8 text-xs" placeholder="Buscar noticias..." value={search} onChange={e => setSearch(e.target.value)} />
+            <Input className="pl-8 h-8 text-xs" placeholder="Buscar noticias verificadas..." value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') searchVerifiedNews(search); }} />
           </div>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
