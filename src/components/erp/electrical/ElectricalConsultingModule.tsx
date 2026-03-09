@@ -37,6 +37,9 @@ import { EnergyAdvancedAnalytics } from './EnergyAdvancedAnalytics';
 import { EnergyMultiVectorComparator } from './EnergyMultiVectorComparator';
 import { EnergyNewsPanel } from './EnergyNewsPanel';
 import { EnergyRegulationsPanel } from './EnergyRegulationsPanel';
+import { EnergyPortalTab } from './EnergyPortalTab';
+import { EnergyAlertPreferencesPanel } from './EnergyAlertPreferencesPanel';
+import { EnergyScheduledReportsPanel } from './EnergyScheduledReportsPanel';
 type SubView = 
   | { type: 'list' }
   | { type: 'new' }
