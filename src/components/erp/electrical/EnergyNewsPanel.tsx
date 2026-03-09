@@ -54,17 +54,25 @@ export function EnergyNewsPanel({ companyId }: Props) {
   const fetchNews = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('energy-ai-recommendation', {
-        body: {
-          action: 'get_energy_news',
-          params: { category: category !== 'all' ? category : undefined, search },
-        },
+      // Primary: fetch from verified news backend
+      const { data, error } = await supabase.functions.invoke('energy-news-ingestion', {
+        body: { action: 'list', filters: { limit: 30 } },
       });
 
-      if (!error && data?.success && Array.isArray(data.data)) {
-        setNews(data.data);
+      if (!error && data?.success && Array.isArray(data.news) && data.news.length > 0) {
+        setNews(data.news.map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          summary: n.summary || n.ai_summary || '',
+          category: n.category || 'general',
+          source: n.source_name || 'Fuente oficial',
+          url: n.source_url || undefined,
+          published_at: n.published_at || n.created_at,
+          importance: n.importance || 'medium',
+          energy_type: n.source_type || undefined,
+          tags: n.tags || [],
+        })));
       } else {
-        // Fallback sample data
         setNews(getSampleNews());
       }
     } catch {
@@ -73,6 +81,24 @@ export function EnergyNewsPanel({ companyId }: Props) {
       setLoading(false);
     }
   }, [category, search]);
+
+  const searchVerifiedNews = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('energy-news-ingestion', {
+        body: { action: 'search_news', query },
+      });
+      if (!error && data?.success) {
+        toast.success(`${data.persisted_count || 0} noticias verificadas encontradas`);
+        await fetchNews();
+      }
+    } catch {
+      toast.error('Error en búsqueda');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchNews]);
 
   useEffect(() => { fetchNews(); }, [fetchNews]);
 
@@ -108,7 +134,7 @@ export function EnergyNewsPanel({ companyId }: Props) {
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input className="pl-8 h-8 text-xs" placeholder="Buscar noticias..." value={search} onChange={e => setSearch(e.target.value)} />
+            <Input className="pl-8 h-8 text-xs" placeholder="Buscar noticias verificadas..." value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') searchVerifiedNews(search); }} />
           </div>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -137,7 +163,7 @@ export function EnergyNewsPanel({ companyId }: Props) {
                       <p className="text-sm font-medium leading-tight">{item.title}</p>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.summary}</p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[10px] text-muted-foreground">{item.source}</span>
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-700 border-emerald-200">✓ {item.source}</Badge>
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <span className="text-[10px] text-muted-foreground">{format(new Date(item.published_at), 'dd MMM yyyy', { locale: es })}</span>
                       </div>

@@ -64,11 +64,23 @@ export function EnergyRegulationsPanel() {
   const fetchRegulations = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('energy-ai-recommendation', {
-        body: { action: 'get_regulations', params: { scope: scope !== 'all' ? scope : undefined, search } },
+      // Primary: fetch from verified regulations backend
+      const { data, error } = await supabase.functions.invoke('energy-news-ingestion', {
+        body: { action: 'list', filters: { limit: 30 } },
       });
-      if (!error && data?.success && Array.isArray(data.data)) {
-        setRegulations(data.data);
+      if (!error && data?.success && Array.isArray(data.regulations) && data.regulations.length > 0) {
+        setRegulations(data.regulations.map((r: any) => ({
+          id: r.id,
+          title: r.title,
+          summary: r.ai_summary || r.summary || '',
+          scope: r.category === 'europea' ? 'europea' : r.category === 'autonomica' ? 'autonomica' : r.category === 'local' ? 'local' : 'estatal',
+          category: r.category || 'general',
+          effective_date: r.effective_date || r.created_at,
+          source: r.source_name || 'Fuente oficial',
+          url: r.source_url || undefined,
+          applies_to: r.tags || [],
+          tags: r.tags || [],
+        })));
       } else {
         setRegulations(getSampleRegulations());
       }
