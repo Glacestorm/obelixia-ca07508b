@@ -175,6 +175,35 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
     }));
   }, [filteredCases]);
 
+  // Savings evolution by month (aggregated from case created_at)
+  const savingsEvolution = useMemo(() => {
+    const byMonth: Record<string, { month: string; estimado: number; validado: number }> = {};
+    filteredCases.forEach(c => {
+      const d = new Date(c.created_at);
+      const key = format(d, 'yyyy-MM');
+      const label = format(d, 'MMM yy', { locale: es });
+      if (!byMonth[key]) byMonth[key] = { month: label, estimado: 0, validado: 0 };
+      byMonth[key].estimado += totalSavings(c);
+      byMonth[key].validado += totalValidated(c);
+    });
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v);
+  }, [filteredCases]);
+
+  // Operational funnel
+  const operationalFunnel = useMemo(() => {
+    const stages = ['intake', 'analysis', 'proposal', 'negotiation', 'documentation', 'switching', 'validation', 'completed'];
+    const stageLabels: Record<string, string> = {
+      intake: 'Entrada', analysis: 'Análisis', proposal: 'Propuesta', negotiation: 'Negociación',
+      documentation: 'Documentación', switching: 'Cambio', validation: 'Validación', completed: 'Cerrado',
+    };
+    return stages.map(s => ({
+      stage: stageLabels[s] || s,
+      count: filteredCases.filter(c => c.status === s).length,
+    })).filter(s => s.count > 0);
+  }, [filteredCases]);
+
   const fmtK = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toLocaleString('es-ES');
   const fmtDate = (d: string | null) => d ? format(new Date(d), 'dd/MM/yy', { locale: es }) : '—';
 
@@ -391,7 +420,26 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
             </Card>
           </div>
 
-          {/* Expiry by period */}
+          {/* Savings evolution */}
+          {savingsEvolution.length > 1 && (
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Evolución mensual del ahorro</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={savingsEvolution}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                    <Tooltip formatter={(v: number) => `${v.toLocaleString('es-ES')} €`} />
+                    <Area type="monotone" dataKey="estimado" name="Estimado" fill="hsl(var(--primary) / 0.2)" stroke="hsl(var(--primary))" strokeWidth={2} />
+                    <Area type="monotone" dataKey="validado" name="Validado" fill="hsl(142, 71%, 45%, 0.2)" stroke="hsl(142, 71%, 45%)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Expiry + Funnel */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Vencimientos por período</CardTitle></CardHeader>
@@ -408,8 +456,25 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
               </CardContent>
             </Card>
 
-            {companyIds.length > 0 && (
-              <SmartActionsPanel companyId={companyIds[0]} onNavigateToCase={onNavigateToCase} />
+            {operationalFunnel.length > 0 ? (
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Embudo operativo</CardTitle></CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={operationalFunnel} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+                      <YAxis type="category" dataKey="stage" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} width={90} />
+                      <Tooltip />
+                      <Bar dataKey="count" name="Expedientes" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            ) : (
+              companyIds.length > 0 && (
+                <SmartActionsPanel companyId={companyIds[0]} onNavigateToCase={onNavigateToCase} />
+              )
             )}
           </div>
         </TabsContent>

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  Link2, ExternalLink, Copy, XCircle, Plus, CheckCircle2, Loader2, Shield
+  Link2, ExternalLink, Copy, XCircle, Plus, CheckCircle2, Loader2, Shield, Eye
 } from 'lucide-react';
 import { useEnergyClientPortal, PortalToken } from '@/hooks/erp/useEnergyClientPortal';
 import { format } from 'date-fns';
@@ -43,10 +43,15 @@ export function ClientPortalManager({ caseId, companyId }: Props) {
     }
   };
 
+  const getPortalUrl = (token: string) => `${window.location.origin}/portal-cliente?portal_token=${token}`;
+
   const copyLink = (token: string) => {
-    const url = `${window.location.origin}/portal-cliente?portal_token=${token}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(getPortalUrl(token));
     toast.success('Enlace copiado al portapapeles');
+  };
+
+  const openPortal = (token: string) => {
+    window.open(getPortalUrl(token), '_blank', 'noopener,noreferrer');
   };
 
   const fmtDate = (d: string) => {
@@ -100,10 +105,13 @@ export function ClientPortalManager({ caseId, companyId }: Props) {
                   <div className="flex items-center gap-1">
                     {t.is_active && !expired && (
                       <>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyLink(t.token)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Abrir portal" onClick={() => openPortal(t.token)}>
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Copiar enlace" onClick={() => copyLink(t.token)}>
                           <Copy className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => revokeToken(t.id)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" title="Revocar" onClick={() => revokeToken(t.id)}>
                           <XCircle className="h-3.5 w-3.5" />
                         </Button>
                       </>

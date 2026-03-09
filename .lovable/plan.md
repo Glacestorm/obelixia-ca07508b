@@ -1,84 +1,61 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium
 
-## Plan: Complete Energy 360 Multi-Energy Consolidation
+## Estado de Implementación
 
-After thorough codebase review, the system is already well-structured. The main gaps are:
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-1. **Edge function `energy-client-portal` lacks `download` and `regulatory_chat` action handlers** -- the client portal UI calls these but the function only handles the default data fetch
-2. **Edge function `energy-ai-recommendation` lacks `get_energy_news`, `get_regulations`, and `regulatory_chat` action handlers** -- the News and Regulations panels call these but fall back to sample data
-3. **No portal link preview/open-in-new-window** from within the admin case management
-4. **No document download support** in the portal edge function
+## Premium Phases — Enterprise Differentiators
 
-### Tasks
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-#### Task 1: Upgrade `energy-client-portal` Edge Function
-Add two new action handlers to the existing function:
-- **`download` action**: Accepts `filePath`, validates it belongs to the case's token scope, generates a signed URL via Supabase Storage, returns it
-- **Default (no action)**: Keep existing behavior as-is
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-#### Task 2: Upgrade `energy-ai-recommendation` Edge Function  
-Add action handlers for the News/Regulations panels:
-- **`get_energy_news`**: Use Lovable AI to generate current energy sector news based on category/search params
-- **`get_regulations`**: Use Lovable AI to generate relevant regulations by scope
-- **`regulatory_chat`**: Accept a question + context, return an AI-powered answer about energy regulations
-- Keep existing recommendation logic untouched
+## FASE 2 — Completada ✅
 
-#### Task 3: Add Portal Link Preview in Admin
-In `ClientPortalManager.tsx`, add:
-- Button to open the portal in a new tab/window with the token URL
-- Inline preview iframe option for quick visualization
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-#### Task 4: Enhance Executive Dashboard
-Add missing elements:
-- **Savings evolution chart** (monthly aggregated over time from case creation dates)
-- **Operational funnel** showing cases flowing through workflow stages
-- Ensure `potencia` tab for power optimization recommendations link
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
-#### Task 5: Portal Client - Add Report/Informe Tab
-The portal currently shows proposals but not formal reports. Add:
-- Tab for "Informe" showing report data if available from `energy_reports` or similar
-- YoY/MoM comparison placeholders with the data available from invoices
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-### Technical Details
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-**Edge Function Changes:**
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-`supabase/functions/energy-client-portal/index.ts`:
-- Parse `action` from request body alongside `portalToken`
-- If `action === 'download'`: validate token, check `filePath` starts with expected prefix for the case, call `supabase.storage.from('energy-documents').createSignedUrl(filePath, 300)`, return `{ signedUrl }`
-- Otherwise: existing full data fetch logic
-
-`supabase/functions/energy-ai-recommendation/index.ts`:
-- Add switch cases for `get_energy_news`, `get_regulations`, `regulatory_chat`
-- Each uses the existing Lovable AI gateway pattern already in the file
-- `get_energy_news`: system prompt for energy sector news generation, returns JSON array
-- `get_regulations`: system prompt for Spanish energy regulation lookup, returns JSON array
-- `regulatory_chat`: system prompt as energy regulation expert, accepts question + context, returns `{ answer: string }`
-
-**Frontend Changes:**
-
-`ClientPortalManager.tsx`: Add "Abrir portal" button that constructs URL and opens `window.open()`
-
-`ElectricalExecutiveDashboard.tsx`: Add monthly savings evolution AreaChart using case `created_at` dates grouped by month
-
-`ClientPortalView.tsx`: Minor - add "Informe" tab that shows report summary data from proposals or a dedicated report endpoint
-
-### Files to Modify
-1. `supabase/functions/energy-client-portal/index.ts` - Add download action
-2. `supabase/functions/energy-ai-recommendation/index.ts` - Add news/regulations/chat actions  
-3. `src/components/erp/electrical/ClientPortalManager.tsx` - Add portal preview/open button
-4. `src/components/erp/electrical/ElectricalExecutiveDashboard.tsx` - Add savings evolution + funnel charts
-5. `src/components/erp/electrical/ClientPortalView.tsx` - Add informe tab + YoY comparison
-
-### What Becomes Fully Multi-Energy
-- Executive Dashboard: All KPIs, charts, rankings, exports
-- Client Portal: Contracts, invoices, gas, solar, savings, alerts, market, proposals, downloads
-- News Panel: AI-powered real content instead of sample data
-- Regulations Panel: AI-powered real regulatory answers
-
-### What Remains Partial (Premium Roadmap)
-- Email/WhatsApp proactive alerts (requires external integration)
-- Scheduled PDF/CSV report delivery (needs cron job)
-- Extended audit (section-level view tracking, read time)
-- Sector benchmarking (needs external data source)
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
