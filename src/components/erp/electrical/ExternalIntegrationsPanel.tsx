@@ -1,7 +1,8 @@
 /**
  * ExternalIntegrationsPanel - Datadis, indexed prices, market data with credential config
+ * Persisted via integration_credentials table
  */
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,15 @@ interface Integration {
   features: string[];
   configurable: boolean;
   fields?: { key: string; label: string; type: string; placeholder: string }[];
+}
+
+interface PersistedStatus {
+  provider: string;
+  status: string;
+  health_status: string;
+  last_validated_at: string | null;
+  masked_credentials: Record<string, string>;
+  configured_at: string | null;
 }
 
 const INTEGRATIONS: Integration[] = [
@@ -107,26 +117,6 @@ const INTEGRATIONS: Integration[] = [
       'Datos regulatorios actualizados',
     ],
   },
-  {
-    id: 'datadis',
-    name: 'Datadis',
-    description: 'Acceso a datos de consumo real de distribuidoras españolas vía API Datadis.',
-    icon: Database,
-    status: 'stub',
-    statusLabel: 'Preparado (requiere credenciales)',
-    configurable: true,
-    fields: [
-      { key: 'username', label: 'Usuario Datadis', type: 'text', placeholder: 'tu-usuario@email.com' },
-      { key: 'password', label: 'Contraseña', type: 'password', placeholder: '••••••••' },
-      { key: 'nif', label: 'NIF/CIF autorizado', type: 'text', placeholder: 'B12345678' },
-    ],
-    features: [
-      'Descarga automática de consumo horario',
-      'Validación de CUPS con datos reales',
-      'Histórico de potencias maximetradas',
-      'Sincronización automática mensual',
-    ],
-  },
 ];
 
 export function ExternalIntegrationsPanel() {
@@ -134,9 +124,33 @@ export function ExternalIntegrationsPanel() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
-  const [configured, setConfigured] = useState<Set<string>>(new Set());
+  const [persistedStatuses, setPersistedStatuses] = useState<Map<string, PersistedStatus>>(new Map());
+  const [loading, setLoading] = useState(true);
 
   const currentIntegration = INTEGRATIONS.find(i => i.id === configuring);
+
+  // Hydrate from backend on mount
+  const fetchStatuses = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('external-integrations', {
+        body: { action: 'get_status', provider: '' },
+      });
+      if (error) throw error;
+      if (data?.success && data?.integrations) {
+        const map = new Map<string, PersistedStatus>();
+        for (const integration of data.integrations) {
+          map.set(integration.provider, integration);
+        }
+        setPersistedStatuses(map);
+      }
+    } catch (err) {
+      console.error('[ExternalIntegrationsPanel] fetchStatuses error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchStatuses(); }, [fetchStatuses]);
 
   const handleOpenConfig = (integrationId: string) => {
     setFormData({});
@@ -148,13 +162,17 @@ export function ExternalIntegrationsPanel() {
     setSaving(true);
     try {
       const { data, error } = await supabase.functions.invoke('external-integrations', {
-        body: { action: 'connect', provider: currentIntegration.id, config: formData },
+        body: {
+          action: 'save_credentials',
+          provider: currentIntegration.id,
+          credentials: formData,
+        },
       });
       if (error) throw error;
       if (data?.success) {
-        setConfigured(prev => new Set([...prev, currentIntegration.id]));
         toast.success(`Credenciales de ${currentIntegration.name} guardadas`);
         setConfiguring(null);
+        await fetchStatuses(); // Re-hydrate
       }
     } catch (err) {
       toast.error('Error al guardar credenciales');
@@ -167,12 +185,17 @@ export function ExternalIntegrationsPanel() {
     setTesting(integrationId);
     try {
       const { data, error } = await supabase.functions.invoke('external-integrations', {
-        body: { action: 'check_health', integrationId },
+        body: { action: 'test_connection', provider: integrationId },
       });
       if (error) throw error;
       if (data?.success) {
-        const health = data.health?.[0];
-        toast.success(`${integrationId}: Conexión OK · Latencia ${health?.latency_ms || '?'}ms`);
+        const result = data.test_result;
+        if (result.ok) {
+          toast.success(`${integrationId}: ${result.message} · ${result.latency_ms}ms`);
+        } else {
+          toast.error(`${integrationId}: ${result.message}`);
+        }
+        await fetchStatuses(); // Refresh health status
       }
     } catch {
       toast.error('Error al probar la conexión');
@@ -194,12 +217,20 @@ export function ExternalIntegrationsPanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {INTEGRATIONS.map(integration => {
           const Icon = integration.icon;
-          const isConfigured = configured.has(integration.id);
+          const persisted = persistedStatuses.get(integration.id);
+          const isConfigured = persisted?.status === 'configured';
           const effectiveStatus = isConfigured ? 'ready' : integration.status;
-          const effectiveLabel = isConfigured ? 'Configurado' : integration.statusLabel;
+          const healthStatus = persisted?.health_status;
+
+          let effectiveLabel = integration.statusLabel;
+          if (isConfigured) {
+            if (healthStatus === 'healthy') effectiveLabel = 'Configurado ✓';
+            else if (healthStatus === 'error') effectiveLabel = 'Configurado (error conexión)';
+            else effectiveLabel = 'Configurado';
+          }
 
           return (
-            <Card key={integration.id}>
+            <Card key={`${integration.id}-${integration.name}`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -221,6 +252,18 @@ export function ExternalIntegrationsPanel() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">{integration.description}</p>
+                {isConfigured && persisted?.last_validated_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Última validación: {new Date(persisted.last_validated_at).toLocaleString('es-ES')}
+                  </p>
+                )}
+                {isConfigured && persisted?.masked_credentials && (
+                  <div className="text-xs text-muted-foreground space-y-0.5">
+                    {Object.entries(persisted.masked_credentials).map(([key, val]) => (
+                      <div key={key}><span className="font-medium">{key}:</span> {val}</div>
+                    ))}
+                  </div>
+                )}
                 <Separator />
                 <ul className="space-y-1">
                   {integration.features.map((f, i) => (
@@ -233,7 +276,8 @@ export function ExternalIntegrationsPanel() {
                 <div className="flex gap-2">
                   {integration.configurable && (
                     <Button variant="outline" size="sm" className="flex-1" onClick={() => handleOpenConfig(integration.id)}>
-                      <Settings className="h-3.5 w-3.5 mr-1" /> Configurar credenciales
+                      <Settings className="h-3.5 w-3.5 mr-1" />
+                      {isConfigured ? 'Reconfigurar' : 'Configurar credenciales'}
                     </Button>
                   )}
                   {(effectiveStatus === 'ready' || isConfigured) && (
@@ -270,7 +314,7 @@ export function ExternalIntegrationsPanel() {
               </div>
             ))}
             <p className="text-xs text-muted-foreground">
-              Las credenciales se almacenan cifradas y solo se usan para las sincronizaciones automáticas.
+              Las credenciales se almacenan cifradas en la base de datos y persisten entre sesiones.
             </p>
           </div>
           <DialogFooter>
