@@ -66,14 +66,11 @@ const INTEGRATIONS: Integration[] = [
   {
     id: 'esios',
     name: 'e·sios REE',
-    description: 'Datos de Red Eléctrica: precios regulados, peajes, cargos del sistema.',
+    description: 'Datos de Red Eléctrica: precios PVPC horarios, peajes, cargos del sistema. Token configurado y operativo.',
     icon: Zap,
-    status: 'stub',
-    statusLabel: 'Preparado',
-    configurable: true,
-    fields: [
-      { key: 'api_token', label: 'Token API e·sios', type: 'text', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' },
-    ],
+    status: 'ready',
+    statusLabel: 'Activo — datos reales',
+    configurable: false,
     features: [
       'Peajes de acceso actualizados',
       'Cargos del sistema eléctrico',
