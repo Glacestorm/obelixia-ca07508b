@@ -1,24 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { decode as base64Decode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
-
-/**
- * Energy Signature Provider Adapter
- * 
- * Supports:
- * - internal: Simple acceptance with evidence hash (ACTIVE)
- * - signaturit: Signaturit sandbox/production API (READY when SIGNATURIT_TOKEN configured)
- * 
- * Actions:
- * - request_signature: Create signature request
- * - check_status: Poll provider for status update
- * - callback: Handle provider webhook callback
- * - download_evidence: Get signed document/evidence
- */
 
 interface SignatureRequest {
   action: 'request_signature' | 'check_status' | 'callback' | 'download_evidence' | 'list_providers';
@@ -31,7 +19,7 @@ interface SignatureRequest {
     signer_email: string;
     signer_nif?: string;
     document_name?: string;
-    document_content?: string;
+    document_base64?: string; // PDF as base64
     signature_type?: 'simple' | 'advanced' | 'qualified';
     expiry_days?: number;
     callback_url?: string;
@@ -77,13 +65,7 @@ serve(async (req) => {
             signature_types: ['simple', 'advanced', 'qualified'],
             description: SIGNATURIT_TOKEN
               ? `Signaturit ${SIGNATURIT_ENV} activo. Firma electrónica avanzada/cualificada eIDAS.`
-              : 'Requiere SIGNATURIT_TOKEN. Soporta firma avanzada y cualificada eIDAS.',
-            activation_steps: SIGNATURIT_TOKEN ? [] : [
-              '1. Crear cuenta en https://app.sandbox.signaturit.com',
-              '2. Obtener API Token en Settings → API',
-              '3. Configurar secret SIGNATURIT_TOKEN en el backend',
-              '4. Probar con firma sandbox antes de producción',
-            ],
+              : 'Requiere SIGNATURIT_TOKEN.',
           },
         ],
       }), {
@@ -101,51 +83,75 @@ serve(async (req) => {
             success: false,
             error: 'SIGNATURIT_TOKEN no configurado',
             activation_required: true,
-            steps: [
-              '1. Registrarse en https://app.sandbox.signaturit.com',
-              '2. Obtener token API en Settings → API',
-              '3. Añadir secret SIGNATURIT_TOKEN al backend',
-            ],
           }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
-        // Signaturit API: Create signature request
         console.log(`[energy-signature] Creating Signaturit ${SIGNATURIT_ENV} signature for ${params.signer_email}`);
 
-        const signaturitBody: Record<string, unknown> = {
-          recipients: [{
-            name: params.signer_name,
-            email: params.signer_email,
-            ...(params.signer_nif ? { widgets: [{ type: 'text', name: 'nif', default: params.signer_nif }] } : {}),
-          }],
-          name: params.document_name || `Propuesta energética - ${params.case_id}`,
-          delivery_type: 'email',
-          branding_id: null,
-          expire_time: params.expiry_days || 30,
-          data: {
-            proposal_id: params.proposal_id,
-            case_id: params.case_id,
-            source: 'energia-360',
-          },
+        // Build multipart form data — Signaturit requires file upload
+        const boundary = `----FormBoundary${crypto.randomUUID().replace(/-/g, '')}`;
+        const docName = params.document_name || `Propuesta-${params.case_id}`;
+
+        // Generate a minimal PDF if no base64 provided
+        let pdfBytes: Uint8Array;
+        if (params.document_base64) {
+          pdfBytes = base64Decode(params.document_base64);
+        } else {
+          // Create minimal valid PDF with proposal info
+          pdfBytes = generateMinimalPDF(docName, params.signer_name, params.case_id, params.proposal_id);
+        }
+
+        // Build multipart body
+        const parts: string[] = [];
+        const addField = (name: string, value: string) => {
+          parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}`);
         };
 
-        // If we have document content, send as file; otherwise create from template
+        addField('recipients[0][name]', params.signer_name);
+        addField('recipients[0][email]', params.signer_email);
+        if (params.signer_nif) {
+          addField('recipients[0][widgets][0][type]', 'text');
+          addField('recipients[0][widgets][0][name]', 'nif');
+          addField('recipients[0][widgets][0][default]', params.signer_nif);
+        }
+        addField('delivery_type', 'email');
+        addField('name', docName);
+        addField('expire_time', String(params.expiry_days || 30));
+        addField('data[proposal_id]', params.proposal_id);
+        addField('data[case_id]', params.case_id);
+        addField('data[source]', 'energia-360');
+
+        // Combine text parts + file part
+        const textPart = parts.join('\r\n') + '\r\n';
+        const filePreamble = `--${boundary}\r\nContent-Disposition: form-data; name="files[0]"; filename="${docName}.pdf"\r\nContent-Type: application/pdf\r\n\r\n`;
+        const fileEnd = `\r\n--${boundary}--\r\n`;
+
+        const textEncoder = new TextEncoder();
+        const preambleBytes = textEncoder.encode(textPart + filePreamble);
+        const endBytes = textEncoder.encode(fileEnd);
+
+        // Concatenate into single Uint8Array
+        const bodyBytes = new Uint8Array(preambleBytes.length + pdfBytes.length + endBytes.length);
+        bodyBytes.set(preambleBytes, 0);
+        bodyBytes.set(pdfBytes, preambleBytes.length);
+        bodyBytes.set(endBytes, preambleBytes.length + pdfBytes.length);
+
         const response = await fetch(`${SIGNATURIT_BASE}/v3/signatures.json`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${SIGNATURIT_TOKEN}`,
-            'Content-Type': 'application/json',
+            'Content-Type': `multipart/form-data; boundary=${boundary}`,
           },
-          body: JSON.stringify(signaturitBody),
+          body: bodyBytes,
         });
 
         if (!response.ok) {
           const errBody = await response.text();
           console.error(`[energy-signature] Signaturit error ${response.status}: ${errBody}`);
-          throw new Error(`Signaturit API error: ${response.status}`);
+          throw new Error(`Signaturit API error: ${response.status} - ${errBody}`);
         }
 
         const sigData = await response.json();
@@ -169,7 +175,7 @@ serve(async (req) => {
             metadata: {
               signaturit_env: SIGNATURIT_ENV,
               signaturit_id: sigData.id,
-              signaturit_status: sigData.status,
+              signaturit_status: sigData.status || 'queued',
               created_via: 'energy-signature-provider',
             },
           }])
@@ -177,6 +183,27 @@ serve(async (req) => {
           .single();
 
         if (dbErr) console.warn('[energy-signature] DB persist warning:', dbErr);
+
+        // Audit log
+        try {
+          await supabase.from('energy_audit_log').insert([{
+            case_id: params.case_id,
+            company_id: 'system',
+            action: 'signature_requested_signaturit',
+            entity_type: 'energy_signatures',
+            entity_id: dbSig?.id || sigData.id,
+            details: {
+              provider: 'signaturit',
+              env: SIGNATURIT_ENV,
+              signer_email: params.signer_email,
+              signaturit_id: sigData.id,
+            },
+            performed_by: null,
+            performed_at: new Date().toISOString(),
+          }]);
+        } catch (auditErr) {
+          console.warn('[energy-signature] audit log warning:', auditErr);
+        }
 
         return new Response(JSON.stringify({
           success: true,
@@ -240,21 +267,17 @@ serve(async (req) => {
 
       const sigRecord = sig as any;
 
-      // If Signaturit, poll the API
       if (sigRecord.provider === 'signaturit' && SIGNATURIT_TOKEN && sigRecord.provider_reference) {
         try {
           const response = await fetch(
             `${SIGNATURIT_BASE}/v3/signatures/${sigRecord.provider_reference}.json`,
-            {
-              headers: { 'Authorization': `Bearer ${SIGNATURIT_TOKEN}` },
-            }
+            { headers: { 'Authorization': `Bearer ${SIGNATURIT_TOKEN}` } }
           );
 
           if (response.ok) {
             const providerData = await response.json();
             const providerStatus = providerData.status;
 
-            // Map Signaturit status to our status
             const statusMap: Record<string, string> = {
               'ready': 'sent',
               'signing': 'viewed',
@@ -282,6 +305,24 @@ serve(async (req) => {
                   },
                 })
                 .eq('id', signature_id);
+
+              // Audit the status change
+              try {
+                await supabase.from('energy_audit_log').insert([{
+                  case_id: sigRecord.case_id,
+                  company_id: 'system',
+                  action: 'signature_status_changed',
+                  entity_type: 'energy_signatures',
+                  entity_id: signature_id,
+                  details: {
+                    from: sigRecord.status,
+                    to: mappedStatus,
+                    provider_status: providerStatus,
+                  },
+                  performed_by: null,
+                  performed_at: new Date().toISOString(),
+                }]);
+              } catch (_) { /* non-critical */ }
             }
 
             return new Response(JSON.stringify({
@@ -293,6 +334,8 @@ serve(async (req) => {
             }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
+          } else {
+            await response.text(); // consume body
           }
         } catch (pollErr) {
           console.warn('[energy-signature] Provider poll error:', pollErr);
@@ -335,7 +378,7 @@ serve(async (req) => {
             : newStatus === 'expired' ? { expired_at: new Date().toISOString() }
             : {};
 
-          await supabase.from('energy_signatures')
+          const { data: updated } = await supabase.from('energy_signatures')
             .update({
               status: newStatus,
               ...timestampField,
@@ -345,7 +388,25 @@ serve(async (req) => {
                 callback_data,
               },
             })
-            .eq('provider_reference', sigId);
+            .eq('provider_reference', sigId)
+            .select()
+            .single();
+
+          // Audit
+          if (updated) {
+            try {
+              await supabase.from('energy_audit_log').insert([{
+                case_id: (updated as any).case_id,
+                company_id: 'system',
+                action: `signature_callback_${eventType}`,
+                entity_type: 'energy_signatures',
+                entity_id: (updated as any).id,
+                details: { event: eventType, new_status: newStatus, callback_data },
+                performed_by: null,
+                performed_at: new Date().toISOString(),
+              }]);
+            } catch (_) { /* non-critical */ }
+          }
         }
       }
 
@@ -367,22 +428,67 @@ serve(async (req) => {
 
       if (sigRecord.provider === 'signaturit' && SIGNATURIT_TOKEN && sigRecord.provider_reference) {
         try {
-          const response = await fetch(
-            `${SIGNATURIT_BASE}/v3/signatures/${sigRecord.provider_reference}/documents/download/signed`,
-            {
-              headers: { 'Authorization': `Bearer ${SIGNATURIT_TOKEN}` },
-            }
+          // First get the signature to find document IDs
+          const sigResp = await fetch(
+            `${SIGNATURIT_BASE}/v3/signatures/${sigRecord.provider_reference}.json`,
+            { headers: { 'Authorization': `Bearer ${SIGNATURIT_TOKEN}` } }
           );
 
-          if (response.ok) {
-            return new Response(JSON.stringify({
-              success: true,
-              has_document: true,
-              message: 'Documento firmado disponible',
-              download_url: `${SIGNATURIT_BASE}/v3/signatures/${sigRecord.provider_reference}/documents/download/signed`,
-            }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+          if (sigResp.ok) {
+            const sigDetails = await sigResp.json();
+            const docId = sigDetails.documents?.[0]?.id;
+
+            if (docId) {
+              // Download signed document
+              const dlResp = await fetch(
+                `${SIGNATURIT_BASE}/v3/signatures/${sigRecord.provider_reference}/documents/${docId}/download/signed`,
+                { headers: { 'Authorization': `Bearer ${SIGNATURIT_TOKEN}` } }
+              );
+
+              if (dlResp.ok) {
+                const pdfBuffer = await dlResp.arrayBuffer();
+                const pdfBase64 = base64Encode(new Uint8Array(pdfBuffer));
+
+                return new Response(JSON.stringify({
+                  success: true,
+                  has_document: true,
+                  document_base64: pdfBase64,
+                  content_type: 'application/pdf',
+                  filename: `signed-${sigRecord.provider_reference}.pdf`,
+                  message: 'Documento firmado descargado',
+                }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+              } else {
+                await dlResp.text();
+              }
+            }
+
+            // Try audit trail
+            const auditResp = await fetch(
+              `${SIGNATURIT_BASE}/v3/signatures/${sigRecord.provider_reference}/documents/${docId || 'unknown'}/download/audit_trail`,
+              { headers: { 'Authorization': `Bearer ${SIGNATURIT_TOKEN}` } }
+            );
+
+            if (auditResp.ok) {
+              const auditBuffer = await auditResp.arrayBuffer();
+              const auditBase64 = base64Encode(new Uint8Array(auditBuffer));
+
+              return new Response(JSON.stringify({
+                success: true,
+                has_document: true,
+                document_base64: auditBase64,
+                content_type: 'application/pdf',
+                filename: `audit-trail-${sigRecord.provider_reference}.pdf`,
+                is_audit_trail: true,
+              }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            } else {
+              await auditResp.text();
+            }
+          } else {
+            await sigResp.text();
           }
         } catch (dlErr) {
           console.warn('[energy-signature] Download error:', dlErr);
@@ -421,4 +527,62 @@ async function generateHash(input: string): Promise<string> {
   const data = encoder.encode(input);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Generate a minimal valid PDF with proposal information.
+ * This is used when no PDF is provided by the client.
+ */
+function generateMinimalPDF(title: string, signerName: string, caseId: string, proposalId: string): Uint8Array {
+  const now = new Date().toISOString().slice(0, 10);
+  const content = [
+    `PROPUESTA COMERCIAL ENERGETICA`,
+    ``,
+    `Documento: ${title}`,
+    `Fecha: ${now}`,
+    `Expediente: ${caseId}`,
+    `Referencia: ${proposalId}`,
+    `Firmante: ${signerName}`,
+    ``,
+    `Este documento requiere su firma electronica.`,
+    `Al firmar, acepta las condiciones de la propuesta energetica.`,
+  ].join('\n');
+
+  // Build a minimal valid PDF manually
+  const textEncoder = new TextEncoder();
+
+  const streamContent = `BT /F1 12 Tf 50 750 Td (${escPdf(title)}) Tj ET\n` +
+    `BT /F1 10 Tf 50 720 Td (Fecha: ${now}) Tj ET\n` +
+    `BT /F1 10 Tf 50 700 Td (Expediente: ${escPdf(caseId)}) Tj ET\n` +
+    `BT /F1 10 Tf 50 680 Td (Referencia: ${escPdf(proposalId)}) Tj ET\n` +
+    `BT /F1 10 Tf 50 660 Td (Firmante: ${escPdf(signerName)}) Tj ET\n` +
+    `BT /F1 10 Tf 50 620 Td (Este documento requiere su firma electronica.) Tj ET\n` +
+    `BT /F1 10 Tf 50 600 Td (Al firmar, acepta las condiciones de la propuesta.) Tj ET\n`;
+
+  const objects = [
+    `1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj`,
+    `2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj`,
+    `3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj`,
+    `4 0 obj<</Length ${streamContent.length}>>stream\n${streamContent}endstream\nendobj`,
+    `5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj`,
+  ];
+
+  let pdf = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  for (const obj of objects) {
+    offsets.push(pdf.length);
+    pdf += obj + '\n';
+  }
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const off of offsets) {
+    pdf += `${String(off).padStart(10, '0')} 00000 n \n`;
+  }
+  pdf += `trailer<</Size ${objects.length + 1}/Root 1 0 R>>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return textEncoder.encode(pdf);
+}
+
+function escPdf(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
