@@ -80,6 +80,9 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
   const [filters, setFilters] = useState<Filters>({ energyType: 'all', status: 'all', companyId: 'all', dateRange: 'all' });
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('kpis');
+  const { data: mibgasData, fetchMibgasData } = useEnergyMibgas();
+
+  useEffect(() => { fetchMibgasData(); }, []);
 
   const loadCompanies = useCallback(async () => {
     if (!user?.id) return;
