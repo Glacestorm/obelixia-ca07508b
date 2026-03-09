@@ -165,14 +165,16 @@ serve(async (req) => {
 
       console.log(`[energy-esios] Fetching spot (indicator ${indicatorId}) for ${targetDate}`);
 
+      const esiosHeaders2 = {
+        'Authorization': `Token token="${ESIOS_TOKEN}"`,
+        'Accept': 'application/json; application/vnd.esios-api-v1+json',
+        'Content-Type': 'application/json',
+        'x-api-key': ESIOS_TOKEN,
+      };
+
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `Token token="${ESIOS_TOKEN}"`,
-          'Accept': 'application/json; application/vnd.esios-api-v2+json',
-          'Content-Type': 'application/json',
-          'Host': 'api.esios.ree.es',
-        },
-        signal: AbortSignal.timeout(10000),
+        headers: esiosHeaders2,
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!response.ok) {
