@@ -11,7 +11,7 @@ import {
   LayoutDashboard, FolderOpen, Zap, FileText, FileSignature, Users,
   BarChart3, Gauge, Lightbulb, FileBarChart, Eye, Settings,
   ChevronDown, ChevronRight, BoltIcon, GitCompareArrows, Building2, Plug,
-  Flame, Sun, Activity, TrendingUp, Layers
+  Flame, Sun, Activity, TrendingUp, Layers, Shield, Bell, Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
