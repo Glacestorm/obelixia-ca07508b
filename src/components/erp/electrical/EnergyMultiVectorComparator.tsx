@@ -118,35 +118,151 @@ export function EnergyMultiVectorComparator({ companyId, caseId }: Props) {
   const runAnalysis = useCallback(async () => {
     setAnalyzing(true);
     try {
-      // Call AI-powered recommendation engine
-      const { data, error } = await supabase.functions.invoke('energy-recommendation-engine', {
+      // Primary: call backend multi-vector comparator
+      const { data, error } = await supabase.functions.invoke('energy-multi-vector-comparator', {
         body: {
-          action: 'multi_vector_analysis',
-          scenario,
-          companyId,
-          caseId,
+          case_id: caseId || `scenario-${Date.now()}`,
+          energy_type: scenario.include_solar && scenario.include_gas ? 'mixed'
+            : scenario.include_solar ? 'solar'
+            : scenario.include_gas ? 'gas'
+            : 'electricity',
+          consumption: {
+            p1_kwh: scenario.elec_consumption_kwh,
+            p2_kwh: Math.round(scenario.elec_consumption_kwh * 0.7),
+            p3_kwh: Math.round(scenario.elec_consumption_kwh * 0.4),
+          },
+          power: {
+            p1_kw: scenario.elec_power_kw,
+            p2_kw: scenario.elec_power_kw,
+          },
+          current_cost: scenario.elec_current_cost,
+          billing_days: 30,
+          access_tariff: scenario.elec_tariff,
+          solar_kw_peak: scenario.include_solar ? scenario.solar_power_kwp : undefined,
+          solar_self_consumption_pct: scenario.include_solar ? scenario.solar_self_consumption_pct : undefined,
+          battery_kwh: scenario.solar_with_battery ? scenario.solar_battery_kwh : undefined,
+          gas_consumption_kwh: scenario.include_gas ? scenario.gas_consumption_kwh : undefined,
+          gas_current_cost: scenario.include_gas ? scenario.gas_current_cost : undefined,
         },
       });
 
-      if (error) throw error;
+      if (!error && data?.success) {
+        // Transform backend result to UI format
+        const backendResult = data;
+        const recommendations: RecommendationItem[] = [];
+        const alerts: AlertItem[] = [];
+        const breakdown: BreakdownItem[] = [];
 
-      if (data?.success && data?.data) {
-        setResult(data.data as ScenarioResult);
+        // Electricity breakdown from tariff results
+        const bestTariff = backendResult.best_tariff;
+        const elecSavings = bestTariff ? Math.round(bestTariff.savings * 12) : 0;
+        breakdown.push({
+          component: 'Energía eléctrica',
+          current: scenario.elec_current_cost * 12,
+          recommended: bestTariff ? Math.round(bestTariff.total_cost * 12) : scenario.elec_current_cost * 12,
+          savings: elecSavings,
+        });
+
+        if (bestTariff) {
+          recommendations.push({
+            type: 'electricity',
+            title: `Cambiar a ${bestTariff.tariff_name} (${bestTariff.supplier})`,
+            detail: `Ahorro ${bestTariff.savings_pct.toFixed(1)}%. ${bestTariff.notes || ''}`,
+            savings: elecSavings,
+            confidence: backendResult.confidence_score || 70,
+            priority: bestTariff.savings_pct > 10 ? 'high' : 'medium',
+          });
+        }
+
+        // Power recommendation
+        if (backendResult.recommended_power?.notes?.length > 0) {
+          backendResult.recommended_power.notes.forEach((note: string) => {
+            alerts.push({ type: 'warning', message: note });
+          });
+        }
+
+        // Solar scenario
+        let solarSavings = 0;
+        if (backendResult.solar_scenario) {
+          solarSavings = backendResult.solar_scenario.savings_estimate;
+          breakdown.push({
+            component: 'Autoconsumo solar',
+            current: 0,
+            recommended: -solarSavings,
+            savings: solarSavings,
+          });
+          recommendations.push({
+            type: 'solar',
+            title: 'Autoconsumo fotovoltaico',
+            detail: `Producción: ${backendResult.solar_scenario.annual_production_kwh} kWh/año. Payback: ${backendResult.solar_scenario.payback_years} años`,
+            savings: solarSavings,
+            confidence: 80,
+            priority: 'high',
+          });
+        }
+
+        // Gas scenario
+        let gasSavings = 0;
+        if (backendResult.gas_scenario?.best_gas) {
+          gasSavings = Math.round(backendResult.gas_scenario.best_gas.savings * 12);
+          breakdown.push({
+            component: 'Gas natural',
+            current: (scenario.gas_current_cost || 0) * 12,
+            recommended: Math.round(backendResult.gas_scenario.best_gas.cost * 12),
+            savings: gasSavings,
+          });
+          recommendations.push({
+            type: 'gas',
+            title: `Gas: ${backendResult.gas_scenario.best_gas.supplier}`,
+            detail: `Ahorro estimado ${gasSavings}€/año`,
+            savings: gasSavings,
+            confidence: 65,
+            priority: 'medium',
+          });
+        }
+
+        // Data quality alerts
+        if (!backendResult.data_quality?.has_real_market_data) {
+          alerts.push({ type: 'info', message: 'Precios de mercado: usando último dato disponible' });
+        }
+        if (backendResult.data_quality?.limitations?.length > 0) {
+          backendResult.data_quality.limitations.forEach((l: string) => {
+            alerts.push({ type: 'info', message: l });
+          });
+        }
+
+        const totalSavings = elecSavings + solarSavings + gasSavings;
+        const totalCurrent = scenario.elec_current_cost * 12 + (scenario.include_gas ? scenario.gas_current_cost * 12 : 0);
+
+        if (totalSavings > 0) {
+          alerts.push({ type: 'success', message: `Ahorro potencial total: ${totalSavings.toLocaleString()} €/año` });
+        }
+
+        setResult({
+          id: crypto.randomUUID(),
+          scenario: scenario.name,
+          elec_savings: elecSavings,
+          gas_savings: gasSavings,
+          solar_savings: solarSavings,
+          total_savings: totalSavings,
+          total_current_cost: totalCurrent,
+          total_recommended_cost: totalCurrent - totalSavings,
+          confidence: backendResult.confidence_score || 70,
+          recommendations: recommendations.sort((a, b) => b.savings - a.savings),
+          alerts,
+          breakdown,
+        });
         setActiveTab('results');
-        toast.success('Análisis multi-vector completado');
+        toast.success(`Análisis backend completado: ${backendResult.tariff_results?.length || 0} tarifas reales comparadas`);
       } else {
-        // Fallback to local calculation
-        const localResult = computeLocalAnalysis(scenario);
-        setResult(localResult);
-        setActiveTab('results');
-        toast.success('Análisis completado (cálculo local)');
+        throw new Error('Backend error');
       }
     } catch (err) {
-      console.warn('[MultiVectorComparator] AI analysis failed, using local calc:', err);
+      console.warn('[MultiVectorComparator] Backend analysis failed, using local calc:', err);
       const localResult = computeLocalAnalysis(scenario);
       setResult(localResult);
       setActiveTab('results');
-      toast.success('Análisis completado');
+      toast.info('Análisis completado (cálculo local — backend no disponible)');
     } finally {
       setAnalyzing(false);
     }

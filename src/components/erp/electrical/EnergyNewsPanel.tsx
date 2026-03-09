@@ -163,7 +163,7 @@ export function EnergyNewsPanel({ companyId }: Props) {
                       <p className="text-sm font-medium leading-tight">{item.title}</p>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.summary}</p>
                       <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[10px] text-muted-foreground">{item.source}</span>
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-700 border-emerald-200">✓ {item.source}</Badge>
                         <span className="text-[10px] text-muted-foreground">·</span>
                         <span className="text-[10px] text-muted-foreground">{format(new Date(item.published_at), 'dd MMM yyyy', { locale: es })}</span>
                       </div>

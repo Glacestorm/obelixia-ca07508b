@@ -209,14 +209,16 @@ serve(async (req) => {
 
       const url = `${esiosBaseUrl}/indicators/${indicatorId}?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&geo_ids[]=8741`;
 
+      const esiosHeaders3 = {
+        'Authorization': `Token token="${ESIOS_TOKEN}"`,
+        'Accept': 'application/json; application/vnd.esios-api-v1+json',
+        'Content-Type': 'application/json',
+        'x-api-key': ESIOS_TOKEN,
+      };
+
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `Token token="${ESIOS_TOKEN}"`,
-          'Accept': 'application/json; application/vnd.esios-api-v2+json',
-          'Content-Type': 'application/json',
-          'Host': 'api.esios.ree.es',
-        },
-        signal: AbortSignal.timeout(10000),
+        headers: esiosHeaders3,
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!response.ok) throw new Error(`ESIOS API error: ${response.status}`);
