@@ -116,6 +116,12 @@ export function EnergyMultiVectorComparator({ companyId, caseId }: Props) {
   const [result, setResult] = useState<ScenarioResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState('configure');
+  const { data: mibgasData, loading: mibgasLoading, fetchMibgasData } = useEnergyMibgas();
+
+  // Fetch MIBGAS when gas is included
+  useEffect(() => {
+    if (scenario.include_gas && !mibgasData) fetchMibgasData();
+  }, [scenario.include_gas]);
 
   const runAnalysis = useCallback(async () => {
     setAnalyzing(true);

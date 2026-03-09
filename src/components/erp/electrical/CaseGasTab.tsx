@@ -268,6 +268,61 @@ export function CaseGasTab({ caseId }: Props) {
           <TabsTrigger value="invoices" className="text-xs">Facturas ({invoices.length})</TabsTrigger>
         </TabsList>
 
+        {/* Market tab - MIBGAS detailed */}
+        <TabsContent value="market" className="mt-3">
+          <div className="space-y-4">
+            {mibgasData ? (
+              <>
+                {/* All products by category */}
+                {['spot', 'forward', 'index'].map(cat => {
+                  const products = getProductsByCategory(cat as any);
+                  if (products.length === 0) return null;
+                  const catLabels: Record<string, string> = { spot: 'Spot', forward: 'Futuros', index: 'Índices' };
+                  return (
+                    <Card key={cat}>
+                      <CardHeader className="pb-2"><CardTitle className="text-sm">{catLabels[cat]} PVB</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {products.map(p => (
+                            <div key={`${p.product}-${p.delivery}`} className="p-2 rounded-lg border bg-muted/30">
+                              <p className="text-[10px] text-muted-foreground truncate">{p.product}</p>
+                              <p className="text-xs text-muted-foreground">{p.delivery}</p>
+                              <p className="text-sm font-bold">{p.price_eur_mwh.toFixed(2)} €/MWh</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                {/* Price comparison chart */}
+                {getProductsByCategory('forward').length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">Curva forward PVB</CardTitle></CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={getProductsByCategory('forward')}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="delivery" fontSize={9} tick={{ fill: 'hsl(var(--muted-foreground))' }} angle={-30} textAnchor="end" height={50} />
+                          <YAxis fontSize={10} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                          <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`${v.toFixed(2)} €/MWh`]} />
+                          <Bar dataKey="price_eur_mwh" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} name="€/MWh" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : (
+              <Card className="border-dashed"><CardContent className="py-8 text-center">
+                <Globe className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Cargando datos de mercado MIBGAS...</p>
+                <Button variant="outline" size="sm" className="mt-2" onClick={fetchMibgasData}><RefreshCw className="h-3.5 w-3.5 mr-1" /> Obtener datos</Button>
+              </CardContent></Card>
+            )}
+          </div>
+        </TabsContent>
+
         {/* Overview */}
         <TabsContent value="overview" className="mt-3">
           {contracts.length === 0 && invoices.length === 0 ? (
