@@ -1,6 +1,7 @@
 /**
  * CaseGasTab - Professional gas management within a case
  * Contracts, invoices, consumption charts, cost analysis, KPIs
+ * Now with real MIBGAS market data integration
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,13 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import {
   Flame, FileText, FileSignature, Plus, Loader2, TrendingDown,
-  TrendingUp, Activity, BarChart3, Save, X, AlertTriangle, Calendar
+  TrendingUp, Activity, BarChart3, Save, X, AlertTriangle, Calendar,
+  RefreshCw, Globe, Clock
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, ReferenceLine
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
+import { useEnergyMibgas } from '@/hooks/erp/useEnergyMibgas';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -58,6 +61,10 @@ export function CaseGasTab({ caseId }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddContract, setShowAddContract] = useState(false);
+  const { data: mibgasData, loading: mibgasLoading, fetchMibgasData, getProductsByCategory } = useEnergyMibgas();
+
+  // Fetch MIBGAS on mount
+  useEffect(() => { fetchMibgasData(); }, []);
   const [contractForm, setContractForm] = useState({
     supplier: '', gas_tariff: '', distributor: '',
     start_date: '', end_date: '', gas_annual_consumption_kwh: '',
@@ -187,14 +194,134 @@ export function CaseGasTab({ caseId }: Props) {
         })}
       </div>
 
+      {/* MIBGAS Real Market Prices */}
+      <Card className="border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/20">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Globe className="h-4 w-4 text-blue-500" /> Mercado MIBGAS — Precios reales
+              {mibgasData?.data_quality === 'real' && <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-700 border-emerald-300">Dato real</Badge>}
+              {mibgasData?.data_quality === 'partial' && <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-300">Parcial</Badge>}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              {mibgasData?.last_updated && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {mibgasData.last_updated}
+                </span>
+              )}
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchMibgasData} disabled={mibgasLoading}>
+                <RefreshCw className={cn("h-3 w-3", mibgasLoading && "animate-spin")} />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {mibgasLoading && !mibgasData ? (
+            <div className="h-16 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+          ) : mibgasData ? (
+            <div className="space-y-3">
+              {/* Headline prices */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: 'Day Ahead ES', value: mibgasData.day_ahead_es, unit: '€/MWh', color: 'text-blue-600' },
+                  { label: 'Month Ahead ES', value: mibgasData.month_ahead_es, unit: '€/MWh', color: 'text-indigo-600' },
+                  { label: 'Day Ahead PT', value: mibgasData.day_ahead_pt, unit: '€/MWh', color: 'text-cyan-600' },
+                  { label: 'Variación', value: mibgasData.day_ahead_change_pct, unit: '%', color: mibgasData.day_ahead_change_pct && mibgasData.day_ahead_change_pct > 0 ? 'text-red-600' : 'text-emerald-600' },
+                ].map(item => (
+                  <div key={item.label} className="p-2 rounded-lg bg-background border">
+                    <p className="text-[10px] text-muted-foreground uppercase">{item.label}</p>
+                    <p className={cn("text-lg font-bold", item.color)}>
+                      {item.value != null ? `${item.value.toFixed(2)} ${item.unit}` : '—'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {/* Forward products */}
+              {getProductsByCategory('forward').length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Futuros PVB</p>
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+                    {getProductsByCategory('forward').slice(0, 5).map(p => (
+                      <div key={p.product} className="p-1.5 rounded bg-muted/50 text-center">
+                        <p className="text-[10px] text-muted-foreground truncate">{p.product}</p>
+                        <p className="text-xs font-semibold">{p.price_eur_mwh.toFixed(2)} €</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground">Fuente: MIBGAS vía Firecrawl • {mibgasData.source}</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground py-2">No se pudieron obtener datos de MIBGAS. <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={fetchMibgasData}>Reintentar</Button></p>
+          )}
+        </CardContent>
+      </Card>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview" className="text-xs">Resumen</TabsTrigger>
+          <TabsTrigger value="market" className="text-xs">Mercado</TabsTrigger>
           <TabsTrigger value="consumption" className="text-xs">Consumo</TabsTrigger>
           <TabsTrigger value="costs" className="text-xs">Costes</TabsTrigger>
           <TabsTrigger value="contracts" className="text-xs">Contratos ({contracts.length})</TabsTrigger>
           <TabsTrigger value="invoices" className="text-xs">Facturas ({invoices.length})</TabsTrigger>
         </TabsList>
+
+        {/* Market tab - MIBGAS detailed */}
+        <TabsContent value="market" className="mt-3">
+          <div className="space-y-4">
+            {mibgasData ? (
+              <>
+                {/* All products by category */}
+                {['spot', 'forward', 'index'].map(cat => {
+                  const products = getProductsByCategory(cat as any);
+                  if (products.length === 0) return null;
+                  const catLabels: Record<string, string> = { spot: 'Spot', forward: 'Futuros', index: 'Índices' };
+                  return (
+                    <Card key={cat}>
+                      <CardHeader className="pb-2"><CardTitle className="text-sm">{catLabels[cat]} PVB</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {products.map(p => (
+                            <div key={`${p.product}-${p.delivery}`} className="p-2 rounded-lg border bg-muted/30">
+                              <p className="text-[10px] text-muted-foreground truncate">{p.product}</p>
+                              <p className="text-xs text-muted-foreground">{p.delivery}</p>
+                              <p className="text-sm font-bold">{p.price_eur_mwh.toFixed(2)} €/MWh</p>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                {/* Price comparison chart */}
+                {getProductsByCategory('forward').length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">Curva forward PVB</CardTitle></CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={250}>
+                        <BarChart data={getProductsByCategory('forward')}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="delivery" fontSize={9} tick={{ fill: 'hsl(var(--muted-foreground))' }} angle={-30} textAnchor="end" height={50} />
+                          <YAxis fontSize={10} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                          <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`${v.toFixed(2)} €/MWh`]} />
+                          <Bar dataKey="price_eur_mwh" fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} name="€/MWh" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : (
+              <Card className="border-dashed"><CardContent className="py-8 text-center">
+                <Globe className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Cargando datos de mercado MIBGAS...</p>
+                <Button variant="outline" size="sm" className="mt-2" onClick={fetchMibgasData}><RefreshCw className="h-3.5 w-3.5 mr-1" /> Obtener datos</Button>
+              </CardContent></Card>
+            )}
+          </div>
+        </TabsContent>
 
         {/* Overview */}
         <TabsContent value="overview" className="mt-3">
