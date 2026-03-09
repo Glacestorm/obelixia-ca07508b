@@ -507,3 +507,9 @@ verify_jwt = true
 
 [functions.academia-content-enricher]
 verify_jwt = true
+
+[functions.energy-signature-provider]
+verify_jwt = false
+
+[functions.external-integrations]
+verify_jwt = true

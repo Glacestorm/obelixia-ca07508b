@@ -19055,6 +19055,7 @@ export type Database = {
           id: string
           ip_address: string | null
           metadata: Json | null
+          processed_events: Json | null
           proposal_id: string
           provider: string | null
           provider_envelope_id: string | null
@@ -19082,6 +19083,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          processed_events?: Json | null
           proposal_id: string
           provider?: string | null
           provider_envelope_id?: string | null
@@ -19109,6 +19111,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          processed_events?: Json | null
           proposal_id?: string
           provider?: string | null
           provider_envelope_id?: string | null
@@ -54483,6 +54486,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      integration_credentials: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          credentials_encrypted: Json
+          health_status: string | null
+          id: string
+          last_sync_at: string | null
+          last_validated_at: string | null
+          metadata: Json | null
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          credentials_encrypted?: Json
+          health_status?: string | null
+          id?: string
+          last_sync_at?: string | null
+          last_validated_at?: string | null
+          metadata?: Json | null
+          provider: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          credentials_encrypted?: Json
+          health_status?: string | null
+          id?: string
+          last_sync_at?: string | null
+          last_validated_at?: string | null
+          metadata?: Json | null
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       integration_mappings: {
         Row: {
