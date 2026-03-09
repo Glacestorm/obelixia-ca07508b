@@ -139,5 +139,13 @@ export function useEnergyProposalPDF() {
     }
   }, [generatePDF]);
 
-  return { generatePDF, downloadPDF, uploadPDF };
+  /** Get PDF as base64 string for API transmission */
+  const getBase64 = useCallback((proposal: EnergyProposal, ctx: ProposalPDFContext): string => {
+    const doc = generatePDF(proposal, ctx);
+    // output as base64 string (strip data URI prefix)
+    const dataUri = doc.output('datauristring');
+    return dataUri.split(',')[1] || '';
+  }, [generatePDF]);
+
+  return { generatePDF, downloadPDF, uploadPDF, getBase64 };
 }

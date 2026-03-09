@@ -26,7 +26,7 @@ interface Props { caseId: string; companyId: string; }
 
 export function CaseProposalTab({ caseId, companyId }: Props) {
   const { proposals, loading, error, createProposal, acceptProposal, rejectProposal, issueProposal, fetchProposals } = useEnergyProposals(caseId);
-  const { downloadPDF, uploadPDF } = useEnergyProposalPDF();
+  const { downloadPDF, uploadPDF, getBase64 } = useEnergyProposalPDF();
   const { energyCase } = useEnergyCase(caseId);
   const { log } = useEnergyAuditLog(companyId, caseId);
 
@@ -265,6 +265,13 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                         <Button size="sm" variant="default" onClick={async () => {
                           setActionLoading('sign-ext');
                           try {
+                            // Generate PDF as base64 for Signaturit
+                            const pdfBase64 = getBase64(p, {
+                              caseTitle: energyCase?.title,
+                              customerName: energyCase?.cups || undefined,
+                              address: energyCase?.address || undefined,
+                            });
+
                             const { data: sigResult, error: sigErr } = await supabase.functions.invoke('energy-signature-provider', {
                               body: {
                                 action: 'request_signature',
@@ -273,8 +280,9 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                                   proposal_id: p.id,
                                   case_id: caseId,
                                   signer_name: energyCase?.cups || 'Cliente',
-                                  signer_email: (energyCase as any)?.client_email || '',
+                                  signer_email: (energyCase as any)?.client_email || 'test@sandbox.signaturit.com',
                                   document_name: `Propuesta v${p.version} - ${energyCase?.title || caseId}`,
+                                  document_base64: pdfBase64,
                                   signature_type: 'advanced',
                                   expiry_days: 30,
                                 },
