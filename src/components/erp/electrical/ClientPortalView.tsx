@@ -425,7 +425,7 @@ export function ClientPortalView() {
         )}
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="resumen" className="text-xs">Resumen</TabsTrigger>
             <TabsTrigger value="ahorro" className="text-xs">Ahorro</TabsTrigger>
