@@ -224,30 +224,56 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
                       </>
                     )}
                     {p.status === 'accepted' && !p.signed_at && (
-                      <Button size="sm" variant="default" onClick={async () => {
-                        setActionLoading('sign');
-                        try {
-                          const { supabase } = await import('@/integrations/supabase/client');
-                          const { error: signErr } = await supabase.from('energy_proposals').update({
-                            signed_at: new Date().toISOString(),
-                            signed_by: energyCase?.cups || 'Cliente',
-                            signature_method: 'digital_acceptance',
-                          } as any).eq('id', p.id);
-                          if (signErr) throw signErr;
-                          log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'digital_acceptance' });
-                          await fetchProposals();
-                        } catch (err) {
-                          console.error('[CaseProposalTab] sign error:', err);
-                        } finally {
-                          setActionLoading(null);
-                        }
-                      }} disabled={!!actionLoading}>
-                        <PenTool className="h-3.5 w-3.5 mr-1" /> Firmar digitalmente
-                      </Button>
+                      <div className="flex gap-2">
+                        {/* Signaturit external signature */}
+                        <Button size="sm" variant="default" onClick={async () => {
+                          setActionLoading('sign-ext');
+                          try {
+                            const { data: sigResult, error: sigErr } = await supabase.functions.invoke('energy-signature-provider', {
+                              body: {
+                                action: 'request_signature',
+                                provider: 'signaturit',
+                                params: {
+                                  proposal_id: p.id,
+                                  case_id: caseId,
+                                  signer_name: energyCase?.cups || 'Cliente',
+                                  signer_email: (energyCase as any)?.client_email || '',
+                                  document_name: `Propuesta v${p.version} - ${energyCase?.title || caseId}`,
+                                  signature_type: 'advanced',
+                                  expiry_days: 30,
+                                },
+                              },
+                            });
+                            if (sigErr) throw sigErr;
+                            if (sigResult?.success) {
+                              toast.success(sigResult.message || 'Firma enviada vía Signaturit');
+                              log('signature_requested', 'energy_proposals', p.id, { provider: 'signaturit', signature_id: sigResult.signature_id });
+                              await fetchProposals();
+                            } else if (sigResult?.activation_required) {
+                              toast.info('Signaturit requiere configuración. Usando firma interna.');
+                              // Fallback to internal
+                              await handleInternalSign(p);
+                            } else {
+                              throw new Error(sigResult?.error || 'Error en firma externa');
+                            }
+                          } catch (err) {
+                            console.error('[CaseProposalTab] signaturit error:', err);
+                            toast.error('Error con Signaturit. Prueba firma interna.');
+                          } finally {
+                            setActionLoading(null);
+                          }
+                        }} disabled={!!actionLoading}>
+                          {actionLoading === 'sign-ext' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1" />} Firma Signaturit
+                        </Button>
+                        {/* Internal simple signature */}
+                        <Button size="sm" variant="outline" onClick={() => handleInternalSign(p)} disabled={!!actionLoading}>
+                          {actionLoading === 'sign' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <PenTool className="h-3.5 w-3.5 mr-1" />} Firma interna
+                        </Button>
+                      </div>
                     )}
                     {p.signed_at && (
                       <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/10 rounded text-xs text-emerald-700">
-                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate(p.signed_at)}
+                        <PenTool className="h-3 w-3" /> Firmada el {fmtDate(p.signed_at)} {(p as any).signature_method === 'signaturit' && <Badge variant="outline" className="text-[10px] px-1 py-0 ml-1">Signaturit</Badge>}
                       </div>
                     )}
                   </div>
