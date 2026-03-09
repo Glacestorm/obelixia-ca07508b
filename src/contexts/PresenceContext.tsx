@@ -59,14 +59,26 @@ export function PresenceProvider({ children }: PresenceProviderProps) {
     if (!user?.id) return;
 
     // Fetch profile data
+    const ROLE_PRIORITIES: Record<string, number> = {
+      'superadmin': 100, 'director_comercial': 90, 'responsable_comercial': 80,
+      'director_oficina': 70, 'admin': 60, 'auditor': 50, 'gestor': 40, 'user': 10,
+    };
+
     const [profileRes, roleRes] = await Promise.all([
       supabase.from('profiles').select('full_name, avatar_url, oficina').eq('id', user.id).single(),
-      supabase.from('user_roles').select('role').eq('user_id', user.id).single(),
+      supabase.from('user_roles').select('role').eq('user_id', user.id),
     ]);
+
+    const roles = roleRes.data || [];
+    const highestRole = roles.length > 0
+      ? roles.reduce((best, cur) =>
+          (ROLE_PRIORITIES[cur.role] || 0) > (ROLE_PRIORITIES[best.role] || 0) ? cur : best
+        ).role
+      : 'user';
 
     profileDataRef.current = {
       full_name: profileRes.data?.full_name || user.email || 'Unknown',
-      role: roleRes.data?.role || 'user',
+      role: highestRole,
       avatar_url: profileRes.data?.avatar_url,
       oficina: profileRes.data?.oficina,
     };

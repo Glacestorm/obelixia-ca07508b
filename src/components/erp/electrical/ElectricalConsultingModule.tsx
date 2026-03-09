@@ -307,7 +307,6 @@ export function ElectricalConsultingModule() {
         {activeModule === 'noticias-energia' && <EnergyNewsPanel companyId={companyId} />}
         {activeModule === 'normativa' && <EnergyRegulationsPanel />}
         {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
-        {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
       </div>
     </div>
   );
