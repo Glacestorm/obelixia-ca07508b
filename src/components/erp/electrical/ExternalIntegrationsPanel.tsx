@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  Plug, Zap, BarChart3, Database, Globe, Lock, CheckCircle2, Settings, Loader2, TestTube2
+  Plug, Zap, BarChart3, Database, Globe, Lock, CheckCircle2, Settings, Loader2, TestTube2, Flame
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
