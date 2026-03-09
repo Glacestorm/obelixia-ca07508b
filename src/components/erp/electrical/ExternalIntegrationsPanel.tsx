@@ -79,6 +79,21 @@ const INTEGRATIONS: Integration[] = [
     ],
   },
   {
+    id: 'mibgas',
+    name: 'MIBGAS - Gas Natural',
+    description: 'Precios de referencia PVB del gas natural. Actualmente usa estimaciones de mercado.',
+    icon: Flame,
+    status: 'stub',
+    statusLabel: 'Estimaciones (sin API)',
+    configurable: false,
+    features: [
+      'Precios PVB-ES de referencia',
+      'Tarifas TUR y mercado libre',
+      'Evolución trimestral del precio',
+      'Comparativa de comercializadoras de gas',
+    ],
+  },
+  {
     id: 'cnmc',
     name: 'CNMC - Tarifas reguladas',
     description: 'Datos de la CNMC sobre tarifas reguladas y comercializadoras.',
@@ -90,6 +105,26 @@ const INTEGRATIONS: Integration[] = [
       'Listado oficial de comercializadoras',
       'Tarifas de último recurso',
       'Datos regulatorios actualizados',
+    ],
+  },
+  {
+    id: 'datadis',
+    name: 'Datadis',
+    description: 'Acceso a datos de consumo real de distribuidoras españolas vía API Datadis.',
+    icon: Database,
+    status: 'stub',
+    statusLabel: 'Preparado (requiere credenciales)',
+    configurable: true,
+    fields: [
+      { key: 'username', label: 'Usuario Datadis', type: 'text', placeholder: 'tu-usuario@email.com' },
+      { key: 'password', label: 'Contraseña', type: 'password', placeholder: '••••••••' },
+      { key: 'nif', label: 'NIF/CIF autorizado', type: 'text', placeholder: 'B12345678' },
+    ],
+    features: [
+      'Descarga automática de consumo horario',
+      'Validación de CUPS con datos reales',
+      'Histórico de potencias maximetradas',
+      'Sincronización automática mensual',
     ],
   },
 ];
