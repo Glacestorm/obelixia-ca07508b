@@ -175,6 +175,35 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
     }));
   }, [filteredCases]);
 
+  // Savings evolution by month (aggregated from case created_at)
+  const savingsEvolution = useMemo(() => {
+    const byMonth: Record<string, { month: string; estimado: number; validado: number }> = {};
+    filteredCases.forEach(c => {
+      const d = new Date(c.created_at);
+      const key = format(d, 'yyyy-MM');
+      const label = format(d, 'MMM yy', { locale: es });
+      if (!byMonth[key]) byMonth[key] = { month: label, estimado: 0, validado: 0 };
+      byMonth[key].estimado += totalSavings(c);
+      byMonth[key].validado += totalValidated(c);
+    });
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v);
+  }, [filteredCases]);
+
+  // Operational funnel
+  const operationalFunnel = useMemo(() => {
+    const stages = ['intake', 'analysis', 'proposal', 'negotiation', 'documentation', 'switching', 'validation', 'completed'];
+    const stageLabels: Record<string, string> = {
+      intake: 'Entrada', analysis: 'Análisis', proposal: 'Propuesta', negotiation: 'Negociación',
+      documentation: 'Documentación', switching: 'Cambio', validation: 'Validación', completed: 'Cerrado',
+    };
+    return stages.map(s => ({
+      stage: stageLabels[s] || s,
+      count: filteredCases.filter(c => c.status === s).length,
+    })).filter(s => s.count > 0);
+  }, [filteredCases]);
+
   const fmtK = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toLocaleString('es-ES');
   const fmtDate = (d: string | null) => d ? format(new Date(d), 'dd/MM/yy', { locale: es }) : '—';
 
