@@ -26,7 +26,7 @@ interface Props { caseId: string; companyId: string; }
 
 export function CaseProposalTab({ caseId, companyId }: Props) {
   const { proposals, loading, error, createProposal, acceptProposal, rejectProposal, issueProposal, fetchProposals } = useEnergyProposals(caseId);
-  const { downloadPDF, uploadPDF } = useEnergyProposalPDF();
+  const { downloadPDF, uploadPDF, getBase64 } = useEnergyProposalPDF();
   const { energyCase } = useEnergyCase(caseId);
   const { log } = useEnergyAuditLog(companyId, caseId);
 
