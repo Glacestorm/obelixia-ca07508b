@@ -412,6 +412,7 @@ export function ClientPortalView() {
             {hasGas && <TabsTrigger value="gas" className="text-xs">Gas</TabsTrigger>}
             {hasSolar && <TabsTrigger value="solar" className="text-xs">Solar</TabsTrigger>}
             {data.proposals.length > 0 && <TabsTrigger value="propuestas" className="text-xs">Propuestas</TabsTrigger>}
+            {(data.reports?.length > 0 || data.invoiceYoY) && <TabsTrigger value="informe" className="text-xs">Informe</TabsTrigger>}
             <TabsTrigger value="alertas" className="text-xs">Alertas</TabsTrigger>
             {marketApplicable && <TabsTrigger value="mercado" className="text-xs">Precio luz</TabsTrigger>}
           </TabsList>
