@@ -7,17 +7,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Plus, FileText, CheckCircle2, XCircle, Send, Loader2, AlertTriangle, Download, Upload, PenTool
+  Plus, FileText, CheckCircle2, XCircle, Send, Loader2, AlertTriangle, Download, Upload, PenTool, ShieldCheck
 } from 'lucide-react';
 import { useEnergyProposals, PROPOSAL_STATUSES, EnergyProposal } from '@/hooks/erp/useEnergyProposals';
 import { useEnergyProposalPDF } from '@/hooks/erp/useEnergyProposalPDF';
 import { useEnergyCase } from '@/hooks/erp/useEnergyCases';
 import { useEnergyAuditLog } from '@/hooks/erp/useEnergyAuditLog';
 import { PermissionGate } from './PermissionGate';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface Props { caseId: string; companyId: string; }
 
