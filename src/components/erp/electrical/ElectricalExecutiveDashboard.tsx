@@ -4,6 +4,7 @@
  * Integrated with real MIBGAS market data
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEnergyMibgas } from '@/hooks/erp/useEnergyMibgas';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
