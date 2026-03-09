@@ -357,6 +357,33 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
         })}
       </div>
 
+      {/* MIBGAS Market Reference */}
+      {mibgasData && (
+        <Card className="border-blue-200/50 dark:border-blue-800/50">
+          <CardContent className="py-3">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Flame className="h-4 w-4 text-blue-500" />
+                <span className="text-xs font-medium">Mercado gas MIBGAS</span>
+                <Badge variant="outline" className="text-[10px]">Real</Badge>
+              </div>
+              {mibgasData.day_ahead_es != null && (
+                <span className="text-xs">Day Ahead ES: <strong>{mibgasData.day_ahead_es.toFixed(2)} €/MWh</strong></span>
+              )}
+              {mibgasData.month_ahead_es != null && (
+                <span className="text-xs">Month Ahead: <strong>{mibgasData.month_ahead_es.toFixed(2)} €/MWh</strong></span>
+              )}
+              {mibgasData.day_ahead_change_pct != null && (
+                <span className={cn("text-xs font-medium", mibgasData.day_ahead_change_pct > 0 ? "text-destructive" : "text-emerald-600")}>
+                  {mibgasData.day_ahead_change_pct > 0 ? '▲' : '▼'} {Math.abs(mibgasData.day_ahead_change_pct).toFixed(2)}%
+                </span>
+              )}
+              <span className="text-[10px] text-muted-foreground ml-auto">{mibgasData.last_updated}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tabs for charts and rankings */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto gap-1">
