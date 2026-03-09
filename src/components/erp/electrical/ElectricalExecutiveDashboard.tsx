@@ -360,6 +360,7 @@ export function ElectricalExecutiveDashboard({ onNavigateToCase }: Props) {
           <TabsTrigger value="riesgo" className="text-xs">Riesgo</TabsTrigger>
           {kpis && kpis.companyBreakdown.length > 1 && <TabsTrigger value="empresas" className="text-xs">Empresas</TabsTrigger>}
           <TabsTrigger value="acciones" className="text-xs">Acciones</TabsTrigger>
+          <TabsTrigger value="benchmark" className="text-xs">Benchmark</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kpis" className="mt-4 space-y-4">
