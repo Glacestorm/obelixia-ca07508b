@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  Plug, Zap, BarChart3, Database, Globe, Lock, CheckCircle2, Settings, Loader2, TestTube2
+  Plug, Zap, BarChart3, Database, Globe, Lock, CheckCircle2, Settings, Loader2, TestTube2, Flame
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -66,19 +66,31 @@ const INTEGRATIONS: Integration[] = [
   {
     id: 'esios',
     name: 'e·sios REE',
-    description: 'Datos de Red Eléctrica: precios regulados, peajes, cargos del sistema.',
+    description: 'Datos de Red Eléctrica: precios PVPC horarios, peajes, cargos del sistema. Token configurado y operativo.',
     icon: Zap,
-    status: 'stub',
-    statusLabel: 'Preparado',
-    configurable: true,
-    fields: [
-      { key: 'api_token', label: 'Token API e·sios', type: 'text', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' },
-    ],
+    status: 'ready',
+    statusLabel: 'Activo — datos reales',
+    configurable: false,
     features: [
       'Peajes de acceso actualizados',
       'Cargos del sistema eléctrico',
       'Indicadores de REE',
       'Previsiones de demanda',
+    ],
+  },
+  {
+    id: 'mibgas',
+    name: 'MIBGAS - Gas Natural',
+    description: 'Precios de referencia PVB del gas natural. Actualmente usa estimaciones de mercado.',
+    icon: Flame,
+    status: 'stub',
+    statusLabel: 'Estimaciones (sin API)',
+    configurable: false,
+    features: [
+      'Precios PVB-ES de referencia',
+      'Tarifas TUR y mercado libre',
+      'Evolución trimestral del precio',
+      'Comparativa de comercializadoras de gas',
     ],
   },
   {
@@ -93,6 +105,26 @@ const INTEGRATIONS: Integration[] = [
       'Listado oficial de comercializadoras',
       'Tarifas de último recurso',
       'Datos regulatorios actualizados',
+    ],
+  },
+  {
+    id: 'datadis',
+    name: 'Datadis',
+    description: 'Acceso a datos de consumo real de distribuidoras españolas vía API Datadis.',
+    icon: Database,
+    status: 'stub',
+    statusLabel: 'Preparado (requiere credenciales)',
+    configurable: true,
+    fields: [
+      { key: 'username', label: 'Usuario Datadis', type: 'text', placeholder: 'tu-usuario@email.com' },
+      { key: 'password', label: 'Contraseña', type: 'password', placeholder: '••••••••' },
+      { key: 'nif', label: 'NIF/CIF autorizado', type: 'text', placeholder: 'B12345678' },
+    ],
+    features: [
+      'Descarga automática de consumo horario',
+      'Validación de CUPS con datos reales',
+      'Histórico de potencias maximetradas',
+      'Sincronización automática mensual',
     ],
   },
 ];
