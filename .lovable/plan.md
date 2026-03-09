@@ -1,77 +1,61 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium
 
-# Fix: user_roles `.single()` Error + Duplicate Line Removal
+## Estado de Implementación
 
-## Root Cause
-Users with multiple roles trigger a **406 error** ("Cannot coerce the result to a single JSON object") because `.single()` expects exactly 1 row but finds 2+. This crashes the Presence system and the manage-user edge function.
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-## Locations to Fix
+## Premium Phases — Enterprise Differentiators
 
-### Fix 1: `src/contexts/PresenceContext.tsx` (line 64)
-**Problem**: `.single()` on `user_roles` query crashes for multi-role users.
-**Fix**: Replace with array query + priority-based role selection (same pattern already used in `useAuth.tsx`).
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-```typescript
-// Before:
-supabase.from('user_roles').select('role').eq('user_id', user.id).single(),
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-// After:
-supabase.from('user_roles').select('role').eq('user_id', user.id),
-```
+## FASE 2 — Completada ✅
 
-Then change line 69 to pick highest-priority role from array:
-```typescript
-const roles = roleRes.data || [];
-const ROLE_PRIORITIES: Record<string, number> = {
-  'superadmin': 100, 'director_comercial': 90, 'responsable_comercial': 80,
-  'director_oficina': 70, 'admin': 60, 'auditor': 50, 'gestor': 40, 'user': 10,
-};
-const highestRole = roles.length > 0
-  ? roles.reduce((best, cur) =>
-      (ROLE_PRIORITIES[cur.role] || 0) > (ROLE_PRIORITIES[best.role] || 0) ? cur : best
-    ).role
-  : 'user';
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-profileDataRef.current = {
-  full_name: profileRes.data?.full_name || user.email || 'Unknown',
-  role: highestRole,
-  avatar_url: profileRes.data?.avatar_url,
-  oficina: profileRes.data?.oficina,
-};
-```
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
-### Fix 2: `supabase/functions/manage-user/index.ts` (lines 36-40)
-**Problem**: `.single()` on superadmin check fails for multi-role users.
-**Fix**: Query all roles, check if any is `superadmin`:
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-```typescript
-// Before:
-const { data: roles } = await supabaseAdmin
-  .from('user_roles').select('role').eq('user_id', user.id).single();
-if (!roles || roles.role !== 'superadmin') { throw... }
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-// After:
-const { data: roles } = await supabaseAdmin
-  .from('user_roles').select('role').eq('user_id', user.id);
-const isSuperAdmin = (roles || []).some(r => r.role === 'superadmin');
-if (!isSuperAdmin) { throw... }
-```
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-### Fix 3: `src/components/erp/electrical/ElectricalConsultingModule.tsx` (line 310)
-**Problem**: `ElectricalAjustesPanel` rendered twice (lines 309 and 310 are identical).
-**Fix**: Delete line 310.
-
-## Impact
-- **PresenceContext**: Will stop throwing 406 errors for multi-role users. Online presence indicator works correctly.
-- **manage-user edge function**: Superadmin user management operations will work for users who also have other roles.
-- **useAuth**: Already correct (uses array query). No change needed.
-- **useMFAEnforcement**: Already correct (uses `.maybeSingle()`). No change needed.
-- **ElectricalConsultingModule**: Ajustes panel renders once instead of twice, eliminating duplicate mount side effects.
-
-## Files Modified
-1. `src/contexts/PresenceContext.tsx` — Replace `.single()` with array + priority selection
-2. `supabase/functions/manage-user/index.ts` — Replace `.single()` with `.some()` check
-3. `src/components/erp/electrical/ElectricalConsultingModule.tsx` — Remove duplicate line 310
-
-## Risk: None. These are pure bug fixes with no architectural changes.
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard

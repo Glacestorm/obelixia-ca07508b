@@ -36,10 +36,10 @@ serve(async (req) => {
     const { data: roles } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    if (!roles || roles.role !== 'superadmin') {
+    const isSuperAdmin = (roles || []).some(r => r.role === 'superadmin');
+    if (!isSuperAdmin) {
       throw new Error('Solo superadministradores pueden gestionar usuarios');
     }
 
