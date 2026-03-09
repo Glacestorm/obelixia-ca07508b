@@ -91,9 +91,11 @@ serve(async (req) => {
       const esiosHeaders = {
         'Accept': 'application/json; application/vnd.esios-api-v1+json',
         'Content-Type': 'application/json',
-        'Host': 'api.esios.ree.es',
         'x-api-key': ESIOS_TOKEN,
+        'Authorization': `Token token="${ESIOS_TOKEN}"`,
       };
+
+      console.log(`[energy-esios] Using token prefix: ${ESIOS_TOKEN.substring(0, 8)}...`);
 
       const response = await fetch(url, {
         headers: esiosHeaders,
