@@ -115,6 +115,8 @@ interface PortalData {
   alerts: PortalNotification[];
   marketPrices: PortalMarketPrice[];
   savingsLines: SavingsLine[];
+  reports: Array<{ id: string; report_type: string | null; version: number | null; pdf_url: string | null; summary: string | null; created_at: string; updated_at: string }>;
+  invoiceYoY: Array<{ month: string; current: number; previous: number }> | null;
   gasSummary: {
     contracts_count: number;
     invoices_count: number;
