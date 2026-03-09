@@ -18488,6 +18488,128 @@ export type Database = {
         }
         Relationships: []
       }
+      energy_market_sources: {
+        Row: {
+          api_url: string | null
+          created_at: string | null
+          error_count: number | null
+          fetch_count: number | null
+          id: string
+          is_active: boolean | null
+          last_fetch_at: string | null
+          last_fetch_status: string | null
+          metadata: Json | null
+          requires_token: boolean | null
+          source_name: string
+          source_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_url?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          fetch_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_fetch_at?: string | null
+          last_fetch_status?: string | null
+          metadata?: Json | null
+          requires_token?: boolean | null
+          source_name: string
+          source_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_url?: string | null
+          created_at?: string | null
+          error_count?: number | null
+          fetch_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_fetch_at?: string | null
+          last_fetch_status?: string | null
+          metadata?: Json | null
+          requires_token?: boolean | null
+          source_name?: string
+          source_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      energy_news_official: {
+        Row: {
+          ai_enriched_at: string | null
+          ai_summary: string | null
+          category: string | null
+          company_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          importance: string | null
+          ingestion_method: string | null
+          is_verified: boolean | null
+          published_at: string | null
+          source_name: string
+          source_type: string | null
+          source_url: string | null
+          summary: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          verified_source: boolean | null
+        }
+        Insert: {
+          ai_enriched_at?: string | null
+          ai_summary?: string | null
+          category?: string | null
+          company_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          importance?: string | null
+          ingestion_method?: string | null
+          is_verified?: boolean | null
+          published_at?: string | null
+          source_name: string
+          source_type?: string | null
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          verified_source?: boolean | null
+        }
+        Update: {
+          ai_enriched_at?: string | null
+          ai_summary?: string | null
+          category?: string | null
+          company_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          importance?: string | null
+          ingestion_method?: string | null
+          is_verified?: boolean | null
+          published_at?: string | null
+          source_name?: string
+          source_type?: string | null
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          verified_source?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_news_official_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energy_notifications: {
         Row: {
           case_id: string | null
@@ -18745,6 +18867,89 @@ export type Database = {
           },
         ]
       }
+      energy_regulations: {
+        Row: {
+          ai_enriched_at: string | null
+          ai_summary: string | null
+          category: string | null
+          company_id: string | null
+          content: string | null
+          created_at: string | null
+          effective_date: string | null
+          expiry_date: string | null
+          id: string
+          importance: string | null
+          ingestion_method: string | null
+          is_active: boolean | null
+          regulation_code: string | null
+          source_name: string
+          source_url: string | null
+          summary: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          ai_enriched_at?: string | null
+          ai_summary?: string | null
+          category?: string | null
+          company_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          importance?: string | null
+          ingestion_method?: string | null
+          is_active?: boolean | null
+          regulation_code?: string | null
+          source_name: string
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          ai_enriched_at?: string | null
+          ai_summary?: string | null
+          category?: string | null
+          company_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          importance?: string | null
+          ingestion_method?: string | null
+          is_active?: boolean | null
+          regulation_code?: string | null
+          source_name?: string
+          source_url?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_regulations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       energy_report_schedules: {
         Row: {
           company_id: string
@@ -18833,6 +19038,98 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "energy_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      energy_signatures: {
+        Row: {
+          callback_url: string | null
+          case_id: string
+          created_at: string | null
+          created_by: string | null
+          evidence_hash: string | null
+          evidence_pdf_path: string | null
+          expired_at: string | null
+          expiry_date: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          proposal_id: string
+          provider: string | null
+          provider_envelope_id: string | null
+          provider_reference: string | null
+          rejected_at: string | null
+          requested_at: string | null
+          signature_type: string
+          signed_at: string | null
+          signer_email: string | null
+          signer_name: string
+          signer_nif: string | null
+          status: string
+          updated_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          callback_url?: string | null
+          case_id: string
+          created_at?: string | null
+          created_by?: string | null
+          evidence_hash?: string | null
+          evidence_pdf_path?: string | null
+          expired_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          proposal_id: string
+          provider?: string | null
+          provider_envelope_id?: string | null
+          provider_reference?: string | null
+          rejected_at?: string | null
+          requested_at?: string | null
+          signature_type?: string
+          signed_at?: string | null
+          signer_email?: string | null
+          signer_name: string
+          signer_nif?: string | null
+          status?: string
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          callback_url?: string | null
+          case_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          evidence_hash?: string | null
+          evidence_pdf_path?: string | null
+          expired_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          proposal_id?: string
+          provider?: string | null
+          provider_envelope_id?: string | null
+          provider_reference?: string | null
+          rejected_at?: string | null
+          requested_at?: string | null
+          signature_type?: string
+          signed_at?: string | null
+          signer_email?: string | null
+          signer_name?: string
+          signer_nif?: string | null
+          status?: string
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_signatures_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "energy_proposals"
             referencedColumns: ["id"]
           },
         ]
