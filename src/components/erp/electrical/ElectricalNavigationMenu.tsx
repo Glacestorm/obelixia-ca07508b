@@ -122,6 +122,23 @@ export function ElectricalNavigationMenu({
       ]
     },
     {
+      id: 'portal',
+      label: 'Portal',
+      icon: Shield,
+      items: [
+        { id: 'portal-cliente', label: 'Portal Cliente', icon: Shield, description: 'Gestión de accesos y vista previa' },
+      ]
+    },
+    {
+      id: 'premium',
+      label: 'Premium',
+      icon: Bell,
+      items: [
+        { id: 'alertas', label: 'Alertas Proactivas', icon: Bell, description: 'Email, WhatsApp, in-app' },
+        { id: 'reportes-programados', label: 'Reportes Programados', icon: Calendar, description: 'PDF/CSV automáticos' },
+      ]
+    },
+    {
       id: 'config',
       label: 'Ajustes',
       icon: Settings,
