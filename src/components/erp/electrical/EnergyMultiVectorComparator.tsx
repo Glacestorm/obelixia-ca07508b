@@ -25,6 +25,7 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
+import { useEnergyMibgas } from '@/hooks/erp/useEnergyMibgas';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
