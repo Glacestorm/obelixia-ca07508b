@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  Link2, ExternalLink, Copy, XCircle, Plus, CheckCircle2, Loader2, Shield
+  Link2, ExternalLink, Copy, XCircle, Plus, CheckCircle2, Loader2, Shield, Eye
 } from 'lucide-react';
 import { useEnergyClientPortal, PortalToken } from '@/hooks/erp/useEnergyClientPortal';
 import { format } from 'date-fns';

@@ -8,6 +8,8 @@ const corsHeaders = {
 
 interface PortalRequestBody {
   portalToken?: string;
+  action?: string;
+  filePath?: string;
 }
 
 serve(async (req) => {
@@ -18,6 +20,7 @@ serve(async (req) => {
   try {
     const body = (await req.json().catch(() => ({}))) as PortalRequestBody;
     const portalToken = typeof body.portalToken === "string" ? body.portalToken.trim() : "";
+    const action = body.action || "get_data";
 
     if (!portalToken || portalToken.length < 20) {
       return new Response(
@@ -32,6 +35,7 @@ serve(async (req) => {
       { auth: { persistSession: false } },
     );
 
+    // Validate token
     const { data: tokenData, error: tokenError } = await supabase
       .from("energy_client_portal_tokens")
       .select("id, case_id, company_id, client_name, expires_at, is_active, created_at, last_accessed_at")
@@ -56,22 +60,66 @@ serve(async (req) => {
           data: {
             expired: true,
             clientName: tokenData.client_name,
-            tokenTrace: {
-              created_at: tokenData.created_at,
-              expires_at: tokenData.expires_at,
-              last_accessed_at: tokenData.last_accessed_at,
-            },
+            tokenTrace: { created_at: tokenData.created_at, expires_at: tokenData.expires_at, last_accessed_at: tokenData.last_accessed_at },
           },
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    // Update last accessed
     await supabase
       .from("energy_client_portal_tokens")
       .update({ last_accessed_at: nowIso })
       .eq("id", tokenData.id);
 
+    // === DOWNLOAD ACTION ===
+    if (action === "download") {
+      const filePath = body.filePath;
+      if (!filePath || typeof filePath !== "string") {
+        return new Response(
+          JSON.stringify({ success: false, error: "Ruta de archivo no proporcionada" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Security: validate file path contains the case_id to prevent cross-case access
+      const caseId = tokenData.case_id;
+      if (!filePath.includes(caseId) && !filePath.includes(tokenData.company_id)) {
+        console.error(`[energy-client-portal] Download denied: filePath=${filePath} caseId=${caseId}`);
+        return new Response(
+          JSON.stringify({ success: false, error: "Acceso denegado al archivo solicitado" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      try {
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from("energy-documents")
+          .createSignedUrl(filePath, 300); // 5 min expiry
+
+        if (signedError || !signedData?.signedUrl) {
+          console.error("[energy-client-portal] Signed URL error:", signedError);
+          return new Response(
+            JSON.stringify({ success: false, error: "No se pudo generar el enlace de descarga" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, signedUrl: signedData.signedUrl }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      } catch (err) {
+        console.error("[energy-client-portal] Download error:", err);
+        return new Response(
+          JSON.stringify({ success: false, error: "Error al generar descarga" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // === DEFAULT: GET FULL PORTAL DATA ===
     const { data: caseData, error: caseError } = await supabase
       .from("energy_cases")
       .select(
@@ -90,7 +138,7 @@ serve(async (req) => {
     const marketApplicable = ["electricity", "mixed", "solar"].includes(caseData.energy_type ?? "");
     const marketStart = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
 
-    const [proposalsRes, workflowRes, solarRes, contractsRes, invoicesRes, alertsRes, marketRes] = await Promise.all([
+    const [proposalsRes, workflowRes, solarRes, contractsRes, invoicesRes, alertsRes, marketRes, reportsRes] = await Promise.all([
       supabase
         .from("energy_proposals")
         .select("id, version, status, recommended_tariff, recommended_supplier, estimated_annual_cost, estimated_annual_savings, gas_savings, accepted_at, issued_at, valid_until, energy_type")
@@ -134,6 +182,12 @@ serve(async (req) => {
             .order("hour", { ascending: true })
             .limit(14 * 24)
         : Promise.resolve({ data: [], error: null }),
+      supabase
+        .from("energy_reports")
+        .select("id, report_type, version, pdf_url, summary, created_at, updated_at")
+        .eq("case_id", tokenData.case_id)
+        .order("version", { ascending: false })
+        .limit(10),
     ]);
 
     const contracts = contractsRes.data || [];
@@ -148,22 +202,38 @@ serve(async (req) => {
     const totalGasCost = gasInvoices.reduce((sum: number, i: any) => sum + (Number(i.total_amount) || 0), 0);
 
     const savingsLines = [
-      {
-        line: "electricidad",
-        estimated: Number(caseData.estimated_annual_savings) || 0,
-        validated: Number(caseData.validated_annual_savings) || 0,
-      },
-      {
-        line: "gas",
-        estimated: Number(caseData.estimated_gas_savings) || 0,
-        validated: Number(caseData.validated_gas_savings) || 0,
-      },
-      {
-        line: "solar",
-        estimated: Number(caseData.estimated_solar_savings) || 0,
-        validated: Number(caseData.validated_solar_savings) || 0,
-      },
+      { line: "electricidad", estimated: Number(caseData.estimated_annual_savings) || 0, validated: Number(caseData.validated_annual_savings) || 0 },
+      { line: "gas", estimated: Number(caseData.estimated_gas_savings) || 0, validated: Number(caseData.validated_gas_savings) || 0 },
+      { line: "solar", estimated: Number(caseData.estimated_solar_savings) || 0, validated: Number(caseData.validated_solar_savings) || 0 },
     ];
+
+    // YoY invoice comparison
+    const invoiceYoY = (() => {
+      if (!invoices.length) return null;
+      const byMonth: Record<string, { current: number; previous: number }> = {};
+      const now = new Date();
+      const thisYear = now.getFullYear();
+      for (const inv of invoices) {
+        if (!inv.billing_start || !inv.total_amount) continue;
+        const d = new Date(inv.billing_start);
+        const month = d.getMonth();
+        const year = d.getFullYear();
+        const key = String(month).padStart(2, "0");
+        if (!byMonth[key]) byMonth[key] = { current: 0, previous: 0 };
+        if (year === thisYear || year === thisYear - 1) {
+          if (year === thisYear) byMonth[key].current += Number(inv.total_amount) || 0;
+          else byMonth[key].previous += Number(inv.total_amount) || 0;
+        }
+      }
+      const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      return Object.entries(byMonth)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, val]) => ({
+          month: months[parseInt(key)] || key,
+          current: Math.round(val.current * 100) / 100,
+          previous: Math.round(val.previous * 100) / 100,
+        }));
+    })();
 
     return new Response(
       JSON.stringify({
@@ -180,6 +250,7 @@ serve(async (req) => {
           invoices,
           alerts: alertsRes.data || [],
           marketPrices: marketRes.data || [],
+          reports: reportsRes.data || [],
           gasSummary: {
             contracts_count: gasContracts.length,
             invoices_count: gasInvoices.length,
@@ -188,6 +259,7 @@ serve(async (req) => {
             avg_cost_eur_kwh: totalGasConsumption > 0 ? Math.round((totalGasCost / totalGasConsumption) * 10000) / 10000 : null,
           },
           savingsLines,
+          invoiceYoY,
           tokenTrace: {
             created_at: tokenData.created_at,
             expires_at: tokenData.expires_at,
