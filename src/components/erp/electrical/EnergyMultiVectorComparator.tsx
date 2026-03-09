@@ -449,12 +449,27 @@ export function EnergyMultiVectorComparator({ companyId, caseId }: Props) {
                 </div>
               </CardHeader>
               {scenario.include_gas && (
-                <CardContent>
+                <CardContent className="space-y-3">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <div><Label className="text-xs">Consumo mensual (kWh)</Label><Input type="number" value={scenario.gas_consumption_kwh} onChange={e => updateScenario('gas_consumption_kwh', parseFloat(e.target.value) || 0)} className="h-8 text-sm" /></div>
                     <div><Label className="text-xs">Coste mensual actual (€)</Label><Input type="number" value={scenario.gas_current_cost} onChange={e => updateScenario('gas_current_cost', parseFloat(e.target.value) || 0)} className="h-8 text-sm" /></div>
                     <div><Label className="text-xs">Tarifa gas</Label><Input value={scenario.gas_tariff} onChange={e => updateScenario('gas_tariff', e.target.value)} placeholder="RL.1, RL.2..." className="h-8 text-sm" /></div>
                   </div>
+                  {/* MIBGAS real market reference */}
+                  {mibgasData && (
+                    <div className="p-2 rounded-lg bg-muted/50 border border-dashed">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-[10px]">MIBGAS real</Badge>
+                        <span className="text-[10px] text-muted-foreground">{mibgasData.last_updated}</span>
+                      </div>
+                      <div className="flex gap-4 text-xs">
+                        {mibgasData.day_ahead_es != null && <span>Day Ahead: <strong>{mibgasData.day_ahead_es.toFixed(2)} €/MWh</strong></span>}
+                        {mibgasData.month_ahead_es != null && <span>Month Ahead: <strong>{mibgasData.month_ahead_es.toFixed(2)} €/MWh</strong></span>}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">Precio de referencia de mercado usado en el análisis</p>
+                    </div>
+                  )}
+                  {mibgasLoading && <p className="text-[10px] text-muted-foreground">Cargando precios MIBGAS...</p>}
                 </CardContent>
               )}
             </Card>
