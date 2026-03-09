@@ -84,28 +84,77 @@ serve(async (req) => {
       const startDate = `${targetDate}T00:00:00`;
       const endDate = `${targetDate}T23:59:59`;
 
-      const url = `${esiosBaseUrl}/indicators/${indicatorId}?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&geo_ids[]=8741`; // 8741 = Peninsular
-
       console.log(`[energy-esios] Fetching PVPC for ${targetDate}`);
+      console.log(`[energy-esios] Token length: ${ESIOS_TOKEN.length}, prefix: ${ESIOS_TOKEN.substring(0, 6)}...`);
 
-      const esiosHeaders = {
-        'Accept': 'application/json; application/vnd.esios-api-v1+json',
-        'Content-Type': 'application/json',
-        'x-api-key': ESIOS_TOKEN,
-        'Authorization': `Token token="${ESIOS_TOKEN}"`,
-      };
+      let values: any[] = [];
+      let source = 'esios';
 
-      console.log(`[energy-esios] Using token prefix: ${ESIOS_TOKEN.substring(0, 8)}...`);
+      // Try ESIOS API first
+      try {
+        const esiosUrl = `${esiosBaseUrl}/indicators/${indicatorId}?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&geo_ids[]=8741`;
+        const esiosResponse = await fetch(esiosUrl, {
+          headers: {
+            'Accept': 'application/json; application/vnd.esios-api-v1+json',
+            'Content-Type': 'application/json',
+            'x-api-key': ESIOS_TOKEN,
+            'Authorization': `Token token="${ESIOS_TOKEN}"`,
+          },
+          signal: AbortSignal.timeout(10000),
+        });
 
-      const response = await fetch(url, {
-        headers: esiosHeaders,
-        signal: AbortSignal.timeout(15000),
-      });
+        if (esiosResponse.ok) {
+          const esiosData = await esiosResponse.json();
+          values = esiosData?.indicator?.values || [];
+          source = 'esios';
+          console.log(`[energy-esios] ESIOS success: ${values.length} values`);
+        } else {
+          const errText = await esiosResponse.text();
+          console.warn(`[energy-esios] ESIOS returned ${esiosResponse.status}: ${errText}`);
+          throw new Error(`ESIOS ${esiosResponse.status}`);
+        }
+      } catch (esiosErr) {
+        console.warn(`[energy-esios] ESIOS failed, trying REE public API...`, esiosErr);
+        
+        // Fallback: REE public API (apidatos.ree.es) — no token required for PVPC
+        try {
+          const reeUrl = `https://apidatos.ree.es/es/datos/mercados/precios-mercados-tiempo-real?start_date=${targetDate}T00:00&end_date=${targetDate}T23:59&time_trunc=hour`;
+          const reeResponse = await fetch(reeUrl, {
+            headers: { 'Accept': 'application/json' },
+            signal: AbortSignal.timeout(10000),
+          });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error(`[energy-esios] PVPC error: ${response.status}`, errText);
-        throw new Error(`ESIOS API error: ${response.status}`);
+          if (reeResponse.ok) {
+            const reeData = await reeResponse.json();
+            // REE API structure: included[].attributes.values[]
+            const pvpcSeries = reeData?.included?.find((s: any) => s.type === 'PVPC' || s.id === '600');
+            if (pvpcSeries?.attributes?.values) {
+              values = pvpcSeries.attributes.values.map((v: any) => ({
+                datetime: v.datetime,
+                value: v.value,
+                geo_name: 'Peninsular',
+              }));
+              source = 'ree_public';
+              console.log(`[energy-esios] REE public API success: ${values.length} values`);
+            }
+          } else {
+            console.warn(`[energy-esios] REE public API returned ${reeResponse.status}`);
+          }
+        } catch (reeErr) {
+          console.warn(`[energy-esios] REE public API also failed:`, reeErr);
+        }
+      }
+
+      if (values.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'No se pudieron obtener datos PVPC de ninguna fuente',
+          fallback: true,
+          message: 'El token ESIOS puede ser inválido o haber expirado. La API pública de REE tampoco respondió. Verifica tu token en https://api.esios.ree.es/',
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       const data = await response.json();
