@@ -61,6 +61,10 @@ export function CaseGasTab({ caseId }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddContract, setShowAddContract] = useState(false);
+  const { data: mibgasData, loading: mibgasLoading, fetchMibgasData, getProductsByCategory } = useEnergyMibgas();
+
+  // Fetch MIBGAS on mount
+  useEffect(() => { fetchMibgasData(); }, []);
   const [contractForm, setContractForm] = useState({
     supplier: '', gas_tariff: '', distributor: '',
     start_date: '', end_date: '', gas_annual_consumption_kwh: '',
