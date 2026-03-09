@@ -113,6 +113,15 @@ export function ElectricalNavigationMenu({
       ]
     },
     {
+      id: 'noticias',
+      label: 'Noticias',
+      icon: Activity,
+      items: [
+        { id: 'noticias-energia', label: 'Noticias Energía', icon: Activity, description: 'Noticias del sector energético' },
+        { id: 'normativa', label: 'Normativa', icon: FileBarChart, description: 'Regulación local, estatal y europea' },
+      ]
+    },
+    {
       id: 'config',
       label: 'Ajustes',
       icon: Settings,
