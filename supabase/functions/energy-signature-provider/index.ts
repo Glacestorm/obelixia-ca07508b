@@ -101,20 +101,16 @@ serve(async (req) => {
           pdfBytes = generateMinimalPDF(docName, params.signer_name, params.case_id, params.proposal_id);
         }
 
-        // Use FormData API (supported in Deno)
+        // Use FormData API with File constructor
         const formData = new FormData();
         formData.append('recipients[0][name]', params.signer_name);
         formData.append('recipients[0][email]', params.signer_email);
         formData.append('delivery_type', 'email');
         formData.append('name', docName);
-        formData.append('expire_time', String(params.expiry_days || 30));
-        formData.append('data[proposal_id]', params.proposal_id);
-        formData.append('data[case_id]', params.case_id);
-        formData.append('data[source]', 'energia-360');
 
-        // Attach PDF file
-        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
-        formData.append('files[0]', pdfBlob, `${docName}.pdf`);
+        // Attach PDF file - use File constructor for proper filename
+        const pdfFile = new File([pdfBytes], `${docName}.pdf`, { type: 'application/pdf' });
+        formData.append('files[0]', pdfFile);
 
         const response = await fetch(`${SIGNATURIT_BASE}/v3/signatures.json`, {
           method: 'POST',
