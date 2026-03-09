@@ -153,14 +153,14 @@ export function useMFAEnforcement(): UseMFAEnforcementReturn | null {
         setShowMFASetup(false);
       }
 
-      // Create/update MFA requirements record
+      // Create/update MFA requirements record (upsert to prevent duplicates)
       if (!mfaReq && isAdminRole) {
-        await supabase.from('mfa_requirements').insert({
+        await supabase.from('mfa_requirements').upsert({
           user_id: user.id,
           mfa_required: true,
           mfa_enabled: mfaEnabled,
           mfa_method: mfaMethod,
-        });
+        }, { onConflict: 'user_id', ignoreDuplicates: true });
       } else if (mfaReq) {
         await supabase
           .from('mfa_requirements')
@@ -168,7 +168,7 @@ export function useMFAEnforcement(): UseMFAEnforcementReturn | null {
             mfa_enabled: mfaEnabled,
             mfa_method: mfaMethod,
           })
-          .eq('user_id', user.id);
+          .eq('id', mfaReq.id);
       }
       
       setStatus('success');
