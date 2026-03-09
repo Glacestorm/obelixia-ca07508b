@@ -91,61 +91,37 @@ serve(async (req) => {
 
         console.log(`[energy-signature] Creating Signaturit ${SIGNATURIT_ENV} signature for ${params.signer_email}`);
 
-        // Build multipart form data — Signaturit requires file upload
-        const boundary = `----FormBoundary${crypto.randomUUID().replace(/-/g, '')}`;
         const docName = params.document_name || `Propuesta-${params.case_id}`;
 
-        // Generate a minimal PDF if no base64 provided
+        // Generate PDF bytes
         let pdfBytes: Uint8Array;
         if (params.document_base64) {
           pdfBytes = base64Decode(params.document_base64);
         } else {
-          // Create minimal valid PDF with proposal info
           pdfBytes = generateMinimalPDF(docName, params.signer_name, params.case_id, params.proposal_id);
         }
 
-        // Build multipart body
-        const parts: string[] = [];
-        const addField = (name: string, value: string) => {
-          parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}`);
-        };
+        // Use FormData API (supported in Deno)
+        const formData = new FormData();
+        formData.append('recipients[0][name]', params.signer_name);
+        formData.append('recipients[0][email]', params.signer_email);
+        formData.append('delivery_type', 'email');
+        formData.append('name', docName);
+        formData.append('expire_time', String(params.expiry_days || 30));
+        formData.append('data[proposal_id]', params.proposal_id);
+        formData.append('data[case_id]', params.case_id);
+        formData.append('data[source]', 'energia-360');
 
-        addField('recipients[0][name]', params.signer_name);
-        addField('recipients[0][email]', params.signer_email);
-        if (params.signer_nif) {
-          addField('recipients[0][widgets][0][type]', 'text');
-          addField('recipients[0][widgets][0][name]', 'nif');
-          addField('recipients[0][widgets][0][default]', params.signer_nif);
-        }
-        addField('delivery_type', 'email');
-        addField('name', docName);
-        addField('expire_time', String(params.expiry_days || 30));
-        addField('data[proposal_id]', params.proposal_id);
-        addField('data[case_id]', params.case_id);
-        addField('data[source]', 'energia-360');
-
-        // Combine text parts + file part
-        const textPart = parts.join('\r\n') + '\r\n';
-        const filePreamble = `--${boundary}\r\nContent-Disposition: form-data; name="files[0]"; filename="${docName}.pdf"\r\nContent-Type: application/pdf\r\n\r\n`;
-        const fileEnd = `\r\n--${boundary}--\r\n`;
-
-        const textEncoder = new TextEncoder();
-        const preambleBytes = textEncoder.encode(textPart + filePreamble);
-        const endBytes = textEncoder.encode(fileEnd);
-
-        // Concatenate into single Uint8Array
-        const bodyBytes = new Uint8Array(preambleBytes.length + pdfBytes.length + endBytes.length);
-        bodyBytes.set(preambleBytes, 0);
-        bodyBytes.set(pdfBytes, preambleBytes.length);
-        bodyBytes.set(endBytes, preambleBytes.length + pdfBytes.length);
+        // Attach PDF file
+        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+        formData.append('files[0]', pdfBlob, `${docName}.pdf`);
 
         const response = await fetch(`${SIGNATURIT_BASE}/v3/signatures.json`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${SIGNATURIT_TOKEN}`,
-            'Content-Type': `multipart/form-data; boundary=${boundary}`,
           },
-          body: bodyBytes,
+          body: formData,
         });
 
         if (!response.ok) {
