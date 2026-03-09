@@ -35,6 +35,8 @@ import { NotificationsPanel } from './NotificationsPanel';
 import { EnergyMarketPanel } from './EnergyMarketPanel';
 import { EnergyAdvancedAnalytics } from './EnergyAdvancedAnalytics';
 import { EnergyMultiVectorComparator } from './EnergyMultiVectorComparator';
+import { EnergyNewsPanel } from './EnergyNewsPanel';
+import { EnergyRegulationsPanel } from './EnergyRegulationsPanel';
 type SubView = 
   | { type: 'list' }
   | { type: 'new' }
@@ -296,6 +298,8 @@ export function ElectricalConsultingModule() {
         {activeModule === 'seguimiento' && <ElectricalSeguimientoPanel companyId={companyId} />}
         {activeModule === 'ejecutivo' && <ElectricalExecutiveDashboard onNavigateToCase={handleNavigateToCase} />}
         {activeModule === 'integraciones' && <ExternalIntegrationsPanel />}
+        {activeModule === 'noticias-energia' && <EnergyNewsPanel companyId={companyId} />}
+        {activeModule === 'normativa' && <EnergyRegulationsPanel />}
         {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
       </div>
     </div>
