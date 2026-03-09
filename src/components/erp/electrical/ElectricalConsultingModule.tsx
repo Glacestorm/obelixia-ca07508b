@@ -298,6 +298,8 @@ export function ElectricalConsultingModule() {
         {activeModule === 'seguimiento' && <ElectricalSeguimientoPanel companyId={companyId} />}
         {activeModule === 'ejecutivo' && <ElectricalExecutiveDashboard onNavigateToCase={handleNavigateToCase} />}
         {activeModule === 'integraciones' && <ExternalIntegrationsPanel />}
+        {activeModule === 'noticias-energia' && <EnergyNewsPanel companyId={companyId} />}
+        {activeModule === 'normativa' && <EnergyRegulationsPanel />}
         {activeModule === 'ajustes' && <ElectricalAjustesPanel companyId={companyId} />}
       </div>
     </div>
