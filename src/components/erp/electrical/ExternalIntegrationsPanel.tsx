@@ -81,16 +81,16 @@ const INTEGRATIONS: Integration[] = [
   {
     id: 'mibgas',
     name: 'MIBGAS - Gas Natural',
-    description: 'Precios de referencia PVB del gas natural. Actualmente usa estimaciones de mercado.',
+    description: 'Precios reales del mercado ibérico del gas via scraping Firecrawl. Day Ahead, futuros y índices PVB.',
     icon: Flame,
-    status: 'stub',
-    statusLabel: 'Estimaciones (sin API)',
+    status: 'ready',
+    statusLabel: 'Activo — datos reales',
     configurable: false,
     features: [
-      'Precios PVB-ES de referencia',
-      'Tarifas TUR y mercado libre',
-      'Evolución trimestral del precio',
-      'Comparativa de comercializadoras de gas',
+      'Precios PVB Day Ahead en tiempo real',
+      'Futuros trimestrales, semestrales y anuales',
+      'Índices LPI y API Day Ahead',
+      'Comparativa ES vs PT',
     ],
   },
   {

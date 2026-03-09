@@ -80,7 +80,7 @@ export interface MarketProvider {
 const PROVIDERS: MarketProvider[] = [
   { id: 'omie', name: 'OMIE', status: 'stub', energyType: 'electricity', description: 'Operador del Mercado Ibérico de Energía — precios diarios del pool' },
   { id: 'ree', name: 'REE / ESIOS', status: 'stub', energyType: 'electricity', description: 'Red Eléctrica de España — indicadores PVPC y mercado libre' },
-  { id: 'mibgas', name: 'MIBGAS', status: 'stub', energyType: 'gas', description: 'Mercado Ibérico del Gas — precios referencia PVB' },
+  { id: 'mibgas', name: 'MIBGAS', status: 'connected', energyType: 'gas', description: 'Mercado Ibérico del Gas — precios reales PVB via Firecrawl' },
 ];
 
 function generateMockPrices(dateStr: string, energyType: MarketEnergyType): MarketPrice[] {
