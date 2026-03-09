@@ -1,6 +1,7 @@
 /**
  * CaseGasTab - Professional gas management within a case
  * Contracts, invoices, consumption charts, cost analysis, KPIs
+ * Now with real MIBGAS market data integration
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,13 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import {
   Flame, FileText, FileSignature, Plus, Loader2, TrendingDown,
-  TrendingUp, Activity, BarChart3, Save, X, AlertTriangle, Calendar
+  TrendingUp, Activity, BarChart3, Save, X, AlertTriangle, Calendar,
+  RefreshCw, Globe, Clock
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart, ReferenceLine
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
+import { useEnergyMibgas } from '@/hooks/erp/useEnergyMibgas';
 import { toast } from 'sonner';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
