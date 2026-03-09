@@ -54,17 +54,25 @@ export function EnergyNewsPanel({ companyId }: Props) {
   const fetchNews = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('energy-ai-recommendation', {
-        body: {
-          action: 'get_energy_news',
-          params: { category: category !== 'all' ? category : undefined, search },
-        },
+      // Primary: fetch from verified news backend
+      const { data, error } = await supabase.functions.invoke('energy-news-ingestion', {
+        body: { action: 'list', filters: { limit: 30 } },
       });
 
-      if (!error && data?.success && Array.isArray(data.data)) {
-        setNews(data.data);
+      if (!error && data?.success && Array.isArray(data.news) && data.news.length > 0) {
+        setNews(data.news.map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          summary: n.summary || n.ai_summary || '',
+          category: n.category || 'general',
+          source: n.source_name || 'Fuente oficial',
+          url: n.source_url || undefined,
+          published_at: n.published_at || n.created_at,
+          importance: n.importance || 'medium',
+          energy_type: n.source_type || undefined,
+          tags: n.tags || [],
+        })));
       } else {
-        // Fallback sample data
         setNews(getSampleNews());
       }
     } catch {
@@ -73,6 +81,24 @@ export function EnergyNewsPanel({ companyId }: Props) {
       setLoading(false);
     }
   }, [category, search]);
+
+  const searchVerifiedNews = useCallback(async (query: string) => {
+    if (!query.trim()) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('energy-news-ingestion', {
+        body: { action: 'search_news', query },
+      });
+      if (!error && data?.success) {
+        toast.success(`${data.persisted_count || 0} noticias verificadas encontradas`);
+        await fetchNews();
+      }
+    } catch {
+      toast.error('Error en búsqueda');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchNews]);
 
   useEffect(() => { fetchNews(); }, [fetchNews]);
 
