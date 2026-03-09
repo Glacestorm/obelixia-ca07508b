@@ -34,6 +34,42 @@ export function CaseProposalTab({ caseId, companyId }: Props) {
   const [showReject, setShowReject] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleInternalSign = useCallback(async (p: EnergyProposal) => {
+    setActionLoading('sign');
+    try {
+      const { data: sigResult, error: sigErr } = await supabase.functions.invoke('energy-signature-provider', {
+        body: {
+          action: 'request_signature',
+          provider: 'internal',
+          params: {
+            proposal_id: p.id,
+            case_id: caseId,
+            signer_name: energyCase?.cups || 'Cliente',
+            signer_email: (energyCase as any)?.client_email || '',
+            signature_type: 'simple',
+          },
+        },
+      });
+      if (sigErr) throw sigErr;
+      if (sigResult?.success) {
+        // Also update proposal
+        await supabase.from('energy_proposals').update({
+          signed_at: new Date().toISOString(),
+          signed_by: energyCase?.cups || 'Cliente',
+          signature_method: 'internal',
+        } as any).eq('id', p.id);
+        log('proposal_signed', 'energy_proposals', p.id, { version: p.version, method: 'internal', signature_id: sigResult.signature_id });
+        toast.success('Propuesta firmada internamente');
+        await fetchProposals();
+      }
+    } catch (err) {
+      console.error('[CaseProposalTab] internal sign error:', err);
+      toast.error('Error al firmar');
+    } finally {
+      setActionLoading(null);
+    }
+  }, [caseId, energyCase, log, fetchProposals]);
   const [form, setForm] = useState({
     cups: '', current_supplier: '', current_tariff: '',
     current_annual_cost: '', recommended_supplier: '', recommended_tariff: '',
