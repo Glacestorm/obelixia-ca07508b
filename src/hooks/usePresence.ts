@@ -69,11 +69,20 @@ export function usePresence(options: UsePresenceOptions = {}) {
           .eq('id', user.id)
           .single();
 
-        const { data: roleData } = await supabase
+        const { data: rolesArray } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
-          .single();
+          .eq('user_id', user.id);
+
+        const ROLE_PRIORITIES: Record<string, number> = {
+          'superadmin': 100, 'director_comercial': 90, 'responsable_comercial': 80,
+          'director_oficina': 70, 'admin': 60, 'auditor': 50, 'gestor': 40, 'user': 10,
+        };
+        const highestRole = (rolesArray && rolesArray.length > 0)
+          ? rolesArray.reduce((best, cur) =>
+              (ROLE_PRIORITIES[cur.role] || 0) > (ROLE_PRIORITIES[best.role] || 0) ? cur : best
+            ).role
+          : 'user';
 
         profileDataRef.current = {
           full_name: profile?.full_name || user.email || 'Unknown',
