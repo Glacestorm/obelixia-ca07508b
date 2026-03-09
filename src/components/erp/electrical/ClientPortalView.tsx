@@ -638,7 +638,54 @@ export function ClientPortalView() {
             </TabsContent>
           )}
 
-          {/* ALERTAS */}
+          {/* INFORME */}
+          {(data.reports?.length > 0 || data.invoiceYoY) && (
+            <TabsContent value="informe" className="mt-4 space-y-4">
+              {/* Reports */}
+              {data.reports && data.reports.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><FileText className="h-4 w-4 text-primary" />Informes del expediente</CardTitle></CardHeader>
+                  <CardContent className="space-y-2">
+                    {data.reports.map((r: any) => (
+                      <div key={r.id} className="flex items-center justify-between border-b pb-2 last:border-0">
+                        <div>
+                          <p className="text-sm font-medium">{r.report_type || 'Informe'} — v{r.version || 1}</p>
+                          <p className="text-xs text-muted-foreground">{fmtDate(r.created_at)}</p>
+                          {r.summary && <p className="text-xs text-muted-foreground mt-1">{r.summary}</p>}
+                        </div>
+                        {r.pdf_url && (
+                          <Button variant="ghost" size="sm" onClick={() => handleDownload(r.pdf_url, `informe-v${r.version || 1}.pdf`)} disabled={downloading === r.pdf_url}>
+                            {downloading === r.pdf_url ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* YoY comparison */}
+              {data.invoiceYoY && data.invoiceYoY.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" />Comparativa interanual (YoY)</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={data.invoiceYoY}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <Tooltip formatter={(v: number) => `${v.toLocaleString('es-ES')} €`} />
+                        <Bar dataKey="previous" name="Año anterior" fill="hsl(var(--muted-foreground) / 0.4)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="current" name="Año actual" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <p className="text-xs text-muted-foreground mt-2 text-center">Coste total mensual por factura — año actual vs anterior</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+          )}
+
           <TabsContent value="alertas" className="mt-4 space-y-3">
             {data.alerts.length === 0 ? (
               <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">No hay alertas relevantes.</CardContent></Card>
