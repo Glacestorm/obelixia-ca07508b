@@ -17778,6 +17778,51 @@ export type Database = {
         }
         Relationships: []
       }
+      energy_alert_preferences: {
+        Row: {
+          alert_types: string[]
+          channels: string[]
+          client_email: string | null
+          client_name: string | null
+          company_id: string
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          phone_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_types?: string[]
+          channels?: string[]
+          client_email?: string | null
+          client_name?: string | null
+          company_id: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          phone_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_types?: string[]
+          channels?: string[]
+          client_email?: string | null
+          client_name?: string | null
+          company_id?: string
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          phone_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       energy_audit_log: {
         Row: {
           action: string
@@ -18699,6 +18744,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      energy_report_schedules: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          format: string
+          id: string
+          is_active: boolean
+          last_generated_at: string | null
+          next_scheduled_at: string | null
+          recipients: string[]
+          report_type: string
+          schedule: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          format?: string
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_scheduled_at?: string | null
+          recipients?: string[]
+          report_type?: string
+          schedule?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          format?: string
+          id?: string
+          is_active?: boolean
+          last_generated_at?: string | null
+          next_scheduled_at?: string | null
+          recipients?: string[]
+          report_type?: string
+          schedule?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       energy_reports: {
         Row: {
