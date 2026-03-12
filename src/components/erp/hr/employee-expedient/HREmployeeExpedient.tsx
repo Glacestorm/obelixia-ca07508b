@@ -60,12 +60,12 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
     const fetch = async () => {
       setLoading(true);
       try {
-        const { data } = await supabase
+        const { data } = await (supabase
           .from('erp_hr_employees')
           .select('id, first_name, last_name, email, phone, status, hire_date, position_title, country_code, legal_entity_id, work_center_id')
           .eq('id', employeeId)
-          .single();
-        if (data) setEmployee({ ...data, department_name: (data as any).department_name ?? null } as unknown as EmployeeData);
+          .single() as any);
+        if (data) setEmployee(data as EmployeeData);
       } catch { /* ignore */ }
       setLoading(false);
     };
