@@ -242,13 +242,13 @@ export function useHRDocumentExpedient(companyId: string) {
   // ── Versions ───────────────────────────────────────────────────────────────
 
   const fetchVersions = useCallback(async (documentId: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('erp_hr_document_versions')
       .select('*')
       .eq('document_id', documentId)
       .order('version_number', { ascending: false });
     if (error) throw error;
-    return (data ?? []) as unknown as DocumentVersion[];
+    return (data ?? []) as DocumentVersion[];
   }, []);
 
   // ── Access Log ─────────────────────────────────────────────────────────────
