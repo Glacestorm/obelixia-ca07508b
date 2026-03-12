@@ -640,10 +640,10 @@ export function useESPayrollBridge(companyId?: string) {
         .eq('status', 'active');
 
       // 5. Get contracts for salary data
-      const { data: contracts } = await supabase
+      const { data: contracts } = await (supabase
         .from('erp_hr_contracts')
         .select('*')
-        .in('employee_id', employeeIds)
+        .in('employee_id', employeeIds) as any)
         .eq('status', 'active');
 
       // 6. Ensure SS bases and IRPF tables are loaded
