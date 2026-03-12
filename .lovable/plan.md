@@ -13,8 +13,8 @@
 | **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
 | **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
 | **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
-| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
-| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
+| **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
+| **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
 | G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
 
 ## Estado de Implementación — Fases Base
