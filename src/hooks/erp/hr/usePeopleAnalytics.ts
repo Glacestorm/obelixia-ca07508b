@@ -322,25 +322,25 @@ export function usePeopleAnalytics() {
   const fetchComplianceRisks = useCallback(async (companyId: string, _filters?: PAFilters) => {
     try {
       const [docsRes, tasksRes] = await Promise.all([
-        supabase.from('erp_hr_employee_documents').select('id, status, expiry_date').eq('company_id', companyId).limit(200),
+        supabase.from('erp_hr_employee_documents').select('id, expiry_date').eq('company_id', companyId).limit(200),
         supabase.from('hr_tasks').select('id, title, status, sla_breached, due_date, category').eq('company_id', companyId).in('status', ['pending', 'in_progress']).limit(200),
       ]);
 
-      const docs = docsRes.data || [];
-      const tasks = tasksRes.data || [];
+      const docs = (docsRes.data || []) as any[];
+      const tasks = (tasksRes.data || []) as any[];
       const now = new Date().toISOString();
-      const expiredDocs = docs.filter(d => d.expiry_date && d.expiry_date < now);
-      const slaBreach = tasks.filter(t => t.sla_breached === true);
-      const overdue = tasks.filter(t => t.due_date && t.due_date < now && t.status !== 'completed');
+      const expiredDocs = docs.filter((d: any) => d.expiry_date && d.expiry_date < now);
+      const slaBreach = tasks.filter((t: any) => t.sla_breached === true);
+      const overdue = tasks.filter((t: any) => t.due_date && t.due_date < now && t.status !== 'completed');
 
       const items: PAComplianceRisks['items'] = [
-        ...expiredDocs.slice(0, 5).map(d => ({
+        ...expiredDocs.slice(0, 5).map((d: any) => ({
           type: 'document' as const,
           title: `Documento expirado: ${d.id.slice(0, 8)}`,
           severity: 'high' as const,
           entityId: d.id,
         })),
-        ...slaBreach.slice(0, 5).map(t => ({
+        ...slaBreach.slice(0, 5).map((t: any) => ({
           type: 'task' as const,
           title: `SLA incumplido: ${t.title || t.id.slice(0, 8)}`,
           severity: 'high' as const,
