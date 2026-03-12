@@ -115,3 +115,15 @@ export type {
   SettlementParams,
   SettlementResult,
 } from './useESLocalization';
+
+// Motor de Nómina España (ESP)
+export { useESPayrollBridge } from './useESPayrollBridge';
+export type {
+  ESPayrollConceptDef,
+  ESPayrollInput,
+  ESPayrollCalculation,
+  ESPayrollLine,
+  ESPayrollSummary,
+  ESPreCloseValidation,
+  ESReportData,
+} from './useESPayrollBridge';
