@@ -258,30 +258,30 @@ export function usePeopleAnalytics() {
   const fetchAbsenteeismAnalytics = useCallback(async (companyId: string, _filters?: PAFilters) => {
     try {
       const { data: absences, error: absErr } = await supabase
-        .from('erp_hr_absences')
-        .select('id, employee_id, absence_type, start_date, end_date, calendar_days, business_days, status')
+        .from('erp_hr_leave_requests')
+        .select('id, employee_id, leave_type_code, start_date, end_date, days_requested, status')
         .eq('company_id', companyId)
         .limit(500);
       if (absErr) throw absErr;
 
-      const all = absences || [];
-      const totalDays = all.reduce((s, a) => s + (a.calendar_days || a.business_days || 0), 0);
+      const all = (absences || []) as any[];
+      const totalDays = all.reduce((s: number, a: any) => s + (a.days_requested || 0), 0);
 
       const typeMap: Record<string, { days: number; count: number }> = {};
-      all.forEach(a => {
-        const t = a.absence_type || 'other';
+      all.forEach((a: any) => {
+        const t = a.leave_type_code || 'other';
         if (!typeMap[t]) typeMap[t] = { days: 0, count: 0 };
-        typeMap[t].days += (a.calendar_days || a.business_days || 0);
+        typeMap[t].days += (a.days_requested || 0);
         typeMap[t].count += 1;
       });
 
       // Bradford factor per employee: S² × D
       const empAbsences: Record<string, { episodes: number; days: number }> = {};
-      all.forEach(a => {
+      all.forEach((a: any) => {
         const eid = a.employee_id;
         if (!empAbsences[eid]) empAbsences[eid] = { episodes: 0, days: 0 };
         empAbsences[eid].episodes += 1;
-        empAbsences[eid].days += (a.calendar_days || a.business_days || 0);
+        empAbsences[eid].days += (a.days_requested || 0);
       });
 
       const highBradford = Object.entries(empAbsences)
