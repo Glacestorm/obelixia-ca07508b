@@ -1,77 +1,336 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-## Estado de Implementación — Global HR Platform
+# Payroll & Compliance Engine — Arquitectura Funcional
 
-| Fase Global | Estado | Detalles |
-|------|--------|----------|
-| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
-| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
-| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
-| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
-| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
-| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
-| G2 - Extraer lógica ES a plugin | 🔜 Pendiente | IRPF, TGSS, contratos, permisos → localization/es/ |
-| G3 - Payroll Engine genérico | 🔜 Pendiente | Refactor motor de nómina multi-país |
-| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
-| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
-| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+## Estado Actual
 
-## Estado de Implementación — Fases Base
+El sistema de nóminas actual tiene:
+- **`erp_hr_payrolls`**: tabla con campos ES-hardcoded (`ss_worker`, `irpf_amount`, `irpf_percentage`, `ss_company`, columnas TGSS)
+- **`erp_hr_payroll_concepts`**: conceptos con `cotiza_ss`, `tributa_irpf` (terminología ES)
+- **`erp_hr_ss_contributions`**: tabla 100% española (CC, AT/EP, FOGASA, FP, desempleo)
+- **`HRPayrollEntryDialog`**: SS_RATES hardcoded (23.60% CC, 5.50% desempleo, etc.)
+- **`HRPayrollPanel`**: muestra IRPF y SS como columnas fijas
+- **`erp_hr_payroll_recalculations`**: ya tiene `fiscal_jurisdiction`
+- **`HRPayrollPeriodsPanel`**: solo demo data estática
 
-| Fase | Estado | Detalles |
-|------|--------|----------|
-| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
-| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
-| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
-| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
+**Problema**: El motor mezcla lógica española en la capa core. Los tipos de cotización, porcentajes SS e IRPF están hardcoded en componentes y tablas.
 
-## Premium Phases — Enterprise Differentiators
+---
 
-| Fase Premium | Estado | Detalles |
-|------|--------|----------|
-| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
-| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
-| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
-| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
-| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
-| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
-| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
-| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
+## Diseño: Motor Global Desacoplado
 
-### Edge Functions consolidadas (plan):
-- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
-- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
-- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
+### Principio de separación
 
-## FASE 2 — Completada ✅
+```text
+┌─────────────────────────────────────────┐
+│         PAYROLL ENGINE (Global)         │
+│  Períodos · Líneas · Conceptos · Estados│
+│  Cierre · Auditoría · Exportación       │
+├─────────────────────────────────────────┤
+│         CALCULATION RULES API           │
+│  Interface: calcEarnings, calcDeductions│
+│  calcEmployerCosts, validate            │
+├──────────┬──────────┬───────────────────┤
+│ Plugin ES│ Plugin PT│ Plugin FR ...     │
+│ IRPF,TGSS│ IRS,TSU  │ IR,URSSAF        │
+└──────────┴──────────┴───────────────────┘
+```
 
-### Tablas creadas:
-- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
-- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
-- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
-- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
-- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
-- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
+---
 
-### Edge Function: `erp-hr-workflow-engine`
-- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
-- Audit trail automático en cada decisión
+## 1. Nuevas Tablas (migración)
 
-### Hook: `useHRWorkflowEngine`
-- Gestión completa + realtime via supabase channel
+### `hr_payroll_periods` — Períodos de nómina (reemplaza demo)
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `company_id` | FK | |
+| `legal_entity_id` | FK nullable | Entidad legal (multi-entity) |
+| `period_year` | INT | Año |
+| `period_month` | INT | Mes (1-12) |
+| `period_type` | TEXT | `monthly`, `biweekly`, `weekly`, `extra`, `settlement` |
+| `status` | TEXT | `draft`, `open`, `calculating`, `calculated`, `reviewing`, `closing`, `closed`, `locked` |
+| `opened_at` | TIMESTAMPTZ | |
+| `closed_at` | TIMESTAMPTZ | |
+| `closed_by` | UUID | |
+| `locked_at` | TIMESTAMPTZ | Bloqueo definitivo |
+| `employee_count` | INT | Empleados en período |
+| `total_gross` | NUMERIC | Bruto total |
+| `total_net` | NUMERIC | Neto total |
+| `total_employer_cost` | NUMERIC | Coste empresa |
+| `validation_results` | JSONB | Resultados de validación pre-cierre |
+| `metadata` | JSONB | |
 
-### UI (3 paneles):
-- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
-- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
-- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
+### `hr_payroll_lines` — Líneas de nómina (reemplaza JSONB complements/deductions)
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `payroll_id` | FK → erp_hr_payrolls | |
+| `concept_id` | FK nullable → payroll_concepts | |
+| `concept_code` | TEXT | Código del concepto |
+| `concept_name` | TEXT | Nombre snapshot |
+| `line_type` | TEXT | `earning`, `deduction`, `employer_cost`, `informative` |
+| `category` | TEXT | `fixed`, `variable`, `overtime`, `bonus`, `commission`, `allowance`, `flexible_remuneration`, `advance`, `regularization`, `withholding`, `social_contribution`, `other` |
+| `units` | NUMERIC | Horas, días, unidades |
+| `unit_price` | NUMERIC | Precio unitario |
+| `amount` | NUMERIC | Importe calculado |
+| `is_percentage` | BOOL | |
+| `percentage_base` | TEXT | Sobre qué base aplica |
+| `percentage_value` | NUMERIC | % |
+| `taxable` | BOOL | Sujeto a impuestos (genérico) |
+| `contributable` | BOOL | Sujeto a cotización social (genérico) |
+| `source` | TEXT | `manual`, `calculated`, `imported`, `rule_engine`, `incident` |
+| `incident_id` | UUID nullable | Si viene de incidencia |
+| `sort_order` | INT | |
+| `metadata` | JSONB | Datos locales del plugin |
 
-### Seed Data (9 workflows):
-- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
+### `hr_payroll_concept_templates` — Catálogo global de conceptos
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `company_id` | FK | |
+| `code` | TEXT UNIQUE per company | |
+| `name` | TEXT | |
+| `line_type` | TEXT | earning/deduction/employer_cost/informative |
+| `category` | TEXT | fixed/variable/overtime/etc |
+| `default_amount` | NUMERIC nullable | |
+| `is_percentage` | BOOL | |
+| `default_percentage` | NUMERIC nullable | |
+| `percentage_base` | TEXT nullable | |
+| `taxable` | BOOL | Genérico: sujeto a impuestos |
+| `contributable` | BOOL | Genérico: sujeto a cotización |
+| `country_code` | TEXT nullable | NULL = global, 'ES' = solo España |
+| `is_active` | BOOL | |
+| `sort_order` | INT | |
+| `legal_reference` | TEXT nullable | |
+| `metadata` | JSONB | Config específica del plugin |
 
-### Navegación:
-- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+### `hr_payroll_simulations` — Simulaciones sin impacto
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `company_id` | FK | |
+| `employee_id` | FK | |
+| `period_year`, `period_month` | INT | |
+| `simulation_type` | TEXT | `what_if`, `salary_change`, `new_hire`, `promotion` |
+| `input_params` | JSONB | Parámetros de entrada |
+| `result_lines` | JSONB | Líneas calculadas |
+| `result_summary` | JSONB | Bruto, neto, coste empresa |
+| `created_by` | UUID | |
+| `created_at` | TIMESTAMPTZ | |
+
+### `hr_payroll_audit_log` — Auditoría específica de nómina
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `company_id` | FK | |
+| `payroll_id` | FK nullable | |
+| `period_id` | FK nullable | |
+| `action` | TEXT | `created`, `calculated`, `line_added`, `line_modified`, `approved`, `rejected`, `closed`, `locked`, `reopened`, `recalculated`, `exported`, `simulated` |
+| `actor_id` | UUID | |
+| `actor_name` | TEXT | |
+| `entity_type` | TEXT | `payroll`, `period`, `line`, `concept` |
+| `entity_id` | UUID | |
+| `old_value` | JSONB | |
+| `new_value` | JSONB | |
+| `metadata` | JSONB | |
+| `created_at` | TIMESTAMPTZ | |
+
+---
+
+## 2. Estados de Nómina (ciclo de vida)
+
+### Nómina individual (`erp_hr_payrolls.status`)
+```text
+draft → calculated → reviewing → approved → paid → cancelled
+                        ↓
+                     rejected (→ draft)
+```
+
+Se añaden: `reviewing`, `rejected` al CHECK constraint existente.
+
+### Período de nómina (`hr_payroll_periods.status`)
+```text
+draft → open → calculating → calculated → reviewing → closing → closed → locked
+                                              ↓
+                                          reopened (→ open)
+```
+
+### Validaciones pre-cierre de período
+Antes de pasar a `closing`:
+1. Todas las nóminas del período en estado `approved` o `paid`
+2. No hay incidencias pendientes vinculadas al período
+3. Totales cuadran (sum lines = payroll totals)
+4. Sin conceptos con importe 0 en líneas obligatorias
+5. Sin empleados activos sin nómina generada
+6. Firma del responsable de nómina
+
+---
+
+## 3. Estructura de Conceptos y Categorías
+
+### Categorías globales (agnósticas de país)
+
+| Categoría | Ejemplos |
+|---|---|
+| `fixed` | Salario base, complementos fijos |
+| `variable` | Horas extra, comisiones, bonus, incentivos |
+| `overtime` | Horas extraordinarias (normal, festiva, nocturna) |
+| `bonus` | Bonus mensual, trimestral, anual, por objetivos |
+| `commission` | Comisiones de ventas, por proyecto |
+| `allowance` | Dietas, transporte, vivienda, vestuario |
+| `flexible_remuneration` | Seguro médico, guardería, ticket restaurante, formación |
+| `advance` | Anticipos a descontar |
+| `regularization` | Atrasos, recálculos, ajustes retroactivos |
+| `withholding` | Retenciones fiscales (plugin calcula %) |
+| `social_contribution` | Cotizaciones sociales (plugin calcula %) |
+| `informative` | Bases, totales informativos, coste empresa |
+| `other` | Cuota sindical, embargo, pensión alimenticia |
+
+### Flags genéricos por concepto
+- `taxable`: ¿Sujeto a impuestos del país? (el plugin decide qué impuesto)
+- `contributable`: ¿Sujeto a cotización social? (el plugin decide qué régimen)
+
+---
+
+## 4. Componentes UI
+
+### 4.1 `HRPayrollEngine` — Panel principal (reemplaza `HRPayrollPanel`)
+Tabs:
+- **Períodos**: CRUD de períodos, estados, apertura/cierre
+- **Nóminas**: Listado por período con filtros
+- **Conceptos**: Catálogo de conceptos (global + local)
+- **Simulación**: Calculadora what-if
+- **Auditoría**: Log de cambios
+
+### 4.2 `HRPayrollPeriodManager`
+- Lista de períodos por año/entidad legal
+- Acciones: Abrir, calcular masivo, revisar, cerrar, bloquear
+- Indicadores: empleados procesados, pendientes, con incidencias
+- Validación pre-cierre visual (checklist)
+
+### 4.3 `HRPayrollDetail` (refactoriza `HRPayrollEntryDialog`)
+Vista completa de una nómina individual:
+- Header: empleado, período, estado, jurisdicción
+- Tabla de líneas (earning + deduction + employer_cost) con `hr_payroll_lines`
+- Totales: bruto, deducciones, neto, coste empresa
+- Panel lateral: incidencias vinculadas, documentos, histórico
+- Acciones: calcular, aprobar, rechazar, recalcular, exportar justificante
+
+### 4.4 `HRPayrollConceptsCatalog`
+- CRUD de `hr_payroll_concept_templates`
+- Filtro por país (global vs local)
+- Columnas: código, nombre, tipo, categoría, taxable, contributable, activo
+- Import/export masivo
+
+### 4.5 `HRPayrollSimulator`
+- Selector de empleado + escenario
+- Parámetros editables (salario, jornada, conceptos)
+- Resultado: líneas simuladas + comparativa con nómina actual
+- No persiste en `erp_hr_payrolls`, solo en `hr_payroll_simulations`
+
+### 4.6 `HRPayrollClosingWizard`
+- Wizard paso a paso para cerrar un período:
+  1. Validar: checklist de pre-cierre
+  2. Revisar: resumen de totales y anomalías
+  3. Aprobar: firma digital / confirmación
+  4. Cerrar: cambia estado a `closed`
+  5. Exportar: genera ficheros (SEPA, contabilidad)
+- Cada paso registra en `hr_payroll_audit_log`
+
+### 4.7 `HRPayrollAuditTrail`
+- Timeline filtrable por período/empleado/acción
+- Detalle de cada cambio con diff visual
+
+### 4.8 `HRPayrollIncidentsBridge`
+- Lista de incidencias pendientes que impactan nómina
+- Vinculación: `hr_admin_requests` → `hr_payroll_lines` via `incident_id`
+- Tipos: horas extra, bonus, dietas, anticipos, IT, accidente
+
+---
+
+## 5. Hook: `usePayrollEngine`
+
+Funciones principales:
+- `fetchPeriods(year, legalEntityId?)` — períodos con resumen
+- `openPeriod(year, month, legalEntityId?)` — crear/abrir período
+- `closePeriod(periodId)` — validar + cerrar
+- `lockPeriod(periodId)` — bloqueo definitivo
+- `fetchPayrolls(periodId, filters?)` — nóminas del período
+- `calculatePayroll(employeeId, periodId)` — cálculo (llama al plugin de país)
+- `calculateBatch(periodId)` — cálculo masivo
+- `fetchPayrollLines(payrollId)` — líneas detalladas
+- `addLine(payrollId, line)` / `updateLine` / `deleteLine`
+- `approvePayroll(payrollId)` / `rejectPayroll`
+- `simulate(params)` — simulación sin persistir en nóminas
+- `validatePreClose(periodId)` — checklist de validación
+- `exportPayroll(payrollId, format)` — PDF/SEPA/contabilidad
+- `fetchAuditLog(filters)` — auditoría
+
+---
+
+## 6. Permisos por Rol
+
+| Permiso | Quién |
+|---|---|
+| `payroll.periods.read` | Payroll Manager, Admin |
+| `payroll.periods.manage` | Payroll Manager |
+| `payroll.periods.close` | Payroll Manager + approval |
+| `payroll.periods.lock` | Admin Global |
+| `payroll.payslips.read` | Payroll Manager, Manager (su equipo), Empleado (la suya) |
+| `payroll.payslips.calculate` | Payroll Manager |
+| `payroll.payslips.approve` | Payroll Manager + Director |
+| `payroll.payslips.export` | Payroll Manager |
+| `payroll.concepts.read` | Payroll Manager, Admin |
+| `payroll.concepts.manage` | Admin |
+| `payroll.simulate` | Payroll Manager, HR Manager |
+| `payroll.audit.read` | Admin, Auditor |
+
+---
+
+## 7. Eventos e Incidencias que Impactan Nómina
+
+| Evento origen | Impacto en nómina | Automatización |
+|---|---|---|
+| Alta empleado (admin-portal) | Generar primera nómina prorrateada | Auto |
+| Cambio salarial (admin-portal) | Recalcular desde fecha efecto | Semi-auto |
+| Cambio jornada | Recalcular proporcional | Semi-auto |
+| IT / Accidente (leave_incident) | Ajustar complemento, bases | Auto |
+| Horas extra (time_clock) | Añadir línea variable | Import |
+| Vacaciones (leave_request) | Ajustar días trabajados | Auto |
+| Anticipo aprobado | Añadir línea deducción | Auto |
+| Baja voluntaria/despido | Trigger settlement/finiquito | Manual |
+| Regularización retroactiva | Líneas de atraso | Recálculo |
+| Retribución flexible | Líneas en especie | Config |
+
+---
+
+## 8. Qué NO va en el motor global
+
+| Concepto | Dónde va | Razón |
+|---|---|---|
+| Tramos IRPF | Plugin ES | Legislación fiscal española |
+| Tipos cotización TGSS | Plugin ES | Sistema SS español |
+| Bases mínimas/máximas SS | Plugin ES | Varían por país |
+| Modelo 111/190 | Plugin ES | Modelos fiscales AEAT |
+| TC1/TC2 | Plugin ES | Liquidación TGSS |
+| Complemento IT por convenio | Plugin ES | Convenios españoles |
+| Cálculo finiquito legal | Plugin ES | Legislación laboral |
+
+---
+
+## 9. Plan de implementación
+
+| Fase | Contenido |
+|---|---|
+| **PY1** | Migración: 5 tablas nuevas + modificar `erp_hr_payrolls` (añadir `period_id`, `reviewing`, `rejected`) |
+| **PY2** | Hook `usePayrollEngine` con CRUD períodos + líneas |
+| **PY3** | `HRPayrollEngine` con tabs: Períodos, Nóminas, Conceptos |
+| **PY4** | `HRPayrollDetail` con líneas detalladas (reemplaza dialog) |
+| **PY5** | `HRPayrollClosingWizard` + validaciones pre-cierre |
+| **PY6** | `HRPayrollSimulator` + `HRPayrollAuditTrail` |
+| **PY7** | `HRPayrollIncidentsBridge` — vincular admin-portal → líneas nómina |
+| **PY8** | Wiring en HRModule + actualizar navegación Payroll |
+
+Prioridad: PY1 → PY2 → PY3 → PY4 (base funcional), luego PY5-PY8 (cierre + simulación + auditoría).
+
