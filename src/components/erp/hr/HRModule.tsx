@@ -81,6 +81,7 @@ import { HRBoardPackPanel } from './board-pack';
 import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRTasksPanel, HRPayrollPeriodsPanel, HRComplianceEvidencePanel } from './global';
 import { OfficialIntegrationsHub } from './official-integrations';
 import { GlobalMobilityModule } from './mobility';
+import { DocumentExpedientModule } from './document-expedient';
 import { HRPayrollEngine } from './payroll-engine';
 import { ESLocalizationPlugin } from './localization/es';
 import { HRAdminPortal } from './admin-portal';
