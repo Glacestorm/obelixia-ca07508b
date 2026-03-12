@@ -16,3 +16,10 @@ export type { AgreementData } from './HRCollectiveAgreementSelect';
 export { DataSourceBadge, resolveDataSource } from './DataSourceBadge';
 export type { DataSource } from './DataSourceBadge';
 export { RoleAwareDashboard } from './RoleAwareDashboard';
+
+// Status badges & navigation
+export { HRStatusBadge } from './HRStatusBadge';
+export type { HREntityType } from './HRStatusBadge';
+export { HREntityBreadcrumb } from './HREntityBreadcrumb';
+export type { BreadcrumbItem } from './HREntityBreadcrumb';
+export { HRCommandPalette } from './HRCommandPalette';
