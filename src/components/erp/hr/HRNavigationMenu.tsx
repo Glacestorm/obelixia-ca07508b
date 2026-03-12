@@ -22,6 +22,7 @@ import {
 interface HRNavigationMenuProps {
   activeModule: string;
   onModuleChange: (module: string) => void;
+  mvpMode?: boolean;
   stats: {
     pendingPayrolls: number;
     pendingVacations: number;
@@ -57,8 +58,25 @@ interface MegaMenuCategory {
   headerDescription: string;
 }
 
-export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavigationMenuProps) {
+export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode = true }: HRNavigationMenuProps) {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
+
+  // MVP mode IDs — only these categories and items are shown
+  const mvpCategories = new Set(['core-hr', 'payroll', 'laboral', 'global']);
+  const mvpItems = new Set([
+    // Core HR
+    'employees', 'contracts', 'documents', 'document-expedient',
+    'departments', 'legal-entities', 'work-centers',
+    'work-calendars',
+    // Payroll
+    'payroll', 'payroll-periods',
+    'ss', 'compensation-suite', 'benefits',
+    // Laboral
+    'vacations', 'time-clock', 'leave-incidents',
+    'admin-requests', 'hr-tasks',
+    // Global
+    'country-registry', 'es-localization',
+  ]);
 
   const megaMenus: MegaMenuCategory[] = [
     {
@@ -365,9 +383,21 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
     },
   ];
 
+  // Filter menus in MVP mode
+  const filteredMenus = mvpMode
+    ? megaMenus
+        .filter(m => mvpCategories.has(m.id))
+        .map(m => ({
+          ...m,
+          subGroups: m.subGroups
+            .map(sg => ({ ...sg, items: sg.items.filter(i => mvpItems.has(i.id)) }))
+            .filter(sg => sg.items.length > 0),
+        }))
+    : megaMenus;
+
   // Collect all IDs per category for active detection
   const allIds: Record<string, string[]> = {};
-  megaMenus.forEach(m => {
+  filteredMenus.forEach(m => {
     allIds[m.id] = m.subGroups.flatMap(g => g.items.map(i => i.id));
   });
 
@@ -441,7 +471,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
       </Button>
 
       {/* All mega-menus */}
-      {megaMenus.map((menu) => {
+      {filteredMenus.map((menu) => {
         const MenuIcon = menu.icon;
         const isActive = activeCategory === menu.id;
         const isOpen = openCategory === menu.id;
@@ -531,16 +561,18 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
         );
       })}
 
-      {/* 2026+ */}
-      <Button
-        variant={activeModule === 'trends' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => onModuleChange('trends')}
-        className="gap-1.5"
-      >
-        <Rocket className="h-4 w-4" />
-        2026+
-      </Button>
+      {/* 2026+ — hidden in MVP mode */}
+      {!mvpMode && (
+        <Button
+          variant={activeModule === 'trends' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => onModuleChange('trends')}
+          className="gap-1.5"
+        >
+          <Rocket className="h-4 w-4" />
+          2026+
+        </Button>
+      )}
     </div>
   );
 }

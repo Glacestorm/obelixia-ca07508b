@@ -1,10 +1,11 @@
 /**
  * DocumentExpedientModule — Panel principal del expediente documental
- * Tabs: Empleado | Nómina | Movilidad | Integraciones | Consentimientos | Retención | Auditoría
+ * MVP: Empleado | Nómina
+ * Full: + Consentimientos | Retención | Auditoría
  */
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FolderOpen, FileText, Plane, Send, ShieldCheck, Clock, Eye } from 'lucide-react';
+import { FolderOpen, FileText, ShieldCheck, Clock, Eye } from 'lucide-react';
 import { EmployeeDocumentExpedient } from './EmployeeDocumentExpedient';
 import { PayrollDocumentExpedient } from './PayrollDocumentExpedient';
 import { ConsentsPanel } from './ConsentsPanel';
@@ -13,10 +14,12 @@ import { DocumentAuditPanel } from './DocumentAuditPanel';
 
 interface Props {
   companyId: string;
+  mvpMode?: boolean;
 }
 
-export function DocumentExpedientModule({ companyId }: Props) {
+export function DocumentExpedientModule({ companyId, mvpMode = true }: Props) {
   const [activeTab, setActiveTab] = useState('employee');
+  const showFull = !mvpMode;
 
   return (
     <div className="space-y-4">
@@ -38,15 +41,21 @@ export function DocumentExpedientModule({ companyId }: Props) {
           <TabsTrigger value="payroll" className="gap-1.5 text-xs">
             <FileText className="h-3.5 w-3.5" /> Nómina
           </TabsTrigger>
-          <TabsTrigger value="consents" className="gap-1.5 text-xs">
-            <ShieldCheck className="h-3.5 w-3.5" /> Consentimientos
-          </TabsTrigger>
-          <TabsTrigger value="retention" className="gap-1.5 text-xs">
-            <Clock className="h-3.5 w-3.5" /> Retención
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5 text-xs">
-            <Eye className="h-3.5 w-3.5" /> Auditoría
-          </TabsTrigger>
+          {showFull && (
+            <TabsTrigger value="consents" className="gap-1.5 text-xs">
+              <ShieldCheck className="h-3.5 w-3.5" /> Consentimientos
+            </TabsTrigger>
+          )}
+          {showFull && (
+            <TabsTrigger value="retention" className="gap-1.5 text-xs">
+              <Clock className="h-3.5 w-3.5" /> Retención
+            </TabsTrigger>
+          )}
+          {showFull && (
+            <TabsTrigger value="audit" className="gap-1.5 text-xs">
+              <Eye className="h-3.5 w-3.5" /> Auditoría
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="employee">
@@ -57,17 +66,23 @@ export function DocumentExpedientModule({ companyId }: Props) {
           <PayrollDocumentExpedient companyId={companyId} />
         </TabsContent>
 
-        <TabsContent value="consents">
-          <ConsentsPanel companyId={companyId} />
-        </TabsContent>
+        {showFull && (
+          <TabsContent value="consents">
+            <ConsentsPanel companyId={companyId} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="retention">
-          <RetentionPoliciesPanel companyId={companyId} />
-        </TabsContent>
+        {showFull && (
+          <TabsContent value="retention">
+            <RetentionPoliciesPanel companyId={companyId} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="audit">
-          <DocumentAuditPanel companyId={companyId} />
-        </TabsContent>
+        {showFull && (
+          <TabsContent value="audit">
+            <DocumentAuditPanel companyId={companyId} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
