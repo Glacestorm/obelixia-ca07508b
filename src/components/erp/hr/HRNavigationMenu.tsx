@@ -76,6 +76,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'admin-requests', 'hr-tasks', 'approval-inbox',
     // Global
     'country-registry', 'es-localization',
+    'mobility-assignments', 'mobility-dashboard',
+    'official-submissions', 'compliance-evidence',
   ]);
 
   const megaMenus: MegaMenuCategory[] = [
@@ -443,7 +445,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             )}>
               {item.label}
             </p>
-            {item.badge && Number(item.badge) > 0 && (
+            {item.badge && (typeof item.badge === 'string' || Number(item.badge) > 0) && (
               <Badge variant={item.badgeVariant || 'secondary'} className="text-[10px] h-4 min-w-4 px-1 justify-center">
                 {item.badge}
               </Badge>
