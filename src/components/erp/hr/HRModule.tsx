@@ -448,6 +448,7 @@ export function HRModule() {
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
         {activeModule === 'document-expedient' && <DocumentExpedientModule companyId={companyId} />}
         {activeModule === 'es-localization' && <ESLocalizationPlugin companyId={companyId} />}
+        {activeModule === 'people-analytics' && <PeopleAnalyticsModule companyId={companyId} />}
 
         {/* Employee Expedient — transversal view */}
         {activeModule === 'employee-expedient' && selectedEmployeeId && (

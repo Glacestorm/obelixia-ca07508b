@@ -340,6 +340,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
           color: 'text-violet-600',
           items: [
             { id: 'util-analytics-bi', label: 'Analytics BI', icon: LineChart, description: 'BI cross-module con IA' },
+            { id: 'people-analytics', label: 'People Analytics', icon: BarChart3, description: 'Analytics unificado + Copiloto IA', badge: 'Nuevo' },
             { id: 'util-reporting', label: 'Reporting Engine', icon: FileText, description: 'Reportes ejecutivos' },
             { id: 'util-regulatory', label: 'Compliance Regulatorio', icon: Shield, description: 'Igualdad, GDPR, EU AI Act' },
             { id: 'util-board-pack', label: 'Board Pack', icon: Briefcase, description: 'Packs para comités' },
