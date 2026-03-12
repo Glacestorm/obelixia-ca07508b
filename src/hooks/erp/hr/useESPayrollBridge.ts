@@ -54,6 +54,13 @@ export interface ESPayrollCalculation {
   summary: ESPayrollSummary;
 }
 
+export interface ESCalculationTrace {
+  rule: string;
+  inputs: Record<string, unknown>;
+  formula: string;
+  timestamp: string;
+}
+
 export interface ESPayrollLine {
   concept_code: string;
   concept_name: string;
@@ -68,6 +75,8 @@ export interface ESPayrollLine {
   percentage_base?: string;
   sort_order: number;
   source: string;
+  incident_ref?: string;
+  calculation_trace?: ESCalculationTrace;
 }
 
 export interface ESPayrollSummary {
