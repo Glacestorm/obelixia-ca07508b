@@ -56265,6 +56265,7 @@ export type Database = {
           country_rule_set_id: string | null
           created_at: string
           currency: string
+          diff_vs_previous: Json | null
           employee_id: string
           employer_cost: number
           gross_salary: number
@@ -56276,6 +56277,10 @@ export type Database = {
           payment_reference: string | null
           payroll_period_id: string
           retroactive_period_id: string | null
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           total_deductions: number
           updated_at: string
@@ -56290,6 +56295,7 @@ export type Database = {
           country_rule_set_id?: string | null
           created_at?: string
           currency?: string
+          diff_vs_previous?: Json | null
           employee_id: string
           employer_cost?: number
           gross_salary?: number
@@ -56301,6 +56307,10 @@ export type Database = {
           payment_reference?: string | null
           payroll_period_id: string
           retroactive_period_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           total_deductions?: number
           updated_at?: string
@@ -56315,6 +56325,7 @@ export type Database = {
           country_rule_set_id?: string | null
           created_at?: string
           currency?: string
+          diff_vs_previous?: Json | null
           employee_id?: string
           employer_cost?: number
           gross_salary?: number
@@ -56326,6 +56337,10 @@ export type Database = {
           payment_reference?: string | null
           payroll_period_id?: string
           retroactive_period_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           total_deductions?: number
           updated_at?: string
