@@ -255,7 +255,7 @@ export function useHRDocumentExpedient(companyId: string) {
 
   const logAccess = useMutation({
     mutationFn: async (params: { document_id: string; action: AccessAction; document_table?: string }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('erp_hr_document_access_log')
         .insert({
           company_id: companyId,
@@ -263,13 +263,13 @@ export function useHRDocumentExpedient(companyId: string) {
           document_table: params.document_table ?? 'erp_hr_employee_documents',
           action: params.action,
           user_agent: navigator.userAgent,
-        } as any);
+        });
       if (error) throw error;
     },
   });
 
   const fetchAccessLog = useCallback(async (documentId?: string) => {
-    let query = supabase
+    let query = (supabase as any)
       .from('erp_hr_document_access_log')
       .select('*')
       .eq('company_id', companyId)
@@ -278,7 +278,7 @@ export function useHRDocumentExpedient(companyId: string) {
     if (documentId) query = query.eq('document_id', documentId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data ?? []) as unknown as DocumentAccessLog[];
+    return (data ?? []) as DocumentAccessLog[];
   }, [companyId]);
 
   // ── Comments ───────────────────────────────────────────────────────────────
