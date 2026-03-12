@@ -507,7 +507,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
       <HREmployeeExportDialog
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
-        employee={selectedEmployee}
+        employee={selectedEmployee as any}
       />
     </div>
   );
