@@ -78,7 +78,8 @@ import { ComplianceReportingPanel } from './regulatory-reporting';
 import { PremiumAPIWebhooksPanel } from './premium-api';
 import { EnterpriseIntegrationsPanel } from './enterprise-integrations';
 import { HRBoardPackPanel } from './board-pack';
-import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRTasksPanel, HROfficialSubmissionsPanel, HRPayrollPeriodsPanel, HRComplianceEvidencePanel } from './global';
+import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRTasksPanel, HRPayrollPeriodsPanel, HRComplianceEvidencePanel } from './global';
+import { OfficialIntegrationsHub } from './official-integrations';
 import { GlobalMobilityModule } from './mobility';
 import { HRPayrollEngine } from './payroll-engine';
 import { ESLocalizationPlugin } from './localization/es';
@@ -436,7 +437,7 @@ export function HRModule() {
         {activeModule === 'leave-incidents' && <HRLeaveIncidentsPanel companyId={companyId} />}
         {activeModule === 'admin-requests' && <HRAdminPortal companyId={companyId} />}
         {activeModule === 'hr-tasks' && <HRTasksPanel companyId={companyId} />}
-        {activeModule === 'official-submissions' && <HROfficialSubmissionsPanel companyId={companyId} />}
+        {activeModule === 'official-submissions' && <OfficialIntegrationsHub companyId={companyId} />}
         {activeModule === 'mobility-assignments' && <GlobalMobilityModule companyId={companyId} />}
         {activeModule === 'mobility-dashboard' && <GlobalMobilityModule companyId={companyId} />}
         {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
