@@ -95,6 +95,12 @@ interface Employee {
   reports_to: string | null;
   reports_to_name?: string;
   base_salary: number | null;
+  // Compat fields for dialogs
+  contract_type?: string | null;
+  gross_salary?: number | null;
+  social_security_number?: string | null;
+  contract_end_date?: string | null;
+  jurisdiction?: string | null;
 }
 
 interface HREmployeesPanelProps {
