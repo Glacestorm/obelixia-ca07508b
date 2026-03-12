@@ -158,3 +158,21 @@ export type {
   SubmissionPriority,
   ReceiptType,
 } from './useOfficialIntegrationsHub';
+
+// Expediente Documental & Compliance (DC)
+export { useHRDocumentExpedient } from './useHRDocumentExpedient';
+export type {
+  DocumentCategory,
+  DocumentSource,
+  ConsentType as HRConsentType,
+  ConsentStatus as HRConsentStatus,
+  AccessAction,
+  EmployeeDocument,
+  DocumentVersion,
+  DocumentAccessLog,
+  DocumentComment,
+  HRConsent,
+  RetentionPolicy,
+  DocumentFilters,
+  ExpedientStats,
+} from './useHRDocumentExpedient';
