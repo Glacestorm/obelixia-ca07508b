@@ -383,6 +383,18 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     },
   ];
 
+  // Filter menus in MVP mode
+  const filteredMenus = mvpMode
+    ? megaMenus
+        .filter(m => mvpCategories.has(m.id))
+        .map(m => ({
+          ...m,
+          subGroups: m.subGroups
+            .map(sg => ({ ...sg, items: sg.items.filter(i => mvpItems.has(i.id)) }))
+            .filter(sg => sg.items.length > 0),
+        }))
+    : megaMenus;
+
   // Collect all IDs per category for active detection
   const allIds: Record<string, string[]> = {};
   megaMenus.forEach(m => {
