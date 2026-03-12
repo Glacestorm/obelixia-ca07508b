@@ -1,261 +1,76 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-# Global HR Core — Diseño del Submódulo
+## Estado de Implementación — Global HR Platform
 
-## Estado Actual
+| Fase Global | Estado | Detalles |
+|------|--------|----------|
+| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
+| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
+| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
+| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
+| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
+| G2 - Extraer lógica ES a plugin | 🔜 Pendiente | IRPF, TGSS, contratos, permisos → localization/es/ |
+| G3 - Payroll Engine genérico | 🔜 Pendiente | Refactor motor de nómina multi-país |
+| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
+| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
+| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
 
-El módulo HR tiene ~65 paneles con lógica española mezclada en el core. Ya existen tablas clave (`erp_hr_employees`, `erp_hr_contracts`, `erp_hr_departments`, `erp_hr_positions`, `hr_employee_profiles`, `hr_job_assignments`, `hr_leave_incidents`, `hr_admin_requests`, `hr_tasks`) y componentes (`HREmployeesPanel`, `HREmployeeExpedient`, `HRContractsPanel`, `HRDepartmentsPanel`, etc.). El expediente transversal ya tiene 9 tabs. Las tablas G1b ya añadieron `nationality`, `tax_residence_country` y `country_code` al empleado.
+## Estado de Implementación — Fases Base
 
-**Lo que falta**: un diseño explícito de qué es "Global Core" vs "Localización", refactorizar los componentes existentes para eliminar referencias españolas del core, y completar la ficha global del empleado con ciclo de vida completo.
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
----
+## Premium Phases — Enterprise Differentiators
 
-## 1. Campos Globales del Empleado (universales)
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-Estos campos viven en `erp_hr_employees` + `hr_employee_profiles` y son agnósticos de país:
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-### `erp_hr_employees` (ya existe — campos globales)
-| Campo | Tipo | Propósito |
-|---|---|---|
-| `first_name`, `last_name` | TEXT | Identidad |
-| `email`, `phone` | TEXT | Contacto |
-| `date_of_birth`, `gender` | DATE/TEXT | Demografía |
-| `nationality`, `secondary_nationality` | TEXT | Nacionalidad |
-| `country_code` | TEXT | País de empleo |
-| `tax_residence_country` | TEXT | Residencia fiscal |
-| `hire_date`, `termination_date` | DATE | Ciclo de vida |
-| `status` | TEXT | Estado actual |
-| `employee_number` | TEXT | Identificador interno |
-| `position_title` | TEXT | Cargo actual |
-| `department_id` | FK | Departamento |
-| `legal_entity_id` | FK | Entidad legal empleadora |
-| `work_center_id` | FK | Centro de trabajo |
-| `manager_id` | FK (self) | Manager directo |
-| `gross_salary` | NUMERIC | Salario bruto anual (genérico) |
-| `avatar_url` | TEXT | Foto |
+## FASE 2 — Completada ✅
 
-### `hr_employee_profiles` (ya existe — datos extendidos globales)
-| Campo | Tipo | Propósito |
-|---|---|---|
-| `emergency_contact_*` | TEXT | Contacto emergencia |
-| `education_level`, `education_details` | TEXT/JSONB | Formación académica |
-| `languages` | JSONB | Idiomas |
-| `skills` | JSONB | Competencias |
-| `personal_email`, `personal_phone` | TEXT | Contacto personal |
-| `address_*` | TEXT | Dirección |
-| `marital_status` | TEXT | Estado civil |
-| `dependents_count` | INT | Personas a cargo |
-| `disability_percentage` | NUMERIC | Discapacidad (universal) |
-| `bank_account_iban` | TEXT | Cuenta bancaria |
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-### Qué NO va en Core (pertenece a Localización)
-| Dato | Pertenece a | Razón |
-|---|---|---|
-| NAF / NSS (nº afiliación SS) | Plugin ES | Específico del sistema SS español |
-| Grupo de cotización (1-11) | Plugin ES | Categorías TGSS |
-| Tipo de contrato (indefinido, temporal...) | Plugin ES/FR/etc | Cada país define sus tipos |
-| IRPF / tramos retención | Plugin ES | Legislación fiscal nacional |
-| Comunidad autónoma | Plugin ES | Subdivisión administrativa española |
-| Convenio colectivo | Plugin ES | Marco laboral español |
-| CNO / CNAE | Plugin ES | Clasificaciones españolas |
-| Código contrato RED | Plugin ES | Sistema RED/TGSS |
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
----
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-## 2. Estados del Empleado y Ciclo de Vida
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-### Estados (universales)
-```text
-┌──────────┐    ┌──────────┐    ┌──────────────┐    ┌─────────────┐
-│ CANDIDATE │───→│ ONBOARDING│───→│   ACTIVE     │───→│ OFFBOARDING │
-└──────────┘    └──────────┘    └──────────────┘    └─────────────┘
-                                       │                    │
-                                       ▼                    ▼
-                                ┌──────────────┐    ┌─────────────┐
-                                │TEMPORARY_LEAVE│    │ TERMINATED  │
-                                └──────────────┘    └─────────────┘
-                                       │
-                                       ▼
-                                ┌──────────────┐
-                                │  EXCEDENCIA  │
-                                └──────────────┘
-```
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-| Estado | Significado global |
-|---|---|
-| `candidate` | Pre-alta, en proceso de selección |
-| `onboarding` | Alta en curso, documentación pendiente |
-| `active` | En plantilla activa |
-| `temporary_leave` | Baja temporal (razón varía por país) |
-| `excedencia` | Excedencia / leave of absence |
-| `offboarding` | Proceso de salida iniciado |
-| `terminated` | Baja definitiva |
-
-### Transiciones (requieren workflow)
-- `candidate → onboarding`: Aprobación de contratación
-- `onboarding → active`: Completar checklist de alta
-- `active → temporary_leave`: Registrar incidencia de baja
-- `active → offboarding`: Iniciar proceso de salida
-- `offboarding → terminated`: Completar finiquito
-- `temporary_leave → active`: Reincorporación
-
----
-
-## 3. Páginas y Componentes — Refactorización
-
-### 3.1 Ficha Global del Empleado (refactorizar `HREmployeeExpedient`)
-
-Se amplía el expediente existente de 9 tabs. Los tabs se reorganizan para separar core de localización:
-
-| Tab | Contenido Core Global | Componente |
-|---|---|---|
-| **Ficha** | Datos personales, contacto, foto, estado, manager, org | `ExpedientFichaTab` |
-| **Trayectoria** | Job assignments históricos, promociones, cambios de puesto | `ExpedientTrayectoriaTab` |
-| **Contratos** | Contratos genéricos (fechas, tipo template, jornada) | `ExpedientContratosTab` |
-| **Compensación** | Salario bruto, histórico salarial, beneficios globales | `ExpedientCompensacionTab` |
-| **Tiempo** | Fichajes, calendario, ausencias genéricas | `ExpedientTiempoTab` |
-| **Formación** | Cursos, certificaciones, skills | `ExpedientFormacionTab` |
-| **Desempeño** | Evaluaciones, OKRs, feedback | `ExpedientDesempenoTab` |
-| **Documentos** | Archivo digital, evidencias | `ExpedientDocumentosTab` |
-| **Movilidad** | Asignaciones internacionales | `ExpedientMovilidadTab` |
-| **Auditoría** | Timeline de cambios | `ExpedientAuditoriaTab` |
-
-**Tab de Localización** (se añade dinámicamente según `country_code`):
-- Si ES: tab "España" con NAF, grupo cotización, convenio, IRPF
-- Si FR: tab "France" con NSS, URSSAF, etc.
-
-### 3.2 Listado de Empleados (refactorizar `HREmployeesPanel`)
-
-Cambios al panel existente:
-- Añadir filtro por **país** (`country_code`)
-- Añadir filtro por **entidad legal** (`legal_entity_id`)
-- Añadir columna **país** con bandera
-- Eliminar columnas específicas de ES (NSS, grupo cotización) del listado core — moverlas a vista de localización
-- Añadir columna **manager** con link al expediente
-- Añadir acción "Ver expediente" que navega al `HREmployeeExpedient`
-
-### 3.3 Formulario de Alta (refactorizar `HREmployeeFormDialog`)
-
-**Secciones del formulario global:**
-1. Datos personales (nombre, email, teléfono, fecha nacimiento, género, nacionalidad)
-2. Datos organizativos (entidad legal, centro trabajo, departamento, puesto, manager)
-3. Datos de empleo (fecha alta, tipo jornada, salario bruto)
-4. Datos bancarios (IBAN)
-5. Contacto emergencia
-
-**Sección dinámica por país** (se carga según `country_code` seleccionado):
-- ES: NAF, grupo cotización, tipo contrato RD, convenio, CCAA
-- FR: NSS, catégorie socioprofessionnelle
-- etc.
-
-### 3.4 Organigrama (ya existe `HROrgStructurePanel`)
-
-Se mantiene sin cambios. Es 100% global (entidades legales → centros → departamentos → personas).
-
-### 3.5 Departamentos y Puestos (ya existen)
-
-`HRDepartmentsPanel` — se mantiene, es global.
-`HRJobPositionsPanel` — se mantiene, es global.
-
-Se añade: **`hr_job_assignments`** como historial de movimientos internos visibles desde el expediente.
-
-### 3.6 Onboarding/Offboarding (ya existen)
-
-`HROnboardingPanel` y `HROffboardingPanel` — se mantienen como core global.
-El checklist de onboarding puede tener items locales (ej: "Dar de alta en TGSS") que vendrían del plugin de país, pero la mecánica de checklists es global.
-
-### 3.7 Desempeño y Formación (ya existen)
-
-`HRPerformancePanel` y `HRTrainingPanel` — 100% globales, sin cambios necesarios.
-
-### 3.8 Compensación Global
-
-`HRCompensationSuitePanel` — se mantiene. Es la vista global de salario bruto + beneficios.
-Los detalles de coste empresa por SS (TGSS, URSSAF, etc.) van en el plugin de país.
-
-### 3.9 Vacaciones y Ausencias Genéricas
-
-`HRVacationsPanel` — se refactoriza para usar políticas genéricas (`hr_country_policies`) en lugar de los 22 días laborables hardcoded de España.
-
-### 3.10 Documentos
-
-`HREmployeeDocumentsPanel` — 100% global. Las plantillas por país vienen de `hr_document_templates`.
-
-### 3.11 Workflows Básicos
-
-`HRWorkflowDesigner` + `HRApprovalInbox` — 100% globales. Los tipos de proceso que disparan workflows pueden variar por país pero el motor es agnóstico.
-
-### 3.12 Auditoría Básica
-
-`HRAuditTrailPanel` — 100% global. Ya funciona con triggers inmutables.
-
----
-
-## 4. Roles y Permisos (Global Core)
-
-| Permiso | Descripción |
-|---|---|
-| `hr.employees.read` | Ver listado y ficha |
-| `hr.employees.write` | Crear/editar empleados |
-| `hr.employees.delete` | Dar de baja |
-| `hr.contracts.read/write` | Contratos |
-| `hr.payroll.read/write/approve` | Nóminas |
-| `hr.leave.read/write/approve` | Ausencias |
-| `hr.documents.read/write` | Documentos |
-| `hr.org.read/write` | Estructura organizativa |
-| `hr.performance.read/write` | Evaluaciones |
-| `hr.training.read/write` | Formación |
-| `hr.compensation.read/write` | Compensación |
-| `hr.workflows.manage` | Gestionar workflows |
-| `hr.audit.read` | Ver auditoría |
-| `hr.mobility.read/write` | Movilidad internacional |
-
-Los permisos se resuelven con scope: `company_id` + `legal_entity_id` + `department_id`.
-
----
-
-## 5. Tablas del Core Global (resumen)
-
-### Ya existentes (se mantienen)
-- `erp_hr_employees` — ficha maestra
-- `erp_hr_departments` — departamentos
-- `erp_hr_positions` — puestos
-- `erp_hr_contracts` — contratos (se añade `contract_template_id`)
-- `erp_hr_leave_requests` — solicitudes de ausencia
-- `erp_hr_employee_documents` — documentos
-- `erp_hr_workflow_*` — motor de workflows
-- `erp_hr_audit_log` — auditoría
-- `erp_hr_legal_entities` — entidades legales
-- `erp_hr_work_centers` — centros de trabajo
-- `erp_hr_org_units` — unidades organizativas
-- `erp_hr_performance_*` — evaluaciones
-- `erp_hr_training_*` — formación
-
-### Ya creadas en G1b (se mantienen)
-- `hr_employee_profiles` — datos extendidos
-- `hr_job_assignments` — historial de asignaciones
-- `hr_leave_incidents` — incidencias de ausencia
-- `hr_admin_requests` — solicitudes admin
-- `hr_tasks` — tareas RRHH
-
-### Modificaciones necesarias
-- `erp_hr_employees`: añadir `manager_id UUID REFERENCES erp_hr_employees(id)` si no existe
-- `erp_hr_contracts`: añadir `contract_template_id UUID` para vincular a plantillas por país
-- `erp_hr_leave_requests`: añadir `leave_policy_id UUID` para vincular a política genérica
-
----
-
-## 6. Plan de Implementación
-
-| Tarea | Detalle |
-|---|---|
-| **C1** | Añadir `manager_id` a `erp_hr_employees` + `contract_template_id` a contratos + `leave_policy_id` a leave requests (migración) |
-| **C2** | Refactorizar `HREmployeeExpedient` — dividir en 10 tab-components independientes, añadir tab dinámico por país |
-| **C3** | Refactorizar `HREmployeesPanel` — añadir filtros por país/entidad legal, columna manager, eliminar campos ES del core |
-| **C4** | Refactorizar `HREmployeeFormDialog` — sección dinámica por país, separar campos globales de locales |
-| **C5** | Refactorizar `HRVacationsPanel` — usar `hr_country_policies` para resolver días base en vez de 22 hardcoded |
-| **C6** | Crear `ExpedientTrayectoriaTab` — vista de `hr_job_assignments` con timeline visual |
-| **C7** | Crear `ExpedientCompensacionTab` — historial salarial global sin cálculos fiscales locales |
-
-**Prioridad**: C1 → C2 → C3 → C4 (base estructural), luego C5-C7 (mejoras funcionales).
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard

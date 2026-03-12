@@ -1,21 +1,33 @@
 /**
- * HREmployeeExpedient — Transversal employee view with 9 tabs
- * Core component for navigating all data related to a single employee
+ * HREmployeeExpedient — Transversal employee view with 10 global tabs + dynamic country tab
+ * Global HR Core: country-agnostic, loads localization dynamically
  */
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
-  User, FileText, DollarSign, Clock, FolderOpen, Globe, Landmark,
-  Send, ClipboardList, ArrowLeft, Mail, Phone, MapPin, Building2
+  User, FileText, DollarSign, Clock, FolderOpen, Globe, Briefcase,
+  GraduationCap, BarChart3, ClipboardList, ArrowLeft, Mail, Phone, Building2, Flag
 } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HREntityBreadcrumb, type BreadcrumbItem } from '../shared/HREntityBreadcrumb';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
+import {
+  ExpedientFichaTab,
+  ExpedientTrayectoriaTab,
+  ExpedientContratosTab,
+  ExpedientCompensacionTab,
+  ExpedientTiempoTab,
+  ExpedientFormacionTab,
+  ExpedientDesempenoTab,
+  ExpedientDocumentosTab,
+  ExpedientMovilidadTab,
+  ExpedientAuditoriaTab,
+  ExpedientLocalizacionTab,
+} from './tabs';
 
 interface Props {
   companyId: string;
@@ -37,17 +49,32 @@ interface EmployeeData {
   country_code?: string;
   legal_entity_id?: string;
   work_center_id?: string;
+  nationality?: string;
+  reports_to?: string;
+  reports_to_name?: string;
+  legal_entity_name?: string;
+  work_center_name?: string;
+  birth_date?: string;
+  gender?: string;
+  employee_number?: string;
+  base_salary?: number;
+  job_title?: string;
 }
 
-const TABS = [
+const COUNTRY_FLAGS: Record<string, string> = {
+  ES: '🇪🇸', FR: '🇫🇷', PT: '🇵🇹', DE: '🇩🇪', IT: '🇮🇹', UK: '🇬🇧', US: '🇺🇸', MX: '🇲🇽', AD: '🇦🇩',
+};
+
+const CORE_TABS = [
   { id: 'ficha', label: 'Ficha', icon: User },
+  { id: 'trayectoria', label: 'Trayectoria', icon: Briefcase },
   { id: 'contratos', label: 'Contratos', icon: FileText },
-  { id: 'nominas', label: 'Nóminas', icon: DollarSign },
+  { id: 'compensacion', label: 'Compensación', icon: DollarSign },
   { id: 'tiempo', label: 'Tiempo', icon: Clock },
+  { id: 'formacion', label: 'Formación', icon: GraduationCap },
+  { id: 'desempeno', label: 'Desempeño', icon: BarChart3 },
   { id: 'documentos', label: 'Documentos', icon: FolderOpen },
   { id: 'movilidad', label: 'Movilidad', icon: Globe },
-  { id: 'ss-fiscal', label: 'SS/Fiscal', icon: Landmark },
-  { id: 'envios', label: 'Envíos', icon: Send },
   { id: 'auditoria', label: 'Auditoría', icon: ClipboardList },
 ] as const;
 
@@ -57,19 +84,25 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchEmployee = async () => {
       setLoading(true);
       try {
         const { data } = await (supabase
           .from('erp_hr_employees')
-          .select('id, first_name, last_name, email, phone, status, hire_date, position_title, country_code, legal_entity_id, work_center_id')
+          .select('id, first_name, last_name, email, phone, status, hire_date, job_title, country_code, legal_entity_id, work_center_id, nationality, reports_to, birth_date, gender, employee_number, base_salary')
           .eq('id', employeeId)
           .single() as any);
-        if (data) setEmployee(data as EmployeeData);
+        if (data) {
+          const empData: EmployeeData = {
+            ...data,
+            position_title: data.job_title,
+          };
+          setEmployee(empData);
+        }
       } catch { /* ignore */ }
       setLoading(false);
     };
-    fetch();
+    fetchEmployee();
   }, [employeeId]);
 
   if (loading) {
@@ -100,6 +133,17 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
   }
 
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
+  const countryFlag = employee.country_code ? COUNTRY_FLAGS[employee.country_code] || '🌐' : null;
+
+  // Build dynamic tabs: core + country localization tab
+  const allTabs = [
+    ...CORE_TABS,
+    ...(employee.country_code ? [{
+      id: 'localizacion',
+      label: `${countryFlag} ${employee.country_code}`,
+      icon: Flag,
+    }] : []),
+  ];
 
   const breadcrumb: BreadcrumbItem[] = [
     { id: 'company', label: 'Empresa', type: 'company', onClick: onBack },
@@ -109,7 +153,6 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
 
   return (
     <div className="space-y-4">
-      {/* Breadcrumb */}
       <HREntityBreadcrumb items={breadcrumb} />
 
       {/* Employee Header Card */}
@@ -130,9 +173,9 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
                   {employee.first_name} {employee.last_name}
                 </h2>
                 <HRStatusBadge entity="employee" status={employee.status} size="md" />
-                {employee.country_code && (
+                {countryFlag && (
                   <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                    {employee.country_code}
+                    {countryFlag} {employee.country_code}
                   </span>
                 )}
               </div>
@@ -154,7 +197,7 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
                 )}
                 {employee.hire_date && (
                   <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Alta: {new Date(employee.hire_date).toLocaleDateString('es-ES')}
+                    <Clock className="h-3 w-3" /> Alta: {new Date(employee.hire_date).toLocaleDateString()}
                   </span>
                 )}
               </div>
@@ -167,7 +210,7 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <ScrollArea className="w-full">
           <TabsList className="inline-flex w-auto">
-            {TABS.map(tab => {
+            {allTabs.map(tab => {
               const Icon = tab.icon;
               return (
                 <TabsTrigger key={tab.id} value={tab.id} className="gap-1.5 text-xs">
@@ -180,104 +223,51 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate 
         </ScrollArea>
 
         <TabsContent value="ficha">
-          <ExpedientSection title="Datos Personales" icon={User}>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-              <Field label="Nombre" value={employee.first_name} />
-              <Field label="Apellidos" value={employee.last_name} />
-              <Field label="Email" value={employee.email} />
-              <Field label="Teléfono" value={employee.phone} />
-              <Field label="País" value={employee.country_code} />
-              <Field label="Departamento" value={employee.department_name} />
-              <Field label="Puesto" value={employee.position_title} />
-              <Field label="Fecha alta" value={employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('es-ES') : undefined} />
-              <Field label="Estado" value={employee.status} />
-            </div>
-          </ExpedientSection>
+          <ExpedientFichaTab employee={employee} />
+        </TabsContent>
+
+        <TabsContent value="trayectoria">
+          <ExpedientTrayectoriaTab employeeId={employeeId} companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="contratos">
-          <ExpedientSection title="Historial Contractual" icon={FileText}>
-            <PlaceholderContent text="Contratos vinculados a este empleado" actionLabel="Ver contratos" onAction={() => onNavigate?.('contracts')} />
-          </ExpedientSection>
+          <ExpedientContratosTab employeeId={employeeId} companyId={companyId} onNavigate={(m) => onNavigate?.(m)} />
         </TabsContent>
 
-        <TabsContent value="nominas">
-          <ExpedientSection title="Historial de Nóminas" icon={DollarSign}>
-            <PlaceholderContent text="Nóminas procesadas para este empleado" actionLabel="Ver nóminas" onAction={() => onNavigate?.('payroll')} />
-          </ExpedientSection>
+        <TabsContent value="compensacion">
+          <ExpedientCompensacionTab employeeId={employeeId} companyId={companyId} currentSalary={employee.base_salary} onNavigate={(m) => onNavigate?.(m)} />
         </TabsContent>
 
         <TabsContent value="tiempo">
-          <ExpedientSection title="Tiempo y Ausencias" icon={Clock}>
-            <PlaceholderContent text="Fichajes, vacaciones e incidencias" actionLabel="Ver vacaciones" onAction={() => onNavigate?.('vacations')} />
-          </ExpedientSection>
+          <ExpedientTiempoTab employeeId={employeeId} companyId={companyId} onNavigate={(m) => onNavigate?.(m)} />
+        </TabsContent>
+
+        <TabsContent value="formacion">
+          <ExpedientFormacionTab employeeId={employeeId} companyId={companyId} onNavigate={(m) => onNavigate?.(m)} />
+        </TabsContent>
+
+        <TabsContent value="desempeno">
+          <ExpedientDesempenoTab employeeId={employeeId} companyId={companyId} onNavigate={(m) => onNavigate?.(m)} />
         </TabsContent>
 
         <TabsContent value="documentos">
-          <ExpedientSection title="Documentos" icon={FolderOpen}>
-            <PlaceholderContent text="Documentos y evidencias de compliance" actionLabel="Gestor documental" onAction={() => onNavigate?.('documents')} />
-          </ExpedientSection>
+          <ExpedientDocumentosTab employeeId={employeeId} companyId={companyId} onNavigate={(m) => onNavigate?.(m)} />
         </TabsContent>
 
         <TabsContent value="movilidad">
-          <ExpedientSection title="Movilidad Internacional" icon={Globe}>
-            <PlaceholderContent text="Asignaciones internacionales activas" actionLabel="Ver movilidad" onAction={() => onNavigate?.('mobility-assignments')} />
-          </ExpedientSection>
-        </TabsContent>
-
-        <TabsContent value="ss-fiscal">
-          <ExpedientSection title="Seguridad Social y Fiscal" icon={Landmark}>
-            <PlaceholderContent text="Eventos de SS, retenciones y fiscalidad" actionLabel="Ver SS" onAction={() => onNavigate?.('ss')} />
-          </ExpedientSection>
-        </TabsContent>
-
-        <TabsContent value="envios">
-          <ExpedientSection title="Envíos Oficiales" icon={Send}>
-            <PlaceholderContent text="Milena PA, Contrat@, certificados" actionLabel="Ver envíos" onAction={() => onNavigate?.('official-submissions')} />
-          </ExpedientSection>
+          <ExpedientMovilidadTab employeeId={employeeId} companyId={companyId} onNavigate={(m) => onNavigate?.(m)} />
         </TabsContent>
 
         <TabsContent value="auditoria">
-          <ExpedientSection title="Auditoría del Expediente" icon={ClipboardList}>
-            <PlaceholderContent text="Timeline de cambios en este expediente" actionLabel="Ver auditoría" onAction={() => onNavigate?.('audit-trail')} />
-          </ExpedientSection>
+          <ExpedientAuditoriaTab employeeId={employeeId} companyId={companyId} onNavigate={(m) => onNavigate?.(m)} />
         </TabsContent>
+
+        {employee.country_code && (
+          <TabsContent value="localizacion">
+            <ExpedientLocalizacionTab employeeId={employeeId} companyId={companyId} countryCode={employee.country_code} />
+          </TabsContent>
+        )}
       </Tabs>
-    </div>
-  );
-}
-
-function ExpedientSection({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" /> {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-function Field({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="font-medium">{value || '—'}</p>
-    </div>
-  );
-}
-
-function PlaceholderContent({ text, actionLabel, onAction }: { text: string; actionLabel: string; onAction?: () => void }) {
-  return (
-    <div className="text-center py-6 space-y-3">
-      <p className="text-sm text-muted-foreground">{text}</p>
-      {onAction && (
-        <Button variant="outline" size="sm" onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
     </div>
   );
 }
