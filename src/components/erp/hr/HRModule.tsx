@@ -272,8 +272,8 @@ export function HRModule() {
         }}
       />
 
-      {/* Header con estadísticas rápidas */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      {/* Header con estadísticas rápidas — MVP: 4 cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
           <CardContent className="p-3">
             <div className="flex items-center gap-2">
@@ -317,30 +317,6 @@ export function HRModule() {
               <div>
                 <p className="text-xs text-muted-foreground">Nóminas</p>
                 <p className="text-lg font-bold">{stats.pendingPayrolls}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Vencimientos</p>
-                <p className="text-lg font-bold">{stats.expiringContracts}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-red-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">Seguridad</p>
-                <p className="text-lg font-bold">{stats.safetyAlerts}</p>
               </div>
             </div>
           </CardContent>
@@ -455,6 +431,7 @@ export function HRModule() {
           <HREmployeeExpedient
             companyId={companyId}
             employeeId={selectedEmployeeId}
+            mvpMode={true}
             onBack={() => {
               setSelectedEmployeeId(null);
               setActiveModule('employees');

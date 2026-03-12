@@ -69,11 +69,11 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'departments', 'legal-entities', 'work-centers',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-periods',
+    'payroll', 'payroll-periods', 'payroll-engine',
     'ss', 'compensation-suite', 'benefits',
     // Laboral
     'vacations', 'time-clock', 'leave-incidents',
-    'admin-requests', 'hr-tasks',
+    'admin-requests', 'hr-tasks', 'approval-inbox',
     // Global
     'country-registry', 'es-localization',
   ]);
@@ -138,9 +138,10 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-emerald-600',
           items: [
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
+            { id: 'payroll-engine', label: 'Motor Nómina', icon: Calculator, description: 'Períodos, registros y conceptos', badge: 'Nuevo' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones' },
-            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Gestión de períodos', badge: 'Nuevo' },
+            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Gestión de períodos' },
           ]
         },
         {
@@ -182,6 +183,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'admin-requests', label: 'Solicitudes', icon: Briefcase, description: 'Solicitudes administrativas', badge: 'Nuevo' },
             { id: 'hr-tasks', label: 'Tareas RRHH', icon: ClipboardList, description: 'Tareas asignables', badge: 'Nuevo' },
+            { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox, description: 'Bandeja de aprobaciones' },
             { id: 'regulatory-watch', label: 'Vigilancia Normativa', icon: Shield, description: 'Alertas legales' },
             { id: 'safety', label: 'PRL', icon: Shield, description: 'Prevención de riesgos', badge: stats.safetyAlerts, badgeVariant: 'destructive' },
           ]
