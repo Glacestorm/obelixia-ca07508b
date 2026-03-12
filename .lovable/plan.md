@@ -6,6 +6,7 @@
 | Fase Global | Estado | Detalles |
 |------|--------|----------|
 | G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas (hr_country_registry, hr_country_policies, hr_employee_extensions) + Edge Function (hr-country-registry) + Hook (useCountryRegistry) + UI Panel (3 tabs: Países, Políticas, Compliance IA) + Navegación Global + Realtime + Seed España |
+| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes: Core (profiles, job_assignments, leave_incidents, admin_requests, tasks), Localización (rule_sets, localization_configs, document_templates), Payroll (periods, records, record_lines, variables, ss_events, tax_events), Mobility (assignments, packages, immigration, tax_eq, split_payroll), Compliance (requirements, evidence), Integraciones (adapters, submissions, receipts) + RLS + Indexes + Realtime |
 | G2 - Extraer lógica ES a plugin | 🔜 Pendiente | IRPF, TGSS, contratos, permisos → localization/es/ |
 | G3 - Payroll Engine genérico | 🔜 Pendiente | Refactor motor de nómina multi-país |
 | G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
