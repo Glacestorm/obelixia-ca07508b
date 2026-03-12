@@ -413,6 +413,9 @@ export function HRModule() {
         {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={companyId} />}
         {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={companyId} />}
 
+        {/* Global HR Platform - Fase G1 */}
+        {activeModule === 'country-registry' && <HRCountryRegistryPanel companyId={companyId} />}
+
         {/* Utilidades — grid de navegación */}
         {activeModule === 'util-grid' && (
           <HRUtilitiesNavigation

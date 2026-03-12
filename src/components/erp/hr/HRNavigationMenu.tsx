@@ -16,7 +16,7 @@ import {
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
-  Sparkles, Wrench, MessageSquare, Search, Activity
+  Sparkles, Wrench, MessageSquare, Search, Activity, Flag
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
