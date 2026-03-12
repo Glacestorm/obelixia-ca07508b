@@ -12,7 +12,7 @@
 | C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
 | **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
 | G2 - Extraer lógica ES a plugin | 🔜 Pendiente | IRPF, TGSS, contratos, permisos → localization/es/ |
-| G3 - Payroll Engine genérico | 🔜 Pendiente | Refactor motor de nómina multi-país |
+| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
 | G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
 | G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
 | G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
