@@ -31838,15 +31838,18 @@ export type Database = {
           legal_entity_id: string | null
           metadata: Json | null
           national_id: string | null
+          nationality: string | null
           org_unit_id: string | null
           phone: string | null
           position_id: string | null
           reports_to: string | null
           search_vector: unknown
+          secondary_nationality: string | null
           social_security_number: string | null
           ss_number: string | null
           status: string | null
           tax_jurisdiction: string | null
+          tax_residence_country: string | null
           termination_date: string | null
           updated_at: string | null
           user_id: string | null
@@ -31882,15 +31885,18 @@ export type Database = {
           legal_entity_id?: string | null
           metadata?: Json | null
           national_id?: string | null
+          nationality?: string | null
           org_unit_id?: string | null
           phone?: string | null
           position_id?: string | null
           reports_to?: string | null
           search_vector?: unknown
+          secondary_nationality?: string | null
           social_security_number?: string | null
           ss_number?: string | null
           status?: string | null
           tax_jurisdiction?: string | null
+          tax_residence_country?: string | null
           termination_date?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -31926,15 +31932,18 @@ export type Database = {
           legal_entity_id?: string | null
           metadata?: Json | null
           national_id?: string | null
+          nationality?: string | null
           org_unit_id?: string | null
           phone?: string | null
           position_id?: string | null
           reports_to?: string | null
           search_vector?: unknown
+          secondary_nationality?: string | null
           social_security_number?: string | null
           ss_number?: string | null
           status?: string | null
           tax_jurisdiction?: string | null
+          tax_residence_country?: string | null
           termination_date?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -36781,6 +36790,7 @@ export type Database = {
           company_id: string
           concept_type: string
           cotiza_ss: boolean | null
+          country_code: string | null
           created_at: string | null
           default_amount: number | null
           id: string
@@ -36802,6 +36812,7 @@ export type Database = {
           company_id: string
           concept_type: string
           cotiza_ss?: boolean | null
+          country_code?: string | null
           created_at?: string | null
           default_amount?: number | null
           id?: string
@@ -36823,6 +36834,7 @@ export type Database = {
           company_id?: string
           concept_type?: string
           cotiza_ss?: boolean | null
+          country_code?: string | null
           created_at?: string | null
           default_amount?: number | null
           id?: string
@@ -53893,6 +53905,206 @@ export type Database = {
           },
         ]
       }
+      hr_admin_requests: {
+        Row: {
+          assigned_to: string | null
+          attachments: Json | null
+          company_id: string
+          created_at: string
+          description: string | null
+          employee_id: string
+          id: string
+          metadata: Json | null
+          priority: string
+          request_subtype: string | null
+          request_type: string
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          subject: string
+          updated_at: string
+          workflow_instance_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          attachments?: Json | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          employee_id: string
+          id?: string
+          metadata?: Json | null
+          priority?: string
+          request_subtype?: string | null
+          request_type: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          workflow_instance_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          attachments?: Json | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          employee_id?: string
+          id?: string
+          metadata?: Json | null
+          priority?: string
+          request_subtype?: string | null
+          request_type?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          workflow_instance_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_admin_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_compliance_evidence: {
+        Row: {
+          alert_days_before: number | null
+          alert_sent: boolean
+          company_id: string
+          created_at: string
+          document_id: string | null
+          employee_id: string
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          metadata: Json | null
+          requirement_id: string
+          status: string
+          updated_at: string
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          alert_days_before?: number | null
+          alert_sent?: boolean
+          company_id: string
+          created_at?: string
+          document_id?: string | null
+          employee_id: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          metadata?: Json | null
+          requirement_id: string
+          status?: string
+          updated_at?: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          alert_days_before?: number | null
+          alert_sent?: boolean
+          company_id?: string
+          created_at?: string
+          document_id?: string | null
+          employee_id?: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          metadata?: Json | null
+          requirement_id?: string
+          status?: string
+          updated_at?: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_compliance_evidence_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_compliance_evidence_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "hr_compliance_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_compliance_requirements: {
+        Row: {
+          applies_to: string | null
+          company_id: string | null
+          country_code: string
+          created_at: string
+          description: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean
+          legal_reference: string | null
+          mandatory: boolean
+          metadata: Json | null
+          name: string
+          penalty_info: string | null
+          renewal_period_days: number | null
+          requirement_type: string
+          updated_at: string
+        }
+        Insert: {
+          applies_to?: string | null
+          company_id?: string | null
+          country_code: string
+          created_at?: string
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          legal_reference?: string | null
+          mandatory?: boolean
+          metadata?: Json | null
+          name: string
+          penalty_info?: string | null
+          renewal_period_days?: number | null
+          requirement_type: string
+          updated_at?: string
+        }
+        Update: {
+          applies_to?: string | null
+          company_id?: string | null
+          country_code?: string
+          created_at?: string
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean
+          legal_reference?: string | null
+          mandatory?: boolean
+          metadata?: Json | null
+          name?: string
+          penalty_info?: string | null
+          renewal_period_days?: number | null
+          requirement_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_country_policies: {
         Row: {
           company_id: string
@@ -54031,6 +54243,132 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_country_rule_sets: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_id: string | null
+          country_code: string
+          created_at: string
+          description: string | null
+          effective_from: string
+          effective_to: string | null
+          fiscal_year: number
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          name: string
+          rule_type: string
+          rules_data: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          country_code: string
+          created_at?: string
+          description?: string | null
+          effective_from: string
+          effective_to?: string | null
+          fiscal_year: number
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name: string
+          rule_type: string
+          rules_data?: Json
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_id?: string | null
+          country_code?: string
+          created_at?: string
+          description?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          fiscal_year?: number
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          name?: string
+          rule_type?: string
+          rules_data?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      hr_document_templates: {
+        Row: {
+          company_id: string | null
+          content_template: string | null
+          country_code: string
+          created_at: string
+          description: string | null
+          footer_template: string | null
+          header_template: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          legal_reference: string | null
+          metadata: Json | null
+          name: string
+          styling: Json | null
+          template_subtype: string | null
+          template_type: string
+          updated_at: string
+          variables: Json | null
+          version: number
+        }
+        Insert: {
+          company_id?: string | null
+          content_template?: string | null
+          country_code: string
+          created_at?: string
+          description?: string | null
+          footer_template?: string | null
+          header_template?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          legal_reference?: string | null
+          metadata?: Json | null
+          name: string
+          styling?: Json | null
+          template_subtype?: string | null
+          template_type: string
+          updated_at?: string
+          variables?: Json | null
+          version?: number
+        }
+        Update: {
+          company_id?: string | null
+          content_template?: string | null
+          country_code?: string
+          created_at?: string
+          description?: string | null
+          footer_template?: string | null
+          header_template?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          legal_reference?: string | null
+          metadata?: Json | null
+          name?: string
+          styling?: Json | null
+          template_subtype?: string | null
+          template_type?: string
+          updated_at?: string
+          variables?: Json | null
+          version?: number
+        }
+        Relationships: []
+      }
       hr_employee_extensions: {
         Row: {
           company_id: string
@@ -54081,6 +54419,1386 @@ export type Database = {
           work_permit_expiry?: string | null
         }
         Relationships: []
+      }
+      hr_employee_profiles: {
+        Row: {
+          certifications: Json | null
+          company_id: string
+          created_at: string
+          education_details: Json | null
+          education_level: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          employee_id: string
+          id: string
+          languages: Json | null
+          metadata: Json | null
+          personal_notes: string | null
+          skills: Json | null
+          updated_at: string
+        }
+        Insert: {
+          certifications?: Json | null
+          company_id: string
+          created_at?: string
+          education_details?: Json | null
+          education_level?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_id: string
+          id?: string
+          languages?: Json | null
+          metadata?: Json | null
+          personal_notes?: string | null
+          skills?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          certifications?: Json | null
+          company_id?: string
+          created_at?: string
+          education_details?: Json | null
+          education_level?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_id?: string
+          id?: string
+          languages?: Json | null
+          metadata?: Json | null
+          personal_notes?: string | null
+          skills?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_employee_profiles_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_expatriate_packages: {
+        Row: {
+          assignment_id: string
+          base_salary_home: number | null
+          base_salary_host: number | null
+          cola_allowance: number | null
+          created_at: string
+          currency: string
+          education_allowance: number | null
+          hardship_allowance: number | null
+          housing_allowance: number | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          other_allowances: Json | null
+          relocation_budget: number | null
+          tax_gross_up: boolean
+          total_package_value: number | null
+          travel_allowance: number | null
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          base_salary_home?: number | null
+          base_salary_host?: number | null
+          cola_allowance?: number | null
+          created_at?: string
+          currency?: string
+          education_allowance?: number | null
+          hardship_allowance?: number | null
+          housing_allowance?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          other_allowances?: Json | null
+          relocation_budget?: number | null
+          tax_gross_up?: boolean
+          total_package_value?: number | null
+          travel_allowance?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          base_salary_home?: number | null
+          base_salary_host?: number | null
+          cola_allowance?: number | null
+          created_at?: string
+          currency?: string
+          education_allowance?: number | null
+          hardship_allowance?: number | null
+          housing_allowance?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          other_allowances?: Json | null
+          relocation_budget?: number | null
+          tax_gross_up?: boolean
+          total_package_value?: number | null
+          travel_allowance?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_expatriate_packages_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_mobility_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_immigration_documents: {
+        Row: {
+          alert_sent: boolean
+          assignment_id: string | null
+          company_id: string
+          country: string
+          created_at: string
+          document_number: string | null
+          document_subtype: string | null
+          document_type: string
+          document_url: string | null
+          employee_id: string
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          issuing_authority: string | null
+          metadata: Json | null
+          notes: string | null
+          renewal_lead_days: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alert_sent?: boolean
+          assignment_id?: string | null
+          company_id: string
+          country: string
+          created_at?: string
+          document_number?: string | null
+          document_subtype?: string | null
+          document_type: string
+          document_url?: string | null
+          employee_id: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          renewal_lead_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alert_sent?: boolean
+          assignment_id?: string | null
+          company_id?: string
+          country?: string
+          created_at?: string
+          document_number?: string | null
+          document_subtype?: string | null
+          document_type?: string
+          document_url?: string | null
+          employee_id?: string
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          renewal_lead_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_immigration_documents_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_mobility_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_immigration_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_integration_adapters: {
+        Row: {
+          adapter_name: string
+          adapter_type: string
+          auth_type: string | null
+          company_id: string | null
+          config: Json | null
+          country_code: string
+          created_at: string
+          endpoint_url: string | null
+          id: string
+          is_active: boolean
+          last_execution_at: string | null
+          last_execution_status: string | null
+          metadata: Json | null
+          status: string
+          system_name: string
+          updated_at: string
+        }
+        Insert: {
+          adapter_name: string
+          adapter_type: string
+          auth_type?: string | null
+          company_id?: string | null
+          config?: Json | null
+          country_code: string
+          created_at?: string
+          endpoint_url?: string | null
+          id?: string
+          is_active?: boolean
+          last_execution_at?: string | null
+          last_execution_status?: string | null
+          metadata?: Json | null
+          status?: string
+          system_name: string
+          updated_at?: string
+        }
+        Update: {
+          adapter_name?: string
+          adapter_type?: string
+          auth_type?: string | null
+          company_id?: string | null
+          config?: Json | null
+          country_code?: string
+          created_at?: string
+          endpoint_url?: string | null
+          id?: string
+          is_active?: boolean
+          last_execution_at?: string | null
+          last_execution_status?: string | null
+          metadata?: Json | null
+          status?: string
+          system_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_job_assignments: {
+        Row: {
+          assignment_type: string
+          company_id: string
+          created_at: string
+          department_id: string | null
+          employee_id: string
+          end_date: string | null
+          id: string
+          is_current: boolean
+          legal_entity_id: string | null
+          metadata: Json | null
+          notes: string | null
+          org_unit_id: string | null
+          position_id: string | null
+          reason: string | null
+          start_date: string
+          updated_at: string
+          work_center_id: string | null
+        }
+        Insert: {
+          assignment_type?: string
+          company_id: string
+          created_at?: string
+          department_id?: string | null
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          is_current?: boolean
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          org_unit_id?: string | null
+          position_id?: string | null
+          reason?: string | null
+          start_date: string
+          updated_at?: string
+          work_center_id?: string | null
+        }
+        Update: {
+          assignment_type?: string
+          company_id?: string
+          created_at?: string
+          department_id?: string | null
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          is_current?: boolean
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          org_unit_id?: string | null
+          position_id?: string | null
+          reason?: string | null
+          start_date?: string
+          updated_at?: string
+          work_center_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_job_assignments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_job_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_job_assignments_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_job_assignments_org_unit_id_fkey"
+            columns: ["org_unit_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_org_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_job_assignments_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_positions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_job_assignments_work_center_id_fkey"
+            columns: ["work_center_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_work_centers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_leave_incidents: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          calendar_days: number | null
+          company_id: string
+          country_code: string
+          created_at: string
+          document_id: string | null
+          employee_id: string
+          end_date: string | null
+          id: string
+          justification: string | null
+          leave_policy_id: string | null
+          leave_subtype: string | null
+          leave_type: string
+          medical_certificate_ref: string | null
+          metadata: Json | null
+          start_date: string
+          status: string
+          updated_at: string
+          workflow_instance_id: string | null
+          working_days: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_days?: number | null
+          company_id: string
+          country_code?: string
+          created_at?: string
+          document_id?: string | null
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          justification?: string | null
+          leave_policy_id?: string | null
+          leave_subtype?: string | null
+          leave_type: string
+          medical_certificate_ref?: string | null
+          metadata?: Json | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          workflow_instance_id?: string | null
+          working_days?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_days?: number | null
+          company_id?: string
+          country_code?: string
+          created_at?: string
+          document_id?: string | null
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          justification?: string | null
+          leave_policy_id?: string | null
+          leave_subtype?: string | null
+          leave_type?: string
+          medical_certificate_ref?: string | null
+          metadata?: Json | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          workflow_instance_id?: string | null
+          working_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_leave_incidents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_leave_incidents_leave_policy_id_fkey"
+            columns: ["leave_policy_id"]
+            isOneToOne: false
+            referencedRelation: "hr_country_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_localization_configs: {
+        Row: {
+          calendar_config: Json | null
+          company_id: string | null
+          config_type: string
+          country_code: string
+          created_at: string
+          date_format: string | null
+          id: string
+          is_active: boolean
+          legal_templates: Json | null
+          metadata: Json | null
+          name: string
+          number_format: Json | null
+          payslip_format: Json | null
+          rounding_rules: Json | null
+          updated_at: string
+        }
+        Insert: {
+          calendar_config?: Json | null
+          company_id?: string | null
+          config_type: string
+          country_code: string
+          created_at?: string
+          date_format?: string | null
+          id?: string
+          is_active?: boolean
+          legal_templates?: Json | null
+          metadata?: Json | null
+          name: string
+          number_format?: Json | null
+          payslip_format?: Json | null
+          rounding_rules?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          calendar_config?: Json | null
+          company_id?: string | null
+          config_type?: string
+          country_code?: string
+          created_at?: string
+          date_format?: string | null
+          id?: string
+          is_active?: boolean
+          legal_templates?: Json | null
+          metadata?: Json | null
+          name?: string
+          number_format?: Json | null
+          payslip_format?: Json | null
+          rounding_rules?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_mobility_assignments: {
+        Row: {
+          actual_end_date: string | null
+          assignment_letter_ref: string | null
+          assignment_type: string
+          company_id: string
+          created_at: string
+          days_in_host: number | null
+          employee_id: string
+          expected_end_date: string | null
+          home_country: string
+          home_entity_id: string | null
+          host_country: string
+          host_entity_id: string | null
+          id: string
+          job_title_host: string | null
+          metadata: Json | null
+          notes: string | null
+          pe_risk_flag: boolean
+          reporting_to: string | null
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end_date?: string | null
+          assignment_letter_ref?: string | null
+          assignment_type?: string
+          company_id: string
+          created_at?: string
+          days_in_host?: number | null
+          employee_id: string
+          expected_end_date?: string | null
+          home_country: string
+          home_entity_id?: string | null
+          host_country: string
+          host_entity_id?: string | null
+          id?: string
+          job_title_host?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          pe_risk_flag?: boolean
+          reporting_to?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end_date?: string | null
+          assignment_letter_ref?: string | null
+          assignment_type?: string
+          company_id?: string
+          created_at?: string
+          days_in_host?: number | null
+          employee_id?: string
+          expected_end_date?: string | null
+          home_country?: string
+          home_entity_id?: string | null
+          host_country?: string
+          host_entity_id?: string | null
+          id?: string
+          job_title_host?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          pe_risk_flag?: boolean
+          reporting_to?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_mobility_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_mobility_assignments_home_entity_id_fkey"
+            columns: ["home_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_mobility_assignments_host_entity_id_fkey"
+            columns: ["host_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_official_submission_receipts: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          official_response: Json | null
+          receipt_date: string | null
+          receipt_document_url: string | null
+          receipt_reference: string | null
+          submission_id: string
+          validation_errors: Json | null
+          validation_status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          official_response?: Json | null
+          receipt_date?: string | null
+          receipt_document_url?: string | null
+          receipt_reference?: string | null
+          submission_id: string
+          validation_errors?: Json | null
+          validation_status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          official_response?: Json | null
+          receipt_date?: string | null
+          receipt_document_url?: string | null
+          receipt_reference?: string | null
+          submission_id?: string
+          validation_errors?: Json | null
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_official_submission_receipts_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "hr_official_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_official_submissions: {
+        Row: {
+          adapter_id: string | null
+          attempts: number
+          company_id: string
+          country_code: string
+          created_at: string
+          external_reference: string | null
+          file_format: string | null
+          file_url: string | null
+          id: string
+          last_error: string | null
+          legal_entity_id: string | null
+          metadata: Json | null
+          notes: string | null
+          payload: Json
+          reference_period: string | null
+          status: string
+          submission_subtype: string | null
+          submission_type: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          adapter_id?: string | null
+          attempts?: number
+          company_id: string
+          country_code?: string
+          created_at?: string
+          external_reference?: string | null
+          file_format?: string | null
+          file_url?: string | null
+          id?: string
+          last_error?: string | null
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          payload?: Json
+          reference_period?: string | null
+          status?: string
+          submission_subtype?: string | null
+          submission_type: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adapter_id?: string | null
+          attempts?: number
+          company_id?: string
+          country_code?: string
+          created_at?: string
+          external_reference?: string | null
+          file_format?: string | null
+          file_url?: string | null
+          id?: string
+          last_error?: string | null
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          payload?: Json
+          reference_period?: string | null
+          status?: string
+          submission_subtype?: string | null
+          submission_type?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_official_submissions_adapter_id_fkey"
+            columns: ["adapter_id"]
+            isOneToOne: false
+            referencedRelation: "hr_integration_adapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_official_submissions_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_periods: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          company_id: string
+          country_code: string
+          created_at: string
+          end_date: string
+          fiscal_year: number
+          id: string
+          legal_entity_id: string | null
+          metadata: Json | null
+          payment_date: string | null
+          period_name: string
+          period_number: number
+          period_type: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id: string
+          country_code?: string
+          created_at?: string
+          end_date: string
+          fiscal_year: number
+          id?: string
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          payment_date?: string | null
+          period_name: string
+          period_number: number
+          period_type?: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id?: string
+          country_code?: string
+          created_at?: string
+          end_date?: string
+          fiscal_year?: number
+          id?: string
+          legal_entity_id?: string | null
+          metadata?: Json | null
+          payment_date?: string | null
+          period_name?: string
+          period_number?: number
+          period_type?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_periods_legal_entity_id_fkey"
+            columns: ["legal_entity_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_record_lines: {
+        Row: {
+          amount: number
+          base_amount: number | null
+          calculation_formula: string | null
+          concept_code: string
+          concept_name: string
+          created_at: string
+          id: string
+          is_ss_contributable: boolean
+          is_taxable: boolean
+          line_type: string
+          metadata: Json | null
+          payroll_record_id: string
+          percentage: number | null
+          sort_order: number
+          units: number | null
+        }
+        Insert: {
+          amount?: number
+          base_amount?: number | null
+          calculation_formula?: string | null
+          concept_code: string
+          concept_name: string
+          created_at?: string
+          id?: string
+          is_ss_contributable?: boolean
+          is_taxable?: boolean
+          line_type: string
+          metadata?: Json | null
+          payroll_record_id: string
+          percentage?: number | null
+          sort_order?: number
+          units?: number | null
+        }
+        Update: {
+          amount?: number
+          base_amount?: number | null
+          calculation_formula?: string | null
+          concept_code?: string
+          concept_name?: string
+          created_at?: string
+          id?: string
+          is_ss_contributable?: boolean
+          is_taxable?: boolean
+          line_type?: string
+          metadata?: Json | null
+          payroll_record_id?: string
+          percentage?: number | null
+          sort_order?: number
+          units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_record_lines_payroll_record_id_fkey"
+            columns: ["payroll_record_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_records: {
+        Row: {
+          calculation_details: Json | null
+          company_id: string
+          contract_id: string | null
+          country_code: string
+          country_rule_set_id: string | null
+          created_at: string
+          currency: string
+          employee_id: string
+          employer_cost: number
+          gross_salary: number
+          id: string
+          is_retroactive: boolean
+          metadata: Json | null
+          net_salary: number
+          paid_at: string | null
+          payment_reference: string | null
+          payroll_period_id: string
+          retroactive_period_id: string | null
+          status: string
+          total_deductions: number
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          calculation_details?: Json | null
+          company_id: string
+          contract_id?: string | null
+          country_code?: string
+          country_rule_set_id?: string | null
+          created_at?: string
+          currency?: string
+          employee_id: string
+          employer_cost?: number
+          gross_salary?: number
+          id?: string
+          is_retroactive?: boolean
+          metadata?: Json | null
+          net_salary?: number
+          paid_at?: string | null
+          payment_reference?: string | null
+          payroll_period_id: string
+          retroactive_period_id?: string | null
+          status?: string
+          total_deductions?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          calculation_details?: Json | null
+          company_id?: string
+          contract_id?: string | null
+          country_code?: string
+          country_rule_set_id?: string | null
+          created_at?: string
+          currency?: string
+          employee_id?: string
+          employer_cost?: number
+          gross_salary?: number
+          id?: string
+          is_retroactive?: boolean
+          metadata?: Json | null
+          net_salary?: number
+          paid_at?: string | null
+          payment_reference?: string | null
+          payroll_period_id?: string
+          retroactive_period_id?: string | null
+          status?: string
+          total_deductions?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_records_country_rule_set_id_fkey"
+            columns: ["country_rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "hr_country_rule_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_records_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_variables: {
+        Row: {
+          approved: boolean
+          approved_by: string | null
+          company_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payroll_period_id: string
+          source: string | null
+          units: number | null
+          updated_at: string
+          value: number
+          variable_code: string
+          variable_name: string
+          variable_type: string
+        }
+        Insert: {
+          approved?: boolean
+          approved_by?: string | null
+          company_id: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payroll_period_id: string
+          source?: string | null
+          units?: number | null
+          updated_at?: string
+          value?: number
+          variable_code: string
+          variable_name: string
+          variable_type?: string
+        }
+        Update: {
+          approved?: boolean
+          approved_by?: string | null
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payroll_period_id?: string
+          source?: string | null
+          units?: number | null
+          updated_at?: string
+          value?: number
+          variable_code?: string
+          variable_name?: string
+          variable_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_variables_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_variables_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_social_security_events: {
+        Row: {
+          company_id: string
+          country_code: string
+          created_at: string
+          effective_date: string
+          employee_id: string
+          end_date: string | null
+          event_date: string
+          event_subtype: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          official_response: Json | null
+          reference_number: string | null
+          status: string
+          submission_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          country_code?: string
+          created_at?: string
+          effective_date: string
+          employee_id: string
+          end_date?: string | null
+          event_date: string
+          event_subtype?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          official_response?: Json | null
+          reference_number?: string | null
+          status?: string
+          submission_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          country_code?: string
+          created_at?: string
+          effective_date?: string
+          employee_id?: string
+          end_date?: string | null
+          event_date?: string
+          event_subtype?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          official_response?: Json | null
+          reference_number?: string | null
+          status?: string
+          submission_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_social_security_events_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_split_payroll_config: {
+        Row: {
+          assignment_id: string
+          concepts_home: Json | null
+          concepts_host: Json | null
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          exchange_rate_type: string | null
+          home_currency: string
+          home_percentage: number
+          host_currency: string
+          host_percentage: number
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          concepts_home?: Json | null
+          concepts_host?: Json | null
+          created_at?: string
+          effective_from: string
+          effective_to?: string | null
+          exchange_rate_type?: string | null
+          home_currency?: string
+          home_percentage?: number
+          host_currency?: string
+          host_percentage?: number
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          concepts_home?: Json | null
+          concepts_host?: Json | null
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          exchange_rate_type?: string | null
+          home_currency?: string
+          home_percentage?: number
+          host_currency?: string
+          host_percentage?: number
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_split_payroll_config_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_mobility_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_tasks: {
+        Row: {
+          assigned_to: string | null
+          company_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          employee_id: string | null
+          id: string
+          metadata: Json | null
+          parent_task_id: string | null
+          priority: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          metadata?: Json | null
+          parent_task_id?: string | null
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string
+          task_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          metadata?: Json | null
+          parent_task_id?: string | null
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "hr_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_tax_equalization: {
+        Row: {
+          actual_tax_home: number | null
+          actual_tax_host: number | null
+          assignment_id: string
+          calculation_details: Json | null
+          created_at: string
+          equalization_amount: number | null
+          fiscal_year: number
+          hypothetical_tax_home: number | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payroll_period_id: string | null
+          settlement_date: string | null
+          settlement_status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_tax_home?: number | null
+          actual_tax_host?: number | null
+          assignment_id: string
+          calculation_details?: Json | null
+          created_at?: string
+          equalization_amount?: number | null
+          fiscal_year: number
+          hypothetical_tax_home?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payroll_period_id?: string | null
+          settlement_date?: string | null
+          settlement_status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_tax_home?: number | null
+          actual_tax_host?: number | null
+          assignment_id?: string
+          calculation_details?: Json | null
+          created_at?: string
+          equalization_amount?: number | null
+          fiscal_year?: number
+          hypothetical_tax_home?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payroll_period_id?: string | null
+          settlement_date?: string | null
+          settlement_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_tax_equalization_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_mobility_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_tax_equalization_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_tax_events: {
+        Row: {
+          company_id: string
+          country_code: string
+          created_at: string
+          document_ref: string | null
+          employee_id: string
+          event_date: string
+          event_type: string
+          fiscal_year: number
+          id: string
+          metadata: Json | null
+          new_value: Json | null
+          previous_value: Json | null
+          reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          country_code?: string
+          created_at?: string
+          document_ref?: string | null
+          employee_id: string
+          event_date: string
+          event_type: string
+          fiscal_year: number
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          country_code?: string
+          created_at?: string
+          document_ref?: string | null
+          employee_id?: string
+          event_date?: string
+          event_type?: string
+          fiscal_year?: number
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_tax_events_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_batches: {
         Row: {
