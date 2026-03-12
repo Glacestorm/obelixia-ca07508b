@@ -54897,6 +54897,66 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_es_flexible_remuneration_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          cheque_guarderia_mensual: number | null
+          company_id: string
+          created_at: string | null
+          employee_id: string
+          formacion_anual: number | null
+          id: string
+          max_porcentaje_salario: number | null
+          metadata: Json | null
+          plan_year: number
+          seguro_medico_mensual: number | null
+          status: string
+          ticket_restaurante_mensual: number | null
+          total_mensual_exento: number | null
+          transporte_mensual: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cheque_guarderia_mensual?: number | null
+          company_id: string
+          created_at?: string | null
+          employee_id: string
+          formacion_anual?: number | null
+          id?: string
+          max_porcentaje_salario?: number | null
+          metadata?: Json | null
+          plan_year?: number
+          seguro_medico_mensual?: number | null
+          status?: string
+          ticket_restaurante_mensual?: number | null
+          total_mensual_exento?: number | null
+          transporte_mensual?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cheque_guarderia_mensual?: number | null
+          company_id?: string
+          created_at?: string | null
+          employee_id?: string
+          formacion_anual?: number | null
+          id?: string
+          max_porcentaje_salario?: number | null
+          metadata?: Json | null
+          plan_year?: number
+          seguro_medico_mensual?: number | null
+          status?: string
+          ticket_restaurante_mensual?: number | null
+          total_mensual_exento?: number | null
+          transporte_mensual?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hr_es_irpf_tables: {
         Row: {
           ccaa_code: string | null
@@ -56172,6 +56232,7 @@ export type Database = {
           amount: number
           base_amount: number | null
           calculation_formula: string | null
+          calculation_trace: Json | null
           category: string | null
           concept_code: string
           concept_id: string | null
@@ -56179,6 +56240,7 @@ export type Database = {
           created_at: string
           id: string
           incident_id: string | null
+          incident_ref: string | null
           is_percentage: boolean | null
           is_ss_contributable: boolean
           is_taxable: boolean
@@ -56196,6 +56258,7 @@ export type Database = {
           amount?: number
           base_amount?: number | null
           calculation_formula?: string | null
+          calculation_trace?: Json | null
           category?: string | null
           concept_code: string
           concept_id?: string | null
@@ -56203,6 +56266,7 @@ export type Database = {
           created_at?: string
           id?: string
           incident_id?: string | null
+          incident_ref?: string | null
           is_percentage?: boolean | null
           is_ss_contributable?: boolean
           is_taxable?: boolean
@@ -56220,6 +56284,7 @@ export type Database = {
           amount?: number
           base_amount?: number | null
           calculation_formula?: string | null
+          calculation_trace?: Json | null
           category?: string | null
           concept_code?: string
           concept_id?: string | null
@@ -56227,6 +56292,7 @@ export type Database = {
           created_at?: string
           id?: string
           incident_id?: string | null
+          incident_ref?: string | null
           is_percentage?: boolean | null
           is_ss_contributable?: boolean
           is_taxable?: boolean
@@ -56259,6 +56325,7 @@ export type Database = {
           country_rule_set_id: string | null
           created_at: string
           currency: string
+          diff_vs_previous: Json | null
           employee_id: string
           employer_cost: number
           gross_salary: number
@@ -56270,6 +56337,10 @@ export type Database = {
           payment_reference: string | null
           payroll_period_id: string
           retroactive_period_id: string | null
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           total_deductions: number
           updated_at: string
@@ -56284,6 +56355,7 @@ export type Database = {
           country_rule_set_id?: string | null
           created_at?: string
           currency?: string
+          diff_vs_previous?: Json | null
           employee_id: string
           employer_cost?: number
           gross_salary?: number
@@ -56295,6 +56367,10 @@ export type Database = {
           payment_reference?: string | null
           payroll_period_id: string
           retroactive_period_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           total_deductions?: number
           updated_at?: string
@@ -56309,6 +56385,7 @@ export type Database = {
           country_rule_set_id?: string | null
           created_at?: string
           currency?: string
+          diff_vs_previous?: Json | null
           employee_id?: string
           employer_cost?: number
           gross_salary?: number
@@ -56320,6 +56397,10 @@ export type Database = {
           payment_reference?: string | null
           payroll_period_id?: string
           retroactive_period_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           total_deductions?: number
           updated_at?: string
