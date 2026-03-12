@@ -285,7 +285,7 @@ export function useHRDocumentExpedient(companyId: string) {
 
   const addComment = useMutation({
     mutationFn: async (params: { document_id: string; comment_text: string; is_internal?: boolean; parent_comment_id?: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('erp_hr_document_comments')
         .insert({
           company_id: companyId,
@@ -293,7 +293,7 @@ export function useHRDocumentExpedient(companyId: string) {
           comment_text: params.comment_text,
           is_internal: params.is_internal ?? true,
           parent_comment_id: params.parent_comment_id ?? null,
-        } as any)
+        })
         .select()
         .single();
       if (error) throw error;
@@ -303,13 +303,13 @@ export function useHRDocumentExpedient(companyId: string) {
   });
 
   const fetchComments = useCallback(async (documentId: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('erp_hr_document_comments')
       .select('*')
       .eq('document_id', documentId)
       .order('created_at', { ascending: true });
     if (error) throw error;
-    return (data ?? []) as unknown as DocumentComment[];
+    return (data ?? []) as DocumentComment[];
   }, []);
 
   // ── Consents ───────────────────────────────────────────────────────────────
