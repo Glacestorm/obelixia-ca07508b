@@ -58,8 +58,25 @@ interface MegaMenuCategory {
   headerDescription: string;
 }
 
-export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavigationMenuProps) {
+export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode = true }: HRNavigationMenuProps) {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
+
+  // MVP mode IDs — only these categories and items are shown
+  const mvpCategories = new Set(['core-hr', 'payroll', 'laboral', 'global']);
+  const mvpItems = new Set([
+    // Core HR
+    'employees', 'contracts', 'documents', 'document-expedient',
+    'departments', 'legal-entities', 'work-centers',
+    'work-calendars',
+    // Payroll
+    'payroll', 'payroll-periods',
+    'ss', 'compensation-suite', 'benefits',
+    // Laboral
+    'vacations', 'time-clock', 'leave-incidents',
+    'admin-requests', 'hr-tasks',
+    // Global
+    'country-registry', 'es-localization',
+  ]);
 
   const megaMenus: MegaMenuCategory[] = [
     {
