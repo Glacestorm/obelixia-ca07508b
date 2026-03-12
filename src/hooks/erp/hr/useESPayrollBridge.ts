@@ -601,6 +601,283 @@ export function useESPayrollBridge(companyId?: string) {
     }
   }, [companyId]);
 
+  // ── V2-ES.1 Paso 2: Cálculo masivo por período ──
+  const calculateBatch = useCallback(async (periodId: string): Promise<{ calculated: number; errors: number; details: Array<{ employeeId: string; success: boolean; error?: string }> } | null> => {
+    if (!companyId) return null;
+    setIsCalculating(true);
+    const results: Array<{ employeeId: string; success: boolean; error?: string }> = [];
+
+    try {
+      // 1. Get period info
+      const { data: period } = await supabase.from('hr_payroll_periods').select('*').eq('id', periodId).single();
+      if (!period) throw new Error('Período no encontrado');
+
+      // 2. Get active employees with contracts
+      const { data: employees } = await supabase
+        .from('erp_hr_employees')
+        .select('id, first_name, last_name')
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+      if (!employees || employees.length === 0) {
+        toast.error('No hay empleados activos');
+        return null;
+      }
+
+      // 3. Get labor data for all employees
+      const employeeIds = employees.map(e => e.id);
+      const { data: laborDataList } = await supabase
+        .from('hr_es_employee_labor_data')
+        .select('*')
+        .in('employee_id', employeeIds);
+
+      // 4. Get flexible remuneration plans
+      const currentYear = (period as any).fiscal_year || new Date().getFullYear();
+      const { data: flexPlans } = await supabase
+        .from('hr_es_flexible_remuneration_plans')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('plan_year', currentYear)
+        .eq('status', 'active');
+
+      // 5. Get contracts for salary data
+      const { data: contracts } = await supabase
+        .from('erp_hr_contracts')
+        .select('*')
+        .in('employee_id', employeeIds)
+        .eq('status', 'active');
+
+      // 6. Ensure SS bases and IRPF tables are loaded
+      if (esLoc.ssBases.length === 0) {
+        await esLoc.fetchSSBases(currentYear);
+      }
+      if (esLoc.irpfTables.length === 0) {
+        await esLoc.fetchIRPFTables(currentYear);
+      }
+
+      // 7. Calculate for each employee
+      for (const emp of employees) {
+        try {
+          const laborData = (laborDataList || []).find((ld: any) => ld.employee_id === emp.id);
+          if (!laborData) {
+            results.push({ employeeId: emp.id, success: false, error: 'Sin datos laborales ES' });
+            continue;
+          }
+
+          const contract = (contracts || []).find((c: any) => c.employee_id === emp.id);
+          const grupoCotizacion = (laborData as any).grupo_cotizacion || 1;
+          const ssBase = esLoc.ssBases.find(b => b.grupo_cotizacion === grupoCotizacion) || esLoc.ssBases[0];
+          if (!ssBase) {
+            results.push({ employeeId: emp.id, success: false, error: 'Sin base SS para grupo' });
+            continue;
+          }
+
+          const salarioBase = contract ? Number((contract as any).base_salary || 0) : 0;
+          if (salarioBase <= 0) {
+            results.push({ employeeId: emp.id, success: false, error: 'Salario base = 0' });
+            continue;
+          }
+
+          // Build flex remuneration from plan
+          const flexPlan = (flexPlans || []).find((fp: any) => fp.employee_id === emp.id);
+
+          const input: ESPayrollInput = {
+            employeeId: emp.id,
+            periodId,
+            salarioBase,
+            seguroMedico: flexPlan ? Number((flexPlan as any).seguro_medico_mensual || 0) : 0,
+            ticketRestaurante: flexPlan ? Number((flexPlan as any).ticket_restaurante_mensual || 0) : 0,
+            chequeGuarderia: flexPlan ? Number((flexPlan as any).cheque_guarderia_mensual || 0) : 0,
+          };
+
+          const calculation = calculateESPayroll(input, laborData as any, ssBase, esLoc.irpfTables);
+
+          // 8. Persist: create record
+          const totalDevengos = calculation.summary.totalDevengos;
+          const totalDeducciones = calculation.summary.totalDeducciones;
+          const netSalary = calculation.summary.liquidoPercibir;
+          const employerCost = calculation.summary.totalCosteEmpresa;
+
+          const { data: record, error: recError } = await supabase.from('hr_payroll_records').insert({
+            company_id: companyId,
+            employee_id: emp.id,
+            payroll_period_id: periodId,
+            country_code: 'ES',
+            contract_id: contract ? (contract as any).id : null,
+            gross_salary: totalDevengos,
+            net_salary: netSalary,
+            total_deductions: totalDeducciones,
+            employer_cost: employerCost,
+            status: 'calculated',
+            review_status: 'pending',
+            calculation_details: calculation.summary as any,
+          } as any).select().single();
+
+          if (recError) throw recError;
+
+          // 9. Persist: create lines
+          const lineRows = calculation.lines.map((line, idx) => ({
+            payroll_record_id: (record as any).id,
+            concept_code: line.concept_code,
+            concept_name: line.concept_name,
+            line_type: line.line_type,
+            category: line.category,
+            amount: line.amount,
+            base_amount: line.base_amount || null,
+            percentage: line.percentage || null,
+            is_taxable: line.is_taxable,
+            is_ss_contributable: line.is_ss_contributable,
+            is_percentage: line.is_percentage,
+            percentage_base: line.percentage_base || null,
+            sort_order: line.sort_order || idx,
+            source: line.source || 'rule_engine',
+            incident_ref: line.incident_ref || null,
+            calculation_trace: line.calculation_trace || {},
+            metadata: {},
+          }));
+
+          const { error: linesError } = await supabase.from('hr_payroll_record_lines').insert(lineRows as any);
+          if (linesError) throw linesError;
+
+          results.push({ employeeId: emp.id, success: true });
+        } catch (empErr) {
+          results.push({ employeeId: emp.id, success: false, error: empErr instanceof Error ? empErr.message : 'Error' });
+        }
+      }
+
+      const calculated = results.filter(r => r.success).length;
+      const errors = results.filter(r => !r.success).length;
+
+      if (calculated > 0) {
+        toast.success(`${calculated} nóminas calculadas${errors > 0 ? `, ${errors} errores` : ''}`);
+      } else {
+        toast.error(`Ninguna nómina calculada. ${errors} errores.`);
+      }
+
+      return { calculated, errors, details: results };
+    } catch (err) {
+      console.error('[useESPayrollBridge] calculateBatch:', err);
+      toast.error('Error en cálculo masivo');
+      return null;
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [companyId, esLoc, calculateESPayroll]);
+
+  // ── V2-ES.1 Paso 2: Inyectar incidencias al período ──
+  const injectIncidentsToPayroll = useCallback(async (periodId: string): Promise<{ injected: number; skipped: number } | null> => {
+    if (!companyId) return null;
+    setIsCalculating(true);
+
+    try {
+      // 1. Get period date range
+      const { data: period } = await supabase.from('hr_payroll_periods').select('start_date, end_date').eq('id', periodId).single();
+      if (!period) throw new Error('Período no encontrado');
+
+      // 2. Find leave incidents that overlap the period
+      const { data: incidents } = await supabase
+        .from('hr_leave_incidents')
+        .select('*')
+        .eq('company_id', companyId)
+        .in('status', ['approved', 'active'])
+        .or(`start_date.lte.${(period as any).end_date},end_date.gte.${(period as any).start_date}`);
+
+      if (!incidents || incidents.length === 0) {
+        toast.info('No hay incidencias activas en este período');
+        return { injected: 0, skipped: 0 };
+      }
+
+      // 3. Get existing records for the period
+      const { data: records } = await supabase
+        .from('hr_payroll_records')
+        .select('id, employee_id')
+        .eq('payroll_period_id', periodId);
+
+      if (!records || records.length === 0) {
+        toast.error('No hay nóminas en el período. Calcule primero.');
+        return null;
+      }
+
+      let injected = 0;
+      let skipped = 0;
+
+      for (const incident of incidents) {
+        const inc = incident as any;
+        const record = records.find((r: any) => r.employee_id === inc.employee_id);
+        if (!record) { skipped++; continue; }
+
+        // Calculate days in period
+        const incStart = new Date(Math.max(new Date(inc.start_date).getTime(), new Date((period as any).start_date).getTime()));
+        const incEnd = new Date(Math.min(
+          inc.end_date ? new Date(inc.end_date).getTime() : new Date((period as any).end_date).getTime(),
+          new Date((period as any).end_date).getTime()
+        ));
+        const diasIT = Math.max(1, Math.ceil((incEnd.getTime() - incStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+        // Check if already injected
+        const { data: existing } = await supabase
+          .from('hr_payroll_record_lines')
+          .select('id')
+          .eq('payroll_record_id', (record as any).id)
+          .eq('incident_ref', `IT-${inc.id.slice(0, 8)}`);
+
+        if (existing && existing.length > 0) { skipped++; continue; }
+
+        // Determine IT type
+        const isAT = inc.incident_type === 'work_accident' || inc.leave_type === 'work_accident';
+        const conceptCode = isAT ? 'ES_IT_AT_EMPRESA' : 'ES_IT_CC_EMPRESA';
+        const conceptName = isAT ? 'Complemento IT acc. trabajo' : 'Complemento IT cont. común';
+        const pct = isAT ? 0.75 : 0.60;
+
+        // Get base salary from record
+        const { data: recDetail } = await supabase.from('hr_payroll_records').select('gross_salary').eq('id', (record as any).id).single();
+        const salarioBase = recDetail ? Number((recDetail as any).gross_salary || 0) : 0;
+        const dailySalary = salarioBase / 30;
+        const amount = Math.round(dailySalary * diasIT * pct * 100) / 100;
+
+        const incidentRef = `IT-${inc.id.slice(0, 8)}`;
+
+        await supabase.from('hr_payroll_record_lines').insert({
+          payroll_record_id: (record as any).id,
+          concept_code: conceptCode,
+          concept_name: conceptName,
+          line_type: 'earning',
+          category: 'variable',
+          amount,
+          is_taxable: true,
+          is_ss_contributable: false,
+          is_percentage: false,
+          sort_order: isAT ? 91 : 90,
+          source: 'incident',
+          incident_ref: incidentRef,
+          incident_id: inc.id,
+          calculation_trace: {
+            rule: isAT ? 'IT_AT_incident_injection' : 'IT_CC_incident_injection',
+            inputs: { incidentId: inc.id, diasIT, pct, dailySalary },
+            formula: `(${salarioBase}/30) × ${diasIT} días × ${pct * 100}% = ${amount}`,
+            timestamp: new Date().toISOString(),
+          },
+          metadata: { incident_type: inc.incident_type, leave_type: inc.leave_type },
+        } as any);
+
+        injected++;
+      }
+
+      if (injected > 0) {
+        toast.success(`${injected} incidencias inyectadas${skipped > 0 ? `, ${skipped} omitidas` : ''}`);
+      } else {
+        toast.info(`Sin incidencias nuevas para inyectar (${skipped} ya existentes)`);
+      }
+
+      return { injected, skipped };
+    } catch (err) {
+      console.error('[useESPayrollBridge] injectIncidentsToPayroll:', err);
+      toast.error('Error inyectando incidencias');
+      return null;
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [companyId]);
+
   return {
     // State
     isCalculating,
@@ -613,6 +890,9 @@ export function useESPayrollBridge(companyId?: string) {
     // Calculation
     calculateESPayroll,
     simulateES,
+    // V2-ES.1: Batch & incidents
+    calculateBatch,
+    injectIncidentsToPayroll,
     // Validation
     validateESPreClose,
     // Reporting
