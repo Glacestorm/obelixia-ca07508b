@@ -138,9 +138,10 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-emerald-600',
           items: [
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
+            { id: 'payroll-engine', label: 'Motor Nómina', icon: Calculator, description: 'Períodos, registros y conceptos', badge: 'Nuevo' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones' },
-            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Gestión de períodos', badge: 'Nuevo' },
+            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Gestión de períodos' },
           ]
         },
         {
