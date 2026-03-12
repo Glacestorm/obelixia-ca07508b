@@ -397,7 +397,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
 
   // Collect all IDs per category for active detection
   const allIds: Record<string, string[]> = {};
-  megaMenus.forEach(m => {
+  filteredMenus.forEach(m => {
     allIds[m.id] = m.subGroups.flatMap(g => g.items.map(i => i.id));
   });
 
