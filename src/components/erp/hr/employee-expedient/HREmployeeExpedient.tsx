@@ -136,13 +136,15 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate,
   const initials = `${employee.first_name?.[0] || ''}${employee.last_name?.[0] || ''}`.toUpperCase();
   const countryFlag = employee.country_code ? COUNTRY_FLAGS[employee.country_code] || '🌐' : null;
 
-  // Build dynamic tabs: core + country localization tab
+  // Build dynamic tabs: core (filtered by mvpMode) + country localization tab
+  const filteredCoreTabs = mvpMode ? CORE_TABS.filter(t => t.mvp) : CORE_TABS;
   const allTabs = [
-    ...CORE_TABS,
+    ...filteredCoreTabs,
     ...(employee.country_code ? [{
       id: 'localizacion',
       label: `${countryFlag} ${employee.country_code}`,
       icon: Flag,
+      mvp: true,
     }] : []),
   ];
 

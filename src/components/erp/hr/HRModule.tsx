@@ -431,6 +431,7 @@ export function HRModule() {
           <HREmployeeExpedient
             companyId={companyId}
             employeeId={selectedEmployeeId}
+            mvpMode={true}
             onBack={() => {
               setSelectedEmployeeId(null);
               setActiveModule('employees');
