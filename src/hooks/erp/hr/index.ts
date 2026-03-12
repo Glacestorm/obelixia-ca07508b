@@ -127,3 +127,21 @@ export type {
   ESPreCloseValidation,
   ESReportData,
 } from './useESPayrollBridge';
+
+// Global Mobility / Expatriates
+export { useGlobalMobility } from './useGlobalMobility';
+export type {
+  MobilityAssignment,
+  MobilityDocument,
+  MobilityCostProjection,
+  MobilityAuditEntry,
+  MobilityStats,
+  AssignmentType,
+  AssignmentStatus,
+  CompensationApproach,
+  RiskLevel,
+  DocumentType,
+  DocumentStatus,
+  AllowancePackage,
+  AssignmentFilters,
+} from './useGlobalMobility';
