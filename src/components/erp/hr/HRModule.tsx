@@ -355,7 +355,7 @@ export function HRModule() {
 
         {/* Renderizado condicional de contenido */}
         {activeModule === 'dashboard' && <HRExecutiveDashboard companyId={companyId} />}
-        {activeModule === 'employees' && <HREmployeesPanel companyId={companyId} />}
+        {activeModule === 'employees' && <HREmployeesPanel companyId={companyId} onOpenExpedient={(id) => { setSelectedEmployeeId(id); setActiveModule('employee-expedient'); }} />}
         {activeModule === 'recruitment' && <HRRecruitmentPanel companyId={companyId} />}
         {activeModule === 'onboarding' && <HROnboardingPanel companyId={companyId} />}
         {activeModule === 'offboarding' && <HROffboardingPanel companyId={companyId} />}
