@@ -31822,6 +31822,7 @@ export type Database = {
           cno_description: string | null
           company_id: string
           contract_type: string | null
+          country_code: string | null
           created_at: string | null
           department_id: string | null
           email: string | null
@@ -31845,6 +31846,7 @@ export type Database = {
           social_security_number: string | null
           ss_number: string | null
           status: string | null
+          tax_jurisdiction: string | null
           termination_date: string | null
           updated_at: string | null
           user_id: string | null
@@ -31864,6 +31866,7 @@ export type Database = {
           cno_description?: string | null
           company_id: string
           contract_type?: string | null
+          country_code?: string | null
           created_at?: string | null
           department_id?: string | null
           email?: string | null
@@ -31887,6 +31890,7 @@ export type Database = {
           social_security_number?: string | null
           ss_number?: string | null
           status?: string | null
+          tax_jurisdiction?: string | null
           termination_date?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -31906,6 +31910,7 @@ export type Database = {
           cno_description?: string | null
           company_id?: string
           contract_type?: string | null
+          country_code?: string | null
           created_at?: string | null
           department_id?: string | null
           email?: string | null
@@ -31929,6 +31934,7 @@ export type Database = {
           social_security_number?: string | null
           ss_number?: string | null
           status?: string | null
+          tax_jurisdiction?: string | null
           termination_date?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -53886,6 +53892,195 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      hr_country_policies: {
+        Row: {
+          company_id: string
+          country_code: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          legal_reference: string | null
+          policy_key: string
+          policy_type: string
+          policy_value: Json
+          priority: number
+          scope_center_id: string | null
+          scope_entity_id: string | null
+          scope_level: string
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          company_id: string
+          country_code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          legal_reference?: string | null
+          policy_key: string
+          policy_type: string
+          policy_value?: Json
+          priority?: number
+          scope_center_id?: string | null
+          scope_entity_id?: string | null
+          scope_level?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          company_id?: string
+          country_code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          legal_reference?: string | null
+          policy_key?: string
+          policy_type?: string
+          policy_value?: Json
+          priority?: number
+          scope_center_id?: string | null
+          scope_entity_id?: string | null
+          scope_level?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: []
+      }
+      hr_country_registry: {
+        Row: {
+          company_id: string
+          country_code: string
+          country_name: string
+          created_at: string
+          currency_code: string
+          date_format: string
+          fiscal_year_start: number | null
+          id: string
+          is_enabled: boolean
+          labor_law_framework: string | null
+          language_code: string
+          max_working_hours_week: number | null
+          metadata: Json | null
+          min_vacation_days: number | null
+          min_wage_annual: number | null
+          nif_format: string | null
+          nif_label: string | null
+          notice_period_default_days: number | null
+          probation_max_days: number | null
+          severance_formula: string | null
+          social_security_system: string | null
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          country_code: string
+          country_name: string
+          created_at?: string
+          currency_code?: string
+          date_format?: string
+          fiscal_year_start?: number | null
+          id?: string
+          is_enabled?: boolean
+          labor_law_framework?: string | null
+          language_code?: string
+          max_working_hours_week?: number | null
+          metadata?: Json | null
+          min_vacation_days?: number | null
+          min_wage_annual?: number | null
+          nif_format?: string | null
+          nif_label?: string | null
+          notice_period_default_days?: number | null
+          probation_max_days?: number | null
+          severance_formula?: string | null
+          social_security_system?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          currency_code?: string
+          date_format?: string
+          fiscal_year_start?: number | null
+          id?: string
+          is_enabled?: boolean
+          labor_law_framework?: string | null
+          language_code?: string
+          max_working_hours_week?: number | null
+          metadata?: Json | null
+          min_vacation_days?: number | null
+          min_wage_annual?: number | null
+          nif_format?: string | null
+          nif_label?: string | null
+          notice_period_default_days?: number | null
+          probation_max_days?: number | null
+          severance_formula?: string | null
+          social_security_system?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hr_employee_extensions: {
+        Row: {
+          company_id: string
+          country_code: string
+          created_at: string
+          employee_id: string
+          extension_data: Json
+          id: string
+          immigration_status: string | null
+          local_id_number: string | null
+          local_id_type: string | null
+          social_security_number: string | null
+          tax_jurisdiction: string | null
+          tax_residence_country: string | null
+          updated_at: string
+          work_permit_expiry: string | null
+        }
+        Insert: {
+          company_id: string
+          country_code: string
+          created_at?: string
+          employee_id: string
+          extension_data?: Json
+          id?: string
+          immigration_status?: string | null
+          local_id_number?: string | null
+          local_id_type?: string | null
+          social_security_number?: string | null
+          tax_jurisdiction?: string | null
+          tax_residence_country?: string | null
+          updated_at?: string
+          work_permit_expiry?: string | null
+        }
+        Update: {
+          company_id?: string
+          country_code?: string
+          created_at?: string
+          employee_id?: string
+          extension_data?: Json
+          id?: string
+          immigration_status?: string | null
+          local_id_number?: string | null
+          local_id_type?: string | null
+          social_security_number?: string | null
+          tax_jurisdiction?: string | null
+          tax_residence_country?: string | null
+          updated_at?: string
+          work_permit_expiry?: string | null
+        }
+        Relationships: []
       }
       import_batches: {
         Row: {

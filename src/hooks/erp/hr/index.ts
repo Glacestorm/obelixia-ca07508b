@@ -74,3 +74,13 @@ export type {
   GigAIInsight,
   GigWorkforceContext
 } from './useGigWorkforce';
+
+// Fase G1: Country Registry & Policy Engine
+export { useCountryRegistry } from './useCountryRegistry';
+export type {
+  CountryRegistryEntry,
+  CountryPolicy,
+  EmployeeExtension,
+  CountryRegistryStats,
+  ComplianceAnalysis
+} from './useCountryRegistry';

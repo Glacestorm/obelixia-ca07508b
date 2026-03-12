@@ -16,7 +16,7 @@ import {
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
-  Sparkles, Wrench, MessageSquare, Search, Activity
+  Sparkles, Wrench, MessageSquare, Search, Activity, Flag
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -249,6 +249,35 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
             { id: 'digital-twin', label: 'Digital Twin', icon: Layers, description: 'Gemelo digital org.' },
             { id: 'copilot-twin', label: 'Copilot + Twin', icon: Bot, description: 'Asistente IA autónomo' },
             { id: 'workforce-planning', label: 'Workforce Planning', icon: Target, description: 'Planificación estratégica' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'global',
+      label: 'Global',
+      icon: Globe,
+      columns: 2,
+      width: 'w-[520px]',
+      headerTitle: 'Global HR Platform',
+      headerDescription: 'Multi-país, movilidad internacional e integraciones oficiales',
+      subGroups: [
+        {
+          title: 'Localización',
+          icon: Flag,
+          color: 'text-blue-600',
+          items: [
+            { id: 'country-registry', label: 'Country Registry', icon: Globe, description: 'Países y políticas', badge: 'G1' },
+          ]
+        },
+        {
+          title: 'Próximamente',
+          icon: Sparkles,
+          color: 'text-muted-foreground',
+          items: [
+            { id: 'global-payroll-engine', label: 'Payroll Engine', icon: Calculator, description: 'Motor de nómina multi-país', badge: 'G3' },
+            { id: 'global-mobility', label: 'Global Mobility', icon: Globe, description: 'Expatriados y asignaciones', badge: 'G5' },
+            { id: 'global-integrations', label: 'Integraciones Oficiales', icon: Link2, description: 'SILTRA, AEAT, Milena PA', badge: 'G4' },
           ]
         },
       ]
