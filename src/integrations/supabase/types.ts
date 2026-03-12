@@ -55625,7 +55625,10 @@ export type Database = {
           official_response: Json | null
           receipt_date: string | null
           receipt_document_url: string | null
+          receipt_file_name: string | null
+          receipt_file_size: number | null
           receipt_reference: string | null
+          receipt_type: string
           submission_id: string
           validation_errors: Json | null
           validation_status: string
@@ -55637,7 +55640,10 @@ export type Database = {
           official_response?: Json | null
           receipt_date?: string | null
           receipt_document_url?: string | null
+          receipt_file_name?: string | null
+          receipt_file_size?: number | null
           receipt_reference?: string | null
+          receipt_type?: string
           submission_id: string
           validation_errors?: Json | null
           validation_status?: string
@@ -55649,7 +55655,10 @@ export type Database = {
           official_response?: Json | null
           receipt_date?: string | null
           receipt_document_url?: string | null
+          receipt_file_name?: string | null
+          receipt_file_size?: number | null
           receipt_reference?: string | null
+          receipt_type?: string
           submission_id?: string
           validation_errors?: Json | null
           validation_status?: string
@@ -55667,20 +55676,30 @@ export type Database = {
       hr_official_submissions: {
         Row: {
           adapter_id: string | null
+          admin_request_id: string | null
           attempts: number
           company_id: string
+          contract_id: string | null
           country_code: string
           created_at: string
+          employee_id: string | null
           external_reference: string | null
           file_format: string | null
+          file_name: string | null
+          file_size_bytes: number | null
           file_url: string | null
           id: string
           last_error: string | null
           legal_entity_id: string | null
+          max_retries: number
           metadata: Json | null
+          next_retry_at: string | null
           notes: string | null
           payload: Json
+          payroll_record_id: string | null
+          priority: string
           reference_period: string | null
+          response_deadline: string | null
           status: string
           submission_subtype: string | null
           submission_type: string
@@ -55690,20 +55709,30 @@ export type Database = {
         }
         Insert: {
           adapter_id?: string | null
+          admin_request_id?: string | null
           attempts?: number
           company_id: string
+          contract_id?: string | null
           country_code?: string
           created_at?: string
+          employee_id?: string | null
           external_reference?: string | null
           file_format?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
           file_url?: string | null
           id?: string
           last_error?: string | null
           legal_entity_id?: string | null
+          max_retries?: number
           metadata?: Json | null
+          next_retry_at?: string | null
           notes?: string | null
           payload?: Json
+          payroll_record_id?: string | null
+          priority?: string
           reference_period?: string | null
+          response_deadline?: string | null
           status?: string
           submission_subtype?: string | null
           submission_type: string
@@ -55713,20 +55742,30 @@ export type Database = {
         }
         Update: {
           adapter_id?: string | null
+          admin_request_id?: string | null
           attempts?: number
           company_id?: string
+          contract_id?: string | null
           country_code?: string
           created_at?: string
+          employee_id?: string | null
           external_reference?: string | null
           file_format?: string | null
+          file_name?: string | null
+          file_size_bytes?: number | null
           file_url?: string | null
           id?: string
           last_error?: string | null
           legal_entity_id?: string | null
+          max_retries?: number
           metadata?: Json | null
+          next_retry_at?: string | null
           notes?: string | null
           payload?: Json
+          payroll_record_id?: string | null
+          priority?: string
           reference_period?: string | null
+          response_deadline?: string | null
           status?: string
           submission_subtype?: string | null
           submission_type?: string
@@ -55740,6 +55779,13 @@ export type Database = {
             columns: ["adapter_id"]
             isOneToOne: false
             referencedRelation: "hr_integration_adapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_official_submissions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
             referencedColumns: ["id"]
           },
           {
