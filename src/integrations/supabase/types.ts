@@ -54897,6 +54897,66 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_es_flexible_remuneration_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          cheque_guarderia_mensual: number | null
+          company_id: string
+          created_at: string | null
+          employee_id: string
+          formacion_anual: number | null
+          id: string
+          max_porcentaje_salario: number | null
+          metadata: Json | null
+          plan_year: number
+          seguro_medico_mensual: number | null
+          status: string
+          ticket_restaurante_mensual: number | null
+          total_mensual_exento: number | null
+          transporte_mensual: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cheque_guarderia_mensual?: number | null
+          company_id: string
+          created_at?: string | null
+          employee_id: string
+          formacion_anual?: number | null
+          id?: string
+          max_porcentaje_salario?: number | null
+          metadata?: Json | null
+          plan_year?: number
+          seguro_medico_mensual?: number | null
+          status?: string
+          ticket_restaurante_mensual?: number | null
+          total_mensual_exento?: number | null
+          transporte_mensual?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cheque_guarderia_mensual?: number | null
+          company_id?: string
+          created_at?: string | null
+          employee_id?: string
+          formacion_anual?: number | null
+          id?: string
+          max_porcentaje_salario?: number | null
+          metadata?: Json | null
+          plan_year?: number
+          seguro_medico_mensual?: number | null
+          status?: string
+          ticket_restaurante_mensual?: number | null
+          total_mensual_exento?: number | null
+          transporte_mensual?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       hr_es_irpf_tables: {
         Row: {
           ccaa_code: string | null
