@@ -29945,7 +29945,9 @@ export type Database = {
           collective_agreement_id: string | null
           company_id: string | null
           contract_code: string | null
+          contract_template_id: string | null
           contract_type: string
+          country_code: string | null
           created_at: string | null
           created_by: string | null
           document_url: string | null
@@ -29977,7 +29979,9 @@ export type Database = {
           collective_agreement_id?: string | null
           company_id?: string | null
           contract_code?: string | null
+          contract_template_id?: string | null
           contract_type: string
+          country_code?: string | null
           created_at?: string | null
           created_by?: string | null
           document_url?: string | null
@@ -30009,7 +30013,9 @@ export type Database = {
           collective_agreement_id?: string | null
           company_id?: string | null
           contract_code?: string | null
+          contract_template_id?: string | null
           contract_type?: string
+          country_code?: string | null
           created_at?: string | null
           created_by?: string | null
           document_url?: string | null
@@ -30037,6 +30043,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_contracts_contract_template_id_fkey"
+            columns: ["contract_template_id"]
+            isOneToOne: false
+            referencedRelation: "hr_document_templates"
             referencedColumns: ["id"]
           },
           {
