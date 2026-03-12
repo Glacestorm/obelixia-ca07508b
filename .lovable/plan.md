@@ -1,77 +1,198 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-## Estado de Implementación — Global HR Platform
+# Global Mobility / Expatriates — Submódulo Especializado
 
-| Fase Global | Estado | Detalles |
-|------|--------|----------|
-| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
-| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
-| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
-| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
-| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
-| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
-| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
-| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
-| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
-| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
-| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+## Estado Actual
 
-## Estado de Implementación — Fases Base
+- `HRMobilityDashboard`: solo demo data estática (4 asignaciones hardcoded, stats fijos)
+- `ExpedientMovilidadTab`: placeholder vacío con botón "Ver movilidad"
+- Nav: 2 entradas (`mobility-assignments`, `mobility-dashboard`) que apuntan al mismo componente demo
+- `HRStatusBadge`: ya soporta `mobility:planned|active|transition|completed`
+- No hay tablas, hook ni lógica real
 
-| Fase | Estado | Detalles |
-|------|--------|----------|
-| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
-| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
-| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
-| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
+## Diseño
 
-## Premium Phases — Enterprise Differentiators
+### 1. Tablas (migración)
 
-| Fase Premium | Estado | Detalles |
-|------|--------|----------|
-| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
-| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
-| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
-| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
-| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
-| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
-| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
-| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
+**`hr_mobility_assignments`** — Asignación internacional (entidad principal)
 
-### Edge Functions consolidadas (plan):
-- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
-- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
-- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `company_id` | FK | |
+| `employee_id` | FK | Empleado asignado |
+| `assignment_type` | TEXT | `long_term`, `short_term`, `commuter`, `permanent_transfer`, `business_travel_extended`, `rotational` |
+| `status` | TEXT | `draft`, `planned`, `pre_assignment`, `active`, `extending`, `repatriating`, `completed`, `cancelled` |
+| `home_country_code` | TEXT | País de origen |
+| `host_country_code` | TEXT | País de destino |
+| `home_legal_entity_id` | UUID FK nullable | Empleador legal origen |
+| `host_legal_entity_id` | UUID FK nullable | Empleador legal/funcional destino |
+| `payroll_country_code` | TEXT | País donde se procesa nómina principal |
+| `tax_residence_country` | TEXT | País de residencia fiscal |
+| `ss_regime_country` | TEXT | País de régimen SS aplicable |
+| `start_date` | DATE | Inicio asignación |
+| `end_date` | DATE nullable | Fin previsto |
+| `actual_end_date` | DATE nullable | Fin real |
+| `currency_code` | TEXT | Divisa de referencia (paquete) |
+| `compensation_approach` | TEXT | `tax_equalization`, `tax_protection`, `laissez_faire`, `ad_hoc` |
+| `split_payroll` | BOOL | ¿Nómina dividida entre países? |
+| `shadow_payroll` | BOOL | ¿Shadow payroll en origen? |
+| `hypothetical_tax` | NUMERIC nullable | Impuesto hipotético (tax eq.) |
+| `allowance_package` | JSONB | Housing, COLA, hardship, education, relocation, home_leave, etc. |
+| `total_monthly_cost` | NUMERIC nullable | Coste empresa mensual total |
+| `risk_level` | TEXT | `low`, `medium`, `high`, `critical` |
+| `notes` | TEXT nullable | |
+| `metadata` | JSONB | |
+| `created_by` | UUID | |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
 
-## FASE 2 — Completada ✅
+**`hr_mobility_documents`** — Documentos de movilidad (visados, permisos, A1, etc.)
 
-### Tablas creadas:
-- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
-- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
-- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
-- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
-- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
-- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `assignment_id` | FK | |
+| `document_type` | TEXT | `visa`, `work_permit`, `residence_permit`, `a1_certificate`, `tax_residency_cert`, `assignment_letter`, `cost_projection`, `repatriation_agreement`, `social_security_cert`, `medical_clearance`, `relocation_contract` |
+| `document_name` | TEXT | |
+| `country_code` | TEXT | País emisor |
+| `issue_date` | DATE nullable | |
+| `expiry_date` | DATE nullable | |
+| `status` | TEXT | `pending`, `applied`, `approved`, `active`, `expiring_soon`, `expired`, `renewed`, `rejected` |
+| `file_url` | TEXT nullable | |
+| `reference_number` | TEXT nullable | |
+| `alert_days_before` | INT | Días antes de expiración para alerta (default 60) |
+| `metadata` | JSONB | |
+| `created_at` | TIMESTAMPTZ | |
 
-### Edge Function: `erp-hr-workflow-engine`
-- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
-- Audit trail automático en cada decisión
+**`hr_mobility_cost_projections`** — Proyecciones de coste expatriado
 
-### Hook: `useHRWorkflowEngine`
-- Gestión completa + realtime via supabase channel
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `assignment_id` | FK | |
+| `projection_year` | INT | |
+| `base_salary_home` | NUMERIC | Salario base país origen |
+| `base_salary_host` | NUMERIC | Equivalente destino |
+| `housing_allowance` | NUMERIC | |
+| `cola_allowance` | NUMERIC | Cost of living adjustment |
+| `hardship_allowance` | NUMERIC | |
+| `education_allowance` | NUMERIC | |
+| `relocation_cost` | NUMERIC | |
+| `home_leave_flights` | NUMERIC | |
+| `tax_equalization_cost` | NUMERIC | |
+| `ss_cost_home` | NUMERIC | |
+| `ss_cost_host` | NUMERIC | |
+| `medical_insurance` | NUMERIC | |
+| `other_benefits` | NUMERIC | |
+| `total_annual_cost` | NUMERIC | |
+| `currency_code` | TEXT | |
+| `exchange_rate` | NUMERIC | |
+| `metadata` | JSONB | |
+| `created_at` | TIMESTAMPTZ | |
 
-### UI (3 paneles):
-- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
-- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
-- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
+**`hr_mobility_audit_log`** — Trazabilidad de cambios
 
-### Seed Data (9 workflows):
-- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
+| Campo | Tipo | Propósito |
+|---|---|---|
+| `id` | UUID PK | |
+| `assignment_id` | FK | |
+| `action` | TEXT | `created`, `status_changed`, `extended`, `document_added`, `cost_updated`, `repatriation_started`, `completed`, `cancelled` |
+| `actor_id` | UUID | |
+| `old_value` / `new_value` | JSONB | |
+| `created_at` | TIMESTAMPTZ | |
 
-### Navegación:
-- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+RLS: all tables filtered by `company_id`, authenticated users only.
+
+### 2. Hook: `useGlobalMobility`
+
+`src/hooks/erp/hr/useGlobalMobility.ts`
+
+Functions:
+- `fetchAssignments(filters?)` — list with status/country filters
+- `getAssignment(id)` — full detail with documents + cost projections
+- `createAssignment(data)` / `updateAssignment(id, data)`
+- `updateStatus(id, newStatus)` — with audit log
+- `fetchDocuments(assignmentId)` / `addDocument` / `updateDocument`
+- `fetchCostProjection(assignmentId, year?)` / `upsertCostProjection`
+- `getStats()` — dashboard KPIs
+- `getExpiringDocuments(days)` — alertas
+- `fetchAuditLog(assignmentId)`
+
+Realtime subscription on `hr_mobility_assignments`.
+
+### 3. Components
+
+All under `src/components/erp/hr/mobility/`:
+
+**`GlobalMobilityModule`** — Main panel (replaces `HRMobilityDashboard`)
+- Tabs: Dashboard | Asignaciones | Documentos | Costes | Compliance
+
+**`MobilityDashboard`** — KPIs reales
+- Stats cards: activas, países, docs expiring, coste mensual total
+- Charts: assignments by country, by type, cost trend
+- Alertas: visados/permisos próximos a expirar
+
+**`MobilityAssignmentsList`** — Listado con filtros
+- Filtros: status, type, home/host country
+- Columns: employee, home→host, type, dates, compensation approach, risk, status
+- Actions: view detail, change status
+
+**`MobilityAssignmentForm`** — Formulario crear/editar asignación
+- 5 secciones:
+  1. **Datos básicos**: empleado, tipo, fechas
+  2. **Jurisdicciones**: home country, host country, legal entities, payroll country, tax residence, SS regime (los 5 campos diferenciados)
+  3. **Compensación**: approach (tax eq/protection/etc), split payroll, shadow payroll, currency, hypothetical tax
+  4. **Beneficios**: housing, COLA, hardship, education, relocation, home leave (JSONB allowance_package)
+  5. **Riesgo y notas**: risk level, compliance notes
+
+**`MobilityAssignmentDetail`** — Vista completa de una asignación
+- Header: employee + home→host + status badge + dates
+- Tabs: Resumen | Documentos | Costes | Nómina | Auditoría
+- Panel lateral: key dates timeline, risk indicator
+
+**`MobilityDocumentsPanel`** — Gestión de documentos por asignación
+- CRUD documentos con type, dates, status, expiry alerts
+- Filter by status (expiring_soon highlighted)
+- Upload file support
+
+**`MobilityCostProjectionPanel`** — Proyecciones de coste
+- Yearly breakdown: base, allowances, tax eq, SS, medical, total
+- Comparison: home cost vs expatriate cost (multiplier)
+- Currency conversion
+
+**`MobilityCompliancePanel`** — Riesgos y cumplimiento
+- Checklist: A1/certificate SS, work permit valid, tax registration, PE risk, 183-day rule tracker
+- Risk matrix by assignment
+- Expiring documents alerts
+
+### 4. Integration
+
+| Point | Change |
+|---|---|
+| `HRModule.tsx` | Replace `HRMobilityDashboard` → `GlobalMobilityModule` for both `mobility-assignments` and `mobility-dashboard` |
+| `ExpedientMovilidadTab` | Show employee's assignments from `hr_mobility_assignments` with status, links to detail |
+| `HRNavigationMenu` | Keep existing nav items, point to new component |
+| Barrel exports | `src/components/erp/hr/mobility/index.ts` |
+
+### 5. States (assignment lifecycle)
+
+```text
+draft → planned → pre_assignment → active → extending → repatriating → completed
+                                         → cancelled (from any state)
+```
+
+- `pre_assignment`: visa/permit in process, not yet relocated
+- `extending`: extension approved, new end date
+- `repatriating`: return process initiated
+
+### 6. Implementation Order
+
+| Phase | Content |
+|---|---|
+| **GM1** | Migration: 4 tables + RLS |
+| **GM2** | `useGlobalMobility` hook |
+| **GM3** | `GlobalMobilityModule` + `MobilityDashboard` + `MobilityAssignmentsList` |
+| **GM4** | `MobilityAssignmentForm` + `MobilityAssignmentDetail` (with 5-jurisdiction form) |
+| **GM5** | `MobilityDocumentsPanel` + `MobilityCostProjectionPanel` + `MobilityCompliancePanel` |
+| **GM6** | Integration: HRModule, ExpedientMovilidadTab, nav wiring |
+
