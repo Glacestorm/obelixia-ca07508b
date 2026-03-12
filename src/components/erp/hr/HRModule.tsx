@@ -438,7 +438,7 @@ export function HRModule() {
         {/* New Global Panels — N1-N5 */}
         {activeModule === 'leave-incidents' && <HRLeaveIncidentsPanel companyId={companyId} />}
         {activeModule === 'admin-requests' && <HRAdminPortal companyId={companyId} />}
-        {activeModule === 'hr-tasks' && <HRTasksPanel companyId={companyId} />}
+        {activeModule === 'hr-tasks' && <HRTasksModule companyId={companyId} />}
         {activeModule === 'official-submissions' && <OfficialIntegrationsHub companyId={companyId} />}
         {activeModule === 'mobility-assignments' && <GlobalMobilityModule companyId={companyId} />}
         {activeModule === 'mobility-dashboard' && <GlobalMobilityModule companyId={companyId} />}
