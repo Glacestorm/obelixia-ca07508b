@@ -437,8 +437,8 @@ export function HRModule() {
         {activeModule === 'admin-requests' && <HRAdminPortal companyId={companyId} />}
         {activeModule === 'hr-tasks' && <HRTasksPanel companyId={companyId} />}
         {activeModule === 'official-submissions' && <HROfficialSubmissionsPanel companyId={companyId} />}
-        {activeModule === 'mobility-assignments' && <HRMobilityDashboard companyId={companyId} />}
-        {activeModule === 'mobility-dashboard' && <HRMobilityDashboard companyId={companyId} />}
+        {activeModule === 'mobility-assignments' && <GlobalMobilityModule companyId={companyId} />}
+        {activeModule === 'mobility-dashboard' && <GlobalMobilityModule companyId={companyId} />}
         {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
         {activeModule === 'payroll-engine' && <HRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
