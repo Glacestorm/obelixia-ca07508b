@@ -190,7 +190,7 @@ export function useHRDocumentExpedient(companyId: string) {
       if (error) throw error;
 
       // Create version 1
-      await supabase.from('erp_hr_document_versions').insert({
+      await (supabase as any).from('erp_hr_document_versions').insert({
         company_id: companyId,
         document_id: (data as any).id,
         version_number: 1,
