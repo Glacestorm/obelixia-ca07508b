@@ -1,77 +1,136 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-## Estado de Implementación — Global HR Platform
+# Implementación Técnica del MVP — Auditoría y Propuesta
 
-| Fase Global | Estado | Detalles |
-|------|--------|----------|
-| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
-| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
-| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
-| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
-| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
-| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
-| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
-| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
-| **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
-| **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
-| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+## 1. Esquema de Base de Datos (YA EXISTE)
 
-## Estado de Implementación — Fases Base
+Las ~25 tablas MVP están todas creadas y operativas. No se necesitan migraciones nuevas.
 
-| Fase | Estado | Detalles |
-|------|--------|----------|
-| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
-| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
-| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
-| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
+| Tabla | Columnas clave | company_id | Timestamps |
+|-------|---------------|------------|------------|
+| `erp_hr_employees` | first_name, last_name, status, hire_date, legal_entity_id, work_center_id, country_code | ✅ NOT NULL | ✅ created_at, updated_at |
+| `erp_hr_contracts` | employee_id, contract_type, start_date, end_date, base_salary, is_active, country_code | ✅ (nullable!) | ✅ |
+| `erp_hr_departments` | company_id, name | ✅ | ✅ |
+| `erp_hr_legal_entities` | company_id, name, country_code | ✅ | ✅ |
+| `erp_hr_work_centers` | company_id, legal_entity_id | ✅ | ✅ |
+| `erp_hr_leave_requests` | employee_id, company_id, start_date, end_date, status, workflow_status | ✅ | ✅ |
+| `hr_payroll_periods` | company_id, legal_entity_id, country_code, status, start_date, end_date | ✅ | ✅ |
+| `hr_payroll_records` | employee_id, company_id, payroll_period_id, gross_salary, net_salary, status | ✅ | ✅ |
+| `hr_payroll_record_lines` | record_id, concept, amount, line_type | ✅ (via record) | ✅ |
+| `hr_admin_requests` | employee_id, company_id, request_type, status, priority, assigned_to | ✅ | ✅ |
+| `hr_admin_request_comments` | request_id, comment | ✅ (via request) | ✅ |
+| `hr_admin_request_activity` | request_id, action | ✅ (via request) | ✅ |
+| `hr_tasks` | company_id, employee_id, assigned_to, status, priority, sla_hours, sla_breached | ✅ | ✅ |
+| `erp_hr_employee_documents` | company_id, employee_id, document_type, category, file_hash, version | ✅ | ✅ |
+| `erp_hr_workflow_definitions` | company_id | ✅ | ✅ |
+| `erp_hr_workflow_instances` | company_id | ✅ | ✅ |
+| `erp_hr_workflow_decisions` | instance_id (join) | ✅ (via join) | ✅ |
+| `hr_es_employee_labor_data` | employee_id, company_id, naf, grupo_cotizacion, irpf fields | ✅ | ✅ |
+| `hr_es_irpf_tables` | tramos IRPF | N/A (reference) | ✅ |
+| `hr_es_ss_bases` | bases cotización SS | N/A (reference) | ✅ |
+| `hr_country_registry` | country_code, policies | N/A (reference) | ✅ |
 
-## Premium Phases — Enterprise Differentiators
+---
 
-| Fase Premium | Estado | Detalles |
-|------|--------|----------|
-| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
-| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
-| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
-| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
-| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
-| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
-| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
-| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
+## 2. Reglas de Acceso — PROBLEMA CRÍTICO DETECTADO
 
-### Edge Functions consolidadas (plan):
-- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
-- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
-- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
+**Tablas con RLS correcto** (usan `user_has_erp_company_access(company_id)`):
+- `erp_hr_employees` ✅
+- `erp_hr_contracts` ✅
+- `erp_hr_employee_documents` ✅
+- `erp_hr_legal_entities` ✅
+- `erp_hr_work_centers` ✅
+- `erp_hr_leave_requests` ✅
+- `erp_hr_workflow_definitions/instances/decisions` ✅
 
-## FASE 2 — Completada ✅
+**Tablas con RLS INSEGURO** (`USING(true)` — cualquier usuario autenticado puede leer/escribir todo):
+- `hr_admin_requests` ⚠️
+- `hr_tasks` ⚠️
+- `hr_payroll_records` ⚠️
+- `hr_payroll_periods` ⚠️
+- `hr_payroll_record_lines` ⚠️
+- `hr_es_employee_labor_data` ⚠️
+- `hr_admin_request_comments` ⚠️
 
-### Tablas creadas:
-- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
-- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
-- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
-- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
-- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
-- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
+### Migración necesaria: Corregir 7 políticas RLS
 
-### Edge Function: `erp-hr-workflow-engine`
-- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
-- Audit trail automático en cada decisión
+Reemplazar las políticas `USING(true)` por `user_has_erp_company_access(company_id)` en las 7 tablas afectadas. Para tablas sin `company_id` directo (como `hr_payroll_record_lines`), hacer JOIN al padre.
 
-### Hook: `useHRWorkflowEngine`
-- Gestión completa + realtime via supabase channel
+---
 
-### UI (3 paneles):
-- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
-- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
-- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
+## 3. Estados del Workflow (ya implementados en BD)
 
-### Seed Data (9 workflows):
-- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
+| Entidad | Campo | Estados |
+|---------|-------|---------|
+| Employee | `status` | `candidate`, `onboarding`, `active`, `temporary_leave`, `excedencia`, `offboarding`, `terminated` |
+| Contract | `is_active` | `true/false` + `termination_type` |
+| Leave Request | `status` | `pending`, `approved`, `rejected`, `cancelled` |
+| Leave Request | `workflow_status` | enum: `pending_dept`, `pending_hr`, `approved`, `rejected` |
+| Payroll Period | `status` | `draft`, `open`, `calculating`, `review`, `closed`, `locked` |
+| Payroll Record | `status` | `draft`, `calculated`, `validated`, `paid`, `cancelled` |
+| Admin Request | `status` | `open`, `in_progress`, `pending_approval`, `approved`, `rejected`, `completed`, `cancelled` |
+| Task | `status` | `pending`, `in_progress`, `completed`, `cancelled`, `blocked` |
 
-### Navegación:
-- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+---
+
+## 4. Acciones CRUD y Endpoints (ya implementados en hooks)
+
+Todos los CRUD están en hooks existentes — no se necesitan nuevos endpoints:
+
+| Área | Hook | Acciones |
+|------|------|----------|
+| Empleados | `useHRModule` | `createEmployee`, `updateEmployee`, `deleteEmployee`, `fetchEmployees` |
+| Contratos | `useHRModule` | `createContract`, `updateContract` |
+| Ausencias | `useHRModule` | `requestLeave`, `approveLeave`, `rejectLeave` |
+| Nómina | `usePayrollEngine` | `createPeriod`, `openPeriod`, `closePeriod`, `fetchRecords` |
+| Portal Admin | `useAdminPortal` | `createRequest`, `updateRequest`, `addComment`, `addActivity` |
+| Tareas | `useHRTasksEngine` | `createTask`, `updateTask`, `completeTask`, `bulkAction` |
+| Documentos | `useHRDocumentExpedient` | `uploadDocument`, `fetchDocuments`, `logAccess` |
+| España | `useESLocalization` | `saveEmployeeLaborData`, `calculateIRPF`, `calculateSS` |
+| Workflows | `useHRWorkflowEngine` | `startWorkflow`, `decideStep`, `getInbox` |
+
+---
+
+## 5. Validaciones (ya implementadas en frontend)
+
+| Validación | Ubicación |
+|------------|-----------|
+| Empleado: first_name, last_name, hire_date required | `HREmployeeFormDialog` |
+| Contrato: contract_type, start_date required | `HRContractsPanel` |
+| Ausencia: start_date < end_date, no solapamiento | `useHRModule` |
+| Nómina: período no puede cerrarse con registros draft | `usePayrollEngine` |
+| España: NAF formato, grupo cotización 1-11 | `ESEmployeeLaborDataForm` |
+
+---
+
+## 6. Plan de Implementación
+
+### Única migración necesaria: Fix RLS (7 tablas)
+
+```sql
+-- Drop insecure policies and replace with company-scoped ones
+-- hr_admin_requests, hr_tasks, hr_payroll_records, 
+-- hr_payroll_periods, hr_payroll_record_lines,
+-- hr_es_employee_labor_data, hr_admin_request_comments
+```
+
+Para `hr_payroll_record_lines` (no tiene `company_id` directo):
+```sql
+-- Policy using JOIN: EXISTS (SELECT 1 FROM hr_payroll_records r 
+--   WHERE r.id = record_id AND user_has_erp_company_access(r.company_id))
+```
+
+Para `hr_admin_request_comments` y `hr_admin_request_activity`:
+```sql
+-- Policy using JOIN: EXISTS (SELECT 1 FROM hr_admin_requests req 
+--   WHERE req.id = request_id AND user_has_erp_company_access(req.company_id))
+```
+
+### No se necesitan cambios en:
+- Esquema de tablas (todo existe)
+- Hooks (todos funcionales)
+- Edge functions (todas desplegadas)
+- Componentes UI (ya pulidos con mvpMode en Sprint 1)
+
+### Resumen: 1 migración SQL (fix RLS) — 0 cambios de código
+
