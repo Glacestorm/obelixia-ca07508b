@@ -56614,64 +56614,121 @@ export type Database = {
       }
       hr_tasks: {
         Row: {
+          assigned_role: string | null
           assigned_to: string | null
+          assignment_id: string | null
+          category: string | null
           company_id: string
           completed_at: string | null
           completed_by: string | null
+          contract_id: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           due_date: string | null
           employee_id: string | null
+          escalated: boolean | null
+          escalation_at: string | null
+          escalation_to: string | null
           id: string
+          is_bulk: boolean | null
           metadata: Json | null
           parent_task_id: string | null
+          payroll_record_id: string | null
           priority: string
           related_entity_id: string | null
           related_entity_type: string | null
+          reminder_at: string | null
+          sla_breached: boolean | null
+          sla_deadline: string | null
+          sla_hours: number | null
+          source_id: string | null
+          source_type: string | null
           status: string
+          submission_id: string | null
+          tags: string[] | null
           task_type: string
           title: string
           updated_at: string
+          workflow_instance_id: string | null
         }
         Insert: {
+          assigned_role?: string | null
           assigned_to?: string | null
+          assignment_id?: string | null
+          category?: string | null
           company_id: string
           completed_at?: string | null
           completed_by?: string | null
+          contract_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           employee_id?: string | null
+          escalated?: boolean | null
+          escalation_at?: string | null
+          escalation_to?: string | null
           id?: string
+          is_bulk?: boolean | null
           metadata?: Json | null
           parent_task_id?: string | null
+          payroll_record_id?: string | null
           priority?: string
           related_entity_id?: string | null
           related_entity_type?: string | null
+          reminder_at?: string | null
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          sla_hours?: number | null
+          source_id?: string | null
+          source_type?: string | null
           status?: string
+          submission_id?: string | null
+          tags?: string[] | null
           task_type?: string
           title: string
           updated_at?: string
+          workflow_instance_id?: string | null
         }
         Update: {
+          assigned_role?: string | null
           assigned_to?: string | null
+          assignment_id?: string | null
+          category?: string | null
           company_id?: string
           completed_at?: string | null
           completed_by?: string | null
+          contract_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           employee_id?: string | null
+          escalated?: boolean | null
+          escalation_at?: string | null
+          escalation_to?: string | null
           id?: string
+          is_bulk?: boolean | null
           metadata?: Json | null
           parent_task_id?: string | null
+          payroll_record_id?: string | null
           priority?: string
           related_entity_id?: string | null
           related_entity_type?: string | null
+          reminder_at?: string | null
+          sla_breached?: boolean | null
+          sla_deadline?: string | null
+          sla_hours?: number | null
+          source_id?: string | null
+          source_type?: string | null
           status?: string
+          submission_id?: string | null
+          tags?: string[] | null
           task_type?: string
           title?: string
           updated_at?: string
+          workflow_instance_id?: string | null
         }
         Relationships: [
           {
@@ -56679,6 +56736,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "hr_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_tasks_workflow_instance_id_fkey"
+            columns: ["workflow_instance_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_workflow_instances"
             referencedColumns: ["id"]
           },
         ]

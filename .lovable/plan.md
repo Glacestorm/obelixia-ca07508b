@@ -1,148 +1,77 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-# HR Workflows & Tasks System — Unified Orchestration Layer
+## Estado de Implementación — Global HR Platform
 
-## Current State
+| Fase Global | Estado | Detalles |
+|------|--------|----------|
+| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
+| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
+| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
+| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
+| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
+| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
+| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
+| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
+| **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
+| **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
+| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
 
-**Already exists:**
-- **`hr_tasks` table**: Basic tasks with `task_type`, `priority`, `status`, `assigned_to`, `employee_id`, `related_entity_type/id`, `parent_task_id`, `due_date`, `metadata`. RLS enabled.
-- **Workflow engine tables** (`erp_hr_workflow_definitions`, `steps`, `instances`, `decisions`, `delegations`, `sla_tracking`): Full approval workflow with SLA and escalation.
-- **`useHRWorkflowEngine` hook**: `startWorkflow`, `decideStep`, `fetchInbox`, `fetchSLAStatus`, `fetchStats`, `seedWorkflows` — all via `erp-hr-workflow-engine` edge function.
-- **`HRApprovalInbox`**: Functional approval inbox with SLA indicators.
-- **`HRSLADashboard`**: SLA breach tracking.
-- **`HRWorkflowDesigner`**: No-code workflow definition editor.
-- **`HRTasksPanel`**: Static demo data only (4 hardcoded tasks).
-- **`useAdminPortal`**: Already creates `hr_tasks` rows when admin requests are processed.
+## Estado de Implementación — Fases Base
 
-**Missing:**
-- No hook for CRUD on `hr_tasks` (only insert from admin portal)
-- No functional task panel (current one is demo-only)
-- No unified task dashboard connecting workflows + tasks + documents + submissions + mobility
-- No assignment rules, reminders, escalation on tasks
-- No bulk actions
-- No role-based views
-- `hr_tasks` lacks fields for SLA, reminders, source tracking, workflow linkage
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-## Design
+## Premium Phases — Enterprise Differentiators
 
-### 1. Migration — Extend `hr_tasks`
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-**ALTER `hr_tasks`:**
-- `category` TEXT — `admin_request`, `payroll`, `mobility`, `document`, `compliance`, `integration`, `onboarding`, `offboarding`, `general`
-- `source_type` TEXT nullable — `manual`, `workflow`, `admin_request`, `system`, `scheduled`
-- `source_id` UUID nullable — ID of originating entity
-- `workflow_instance_id` UUID nullable FK → `erp_hr_workflow_instances(id)`
-- `contract_id` UUID nullable
-- `payroll_record_id` UUID nullable
-- `submission_id` UUID nullable
-- `assignment_id` UUID nullable (mobility)
-- `assigned_role` TEXT nullable — role-based assignment (vs specific user)
-- `sla_hours` INT nullable — SLA deadline in hours from creation
-- `sla_deadline` TIMESTAMPTZ nullable — computed deadline
-- `sla_breached` BOOL DEFAULT false
-- `reminder_at` TIMESTAMPTZ nullable
-- `escalation_to` TEXT nullable — role to escalate to
-- `escalation_at` TIMESTAMPTZ nullable
-- `escalated` BOOL DEFAULT false
-- `tags` TEXT[] nullable
-- `is_bulk` BOOL DEFAULT false — part of bulk action
-- `created_by` UUID nullable
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-Enable realtime on `hr_tasks`.
+## FASE 2 — Completada ✅
 
-### 2. Hook: `useHRTasksEngine`
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-New hook at `src/hooks/erp/hr/useHRTasksEngine.ts`:
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
-**Task CRUD:**
-- `fetchTasks(filters)` — filters: category, status, priority, assigned_to, assigned_role, employee_id, source_type, sla_breached, dateRange
-- `getTask(id)` — full detail with related entities
-- `createTask(data)` — manual or system-generated
-- `updateTask(id, data)`
-- `completeTask(id)` — mark done with timestamp
-- `reassignTask(id, assignee)` — reassign to user or role
-- `bulkAction(taskIds, action)` — complete, reassign, change priority, cancel
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-**SLA & Escalation:**
-- `checkSLABreaches()` — flag overdue tasks
-- `escalateTask(id)` — escalate to next role
-- `getOverdueTasks()` — SLA breached list
-- `getUpcomingDeadlines(hours)` — tasks nearing SLA
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-**Stats:**
-- `getTaskStats(filters?)` — by status, category, assignee, SLA compliance
-- `getMyTasks(userId)` — personal task list
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-**Auto-generation rules (in hook logic):**
-- When admin request created → generate task
-- When document expires → generate review task
-- When submission rejected → generate correction task
-- When mobility document expiring → generate renewal task
-- When payroll period opens → generate review tasks
-
-### 3. Components
-
-All under `src/components/erp/hr/tasks/`:
-
-**`HRTasksModule`** — Main panel (replaces `HRTasksPanel` placeholder)
-- Tabs: Mi Bandeja | Por Equipo | Por Expediente | SLA | Configuración
-
-**`TasksDashboard`** — KPIs
-- Stats: pending, overdue, completed today, SLA compliance %, by category
-- Charts: tasks by category, trend, SLA breaches
-- Alert cards: overdue tasks requiring immediate action
-
-**`TasksList`** — Unified task list with filters
-- Filters: category, status, priority, assignee/role, employee, source, SLA status
-- Columns: title, category, employee, assignee, priority, due date, SLA indicator, status
-- Inline actions: complete, reassign, escalate
-- Bulk selection + bulk actions bar
-
-**`TaskForm`** — Create/edit task
-- Category selection → contextual fields
-- Link to: employee, contract, payroll, submission, mobility assignment
-- Assignment: specific user OR role
-- SLA: hours, reminder, escalation config
-- Parent task (subtasks support)
-
-**`TaskDetail`** — Slide-over detail
-- Header: title, status, priority, category badge
-- Related entity links (clickable → navigate to employee/payroll/submission)
-- Assignment info + reassign action
-- SLA timeline (created → reminder → deadline → escalation)
-- Activity log (status changes, reassignments)
-- Subtasks list
-- Comments (reuse `erp_hr_document_comments` pattern)
-
-**`TasksByExpedient`** — View tasks grouped by employee expedient
-- Select employee → see all related tasks across categories
-- Timeline view of task lifecycle per employee
-
-**`TaskAssignmentRules`** — Configuration panel
-- Rules: when category X → assign to role Y
-- Auto-escalation: after N hours → escalate to role Z
-- SLA defaults per category
-
-### 4. Integration
-
-| Point | Change |
-|---|---|
-| `HRModule.tsx` | `hr-tasks` → `HRTasksModule` (replaces demo panel) |
-| `HRNavigationMenu` | Keep existing entry, update description |
-| `useAdminPortal` | Already creates tasks — add category + source fields |
-| `useOfficialIntegrationsHub` | On rejection → auto-create correction task |
-| `useGlobalMobility` | On document expiry → auto-create renewal task |
-| `useHRDocumentExpedient` | On document expiry → auto-create review task |
-| `HRApprovalInbox` | Add link to related tasks |
-| Barrel exports | `src/components/erp/hr/tasks/index.ts` |
-
-### 5. Implementation Order
-
-| Phase | Content |
-|---|---|
-| **WT1** | Migration: ALTER `hr_tasks` + realtime |
-| **WT2** | `useHRTasksEngine` hook (CRUD, SLA, bulk, stats) |
-| **WT3** | `HRTasksModule` + `TasksDashboard` + `TasksList` |
-| **WT4** | `TaskForm` + `TaskDetail` + `TasksByExpedient` |
-| **WT5** | `TaskAssignmentRules` + integration (HRModule, auto-generation from other modules) |
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard

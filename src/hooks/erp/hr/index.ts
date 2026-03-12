@@ -161,6 +161,20 @@ export type {
 
 // Expediente Documental & Compliance (DC)
 export { useHRDocumentExpedient } from './useHRDocumentExpedient';
+
+// Tasks Engine (WT)
+export { useHRTasksEngine } from './useHRTasksEngine';
+export type {
+  HRTask,
+  TaskFilters,
+  TaskStats,
+  TaskCreateData,
+  TaskCategory,
+  TaskSourceType,
+  TaskStatus,
+  TaskPriority,
+  BulkActionType,
+} from './useHRTasksEngine';
 export type {
   DocumentCategory,
   DocumentSource,
