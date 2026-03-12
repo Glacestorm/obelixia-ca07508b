@@ -438,6 +438,7 @@ export function HRModule() {
         {activeModule === 'mobility-assignments' && <HRMobilityDashboard companyId={companyId} />}
         {activeModule === 'mobility-dashboard' && <HRMobilityDashboard companyId={companyId} />}
         {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
+        {activeModule === 'payroll-engine' && <HRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
         {activeModule === 'es-localization' && <HRESLocalizationPanel companyId={companyId} />}
 

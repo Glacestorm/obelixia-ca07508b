@@ -84,3 +84,20 @@ export type {
   CountryRegistryStats,
   ComplianceAnalysis
 } from './useCountryRegistry';
+
+// Payroll Engine — Motor global de nómina
+export { usePayrollEngine } from './usePayrollEngine';
+export type {
+  PayrollPeriod,
+  PayrollRecord,
+  PayrollLine,
+  PayrollConceptTemplate,
+  PayrollSimulation,
+  PayrollAuditEntry,
+  PreCloseValidation,
+  PeriodStatus,
+  PayrollRecordStatus,
+  PayrollLineType,
+  PayrollLineCategory,
+  SimulationType,
+} from './usePayrollEngine';
