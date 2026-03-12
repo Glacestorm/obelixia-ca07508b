@@ -1,143 +1,77 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-# Localización España (Fase G2) — Plugin País para Global HR Core + Payroll Engine
+## Estado de Implementación — Global HR Platform
 
-## Estado Actual
+| Fase Global | Estado | Detalles |
+|------|--------|----------|
+| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
+| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
+| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
+| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
+| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
+| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
+| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
+| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
+| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
+| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
+| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
 
-**Ya existe pero como placeholders o lógica hardcoded dispersa:**
-- `HRESLocalizationPanel`: solo tabs vacíos con tramos IRPF estáticos
-- `HRSocialSecurityPanel` (686 líneas): SS_RATES hardcoded, lógica RED/SILTRA 100% española mezclada en core
-- `HRPayrollEntryDialog` (433 líneas): SS_RATES hardcoded, conceptos `cotizaSS`/`tributaIRPF` 
-- `HRSettlementsPanel` (496 líneas): finiquito con lógica ES implícita
-- `erp_hr_ss_contributions`: tabla 100% española (CC, AT/EP, FOGASA, FP, desempleo)
-- `ExpedientLocalizacionTab`: placeholder "Plugin ES — Fase G2"
-- `HREmployeeFormDialog`: sección ES con campos disabled "Plugin ES"
-- `HRPayrollEngine` (nuevo): motor global listo para recibir plugins
+## Estado de Implementación — Fases Base
 
-**Objetivo:** Crear el plugin `localization/es/` completo que implementa el ciclo laboral español de punta a punta, enchufado al Global Core sin contaminarlo.
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
----
+## Premium Phases — Enterprise Differentiators
 
-## 1. Migración SQL — 4 tablas nuevas
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-### `hr_es_employee_labor_data`
-Datos laborales específicos de España por empleado. Campos: `employee_id` (FK), `company_id`, `naf` (nº afiliación SS), `grupo_cotizacion` (1-11), `cno_code`, `convenio_colectivo_id`, `tipo_contrato_rd` (código RD), `comunidad_autonoma`, `provincia`, `regimen_ss` (general/autonomo/agrario/mar/hogar), `categoria_profesional`, `coeficiente_parcialidad`, `fecha_alta_ss`, `fecha_baja_ss`, `codigo_contrato_red`, `epígrafe_at`, `situacion_familiar_irpf` (1-3), `hijos_menores_25`, `hijos_menores_3`, `discapacidad_hijos`, `ascendientes_cargo`, `reduccion_movilidad_geografica`, `pension_compensatoria`, `anualidad_alimentos`, `prolongacion_laboral`, `contrato_inferior_anual`, `metadata` JSONB.
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-### `hr_es_irpf_tables`
-Tramos IRPF configurables por año y CCAA. Campos: `id`, `company_id`, `tax_year` (INT), `ccaa_code` (TEXT, null=estatal), `tramo_desde` (NUMERIC), `tramo_hasta` (NUMERIC nullable), `tipo_estatal` (%), `tipo_autonomico` (%), `tipo_total` (%), `is_active`, `created_at`.
+## FASE 2 — Completada ✅
 
-### `hr_es_ss_bases`
-Bases y tipos de cotización por grupo y año. Campos: `id`, `company_id`, `year` (INT), `grupo_cotizacion` (INT 1-11), `base_minima_mensual`, `base_maxima_mensual`, `base_minima_diaria`, `base_maxima_diaria`, `tipo_cc_empresa` (%), `tipo_cc_trabajador` (%), `tipo_desempleo_empresa_gi` (%), `tipo_desempleo_trabajador_gi` (%), `tipo_desempleo_empresa_td` (%), `tipo_desempleo_trabajador_td` (%), `tipo_fogasa` (%), `tipo_fp_empresa` (%), `tipo_fp_trabajador` (%), `tipo_mei` (%), `tipo_at_empresa` (% según CNAE), `is_active`.
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-### `hr_es_contract_types`
-Tipos de contrato según RD español. Campos: `id`, `company_id`, `code` (ej: "100", "401", "501"), `name`, `category` (indefinido/temporal/formacion/practicas), `subcategory`, `jornada_default` (completa/parcial), `duracion_maxima_meses` (nullable), `periodo_prueba_max_meses`, `indemnizacion_dias_anyo` (NUMERIC), `conversion_indefinido` (BOOL), `normativa_referencia`, `is_active`, `metadata`.
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
-Seed data: Tramos IRPF 2026 (estatal + CCAA), bases SS 2026 por grupo (1-11), tipos de contrato RD vigentes (~20 códigos principales).
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
----
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-## 2. Componentes del Plugin España
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-Todo bajo `src/components/erp/hr/localization/es/`:
-
-### 2.1 `ESLocalizationPlugin` — Panel principal (reemplaza `HRESLocalizationPanel`)
-Tabs: Datos laborales | Seg. Social | IRPF | Contratos | Permisos | Convenios | Documentos
-
-### 2.2 `ESEmployeeLaborDataForm` — Formulario datos laborales ES
-Campos: NAF, grupo cotización (select 1-11), CNO, convenio, tipo contrato RD, CCAA, régimen SS, situación familiar IRPF, hijos, ascendientes. Se usa desde el `ExpedientLocalizacionTab` y desde `HREmployeeFormDialog`.
-
-### 2.3 `ESSocialSecurityPanel` — Seg. Social refactorizada
-Migra la lógica de `HRSocialSecurityPanel` (686 líneas) aquí. Tabs: Cotizaciones | Bases | Comunicaciones RED | CRA | Certificados.
-- **Cotizaciones**: Calcula CC, desempleo, FOGASA, FP, MEI, AT desde `hr_es_ss_bases`
-- **Bases**: Admin de bases min/max por grupo y año
-- **CRA**: Código de Cuenta de Cotización, altas/bajas/variaciones
-- **RED**: Preparación de ficheros AFI, FDI, FAN (no envío real todavía)
-
-### 2.4 `ESIRPFPanel` — Gestión IRPF
-- Tramos configurables por año y CCAA desde `hr_es_irpf_tables`
-- Calculadora de retención: situación familiar + salario → % retención
-- Modelo 111 (retenciones trimestrales) — vista preparatoria
-- Modelo 190 (resumen anual) — vista preparatoria
-- Regularización IRPF
-
-### 2.5 `ESContractTypesPanel` — Tipos de contrato RD
-CRUD de `hr_es_contract_types`. Filtros por categoría. Info de duración máxima, período prueba, indemnización.
-
-### 2.6 `ESPermisosPanel` — Permisos retribuidos ET + convenio
-Tabla estática configurable: matrimonio (15d), nacimiento (16 sem), fallecimiento (2-4d), mudanza (1d), deber inexcusable, exámenes, etc. Vinculado a `hr_country_policies`.
-
-### 2.7 `ESSettlementCalculator` — Finiquito español
-Calcula: vacaciones pendientes, pagas extras prorrateadas, indemnización por tipo de extinción, preaviso. Genera documento PDF con formato legal.
-
-### 2.8 `ESCertificadoEmpresa` — Certificado de empresa
-Genera documento con datos: bases de cotización últimos 180 días, tipo contrato, causa extinción, datos empresa/trabajador.
-
-### 2.9 `ESPayrollBridge` — Puente con Payroll Engine
-Inyecta conceptos españoles como `hr_payroll_record_lines`:
-- Earnings: salario base, plus convenio, plus antigüedad, horas extra
-- Deductions: IRPF (%), CC trabajador (4.70%), desempleo trabajador, FP trabajador, MEI
-- Employer costs: CC empresa (23.60%), desempleo empresa, FOGASA, FP empresa, AT/EP
-Calcula bases de cotización (BC CC, BC AT/EP, BC desempleo) y aplica topes min/max del grupo.
-
----
-
-## 3. Hook: `useESLocalization`
-
-Centraliza toda la lógica del plugin España:
-- `fetchLaborData(employeeId)` / `saveLaborData(data)` — CRUD `hr_es_employee_labor_data`
-- `fetchIRPFTables(year, ccaa?)` — tramos IRPF
-- `calculateIRPFRetention(params)` — cálculo retención según situación familiar
-- `fetchSSBases(year, grupo)` — bases y tipos por grupo
-- `calculateSSContributions(baseCotizacion, grupo, tipoContrato)` — desglose SS
-- `fetchContractTypes(filters?)` — catálogo contratos RD
-- `calculateSettlement(params)` — finiquito con prrorrateo pagas extras + vacaciones + indemnización
-- `generateCertificadoEmpresa(employeeId)` — datos para certificado
-- `injectPayrollConcepts(payrollId, employeeId)` — inyectar líneas ES al motor global
-
----
-
-## 4. Integración con Módulos Existentes
-
-| Punto de integración | Cambio |
-|---|---|
-| `ExpedientLocalizacionTab` | Si `countryCode === 'ES'` → renderiza `ESEmployeeLaborDataForm` (reemplaza placeholder) |
-| `HREmployeeFormDialog` | Si país=ES → renderiza campos del plugin (NAF, grupo, convenio, CCAA) con datos reales |
-| `HRPayrollEngine` → Conceptos | `ESPayrollBridge` inyecta conceptos ES como líneas del motor global |
-| `HRAdminPortal` → tipos solicitud | Los tipos `sick_leave`, `work_accident`, `birth_leave`, `termination` → triggers que crean/actualizan `hr_es_employee_labor_data` |
-| `HRModule` nav | Reemplazar `es-localization` → nuevo `ESLocalizationPlugin` |
-| `HRSocialSecurityPanel` | Se marca como deprecated; su lógica migra a `ESSocialSecurityPanel` |
-
----
-
-## 5. Ciclo Completo del Empleado en España
-
-| Paso | Componente Plugin ES | Datos |
-|---|---|---|
-| **1. Alta** | `ESEmployeeLaborDataForm` | NAF, grupo, régimen, tipo contrato, convenio, alta SS |
-| **2. Contrato** | `ESContractTypesPanel` + Form | Código RD, duración, período prueba, jornada |
-| **3. Incidencias** | Admin Portal → `ESPayrollBridge` | Horas extra, dietas, comisiones → líneas nómina |
-| **4. Nómina** | `ESPayrollBridge` | Base cotización + topes → CC/desempleo/FOGASA/FP/MEI/IRPF |
-| **5. IT/AT** | Admin Portal + `ESSocialSecurityPanel` | Parte baja, complemento IT, CRA variación |
-| **6. Permisos** | `ESPermisosPanel` | Días según ET + convenio |
-| **7. Seg. Social** | `ESSocialSecurityPanel` | TC1/TC2, comunicaciones RED, CRA |
-| **8. CRA** | `ESSocialSecurityPanel` → CRA tab | Altas/bajas/variaciones en cuenta cotización |
-| **9. IRPF** | `ESIRPFPanel` | Retención mensual, modelo 111, modelo 190 |
-| **10. Baja** | Admin Portal → Form | Tipo extinción, fecha efecto, causa |
-| **11. Finiquito** | `ESSettlementCalculator` | Vacaciones + pagas extras + indemnización |
-| **12. Cert. empresa** | `ESCertificadoEmpresa` | Bases 180d, tipo contrato, causa extinción |
-
----
-
-## 6. Plan de Implementación
-
-| Fase | Contenido |
-|---|---|
-| **ES1** | Migración SQL: 4 tablas + seed data (IRPF 2026, SS bases, contratos RD) |
-| **ES2** | Hook `useESLocalization` con CRUD + cálculos |
-| **ES3** | `ESLocalizationPlugin` con tabs + `ESEmployeeLaborDataForm` + `ESContractTypesPanel` |
-| **ES4** | `ESSocialSecurityPanel` (cotizaciones, bases, CRA) + `ESIRPFPanel` (tramos, retención, modelos) |
-| **ES5** | `ESPayrollBridge` + `ESSettlementCalculator` + `ESCertificadoEmpresa` |
-| **ES6** | Integración: ExpedientLocalizacionTab, HREmployeeFormDialog, HRModule nav, deprecar HRSocialSecurityPanel |
-
-Prioridad: ES1 → ES2 → ES3 (datos + hook + UI base), luego ES4 → ES5 → ES6 (cálculos + integración).
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
