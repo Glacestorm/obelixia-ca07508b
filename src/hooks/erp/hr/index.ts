@@ -126,6 +126,7 @@ export type {
   ESPayrollSummary,
   ESPreCloseValidation,
   ESReportData,
+  ESCalculationTrace,
 } from './useESPayrollBridge';
 
 // Global Mobility / Expatriates
