@@ -254,6 +254,15 @@ export function HRModule() {
 
   return (
     <div className="space-y-4">
+      {/* Command Palette (Cmd+K) */}
+      <HRCommandPalette
+        onNavigate={(moduleId) => setActiveModule(moduleId)}
+        onAction={(actionId) => {
+          if (actionId === 'new-payroll') setShowPayrollDialog(true);
+          if (actionId === 'request-vacation') setShowVacationDialog(true);
+        }}
+      />
+
       {/* Header con estadísticas rápidas */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
