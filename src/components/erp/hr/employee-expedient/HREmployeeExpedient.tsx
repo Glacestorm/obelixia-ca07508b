@@ -67,16 +67,16 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 const CORE_TABS = [
-  { id: 'ficha', label: 'Ficha', icon: User },
-  { id: 'trayectoria', label: 'Trayectoria', icon: Briefcase },
-  { id: 'contratos', label: 'Contratos', icon: FileText },
-  { id: 'compensacion', label: 'Compensación', icon: DollarSign },
-  { id: 'tiempo', label: 'Tiempo', icon: Clock },
-  { id: 'formacion', label: 'Formación', icon: GraduationCap },
-  { id: 'desempeno', label: 'Desempeño', icon: BarChart3 },
-  { id: 'documentos', label: 'Documentos', icon: FolderOpen },
-  { id: 'movilidad', label: 'Movilidad', icon: Globe },
-  { id: 'auditoria', label: 'Auditoría', icon: ClipboardList },
+  { id: 'ficha', label: 'Ficha', icon: User, mvp: true },
+  { id: 'trayectoria', label: 'Trayectoria', icon: Briefcase, mvp: false },
+  { id: 'contratos', label: 'Contratos', icon: FileText, mvp: true },
+  { id: 'compensacion', label: 'Compensación', icon: DollarSign, mvp: true },
+  { id: 'tiempo', label: 'Tiempo', icon: Clock, mvp: true },
+  { id: 'formacion', label: 'Formación', icon: GraduationCap, mvp: false },
+  { id: 'desempeno', label: 'Desempeño', icon: BarChart3, mvp: false },
+  { id: 'documentos', label: 'Documentos', icon: FolderOpen, mvp: true },
+  { id: 'movilidad', label: 'Movilidad', icon: Globe, mvp: false },
+  { id: 'auditoria', label: 'Auditoría', icon: ClipboardList, mvp: false },
 ] as const;
 
 export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate }: Props) {
