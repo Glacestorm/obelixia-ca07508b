@@ -56172,6 +56172,7 @@ export type Database = {
           amount: number
           base_amount: number | null
           calculation_formula: string | null
+          calculation_trace: Json | null
           category: string | null
           concept_code: string
           concept_id: string | null
@@ -56179,6 +56180,7 @@ export type Database = {
           created_at: string
           id: string
           incident_id: string | null
+          incident_ref: string | null
           is_percentage: boolean | null
           is_ss_contributable: boolean
           is_taxable: boolean
@@ -56196,6 +56198,7 @@ export type Database = {
           amount?: number
           base_amount?: number | null
           calculation_formula?: string | null
+          calculation_trace?: Json | null
           category?: string | null
           concept_code: string
           concept_id?: string | null
@@ -56203,6 +56206,7 @@ export type Database = {
           created_at?: string
           id?: string
           incident_id?: string | null
+          incident_ref?: string | null
           is_percentage?: boolean | null
           is_ss_contributable?: boolean
           is_taxable?: boolean
@@ -56220,6 +56224,7 @@ export type Database = {
           amount?: number
           base_amount?: number | null
           calculation_formula?: string | null
+          calculation_trace?: Json | null
           category?: string | null
           concept_code?: string
           concept_id?: string | null
@@ -56227,6 +56232,7 @@ export type Database = {
           created_at?: string
           id?: string
           incident_id?: string | null
+          incident_ref?: string | null
           is_percentage?: boolean | null
           is_ss_contributable?: boolean
           is_taxable?: boolean
