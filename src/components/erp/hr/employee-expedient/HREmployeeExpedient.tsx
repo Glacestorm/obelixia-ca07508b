@@ -34,6 +34,7 @@ interface Props {
   employeeId: string;
   onBack: () => void;
   onNavigate?: (module: string, entityId?: string) => void;
+  mvpMode?: boolean;
 }
 
 interface EmployeeData {

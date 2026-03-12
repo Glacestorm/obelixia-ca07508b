@@ -183,6 +183,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'admin-requests', label: 'Solicitudes', icon: Briefcase, description: 'Solicitudes administrativas', badge: 'Nuevo' },
             { id: 'hr-tasks', label: 'Tareas RRHH', icon: ClipboardList, description: 'Tareas asignables', badge: 'Nuevo' },
+            { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox, description: 'Bandeja de aprobaciones' },
             { id: 'regulatory-watch', label: 'Vigilancia Normativa', icon: Shield, description: 'Alertas legales' },
             { id: 'safety', label: 'PRL', icon: Shield, description: 'Prevención de riesgos', badge: stats.safetyAlerts, badgeVariant: 'destructive' },
           ]
