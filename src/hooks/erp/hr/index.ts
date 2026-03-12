@@ -190,3 +190,20 @@ export type {
   DocumentFilters,
   ExpedientStats,
 } from './useHRDocumentExpedient';
+
+// People Analytics + IA (PA)
+export { usePeopleAnalytics } from './usePeopleAnalytics';
+export type {
+  PADomain,
+  PARoleView,
+  PAFilters,
+  PAKpi,
+  PAHROverview,
+  PAPayrollAnalytics,
+  PAAbsenteeismAnalytics,
+  PAComplianceRisks,
+  PAEquityMetrics,
+  PAAlert,
+  PAInsight,
+  PACopilotMessage,
+} from './usePeopleAnalytics';

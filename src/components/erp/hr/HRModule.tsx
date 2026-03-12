@@ -84,6 +84,7 @@ import { OfficialIntegrationsHub } from './official-integrations';
 import { GlobalMobilityModule } from './mobility';
 import { DocumentExpedientModule } from './document-expedient';
 import { HRPayrollEngine } from './payroll-engine';
+import { PeopleAnalyticsModule } from './people-analytics';
 import { ESLocalizationPlugin } from './localization/es';
 import { HRAdminPortal } from './admin-portal';
 import { HREmployeeExpedient } from './employee-expedient';
@@ -447,6 +448,7 @@ export function HRModule() {
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
         {activeModule === 'document-expedient' && <DocumentExpedientModule companyId={companyId} />}
         {activeModule === 'es-localization' && <ESLocalizationPlugin companyId={companyId} />}
+        {activeModule === 'people-analytics' && <PeopleAnalyticsModule companyId={companyId} />}
 
         {/* Employee Expedient — transversal view */}
         {activeModule === 'employee-expedient' && selectedEmployeeId && (
