@@ -267,11 +267,15 @@ export function useESPayrollBridge(companyId?: string) {
       if (input.regularizacion) addEarning('ES_REGULARIZACION', 'Regularización / atrasos', input.regularizacion, 'regularization', true, true, 95);
       if (input.itCCDias && input.itCCDias > 0) {
         const complementoIT = r((input.salarioBase / 30) * input.itCCDias * 0.60);
-        addEarning('ES_IT_CC_EMPRESA', 'Complemento IT cont. común', complementoIT, 'variable', true, false, 90);
+        addEarning('ES_IT_CC_EMPRESA', 'Complemento IT cont. común', complementoIT, 'variable', true, false, 90,
+          'IT_CC_complement', { salarioBase: input.salarioBase, dias: input.itCCDias, pct: 0.60 },
+          `(${input.salarioBase}/30) × ${input.itCCDias} × 60% = ${complementoIT}`);
       }
       if (input.itATDias && input.itATDias > 0) {
         const complementoAT = r((input.salarioBase / 30) * input.itATDias * 0.75);
-        addEarning('ES_IT_AT_EMPRESA', 'Complemento IT acc. trabajo', complementoAT, 'variable', true, false, 91);
+        addEarning('ES_IT_AT_EMPRESA', 'Complemento IT acc. trabajo', complementoAT, 'variable', true, false, 91,
+          'IT_AT_complement', { salarioBase: input.salarioBase, dias: input.itATDias, pct: 0.75 },
+          `(${input.salarioBase}/30) × ${input.itATDias} × 75% = ${complementoAT}`);
       }
 
       // ── 2. Calcular bases ──
