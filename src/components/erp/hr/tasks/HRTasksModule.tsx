@@ -1,6 +1,7 @@
 /**
  * HRTasksModule — Panel principal de tareas RRHH
- * Tabs: Mi Bandeja | Por Equipo | Por Expediente | SLA | Configuración
+ * MVP: Dashboard | Mi Bandeja | Todas
+ * Full: + Por Expediente | Configuración
  */
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,11 +12,15 @@ import { TasksList } from './TasksList';
 import { TasksByExpedient } from './TasksByExpedient';
 import { TaskAssignmentRules } from './TaskAssignmentRules';
 
-interface Props { companyId: string; }
+interface Props {
+  companyId: string;
+  mvpMode?: boolean;
+}
 
-export function HRTasksModule({ companyId }: Props) {
+export function HRTasksModule({ companyId, mvpMode = true }: Props) {
   const engine = useHRTasksEngine(companyId);
   const [tab, setTab] = useState('dashboard');
+  const showFull = !mvpMode;
 
   useEffect(() => {
     engine.fetchTasks();
@@ -39,8 +44,8 @@ export function HRTasksModule({ companyId }: Props) {
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="my-inbox">Mi Bandeja</TabsTrigger>
           <TabsTrigger value="all-tasks">Todas</TabsTrigger>
-          <TabsTrigger value="by-expedient">Por Expediente</TabsTrigger>
-          <TabsTrigger value="config">Configuración</TabsTrigger>
+          {showFull && <TabsTrigger value="by-expedient">Por Expediente</TabsTrigger>}
+          {showFull && <TabsTrigger value="config">Configuración</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -67,13 +72,17 @@ export function HRTasksModule({ companyId }: Props) {
           />
         </TabsContent>
 
-        <TabsContent value="by-expedient">
-          <TasksByExpedient tasks={engine.tasks} loading={engine.loading} />
-        </TabsContent>
+        {showFull && (
+          <TabsContent value="by-expedient">
+            <TasksByExpedient tasks={engine.tasks} loading={engine.loading} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="config">
-          <TaskAssignmentRules companyId={companyId} />
-        </TabsContent>
+        {showFull && (
+          <TabsContent value="config">
+            <TaskAssignmentRules companyId={companyId} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -1,6 +1,7 @@
 /**
  * HRPayrollEngine — Panel principal del motor de nómina global
- * Tabs: Períodos, Nóminas, Conceptos, Simulación, Auditoría
+ * MVP: Períodos + Nóminas + Conceptos
+ * Full: + Simulación + Auditoría
  */
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,12 +13,16 @@ import { HRPayrollConceptsCatalog } from './HRPayrollConceptsCatalog';
 import { HRPayrollSimulator } from './HRPayrollSimulator';
 import { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
 
-interface Props { companyId: string; }
+interface Props {
+  companyId: string;
+  mvpMode?: boolean;
+}
 
-export function HRPayrollEngine({ companyId }: Props) {
+export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
   const [activeTab, setActiveTab] = useState('periods');
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const engine = usePayrollEngine(companyId);
+  const showFull = !mvpMode;
 
   useEffect(() => { engine.fetchPeriods(); }, [engine.fetchPeriods]);
 
@@ -29,12 +34,12 @@ export function HRPayrollEngine({ companyId }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${showFull ? 'grid-cols-5' : 'grid-cols-3'}`}>
           <TabsTrigger value="periods" className="gap-1.5 text-xs"><Calendar className="h-3.5 w-3.5" />Períodos</TabsTrigger>
           <TabsTrigger value="payslips" className="gap-1.5 text-xs"><FileText className="h-3.5 w-3.5" />Nóminas</TabsTrigger>
           <TabsTrigger value="concepts" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" />Conceptos</TabsTrigger>
-          <TabsTrigger value="simulation" className="gap-1.5 text-xs"><FlaskConical className="h-3.5 w-3.5" />Simulación</TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" />Auditoría</TabsTrigger>
+          {showFull && <TabsTrigger value="simulation" className="gap-1.5 text-xs"><FlaskConical className="h-3.5 w-3.5" />Simulación</TabsTrigger>}
+          {showFull && <TabsTrigger value="audit" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" />Auditoría</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="periods" className="mt-4">
@@ -77,22 +82,26 @@ export function HRPayrollEngine({ companyId }: Props) {
           />
         </TabsContent>
 
-        <TabsContent value="simulation" className="mt-4">
-          <HRPayrollSimulator
-            companyId={companyId}
-            simulations={engine.simulations}
-            onFetch={engine.fetchSimulations}
-            onCreate={engine.createSimulation}
-          />
-        </TabsContent>
+        {showFull && (
+          <TabsContent value="simulation" className="mt-4">
+            <HRPayrollSimulator
+              companyId={companyId}
+              simulations={engine.simulations}
+              onFetch={engine.fetchSimulations}
+              onCreate={engine.createSimulation}
+            />
+          </TabsContent>
+        )}
 
-        <TabsContent value="audit" className="mt-4">
-          <HRPayrollAuditTrail
-            companyId={companyId}
-            auditLog={engine.auditLog}
-            onFetch={engine.fetchAuditLog}
-          />
-        </TabsContent>
+        {showFull && (
+          <TabsContent value="audit" className="mt-4">
+            <HRPayrollAuditTrail
+              companyId={companyId}
+              auditLog={engine.auditLog}
+              onFetch={engine.fetchAuditLog}
+            />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
