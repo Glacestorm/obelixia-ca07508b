@@ -223,11 +223,22 @@ export function useESPayrollBridge(companyId?: string) {
     ): ESPayrollCalculation => {
       const lines: ESPayrollLine[] = [];
       const r = (n: number) => Math.round(n * 100) / 100;
+      const ts = new Date().toISOString();
 
       // ── 1. Devengos ──
-      const addEarning = (code: string, name: string, amount: number, category: string, taxable: boolean, contributable: boolean, sortOrder: number) => {
+      const addEarning = (code: string, name: string, amount: number, category: string, taxable: boolean, contributable: boolean, sortOrder: number, traceRule?: string, traceInputs?: Record<string, unknown>, traceFormula?: string) => {
         if (amount === 0) return;
-        lines.push({ concept_code: code, concept_name: name, line_type: 'earning', category, amount: r(amount), is_taxable: taxable, is_ss_contributable: contributable, is_percentage: false, sort_order: sortOrder, source: 'rule_engine' });
+        lines.push({
+          concept_code: code, concept_name: name, line_type: 'earning', category,
+          amount: r(amount), is_taxable: taxable, is_ss_contributable: contributable,
+          is_percentage: false, sort_order: sortOrder, source: 'rule_engine',
+          calculation_trace: {
+            rule: traceRule || code,
+            inputs: traceInputs || { amount },
+            formula: traceFormula || `${name} = ${r(amount)}`,
+            timestamp: ts,
+          },
+        });
       };
 
       addEarning('ES_SAL_BASE', 'Salario base', input.salarioBase, 'fixed', true, true, 10);
