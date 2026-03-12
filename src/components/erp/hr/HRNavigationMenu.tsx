@@ -16,7 +16,7 @@ import {
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
-  Sparkles, Wrench, MessageSquare, Search, Activity, Flag
+  Sparkles, Wrench, MessageSquare, Search, Activity, Flag, Send, AlertTriangle, Plane
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -62,88 +62,170 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
 
   const megaMenus: MegaMenuCategory[] = [
     {
-      id: 'talent',
-      label: 'Talento',
+      id: 'core-hr',
+      label: 'Core HR',
       icon: Users,
-      columns: 2,
-      width: 'w-[520px]',
-      headerTitle: 'Gestión del Talento',
-      headerDescription: 'Ciclo de vida completo del empleado',
+      columns: 3,
+      width: 'w-[720px]',
+      headerTitle: 'Core HR',
+      headerDescription: 'Empleados, contratos, organización y documentos',
       subGroups: [
         {
-          title: 'Ciclo de Vida',
-          icon: UserCheck,
+          title: 'Personas',
+          icon: Users,
           color: 'text-blue-600',
           items: [
-            { id: 'employees', label: 'Empleados', icon: Users, description: 'Directorio y fichas' },
-            { id: 'recruitment', label: 'Reclutamiento', icon: UserPlus, description: 'Ofertas y candidatos' },
+            { id: 'employees', label: 'Empleados', icon: Users, description: 'Directorio y expedientes' },
+            { id: 'contracts', label: 'Contratos', icon: FileText, description: 'Gestión contractual' },
+            { id: 'documents', label: 'Documentos', icon: FolderOpen, description: 'Archivo digital' },
           ]
         },
         {
-          title: 'Incorporación & Salida',
-          icon: Briefcase,
+          title: 'Organización',
+          icon: Building2,
           color: 'text-emerald-600',
           items: [
-            { id: 'onboarding', label: 'Onboarding', icon: UserPlus, description: 'Plan de acogida' },
-            { id: 'offboarding', label: 'Offboarding', icon: UserMinus, description: 'Proceso de salida' },
+            { id: 'departments', label: 'Departamentos', icon: Building2, description: 'Estructura organizativa' },
+            { id: 'legal-entities', label: 'Entidades Legales', icon: Building2, description: 'Sociedades y filiales' },
+            { id: 'work-centers', label: 'Centros de Trabajo', icon: MapPin, description: 'Ubicaciones físicas' },
+            { id: 'org-structure', label: 'Organigrama', icon: Network, description: 'Estructura jerárquica' },
+          ]
+        },
+        {
+          title: 'Configuración',
+          icon: Calendar,
+          color: 'text-amber-600',
+          items: [
+            { id: 'work-calendars', label: 'Calendarios', icon: Calendar, description: 'Festivos y jornadas' },
+            { id: 'enterprise-roles', label: 'Roles y Permisos', icon: Lock, description: 'Control de acceso' },
+            { id: 'unions', label: 'Sindicatos', icon: UserCog, description: 'Rel. laborales' },
           ]
         },
       ]
     },
     {
-      id: 'operations',
-      label: 'Operaciones',
+      id: 'payroll',
+      label: 'Payroll',
       icon: DollarSign,
-      badge: stats.pendingPayrolls + stats.pendingVacations,
-      columns: 3,
-      width: 'w-[720px]',
-      headerTitle: 'Operaciones RRHH',
-      headerDescription: 'Nóminas, contratos, tiempo y administración',
+      badge: stats.pendingPayrolls,
+      columns: 2,
+      width: 'w-[520px]',
+      headerTitle: 'Payroll & Retribución',
+      headerDescription: 'Nóminas, seguridad social y compensación',
       subGroups: [
         {
-          title: 'Nóminas & Retribución',
+          title: 'Nóminas',
           icon: DollarSign,
           color: 'text-emerald-600',
           items: [
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones' },
-            { id: 'ss', label: 'Seg. Social', icon: Landmark, description: 'Cotizaciones y RED' },
+            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Gestión de períodos', badge: 'Nuevo' },
           ]
         },
         {
-          title: 'Tiempo & Ausencias',
-          icon: Clock,
-          color: 'text-amber-600',
-          items: [
-            { id: 'time-clock', label: 'Control Fichaje', icon: Clock, description: 'Registro de jornada' },
-            { id: 'vacations', label: 'Vacaciones', icon: Calendar, description: 'Solicitudes y saldos', badge: stats.pendingVacations, badgeVariant: 'secondary' },
-          ]
-        },
-        {
-          title: 'Administración',
-          icon: FolderOpen,
+          title: 'Cotización & Fiscal',
+          icon: Landmark,
           color: 'text-blue-600',
           items: [
-            { id: 'contracts', label: 'Contratos', icon: FileText, description: 'Gestión contractual' },
-            { id: 'unions', label: 'Sindicatos', icon: UserCog, description: 'Rel. laborales' },
-            { id: 'documents', label: 'Documentos', icon: FolderOpen, description: 'Archivo digital' },
-            { id: 'departments', label: 'Organización', icon: Building2, description: 'Departamentos' },
-            { id: 'regulatory-watch', label: 'Vigilancia Normativa', icon: Shield, description: 'Alertas legales' },
+            { id: 'ss', label: 'Seg. Social', icon: Landmark, description: 'Cotizaciones y RED' },
+            { id: 'compensation-suite', label: 'Compensación', icon: Coins, description: 'Retribución total' },
+            { id: 'benefits', label: 'Beneficios', icon: Gift, description: 'Retribución flexible' },
           ]
         },
       ]
     },
     {
-      id: 'development',
-      label: 'Desarrollo',
-      icon: Award,
-      badge: stats.safetyAlerts > 0 ? stats.safetyAlerts : undefined,
+      id: 'laboral',
+      label: 'Laboral',
+      icon: Briefcase,
+      badge: stats.pendingVacations,
+      columns: 2,
+      width: 'w-[520px]',
+      headerTitle: 'Administración Laboral',
+      headerDescription: 'Tiempo, ausencias, solicitudes y tareas',
+      subGroups: [
+        {
+          title: 'Tiempo & Ausencias',
+          icon: Clock,
+          color: 'text-amber-600',
+          items: [
+            { id: 'vacations', label: 'Vacaciones', icon: Calendar, description: 'Solicitudes y saldos', badge: stats.pendingVacations, badgeVariant: 'secondary' },
+            { id: 'time-clock', label: 'Control Fichaje', icon: Clock, description: 'Registro de jornada' },
+            { id: 'leave-incidents', label: 'Incidencias', icon: AlertTriangle, description: 'Bajas, maternidad, IT', badge: 'Nuevo' },
+          ]
+        },
+        {
+          title: 'Gestión Operativa',
+          icon: ClipboardList,
+          color: 'text-violet-600',
+          items: [
+            { id: 'admin-requests', label: 'Solicitudes', icon: Briefcase, description: 'Solicitudes administrativas', badge: 'Nuevo' },
+            { id: 'hr-tasks', label: 'Tareas RRHH', icon: ClipboardList, description: 'Tareas asignables', badge: 'Nuevo' },
+            { id: 'regulatory-watch', label: 'Vigilancia Normativa', icon: Shield, description: 'Alertas legales' },
+            { id: 'safety', label: 'PRL', icon: Shield, description: 'Prevención de riesgos', badge: stats.safetyAlerts, badgeVariant: 'destructive' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'global',
+      label: 'Global',
+      icon: Globe,
       columns: 3,
       width: 'w-[720px]',
-      headerTitle: 'Desarrollo & Rendimiento',
-      headerDescription: 'Formación, desempeño y analítica de personas',
+      headerTitle: 'Global HR Platform',
+      headerDescription: 'Multi-país, movilidad, integraciones oficiales y compliance',
       subGroups: [
+        {
+          title: 'Localización',
+          icon: Flag,
+          color: 'text-blue-600',
+          items: [
+            { id: 'country-registry', label: 'Country Registry', icon: Globe, description: 'Países y políticas', badge: 'G1' },
+            { id: 'es-localization', label: '🇪🇸 España', icon: Flag, description: 'IRPF, SS, contratos, permisos', badge: 'Nuevo' },
+          ]
+        },
+        {
+          title: 'Global Mobility',
+          icon: Globe,
+          color: 'text-emerald-600',
+          items: [
+            { id: 'mobility-assignments', label: 'Asignaciones', icon: Globe, description: 'Asignaciones internacionales', badge: 'Nuevo' },
+            { id: 'mobility-dashboard', label: 'Mobility Dashboard', icon: Gauge, description: 'KPIs de movilidad', badge: 'Nuevo' },
+          ]
+        },
+        {
+          title: 'Integraciones Oficiales',
+          icon: Send,
+          color: 'text-indigo-600',
+          items: [
+            { id: 'official-submissions', label: 'Envíos Oficiales', icon: Send, description: 'SILTRA, Milena PA, AEAT', badge: 'Nuevo' },
+            { id: 'compliance-evidence', label: 'Evidencias', icon: Shield, description: 'Cumplimiento documental', badge: 'Nuevo' },
+          ]
+        },
+      ]
+    },
+    {
+      id: 'talent',
+      label: 'Talento',
+      icon: Award,
+      columns: 3,
+      width: 'w-[720px]',
+      headerTitle: 'Gestión del Talento',
+      headerDescription: 'Ciclo de vida, formación, desempeño y analítica',
+      subGroups: [
+        {
+          title: 'Ciclo de Vida',
+          icon: UserCheck,
+          color: 'text-blue-600',
+          items: [
+            { id: 'recruitment', label: 'Reclutamiento', icon: UserPlus, description: 'Ofertas y candidatos' },
+            { id: 'onboarding', label: 'Onboarding', icon: UserPlus, description: 'Plan de acogida' },
+            { id: 'offboarding', label: 'Offboarding', icon: UserMinus, description: 'Proceso de salida' },
+          ]
+        },
         {
           title: 'Rendimiento',
           icon: Award,
@@ -152,6 +234,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
             { id: 'performance', label: 'Desempeño', icon: Award, description: 'Evaluaciones y OKRs' },
             { id: 'skills-matrix', label: 'Competencias', icon: Brain, description: 'Matriz de skills' },
             { id: 'succession', label: 'Sucesión', icon: Shield, description: 'Planes de continuidad' },
+            { id: 'talent-intelligence', label: 'Talent Intelligence', icon: Brain, description: 'IA para talento' },
           ]
         },
         {
@@ -161,17 +244,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
           items: [
             { id: 'training', label: 'Formación', icon: GraduationCap, description: 'Planes formativos' },
             { id: 'marketplace', label: 'Marketplace', icon: Rocket, description: 'Movilidad interna' },
-            { id: 'benefits', label: 'Beneficios', icon: Gift, description: 'Retribución flexible' },
-          ]
-        },
-        {
-          title: 'Analítica & Seguridad',
-          icon: LineChart,
-          color: 'text-rose-600',
-          items: [
             { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Cuadros de mando' },
             { id: 'analytics-intelligence', label: 'Analytics IA', icon: Sparkles, description: 'Inteligencia predictiva' },
-            { id: 'safety', label: 'PRL', icon: Shield, description: 'Prevención de riesgos', badge: stats.safetyAlerts, badgeVariant: 'destructive' },
           ]
         },
       ]
@@ -196,25 +270,14 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
           ]
         },
         {
-          title: 'Estructura Organizativa',
-          icon: Building2,
-          color: 'text-blue-600',
-          items: [
-            { id: 'legal-entities', label: 'Entidades Legales', icon: Building2, description: 'Sociedades y filiales' },
-            { id: 'work-centers', label: 'Centros de Trabajo', icon: MapPin, description: 'Ubicaciones físicas' },
-            { id: 'org-structure', label: 'Organigrama', icon: Network, description: 'Estructura jerárquica' },
-            { id: 'work-calendars', label: 'Calendarios', icon: Calendar, description: 'Festivos y jornadas' },
-          ]
-        },
-        {
-          title: 'Gobernanza & Procesos',
+          title: 'Gobernanza & Compliance',
           icon: Lock,
           color: 'text-amber-600',
           items: [
-            { id: 'enterprise-roles', label: 'Roles y Permisos', icon: Lock, description: 'Control de acceso' },
-            { id: 'audit-trail', label: 'Auditoría', icon: ClipboardList, description: 'Trazabilidad completa' },
             { id: 'workflow-designer', label: 'Workflows', icon: GitBranch, description: 'Diseño de flujos' },
+            { id: 'audit-trail', label: 'Auditoría', icon: ClipboardList, description: 'Trazabilidad completa' },
             { id: 'compliance-enterprise', label: 'Compliance', icon: Shield, description: 'Cumplimiento normativo' },
+            { id: 'fairness-engine', label: 'Fairness & Justice', icon: Scale, description: 'Equidad organizativa' },
           ]
         },
         {
@@ -222,11 +285,9 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
           icon: Heart,
           color: 'text-rose-500',
           items: [
-            { id: 'compensation-suite', label: 'Compensación', icon: Coins, description: 'Retribución total' },
-            { id: 'talent-intelligence', label: 'Talent Intelligence', icon: Brain, description: 'IA para talento' },
             { id: 'wellbeing-enterprise', label: 'Wellbeing', icon: Heart, description: 'Bienestar laboral' },
-            { id: 'fairness-engine', label: 'Fairness & Justice', icon: Scale, description: 'Equidad organizativa' },
             { id: 'role-experience', label: 'Role Experience', icon: UserCog, description: 'UX por rol' },
+            { id: 'esg-selfservice', label: 'ESG & Self-Service', icon: Leaf, description: 'Sostenibilidad social' },
           ]
         },
         {
@@ -236,7 +297,6 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
           items: [
             { id: 'legal-engine', label: 'Legal Engine', icon: Gavel, description: 'Motor documental legal' },
             { id: 'cnae-intelligence', label: 'CNAE Intelligence', icon: Globe, description: 'Inteligencia sectorial' },
-            { id: 'esg-selfservice', label: 'ESG & Self-Service', icon: Leaf, description: 'Sostenibilidad social' },
           ]
         },
         {
@@ -249,74 +309,6 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
             { id: 'digital-twin', label: 'Digital Twin', icon: Layers, description: 'Gemelo digital org.' },
             { id: 'copilot-twin', label: 'Copilot + Twin', icon: Bot, description: 'Asistente IA autónomo' },
             { id: 'workforce-planning', label: 'Workforce Planning', icon: Target, description: 'Planificación estratégica' },
-          ]
-        },
-      ]
-    },
-    {
-      id: 'global',
-      label: 'Global',
-      icon: Globe,
-      columns: 2,
-      width: 'w-[520px]',
-      headerTitle: 'Global HR Platform',
-      headerDescription: 'Multi-país, movilidad internacional e integraciones oficiales',
-      subGroups: [
-        {
-          title: 'Localización',
-          icon: Flag,
-          color: 'text-blue-600',
-          items: [
-            { id: 'country-registry', label: 'Country Registry', icon: Globe, description: 'Países y políticas', badge: 'G1' },
-          ]
-        },
-        {
-          title: 'Próximamente',
-          icon: Sparkles,
-          color: 'text-muted-foreground',
-          items: [
-            { id: 'global-payroll-engine', label: 'Payroll Engine', icon: Calculator, description: 'Motor de nómina multi-país', badge: 'G3' },
-            { id: 'global-mobility', label: 'Global Mobility', icon: Globe, description: 'Expatriados y asignaciones', badge: 'G5' },
-            { id: 'global-integrations', label: 'Integraciones Oficiales', icon: Link2, description: 'SILTRA, AEAT, Milena PA', badge: 'G4' },
-          ]
-        },
-      ]
-    },
-    {
-      id: 'tools',
-      label: 'Herramientas',
-      icon: Wrench,
-      columns: 2,
-      width: 'w-[520px]',
-      headerTitle: 'Herramientas & Utilidades',
-      headerDescription: 'IA, normativa, integraciones y soporte',
-      subGroups: [
-        {
-          title: 'Inteligencia Artificial',
-          icon: Sparkles,
-          color: 'text-violet-600',
-          items: [
-            { id: 'agent', label: 'Agente IA', icon: Brain, description: 'Asistente conversacional' },
-            { id: 'news', label: 'Noticias', icon: Newspaper, description: 'Alertas y novedades' },
-          ]
-        },
-        {
-          title: 'Normativa & Legal',
-          icon: BookOpen,
-          color: 'text-emerald-600',
-          items: [
-            { id: 'knowledge', label: 'Normativa', icon: BookOpen, description: 'Base de conocimiento' },
-            { id: 'legal-compliance', label: 'Cumplimiento Legal', icon: Shield, description: 'Estado de cumplimiento' },
-          ]
-        },
-        {
-          title: 'Sistema',
-          icon: Wrench,
-          color: 'text-muted-foreground',
-          items: [
-            { id: 'integration', label: 'Integración Módulos', icon: Link2, description: 'Conectores y APIs' },
-            { id: 'demo-seed', label: 'Datos Demo', icon: Database, description: 'Carga de datos de prueba' },
-            { id: 'help', label: 'Ayuda', icon: HelpCircle, description: 'Guías y documentación' },
           ]
         },
       ]
@@ -347,7 +339,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
           color: 'text-violet-600',
           items: [
             { id: 'util-analytics-bi', label: 'Analytics BI', icon: LineChart, description: 'BI cross-module con IA' },
-            { id: 'util-reporting', label: 'Reporting Engine', icon: FileText, description: 'Reportes ejecutivos avanzados' },
+            { id: 'util-reporting', label: 'Reporting Engine', icon: FileText, description: 'Reportes ejecutivos' },
             { id: 'util-regulatory', label: 'Compliance Regulatorio', icon: Shield, description: 'Igualdad, GDPR, EU AI Act' },
             { id: 'util-board-pack', label: 'Board Pack', icon: Briefcase, description: 'Packs para comités' },
             { id: 'util-compliance', label: 'Cumplimiento Auto', icon: Shield, description: 'GDPR, LOPDGDD, Igualdad' },

@@ -78,7 +78,9 @@ import { ComplianceReportingPanel } from './regulatory-reporting';
 import { PremiumAPIWebhooksPanel } from './premium-api';
 import { EnterpriseIntegrationsPanel } from './enterprise-integrations';
 import { HRBoardPackPanel } from './board-pack';
-import { HRCountryRegistryPanel } from './global';
+import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRAdminRequestsPanel, HRTasksPanel, HROfficialSubmissionsPanel, HRMobilityDashboard, HRPayrollPeriodsPanel, HRComplianceEvidencePanel, HRESLocalizationPanel } from './global';
+import { HREmployeeExpedient } from './employee-expedient';
+import { HRCommandPalette } from './shared/HRCommandPalette';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Loader2 as Spin, AlertCircle as AlertC, Play } from 'lucide-react';
@@ -129,6 +131,7 @@ function PremiumReseedPanel({ companyId }: { companyId?: string }) {
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const { currentCompany } = useERPContext();
   const companyId = currentCompany?.id;
   
@@ -252,6 +255,15 @@ export function HRModule() {
 
   return (
     <div className="space-y-4">
+      {/* Command Palette (Cmd+K) */}
+      <HRCommandPalette
+        onNavigate={(moduleId) => setActiveModule(moduleId)}
+        onAction={(actionId) => {
+          if (actionId === 'new-payroll') setShowPayrollDialog(true);
+          if (actionId === 'request-vacation') setShowVacationDialog(true);
+        }}
+      />
+
       {/* Header con estadísticas rápidas */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
@@ -416,7 +428,29 @@ export function HRModule() {
         {/* Global HR Platform - Fase G1 */}
         {activeModule === 'country-registry' && <HRCountryRegistryPanel companyId={companyId} />}
 
-        {/* Utilidades — grid de navegación */}
+        {/* New Global Panels — N1-N5 */}
+        {activeModule === 'leave-incidents' && <HRLeaveIncidentsPanel companyId={companyId} />}
+        {activeModule === 'admin-requests' && <HRAdminRequestsPanel companyId={companyId} />}
+        {activeModule === 'hr-tasks' && <HRTasksPanel companyId={companyId} />}
+        {activeModule === 'official-submissions' && <HROfficialSubmissionsPanel companyId={companyId} />}
+        {activeModule === 'mobility-assignments' && <HRMobilityDashboard companyId={companyId} />}
+        {activeModule === 'mobility-dashboard' && <HRMobilityDashboard companyId={companyId} />}
+        {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
+        {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
+        {activeModule === 'es-localization' && <HRESLocalizationPanel companyId={companyId} />}
+
+        {/* Employee Expedient — transversal view */}
+        {activeModule === 'employee-expedient' && selectedEmployeeId && (
+          <HREmployeeExpedient
+            companyId={companyId}
+            employeeId={selectedEmployeeId}
+            onBack={() => {
+              setSelectedEmployeeId(null);
+              setActiveModule('employees');
+            }}
+            onNavigate={(module) => setActiveModule(module)}
+          />
+        )}
         {activeModule === 'util-grid' && (
           <HRUtilitiesNavigation
             activeSection={null}
