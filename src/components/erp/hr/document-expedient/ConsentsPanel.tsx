@@ -183,7 +183,7 @@ export function ConsentsPanel({ companyId, employeeId }: Props) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {isExpiring && <AlertTriangle className="h-4 w-4 text-amber-500" title="Próximo a vencer" />}
+                    {isExpiring && <span title="Próximo a vencer"><AlertTriangle className="h-4 w-4 text-amber-500" /></span>}
                     <Badge className={`text-xs ${sc.color}`}>{sc.label}</Badge>
                     {c.status === 'active' && (
                       <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => revokeConsent.mutate(c.id)}>

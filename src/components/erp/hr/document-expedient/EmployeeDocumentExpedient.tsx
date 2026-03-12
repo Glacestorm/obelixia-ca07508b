@@ -157,9 +157,9 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               {doc.integrity_verified ? (
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" title="Integridad verificada" />
+                                <span title="Integridad verificada"><CheckCircle2 className="h-4 w-4 text-emerald-500" /></span>
                               ) : (
-                                <XCircle className="h-4 w-4 text-muted-foreground/40" title="No verificado" />
+                                <span title="No verificado"><XCircle className="h-4 w-4 text-muted-foreground/40" /></span>
                               )}
                               {isExpired && <Badge variant="destructive" className="text-xs">Vencido</Badge>}
                               {isExpiring && !isExpired && <Badge className="text-xs bg-amber-500">Por vencer</Badge>}
