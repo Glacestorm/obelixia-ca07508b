@@ -1,7 +1,18 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-## Estado de Implementación
+## Estado de Implementación — Global HR Platform
+
+| Fase Global | Estado | Detalles |
+|------|--------|----------|
+| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas (hr_country_registry, hr_country_policies, hr_employee_extensions) + Edge Function (hr-country-registry) + Hook (useCountryRegistry) + UI Panel (3 tabs: Países, Políticas, Compliance IA) + Navegación Global + Realtime + Seed España |
+| G2 - Extraer lógica ES a plugin | 🔜 Pendiente | IRPF, TGSS, contratos, permisos → localization/es/ |
+| G3 - Payroll Engine genérico | 🔜 Pendiente | Refactor motor de nómina multi-país |
+| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
+| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
+| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+
+## Estado de Implementación — Fases Base
 
 | Fase | Estado | Detalles |
 |------|--------|----------|
