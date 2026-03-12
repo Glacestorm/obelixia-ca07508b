@@ -217,21 +217,21 @@ export function usePeopleAnalytics() {
   }, []);
 
   // ---- Payroll Analytics ----
-  const fetchPayrollAnalytics = useCallback(async (companyId: string, filters?: PAFilters) => {
+  const fetchPayrollAnalytics = useCallback(async (companyId: string, _filters?: PAFilters) => {
     try {
       const { data: records, error: recErr } = await supabase
-        .from('erp_hr_payroll_records')
-        .select('id, employee_id, period_id, status, gross_salary, net_salary, total_deductions, employer_cost')
+        .from('erp_hr_payrolls')
+        .select('id, employee_id, period_id, status, gross_salary, net_salary, total_deductions, total_cost')
         .eq('company_id', companyId)
         .limit(500);
       if (recErr) throw recErr;
 
-      const all = records || [];
-      const totalGross = all.reduce((s, r) => s + (r.gross_salary || 0), 0);
-      const totalEmployer = all.reduce((s, r) => s + (r.employer_cost || 0), 0);
-      const salaries = all.map(r => r.gross_salary || 0).filter(s => s > 0);
+      const all = (records || []) as any[];
+      const totalGross = all.reduce((s: number, r: any) => s + (r.gross_salary || 0), 0);
+      const totalEmployer = all.reduce((s: number, r: any) => s + (r.total_cost || 0), 0);
+      const salaries = all.map((r: any) => r.gross_salary || 0).filter((s: number) => s > 0);
       const avgSalary = salaries.length > 0 ? totalGross / salaries.length : 0;
-      const sorted = [...salaries].sort((a, b) => a - b);
+      const sorted = [...salaries].sort((a: number, b: number) => a - b);
       const medianSalary = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
 
       const analytics: PAPayrollAnalytics = {
