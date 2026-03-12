@@ -418,7 +418,29 @@ export function HRModule() {
         {/* Global HR Platform - Fase G1 */}
         {activeModule === 'country-registry' && <HRCountryRegistryPanel companyId={companyId} />}
 
-        {/* Utilidades — grid de navegación */}
+        {/* New Global Panels — N1-N5 */}
+        {activeModule === 'leave-incidents' && <HRLeaveIncidentsPanel companyId={companyId} />}
+        {activeModule === 'admin-requests' && <HRAdminRequestsPanel companyId={companyId} />}
+        {activeModule === 'hr-tasks' && <HRTasksPanel companyId={companyId} />}
+        {activeModule === 'official-submissions' && <HROfficialSubmissionsPanel companyId={companyId} />}
+        {activeModule === 'mobility-assignments' && <HRMobilityDashboard companyId={companyId} />}
+        {activeModule === 'mobility-dashboard' && <HRMobilityDashboard companyId={companyId} />}
+        {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
+        {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
+        {activeModule === 'es-localization' && <HRESLocalizationPanel companyId={companyId} />}
+
+        {/* Employee Expedient — transversal view */}
+        {activeModule === 'employee-expedient' && selectedEmployeeId && (
+          <HREmployeeExpedient
+            companyId={companyId}
+            employeeId={selectedEmployeeId}
+            onBack={() => {
+              setSelectedEmployeeId(null);
+              setActiveModule('employees');
+            }}
+            onNavigate={(module) => setActiveModule(module)}
+          />
+        )}
         {activeModule === 'util-grid' && (
           <HRUtilitiesNavigation
             activeSection={null}
