@@ -130,6 +130,7 @@ function PremiumReseedPanel({ companyId }: { companyId?: string }) {
 
 export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const { currentCompany } = useERPContext();
   const companyId = currentCompany?.id;
   
