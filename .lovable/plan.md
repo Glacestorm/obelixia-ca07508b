@@ -16,6 +16,7 @@
 | **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
 | **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
 | G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+| **F17 - QA Final y Cierre MVP** | ✅ **Completada** | Smoke test 26 items + dashboard ✅ · 0 errores consola · 0 errores RLS/403/5xx · Seed validado (108 emp, 58 contratos, 84 vacaciones, 7 nóminas) · Baseline congelado · Acta en `.lovable/mvp-rrhh-baseline.md` |
 
 ## Estado de Implementación — Fases Base
 
