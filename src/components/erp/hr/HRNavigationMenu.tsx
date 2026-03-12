@@ -471,7 +471,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       </Button>
 
       {/* All mega-menus */}
-      {megaMenus.map((menu) => {
+      {filteredMenus.map((menu) => {
         const MenuIcon = menu.icon;
         const isActive = activeCategory === menu.id;
         const isOpen = openCategory === menu.id;
