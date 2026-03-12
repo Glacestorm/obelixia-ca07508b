@@ -37003,6 +37003,7 @@ export type Database = {
           paid_at: string | null
           payment_reference: string | null
           payroll_type: string | null
+          period_id: string | null
           period_month: number
           period_year: number
           ss_company: number | null
@@ -37033,6 +37034,7 @@ export type Database = {
           paid_at?: string | null
           payment_reference?: string | null
           payroll_type?: string | null
+          period_id?: string | null
           period_month: number
           period_year: number
           ss_company?: number | null
@@ -37063,6 +37065,7 @@ export type Database = {
           paid_at?: string | null
           payment_reference?: string | null
           payroll_type?: string | null
+          period_id?: string | null
           period_month?: number
           period_year?: number
           ss_company?: number | null
@@ -37085,6 +37088,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payrolls_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_periods"
             referencedColumns: ["id"]
           },
         ]
@@ -55264,6 +55274,136 @@ export type Database = {
           },
         ]
       }
+      hr_payroll_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          company_id: string
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          new_value: Json | null
+          old_value: Json | null
+          payroll_id: string | null
+          period_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          company_id: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          payroll_id?: string | null
+          period_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          company_id?: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          payroll_id?: string | null
+          period_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_audit_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_concept_templates: {
+        Row: {
+          category: string
+          code: string
+          company_id: string
+          contributable: boolean | null
+          country_code: string | null
+          created_at: string | null
+          default_amount: number | null
+          default_percentage: number | null
+          id: string
+          is_active: boolean | null
+          is_percentage: boolean | null
+          legal_reference: string | null
+          line_type: string
+          metadata: Json | null
+          name: string
+          percentage_base: string | null
+          sort_order: number | null
+          taxable: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          code: string
+          company_id: string
+          contributable?: boolean | null
+          country_code?: string | null
+          created_at?: string | null
+          default_amount?: number | null
+          default_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_percentage?: boolean | null
+          legal_reference?: string | null
+          line_type?: string
+          metadata?: Json | null
+          name: string
+          percentage_base?: string | null
+          sort_order?: number | null
+          taxable?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          code?: string
+          company_id?: string
+          contributable?: boolean | null
+          country_code?: string | null
+          created_at?: string | null
+          default_amount?: number | null
+          default_percentage?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_percentage?: boolean | null
+          legal_reference?: string | null
+          line_type?: string
+          metadata?: Json | null
+          name?: string
+          percentage_base?: string | null
+          sort_order?: number | null
+          taxable?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_concept_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_payroll_periods: {
         Row: {
           closed_at: string | null
@@ -55271,18 +55411,25 @@ export type Database = {
           company_id: string
           country_code: string
           created_at: string
+          employee_count: number | null
           end_date: string
           fiscal_year: number
           id: string
           legal_entity_id: string | null
+          locked_at: string | null
           metadata: Json | null
+          opened_at: string | null
           payment_date: string | null
           period_name: string
           period_number: number
           period_type: string
           start_date: string
           status: string
+          total_employer_cost: number | null
+          total_gross: number | null
+          total_net: number | null
           updated_at: string
+          validation_results: Json | null
         }
         Insert: {
           closed_at?: string | null
@@ -55290,18 +55437,25 @@ export type Database = {
           company_id: string
           country_code?: string
           created_at?: string
+          employee_count?: number | null
           end_date: string
           fiscal_year: number
           id?: string
           legal_entity_id?: string | null
+          locked_at?: string | null
           metadata?: Json | null
+          opened_at?: string | null
           payment_date?: string | null
           period_name: string
           period_number: number
           period_type?: string
           start_date: string
           status?: string
+          total_employer_cost?: number | null
+          total_gross?: number | null
+          total_net?: number | null
           updated_at?: string
+          validation_results?: Json | null
         }
         Update: {
           closed_at?: string | null
@@ -55309,18 +55463,25 @@ export type Database = {
           company_id?: string
           country_code?: string
           created_at?: string
+          employee_count?: number | null
           end_date?: string
           fiscal_year?: number
           id?: string
           legal_entity_id?: string | null
+          locked_at?: string | null
           metadata?: Json | null
+          opened_at?: string | null
           payment_date?: string | null
           period_name?: string
           period_number?: number
           period_type?: string
           start_date?: string
           status?: string
+          total_employer_cost?: number | null
+          total_gross?: number | null
+          total_net?: number | null
           updated_at?: string
+          validation_results?: Json | null
         }
         Relationships: [
           {
@@ -55337,51 +55498,72 @@ export type Database = {
           amount: number
           base_amount: number | null
           calculation_formula: string | null
+          category: string | null
           concept_code: string
+          concept_id: string | null
           concept_name: string
           created_at: string
           id: string
+          incident_id: string | null
+          is_percentage: boolean | null
           is_ss_contributable: boolean
           is_taxable: boolean
           line_type: string
           metadata: Json | null
           payroll_record_id: string
           percentage: number | null
+          percentage_base: string | null
           sort_order: number
+          source: string | null
+          unit_price: number | null
           units: number | null
         }
         Insert: {
           amount?: number
           base_amount?: number | null
           calculation_formula?: string | null
+          category?: string | null
           concept_code: string
+          concept_id?: string | null
           concept_name: string
           created_at?: string
           id?: string
+          incident_id?: string | null
+          is_percentage?: boolean | null
           is_ss_contributable?: boolean
           is_taxable?: boolean
           line_type: string
           metadata?: Json | null
           payroll_record_id: string
           percentage?: number | null
+          percentage_base?: string | null
           sort_order?: number
+          source?: string | null
+          unit_price?: number | null
           units?: number | null
         }
         Update: {
           amount?: number
           base_amount?: number | null
           calculation_formula?: string | null
+          category?: string | null
           concept_code?: string
+          concept_id?: string | null
           concept_name?: string
           created_at?: string
           id?: string
+          incident_id?: string | null
+          is_percentage?: boolean | null
           is_ss_contributable?: boolean
           is_taxable?: boolean
           line_type?: string
           metadata?: Json | null
           payroll_record_id?: string
           percentage?: number | null
+          percentage_base?: string | null
           sort_order?: number
+          source?: string | null
+          unit_price?: number | null
           units?: number | null
         }
         Relationships: [
@@ -55490,6 +55672,63 @@ export type Database = {
             columns: ["payroll_period_id"]
             isOneToOne: false
             referencedRelation: "hr_payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_payroll_simulations: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          employee_id: string
+          id: string
+          input_params: Json | null
+          period_month: number
+          period_year: number
+          result_lines: Json | null
+          result_summary: Json | null
+          simulation_type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          employee_id: string
+          id?: string
+          input_params?: Json | null
+          period_month: number
+          period_year: number
+          result_lines?: Json | null
+          result_summary?: Json | null
+          simulation_type?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          employee_id?: string
+          id?: string
+          input_params?: Json | null
+          period_month?: number
+          period_year?: number
+          result_lines?: Json | null
+          result_summary?: Json | null
+          simulation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_payroll_simulations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_simulations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
             referencedColumns: ["id"]
           },
         ]

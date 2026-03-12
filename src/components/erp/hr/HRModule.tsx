@@ -79,6 +79,7 @@ import { PremiumAPIWebhooksPanel } from './premium-api';
 import { EnterpriseIntegrationsPanel } from './enterprise-integrations';
 import { HRBoardPackPanel } from './board-pack';
 import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRTasksPanel, HROfficialSubmissionsPanel, HRMobilityDashboard, HRPayrollPeriodsPanel, HRComplianceEvidencePanel, HRESLocalizationPanel } from './global';
+import { HRPayrollEngine } from './payroll-engine';
 import { HRAdminPortal } from './admin-portal';
 import { HREmployeeExpedient } from './employee-expedient';
 import { HRCommandPalette } from './shared/HRCommandPalette';
@@ -437,6 +438,7 @@ export function HRModule() {
         {activeModule === 'mobility-assignments' && <HRMobilityDashboard companyId={companyId} />}
         {activeModule === 'mobility-dashboard' && <HRMobilityDashboard companyId={companyId} />}
         {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
+        {activeModule === 'payroll-engine' && <HRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
         {activeModule === 'es-localization' && <HRESLocalizationPanel companyId={companyId} />}
 
