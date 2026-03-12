@@ -561,16 +561,18 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         );
       })}
 
-      {/* 2026+ */}
-      <Button
-        variant={activeModule === 'trends' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => onModuleChange('trends')}
-        className="gap-1.5"
-      >
-        <Rocket className="h-4 w-4" />
-        2026+
-      </Button>
+      {/* 2026+ — hidden in MVP mode */}
+      {!mvpMode && (
+        <Button
+          variant={activeModule === 'trends' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => onModuleChange('trends')}
+          className="gap-1.5"
+        >
+          <Rocket className="h-4 w-4" />
+          2026+
+        </Button>
+      )}
     </div>
   );
 }
