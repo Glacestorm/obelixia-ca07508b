@@ -55316,71 +55316,107 @@ export type Database = {
       hr_mobility_assignments: {
         Row: {
           actual_end_date: string | null
+          allowance_package: Json
           assignment_letter_ref: string | null
           assignment_type: string
           company_id: string
+          compensation_approach: string
           created_at: string
+          created_by: string | null
+          currency_code: string
           days_in_host: number | null
           employee_id: string
-          expected_end_date: string | null
-          home_country: string
-          home_entity_id: string | null
-          host_country: string
-          host_entity_id: string | null
+          end_date: string | null
+          home_country_code: string
+          home_legal_entity_id: string | null
+          host_country_code: string
+          host_legal_entity_id: string | null
+          hypothetical_tax: number | null
           id: string
           job_title_host: string | null
           metadata: Json | null
           notes: string | null
+          payroll_country_code: string
           pe_risk_flag: boolean
           reporting_to: string | null
+          risk_level: string
+          shadow_payroll: boolean
+          split_payroll: boolean
+          ss_regime_country: string
           start_date: string
           status: string
+          tax_residence_country: string
+          total_monthly_cost: number | null
           updated_at: string
         }
         Insert: {
           actual_end_date?: string | null
+          allowance_package?: Json
           assignment_letter_ref?: string | null
           assignment_type?: string
           company_id: string
+          compensation_approach?: string
           created_at?: string
+          created_by?: string | null
+          currency_code?: string
           days_in_host?: number | null
           employee_id: string
-          expected_end_date?: string | null
-          home_country: string
-          home_entity_id?: string | null
-          host_country: string
-          host_entity_id?: string | null
+          end_date?: string | null
+          home_country_code: string
+          home_legal_entity_id?: string | null
+          host_country_code: string
+          host_legal_entity_id?: string | null
+          hypothetical_tax?: number | null
           id?: string
           job_title_host?: string | null
           metadata?: Json | null
           notes?: string | null
+          payroll_country_code?: string
           pe_risk_flag?: boolean
           reporting_to?: string | null
+          risk_level?: string
+          shadow_payroll?: boolean
+          split_payroll?: boolean
+          ss_regime_country?: string
           start_date: string
           status?: string
+          tax_residence_country?: string
+          total_monthly_cost?: number | null
           updated_at?: string
         }
         Update: {
           actual_end_date?: string | null
+          allowance_package?: Json
           assignment_letter_ref?: string | null
           assignment_type?: string
           company_id?: string
+          compensation_approach?: string
           created_at?: string
+          created_by?: string | null
+          currency_code?: string
           days_in_host?: number | null
           employee_id?: string
-          expected_end_date?: string | null
-          home_country?: string
-          home_entity_id?: string | null
-          host_country?: string
-          host_entity_id?: string | null
+          end_date?: string | null
+          home_country_code?: string
+          home_legal_entity_id?: string | null
+          host_country_code?: string
+          host_legal_entity_id?: string | null
+          hypothetical_tax?: number | null
           id?: string
           job_title_host?: string | null
           metadata?: Json | null
           notes?: string | null
+          payroll_country_code?: string
           pe_risk_flag?: boolean
           reporting_to?: string | null
+          risk_level?: string
+          shadow_payroll?: boolean
+          split_payroll?: boolean
+          ss_regime_country?: string
           start_date?: string
           status?: string
+          tax_residence_country?: string
+          total_monthly_cost?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -55393,16 +55429,190 @@ export type Database = {
           },
           {
             foreignKeyName: "hr_mobility_assignments_home_entity_id_fkey"
-            columns: ["home_entity_id"]
+            columns: ["home_legal_entity_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_legal_entities"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "hr_mobility_assignments_host_entity_id_fkey"
-            columns: ["host_entity_id"]
+            columns: ["host_legal_entity_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_legal_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_mobility_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          assignment_id: string
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          assignment_id: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          assignment_id?: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_mobility_audit_log_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_mobility_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_mobility_cost_projections: {
+        Row: {
+          assignment_id: string
+          base_salary_home: number
+          base_salary_host: number
+          cola_allowance: number
+          created_at: string
+          currency_code: string
+          education_allowance: number
+          exchange_rate: number
+          hardship_allowance: number
+          home_leave_flights: number
+          housing_allowance: number
+          id: string
+          medical_insurance: number
+          metadata: Json
+          other_benefits: number
+          projection_year: number
+          relocation_cost: number
+          ss_cost_home: number
+          ss_cost_host: number
+          tax_equalization_cost: number
+          total_annual_cost: number
+        }
+        Insert: {
+          assignment_id: string
+          base_salary_home?: number
+          base_salary_host?: number
+          cola_allowance?: number
+          created_at?: string
+          currency_code?: string
+          education_allowance?: number
+          exchange_rate?: number
+          hardship_allowance?: number
+          home_leave_flights?: number
+          housing_allowance?: number
+          id?: string
+          medical_insurance?: number
+          metadata?: Json
+          other_benefits?: number
+          projection_year: number
+          relocation_cost?: number
+          ss_cost_home?: number
+          ss_cost_host?: number
+          tax_equalization_cost?: number
+          total_annual_cost?: number
+        }
+        Update: {
+          assignment_id?: string
+          base_salary_home?: number
+          base_salary_host?: number
+          cola_allowance?: number
+          created_at?: string
+          currency_code?: string
+          education_allowance?: number
+          exchange_rate?: number
+          hardship_allowance?: number
+          home_leave_flights?: number
+          housing_allowance?: number
+          id?: string
+          medical_insurance?: number
+          metadata?: Json
+          other_benefits?: number
+          projection_year?: number
+          relocation_cost?: number
+          ss_cost_home?: number
+          ss_cost_host?: number
+          tax_equalization_cost?: number
+          total_annual_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_mobility_cost_projections_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_mobility_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_mobility_documents: {
+        Row: {
+          alert_days_before: number
+          assignment_id: string
+          country_code: string
+          created_at: string
+          document_name: string
+          document_type: string
+          expiry_date: string | null
+          file_url: string | null
+          id: string
+          issue_date: string | null
+          metadata: Json
+          reference_number: string | null
+          status: string
+        }
+        Insert: {
+          alert_days_before?: number
+          assignment_id: string
+          country_code: string
+          created_at?: string
+          document_name: string
+          document_type: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          metadata?: Json
+          reference_number?: string | null
+          status?: string
+        }
+        Update: {
+          alert_days_before?: number
+          assignment_id?: string
+          country_code?: string
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string | null
+          metadata?: Json
+          reference_number?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_mobility_documents_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "hr_mobility_assignments"
             referencedColumns: ["id"]
           },
         ]
