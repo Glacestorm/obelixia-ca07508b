@@ -79,7 +79,7 @@ const CORE_TABS = [
   { id: 'auditoria', label: 'Auditoría', icon: ClipboardList, mvp: false },
 ] as const;
 
-export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate }: Props) {
+export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate, mvpMode = true }: Props) {
   const [activeTab, setActiveTab] = useState('ficha');
   const [employee, setEmployee] = useState<EmployeeData | null>(null);
   const [loading, setLoading] = useState(true);
