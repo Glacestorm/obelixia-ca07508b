@@ -62,7 +62,7 @@ export function HRSkillsMatrixPanel({ companyId }: { companyId: string }) {
     const fetchEmployees = async () => {
       setLoadingEmployees(true);
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('erp_hr_employees')
           .select('id, first_name, last_name, base_salary, erp_hr_departments!erp_hr_employees_department_id_fkey(name), erp_hr_positions!erp_hr_employees_position_id_fkey(name)')
           .eq('company_id', companyId)
