@@ -22,6 +22,7 @@ import {
 interface HRNavigationMenuProps {
   activeModule: string;
   onModuleChange: (module: string) => void;
+  mvpMode?: boolean;
   stats: {
     pendingPayrolls: number;
     pendingVacations: number;
