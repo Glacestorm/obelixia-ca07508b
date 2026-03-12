@@ -54593,6 +54593,273 @@ export type Database = {
           },
         ]
       }
+      hr_es_contract_types: {
+        Row: {
+          category: string
+          code: string
+          company_id: string | null
+          conversion_indefinido: boolean | null
+          created_at: string | null
+          duracion_maxima_meses: number | null
+          id: string
+          indemnizacion_dias_anyo: number | null
+          is_active: boolean | null
+          jornada_default: string | null
+          metadata: Json | null
+          name: string
+          normativa_referencia: string | null
+          periodo_prueba_max_meses: number | null
+          subcategory: string | null
+        }
+        Insert: {
+          category?: string
+          code: string
+          company_id?: string | null
+          conversion_indefinido?: boolean | null
+          created_at?: string | null
+          duracion_maxima_meses?: number | null
+          id?: string
+          indemnizacion_dias_anyo?: number | null
+          is_active?: boolean | null
+          jornada_default?: string | null
+          metadata?: Json | null
+          name: string
+          normativa_referencia?: string | null
+          periodo_prueba_max_meses?: number | null
+          subcategory?: string | null
+        }
+        Update: {
+          category?: string
+          code?: string
+          company_id?: string | null
+          conversion_indefinido?: boolean | null
+          created_at?: string | null
+          duracion_maxima_meses?: number | null
+          id?: string
+          indemnizacion_dias_anyo?: number | null
+          is_active?: boolean | null
+          jornada_default?: string | null
+          metadata?: Json | null
+          name?: string
+          normativa_referencia?: string | null
+          periodo_prueba_max_meses?: number | null
+          subcategory?: string | null
+        }
+        Relationships: []
+      }
+      hr_es_employee_labor_data: {
+        Row: {
+          anualidad_alimentos: number | null
+          ascendientes_cargo: number | null
+          categoria_profesional: string | null
+          cno_code: string | null
+          codigo_contrato_red: string | null
+          coeficiente_parcialidad: number | null
+          company_id: string
+          comunidad_autonoma: string | null
+          contrato_inferior_anual: boolean | null
+          convenio_colectivo_id: string | null
+          created_at: string | null
+          discapacidad_hijos: boolean | null
+          employee_id: string
+          epigrafe_at: string | null
+          fecha_alta_ss: string | null
+          fecha_baja_ss: string | null
+          grupo_cotizacion: number | null
+          hijos_menores_25: number | null
+          hijos_menores_3: number | null
+          id: string
+          metadata: Json | null
+          naf: string | null
+          pension_compensatoria: number | null
+          prolongacion_laboral: boolean | null
+          provincia: string | null
+          reduccion_movilidad_geografica: boolean | null
+          regimen_ss: string | null
+          situacion_familiar_irpf: number | null
+          tipo_contrato_rd: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anualidad_alimentos?: number | null
+          ascendientes_cargo?: number | null
+          categoria_profesional?: string | null
+          cno_code?: string | null
+          codigo_contrato_red?: string | null
+          coeficiente_parcialidad?: number | null
+          company_id: string
+          comunidad_autonoma?: string | null
+          contrato_inferior_anual?: boolean | null
+          convenio_colectivo_id?: string | null
+          created_at?: string | null
+          discapacidad_hijos?: boolean | null
+          employee_id: string
+          epigrafe_at?: string | null
+          fecha_alta_ss?: string | null
+          fecha_baja_ss?: string | null
+          grupo_cotizacion?: number | null
+          hijos_menores_25?: number | null
+          hijos_menores_3?: number | null
+          id?: string
+          metadata?: Json | null
+          naf?: string | null
+          pension_compensatoria?: number | null
+          prolongacion_laboral?: boolean | null
+          provincia?: string | null
+          reduccion_movilidad_geografica?: boolean | null
+          regimen_ss?: string | null
+          situacion_familiar_irpf?: number | null
+          tipo_contrato_rd?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anualidad_alimentos?: number | null
+          ascendientes_cargo?: number | null
+          categoria_profesional?: string | null
+          cno_code?: string | null
+          codigo_contrato_red?: string | null
+          coeficiente_parcialidad?: number | null
+          company_id?: string
+          comunidad_autonoma?: string | null
+          contrato_inferior_anual?: boolean | null
+          convenio_colectivo_id?: string | null
+          created_at?: string | null
+          discapacidad_hijos?: boolean | null
+          employee_id?: string
+          epigrafe_at?: string | null
+          fecha_alta_ss?: string | null
+          fecha_baja_ss?: string | null
+          grupo_cotizacion?: number | null
+          hijos_menores_25?: number | null
+          hijos_menores_3?: number | null
+          id?: string
+          metadata?: Json | null
+          naf?: string | null
+          pension_compensatoria?: number | null
+          prolongacion_laboral?: boolean | null
+          provincia?: string | null
+          reduccion_movilidad_geografica?: boolean | null
+          regimen_ss?: string | null
+          situacion_familiar_irpf?: number | null
+          tipo_contrato_rd?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hr_es_irpf_tables: {
+        Row: {
+          ccaa_code: string | null
+          company_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          tax_year: number
+          tipo_autonomico: number
+          tipo_estatal: number
+          tipo_total: number
+          tramo_desde: number
+          tramo_hasta: number | null
+        }
+        Insert: {
+          ccaa_code?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          tax_year: number
+          tipo_autonomico?: number
+          tipo_estatal?: number
+          tipo_total?: number
+          tramo_desde?: number
+          tramo_hasta?: number | null
+        }
+        Update: {
+          ccaa_code?: string | null
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          tax_year?: number
+          tipo_autonomico?: number
+          tipo_estatal?: number
+          tipo_total?: number
+          tramo_desde?: number
+          tramo_hasta?: number | null
+        }
+        Relationships: []
+      }
+      hr_es_ss_bases: {
+        Row: {
+          base_maxima_diaria: number | null
+          base_maxima_mensual: number
+          base_minima_diaria: number | null
+          base_minima_mensual: number
+          company_id: string | null
+          created_at: string | null
+          grupo_cotizacion: number
+          id: string
+          is_active: boolean | null
+          tipo_at_empresa: number | null
+          tipo_cc_empresa: number
+          tipo_cc_trabajador: number
+          tipo_desempleo_empresa_gi: number
+          tipo_desempleo_empresa_td: number
+          tipo_desempleo_trabajador_gi: number
+          tipo_desempleo_trabajador_td: number
+          tipo_fogasa: number
+          tipo_fp_empresa: number
+          tipo_fp_trabajador: number
+          tipo_mei: number
+          year: number
+        }
+        Insert: {
+          base_maxima_diaria?: number | null
+          base_maxima_mensual?: number
+          base_minima_diaria?: number | null
+          base_minima_mensual?: number
+          company_id?: string | null
+          created_at?: string | null
+          grupo_cotizacion: number
+          id?: string
+          is_active?: boolean | null
+          tipo_at_empresa?: number | null
+          tipo_cc_empresa?: number
+          tipo_cc_trabajador?: number
+          tipo_desempleo_empresa_gi?: number
+          tipo_desempleo_empresa_td?: number
+          tipo_desempleo_trabajador_gi?: number
+          tipo_desempleo_trabajador_td?: number
+          tipo_fogasa?: number
+          tipo_fp_empresa?: number
+          tipo_fp_trabajador?: number
+          tipo_mei?: number
+          year: number
+        }
+        Update: {
+          base_maxima_diaria?: number | null
+          base_maxima_mensual?: number
+          base_minima_diaria?: number | null
+          base_minima_mensual?: number
+          company_id?: string | null
+          created_at?: string | null
+          grupo_cotizacion?: number
+          id?: string
+          is_active?: boolean | null
+          tipo_at_empresa?: number | null
+          tipo_cc_empresa?: number
+          tipo_cc_trabajador?: number
+          tipo_desempleo_empresa_gi?: number
+          tipo_desempleo_empresa_td?: number
+          tipo_desempleo_trabajador_gi?: number
+          tipo_desempleo_trabajador_td?: number
+          tipo_fogasa?: number
+          tipo_fp_empresa?: number
+          tipo_fp_trabajador?: number
+          tipo_mei?: number
+          year?: number
+        }
+        Relationships: []
+      }
       hr_expatriate_packages: {
         Row: {
           assignment_id: string
