@@ -84,6 +84,7 @@ import { OfficialIntegrationsHub } from './official-integrations';
 import { GlobalMobilityModule } from './mobility';
 import { DocumentExpedientModule } from './document-expedient';
 import { HRPayrollEngine } from './payroll-engine';
+import { PeopleAnalyticsModule } from './people-analytics';
 import { ESLocalizationPlugin } from './localization/es';
 import { HRAdminPortal } from './admin-portal';
 import { HREmployeeExpedient } from './employee-expedient';
