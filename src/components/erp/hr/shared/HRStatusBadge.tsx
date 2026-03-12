@@ -37,10 +37,15 @@ const STATUS_COLORS: Record<string, string> = {
   'incident:resolved': 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30',
   'incident:escalated': 'bg-red-500/15 text-red-700 border-red-500/30',
   // Mobility
+  'mobility:draft': 'bg-muted text-muted-foreground border-border',
   'mobility:planned': 'bg-muted text-muted-foreground border-border',
+  'mobility:pre_assignment': 'bg-blue-500/15 text-blue-700 border-blue-500/30',
   'mobility:active': 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30',
+  'mobility:extending': 'bg-violet-500/15 text-violet-700 border-violet-500/30',
+  'mobility:repatriating': 'bg-amber-500/15 text-amber-700 border-amber-500/30',
   'mobility:transition': 'bg-amber-500/15 text-amber-700 border-amber-500/30',
   'mobility:completed': 'bg-blue-500/15 text-blue-700 border-blue-500/30',
+  'mobility:cancelled': 'bg-muted text-muted-foreground border-border',
   // Request
   'request:draft': 'bg-muted text-muted-foreground border-border',
   'request:submitted': 'bg-blue-500/15 text-blue-700 border-blue-500/30',
