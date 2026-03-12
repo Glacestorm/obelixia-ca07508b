@@ -76,6 +76,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'admin-requests', 'hr-tasks', 'approval-inbox',
     // Global
     'country-registry', 'es-localization',
+    'mobility-assignments', 'mobility-dashboard',
+    'official-submissions', 'compliance-evidence',
   ]);
 
   const megaMenus: MegaMenuCategory[] = [
