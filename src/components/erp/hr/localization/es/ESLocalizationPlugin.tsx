@@ -10,6 +10,8 @@ import { ESIRPFPanel } from './ESIRPFPanel';
 import { ESContractTypesPanel } from './ESContractTypesPanel';
 import { ESPermisosPanel } from './ESPermisosPanel';
 import { ESSettlementCalculator } from './ESSettlementCalculator';
+import { ESPayrollBridge } from './ESPayrollBridge';
+import { Euro } from 'lucide-react';
 
 interface Props {
   companyId: string;
@@ -24,17 +26,18 @@ export function ESLocalizationPlugin({ companyId, employeeId }: Props) {
           <Flag className="h-5 w-5 text-primary" /> 🇪🇸 Localización España
         </h3>
         <p className="text-sm text-muted-foreground">
-          Legislación laboral española: SS, IRPF, contratos RD, permisos ET, finiquitos
+          Legislación laboral española: SS, IRPF, contratos RD, permisos ET, nómina, finiquitos
         </p>
       </div>
 
       <Tabs defaultValue="labor-data">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="labor-data" className="text-xs gap-1"><BookOpen className="h-3.5 w-3.5" /> Datos</TabsTrigger>
           <TabsTrigger value="ss" className="text-xs gap-1"><Shield className="h-3.5 w-3.5" /> Seg. Social</TabsTrigger>
           <TabsTrigger value="irpf" className="text-xs gap-1"><Calculator className="h-3.5 w-3.5" /> IRPF</TabsTrigger>
           <TabsTrigger value="contracts" className="text-xs gap-1"><FileText className="h-3.5 w-3.5" /> Contratos</TabsTrigger>
           <TabsTrigger value="leaves" className="text-xs gap-1"><Calendar className="h-3.5 w-3.5" /> Permisos</TabsTrigger>
+          <TabsTrigger value="payroll" className="text-xs gap-1"><Euro className="h-3.5 w-3.5" /> Nómina ES</TabsTrigger>
           <TabsTrigger value="settlement" className="text-xs gap-1"><Calculator className="h-3.5 w-3.5" /> Finiquito</TabsTrigger>
         </TabsList>
 
@@ -52,6 +55,9 @@ export function ESLocalizationPlugin({ companyId, employeeId }: Props) {
         </TabsContent>
         <TabsContent value="leaves" className="mt-4">
           <ESPermisosPanel />
+        </TabsContent>
+        <TabsContent value="payroll" className="mt-4">
+          <ESPayrollBridge companyId={companyId} />
         </TabsContent>
         <TabsContent value="settlement" className="mt-4">
           <ESSettlementCalculator companyId={companyId} />
