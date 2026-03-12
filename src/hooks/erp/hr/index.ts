@@ -101,3 +101,17 @@ export type {
   PayrollLineCategory,
   SimulationType,
 } from './usePayrollEngine';
+
+// Localización España (G2)
+export { useESLocalization } from './useESLocalization';
+export type {
+  ESEmployeeLaborData,
+  ESIRPFTramo,
+  ESSSBase,
+  ESContractType,
+  IRPFCalculationParams,
+  IRPFResult,
+  SSContributionResult,
+  SettlementParams,
+  SettlementResult,
+} from './useESLocalization';
