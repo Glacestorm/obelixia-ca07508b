@@ -145,3 +145,16 @@ export type {
   AllowancePackage,
   AssignmentFilters,
 } from './useGlobalMobility';
+
+// Official Integrations Hub (G4)
+export { useOfficialIntegrationsHub } from './useOfficialIntegrationsHub';
+export type {
+  IntegrationAdapter,
+  OfficialSubmission,
+  SubmissionReceipt,
+  SubmissionFilters,
+  HubStats,
+  SubmissionStatus,
+  SubmissionPriority,
+  ReceiptType,
+} from './useOfficialIntegrationsHub';
