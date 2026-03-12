@@ -53918,6 +53918,91 @@ export type Database = {
           },
         ]
       }
+      hr_admin_request_activity: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_value: string | null
+          old_value: string | null
+          request_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          request_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_admin_request_activity_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "hr_admin_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hr_admin_request_comments: {
+        Row: {
+          attachments: Json | null
+          author_id: string | null
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          request_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          author_id?: string | null
+          author_name?: string
+          content: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          request_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          author_id?: string | null
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_admin_request_comments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "hr_admin_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_admin_requests: {
         Row: {
           assigned_to: string | null
@@ -53929,6 +54014,7 @@ export type Database = {
           id: string
           metadata: Json | null
           priority: string
+          reference_number: string | null
           request_subtype: string | null
           request_type: string
           resolution: string | null
@@ -53949,6 +54035,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           priority?: string
+          reference_number?: string | null
           request_subtype?: string | null
           request_type: string
           resolution?: string | null
@@ -53969,6 +54056,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           priority?: string
+          reference_number?: string | null
           request_subtype?: string | null
           request_type?: string
           resolution?: string | null
