@@ -444,6 +444,7 @@ export function HRModule() {
         {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
         {activeModule === 'payroll-engine' && <HRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
+        {activeModule === 'document-expedient' && <DocumentExpedientModule companyId={companyId} />}
         {activeModule === 'es-localization' && <ESLocalizationPlugin companyId={companyId} />}
 
         {/* Employee Expedient — transversal view */}
