@@ -1,77 +1,128 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-## Estado de Implementación — Global HR Platform
+# People Analytics + IA — Bloque Unificado RRHH
 
-| Fase Global | Estado | Detalles |
-|------|--------|----------|
-| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
-| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
-| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
-| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
-| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
-| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
-| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
-| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
-| **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
-| **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
-| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+## Estado Actual
 
-## Estado de Implementación — Fases Base
+**Ya existe (fragmentado):**
+- `HRDashboardPanel`: dashboard básico con headcount, departamentos, KPIs demo (rotación, absentismo, satisfacción)
+- `HRAdvancedAnalyticsPanel`: KPIs predictivos (Time-to-Hire, Cost-per-Hire, Flight Risk, eNPS, Compa-Ratio, 9-Box) — 756 líneas
+- `HRAnalyticsIntelligencePanel`: turnover prediction, workforce planning, salary benchmark, talent forecast, skills gap — via edge function `erp-hr-analytics-intelligence`
+- `HRAnalyticsBIPremiumPanel`: BI cross-module para módulos premium (P1-P8)
+- `HRCopilotTwinPanel`: copiloto IA conversacional + digital twin con simulaciones
+- `HRAutonomousCopilotPanel`: copilotos autónomos
+- Nav entries dispersas: "Analytics" y "Analytics IA" en Talento, "Analytics BI" en Utilidades, "Copilot-Twin" en Enterprise
 
-| Fase | Estado | Detalles |
-|------|--------|----------|
-| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
-| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
-| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
-| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
+**Lo que falta:**
+- No hay un **panel unificado** que agregue todas las fuentes de datos en dashboards coherentes
+- No hay **dashboard de payroll** dedicado (desviaciones, anomalías, coste laboral por período)
+- No hay **dashboard de absentismo** con tendencias, Bradford Factor, patrones
+- No hay **copiloto de payroll** específico (explicación de incidencias, anomalías de nómina)
+- No hay **alertas predictivas unificadas** cruzando todas las fuentes
+- No hay **vistas por rol** (director, HR manager, payroll specialist, compliance officer)
+- No hay **sugerencias accionables** vinculadas a tareas del motor WT
 
-## Premium Phases — Enterprise Differentiators
+---
 
-| Fase Premium | Estado | Detalles |
-|------|--------|----------|
-| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
-| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
-| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
-| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
-| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
-| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
-| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
-| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
+## Diseño
 
-### Edge Functions consolidadas (plan):
-- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
-- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
-- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
+### 1. No se necesita migración SQL
 
-## FASE 2 — Completada ✅
+Toda la data ya existe en tablas: `erp_hr_employees`, `erp_hr_absences`, `erp_hr_payroll_records/lines`, `erp_hr_contracts`, `erp_hr_compensations`, `hr_tasks`, `hr_official_submissions`, `erp_hr_consents`, etc. Solo se necesitan queries de lectura agregadas.
 
-### Tablas creadas:
-- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
-- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
-- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
-- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
-- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
-- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
+### 2. Hook: `usePeopleAnalytics`
 
-### Edge Function: `erp-hr-workflow-engine`
-- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
-- Audit trail automático en cada decisión
+Nuevo hook en `src/hooks/erp/hr/usePeopleAnalytics.ts`:
 
-### Hook: `useHRWorkflowEngine`
-- Gestión completa + realtime via supabase channel
+**Datos agregados (queries directas a Supabase):**
+- `fetchHROverview(companyId, filters)` → headcount, altas/bajas, rotación, absentismo, coste laboral
+- `fetchPayrollAnalytics(companyId, period?)` → coste total, desviaciones vs período anterior, anomalías (líneas fuera de rango), distribución por concepto
+- `fetchAbsenteeismAnalytics(companyId)` → tasa, Bradford Factor, por departamento/tipo, tendencia 12 meses
+- `fetchComplianceRisks(companyId)` → documentos expirados, consentimientos pendientes, envíos rechazados, SLA breached en tareas
+- `fetchEquityMetrics(companyId)` → brecha salarial por género/departamento, Compa-Ratio distribution
+- `fetchWellbeingMetrics(companyId)` → pulse survey scores, burnout risk indicators
 
-### UI (3 paneles):
-- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
-- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
-- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
+**IA (via edge function `erp-hr-people-analytics-ai`):**
+- `getAIInsights(companyId, domain)` → insights por dominio (hr, payroll, compliance, wellbeing)
+- `explainAnomaly(anomalyData)` → explicación automática de incidencia/anomalía
+- `getActionableSuggestions(companyId)` → sugerencias vinculadas a tareas
+- `askCopilot(question, context)` → copiloto conversacional HR/Payroll unificado
 
-### Seed Data (9 workflows):
-- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
+**Filtros globales:**
+- Período, departamento, centro de trabajo, entidad legal, país
 
-### Navegación:
-- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+### 3. Edge Function: `erp-hr-people-analytics-ai`
+
+Usando Lovable AI (Gemini 3 Flash Preview):
+- Action `insights`: recibe métricas agregadas → devuelve insights priorizados con severidad
+- Action `explain`: recibe anomalía → devuelve explicación en lenguaje natural + causas probables
+- Action `suggest`: recibe contexto → devuelve sugerencias accionables (con `task_category` para auto-crear tareas)
+- Action `copilot`: chat conversacional con contexto de métricas HR/Payroll
+
+### 4. Componentes UI
+
+Todos bajo `src/components/erp/hr/people-analytics/`:
+
+**`PeopleAnalyticsModule`** — Panel principal unificado
+- Header con filtros globales (período, departamento, entidad legal, país)
+- Selector de vista por rol: Director | HR Manager | Payroll | Compliance
+- Tabs: Overview | Payroll | Absentismo | Rotación | Equity | Compliance | Copiloto IA
+
+**`PAOverviewDashboard`** — Vista general
+- KPI cards: headcount, rotación %, absentismo %, coste laboral, satisfacción
+- Gráficos: tendencia headcount 12m, distribución por departamento, altas vs bajas
+- Alertas activas (documentos expirados, contratos por vencer, SLA breached)
+- AI Insights card (3-5 insights priorizados con acción)
+
+**`PAPayrollDashboard`** — Analytics de nómina
+- KPIs: coste bruto total, coste empresa, desviación vs mes anterior, anomalías detectadas
+- Gráfico: evolución coste laboral 12 meses
+- Tabla: anomalías de nómina (líneas fuera de rango, desviaciones >10%)
+- AI: explicación automática de cada anomalía + sugerencia
+
+**`PAAbsenteeismDashboard`** — Absentismo
+- KPIs: tasa absentismo, Bradford Factor medio, días perdidos
+- Gráfico: tendencia mensual, por departamento, por tipo (IT, enfermedad, accidente)
+- Heatmap: absentismo por día de la semana
+- Alertas: empleados con Bradford Factor alto
+
+**`PAEquityDashboard`** — Equidad salarial
+- Brecha salarial por género (global + por departamento)
+- Compa-Ratio distribution chart
+- Tabla de outliers (empleados por debajo/encima de banda)
+
+**`PAComplianceDashboard`** — Riesgos de cumplimiento
+- Scorecards: documentos expirados, consentimientos pendientes, envíos rechazados
+- Timeline: próximos vencimientos
+- Alertas de compliance con severidad
+
+**`PACopilotChat`** — Copiloto IA unificado HR/Payroll
+- Chat conversacional con contexto de métricas
+- Streaming response (SSE via edge function)
+- Sugerencias rápidas: "¿Por qué subió el absentismo?", "Explica la desviación de nómina", "¿Qué empleados tienen riesgo de fuga?"
+- Cada respuesta puede incluir acción sugerida → botón para crear tarea en WT
+
+**`PAAlertsFeed`** — Feed de alertas predictivas
+- Alertas cruzadas de todas las fuentes ordenadas por severidad
+- Filtrable por dominio (HR, payroll, compliance, mobility)
+- Acción directa: crear tarea, ver expediente, ir a envío
+
+### 5. Integración
+
+| Punto | Cambio |
+|---|---|
+| `HRModule.tsx` | `people-analytics` → `PeopleAnalyticsModule` |
+| `HRNavigationMenu` | Nuevo mega-menu "Analytics & IA" con items: Overview, Payroll, Absentismo, Equidad, Compliance, Copiloto |
+| Existing panels | Mantener `HRAnalyticsIntelligencePanel`, `HRAdvancedAnalyticsPanel`, etc. como están — el nuevo módulo agrega, no reemplaza |
+| `useHRTasksEngine` | Desde sugerencias IA → auto-crear tareas con `source_type: 'system'` |
+
+### 6. Implementation Order
+
+| Phase | Content |
+|---|---|
+| **PA1** | `usePeopleAnalytics` hook (queries agregadas sobre tablas existentes) |
+| **PA2** | Edge function `erp-hr-people-analytics-ai` (insights, explain, suggest, copilot) |
+| **PA3** | `PeopleAnalyticsModule` + `PAOverviewDashboard` + `PAPayrollDashboard` |
+| **PA4** | `PAAbsenteeismDashboard` + `PAEquityDashboard` + `PAComplianceDashboard` |
+| **PA5** | `PACopilotChat` + `PAAlertsFeed` + integration (HRModule, nav, task creation) |
+
