@@ -1,120 +1,77 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-# Portal Administrativo HR (tipo Milena PA)
+## Estado de Implementación — Global HR Platform
 
-## Resumen
+| Fase Global | Estado | Detalles |
+|------|--------|----------|
+| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
+| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
+| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
+| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
+| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
+| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
+| G2 - Extraer lógica ES a plugin | 🔜 Pendiente | IRPF, TGSS, contratos, permisos → localization/es/ |
+| G3 - Payroll Engine genérico | 🔜 Pendiente | Refactor motor de nómina multi-país |
+| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
+| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
+| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
 
-Transformar el `HRAdminRequestsPanel` actual (4 líneas de demo data) en un portal administrativo completo con formularios tipados por gestión, workflow de aprobación, comentarios, adjuntos, tareas automáticas y registro de actividad. Se reutiliza la tabla `hr_admin_requests` existente y se añaden 2 tablas auxiliares.
+## Estado de Implementación — Fases Base
 
----
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-## 1. Migración SQL — 2 tablas nuevas
+## Premium Phases — Enterprise Differentiators
 
-### `hr_admin_request_comments`
-Comentarios y notas internas por solicitud. Campos: `id`, `request_id` (FK → hr_admin_requests), `author_id`, `author_name`, `content`, `is_internal` (bool), `attachments` (JSONB), `created_at`.
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-### `hr_admin_request_activity`
-Log de actividad inmutable. Campos: `id`, `request_id` (FK → hr_admin_requests), `action` (created, status_changed, assigned, commented, attachment_added, workflow_started, task_generated), `actor_id`, `actor_name`, `old_value`, `new_value`, `metadata` (JSONB), `created_at`.
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
-RLS: authenticated users con `company_id` match. Indexes en `request_id`. Realtime habilitado para ambas.
+## FASE 2 — Completada ✅
 
----
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-## 2. Tipos de Solicitud (14 iniciales)
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
-Cada tipo define: campos del formulario, prioridad por defecto, workflow trigger, y tareas automáticas.
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-| `request_type` | `request_subtype` | Campos formulario (en `metadata` JSONB) | Workflow trigger | Tareas auto |
-|---|---|---|---|---|
-| `employee_registration` | — | nombre, puesto, departamento, fecha_inicio, jornada, salario_bruto, entidad_legal, centro_trabajo | Aprobación manager + RRHH | Crear ficha, generar contrato, onboarding checklist |
-| `contract_modification` | — | employee_id, tipo_cambio, fecha_efecto, nuevas_condiciones | Aprobación RRHH + legal | Actualizar contrato, notificar nóminas |
-| `schedule_change` | — | employee_id, jornada_actual, jornada_nueva, fecha_efecto, motivo | Aprobación manager | Actualizar contrato, recalcular nómina |
-| `salary_change` | — | employee_id, salario_actual, salario_nuevo, fecha_efecto, motivo | Aprobación dirección + RRHH | Actualizar ficha, recalcular nómina |
-| `monthly_incidents` | — | employee_id, periodo, conceptos[] (horas_extra, plus, descuento) | Revisión payroll | Incorporar a nómina del período |
-| `sick_leave` | `it_common` / `it_professional` | employee_id, fecha_inicio, fecha_fin_estimada, diagnostico_generico, parte_baja | Notificación RRHH | Registrar leave_incident, calcular complemento |
-| `work_accident` | — | employee_id, fecha, descripcion, testigos, centro_trabajo, parte_accidente | Aprobación PRL + RRHH | Leave incident, parte accidente, investigación |
-| `unpaid_leave` | — | employee_id, fecha_inicio, fecha_fin, motivo | Aprobación manager + RRHH | Registrar leave_incident, ajustar nómina |
-| `birth_leave` | `paternity` / `maternity` | employee_id, fecha_nacimiento, tipo, semanas | Notificación RRHH | Leave incident, solicitud prestación SS |
-| `vacation` | — | employee_id, fecha_inicio, fecha_fin, dias | Aprobación manager | Crear leave_request |
-| `termination` | `voluntary` / `dismissal` / `end_contract` | employee_id, fecha_efecto, tipo_baja, motivo | Aprobación dirección + RRHH + legal | Offboarding, finiquito, baja SS |
-| `settlement` | — | employee_id, conceptos_finiquito, fecha_calculo | Aprobación payroll + dirección | Calcular finiquito, generar documento |
-| `company_certificate` | — | employee_id, tipo_certificado, motivo, destinatario | Auto-aprobación o RRHH | Generar documento desde template |
-| `document_submission` | — | employee_id, tipo_documento, descripcion, adjuntos | Auto-registro | Vincular a expediente empleado |
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
----
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-## 3. Estados de la Solicitud
-
-```text
-draft → submitted → reviewing → pending_approval → approved → in_progress → completed
-                       ↓              ↓                              ↓
-                    returned      rejected                        cancelled
-```
-
-Se añaden al `HRStatusBadge` los estados: `draft`, `submitted`, `in_progress`, `completed`, `returned`.
-
----
-
-## 4. Componentes a Crear
-
-### 4.1 `HRAdminPortal` (reemplaza `HRAdminRequestsPanel`)
-Panel principal con 3 vistas: Listado, Detalle, Nuevo.
-
-### 4.2 `HRAdminRequestsList`
-Tabla con filtros: tipo, estado, prioridad, empleado, fecha. Columnas: ref, tipo, empleado, estado, prioridad, asignado, fecha. Acciones: ver detalle, cambiar estado rápido.
-
-### 4.3 `HRAdminRequestDetail`
-Vista de detalle con:
-- Header: ref, estado, prioridad, asignado, empleado vinculado
-- Formulario leído (datos del metadata)
-- Panel de adjuntos
-- Timeline de actividad (`hr_admin_request_activity`)
-- Comentarios (`hr_admin_request_comments`)
-- Acciones: aprobar, rechazar, devolver, asignar, cambiar estado
-- Sidebar: entidades relacionadas (empleado, contrato, nómina)
-
-### 4.4 `HRAdminRequestForm`
-Dialog/sheet con formulario dinámico según `request_type`. Selector de tipo → campos dinámicos → validación → submit. Sección de adjuntos. Genera referencia automática (ADM-YYYYMMDD-XXXXX).
-
-### 4.5 `HRAdminRequestComments`
-Lista de comentarios con input. Toggle "comentario interno" para notas visibles solo por RRHH.
-
-### 4.6 `HRAdminRequestTimeline`
-Timeline visual de actividad con iconos por tipo de acción.
-
-### 4.7 `HRAdminPortalDashboard`
-Mini-dashboard: solicitudes por estado (badges), por tipo (barras), SLA pendientes, mis asignadas.
-
----
-
-## 5. Hook: `useAdminPortal`
-
-CRUD contra `hr_admin_requests` + `hr_admin_request_comments` + `hr_admin_request_activity`. Funciones:
-- `fetchRequests(filters)` — listado con joins a employees
-- `createRequest(data)` — insert + activity log "created" + auto-generate ref
-- `updateStatus(id, newStatus, comment?)` — update + activity log + comment opcional
-- `assignRequest(id, assignedTo)` — update + activity
-- `addComment(requestId, content, isInternal, attachments?)` — insert comment + activity
-- `fetchDetail(id)` — request + comments + activity + employee data
-- `generateTasks(requestId)` — crear `hr_tasks` según tipo de solicitud
-
----
-
-## 6. Wiring en HRModule
-
-- Reemplazar `HRAdminRequestsPanel` por `HRAdminPortal` en el slot `admin-requests`
-- Añadir nav item `admin-portal` en el mega-menu Laboral (o renombrar el existente `admin-requests`)
-
----
-
-## 7. Plan de implementación
-
-| Tarea | Detalle |
-|---|---|
-| **P1** | Migración SQL: 2 tablas nuevas + RLS + indexes + realtime |
-| **P2** | Hook `useAdminPortal` con CRUD completo |
-| **P3** | `HRAdminPortal` con lista, detalle y formulario dinámico |
-| **P4** | Comentarios + Timeline de actividad |
-| **P5** | Generación automática de tareas y estados HRStatusBadge |
-| **P6** | Wiring en HRModule + actualizar navegación |
-
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard

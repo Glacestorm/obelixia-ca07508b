@@ -78,7 +78,8 @@ import { ComplianceReportingPanel } from './regulatory-reporting';
 import { PremiumAPIWebhooksPanel } from './premium-api';
 import { EnterpriseIntegrationsPanel } from './enterprise-integrations';
 import { HRBoardPackPanel } from './board-pack';
-import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRAdminRequestsPanel, HRTasksPanel, HROfficialSubmissionsPanel, HRMobilityDashboard, HRPayrollPeriodsPanel, HRComplianceEvidencePanel, HRESLocalizationPanel } from './global';
+import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRTasksPanel, HROfficialSubmissionsPanel, HRMobilityDashboard, HRPayrollPeriodsPanel, HRComplianceEvidencePanel, HRESLocalizationPanel } from './global';
+import { HRAdminPortal } from './admin-portal';
 import { HREmployeeExpedient } from './employee-expedient';
 import { HRCommandPalette } from './shared/HRCommandPalette';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
@@ -430,7 +431,7 @@ export function HRModule() {
 
         {/* New Global Panels — N1-N5 */}
         {activeModule === 'leave-incidents' && <HRLeaveIncidentsPanel companyId={companyId} />}
-        {activeModule === 'admin-requests' && <HRAdminRequestsPanel companyId={companyId} />}
+        {activeModule === 'admin-requests' && <HRAdminPortal companyId={companyId} />}
         {activeModule === 'hr-tasks' && <HRTasksPanel companyId={companyId} />}
         {activeModule === 'official-submissions' && <HROfficialSubmissionsPanel companyId={companyId} />}
         {activeModule === 'mobility-assignments' && <HRMobilityDashboard companyId={companyId} />}
