@@ -69,11 +69,11 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'departments', 'legal-entities', 'work-centers',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-periods',
+    'payroll', 'payroll-periods', 'payroll-engine',
     'ss', 'compensation-suite', 'benefits',
     // Laboral
     'vacations', 'time-clock', 'leave-incidents',
-    'admin-requests', 'hr-tasks',
+    'admin-requests', 'hr-tasks', 'approval-inbox',
     // Global
     'country-registry', 'es-localization',
   ]);
