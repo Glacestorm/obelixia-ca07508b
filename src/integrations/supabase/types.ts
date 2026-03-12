@@ -29339,6 +29339,72 @@ export type Database = {
           },
         ]
       }
+      erp_hr_consents: {
+        Row: {
+          company_id: string
+          consent_text: string | null
+          consent_type: string
+          created_at: string
+          employee_id: string
+          evidence_url: string | null
+          granted_at: string | null
+          granted_via: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          revoked_at: string | null
+          status: string
+          valid_until: string | null
+        }
+        Insert: {
+          company_id: string
+          consent_text?: string | null
+          consent_type?: string
+          created_at?: string
+          employee_id: string
+          evidence_url?: string | null
+          granted_at?: string | null
+          granted_via?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          revoked_at?: string | null
+          status?: string
+          valid_until?: string | null
+        }
+        Update: {
+          company_id?: string
+          consent_text?: string | null
+          consent_type?: string
+          created_at?: string
+          employee_id?: string
+          evidence_url?: string | null
+          granted_at?: string | null
+          granted_via?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          revoked_at?: string | null
+          status?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_consents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_consents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_contingent_assignments: {
         Row: {
           actual_cost: number | null
@@ -31423,7 +31489,9 @@ export type Database = {
           ai_indexed: boolean | null
           ai_indexed_at: string | null
           ai_summary: string | null
+          category: string | null
           company_id: string
+          consent_id: string | null
           created_at: string | null
           document_name: string
           document_type: string
@@ -31433,11 +31501,16 @@ export type Database = {
           file_hash: string | null
           file_size: number | null
           id: string
+          integrity_verified: boolean | null
+          integrity_verified_at: string | null
           is_confidential: boolean | null
           metadata: Json | null
           mime_type: string | null
           notes: string | null
+          retention_policy_id: string | null
           searchable_content: string | null
+          source: string | null
+          subcategory: string | null
           updated_at: string | null
           uploaded_by: string | null
           version: number | null
@@ -31450,7 +31523,9 @@ export type Database = {
           ai_indexed?: boolean | null
           ai_indexed_at?: string | null
           ai_summary?: string | null
+          category?: string | null
           company_id: string
+          consent_id?: string | null
           created_at?: string | null
           document_name: string
           document_type: string
@@ -31460,11 +31535,16 @@ export type Database = {
           file_hash?: string | null
           file_size?: number | null
           id?: string
+          integrity_verified?: boolean | null
+          integrity_verified_at?: string | null
           is_confidential?: boolean | null
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          retention_policy_id?: string | null
           searchable_content?: string | null
+          source?: string | null
+          subcategory?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
           version?: number | null
@@ -31477,7 +31557,9 @@ export type Database = {
           ai_indexed?: boolean | null
           ai_indexed_at?: string | null
           ai_summary?: string | null
+          category?: string | null
           company_id?: string
+          consent_id?: string | null
           created_at?: string | null
           document_name?: string
           document_type?: string
@@ -31487,11 +31569,16 @@ export type Database = {
           file_hash?: string | null
           file_size?: number | null
           id?: string
+          integrity_verified?: boolean | null
+          integrity_verified_at?: string | null
           is_confidential?: boolean | null
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          retention_policy_id?: string | null
           searchable_content?: string | null
+          source?: string | null
+          subcategory?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
           version?: number | null
@@ -31505,10 +31592,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "erp_hr_employee_documents_consent_id_fkey"
+            columns: ["consent_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_consents"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "erp_hr_employee_documents_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_employee_documents_retention_policy_id_fkey"
+            columns: ["retention_policy_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_retention_policies"
             referencedColumns: ["id"]
           },
         ]
@@ -38192,6 +38293,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "erp_hr_report_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_retention_policies: {
+        Row: {
+          auto_archive: boolean
+          auto_delete: boolean
+          company_id: string
+          created_at: string
+          description: string | null
+          document_type: string
+          id: string
+          is_active: boolean
+          jurisdiction: string
+          legal_basis: string | null
+          retention_years: number
+        }
+        Insert: {
+          auto_archive?: boolean
+          auto_delete?: boolean
+          company_id: string
+          created_at?: string
+          description?: string | null
+          document_type: string
+          id?: string
+          is_active?: boolean
+          jurisdiction?: string
+          legal_basis?: string | null
+          retention_years?: number
+        }
+        Update: {
+          auto_archive?: boolean
+          auto_delete?: boolean
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          id?: string
+          is_active?: boolean
+          jurisdiction?: string
+          legal_basis?: string | null
+          retention_years?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_retention_policies_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
