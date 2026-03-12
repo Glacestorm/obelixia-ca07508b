@@ -1,77 +1,160 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-## Estado de Implementación — Global HR Platform
+# Official Integrations Hub — Diseño Funcional
 
-| Fase Global | Estado | Detalles |
-|------|--------|----------|
-| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
-| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
-| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
-| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
-| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
-| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
-| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
-| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
-| G4 - Integraciones oficiales ES | 🔜 Pendiente | Milena PA, SILTRA, Contrat@, AEAT |
-| G5 - Global Mobility | 🔜 Pendiente | Asignaciones, immigration, tax equalization |
-| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+## Estado Actual
 
-## Estado de Implementación — Fases Base
+**Ya existe en DB (migración original):**
+- `hr_integration_adapters`: conectores por país (adapter_name, system_name, auth_type, status, config)
+- `hr_official_submissions`: envíos oficiales (submission_type, payload, file_url, status, attempts, last_error)
+- `hr_official_submission_receipts`: acuses (receipt_reference, receipt_document_url, validation_status, validation_errors, official_response)
+- RLS habilitado, índices por status y country_code, realtime en submissions
 
-| Fase | Estado | Detalles |
-|------|--------|----------|
-| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
-| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
-| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
-| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
+**Ya existe en UI (placeholder):**
+- `HROfficialSubmissionsPanel`: solo demo data estática (5 envíos hardcoded)
+- Nav: `official-submissions` → apunta al placeholder
+- `HRCommandPalette`: comando "Enviar Milena PA"
 
-## Premium Phases — Enterprise Differentiators
+**No existe:**
+- Hook para CRUD real sobre las 3 tablas
+- UI funcional: dashboard, formulario de envío, detalle con acuses, logs
+- Conectores ES pre-configurados (SILTRA, RED, Contrat@, etc.)
+- Relación explícita con empleado/contrato/nómina en submissions
 
-| Fase Premium | Estado | Detalles |
-|------|--------|----------|
-| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
-| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
-| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
-| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
-| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
-| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
-| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
-| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
+---
 
-### Edge Functions consolidadas (plan):
-- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
-- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
-- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
+## 1. Migración SQL — Extender tablas existentes
 
-## FASE 2 — Completada ✅
+Añadir campos que faltan en las tablas existentes:
 
-### Tablas creadas:
-- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
-- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
-- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
-- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
-- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
-- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
+**ALTER `hr_official_submissions`:**
+- `employee_id` UUID FK nullable — enlace con empleado
+- `contract_id` UUID nullable — enlace con contrato
+- `payroll_record_id` UUID nullable — enlace con nómina
+- `admin_request_id` UUID nullable — enlace con solicitud administrativa
+- `priority` TEXT DEFAULT 'normal' — `low`, `normal`, `high`, `urgent`
+- `max_retries` INT DEFAULT 3
+- `next_retry_at` TIMESTAMPTZ nullable
+- `file_name` TEXT nullable
+- `file_size_bytes` INT nullable
+- `response_deadline` TIMESTAMPTZ nullable — plazo máximo de respuesta oficial
 
-### Edge Function: `erp-hr-workflow-engine`
-- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
-- Audit trail automático en cada decisión
+**ALTER `hr_official_submission_receipts`:**
+- `receipt_type` TEXT DEFAULT 'acknowledgement' — `acknowledgement`, `acceptance`, `rejection`, `partial`, `correction_required`
+- `receipt_file_name` TEXT nullable
+- `receipt_file_size` INT nullable
 
-### Hook: `useHRWorkflowEngine`
-- Gestión completa + realtime via supabase channel
+**Seed: Adaptadores ES predefinidos:**
+Insert 7 `hr_integration_adapters` con `country_code = 'ES'`:
+- TGSS/Sistema RED (altas, bajas, variaciones afiliación)
+- SILTRA (cotizaciones, ficheros FAN/FDI/AFI)
+- Contrat@ (comunicación de contratos)
+- Certific@2 (certificados de empresa)
+- Delt@ (accidentes de trabajo)
+- AEAT (modelos 111, 190, certificados retenciones)
+- SEPE (prestaciones, ERE/ERTE)
 
-### UI (3 paneles):
-- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
-- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
-- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
+---
 
-### Seed Data (9 workflows):
-- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
+## 2. Hook: `useOfficialIntegrationsHub`
 
-### Navegación:
-- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+Nuevo hook en `src/hooks/erp/hr/useOfficialIntegrationsHub.ts`:
+
+**Adapters:**
+- `fetchAdapters(countryCode?)` — listar conectores por país
+- `updateAdapterStatus(id, status)` — activar/desactivar
+
+**Submissions:**
+- `fetchSubmissions(filters)` — filtros: country, adapter, status, employee, dateRange
+- `getSubmission(id)` — detalle completo con receipts
+- `createSubmission(data)` — nuevo envío (draft)
+- `updateSubmission(id, data)` — editar borrador
+- `markAsSent(id)` — marcar como enviado (incrementa attempts, registra submitted_at)
+- `markAsAccepted(id, receiptData)` — registrar acuse positivo
+- `markAsRejected(id, errors)` — registrar rechazo con errores
+- `retrySubmission(id)` — reintentar (incrementa attempts, recalcula next_retry_at)
+- `cancelSubmission(id)`
+- `deleteSubmission(id)` — solo drafts
+
+**Receipts:**
+- `addReceipt(submissionId, data)` — importar acuse/justificante
+- `fetchReceipts(submissionId)`
+
+**Stats:**
+- `getHubStats(countryCode?)` — KPIs: total, pending, sent, accepted, rejected, retry_pending
+- `getAdapterStats()` — submissions por conector
+
+**Submission statuses:** `draft` → `validating` → `ready` → `sent` → `acknowledged` → `accepted` | `rejected` | `correction_required` → `corrected` → `sent` ... Also `cancelled`, `expired`.
+
+---
+
+## 3. Components
+
+Todo bajo `src/components/erp/hr/official-integrations/`:
+
+### 3.1 `OfficialIntegrationsHub` — Panel principal (reemplaza `HROfficialSubmissionsPanel`)
+Tabs: Dashboard | Envíos | Conectores | Acuses | Logs
+
+### 3.2 `IntegrationsHubDashboard` — KPIs
+- Stats cards: enviados hoy, pendientes, aceptados, rechazados, reintentos
+- Gráfico: envíos por conector (últimos 30 días)
+- Alertas: envíos con respuesta pendiente pasado plazo, reintentos agotados
+- Timeline de actividad reciente
+
+### 3.3 `SubmissionsList` — Listado con filtros
+- Filtros: país, conector, estado, empleado, período
+- Columnas: ref, tipo, subtipo, conector, empleado, fecha, intentos, estado
+- Acciones: ver detalle, reenviar, cancelar
+
+### 3.4 `SubmissionForm` — Crear/editar envío
+- Selector de país → filtra conectores disponibles
+- Selector de conector → filtra tipos de envío
+- Enlace opcional: empleado, contrato, nómina, solicitud administrativa
+- Payload / fichero adjunto
+- Prioridad
+- Notas
+
+### 3.5 `SubmissionDetail` — Vista completa de un envío
+- Header: ref, tipo, conector, estado, empleado
+- Timeline: creación → validación → envío → acuse → resultado
+- Sección acuses/justificantes importados
+- Historial de reintentos con errores
+- Documentos asociados (payload original + respuestas)
+
+### 3.6 `AdaptersPanel` — Conectores registrados por país
+- Agrupados por país (ES, FR, PT, etc.)
+- Estado: activo/inactivo/error
+- Config visible (solo lectura)
+- Última ejecución y resultado
+- Botón activar/desactivar
+
+### 3.7 `ReceiptsPanel` — Acuses y justificantes
+- Listado global de receipts con filtros por tipo y estado
+- Importar acuse (upload o datos manuales)
+- Validación: accepted/rejected/correction_required
+
+---
+
+## 4. Integración
+
+| Punto | Cambio |
+|---|---|
+| `HRModule.tsx` | `official-submissions` → `OfficialIntegrationsHub` (reemplaza placeholder) |
+| `HRNavigationMenu` | Ampliar grupo "Integraciones Oficiales" con items: Hub, Envíos, Conectores, Acuses |
+| `HRAdminPortal` | Desde solicitudes tipo contrato/baja → crear submission draft automático |
+| `ESPayrollBridge` | Desde reporting → crear submission para modelo 111/190 |
+| `ESSocialSecurityPanel` | Desde CRA/RED → crear submission para SILTRA/RED |
+| Barrel exports | `src/components/erp/hr/official-integrations/index.ts` |
+
+---
+
+## 5. Implementation Order
+
+| Phase | Content |
+|---|---|
+| **OH1** | Migration: ALTER tables + seed 7 ES adapters |
+| **OH2** | `useOfficialIntegrationsHub` hook |
+| **OH3** | `OfficialIntegrationsHub` + `IntegrationsHubDashboard` + `SubmissionsList` |
+| **OH4** | `SubmissionForm` + `SubmissionDetail` + `ReceiptsPanel` |
+| **OH5** | `AdaptersPanel` + integration with HRModule/nav |
+
