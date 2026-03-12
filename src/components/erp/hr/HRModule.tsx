@@ -81,6 +81,7 @@ import { HRBoardPackPanel } from './board-pack';
 import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRTasksPanel, HRPayrollPeriodsPanel, HRComplianceEvidencePanel } from './global';
 import { OfficialIntegrationsHub } from './official-integrations';
 import { GlobalMobilityModule } from './mobility';
+import { DocumentExpedientModule } from './document-expedient';
 import { HRPayrollEngine } from './payroll-engine';
 import { ESLocalizationPlugin } from './localization/es';
 import { HRAdminPortal } from './admin-portal';
@@ -443,6 +444,7 @@ export function HRModule() {
         {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
         {activeModule === 'payroll-engine' && <HRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
+        {activeModule === 'document-expedient' && <DocumentExpedientModule companyId={companyId} />}
         {activeModule === 'es-localization' && <ESLocalizationPlugin companyId={companyId} />}
 
         {/* Employee Expedient — transversal view */}

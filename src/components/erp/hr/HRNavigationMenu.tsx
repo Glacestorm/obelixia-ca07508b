@@ -78,6 +78,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats }: HRNavi
             { id: 'employees', label: 'Empleados', icon: Users, description: 'Directorio y expedientes' },
             { id: 'contracts', label: 'Contratos', icon: FileText, description: 'Gestión contractual' },
             { id: 'documents', label: 'Documentos', icon: FolderOpen, description: 'Archivo digital' },
+            { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Documentos, evidencias y compliance', badge: 'Nuevo' },
           ]
         },
         {
