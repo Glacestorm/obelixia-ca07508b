@@ -129,6 +129,7 @@ export function useAdminPortal(companyId: string) {
   const [detail, setDetail] = useState<AdminRequest | null>(null);
   const [comments, setComments] = useState<AdminRequestComment[]>([]);
   const [activity, setActivity] = useState<AdminRequestActivity[]>([]);
+  const [linkedTasks, setLinkedTasks] = useState<LinkedTask[]>([]);
 
   // === FETCH REQUESTS ===
   const fetchRequests = useCallback(async (filters?: AdminPortalFilters) => {
