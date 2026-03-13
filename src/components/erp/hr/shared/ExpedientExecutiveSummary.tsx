@@ -213,6 +213,7 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, doc
     });
   }
 
+  const SEVERITY_STYLE: Record<string, string> = {
     ok: 'text-emerald-600',
     warn: 'text-amber-600',
     error: 'text-red-600 font-semibold',
