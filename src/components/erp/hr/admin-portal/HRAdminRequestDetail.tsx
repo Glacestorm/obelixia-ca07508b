@@ -214,6 +214,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 docs={linkedDocs}
                 completeness={completeness}
                 processType={request.request_type}
+                calendarLabel={calendarLabel}
               />
               <ProcessDeadlinesSummary
                 processType={request.request_type}
