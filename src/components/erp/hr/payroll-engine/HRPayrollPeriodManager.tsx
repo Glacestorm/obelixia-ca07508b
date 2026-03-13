@@ -67,7 +67,9 @@ export function HRPayrollPeriodManager({
   };
 
   const handleClose = async () => {
-    if (validatingPeriodId && validationResults.every(v => v.passed)) {
+    // Only block on error severity, warnings are allowed
+    const hasBlockingErrors = validationResults.some(v => !v.passed && (v as any).severity === 'error');
+    if (validatingPeriodId && !hasBlockingErrors) {
       await onUpdateStatus(validatingPeriodId, 'closed');
       setShowValidation(false);
     }
