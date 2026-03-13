@@ -176,6 +176,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               )}
                               {isExpired && <Badge variant="destructive" className="text-xs">Vencido</Badge>}
                               {isExpiring && !isExpired && <Badge className="text-xs bg-amber-500">Por vencer</Badge>}
+                              <DocumentOriginBadge relatedEntityType={doc.related_entity_type} />
                               {doc.is_confidential && <Badge variant="outline" className="text-xs">Confidencial</Badge>}
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); }}>
                                 <Download className="h-3.5 w-3.5" />
