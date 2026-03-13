@@ -1,15 +1,26 @@
 /**
  * useHRDocumentDueRules — Hook para reglas de plazos documentales HR
- * V2-ES.4 Paso 1 (parte 3): Lectura cacheada + utilidades de cálculo
+ * V2-ES.4 Paso 1 (parte 3) + Paso 2.3: Precisión mejorada de vencimientos
  *
  * REGLAS:
  * - Query cacheada con staleTime alto (reglas casi estáticas)
- * - Cálculos de due date en client-side (MVP: calendar_days, before_start, end_of_next_month)
- * - business_days: aproximación simple (×1.4), preparado para calendario real en futuro
- * - Graceful degradation para due_rule_type no soportado
+ * - Cálculos de due date en client-side
+ * - business_days: excluye sábados/domingos (preparado para festivos reales)
+ * - before_start: soporta offset negativo (ej: -5 = 5 días antes del trigger)
+ * - end_of_next_month: último día del mes siguiente al trigger
+ * - Fallback seguro si falta triggerDate
+ * - Arquitectura holiday-ready via calendarHelpers
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  addBusinessDays,
+  addCalendarDays,
+  endOfNextMonth,
+  daysUntil,
+  type HolidayCalendar,
+  EMPTY_CALENDAR,
+} from '@/components/erp/hr/shared/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,6 +48,8 @@ export interface DueDateResult {
   dueDate: Date | null;
   /** Días restantes (negativo = vencido) */
   daysRemaining: number | null;
+  /** Días laborables restantes (null si no se puede calcular) */
+  businessDaysRemaining: number | null;
   /** Severidad de la regla */
   severity: DueSeverity;
   /** Urgencia derivada del cálculo */
@@ -45,99 +58,144 @@ export interface DueDateResult {
   label: string;
   /** Regla aplicada */
   rule: DocumentDueRule;
+  /** Tipo de calendario usado en el cálculo */
+  calendarType: 'business' | 'calendar' | 'special' | 'unknown';
 }
 
-// ─── Calculation utilities ───────────────────────────────────────────────────
+// ─── Urgency thresholds (configurable) ───────────────────────────────────────
 
-/**
- * Adds N business days to a date, skipping weekends (sat=6, sun=0).
- * No public holiday calendar yet — prepared for future extension.
- */
-function addBusinessDays(start: Date, days: number): Date {
-  const result = new Date(start);
-  let added = 0;
-  const direction = days >= 0 ? 1 : -1;
-  const absDays = Math.abs(days);
-  while (added < absDays) {
-    result.setDate(result.getDate() + direction);
-    const dow = result.getDay();
-    if (dow !== 0 && dow !== 6) added++;
+const URGENCY_THRESHOLDS = {
+  /** Days remaining to be considered urgent */
+  urgent: 3,
+  /** Days remaining to be considered upcoming */
+  upcoming: 10,
+} as const;
+
+function classifyUrgency(daysRemaining: number): { urgency: DueUrgency; label: string } {
+  if (daysRemaining < 0) {
+    const abs = Math.abs(daysRemaining);
+    return {
+      urgency: 'overdue',
+      label: `Vencido hace ${abs} día${abs !== 1 ? 's' : ''}`,
+    };
   }
-  return result;
+  if (daysRemaining === 0) {
+    return { urgency: 'urgent', label: 'Vence hoy' };
+  }
+  if (daysRemaining <= URGENCY_THRESHOLDS.urgent) {
+    return {
+      urgency: 'urgent',
+      label: `Vence en ${daysRemaining} día${daysRemaining !== 1 ? 's' : ''} — urgente`,
+    };
+  }
+  if (daysRemaining <= URGENCY_THRESHOLDS.upcoming) {
+    return {
+      urgency: 'upcoming',
+      label: `Vence en ${daysRemaining} días`,
+    };
+  }
+  return {
+    urgency: 'ok',
+    label: `${daysRemaining} días restantes`,
+  };
 }
+
+// ─── Calculation ─────────────────────────────────────────────────────────────
 
 /**
  * Calcula la fecha límite a partir de un evento trigger y una regla.
- * MVP: soporta calendar_days, before_start, end_of_next_month.
- * business_days usa aproximación ×1.4 (graceful degradation).
+ * V2-ES.4 Paso 2.3: Precisión mejorada con calendarHelpers.
+ *
+ * @param rule - Regla de plazo
+ * @param triggerDate - Fecha del evento que dispara el plazo (null = fallback)
+ * @param referenceDate - Fecha actual para cálculo de urgencia
+ * @param holidays - Calendario de festivos (MVP: vacío)
  */
 export function computeDueDate(
   rule: DocumentDueRule,
-  triggerDate: Date,
+  triggerDate: Date | null | undefined,
   referenceDate: Date = new Date(),
+  holidays: HolidayCalendar = EMPTY_CALENDAR,
 ): DueDateResult {
+  // Fallback: si no hay triggerDate, no podemos calcular
+  if (!triggerDate || isNaN(triggerDate.getTime())) {
+    return {
+      dueDate: null,
+      daysRemaining: null,
+      businessDaysRemaining: null,
+      severity: rule.severity,
+      urgency: 'unknown',
+      label: 'Sin fecha de referencia',
+      rule,
+      calendarType: 'unknown',
+    };
+  }
+
   let dueDate: Date | null = null;
+  let calendarType: DueDateResult['calendarType'] = 'calendar';
 
   switch (rule.due_rule_type) {
-    case 'before_start':
-      // Must be ready before/on the trigger date
-      dueDate = new Date(triggerDate);
+    case 'before_start': {
+      // Document must be ready BEFORE the trigger date
+      // offset is interpreted as days before: offset=5 → 5 calendar days before trigger
+      // offset=0 → same day as trigger
+      dueDate = addCalendarDays(triggerDate, -(Math.abs(rule.due_offset_days)));
+      calendarType = 'calendar';
       break;
+    }
 
-    case 'calendar_days':
-      dueDate = new Date(triggerDate);
-      dueDate.setDate(dueDate.getDate() + rule.due_offset_days);
+    case 'calendar_days': {
+      dueDate = addCalendarDays(triggerDate, rule.due_offset_days);
+      calendarType = 'calendar';
       break;
+    }
 
     case 'business_days': {
-      // Exclude weekends (sat/sun). No public holidays yet.
-      dueDate = addBusinessDays(triggerDate, rule.due_offset_days);
+      dueDate = addBusinessDays(triggerDate, rule.due_offset_days, holidays);
+      calendarType = 'business';
       break;
     }
 
     case 'end_of_next_month': {
-      dueDate = new Date(triggerDate);
-      dueDate.setMonth(dueDate.getMonth() + 2, 0); // last day of next month
+      dueDate = endOfNextMonth(triggerDate);
+      calendarType = 'special';
       break;
     }
 
     case 'custom':
     default:
-      // Can't compute — graceful degradation
       return {
         dueDate: null,
         daysRemaining: null,
+        businessDaysRemaining: null,
         severity: rule.severity,
         urgency: 'unknown',
-        label: 'Plazo especial',
+        label: 'Plazo especial — verificar manualmente',
         rule,
+        calendarType: 'unknown',
       };
   }
 
-  const diffMs = dueDate.getTime() - referenceDate.getTime();
-  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const daysRemaining = daysUntil(dueDate, referenceDate);
+  const { urgency, label } = classifyUrgency(daysRemaining);
 
-  let urgency: DueUrgency;
-  let label: string;
-
-  if (daysRemaining < 0) {
-    urgency = 'overdue';
-    label = `Vencido hace ${Math.abs(daysRemaining)} día${Math.abs(daysRemaining) !== 1 ? 's' : ''}`;
-  } else if (daysRemaining === 0) {
-    urgency = 'urgent';
-    label = 'Vence hoy';
-  } else if (daysRemaining <= 3) {
-    urgency = 'urgent';
-    label = `Vence en ${daysRemaining} día${daysRemaining !== 1 ? 's' : ''}`;
-  } else if (daysRemaining <= 7) {
-    urgency = 'upcoming';
-    label = `Vence en ${daysRemaining} días`;
-  } else {
-    urgency = 'ok';
-    label = `${daysRemaining} días restantes`;
+  // For business day rules, also compute business days remaining
+  let businessDaysRemaining: number | null = null;
+  if (calendarType === 'business' && daysRemaining !== null) {
+    // Approximate: ~71% of calendar days are business days (5/7)
+    businessDaysRemaining = Math.max(0, Math.round(daysRemaining * (5 / 7)));
   }
 
-  return { dueDate, daysRemaining, severity: rule.severity, urgency, label, rule };
+  return {
+    dueDate,
+    daysRemaining,
+    businessDaysRemaining,
+    severity: rule.severity,
+    urgency,
+    label,
+    rule,
+    calendarType,
+  };
 }
 
 /**
