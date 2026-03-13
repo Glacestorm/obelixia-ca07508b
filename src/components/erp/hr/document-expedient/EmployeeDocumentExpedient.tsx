@@ -16,6 +16,8 @@ import {
 import { useHRDocumentExpedient, type DocumentCategory, type EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
 import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type OriginFilterValue } from '../shared/DocumentOriginBadge';
+import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
+import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
 
 interface Props {
   companyId: string;
