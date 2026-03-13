@@ -17,6 +17,7 @@ import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
 import { DocStatusBadge } from './DocStatusBadge';
 import { DocReconciliationBadge } from './DocReconciliationBadge';
+import { DocReconciliationToggle } from './DocReconciliationToggle';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
@@ -281,27 +282,40 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
             {docs.map(doc => (
               <div
                 key={doc.id}
-                className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors text-sm"
+                className="p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors text-sm space-y-1"
               >
-                <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate text-xs">{doc.document_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('es-ES')}
-                  </p>
+                <div className="flex items-center gap-2">
+                  <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate text-xs">{doc.document_name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('es-ES')}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] shrink-0">
+                    {CATEGORY_LABELS[doc.category] || doc.category}
+                  </Badge>
+                  <DocStatusBadge status={doc.document_status} />
+                  <DocReconciliationBadge
+                    documentType={doc.document_type}
+                    flags={{
+                      reconciled_with_payroll: doc.reconciled_with_payroll,
+                      reconciled_with_social_security: doc.reconciled_with_social_security,
+                      reconciled_with_tax: doc.reconciled_with_tax,
+                      reconciliation_notes: doc.reconciliation_notes,
+                    }}
+                  />
                 </div>
-                <Badge variant="outline" className="text-[10px] shrink-0">
-                  {CATEGORY_LABELS[doc.category] || doc.category}
-                </Badge>
-                <DocStatusBadge status={doc.document_status} />
-                <DocReconciliationBadge
+                <DocReconciliationToggle
+                  documentId={doc.id}
                   documentType={doc.document_type}
-                  flags={{
+                  currentFlags={{
                     reconciled_with_payroll: doc.reconciled_with_payroll,
                     reconciled_with_social_security: doc.reconciled_with_social_security,
                     reconciled_with_tax: doc.reconciled_with_tax,
                     reconciliation_notes: doc.reconciliation_notes,
                   }}
+                  onUpdated={loadDocs}
                 />
               </div>
             ))}
