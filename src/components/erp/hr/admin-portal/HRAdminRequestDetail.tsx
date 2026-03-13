@@ -15,6 +15,7 @@ import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 import { DocumentCompletenessIndicator } from '../shared/DocumentCompletenessIndicator';
+import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -190,6 +191,10 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
               <DocumentCompletenessIndicator
                 managementType={request.request_type}
                 docs={linkedDocs}
+              />
+              <ProcessDeadlinesSummary
+                processType={request.request_type}
+                triggerDate={request.created_at}
               />
               <Separator />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -31112,6 +31112,59 @@ export type Database = {
           },
         ]
       }
+      erp_hr_document_due_rules: {
+        Row: {
+          created_at: string
+          document_type_code: string
+          document_type_id: string | null
+          due_offset_days: number
+          due_rule_type: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          process_type: string
+          severity: string
+          trigger_event: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_type_code: string
+          document_type_id?: string | null
+          due_offset_days?: number
+          due_rule_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          process_type: string
+          severity?: string
+          trigger_event: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_type_code?: string
+          document_type_id?: string | null
+          due_offset_days?: number
+          due_rule_type?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          process_type?: string
+          severity?: string
+          trigger_event?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_document_due_rules_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_document_requests: {
         Row: {
           company_id: string
