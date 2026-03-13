@@ -62,6 +62,7 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
       // Deduplicate by id (safety net)
       const unique = Array.from(new Map(result.map(d => [d.id, d])).values());
       setDocs(unique);
+      onDocsLoaded?.(unique);
     } catch {
       setDocs([]);
     } finally {
