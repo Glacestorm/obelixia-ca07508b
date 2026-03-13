@@ -505,6 +505,8 @@ export function useHRDocumentStorage(companyId: string) {
     getDownloadUrl,
     downloadFile,
     deleteFile,
+    // Audit (exposed for UI components to log preview/download with full context)
+    logFileAudit,
     // State
     isUploading,
     uploadProgress,
