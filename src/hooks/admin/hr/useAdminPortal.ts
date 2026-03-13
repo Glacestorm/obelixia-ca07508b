@@ -1,10 +1,33 @@
 /**
  * useAdminPortal — CRUD hook for HR Admin Portal (requests, comments, activity)
+ * V2-ES.2 Paso 2: Workflow engine integration for admin requests
  */
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+
+// === WORKFLOW MAPPING ===
+// Maps admin request types to workflow process_types for the engine
+const REQUEST_TYPE_TO_PROCESS: Record<string, string> = {
+  employee_registration: 'admin_employee_registration',
+  contract_modification: 'admin_contract_modification',
+  schedule_change: 'admin_schedule_change',
+  salary_change: 'admin_salary_change',
+  termination: 'admin_termination',
+  settlement: 'admin_settlement',
+  sick_leave: 'admin_sick_leave',
+  work_accident: 'admin_work_accident',
+  vacation: 'admin_vacation',
+  unpaid_leave: 'admin_unpaid_leave',
+  birth_leave: 'admin_birth_leave',
+  company_certificate: 'admin_company_certificate',
+  document_submission: 'admin_document_submission',
+  monthly_incidents: 'admin_monthly_incidents',
+};
+
+// Statuses that are considered "operational" and should trigger a workflow
+const WORKFLOW_TRIGGER_STATUSES: AdminRequestStatus[] = ['submitted', 'pending_approval'];
 
 // === TYPES ===
 export type AdminRequestType =
