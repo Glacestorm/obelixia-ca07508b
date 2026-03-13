@@ -97,22 +97,27 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Download className="h-3.5 w-3.5" /> Descargar
+          {/* File preview & download (3.4) */}
+          <DocFilePreview
+            companyId={companyId}
+            storagePath={doc.storage_path}
+            fileName={doc.file_name}
+            mimeType={doc.mime_type}
+            fileSizeBytes={doc.file_size_bytes}
+            fileStatus={fileStatus}
+          />
+
+          {/* Verify integrity */}
+          {!doc.integrity_verified && fileStatus === 'attached' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => verifyIntegrity.mutate(documentId)}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" /> Verificar integridad
             </Button>
-            {!doc.integrity_verified && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => verifyIntegrity.mutate(documentId)}
-              >
-                <ShieldCheck className="h-3.5 w-3.5" /> Verificar integridad
-              </Button>
-            )}
-          </div>
+          )}
 
           {/* Tabs */}
           <Tabs value={tab} onValueChange={setTab}>
