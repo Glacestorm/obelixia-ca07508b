@@ -1,8 +1,9 @@
 /**
  * EmployeeDocumentExpedient — Expediente documental del empleado con datos reales
  * Categorías: Personal, Contratos, Nómina, Compliance, Médicos, Formación, Legal, Movilidad
+ * V2-ES.4 Paso 6+: Incluye resumen ejecutivo, indicadores de archivo/versión y generación
  */
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   FolderOpen, Upload, Search, FileText, ShieldCheck, AlertTriangle,
-  Eye, Download, CheckCircle2, XCircle, Clock
+  Eye, Download, CheckCircle2, XCircle, Clock, Paperclip, History
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentCategory, type EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
@@ -20,6 +21,11 @@ import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
 import { DocStatusBadge } from '../shared/DocStatusBadge';
 import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
+import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
+import { DocGenerationBadge } from '../shared/DocGenerationBadge';
+import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Props {
   companyId: string;
