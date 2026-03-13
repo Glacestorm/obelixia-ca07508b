@@ -100,6 +100,7 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
           {/* File preview & download (3.4) */}
           <DocFilePreview
             companyId={companyId}
+            documentId={doc.id}
             storagePath={doc.storage_path}
             fileName={doc.file_name}
             mimeType={doc.mime_type}
