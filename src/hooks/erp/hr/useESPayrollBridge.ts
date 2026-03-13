@@ -905,7 +905,7 @@ export function useESPayrollBridge(companyId?: string) {
     diff_pct: number;
   }
 
-  export interface DiffVsPrevious {
+  interface DiffVsPrevious {
     employee_id: string;
     previous_period_id: string;
     current_period_id: string;
