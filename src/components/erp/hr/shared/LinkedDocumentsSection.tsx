@@ -1,7 +1,7 @@
 /**
  * LinkedDocumentsSection — Reusable section to view/upload documents
  * linked to an admin_request or hr_task via related_entity_type/id.
- * V2-ES.3 Paso 2
+ * V2-ES.3 Paso 2 + Paso 4 (completitud documental informativa)
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2 } from 'lucide-react';
+import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle2, CircleDashed } from 'lucide-react';
 import { useHRDocumentExpedient, type RelatedEntityType, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { computeDocCompleteness, type ExpectedDocType } from './documentExpectedTypes';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
@@ -35,9 +37,11 @@ interface Props {
   entityType: RelatedEntityType;
   entityId: string;
   employeeId?: string | null;
+  /** Tipo de solicitud (request_type) para checklist de completitud. Opcional. */
+  managementType?: string | null;
 }
 
-export function LinkedDocumentsSection({ companyId, entityType, entityId, employeeId }: Props) {
+export function LinkedDocumentsSection({ companyId, entityType, entityId, employeeId, managementType }: Props) {
   const { fetchDocumentsByEntity, uploadDocument } = useHRDocumentExpedient(companyId);
   const [docs, setDocs] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +92,9 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
 
   const label = ENTITY_LABELS[entityType];
 
+  // V2-ES.3 Paso 4: Completitud documental (informativa)
+  const completeness = computeDocCompleteness(managementType, docs);
+
   return (
     <Card className="border-dashed">
       <CardHeader className="pb-2">
@@ -96,11 +103,25 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
             <Link2 className="h-3.5 w-3.5 text-primary" />
             Documentos vinculados a esta {label}
           </CardTitle>
-          {employeeId && !showForm && (
-            <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => setShowForm(true)}>
-              <Upload className="h-3 w-3" /> Adjuntar
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {completeness && (
+              <Badge
+                variant="outline"
+                className={
+                  completeness.percentage === 100
+                    ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-[10px]'
+                    : 'bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px]'
+                }
+              >
+                {completeness.completed}/{completeness.total} docs
+              </Badge>
+            )}
+            {employeeId && !showForm && (
+              <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => setShowForm(true)}>
+                <Upload className="h-3 w-3" /> Adjuntar
+              </Button>
+            )}
+          </div>
         </div>
         {!employeeId && (
           <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
@@ -111,6 +132,41 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* V2-ES.3 Paso 4: Checklist de completitud */}
+        {completeness && (
+          <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-medium">Completitud documental</span>
+              <span className={completeness.percentage === 100 ? 'text-emerald-600 font-medium' : 'text-amber-600 font-medium'}>
+                {completeness.percentage}%
+              </span>
+            </div>
+            <Progress value={completeness.percentage} className="h-1.5" />
+            <div className="space-y-1 mt-1">
+              {completeness.expected.map((exp) => {
+                const isPresent = completeness.present.includes(exp.type);
+                return (
+                  <div key={exp.type} className="flex items-center gap-2 text-xs">
+                    {isPresent ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                    ) : (
+                      <CircleDashed className="h-3 w-3 text-amber-500 shrink-0" />
+                    )}
+                    <span className={isPresent ? 'text-muted-foreground' : 'text-foreground'}>
+                      {exp.label}
+                    </span>
+                    {!isPresent && (
+                      <Badge variant="outline" className="text-[9px] h-4 px-1 bg-amber-500/5 text-amber-600 border-amber-500/20">
+                        Pendiente
+                      </Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Upload form */}
         {showForm && employeeId && (
           <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
@@ -133,6 +189,9 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
                     <SelectItem value="justificante">Justificante</SelectItem>
                     <SelectItem value="contrato">Contrato</SelectItem>
                     <SelectItem value="certificado">Certificado</SelectItem>
+                    <SelectItem value="dni">DNI/NIE</SelectItem>
+                    <SelectItem value="ss">Doc. Seguridad Social</SelectItem>
+                    <SelectItem value="medico">Informe médico</SelectItem>
                     <SelectItem value="otro">Otro</SelectItem>
                   </SelectContent>
                 </Select>
