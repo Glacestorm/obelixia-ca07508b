@@ -159,6 +159,21 @@ export function useHRDocumentExpedient(companyId: string) {
     return (data ?? []) as unknown as EmployeeDocument[];
   }, [companyId]);
 
+  const fetchDocumentsByEntity = useCallback(async (
+    entityType: RelatedEntityType,
+    entityId: string
+  ) => {
+    const { data, error } = await supabase
+      .from('erp_hr_employee_documents')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('related_entity_type', entityType as any)
+      .eq('related_entity_id', entityId as any)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as unknown as EmployeeDocument[];
+  }, [companyId]);
+
   const uploadDocument = useMutation({
     mutationFn: async (doc: {
       employee_id: string;
