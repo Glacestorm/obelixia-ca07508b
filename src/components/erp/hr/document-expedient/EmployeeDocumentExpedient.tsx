@@ -52,6 +52,9 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterOrigin, setFilterOrigin] = useState<OriginFilterValue>('all');
 
+  // Calendar label for executive summary
+  const { calendarLabel } = useHRHolidayCalendar();
+
   const filtered = filterByOrigin(
     documents.filter(d => {
       if (employeeId && d.employee_id !== employeeId) return false;
@@ -71,6 +74,17 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   }, {} as Record<string, EmployeeDocument[]>);
 
   const stats = getExpedientStats();
+
+  // Version counts for indicator badges
+  const documentIds = useMemo(() => filtered.map(d => d.id), [filtered]);
+  const { countsMap: versionCounts } = useDocumentVersionCounts(documentIds);
+
+  // Count docs with version history for executive summary
+  const docsWithVersionHistory = useMemo(() => {
+    let count = 0;
+    versionCounts.forEach(v => { if (v > 1) count++; });
+    return count;
+  }, [versionCounts]);
 
   const handleView = (doc: EmployeeDocument) => {
     setSelectedDocumentId(doc.id);
