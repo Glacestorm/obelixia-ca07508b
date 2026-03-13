@@ -98,6 +98,9 @@ export function useHRDocGenerationRules() {
       is_confidential_default: false,
       notes_template: null,
       metadata_defaults: {},
+      generation_mode: 'auto' as GenerationMode,
+      company_id: null,
+      description_template: null,
       is_active: true,
       sort_order: i,
     }));
