@@ -37,6 +37,7 @@ interface Props {
 
 export function HRAdminRequestDetail({ request, comments, activity, linkedTasks = [], onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
   const meta = (request.metadata || {}) as Record<string, any>;
+  const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
 
   return (
     <div className="space-y-4">
