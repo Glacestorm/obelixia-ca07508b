@@ -104,7 +104,7 @@ export function DocFileUpload({
       setErrorMessage('Error inesperado al subir el archivo');
       setProgress(0);
     }
-  }, [selectedFile, documentId, employeeId, existingStoragePath, uploadFile, onUploadComplete]);
+  }, [selectedFile, documentId, employeeId, existingStoragePath, uploadFile, onUploadComplete, hasExistingFile, replaceReason]);
 
   // ── Reset ──
   const reset = useCallback(() => {
