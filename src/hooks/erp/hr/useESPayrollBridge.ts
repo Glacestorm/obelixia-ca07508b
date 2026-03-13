@@ -923,28 +923,6 @@ export function useESPayrollBridge(companyId?: string) {
   }, [companyId]);
 
   // ── V2-ES.1 Paso 3: Comparativa vs período anterior ──
-  interface PayrollDiff {
-    concept_code: string;
-    concept_name: string;
-    previous_amount: number;
-    current_amount: number;
-    diff_amount: number;
-    diff_pct: number;
-  }
-
-  interface DiffVsPrevious {
-    employee_id: string;
-    previous_period_id: string;
-    current_period_id: string;
-    previous_gross: number;
-    current_gross: number;
-    previous_net: number;
-    current_net: number;
-    diff_gross: number;
-    diff_net: number;
-    line_diffs: PayrollDiff[];
-    computed_at: string;
-  }
 
   const computeDiffVsPrevious = useCallback(async (
     recordId: string,
