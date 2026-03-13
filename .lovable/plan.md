@@ -18,6 +18,15 @@
 | G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
 | **F17 - QA Final y Cierre MVP** | ✅ **Completada** | Smoke test 26 items + dashboard ✅ · 0 errores consola · 0 errores RLS/403/5xx · Seed validado (108 emp, 58 contratos, 84 vacaciones, 7 nóminas) · Baseline congelado · Acta en `.lovable/mvp-rrhh-baseline.md` |
 
+## V2 — Evolución Post-MVP
+
+| Subfase V2 | Estado | Detalles |
+|------|--------|----------|
+| **V2-ES.1 - Motor nómina ES operativo** | ✅ **Completada** | 5 pasos · calculation_trace JSONB · cálculo masivo idempotente · inyección incidencias · comparativa período-a-período · review/approval workflow · cierre con validación de revisión · UNIQUE(payroll_period_id, employee_id) · 3 subcomponentes UI nuevos · 0 rutas/menús nuevos |
+| V2-ES.2 - Workflows y aprobaciones reales | 🔜 Pendiente | |
+| V2-ES.3 - Expediente documental operativo | 🔜 Pendiente | |
+| V2-ES.4 - Integraciones oficiales España | 🔜 Pendiente | |
+
 ## Estado de Implementación — Fases Base
 
 | Fase | Estado | Detalles |
@@ -48,6 +57,41 @@
 - `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
 - `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
 - `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
+
+---
+
+## V2-ES.1 — Acta de cierre
+
+### Paso 1: calculation_trace JSONB
+- Campo `calculation_trace` (JSONB) en `hr_payroll_record_lines`
+- Estructura `{ rule, inputs, formula, timestamp }` por cada línea
+- Campo `incident_ref` + `incident_id` en líneas
+
+### Paso 2: Cálculo masivo + incidencias
+- `calculateBatch(periodId)` — cálculo masivo idempotente por `(payroll_period_id, employee_id)`
+- `injectIncidentsToPayroll(periodId)` — inyección de IT/horas extra desde portal admin
+- Integración automática de `hr_es_flexible_remuneration_plans` (seguro médico, ticket restaurante, guardería)
+
+### Paso 3: Comparativa + revisión
+- `computeDiffVsPrevious(recordId, periodId)` — diff línea-a-línea vs período anterior
+- `computeBatchDiff(periodId)` — comparativa masiva
+- `reviewRecord(recordId, action, notes)` — flujo de aprobación (approved/flagged/reviewed)
+- Campos: `review_status`, `review_notes`, `reviewed_by`, `reviewed_at`, `diff_vs_previous`
+
+### Paso 4: Integración UI completa
+- `PayrollReviewBadge` — badge visual de review_status
+- `PayrollDiffPanel` — panel de comparativa con deltas bruto/neto + detalle por concepto
+- `PayrollTraceLine` — línea expandible con calculation_trace + incident_ref
+- Columna "Revisión" en tabla de nóminas + botones aprobar/flaggear con diálogo
+- Botones "Cálculo masivo ES" y "Comparativa" en PeriodManager con feedback UX
+
+### Paso 5: Cierre con validación de revisión
+- `validateESPreClose` ampliado con check "Todas las nóminas aprobadas" (error → bloquea cierre)
+- Warning "Comparativa computada" (no bloqueante)
+- PeriodManager distingue error (rojo) vs warning (ámbar) en diálogo de validación
+
+### Protección BD
+- `UNIQUE(payroll_period_id, employee_id)` en `hr_payroll_records`
 
 ## FASE 2 — Completada ✅
 
