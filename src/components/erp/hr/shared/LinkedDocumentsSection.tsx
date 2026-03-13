@@ -39,9 +39,11 @@ interface Props {
   employeeId?: string | null;
   /** Tipo de solicitud (request_type) para checklist de completitud. Opcional. */
   managementType?: string | null;
+  /** Callback when docs are loaded/updated — used to share data with sibling components */
+  onDocsLoaded?: (docs: EmployeeDocument[]) => void;
 }
 
-export function LinkedDocumentsSection({ companyId, entityType, entityId, employeeId, managementType }: Props) {
+export function LinkedDocumentsSection({ companyId, entityType, entityId, employeeId, managementType, onDocsLoaded }: Props) {
   const { fetchDocumentsByEntity, uploadDocument } = useHRDocumentExpedient(companyId);
   const [docs, setDocs] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
