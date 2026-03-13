@@ -157,6 +157,75 @@ export function useAdminPortal(companyId: string) {
     }
   }, [companyId]);
 
+  // === START WORKFLOW (idempotent, only for operational statuses) ===
+  const startWorkflowForRequest = useCallback(async (request: AdminRequest) => {
+    const status = request.status as AdminRequestStatus;
+    if (!WORKFLOW_TRIGGER_STATUSES.includes(status)) {
+      console.log(`[useAdminPortal] Skipping workflow for status=${status} (not operational)`);
+      return null;
+    }
+
+    const processType = REQUEST_TYPE_TO_PROCESS[request.request_type];
+    if (!processType) {
+      console.log(`[useAdminPortal] No process_type mapped for request_type=${request.request_type}`);
+      return null;
+    }
+
+    try {
+      // Idempotency: check for existing active instance
+      const { data: existing } = await supabase
+        .from('erp_hr_workflow_instances')
+        .select('id, status')
+        .eq('entity_type', 'admin_request')
+        .eq('entity_id', request.id)
+        .in('status', ['in_progress', 'pending'])
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        console.log(`[useAdminPortal] Active workflow already exists for admin_request ${request.id}: ${existing[0].id}`);
+        return existing[0];
+      }
+
+      // Start workflow via engine
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('erp-hr-workflow-engine', {
+        body: {
+          action: 'start_workflow',
+          params: {
+            company_id: request.company_id,
+            process_type: processType,
+            entity_type: 'admin_request',
+            entity_id: request.id,
+            entity_summary: `${request.subject} (${request.reference_number || request.id})`,
+            priority: request.priority,
+          }
+        }
+      });
+
+      if (fnError) throw fnError;
+      if (!fnData?.success) throw new Error(fnData?.error || 'Workflow start failed');
+
+      // Link workflow_instance_id to request (best-effort)
+      await supabase.from('hr_admin_requests')
+        .update({ workflow_instance_id: fnData.data.id } as any)
+        .eq('id', request.id);
+
+      // Log activity
+      await supabase.from('hr_admin_request_activity').insert([{
+        request_id: request.id,
+        action: 'workflow_started',
+        actor_id: user?.id,
+        actor_name: 'Sistema',
+        metadata: { workflow_instance_id: fnData.data.id, process_type: processType },
+      }] as any);
+
+      console.log(`[useAdminPortal] Workflow started for admin_request ${request.id}: ${fnData.data.id}`);
+      return fnData.data;
+    } catch (err) {
+      console.warn('[useAdminPortal] startWorkflowForRequest failed (non-blocking):', err);
+      return null;
+    }
+  }, [user]);
+
   // === CREATE REQUEST ===
   const createRequest = useCallback(async (data: {
     employee_id: string;
@@ -172,6 +241,7 @@ export function useAdminPortal(companyId: string) {
     if (!user?.id) { toast.error('Inicia sesión'); return null; }
     try {
       const ref = generateReference();
+      const finalStatus = data.status || 'submitted';
       const { data: row, error } = await supabase
         .from('hr_admin_requests')
         .insert([{
@@ -182,7 +252,7 @@ export function useAdminPortal(companyId: string) {
           subject: data.subject,
           description: data.description || null,
           priority: data.priority || 'normal',
-          status: data.status || 'submitted',
+          status: finalStatus,
           metadata: data.metadata || {},
           attachments: data.attachments || [],
           reference_number: ref,
@@ -191,26 +261,32 @@ export function useAdminPortal(companyId: string) {
         .single();
 
       if (error) throw error;
+      const newRequest = row as AdminRequest;
 
       // Log activity
       await supabase.from('hr_admin_request_activity').insert([{
-        request_id: (row as any).id,
+        request_id: newRequest.id,
         action: 'created',
         actor_id: user.id,
         actor_name: user.email || 'Usuario',
-        new_value: data.status || 'submitted',
+        new_value: finalStatus,
         metadata: { request_type: data.request_type, reference: ref },
       }] as any);
 
+      // V2-ES.2 Paso 2: Start workflow only if status is operational (not draft)
+      if (WORKFLOW_TRIGGER_STATUSES.includes(finalStatus as AdminRequestStatus)) {
+        await startWorkflowForRequest(newRequest);
+      }
+
       toast.success(`Solicitud ${ref} creada`);
       await fetchRequests();
-      return row as AdminRequest;
+      return newRequest;
     } catch (err) {
       console.error('[useAdminPortal] createRequest:', err);
       toast.error('Error al crear solicitud');
       return null;
     }
-  }, [companyId, user, fetchRequests]);
+  }, [companyId, user, fetchRequests, startWorkflowForRequest]);
 
   // === UPDATE STATUS ===
   const updateStatus = useCallback(async (id: string, newStatus: AdminRequestStatus, comment?: string) => {
