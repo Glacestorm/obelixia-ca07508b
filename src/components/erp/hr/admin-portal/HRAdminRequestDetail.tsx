@@ -14,7 +14,6 @@ import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
-import { DocumentCompletenessIndicator } from '../shared/DocumentCompletenessIndicator';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
 import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
