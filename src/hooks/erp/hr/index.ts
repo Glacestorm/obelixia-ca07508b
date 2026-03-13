@@ -127,6 +127,9 @@ export type {
   ESPreCloseValidation,
   ESReportData,
   ESCalculationTrace,
+  PayrollDiff,
+  DiffVsPrevious,
+  ReviewAction,
 } from './useESPayrollBridge';
 
 // Global Mobility / Expatriates
