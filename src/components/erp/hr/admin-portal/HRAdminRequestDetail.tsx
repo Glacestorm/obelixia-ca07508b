@@ -201,6 +201,11 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 processType={request.request_type}
                 triggerDate={request.created_at}
               />
+              <DocumentAlertsSummary
+                docs={linkedDocs}
+                mandatoryMissing={completeness?.mandatoryMissing}
+                maxVisible={4}
+              />
               <DocActionQueuePanel
                 employeeId={request.employee_id}
                 relatedEntityType="admin_request"
