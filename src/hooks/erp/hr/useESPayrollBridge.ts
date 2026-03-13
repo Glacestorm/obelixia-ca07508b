@@ -1108,7 +1108,6 @@ export function useESPayrollBridge(companyId?: string) {
   }, [companyId, computeDiffVsPrevious]);
 
   // ── V2-ES.1 Paso 3: Revisión de nómina ──
-  type ReviewAction = 'approve' | 'flag' | 'reviewed';
 
   const reviewRecord = useCallback(async (
     recordId: string,
