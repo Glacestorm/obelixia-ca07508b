@@ -279,13 +279,15 @@ export function useHRDocumentStorage(companyId: string) {
 
   /**
    * Upload a file and update document metadata.
-   * If the document already has a file (replace), the old file is removed first.
+   * V2-ES.4 Paso 4: on replace, old file is PRESERVED in storage for version history.
    */
   const uploadFile = useCallback(async (
     documentId: string,
     employeeId: string,
     file: File,
     existingStoragePath?: string | null,
+    /** V2-ES.4 Paso 4: optional reason for replacement (stored in version history) */
+    replaceReason?: string | null,
   ): Promise<StorageResult<UploadResult>> => {
     // 1. Validate
     const validationError = validateFile(file);
@@ -306,12 +308,9 @@ export function useHRDocumentStorage(companyId: string) {
       // 3. Build path
       const storagePath = buildStoragePath(companyId, employeeId, documentId, file.name);
 
-      // 4. If replacing, remove old file first (best-effort)
-      if (existingStoragePath && existingStoragePath !== storagePath) {
-        await supabase.storage
-          .from(HR_DOC_BUCKET)
-          .remove([existingStoragePath]);
-      }
+      // 4. On replace: do NOT delete old file — it stays in storage for version history.
+      //    If same path, upload with upsert will overwrite (the old version was already
+      //    snapshotted in erp_hr_document_file_versions before this point if applicable).
 
       setUploadProgress(50);
 
@@ -334,7 +333,7 @@ export function useHRDocumentStorage(companyId: string) {
 
       setUploadProgress(80);
 
-      // 6. Update document metadata
+      // 6. Update document metadata (source of truth for current file)
       const metadata = buildMetadataFromUpload(storagePath, file, checksum);
       const { error: updateError } = await supabase
         .from('erp_hr_employee_documents')
@@ -352,15 +351,83 @@ export function useHRDocumentStorage(companyId: string) {
         return fail(createStorageError('METADATA_UPDATE_FAILED', 'Error al actualizar metadata', updateError));
       }
 
+      setUploadProgress(90);
+
+      // 7. V2-ES.4 Paso 4: Register file version (best-effort, non-blocking)
+      //    Get current user for uploaded_by
+      let uploadedBy: string | null = null;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        uploadedBy = user?.id ?? null;
+      } catch { /* ignore */ }
+
+      try {
+        // Inline version registration to avoid circular dependency
+        // 7a. Find current version
+        const { data: currentVer } = await (supabase as any)
+          .from('erp_hr_document_file_versions')
+          .select('id, version_number')
+          .eq('document_id', documentId)
+          .eq('is_current', true)
+          .maybeSingle();
+
+        const previousVersionId = currentVer?.id ?? null;
+        const nextVersion = currentVer ? (currentVer.version_number as number) + 1 : 1;
+
+        // 7b. Mark previous as not current
+        if (previousVersionId) {
+          await (supabase as any)
+            .from('erp_hr_document_file_versions')
+            .update({ is_current: false })
+            .eq('id', previousVersionId);
+        }
+
+        // 7c. Insert new version
+        await (supabase as any)
+          .from('erp_hr_document_file_versions')
+          .insert({
+            company_id: companyId,
+            document_id: documentId,
+            version_number: nextVersion,
+            is_current: true,
+            file_name: file.name,
+            mime_type: file.type,
+            file_size_bytes: file.size,
+            checksum,
+            storage_path: storagePath,
+            storage_bucket: HR_DOC_BUCKET,
+            storage_provider: 'supabase',
+            uploaded_by: uploadedBy,
+            replace_reason: isReplace ? (replaceReason || null) : null,
+          });
+
+        // 7d. Audit version event
+        logFileAudit(
+          isReplace ? 'file_replace' : 'file_upload',
+          documentId,
+          true,
+          {
+            employee_id: employeeId,
+            file_name: file.name,
+            mime_type: file.type,
+            file_size_bytes: file.size,
+            storage_path: storagePath,
+            checksum,
+          },
+        );
+      } catch (versionErr) {
+        // Version registration is best-effort — upload itself succeeded
+        console.warn('[useHRDocumentStorage] version registration failed (non-blocking):', versionErr);
+        // Still audit the upload success without version info
+        logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, true, {
+          employee_id: employeeId, file_name: file.name, mime_type: file.type,
+          file_size_bytes: file.size, storage_path: storagePath, checksum,
+        });
+      }
+
       setUploadProgress(100);
       invalidateDocs();
-      toast.success('Archivo subido correctamente');
-
-      // Audit success
-      logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, true, {
-        employee_id: employeeId, file_name: file.name, mime_type: file.type,
-        file_size_bytes: file.size, storage_path: storagePath, checksum,
-      });
+      toast.success(isReplace ? 'Archivo reemplazado correctamente' : 'Archivo subido correctamente');
 
       return ok({
         storagePath,
@@ -376,7 +443,6 @@ export function useHRDocumentStorage(companyId: string) {
       return fail(createStorageError('UPLOAD_FAILED', 'Error inesperado durante la subida', err));
     } finally {
       setIsUploading(false);
-      // Reset progress after brief delay so UI can show 100%
       setTimeout(() => setUploadProgress(0), 600);
     }
   }, [companyId, invalidateDocs]);
