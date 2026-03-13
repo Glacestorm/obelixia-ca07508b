@@ -84,7 +84,7 @@ export function DocFileUpload({
     }, 300);
 
     try {
-      const result = await uploadFile(documentId, employeeId, selectedFile, existingStoragePath);
+      const result = await uploadFile(documentId, employeeId, selectedFile, existingStoragePath, hasExistingFile ? (replaceReason || null) : null);
 
       clearInterval(progressTimer);
 
