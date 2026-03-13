@@ -1128,7 +1128,102 @@ export function useESPayrollBridge(companyId?: string) {
     }
   }, [companyId, computeDiffVsPrevious]);
 
-  // ── V2-ES.1 Paso 3: Revisión de nómina ──
+  // ── V2-ES.2 Paso 1: Start payroll approval workflow for a period ──
+
+  const startPayrollApprovalWorkflow = useCallback(async (
+    periodId: string,
+  ): Promise<{ started: number; skipped: number; errors: number } | null> => {
+    if (!companyId) return null;
+
+    try {
+      // 1. Get all records for this period
+      const { data: records, error: recErr } = await supabase
+        .from('hr_payroll_records')
+        .select('id, employee_id, review_status')
+        .eq('payroll_period_id', periodId);
+      if (recErr) throw recErr;
+      if (!records?.length) {
+        toast.warning('No hay nóminas en este período');
+        return null;
+      }
+
+      // 2. Check which records already have a workflow instance
+      const { data: existingInstances } = await supabase
+        .from('erp_hr_workflow_instances')
+        .select('entity_id')
+        .eq('company_id', companyId)
+        .eq('entity_type', 'payroll_record')
+        .in('entity_id', records.map(r => r.id));
+
+      const existingIds = new Set((existingInstances || []).map(i => i.entity_id));
+
+      let started = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      for (const record of records) {
+        if (existingIds.has(record.id)) {
+          skipped++;
+          continue;
+        }
+
+        try {
+          // Start workflow via edge function
+          const { data: wfData, error: wfErr } = await supabase.functions.invoke(
+            'erp-hr-workflow-engine',
+            {
+              body: {
+                action: 'start_workflow',
+                params: {
+                  company_id: companyId,
+                  process_type: 'payroll_approval',
+                  entity_type: 'payroll_record',
+                  entity_id: record.id,
+                  entity_summary: `Nómina empleado ${record.employee_id} — período ${periodId}`,
+                  priority: 'normal',
+                },
+              },
+            }
+          );
+
+          if (wfErr || !wfData?.success) {
+            // Fallback: no workflow definition found — skip gracefully
+            console.warn('[useESPayrollBridge] startPayrollApprovalWorkflow: no definition or error', wfErr || wfData?.error);
+            errors++;
+            continue;
+          }
+
+          // Update review_status to 'pending' to indicate it's in a workflow
+          await supabase.from('hr_payroll_records').update({
+            review_status: 'pending',
+          } as any).eq('id', record.id);
+
+          started++;
+        } catch (innerErr) {
+          console.error('[useESPayrollBridge] startPayrollApprovalWorkflow record error:', innerErr);
+          errors++;
+        }
+      }
+
+      if (started > 0) {
+        toast.success(`${started} nóminas enviadas a aprobación`);
+      }
+      if (skipped > 0) {
+        toast.info(`${skipped} nóminas ya tenían flujo de aprobación`);
+      }
+      if (errors > 0) {
+        toast.warning(`${errors} errores al iniciar flujos (¿falta definición payroll_approval?)`);
+      }
+
+      return { started, skipped, errors };
+    } catch (err) {
+      console.error('[useESPayrollBridge] startPayrollApprovalWorkflow:', err);
+      toast.error('Error al enviar a aprobación');
+      return null;
+    }
+  }, [companyId]);
+
+  // ── V2-ES.2 Paso 1: Revisión de nómina sincronizada con workflow engine ──
 
   const reviewRecord = useCallback(async (
     recordId: string,
@@ -1148,6 +1243,7 @@ export function useESPayrollBridge(companyId?: string) {
         reviewed: 'reviewed',
       };
 
+      // 1. Update review_status on payroll record (operational mirror)
       const { error } = await supabase.from('hr_payroll_records').update({
         review_status: statusMap[action],
         review_notes: notes || null,
@@ -1156,6 +1252,38 @@ export function useESPayrollBridge(companyId?: string) {
       } as any).eq('id', recordId);
 
       if (error) throw error;
+
+      // 2. Sync with workflow engine (authoritative source)
+      // Find the workflow instance for this record
+      const { data: instances } = await supabase
+        .from('erp_hr_workflow_instances')
+        .select('id, status')
+        .eq('company_id', companyId)
+        .eq('entity_type', 'payroll_record')
+        .eq('entity_id', recordId)
+        .eq('status', 'in_progress')
+        .limit(1);
+
+      if (instances?.length) {
+        const instanceId = instances[0].id;
+        const wfDecision = action === 'approve' ? 'approved' : action === 'flag' ? 'returned' : 'approved';
+
+        try {
+          await supabase.functions.invoke('erp-hr-workflow-engine', {
+            body: {
+              action: 'decide_step',
+              params: {
+                instance_id: instanceId,
+                decision: wfDecision,
+                comment: notes || `Revisión desde motor de nómina: ${statusMap[action]}`,
+              },
+            },
+          });
+        } catch (wfErr) {
+          // Non-blocking: workflow sync is best-effort
+          console.warn('[useESPayrollBridge] reviewRecord workflow sync failed:', wfErr);
+        }
+      }
 
       const actionLabels: Record<ReviewAction, string> = {
         approve: 'aprobada',
