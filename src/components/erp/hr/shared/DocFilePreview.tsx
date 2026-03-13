@@ -7,7 +7,7 @@
  * - Otros: botón de descarga
  * - Sin archivo: estado informativo
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   FileText, Image as ImageIcon, Download, ExternalLink,
   AlertTriangle, Loader2, Eye, FileQuestion,
