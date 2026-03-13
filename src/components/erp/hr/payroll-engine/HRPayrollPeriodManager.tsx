@@ -1,14 +1,17 @@
 /**
- * HRPayrollPeriodManager — CRUD de períodos, estados, apertura/cierre
+ * HRPayrollPeriodManager — V2-ES.1 Paso 4: batch calculate + batch diff buttons
  */
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Calendar, Plus, Lock, Unlock, RefreshCw, CheckCircle, AlertTriangle, Play, Eye } from 'lucide-react';
+import {
+  Calendar, Plus, Lock, Unlock, RefreshCw, CheckCircle,
+  AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2
+} from 'lucide-react';
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
 
 interface Props {
@@ -20,6 +23,9 @@ interface Props {
   onValidatePreClose: (periodId: string) => Promise<PreCloseValidation[]>;
   onSelectPeriod: (id: string) => void;
   onRefresh: () => void;
+  // V2-ES.1 Paso 4
+  onBatchCalculateES?: (periodId: string) => Promise<{ calculated: number; skipped: number; errors: number } | null>;
+  onBatchDiff?: (periodId: string) => Promise<{ computed: number; errors: number } | null>;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -33,13 +39,20 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   locked: { label: 'Bloqueado', variant: 'destructive' },
 };
 
-export function HRPayrollPeriodManager({ companyId, periods, isLoading, onOpenPeriod, onUpdateStatus, onValidatePreClose, onSelectPeriod, onRefresh }: Props) {
+export function HRPayrollPeriodManager({
+  companyId, periods, isLoading, onOpenPeriod, onUpdateStatus,
+  onValidatePreClose, onSelectPeriod, onRefresh,
+  onBatchCalculateES, onBatchDiff,
+}: Props) {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newYear, setNewYear] = useState(new Date().getFullYear());
   const [newMonth, setNewMonth] = useState(new Date().getMonth() + 1);
   const [showValidation, setShowValidation] = useState(false);
   const [validationResults, setValidationResults] = useState<PreCloseValidation[]>([]);
   const [validatingPeriodId, setValidatingPeriodId] = useState<string | null>(null);
+  const [batchCalcLoading, setBatchCalcLoading] = useState<string | null>(null);
+  const [batchDiffLoading, setBatchDiffLoading] = useState<string | null>(null);
+  const [batchResult, setBatchResult] = useState<{ periodId: string; type: string; message: string } | null>(null);
 
   const handleCreate = async () => {
     await onOpenPeriod(newYear, newMonth);
@@ -57,6 +70,36 @@ export function HRPayrollPeriodManager({ companyId, periods, isLoading, onOpenPe
     if (validatingPeriodId && validationResults.every(v => v.passed)) {
       await onUpdateStatus(validatingPeriodId, 'closed');
       setShowValidation(false);
+    }
+  };
+
+  const handleBatchCalc = async (periodId: string) => {
+    if (!onBatchCalculateES) return;
+    setBatchCalcLoading(periodId);
+    setBatchResult(null);
+    const result = await onBatchCalculateES(periodId);
+    setBatchCalcLoading(null);
+    if (result) {
+      setBatchResult({
+        periodId,
+        type: 'calc',
+        message: `Cálculo masivo: ${result.calculated} calculadas, ${result.skipped} existentes, ${result.errors} errores`,
+      });
+    }
+  };
+
+  const handleBatchDiff = async (periodId: string) => {
+    if (!onBatchDiff) return;
+    setBatchDiffLoading(periodId);
+    setBatchResult(null);
+    const result = await onBatchDiff(periodId);
+    setBatchDiffLoading(null);
+    if (result) {
+      setBatchResult({
+        periodId,
+        type: 'diff',
+        message: `Comparativa: ${result.computed} nóminas procesadas${result.errors > 0 ? `, ${result.errors} errores` : ''}`,
+      });
     }
   };
 
@@ -88,43 +131,73 @@ export function HRPayrollPeriodManager({ companyId, periods, isLoading, onOpenPe
       <div className="grid gap-3">
         {periods.map(p => {
           const cfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.draft;
+          const isCalcing = batchCalcLoading === p.id;
+          const isDiffing = batchDiffLoading === p.id;
+          const result = batchResult?.periodId === p.id ? batchResult : null;
+
           return (
             <Card key={p.id} className="hover:bg-muted/30 transition-colors">
-              <CardContent className="py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${p.status === 'open' || p.status === 'calculating' ? 'bg-primary/10' : p.status === 'locked' ? 'bg-destructive/10' : 'bg-muted'}`}>
-                    {p.status === 'locked' ? <Lock className="h-4 w-4 text-destructive" /> : <Unlock className="h-4 w-4 text-primary" />}
+              <CardContent className="py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${p.status === 'open' || p.status === 'calculating' ? 'bg-primary/10' : p.status === 'locked' ? 'bg-destructive/10' : 'bg-muted'}`}>
+                      {p.status === 'locked' ? <Lock className="h-4 w-4 text-destructive" /> : <Unlock className="h-4 w-4 text-primary" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{p.period_name} — {p.period_type}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.start_date} → {p.end_date}
+                        {p.employee_count > 0 && ` · ${p.employee_count} empleados`}
+                        {p.total_gross > 0 && ` · Bruto: ${p.total_gross.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}`}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{p.period_name} — {p.period_type}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {p.start_date} → {p.end_date}
-                      {p.employee_count > 0 && ` · ${p.employee_count} empleados`}
-                      {p.total_gross > 0 && ` · Bruto: ${p.total_gross.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}`}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={cfg.variant}>{cfg.label}</Badge>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSelectPeriod(p.id)} title="Ver nóminas">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {(p.status === 'open' || p.status === 'calculating') && onBatchCalculateES && (
+                      <Button
+                        variant="outline" size="sm"
+                        className="text-xs gap-1"
+                        onClick={() => handleBatchCalc(p.id)}
+                        disabled={isCalcing}
+                      >
+                        {isCalcing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Calculator className="h-3 w-3" />}
+                        Cálculo masivo ES
+                      </Button>
+                    )}
+                    {(p.status === 'calculated' || p.status === 'reviewing') && onBatchDiff && (
+                      <Button
+                        variant="outline" size="sm"
+                        className="text-xs gap-1"
+                        onClick={() => handleBatchDiff(p.id)}
+                        disabled={isDiffing}
+                      >
+                        {isDiffing ? <Loader2 className="h-3 w-3 animate-spin" /> : <TrendingUp className="h-3 w-3" />}
+                        Comparativa
+                      </Button>
+                    )}
+                    {(p.status === 'calculated' || p.status === 'reviewing') && (
+                      <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleValidate(p.id)}>
+                        <CheckCircle className="h-3 w-3" /> Validar cierre
+                      </Button>
+                    )}
+                    {p.status === 'closed' && (
+                      <Button variant="destructive" size="sm" className="text-xs gap-1" onClick={() => onUpdateStatus(p.id, 'locked')}>
+                        <Lock className="h-3 w-3" /> Bloquear
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onSelectPeriod(p.id)} title="Ver nóminas">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  {p.status === 'open' && (
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => onUpdateStatus(p.id, 'calculating')}>
-                      <Play className="h-3 w-3" /> Calcular
-                    </Button>
-                  )}
-                  {(p.status === 'calculated' || p.status === 'reviewing') && (
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleValidate(p.id)}>
-                      <CheckCircle className="h-3 w-3" /> Validar cierre
-                    </Button>
-                  )}
-                  {p.status === 'closed' && (
-                    <Button variant="destructive" size="sm" className="text-xs gap-1" onClick={() => onUpdateStatus(p.id, 'locked')}>
-                      <Lock className="h-3 w-3" /> Bloquear
-                    </Button>
-                  )}
-                </div>
+                {/* Batch result feedback */}
+                {result && (
+                  <div className={`text-xs p-2 rounded-lg border ${result.type === 'calc' ? 'bg-primary/5 border-primary/20' : 'bg-blue-500/5 border-blue-500/20'}`}>
+                    {result.type === 'calc' ? <Calculator className="h-3 w-3 inline mr-1" /> : <TrendingUp className="h-3 w-3 inline mr-1" />}
+                    {result.message}
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
