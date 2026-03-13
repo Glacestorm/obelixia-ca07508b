@@ -31132,11 +31132,14 @@ export type Database = {
       }
       erp_hr_doc_generation_rules: {
         Row: {
+          company_id: string | null
           created_at: string | null
           default_category: string | null
           default_document_name: string
           default_subcategory: string | null
+          description_template: string | null
           document_type_code: string
+          generation_mode: string
           id: string
           is_active: boolean | null
           is_confidential_default: boolean | null
@@ -31148,11 +31151,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           default_category?: string | null
           default_document_name: string
           default_subcategory?: string | null
+          description_template?: string | null
           document_type_code: string
+          generation_mode?: string
           id?: string
           is_active?: boolean | null
           is_confidential_default?: boolean | null
@@ -31164,11 +31170,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           default_category?: string | null
           default_document_name?: string
           default_subcategory?: string | null
+          description_template?: string | null
           document_type_code?: string
+          generation_mode?: string
           id?: string
           is_active?: boolean | null
           is_confidential_default?: boolean | null
@@ -31179,7 +31188,15 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_doc_generation_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_document_ai_processing: {
         Row: {

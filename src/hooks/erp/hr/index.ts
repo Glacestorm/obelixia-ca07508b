@@ -293,6 +293,7 @@ export type {
 export { useHRDocGenerationRules } from './useHRDocGenerationRules';
 export type {
   DocGenerationRule,
+  GenerationMode,
 } from './useHRDocGenerationRules';
 
 export { useHRDocumentGenerator } from './useHRDocumentGenerator';

@@ -15,6 +15,8 @@ import type { AdminRequestType } from '@/hooks/admin/hr/useAdminPortal';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+export type GenerationMode = 'auto' | 'assisted' | 'placeholder';
+
 export interface DocGenerationRule {
   id: string;
   process_type: string;
@@ -26,6 +28,9 @@ export interface DocGenerationRule {
   is_confidential_default: boolean;
   notes_template: string | null;
   metadata_defaults: Record<string, unknown>;
+  generation_mode: GenerationMode;
+  company_id: string | null;
+  description_template: string | null;
   is_active: boolean;
   sort_order: number;
 }
@@ -93,6 +98,9 @@ export function useHRDocGenerationRules() {
       is_confidential_default: false,
       notes_template: null,
       metadata_defaults: {},
+      generation_mode: 'auto' as GenerationMode,
+      company_id: null,
+      description_template: null,
       is_active: true,
       sort_order: i,
     }));
