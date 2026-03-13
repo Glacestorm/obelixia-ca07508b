@@ -154,10 +154,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                   </AccordionTrigger>
                   <AccordionContent className="pb-3">
                     <div className="space-y-2">
-                      {docs.map(doc => {
-                        const isExpiring = doc.expiry_date && new Date(doc.expiry_date) <= new Date(now.getTime() + 30 * 86400000);
-                        const isExpired = doc.expiry_date && new Date(doc.expiry_date) < now;
-                        return (
+                      {docs.map(doc => (
                           <div
                             key={doc.id}
                             className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
@@ -169,7 +166,6 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                                 <p className="text-sm font-medium truncate">{doc.document_name}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {doc.document_type} · v{doc.version}
-                                  {doc.expiry_date && ` · Vence: ${doc.expiry_date}`}
                                 </p>
                               </div>
                             </div>
@@ -179,8 +175,10 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               ) : (
                                 <span title="No verificado"><XCircle className="h-4 w-4 text-muted-foreground/40" /></span>
                               )}
-                              {isExpired && <Badge variant="destructive" className="text-xs">Vencido</Badge>}
-                              {isExpiring && !isExpired && <Badge className="text-xs bg-amber-500">Por vencer</Badge>}
+                              <DocTrafficLightBadge
+                                documentType={doc.document_type}
+                                expiryDate={doc.expiry_date}
+                              />
                               <DocumentOriginBadge relatedEntityType={doc.related_entity_type} />
                               {doc.is_confidential && <Badge variant="outline" className="text-xs">Confidencial</Badge>}
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); }}>
@@ -188,8 +186,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               </Button>
                             </div>
                           </div>
-                        );
-                      })}
+                        ))}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
