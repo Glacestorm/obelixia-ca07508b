@@ -1,0 +1,245 @@
+/**
+ * ExpedientExecutiveSummary — Resumen ejecutivo unificado del expediente documental
+ * V2-ES.4 Paso 2.6: Consolida completitud, alertas, plazos, acciones y conciliación
+ * en un único bloque compacto. Componente puro — recibe datos por props.
+ */
+import { useMemo, useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import {
+  FileText, ShieldAlert, XCircle, Clock, Send,
+  CheckCircle2, AlertCircle, AlertTriangle, Scale,
+  ChevronDown, ChevronUp, Zap,
+} from 'lucide-react';
+import { normalizeDocStatus } from './DocStatusBadge';
+import { isReconcilableDocType } from './DocReconciliationBadge';
+import { computeExpedientAlerts, type ExpedientAlertSummary } from './expedientAlertEngine';
+import { computePendingActions, type PendingAction } from '@/hooks/erp/hr/useHRDocActionQueue';
+import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import type { EnrichedCompleteness } from '@/hooks/erp/hr/useHRProcessDocRequirements';
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type OverallHealth = 'healthy' | 'attention' | 'critical';
+
+interface Props {
+  docs: EmployeeDocument[];
+  completeness: EnrichedCompleteness | null;
+  processType?: string;
+  className?: string;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function computeReconciliationPending(docs: EmployeeDocument[]): number {
+  return docs.filter(d => {
+    if (!isReconcilableDocType(d.document_type)) return false;
+    return !d.reconciled_with_payroll && !d.reconciled_with_social_security && !d.reconciled_with_tax;
+  }).length;
+}
+
+function computeHealth(
+  completeness: EnrichedCompleteness | null,
+  alertSummary: ExpedientAlertSummary,
+  statusCounts: Record<string, number>,
+): OverallHealth {
+  if (alertSummary.critical > 0) return 'critical';
+  if (completeness && !completeness.mandatoryComplete) return 'critical';
+  if ((statusCounts.rejected || 0) > 0) return 'critical';
+  if (alertSummary.warning > 0) return 'attention';
+  if ((statusCounts.pending_submission || 0) > 0) return 'attention';
+  return 'healthy';
+}
+
+const HEALTH_CONFIG: Record<OverallHealth, { dot: string; label: string; border: string }> = {
+  healthy:   { dot: 'bg-emerald-500', label: 'Sin incidencias',   border: 'border-emerald-500/20' },
+  attention: { dot: 'bg-amber-500',   label: 'Requiere atención', border: 'border-amber-500/20' },
+  critical:  { dot: 'bg-red-500',     label: 'Acción urgente',    border: 'border-red-500/20' },
+};
+
+function countByStatus(docs: EmployeeDocument[]): Record<string, number> {
+  const c: Record<string, number> = {};
+  for (const d of docs) {
+    const s = normalizeDocStatus(d.document_status);
+    c[s] = (c[s] || 0) + 1;
+  }
+  return c;
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
+export function ExpedientExecutiveSummary({ docs, completeness, processType, className }: Props) {
+  const [expanded, setExpanded] = useState(false);
+
+  const statusCounts = useMemo(() => countByStatus(docs), [docs]);
+  const alertSummary = useMemo(() => computeExpedientAlerts(docs), [docs]);
+  const pendingActions = useMemo(() => computePendingActions(docs), [docs]);
+  const reconciliationPending = useMemo(() => computeReconciliationPending(docs), [docs]);
+  const health = useMemo(
+    () => computeHealth(completeness, alertSummary, statusCounts),
+    [completeness, alertSummary, statusCounts],
+  );
+
+  if (docs.length === 0 && !completeness) return null;
+
+  const hc = HEALTH_CONFIG[health];
+  const rejected = statusCounts.rejected || 0;
+  const pendingSub = statusCounts.pending_submission || 0;
+  const draft = statusCounts.draft || 0;
+
+  // Build metric rows
+  type MetricRow = { icon: typeof FileText; label: string; value: string; severity: 'ok' | 'warn' | 'error'; tooltip: string };
+  const metrics: MetricRow[] = [];
+
+  // 1. Completitud
+  if (completeness) {
+    metrics.push({
+      icon: completeness.mandatoryComplete ? CheckCircle2 : ShieldAlert,
+      label: 'Completitud',
+      value: `${completeness.completed}/${completeness.total}`,
+      severity: completeness.mandatoryComplete
+        ? (completeness.percentage === 100 ? 'ok' : 'warn')
+        : 'error',
+      tooltip: completeness.mandatoryComplete
+        ? `${completeness.completedMandatory}/${completeness.totalMandatory} obligatorios completos`
+        : `Faltan ${completeness.mandatoryMissing.length} obligatorio(s): ${completeness.mandatoryMissing.slice(0, 3).join(', ')}${completeness.mandatoryMissing.length > 3 ? '…' : ''}`,
+    });
+  }
+
+  // 2. Alertas críticas
+  if (alertSummary.critical > 0) {
+    metrics.push({
+      icon: AlertTriangle,
+      label: 'Alertas críticas',
+      value: String(alertSummary.critical),
+      severity: 'error',
+      tooltip: 'Documentos vencidos, rechazados u obligatorios faltantes',
+    });
+  }
+
+  // 3. Alertas warning
+  if (alertSummary.warning > 0) {
+    metrics.push({
+      icon: AlertCircle,
+      label: 'Avisos',
+      value: String(alertSummary.warning),
+      severity: 'warn',
+      tooltip: 'Documentos próximos a vencer o pendientes de envío',
+    });
+  }
+
+  // 4. Rechazados
+  if (rejected > 0) {
+    metrics.push({
+      icon: XCircle,
+      label: 'Rechazados',
+      value: String(rejected),
+      severity: 'error',
+      tooltip: `${rejected} documento(s) rechazados sin corregir`,
+    });
+  }
+
+  // 5. Acciones pendientes
+  if (pendingActions.length > 0) {
+    metrics.push({
+      icon: Zap,
+      label: 'Acciones pend.',
+      value: String(pendingActions.length),
+      severity: pendingActions.some(a => a.priority === 'critical') ? 'error' : 'warn',
+      tooltip: pendingActions.slice(0, 3).map(a => a.title).join('; '),
+    });
+  }
+
+  // 6. Conciliación pendiente
+  if (reconciliationPending > 0) {
+    metrics.push({
+      icon: Scale,
+      label: 'Conciliación pend.',
+      value: String(reconciliationPending),
+      severity: 'warn',
+      tooltip: `${reconciliationPending} documento(s) reconciliable(s) sin conciliar`,
+    });
+  }
+
+  const SEVERITY_STYLE: Record<string, string> = {
+    ok: 'text-emerald-600',
+    warn: 'text-amber-600',
+    error: 'text-red-600 font-semibold',
+  };
+
+  const visibleMetrics = expanded ? metrics : metrics.slice(0, 4);
+  const hasMore = metrics.length > 4;
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Card className={cn('overflow-hidden', hc.border, className)}>
+        <CardContent className="p-3 space-y-2">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <span className={cn('inline-block w-2 h-2 rounded-full shrink-0 animate-pulse', hc.dot)} />
+              <FileText className="h-3.5 w-3.5" />
+              Expediente
+            </span>
+            <Badge
+              variant="outline"
+              className={cn(
+                'text-[10px] px-1.5 py-0',
+                health === 'healthy' && 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30',
+                health === 'attention' && 'bg-amber-500/10 text-amber-700 border-amber-500/30',
+                health === 'critical' && 'bg-red-500/10 text-red-700 border-red-500/30',
+              )}
+            >
+              {hc.label}
+            </Badge>
+          </div>
+
+          {/* Quick stats row */}
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span>{docs.length} doc{docs.length !== 1 ? 's' : ''}</span>
+            {draft > 0 && <span className="flex items-center gap-0.5"><Clock className="h-3 w-3" />{draft} borr.</span>}
+            {pendingSub > 0 && <span className="flex items-center gap-0.5"><Send className="h-3 w-3" />{pendingSub} pend.</span>}
+          </div>
+
+          {metrics.length > 0 && (
+            <>
+              <Separator />
+              {/* Metric rows */}
+              <div className="space-y-1.5">
+                {visibleMetrics.map((m, i) => (
+                  <Tooltip key={i}>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center justify-between text-xs cursor-default">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <m.icon className="h-3 w-3 shrink-0" />
+                          {m.label}
+                        </span>
+                        <span className={SEVERITY_STYLE[m.severity]}>{m.value}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="text-xs max-w-52">
+                      {m.tooltip}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+
+              {hasMore && (
+                <button
+                  onClick={() => setExpanded(v => !v)}
+                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors w-full justify-center pt-1"
+                >
+                  {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {expanded ? 'Menos' : `+${metrics.length - 4} más`}
+                </button>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </TooltipProvider>
+  );
+}
