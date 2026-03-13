@@ -297,6 +297,7 @@ export function useHRDocumentStorage(companyId: string) {
     setIsUploading(true);
     setUploadProgress(10);
 
+    const isReplace = !!existingStoragePath;
     try {
       // 2. Compute checksum
       const checksum = await computeFileChecksum(file);
