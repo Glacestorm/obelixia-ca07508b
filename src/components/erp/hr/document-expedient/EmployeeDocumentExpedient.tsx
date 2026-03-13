@@ -19,6 +19,7 @@ import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type Origin
 import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
 import { DocStatusBadge } from '../shared/DocStatusBadge';
+import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
 
 interface Props {
   companyId: string;
