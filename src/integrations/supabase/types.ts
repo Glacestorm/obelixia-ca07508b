@@ -31059,6 +31059,77 @@ export type Database = {
           },
         ]
       }
+      erp_hr_doc_action_queue: {
+        Row: {
+          action_type: string
+          assigned_to: string | null
+          context: Json | null
+          created_at: string | null
+          document_id: string | null
+          document_type_code: string
+          due_date: string | null
+          employee_id: string
+          id: string
+          priority: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          source: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_type?: string
+          assigned_to?: string | null
+          context?: Json | null
+          created_at?: string | null
+          document_id?: string | null
+          document_type_code: string
+          due_date?: string | null
+          employee_id: string
+          id?: string
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_type?: string
+          assigned_to?: string | null
+          context?: Json | null
+          created_at?: string | null
+          document_id?: string | null
+          document_type_code?: string
+          due_date?: string | null
+          employee_id?: string
+          id?: string
+          priority?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_doc_action_queue_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employee_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_document_ai_processing: {
         Row: {
           company_id: string
@@ -31614,13 +31685,16 @@ export type Database = {
           document_type: string
           document_url: string
           employee_id: string
+          escalation_level: number | null
           expiry_date: string | null
           file_hash: string | null
           file_size: number | null
+          file_size_bytes: number | null
           id: string
           integrity_verified: boolean | null
           integrity_verified_at: string | null
           is_confidential: boolean | null
+          last_action_at: string | null
           metadata: Json | null
           mime_type: string | null
           notes: string | null
@@ -31635,6 +31709,8 @@ export type Database = {
           retention_policy_id: string | null
           searchable_content: string | null
           source: string | null
+          storage_bucket: string | null
+          storage_path: string | null
           subcategory: string | null
           updated_at: string | null
           uploaded_by: string | null
@@ -31657,13 +31733,16 @@ export type Database = {
           document_type: string
           document_url: string
           employee_id: string
+          escalation_level?: number | null
           expiry_date?: string | null
           file_hash?: string | null
           file_size?: number | null
+          file_size_bytes?: number | null
           id?: string
           integrity_verified?: boolean | null
           integrity_verified_at?: string | null
           is_confidential?: boolean | null
+          last_action_at?: string | null
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
@@ -31678,6 +31757,8 @@ export type Database = {
           retention_policy_id?: string | null
           searchable_content?: string | null
           source?: string | null
+          storage_bucket?: string | null
+          storage_path?: string | null
           subcategory?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
@@ -31700,13 +31781,16 @@ export type Database = {
           document_type?: string
           document_url?: string
           employee_id?: string
+          escalation_level?: number | null
           expiry_date?: string | null
           file_hash?: string | null
           file_size?: number | null
+          file_size_bytes?: number | null
           id?: string
           integrity_verified?: boolean | null
           integrity_verified_at?: string | null
           is_confidential?: boolean | null
+          last_action_at?: string | null
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
@@ -31721,6 +31805,8 @@ export type Database = {
           retention_policy_id?: string | null
           searchable_content?: string | null
           source?: string | null
+          storage_bucket?: string | null
+          storage_path?: string | null
           subcategory?: string | null
           updated_at?: string | null
           uploaded_by?: string | null
