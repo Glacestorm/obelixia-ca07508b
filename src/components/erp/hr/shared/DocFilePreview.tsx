@@ -23,6 +23,7 @@ import {
 
 interface DocFilePreviewProps {
   companyId: string;
+  documentId: string;
   storagePath: string | null | undefined;
   fileName: string | null | undefined;
   mimeType: string | null | undefined;
@@ -33,6 +34,7 @@ interface DocFilePreviewProps {
 
 export function DocFilePreview({
   companyId,
+  documentId,
   storagePath,
   fileName,
   mimeType,
@@ -40,7 +42,7 @@ export function DocFilePreview({
   fileStatus,
   className,
 }: DocFilePreviewProps) {
-  const { getDownloadUrl, downloadFile, isDownloading } = useHRDocumentStorage(companyId);
+  const { getDownloadUrl, downloadFile, isDownloading, logFileAudit } = useHRDocumentStorage(companyId);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
@@ -49,6 +51,8 @@ export function DocFilePreview({
   const canPreview = isPreviewableMime(mimeType) && fileStatus === 'attached';
   const isImage = mimeType?.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
+
+  const auditMeta = { file_name: fileName ?? undefined, mime_type: mimeType ?? undefined, file_size_bytes: fileSizeBytes ?? undefined, storage_path: storagePath ?? undefined };
 
   // ── Load preview URL ──
   const handlePreview = useCallback(async () => {
@@ -60,19 +64,27 @@ export function DocFilePreview({
     if (result.ok) {
       setPreviewUrl(result.data);
       setPreviewOpen(true);
+      logFileAudit('file_preview', documentId, true, auditMeta);
     } else {
       const err = result as { ok: false; error: { message: string } };
       setError(err.error.message);
+      logFileAudit('file_preview', documentId, false, { ...auditMeta, error_message: err.error.message });
     }
     setLoadingPreview(false);
-  }, [storagePath, getDownloadUrl]);
+  }, [storagePath, getDownloadUrl, documentId, logFileAudit, auditMeta]);
 
   // ── Trigger download ──
   const handleDownload = useCallback(async () => {
     if (!storagePath) return;
     setError(null);
-    await downloadFile(storagePath, fileName ?? undefined);
-  }, [storagePath, fileName, downloadFile]);
+    const result = await downloadFile(storagePath, fileName ?? undefined);
+    if (result.ok) {
+      logFileAudit('file_download', documentId, true, auditMeta);
+    } else {
+      const err = result as { ok: false; error: { message: string } };
+      logFileAudit('file_download', documentId, false, { ...auditMeta, error_message: err.error.message });
+    }
+  }, [storagePath, fileName, downloadFile, documentId, logFileAudit, auditMeta]);
 
   // ── No file states ──
   if (fileStatus === 'missing') {

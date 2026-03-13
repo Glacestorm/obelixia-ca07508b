@@ -236,6 +236,45 @@ export function useHRDocumentStorage(companyId: string) {
     qc.invalidateQueries({ queryKey: ['hr-documents', companyId] });
   }, [qc, companyId]);
 
+  /**
+   * Log file storage audit event to erp_hr_document_access_log.
+   * Best-effort — never blocks or fails the parent operation.
+   */
+  const logFileAudit = useCallback(async (
+    action: 'file_upload' | 'file_replace' | 'file_download' | 'file_preview' | 'file_delete',
+    documentId: string,
+    success: boolean,
+    meta?: {
+      employee_id?: string;
+      file_name?: string;
+      mime_type?: string;
+      file_size_bytes?: number;
+      storage_path?: string;
+      checksum?: string;
+      error_message?: string;
+    },
+  ) => {
+    try {
+      await (supabase as any)
+        .from('erp_hr_document_access_log')
+        .insert({
+          company_id: companyId,
+          document_id: documentId,
+          document_table: 'erp_hr_employee_documents',
+          action,
+          user_agent: navigator.userAgent,
+          metadata: {
+            ...meta,
+            success,
+            storage_provider: 'supabase',
+            storage_bucket: HR_DOC_BUCKET,
+          },
+        });
+    } catch (e) {
+      console.warn('[useHRDocumentStorage] audit log failed (non-blocking):', e);
+    }
+  }, [companyId]);
+
   // ── Upload ─────────────────────────────────────────────────────────────────
 
   /**
@@ -258,6 +297,7 @@ export function useHRDocumentStorage(companyId: string) {
     setIsUploading(true);
     setUploadProgress(10);
 
+    const isReplace = !!existingStoragePath;
     try {
       // 2. Compute checksum
       const checksum = await computeFileChecksum(file);
@@ -285,6 +325,10 @@ export function useHRDocumentStorage(companyId: string) {
         });
 
       if (uploadError) {
+        logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, false, {
+          employee_id: employeeId, file_name: file.name, mime_type: file.type,
+          file_size_bytes: file.size, error_message: 'Upload to storage failed',
+        });
         return fail(createStorageError('UPLOAD_FAILED', 'Error al subir el archivo', uploadError));
       }
 
@@ -301,12 +345,22 @@ export function useHRDocumentStorage(companyId: string) {
       if (updateError) {
         // Rollback: remove uploaded file
         await supabase.storage.from(HR_DOC_BUCKET).remove([storagePath]);
+        logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, false, {
+          employee_id: employeeId, file_name: file.name, mime_type: file.type,
+          file_size_bytes: file.size, error_message: 'Metadata update failed, file rolled back',
+        });
         return fail(createStorageError('METADATA_UPDATE_FAILED', 'Error al actualizar metadata', updateError));
       }
 
       setUploadProgress(100);
       invalidateDocs();
       toast.success('Archivo subido correctamente');
+
+      // Audit success
+      logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, true, {
+        employee_id: employeeId, file_name: file.name, mime_type: file.type,
+        file_size_bytes: file.size, storage_path: storagePath, checksum,
+      });
 
       return ok({
         storagePath,
@@ -315,6 +369,10 @@ export function useHRDocumentStorage(companyId: string) {
         mimeType: file.type,
       });
     } catch (err) {
+      logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, false, {
+        employee_id: employeeId, file_name: file.name, mime_type: file.type,
+        error_message: 'Unexpected error',
+      });
       return fail(createStorageError('UPLOAD_FAILED', 'Error inesperado durante la subida', err));
     } finally {
       setIsUploading(false);
@@ -398,6 +456,7 @@ export function useHRDocumentStorage(companyId: string) {
         .remove([storagePath]);
 
       if (removeError) {
+        logFileAudit('file_delete', documentId, false, { storage_path: storagePath, error_message: 'Storage remove failed' });
         return fail(createStorageError('DELETE_FAILED', 'Error al eliminar archivo', removeError));
       }
 
@@ -420,10 +479,12 @@ export function useHRDocumentStorage(companyId: string) {
         .eq('company_id', companyId);
 
       if (updateError) {
+        logFileAudit('file_delete', documentId, false, { storage_path: storagePath, error_message: 'Metadata cleanup failed' });
         return fail(createStorageError('METADATA_UPDATE_FAILED', 'Archivo eliminado pero error al limpiar metadata', updateError));
       }
 
       invalidateDocs();
+      logFileAudit('file_delete', documentId, true, { storage_path: storagePath });
       toast.success('Archivo eliminado');
       return ok(undefined);
     } finally {
@@ -444,6 +505,8 @@ export function useHRDocumentStorage(companyId: string) {
     getDownloadUrl,
     downloadFile,
     deleteFile,
+    // Audit (exposed for UI components to log preview/download with full context)
+    logFileAudit,
     // State
     isUploading,
     uploadProgress,
