@@ -324,6 +324,10 @@ export function useHRDocumentStorage(companyId: string) {
         });
 
       if (uploadError) {
+        logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, false, {
+          employee_id: employeeId, file_name: file.name, mime_type: file.type,
+          file_size_bytes: file.size, error_message: 'Upload to storage failed',
+        });
         return fail(createStorageError('UPLOAD_FAILED', 'Error al subir el archivo', uploadError));
       }
 
@@ -340,12 +344,22 @@ export function useHRDocumentStorage(companyId: string) {
       if (updateError) {
         // Rollback: remove uploaded file
         await supabase.storage.from(HR_DOC_BUCKET).remove([storagePath]);
+        logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, false, {
+          employee_id: employeeId, file_name: file.name, mime_type: file.type,
+          file_size_bytes: file.size, error_message: 'Metadata update failed, file rolled back',
+        });
         return fail(createStorageError('METADATA_UPDATE_FAILED', 'Error al actualizar metadata', updateError));
       }
 
       setUploadProgress(100);
       invalidateDocs();
       toast.success('Archivo subido correctamente');
+
+      // Audit success
+      logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, true, {
+        employee_id: employeeId, file_name: file.name, mime_type: file.type,
+        file_size_bytes: file.size, storage_path: storagePath, checksum,
+      });
 
       return ok({
         storagePath,
@@ -354,6 +368,10 @@ export function useHRDocumentStorage(companyId: string) {
         mimeType: file.type,
       });
     } catch (err) {
+      logFileAudit(isReplace ? 'file_replace' : 'file_upload', documentId, false, {
+        employee_id: employeeId, file_name: file.name, mime_type: file.type,
+        error_message: 'Unexpected error',
+      });
       return fail(createStorageError('UPLOAD_FAILED', 'Error inesperado durante la subida', err));
     } finally {
       setIsUploading(false);
