@@ -31236,6 +31236,74 @@ export type Database = {
           },
         ]
       }
+      erp_hr_document_file_versions: {
+        Row: {
+          checksum: string | null
+          company_id: string
+          created_at: string
+          document_id: string
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          is_current: boolean
+          metadata: Json | null
+          mime_type: string | null
+          replace_reason: string | null
+          storage_bucket: string
+          storage_path: string
+          storage_provider: string
+          uploaded_at: string
+          uploaded_by: string | null
+          version_number: number
+        }
+        Insert: {
+          checksum?: string | null
+          company_id: string
+          created_at?: string
+          document_id: string
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          is_current?: boolean
+          metadata?: Json | null
+          mime_type?: string | null
+          replace_reason?: string | null
+          storage_bucket?: string
+          storage_path: string
+          storage_provider?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version_number?: number
+        }
+        Update: {
+          checksum?: string | null
+          company_id?: string
+          created_at?: string
+          document_id?: string
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          is_current?: boolean
+          metadata?: Json | null
+          mime_type?: string | null
+          replace_reason?: string | null
+          storage_bucket?: string
+          storage_path?: string
+          storage_provider?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_document_file_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_employee_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_document_requests: {
         Row: {
           company_id: string
