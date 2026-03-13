@@ -1,8 +1,9 @@
 /**
  * EmployeeDocumentExpedient — Expediente documental del empleado con datos reales
  * Categorías: Personal, Contratos, Nómina, Compliance, Médicos, Formación, Legal, Movilidad
+ * V2-ES.4 Paso 6+: Incluye resumen ejecutivo, indicadores de archivo/versión y generación
  */
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   FolderOpen, Upload, Search, FileText, ShieldCheck, AlertTriangle,
-  Eye, Download, CheckCircle2, XCircle, Clock
+  Eye, Download, CheckCircle2, XCircle, Clock, Paperclip, History
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentCategory, type EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
@@ -20,6 +21,11 @@ import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
 import { DocStatusBadge } from '../shared/DocStatusBadge';
 import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
+import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
+import { DocGenerationBadge } from '../shared/DocGenerationBadge';
+import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Props {
   companyId: string;
@@ -46,6 +52,9 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterOrigin, setFilterOrigin] = useState<OriginFilterValue>('all');
 
+  // Calendar label for executive summary
+  const { calendarLabel } = useHRHolidayCalendar();
+
   const filtered = filterByOrigin(
     documents.filter(d => {
       if (employeeId && d.employee_id !== employeeId) return false;
@@ -66,6 +75,17 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
 
   const stats = getExpedientStats();
 
+  // Version counts for indicator badges
+  const documentIds = useMemo(() => filtered.map(d => d.id), [filtered]);
+  const { countsMap: versionCounts } = useDocumentVersionCounts(documentIds);
+
+  // Count docs with version history for executive summary
+  const docsWithVersionHistory = useMemo(() => {
+    let count = 0;
+    versionCounts.forEach(v => { if (v > 1) count++; });
+    return count;
+  }, [versionCounts]);
+
   const handleView = (doc: EmployeeDocument) => {
     setSelectedDocumentId(doc.id);
     logAccess.mutate({ document_id: doc.id, action: 'view' });
@@ -74,6 +94,16 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   return (
     <>
       <div className="space-y-4">
+        {/* V2-ES.4+: Executive summary */}
+        {!isLoadingDocuments && filtered.length > 0 && (
+          <ExpedientExecutiveSummary
+            docs={filtered}
+            completeness={null}
+            docsWithVersionHistory={docsWithVersionHistory}
+            calendarLabel={calendarLabel}
+          />
+        )}
+
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Card><CardContent className="p-3 text-center">
@@ -157,8 +187,12 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pb-3">
+                    <TooltipProvider delayDuration={200}>
                     <div className="space-y-2">
-                      {docs.map(doc => (
+                      {docs.map(doc => {
+                        const hasFile = !!(doc as any).storage_path || !!(doc as any).file_name;
+                        const vCount = versionCounts.get(doc.id) ?? 0;
+                        return (
                           <div
                             key={doc.id}
                             className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
@@ -174,6 +208,28 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
+                              {hasFile && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">Archivo adjunto</TooltipContent>
+                                </Tooltip>
+                              )}
+                              {vCount > 1 && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 bg-sky-500/10 text-sky-700 border-sky-500/20">
+                                      <History className="h-2.5 w-2.5" />v{vCount}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">{vCount} versiones de archivo</TooltipContent>
+                                </Tooltip>
+                              )}
+                              <DocGenerationBadge
+                                metadata={doc.metadata as Record<string, any> | null}
+                                source={doc.source}
+                              />
                               {doc.integrity_verified ? (
                                 <span title="Integridad verificada"><CheckCircle2 className="h-4 w-4 text-emerald-500" /></span>
                               ) : (
@@ -191,8 +247,10 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               </Button>
                             </div>
                           </div>
-                        ))}
+                        );
+                      })}
                     </div>
+                    </TooltipProvider>
                   </AccordionContent>
                 </AccordionItem>
               );
