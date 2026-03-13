@@ -6,6 +6,7 @@
 import { Clock, AlertTriangle, AlertOctagon, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHRDocumentDueRules, type DueDateResult } from '@/hooks/erp/hr/useHRDocumentDueRules';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import { DocDeadlineBadge } from './DocDeadlineBadge';
 
 interface Props {
