@@ -146,6 +146,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
             entityType="admin_request"
             entityId={request.id}
             employeeId={request.employee_id}
+            managementType={request.request_type}
           />
         </div>
 
