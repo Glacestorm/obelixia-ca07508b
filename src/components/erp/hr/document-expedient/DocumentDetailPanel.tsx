@@ -53,6 +53,7 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
 
   if (!doc) return null;
 
+  const catalogEntry = getCatalogEntry(doc.document_type);
   return (
     <Sheet open onOpenChange={() => onClose()}>
       <SheetContent className="w-full sm:max-w-lg">
