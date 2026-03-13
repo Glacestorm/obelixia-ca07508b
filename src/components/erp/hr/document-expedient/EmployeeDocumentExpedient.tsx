@@ -18,6 +18,7 @@ import { DocumentDetailPanel } from './DocumentDetailPanel';
 import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type OriginFilterValue } from '../shared/DocumentOriginBadge';
 import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
+import { DocStatusBadge } from '../shared/DocStatusBadge';
 
 interface Props {
   companyId: string;
@@ -178,6 +179,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                                 documentType={doc.document_type}
                                 expiryDate={doc.expiry_date}
                               />
+                              <DocStatusBadge status={doc.document_status} />
                               <DocumentOriginBadge relatedEntityType={doc.related_entity_type} />
                               {doc.is_confidential && <Badge variant="outline" className="text-xs">Confidencial</Badge>}
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); }}>

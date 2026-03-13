@@ -36,6 +36,8 @@ export interface EmployeeDocument {
   consent_id: string | null;
   related_entity_type: RelatedEntityType | null;
   related_entity_id: string | null;
+  /** Estado operativo del documento (V2-ES.4). Legacy docs default to 'draft'. */
+  document_status: string;
   created_at: string;
   updated_at: string;
 }

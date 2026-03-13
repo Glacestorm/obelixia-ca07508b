@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRDocumentUploadDialog } from './HRDocumentUploadDialog';
 import { DocumentOriginBadge } from './shared/DocumentOriginBadge';
+import { DocStatusBadge } from './shared/DocStatusBadge';
 
 interface HREmployeeDocumentsPanelProps {
   companyId: string;
@@ -376,6 +377,7 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
                      <TableHead>Documento</TableHead>
                      <TableHead>Empleado</TableHead>
                      <TableHead>Tipo</TableHead>
+                     <TableHead>Estado</TableHead>
                      <TableHead>Origen</TableHead>
                      <TableHead>IA</TableHead>
                      <TableHead>Vencimiento</TableHead>
@@ -413,6 +415,9 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
                           {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
                         </Badge>
                       </TableCell>
+                     <TableCell>
+                       <DocStatusBadge status={(doc as any).document_status} />
+                     </TableCell>
                      <TableCell>
                        <DocumentOriginBadge relatedEntityType={(doc as any).related_entity_type} />
                      </TableCell>

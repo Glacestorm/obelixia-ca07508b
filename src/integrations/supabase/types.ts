@@ -31557,6 +31557,7 @@ export type Database = {
           consent_id: string | null
           created_at: string | null
           document_name: string
+          document_status: string
           document_type: string
           document_url: string
           employee_id: string
@@ -31593,6 +31594,7 @@ export type Database = {
           consent_id?: string | null
           created_at?: string | null
           document_name: string
+          document_status?: string
           document_type: string
           document_url: string
           employee_id: string
@@ -31629,6 +31631,7 @@ export type Database = {
           consent_id?: string | null
           created_at?: string | null
           document_name?: string
+          document_status?: string
           document_type?: string
           document_url?: string
           employee_id?: string

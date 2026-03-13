@@ -15,6 +15,7 @@ import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle
 import { useHRDocumentExpedient, type RelatedEntityType, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { computeDocCompleteness, type ExpectedDocType } from './documentExpectedTypes';
+import { DocStatusBadge } from './DocStatusBadge';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
@@ -247,6 +248,7 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
                 <Badge variant="outline" className="text-[10px] shrink-0">
                   {CATEGORY_LABELS[doc.category] || doc.category}
                 </Badge>
+                <DocStatusBadge status={doc.document_status} />
               </div>
             ))}
           </div>
