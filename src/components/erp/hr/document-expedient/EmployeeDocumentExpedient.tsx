@@ -40,16 +40,20 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   } = useHRDocumentExpedient(companyId);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterOrigin, setFilterOrigin] = useState<OriginFilterValue>('all');
 
-  const filtered = documents.filter(d => {
-    if (employeeId && d.employee_id !== employeeId) return false;
-    if (filterCategory !== 'all' && d.category !== filterCategory) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      return d.document_name.toLowerCase().includes(s) || d.document_type.toLowerCase().includes(s);
-    }
-    return true;
-  });
+  const filtered = filterByOrigin(
+    documents.filter(d => {
+      if (employeeId && d.employee_id !== employeeId) return false;
+      if (filterCategory !== 'all' && d.category !== filterCategory) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        return d.document_name.toLowerCase().includes(s) || d.document_type.toLowerCase().includes(s);
+      }
+      return true;
+    }),
+    filterOrigin,
+  );
 
   const grouped = Object.entries(CATEGORY_CONFIG).reduce((acc, [cat]) => {
     acc[cat] = filtered.filter(d => d.category === cat);
