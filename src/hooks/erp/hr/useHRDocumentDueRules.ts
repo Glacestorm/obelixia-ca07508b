@@ -50,6 +50,23 @@ export interface DueDateResult {
 // ─── Calculation utilities ───────────────────────────────────────────────────
 
 /**
+ * Adds N business days to a date, skipping weekends (sat=6, sun=0).
+ * No public holiday calendar yet — prepared for future extension.
+ */
+function addBusinessDays(start: Date, days: number): Date {
+  const result = new Date(start);
+  let added = 0;
+  const direction = days >= 0 ? 1 : -1;
+  const absDays = Math.abs(days);
+  while (added < absDays) {
+    result.setDate(result.getDate() + direction);
+    const dow = result.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return result;
+}
+
+/**
  * Calcula la fecha límite a partir de un evento trigger y una regla.
  * MVP: soporta calendar_days, before_start, end_of_next_month.
  * business_days usa aproximación ×1.4 (graceful degradation).
