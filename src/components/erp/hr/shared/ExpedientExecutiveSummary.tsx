@@ -110,22 +110,22 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, cla
   }
 
   // 2. Alertas críticas
-  if (alertSummary.critical > 0) {
+  if (alertSummary.criticalCount > 0) {
     metrics.push({
       icon: AlertTriangle,
       label: 'Alertas críticas',
-      value: String(alertSummary.critical),
+      value: String(alertSummary.criticalCount),
       severity: 'error',
       tooltip: 'Documentos vencidos, rechazados u obligatorios faltantes',
     });
   }
 
   // 3. Alertas warning
-  if (alertSummary.warning > 0) {
+  if (alertSummary.warningCount > 0) {
     metrics.push({
       icon: AlertCircle,
       label: 'Avisos',
-      value: String(alertSummary.warning),
+      value: String(alertSummary.warningCount),
       severity: 'warn',
       tooltip: 'Documentos próximos a vencer o pendientes de envío',
     });
