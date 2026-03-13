@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentCategory, type EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
+import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type OriginFilterValue } from '../shared/DocumentOriginBadge';
 
 interface Props {
   companyId: string;
@@ -39,16 +40,20 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   } = useHRDocumentExpedient(companyId);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterOrigin, setFilterOrigin] = useState<OriginFilterValue>('all');
 
-  const filtered = documents.filter(d => {
-    if (employeeId && d.employee_id !== employeeId) return false;
-    if (filterCategory !== 'all' && d.category !== filterCategory) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      return d.document_name.toLowerCase().includes(s) || d.document_type.toLowerCase().includes(s);
-    }
-    return true;
-  });
+  const filtered = filterByOrigin(
+    documents.filter(d => {
+      if (employeeId && d.employee_id !== employeeId) return false;
+      if (filterCategory !== 'all' && d.category !== filterCategory) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        return d.document_name.toLowerCase().includes(s) || d.document_type.toLowerCase().includes(s);
+      }
+      return true;
+    }),
+    filterOrigin,
+  );
 
   const grouped = Object.entries(CATEGORY_CONFIG).reduce((acc, [cat]) => {
     acc[cat] = filtered.filter(d => d.category === cat);
@@ -102,6 +107,14 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
               <SelectItem value="all">Todas las categorías</SelectItem>
               {Object.entries(CATEGORY_CONFIG).map(([k, v]) => (
                 <SelectItem key={k} value={k}>{v.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterOrigin} onValueChange={v => setFilterOrigin(v as OriginFilterValue)}>
+            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ORIGIN_FILTER_OPTIONS.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -163,6 +176,7 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               )}
                               {isExpired && <Badge variant="destructive" className="text-xs">Vencido</Badge>}
                               {isExpiring && !isExpired && <Badge className="text-xs bg-amber-500">Por vencer</Badge>}
+                              <DocumentOriginBadge relatedEntityType={doc.related_entity_type} />
                               {doc.is_confidential && <Badge variant="outline" className="text-xs">Confidencial</Badge>}
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); }}>
                                 <Download className="h-3.5 w-3.5" />
