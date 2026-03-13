@@ -30,7 +30,7 @@ interface Props {
 }
 
 export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
-  const { documents, fetchVersions, fetchComments, fetchAccessLog, addComment, verifyIntegrity } = useHRDocumentExpedient(companyId);
+  const { documents, fetchVersions, fetchComments, fetchAccessLog, addComment, verifyIntegrity, refetchDocuments } = useHRDocumentExpedient(companyId);
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   const [accessLog, setAccessLog] = useState<DocumentAccessLog[]>([]);
