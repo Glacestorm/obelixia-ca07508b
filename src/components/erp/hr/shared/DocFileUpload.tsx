@@ -47,6 +47,7 @@ export function DocFileUpload({
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [replaceReason, setReplaceReason] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { uploadFile } = useHRDocumentStorage(companyId);
