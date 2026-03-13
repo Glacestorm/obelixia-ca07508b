@@ -1,11 +1,12 @@
 /**
  * useHRDocActionQueue — Hook para cola de acciones documentales pendientes
- * V2-ES.4 Paso 2.2: Genera, resuelve y consulta acciones doc operativas
+ * V2-ES.4 Paso 2: Genera, resuelve y consulta acciones doc operativas
  *
  * REGLAS:
- * - No hace fetch de documentos (recibe datos por prop vía generateActions)
+ * - No hace fetch de documentos (recibe datos por prop vía computePendingActions)
  * - Persiste acciones en erp_hr_doc_action_queue para tracking
  * - Deduplicación por (document_id, action_type, status='pending')
+ * - Modelo enriquecido: title, description, severity derivados del action_type
  * - Escalado automático: pending + overdue → priority critical
  */
 import { useCallback, useMemo } from 'react';
@@ -18,9 +19,20 @@ import type { EmployeeDocument } from './useHRDocumentExpedient';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type DocActionType = 'submit' | 'renew' | 'reconcile' | 'review' | 'escalate';
+export type DocActionType =
+  | 'generate'     // Generar documento faltante (obligatorio del checklist)
+  | 'submit'       // Enviar doc en pending_submission
+  | 'review'       // Revisar doc rechazado o en draft
+  | 'correct'      // Corregir doc rechazado
+  | 'close'        // Cerrar doc accepted pero no cerrado
+  | 'renew'        // Renovar doc vencido o próximo a vencer
+  | 'reconcile'    // Conciliar doc reconciliable
+  | 'escalate';    // Escalado automático
+
 export type DocActionPriority = 'critical' | 'high' | 'medium' | 'low';
+export type DocActionSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type DocActionStatus = 'pending' | 'in_progress' | 'done' | 'dismissed' | 'escalated';
+export type DocActionSource = 'system' | 'manual' | 'escalation' | 'checklist';
 
 export interface DocAction {
   id: string;
@@ -51,19 +63,59 @@ export interface DocActionSummary {
   byType: Record<string, number>;
 }
 
+// ─── Enriched action (computed presentation layer) ───────────────────────────
+
+export interface EnrichedDocAction {
+  /** Raw persisted or computed action */
+  raw: PendingAction;
+  /** Human-readable title */
+  title: string;
+  /** Detailed description */
+  description: string;
+  /** Severity for visual indicators */
+  severity: DocActionSeverity;
+}
+
+const ACTION_META: Record<DocActionType, { title: string; verb: string; severity: DocActionSeverity }> = {
+  generate:  { title: 'Generar documento',           verb: 'generar',   severity: 'high' },
+  submit:    { title: 'Enviar documento',             verb: 'enviar',    severity: 'medium' },
+  review:    { title: 'Revisar documento',            verb: 'revisar',   severity: 'medium' },
+  correct:   { title: 'Corregir documento rechazado', verb: 'corregir',  severity: 'high' },
+  close:     { title: 'Cerrar documento',             verb: 'cerrar',    severity: 'low' },
+  renew:     { title: 'Renovar documento vencido',    verb: 'renovar',   severity: 'critical' },
+  reconcile: { title: 'Conciliar documento',          verb: 'conciliar', severity: 'info' },
+  escalate:  { title: 'Escalado automático',          verb: 'escalar',   severity: 'critical' },
+};
+
+export function enrichAction(action: PendingAction): EnrichedDocAction {
+  const meta = ACTION_META[action.action_type] ?? ACTION_META.review;
+  const severityOverride = action.priority === 'critical' ? 'critical' as const
+    : action.priority === 'high' ? 'high' as const
+    : meta.severity;
+
+  return {
+    raw: action,
+    title: `${meta.title}: ${action.document_type_code}`,
+    description: action.reason,
+    severity: severityOverride,
+  };
+}
+
 // ─── Action generation (pure, no side effects) ──────────────────────────────
 
-interface PendingAction {
+export interface PendingAction {
   document_id: string | null;
   document_type_code: string;
   action_type: DocActionType;
   priority: DocActionPriority;
+  source: DocActionSource;
   due_date: string | null;
   reason: string;
 }
 
 /**
- * Computes pending actions from a set of documents (pure function).
+ * Computes ALL pending actions from a set of documents (pure function).
+ * Covers: generate, submit, review, correct, close, renew, reconcile.
  * Does NOT persist — call syncActions to persist.
  */
 export function computePendingActions(
@@ -76,31 +128,59 @@ export function computePendingActions(
   for (const doc of docs) {
     const status = doc.document_status ?? 'draft';
 
-    // Draft docs that should be submitted
+    // 1. Draft → review (borrador pendiente de revisión)
     if (status === 'draft') {
       actions.push({
         document_id: doc.id,
         document_type_code: doc.document_type,
-        action_type: 'submit',
+        action_type: 'review',
         priority: 'medium',
+        source: 'system',
         due_date: doc.expiry_date,
-        reason: 'Documento en borrador pendiente de envío',
+        reason: 'Documento en borrador pendiente de revisión',
       });
     }
 
-    // Rejected docs needing review
+    // 2. pending_submission → submit
+    if (status === 'pending_submission') {
+      actions.push({
+        document_id: doc.id,
+        document_type_code: doc.document_type,
+        action_type: 'submit',
+        priority: 'high',
+        source: 'system',
+        due_date: doc.expiry_date,
+        reason: 'Documento listo para envío, pendiente de presentación',
+      });
+    }
+
+    // 3. rejected → correct
     if (status === 'rejected') {
       actions.push({
         document_id: doc.id,
         document_type_code: doc.document_type,
-        action_type: 'review',
+        action_type: 'correct',
         priority: 'high',
+        source: 'system',
         due_date: null,
-        reason: 'Documento rechazado requiere revisión',
+        reason: 'Documento rechazado, requiere corrección y reenvío',
       });
     }
 
-    // Expiring/expired docs
+    // 4. accepted but not closed → close
+    if (status === 'accepted') {
+      actions.push({
+        document_id: doc.id,
+        document_type_code: doc.document_type,
+        action_type: 'close',
+        priority: 'low',
+        source: 'system',
+        due_date: null,
+        reason: 'Documento aceptado pendiente de cierre formal',
+      });
+    }
+
+    // 5. Expiring / expired → renew
     if (doc.expiry_date) {
       const docStatus = computeDocStatus(doc.document_type, doc.expiry_date, now);
       if (docStatus.status === 'expired') {
@@ -109,38 +189,41 @@ export function computePendingActions(
           document_type_code: doc.document_type,
           action_type: 'renew',
           priority: 'critical',
+          source: 'system',
           due_date: doc.expiry_date,
           reason: docStatus.label,
         });
-      } else if (docStatus.status === 'expiring' && docStatus.isUrgent) {
+      } else if (docStatus.status === 'expiring') {
         actions.push({
           document_id: doc.id,
           document_type_code: doc.document_type,
           action_type: 'renew',
-          priority: 'high',
+          priority: docStatus.isUrgent ? 'high' : 'medium',
+          source: 'system',
           due_date: doc.expiry_date,
           reason: docStatus.label,
         });
       }
     }
 
-    // Reconciliation needed
-    if (isReconcilableDocType(doc.document_type)) {
+    // 6. Reconciliation needed (accepted doc, reconcilable type, not reconciled)
+    if (isReconcilableDocType(doc.document_type) && (status === 'accepted' || status === 'closed')) {
       const anyReconciled = doc.reconciled_with_payroll || doc.reconciled_with_social_security || doc.reconciled_with_tax;
-      if (!anyReconciled && status === 'accepted') {
+      if (!anyReconciled) {
         actions.push({
           document_id: doc.id,
           document_type_code: doc.document_type,
           action_type: 'reconcile',
           priority: 'low',
+          source: 'system',
           due_date: null,
-          reason: 'Documento aceptado sin conciliación',
+          reason: 'Documento sin conciliación contable',
         });
       }
     }
   }
 
-  // Missing mandatory docs from expected types
+  // 7. Missing mandatory docs from checklist → generate
   if (expectedTypes && expectedTypes.length > 0) {
     const presentTypes = new Set(docs.map(d => d.document_type.toLowerCase()));
     for (const expected of expectedTypes) {
@@ -148,8 +231,9 @@ export function computePendingActions(
         actions.push({
           document_id: null,
           document_type_code: expected,
-          action_type: 'submit',
+          action_type: 'generate',
           priority: 'high',
+          source: 'checklist',
           due_date: null,
           reason: `Documento obligatorio faltante: ${expected}`,
         });
@@ -157,7 +241,7 @@ export function computePendingActions(
     }
   }
 
-  // Sort: critical first, then by due_date
+  // Sort: critical first, then high, then by due_date
   return actions.sort((a, b) => {
     const pOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
     const diff = (pOrder[a.priority] ?? 2) - (pOrder[b.priority] ?? 2);
@@ -180,7 +264,6 @@ export function useHRDocActionQueue(opts: UseHRDocActionQueueOptions = {}) {
   const qc = useQueryClient();
   const { employeeId, relatedEntityType, relatedEntityId } = opts;
 
-  // Fetch persisted actions
   const queryKey = ['hr-doc-action-queue', employeeId, relatedEntityType, relatedEntityId];
 
   const { data: persistedActions = [], isLoading } = useQuery({
@@ -248,7 +331,7 @@ export function useHRDocActionQueue(opts: UseHRDocActionQueueOptions = {}) {
     onError: () => toast.error('Error al resolver acción'),
   });
 
-  // Sync computed actions to DB (upsert-like: skip existing pending)
+  // Sync computed actions to DB (dedup by document_id + action_type)
   const syncActions = useCallback(async (
     employeeIdParam: string,
     actions: PendingAction[],
@@ -257,14 +340,12 @@ export function useHRDocActionQueue(opts: UseHRDocActionQueueOptions = {}) {
   ) => {
     if (actions.length === 0) return;
 
-    // Get existing pending to deduplicate
-    let existingQuery = supabase
+    const { data: existing } = await supabase
       .from('erp_hr_doc_action_queue')
       .select('document_id, action_type')
       .eq('employee_id', employeeIdParam)
       .eq('status', 'pending');
 
-    const { data: existing } = await existingQuery;
     const existingSet = new Set(
       (existing ?? []).map((e: any) => `${e.document_id ?? 'null'}:${e.action_type}`)
     );
@@ -282,7 +363,7 @@ export function useHRDocActionQueue(opts: UseHRDocActionQueueOptions = {}) {
       document_type_code: a.document_type_code,
       action_type: a.action_type,
       priority: a.priority,
-      source: 'system',
+      source: a.source,
       status: 'pending',
       due_date: a.due_date,
       related_entity_type: entityType ?? null,
@@ -309,5 +390,6 @@ export function useHRDocActionQueue(opts: UseHRDocActionQueueOptions = {}) {
     isResolving: resolveMutation.isPending,
     syncActions,
     computePendingActions,
+    enrichAction,
   };
 }
