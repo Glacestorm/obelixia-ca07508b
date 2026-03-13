@@ -171,6 +171,8 @@ export function useHRDocumentExpedient(companyId: string) {
       source?: DocumentSource;
       is_confidential?: boolean;
       expiry_date?: string;
+      related_entity_type?: RelatedEntityType;
+      related_entity_id?: string;
     }) => {
       const { data, error } = await supabase
         .from('erp_hr_employee_documents')
@@ -187,6 +189,8 @@ export function useHRDocumentExpedient(companyId: string) {
           is_confidential: doc.is_confidential ?? false,
           expiry_date: doc.expiry_date ?? null,
           version: 1,
+          related_entity_type: doc.related_entity_type ?? null,
+          related_entity_id: doc.related_entity_id ?? null,
         } as any)
         .select()
         .single();
