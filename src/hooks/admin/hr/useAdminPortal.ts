@@ -349,7 +349,10 @@ export function useAdminPortal(companyId: string) {
         } catch (syncErr) {
           console.warn('[useAdminPortal] Workflow sync failed (non-blocking):', syncErr);
         }
-      }
+        }
+
+        // V2-ES.2 Paso 4: Sync linked tasks based on decision
+        await syncTasksFromDecision(id, newStatus);
 
       toast.success(`Estado actualizado a ${newStatus}`);
       await fetchRequests();
