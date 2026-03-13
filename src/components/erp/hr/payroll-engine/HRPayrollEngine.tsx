@@ -48,7 +48,12 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
     return bridge.computeDiffVsPrevious(recordId, periodId);
   }, [bridge.computeDiffVsPrevious]);
 
-  return (
+  // Combine generic + ES pre-close validation
+  const handleValidatePreClose = useCallback(async (periodId: string) => {
+    const esChecks = await bridge.validateESPreClose(periodId);
+    return esChecks;
+  }, [bridge.validateESPreClose]);
+
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-bold">Motor de Nómina</h2>
