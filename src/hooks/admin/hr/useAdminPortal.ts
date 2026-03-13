@@ -576,7 +576,7 @@ export function useAdminPortal(companyId: string) {
   }, [companyId, fetchRequests]);
 
   return {
-    requests, loading, detail, comments, activity, stats,
+    requests, loading, detail, comments, activity, linkedTasks, stats,
     fetchRequests, createRequest, updateStatus, assignRequest,
     addComment, fetchDetail, generateTasks, setDetail,
   };
