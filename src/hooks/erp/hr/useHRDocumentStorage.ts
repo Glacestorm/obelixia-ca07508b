@@ -359,7 +359,7 @@ export function useHRDocumentStorage(companyId: string) {
     fileName?: string,
   ): Promise<StorageResult<void>> => {
     const urlResult = await getDownloadUrl(storagePath);
-    if (!urlResult.ok) {
+    if (urlResult.ok === false) {
       toast.error(urlResult.error.message);
       return fail(urlResult.error);
     }
