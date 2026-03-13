@@ -218,6 +218,15 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
           </div>
         )}
 
+        {/* V2-ES.4 Paso 2: Acciones pendientes computadas desde docs cargados */}
+        {docs.length > 0 && (
+          <DocActionQueuePanel
+            docs={docs}
+            expectedTypes={completeness?.mandatoryMissing}
+            maxItems={3}
+          />
+        )}
+
         {/* Upload form */}
         {showForm && employeeId && (
           <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
