@@ -63,7 +63,6 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   }, {} as Record<string, EmployeeDocument[]>);
 
   const stats = getExpedientStats();
-  const now = new Date();
 
   const handleView = (doc: EmployeeDocument) => {
     setSelectedDocumentId(doc.id);
