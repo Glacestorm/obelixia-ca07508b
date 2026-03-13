@@ -219,6 +219,15 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
           </div>
         )}
 
+        {/* V2-ES.4 Paso 2.2: Alertas consolidadas */}
+        {!loading && docs.length > 0 && (
+          <DocumentAlertsSummary
+            docs={docs}
+            mandatoryMissing={completeness?.mandatoryMissing}
+            compact
+          />
+        )}
+
         {/* V2-ES.4 Paso 2: Acciones pendientes computadas desde docs cargados */}
         {docs.length > 0 && (
           <DocActionQueuePanel
