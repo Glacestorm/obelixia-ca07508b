@@ -214,6 +214,22 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
                     </div>
                   )}
 
+                  {/* V2-ES.4 Paso 3.3: Upload / replace file */}
+                  <div className="mt-3 pt-3 border-t space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <FileUp className="h-3 w-3" />
+                      {fileStatus === 'attached' ? 'Reemplazar archivo' : 'Adjuntar archivo'}
+                    </p>
+                    <DocFileUpload
+                      companyId={companyId}
+                      employeeId={doc.employee_id}
+                      documentId={doc.id}
+                      hasExistingFile={fileStatus === 'attached'}
+                      existingFileName={doc.file_name}
+                      existingStoragePath={doc.storage_path}
+                    />
+                  </div>
+
                   {/* Catalog metadata */}
                   {catalogEntry && (
                     <div className="mt-3 pt-3 border-t space-y-2">
