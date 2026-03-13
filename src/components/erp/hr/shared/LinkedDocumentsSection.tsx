@@ -294,6 +294,15 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
                   {CATEGORY_LABELS[doc.category] || doc.category}
                 </Badge>
                 <DocStatusBadge status={doc.document_status} />
+                <DocReconciliationBadge
+                  documentType={doc.document_type}
+                  flags={{
+                    reconciled_with_payroll: doc.reconciled_with_payroll,
+                    reconciled_with_social_security: doc.reconciled_with_social_security,
+                    reconciled_with_tax: doc.reconciled_with_tax,
+                    reconciliation_notes: doc.reconciliation_notes,
+                  }}
+                />
               </div>
             ))}
           </div>
