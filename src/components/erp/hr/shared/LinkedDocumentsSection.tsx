@@ -16,6 +16,7 @@ import { useHRDocumentExpedient, type RelatedEntityType, type DocumentCategory }
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
 import { DocStatusBadge } from './DocStatusBadge';
+import { DocReconciliationBadge } from './DocReconciliationBadge';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
