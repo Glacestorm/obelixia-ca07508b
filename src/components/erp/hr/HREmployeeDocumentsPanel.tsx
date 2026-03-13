@@ -24,6 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HRDocumentUploadDialog } from './HRDocumentUploadDialog';
+import { DocumentOriginBadge } from './shared/DocumentOriginBadge';
 
 interface HREmployeeDocumentsPanelProps {
   companyId: string;
