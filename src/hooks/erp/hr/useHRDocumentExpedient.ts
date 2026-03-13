@@ -13,7 +13,7 @@ export type DocumentCategory = 'personal' | 'contract' | 'payroll' | 'compliance
 export type DocumentSource = 'upload' | 'generated' | 'integration' | 'migration';
 export type ConsentType = 'gdpr' | 'medical' | 'background_check' | 'data_processing' | 'image_rights' | 'training_commitment';
 export type ConsentStatus = 'active' | 'revoked' | 'expired';
-export type AccessAction = 'view' | 'download' | 'print' | 'share' | 'export' | 'file_upload' | 'file_replace' | 'file_download' | 'file_preview' | 'file_delete' | 'file_version_created';
+export type AccessAction = 'view' | 'download' | 'print' | 'share' | 'export' | 'file_upload' | 'file_replace' | 'file_download' | 'file_preview' | 'file_delete' | 'file_version_created' | 'doc_auto_generated';
 export type RelatedEntityType = 'admin_request' | 'hr_task';
 
 export interface EmployeeDocument {
@@ -57,6 +57,8 @@ export interface EmployeeDocument {
   uploaded_at: string | null;
   last_action_at: string | null;
   escalation_level: number;
+  /** Metadata JSON (V2-ES.4 Paso 5) — includes generation_mode for auto-generated docs */
+  metadata: Record<string, any> | null;
   created_at: string;
   updated_at: string;
 }
