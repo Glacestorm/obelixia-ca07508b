@@ -18,6 +18,7 @@ import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequi
 import { DocStatusBadge } from './DocStatusBadge';
 import { DocReconciliationBadge } from './DocReconciliationBadge';
 import { DocReconciliationToggle } from './DocReconciliationToggle';
+import { DocActionQueuePanel } from './DocActionQueuePanel';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
@@ -215,6 +216,15 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
               </div>
             )}
           </div>
+        )}
+
+        {/* V2-ES.4 Paso 2: Acciones pendientes computadas desde docs cargados */}
+        {docs.length > 0 && (
+          <DocActionQueuePanel
+            docs={docs}
+            expectedTypes={completeness?.mandatoryMissing}
+            maxItems={3}
+          />
         )}
 
         {/* Upload form */}

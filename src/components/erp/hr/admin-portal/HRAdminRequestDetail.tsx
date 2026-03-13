@@ -201,6 +201,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 employeeId={request.employee_id}
                 relatedEntityType="admin_request"
                 relatedEntityId={request.id}
+                docs={linkedDocs}
               />
               <Separator />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
