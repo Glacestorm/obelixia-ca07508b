@@ -168,3 +168,60 @@
 - Rutas/menús (0 nuevos)
 - Lógica de payroll/cierre de período (V2-ES.1 intacta)
 - HRApprovalInbox (sin modificaciones directas)
+
+## V2-ES.3 — Acta de cierre
+
+### Paso 1: Infraestructura del expediente documental
+- 6 tablas: `erp_hr_employee_documents`, `erp_hr_document_versions`, `erp_hr_document_access_log`, `erp_hr_document_comments`, `erp_hr_consents`, `erp_hr_retention_policies`
+- Hook `useHRDocumentExpedient` (CRUD docs, versiones, access log, comentarios, consentimientos, retención, stats)
+- Campos `related_entity_type` / `related_entity_id` + índice compuesto
+- 7 componentes UI: DocumentExpedientModule, EmployeeDocumentExpedient, PayrollDocumentExpedient, ConsentsPanel, RetentionPoliciesPanel, DocumentAuditPanel, DocumentDetailPanel
+
+### Paso 2: Vinculación documental a solicitudes/tareas
+- Componente `LinkedDocumentsSection` (shared, reutilizable)
+- Integrado en `HRAdminRequestDetail` y `TaskDetail`
+- Upload condicional por `employeeId`, deduplicación por id
+
+### Paso 3: Visibilidad cruzada de origen + filtros
+- Componente `DocumentOriginBadge` (admin_request→Solicitud, hr_task→Tarea, null→Directo)
+- Filtro por origen en `EmployeeDocumentExpedient` (4 opciones)
+- Columna "Origen" en `HREmployeeDocumentsPanel`
+- Utilidad `filterByOrigin` + `ORIGIN_FILTER_OPTIONS`
+
+### Paso 4: Checklist de completitud informativa
+- Config `documentExpectedTypes.ts` con mapa request_type → ExpectedDocType[]
+- `normalizeDocType()` (lowercase + trim + strip diacríticos)
+- `computeDocCompleteness()` calcula present/missing/percentage
+- Barra de progreso + checklist ✅/⚠️ en LinkedDocumentsSection (vía prop `managementType`)
+- Graceful degradation: sin managementType → sin checklist
+
+### Paso 5: Indicador compacto en sidebar
+- Componente `DocumentCompletenessIndicator` (recibe docs por prop, sin fetch propio)
+- Callback `onDocsLoaded` en LinkedDocumentsSection para compartir datos
+- Indicador en sidebar de HRAdminRequestDetail (Completo/X-Y)
+
+### Archivos creados
+- `src/hooks/erp/hr/useHRDocumentExpedient.ts`
+- `src/components/erp/hr/document-expedient/DocumentExpedientModule.tsx`
+- `src/components/erp/hr/document-expedient/EmployeeDocumentExpedient.tsx`
+- `src/components/erp/hr/document-expedient/PayrollDocumentExpedient.tsx`
+- `src/components/erp/hr/document-expedient/ConsentsPanel.tsx`
+- `src/components/erp/hr/document-expedient/RetentionPoliciesPanel.tsx`
+- `src/components/erp/hr/document-expedient/DocumentAuditPanel.tsx`
+- `src/components/erp/hr/document-expedient/DocumentDetailPanel.tsx`
+- `src/components/erp/hr/shared/LinkedDocumentsSection.tsx`
+- `src/components/erp/hr/shared/DocumentOriginBadge.tsx`
+- `src/components/erp/hr/shared/DocumentCompletenessIndicator.tsx`
+- `src/components/erp/hr/shared/documentExpectedTypes.ts`
+
+### Archivos modificados
+- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — LinkedDocs + managementType + onDocsLoaded + indicator sidebar
+- `src/components/erp/hr/tasks/TaskDetail.tsx` — LinkedDocs
+- `src/components/erp/hr/HREmployeeDocumentsPanel.tsx` — columna Origen + query ampliada
+
+### Sin cambios en
+- Edge Functions (0 nuevas, 0 modificadas)
+- Rutas/menús (0 nuevos)
+- Lógica de payroll/cierre (V2-ES.1 intacta)
+- Workflows/aprobaciones (V2-ES.2 intacta)
+- HRApprovalInbox (sin modificaciones)
