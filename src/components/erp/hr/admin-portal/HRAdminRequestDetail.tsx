@@ -187,6 +187,11 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 </div>
               )}
               <Separator />
+              <DocumentCompletenessIndicator
+                managementType={request.request_type}
+                docs={linkedDocs}
+              />
+              <Separator />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
                 Última actualización: {new Date(request.updated_at).toLocaleString('es')}
