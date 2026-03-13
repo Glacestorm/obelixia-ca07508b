@@ -108,6 +108,21 @@ export function HRPayrollPeriodManager({
     }
   };
 
+  const handleStartApproval = async (periodId: string) => {
+    if (!onStartApprovalWorkflow) return;
+    setApprovalLoading(periodId);
+    setBatchResult(null);
+    const result = await onStartApprovalWorkflow(periodId);
+    setApprovalLoading(null);
+    if (result) {
+      setBatchResult({
+        periodId,
+        type: 'approval',
+        message: `Aprobación: ${result.started} enviadas, ${result.skipped} ya en flujo${result.errors > 0 ? `, ${result.errors} errores` : ''}`,
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
