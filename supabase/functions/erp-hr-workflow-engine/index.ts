@@ -440,6 +440,116 @@ serve(async (req) => {
               { name: 'Aprobación Responsable RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, escalation_hours: 72, escalation_to_role: 'HR_DIRECTOR', comments_required: true, delegation_enabled: true },
             ]
           },
+          // V2-ES.2 Paso 2: Admin Request workflow definitions
+          {
+            company_id, name: 'Alta de Empleado (Admin)', process_type: 'admin_employee_registration',
+            description: 'Aprobación de solicitud de alta de nuevo empleado desde portal administrativo',
+            steps: [
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 48, comments_required: true, delegation_enabled: true },
+              { name: 'Aprobación Responsable', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, escalation_hours: 72, escalation_to_role: 'HR_DIRECTOR', comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Modificación Contractual (Admin)', process_type: 'admin_contract_modification',
+            description: 'Aprobación de modificación de contrato desde portal administrativo',
+            steps: [
+              { name: 'Revisión RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
+              { name: 'Aprobación Responsable', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Cambio Salarial (Admin)', process_type: 'admin_salary_change',
+            description: 'Aprobación de cambio salarial desde portal administrativo',
+            steps: [
+              { name: 'Validación Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 48, comments_required: true },
+              { name: 'Aprobación RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, comments_required: true },
+              { name: 'Aprobación Dirección', step_type: 'approval', approver_role: 'HR_DIRECTOR', sla_hours: 72, comments_required: false },
+            ]
+          },
+          {
+            company_id, name: 'Baja de Empleado (Admin)', process_type: 'admin_termination',
+            description: 'Aprobación de baja desde portal administrativo',
+            steps: [
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_MANAGER', sla_hours: 24, comments_required: true },
+              { name: 'Validación Legal', step_type: 'approval', approver_role: 'HR_DIRECTOR', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Finiquito (Admin)', process_type: 'admin_settlement',
+            description: 'Aprobación de finiquito desde portal administrativo',
+            steps: [
+              { name: 'Cálculo Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 24, comments_required: true },
+              { name: 'Aprobación RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 24, comments_required: true },
+              { name: 'Aprobación Legal', step_type: 'approval', approver_role: 'HR_DIRECTOR', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Baja Médica (Admin)', process_type: 'admin_sick_leave',
+            description: 'Registro y validación de IT desde portal administrativo',
+            steps: [
+              { name: 'Registro RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Accidente Laboral (Admin)', process_type: 'admin_work_accident',
+            description: 'Gestión de accidente desde portal administrativo',
+            steps: [
+              { name: 'Registro e Investigación', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
+              { name: 'Validación RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Vacaciones (Admin)', process_type: 'admin_vacation',
+            description: 'Aprobación de vacaciones desde portal administrativo',
+            steps: [
+              { name: 'Aprobación Manager', step_type: 'approval', approver_role: 'MANAGER', sla_hours: 48, delegation_enabled: true },
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24 },
+            ]
+          },
+          {
+            company_id, name: 'Solicitud Genérica (Admin)', process_type: 'admin_schedule_change',
+            description: 'Cambio de jornada desde portal administrativo',
+            steps: [
+              { name: 'Revisión RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 48, comments_required: true },
+              { name: 'Aprobación Responsable', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48 },
+            ]
+          },
+          {
+            company_id, name: 'Certificado Empresa (Admin)', process_type: 'admin_company_certificate',
+            description: 'Generación de certificado desde portal administrativo',
+            steps: [
+              { name: 'Generación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24 },
+            ]
+          },
+          {
+            company_id, name: 'Envío Documentación (Admin)', process_type: 'admin_document_submission',
+            description: 'Registro de documentación desde portal administrativo',
+            steps: [
+              { name: 'Verificación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 48 },
+            ]
+          },
+          {
+            company_id, name: 'Incidencias Mensuales (Admin)', process_type: 'admin_monthly_incidents',
+            description: 'Registro de incidencias mensuales desde portal administrativo',
+            steps: [
+              { name: 'Registro Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Permiso No Retribuido (Admin)', process_type: 'admin_unpaid_leave',
+            description: 'Solicitud de permiso no retribuido',
+            steps: [
+              { name: 'Aprobación Manager', step_type: 'approval', approver_role: 'MANAGER', sla_hours: 48, comments_required: true },
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24 },
+            ]
+          },
+          {
+            company_id, name: 'Nacimiento / Paternidad (Admin)', process_type: 'admin_birth_leave',
+            description: 'Gestión de permiso por nacimiento desde portal administrativo',
+            steps: [
+              { name: 'Registro RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
+            ]
+          },
         ];
 
         let totalDefs = 0;
