@@ -54,6 +54,11 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
     return esChecks;
   }, [bridge.validateESPreClose]);
 
+  // V2-ES.2 Paso 1: Send period to approval workflow
+  const handleStartApprovalWorkflow = useCallback(async (periodId: string) => {
+    return bridge.startPayrollApprovalWorkflow(periodId);
+  }, [bridge.startPayrollApprovalWorkflow]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -82,6 +87,7 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
             onRefresh={() => engine.fetchPeriods()}
             onBatchCalculateES={handleBatchCalcES}
             onBatchDiff={handleBatchDiff}
+            onStartApprovalWorkflow={handleStartApprovalWorkflow}
           />
         </TabsContent>
 

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   Calendar, Plus, Lock, Unlock, RefreshCw, CheckCircle,
-  AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2
+  AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2, Send
 } from 'lucide-react';
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
 
@@ -26,6 +26,8 @@ interface Props {
   // V2-ES.1 Paso 4
   onBatchCalculateES?: (periodId: string) => Promise<{ calculated: number; skipped: number; errors: number } | null>;
   onBatchDiff?: (periodId: string) => Promise<{ computed: number; errors: number } | null>;
+  // V2-ES.2 Paso 1
+  onStartApprovalWorkflow?: (periodId: string) => Promise<{ started: number; skipped: number; errors: number } | null>;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -42,7 +44,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 export function HRPayrollPeriodManager({
   companyId, periods, isLoading, onOpenPeriod, onUpdateStatus,
   onValidatePreClose, onSelectPeriod, onRefresh,
-  onBatchCalculateES, onBatchDiff,
+  onBatchCalculateES, onBatchDiff, onStartApprovalWorkflow,
 }: Props) {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newYear, setNewYear] = useState(new Date().getFullYear());
@@ -52,6 +54,7 @@ export function HRPayrollPeriodManager({
   const [validatingPeriodId, setValidatingPeriodId] = useState<string | null>(null);
   const [batchCalcLoading, setBatchCalcLoading] = useState<string | null>(null);
   const [batchDiffLoading, setBatchDiffLoading] = useState<string | null>(null);
+  const [approvalLoading, setApprovalLoading] = useState<string | null>(null);
   const [batchResult, setBatchResult] = useState<{ periodId: string; type: string; message: string } | null>(null);
 
   const handleCreate = async () => {
@@ -105,6 +108,21 @@ export function HRPayrollPeriodManager({
     }
   };
 
+  const handleStartApproval = async (periodId: string) => {
+    if (!onStartApprovalWorkflow) return;
+    setApprovalLoading(periodId);
+    setBatchResult(null);
+    const result = await onStartApprovalWorkflow(periodId);
+    setApprovalLoading(null);
+    if (result) {
+      setBatchResult({
+        periodId,
+        type: 'approval',
+        message: `Aprobación: ${result.started} enviadas, ${result.skipped} ya en flujo${result.errors > 0 ? `, ${result.errors} errores` : ''}`,
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -135,6 +153,7 @@ export function HRPayrollPeriodManager({
           const cfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.draft;
           const isCalcing = batchCalcLoading === p.id;
           const isDiffing = batchDiffLoading === p.id;
+          const isApproving = approvalLoading === p.id;
           const result = batchResult?.periodId === p.id ? batchResult : null;
 
           return (
@@ -179,6 +198,17 @@ export function HRPayrollPeriodManager({
                       >
                         {isDiffing ? <Loader2 className="h-3 w-3 animate-spin" /> : <TrendingUp className="h-3 w-3" />}
                         Comparativa
+                      </Button>
+                    )}
+                    {(p.status === 'calculated' || p.status === 'reviewing') && onStartApprovalWorkflow && (
+                      <Button
+                        variant="outline" size="sm"
+                        className="text-xs gap-1"
+                        onClick={() => handleStartApproval(p.id)}
+                        disabled={isApproving}
+                      >
+                        {isApproving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                        Enviar a aprobación
                       </Button>
                     )}
                     {(p.status === 'calculated' || p.status === 'reviewing') && (

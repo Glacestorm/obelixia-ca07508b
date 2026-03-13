@@ -341,6 +341,13 @@ serve(async (req) => {
               { name: 'Aprobación Dirección', step_type: 'approval', approver_role: 'HR_DIRECTOR', sla_hours: 48 },
             ]
           },
+          {
+            company_id, name: 'Aprobación de Nómina', process_type: 'payroll_approval', description: 'Flujo de revisión y aprobación de nóminas calculadas antes del cierre de período',
+            steps: [
+              { name: 'Revisión Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 48, comments_required: false, delegation_enabled: true },
+              { name: 'Aprobación Responsable RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, escalation_hours: 72, escalation_to_role: 'HR_DIRECTOR', comments_required: true, delegation_enabled: true },
+            ]
+          },
         ];
 
         let totalDefs = 0;
