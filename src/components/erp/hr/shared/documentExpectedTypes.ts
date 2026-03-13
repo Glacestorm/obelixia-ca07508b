@@ -1,20 +1,33 @@
 /**
  * documentExpectedTypes — Mapa estático de request_type → document_type[] esperados
  * V2-ES.3 Paso 4: Checklist documental informativo
+ * V2-ES.4 Paso 1: Enriquecido con referencia al catálogo documental España
  *
  * REGLAS:
  * - Todos los valores de document_type están en lowercase normalizado
  * - El matching se hace con normalizeDocType() para evitar falsos faltantes
  * - Este mapa es informativo, NO bloquea workflows
+ * - `catalogKey` permite lookup al catálogo para metadata adicional (retención, vencimiento)
  */
 
 import type { AdminRequestType } from '@/hooks/admin/hr/useAdminPortal';
+import { getCatalogEntry, type DocumentCatalogEntry } from './documentCatalogES';
 
 export interface ExpectedDocType {
   /** Valor normalizado (lowercase, sin tildes) para matching */
   type: string;
   /** Etiqueta legible para UI */
   label: string;
+  /** Clave del catálogo para metadata enriquecida (opcional, defaults to type) */
+  catalogKey?: string;
+}
+
+/**
+ * Obtiene la entrada del catálogo para un ExpectedDocType.
+ * Usa catalogKey si existe, si no usa type.
+ */
+export function getExpectedDocCatalogEntry(expected: ExpectedDocType): DocumentCatalogEntry | null {
+  return getCatalogEntry(expected.catalogKey ?? expected.type);
 }
 
 /**
