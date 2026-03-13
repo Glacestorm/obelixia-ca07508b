@@ -166,6 +166,13 @@ export type {
 // Expediente Documental & Compliance (DC)
 export { useHRDocumentExpedient } from './useHRDocumentExpedient';
 
+// Catálogo Documental Operativo (V2-ES.4)
+export { useHRDocumentCatalog } from './useHRDocumentCatalog';
+export type {
+  HRDocumentType,
+  HRDocumentCategory,
+} from './useHRDocumentCatalog';
+
 // Tasks Engine (WT)
 export { useHRTasksEngine } from './useHRTasksEngine';
 export type {
