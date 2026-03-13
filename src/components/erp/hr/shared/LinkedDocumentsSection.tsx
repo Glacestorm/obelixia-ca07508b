@@ -248,6 +248,7 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
                 <Badge variant="outline" className="text-[10px] shrink-0">
                   {CATEGORY_LABELS[doc.category] || doc.category}
                 </Badge>
+                <DocStatusBadge status={doc.document_status} />
               </div>
             ))}
           </div>
