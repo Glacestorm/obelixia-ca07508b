@@ -12,7 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   FileText, History, MessageSquare, Eye, ShieldCheck,
-  Download, CheckCircle2, Send, Clock, Scale, RefreshCw, BookOpen
+  Download, CheckCircle2, Send, Clock, Scale, RefreshCw, BookOpen,
+  HardDrive, FileUp
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentVersion, type DocumentComment, type DocumentAccessLog } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { formatDistanceToNow } from 'date-fns';

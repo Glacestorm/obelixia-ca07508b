@@ -48,8 +48,13 @@ export interface EmployeeDocument {
   /** Storage fields (V2-ES.4 Paso 2) */
   storage_path: string | null;
   storage_bucket: string | null;
+  storage_provider: string | null;
+  file_name: string | null;
   file_size_bytes: number | null;
   mime_type: string | null;
+  checksum: string | null;
+  external_reference: string | null;
+  uploaded_at: string | null;
   last_action_at: string | null;
   escalation_level: number;
   created_at: string;
