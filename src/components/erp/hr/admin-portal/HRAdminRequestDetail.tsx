@@ -11,7 +11,7 @@ import { ArrowLeft, CheckCircle, XCircle, RotateCcw, ListChecks, Clock, AlertTri
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
-import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus } from '@/hooks/admin/hr/useAdminPortal';
+import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
@@ -24,13 +24,14 @@ interface Props {
   request: AdminRequest;
   comments: AdminRequestComment[];
   activity: AdminRequestActivity[];
+  linkedTasks?: LinkedTask[];
   onBack: () => void;
   onUpdateStatus: (id: string, status: AdminRequestStatus, comment?: string) => Promise<boolean>;
   onAddComment: (requestId: string, content: string, isInternal: boolean) => Promise<boolean>;
   onGenerateTasks: (requestId: string) => Promise<void>;
 }
 
-export function HRAdminRequestDetail({ request, comments, activity, onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
+export function HRAdminRequestDetail({ request, comments, activity, linkedTasks = [], onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
   const meta = (request.metadata || {}) as Record<string, any>;
 
   return (
@@ -111,19 +112,19 @@ export function HRAdminRequestDetail({ request, comments, activity, onBack, onUp
             </CardContent>
           </Card>
 
-          {/* Tabs: Timeline + Comments */}
+          {/* V2-ES.2 Paso 5: Unified timeline + comments */}
           <Card>
             <Tabs defaultValue="timeline">
               <CardHeader className="pb-0">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="timeline" className="text-xs">Actividad</TabsTrigger>
+                  <TabsTrigger value="timeline" className="text-xs">Timeline unificado</TabsTrigger>
                   <TabsTrigger value="comments" className="text-xs">Comentarios ({comments.length})</TabsTrigger>
                 </TabsList>
               </CardHeader>
               <CardContent className="pt-4">
                 <TabsContent value="timeline" className="mt-0">
                   <ScrollArea className="h-[350px]">
-                    <HRAdminRequestTimeline activity={activity} />
+                    <HRAdminRequestTimeline activity={activity} comments={comments} linkedTasks={linkedTasks} />
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="comments" className="mt-0">

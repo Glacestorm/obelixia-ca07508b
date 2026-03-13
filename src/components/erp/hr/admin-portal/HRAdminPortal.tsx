@@ -71,6 +71,7 @@ export function HRAdminPortal({ companyId }: Props) {
           request={portal.detail}
           comments={portal.comments}
           activity={portal.activity}
+          linkedTasks={portal.linkedTasks}
           onBack={handleBack}
           onUpdateStatus={(id, s, c) => portal.updateStatus(id, s as AdminRequestStatus, c)}
           onAddComment={portal.addComment}
