@@ -34181,6 +34181,56 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_holiday_calendar: {
+        Row: {
+          company_id: string | null
+          country_code: string
+          created_at: string
+          holiday_date: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          region_code: string | null
+          scope: string
+          year: number
+        }
+        Insert: {
+          company_id?: string | null
+          country_code?: string
+          created_at?: string
+          holiday_date: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          region_code?: string | null
+          scope?: string
+          year?: number
+        }
+        Update: {
+          company_id?: string | null
+          country_code?: string
+          created_at?: string
+          holiday_date?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          region_code?: string | null
+          scope?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_holiday_calendar_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_industry_benchmarks: {
         Row: {
           avg_absenteeism_rate: number | null
