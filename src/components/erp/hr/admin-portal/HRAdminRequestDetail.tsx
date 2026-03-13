@@ -151,6 +151,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
             entityId={request.id}
             employeeId={request.employee_id}
             managementType={request.request_type}
+            onDocsLoaded={setLinkedDocs}
           />
         </div>
 
