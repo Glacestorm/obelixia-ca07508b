@@ -288,3 +288,15 @@ export type {
   CreateVersionParams,
   VersioningResult,
 } from './useDocumentFileVersions';
+
+// V2-ES.4 Paso 5: Generación documental automática
+export { useHRDocGenerationRules } from './useHRDocGenerationRules';
+export type {
+  DocGenerationRule,
+} from './useHRDocGenerationRules';
+
+export { useHRDocumentGenerator } from './useHRDocumentGenerator';
+export type {
+  GenerationContext,
+  GenerationResult,
+} from './useHRDocumentGenerator';
