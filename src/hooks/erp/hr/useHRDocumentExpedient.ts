@@ -34,6 +34,8 @@ export interface EmployeeDocument {
   integrity_verified_at: string | null;
   retention_policy_id: string | null;
   consent_id: string | null;
+  related_entity_type: RelatedEntityType | null;
+  related_entity_id: string | null;
   created_at: string;
   updated_at: string;
 }
