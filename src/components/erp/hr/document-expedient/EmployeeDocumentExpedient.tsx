@@ -110,6 +110,14 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterOrigin} onValueChange={v => setFilterOrigin(v as OriginFilterValue)}>
+            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ORIGIN_FILTER_OPTIONS.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button size="sm" className="gap-1.5">
             <Upload className="h-4 w-4" /> Subir documento
           </Button>
