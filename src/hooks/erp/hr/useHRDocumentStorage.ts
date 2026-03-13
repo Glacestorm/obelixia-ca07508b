@@ -479,10 +479,12 @@ export function useHRDocumentStorage(companyId: string) {
         .eq('company_id', companyId);
 
       if (updateError) {
+        logFileAudit('file_delete', documentId, false, { storage_path: storagePath, error_message: 'Metadata cleanup failed' });
         return fail(createStorageError('METADATA_UPDATE_FAILED', 'Archivo eliminado pero error al limpiar metadata', updateError));
       }
 
       invalidateDocs();
+      logFileAudit('file_delete', documentId, true, { storage_path: storagePath });
       toast.success('Archivo eliminado');
       return ok(undefined);
     } finally {
