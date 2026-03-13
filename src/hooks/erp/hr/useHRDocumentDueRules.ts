@@ -253,8 +253,12 @@ export function useHRDocumentDueRules() {
   /**
    * Calcula todos los plazos de un proceso dado un trigger date.
    */
-  function getProcessDeadlines(processType: string, triggerDate: Date): DueDateResult[] {
-    return computeProcessDeadlines(rules, processType, triggerDate);
+  function getProcessDeadlines(
+    processType: string,
+    triggerDate: Date,
+    holidays: HolidayCalendar = EMPTY_CALENDAR,
+  ): DueDateResult[] {
+    return computeProcessDeadlines(rules, processType, triggerDate, new Date(), holidays);
   }
 
   return {
