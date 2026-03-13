@@ -192,24 +192,15 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 </div>
               )}
               <Separator />
-              <DocumentCompletenessIndicator
-                managementType={request.request_type}
+              {/* V2-ES.4 Paso 2.6: Resumen ejecutivo unificado */}
+              <ExpedientExecutiveSummary
                 docs={linkedDocs}
+                completeness={completeness}
+                processType={request.request_type}
               />
               <ProcessDeadlinesSummary
                 processType={request.request_type}
                 triggerDate={request.created_at}
-              />
-              <DocumentAlertsSummary
-                docs={linkedDocs}
-                mandatoryMissing={completeness?.mandatoryMissing}
-                maxVisible={4}
-              />
-              <DocActionQueuePanel
-                employeeId={request.employee_id}
-                relatedEntityType="admin_request"
-                relatedEntityId={request.id}
-                docs={linkedDocs}
               />
               <Separator />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
