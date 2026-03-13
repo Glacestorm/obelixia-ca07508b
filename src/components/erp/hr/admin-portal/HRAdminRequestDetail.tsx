@@ -11,7 +11,7 @@ import { ArrowLeft, CheckCircle, XCircle, RotateCcw, ListChecks, Clock, AlertTri
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
-import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus } from '@/hooks/admin/hr/useAdminPortal';
+import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
