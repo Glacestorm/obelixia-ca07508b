@@ -413,8 +413,10 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
                           {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {doc.ai_indexed ? (
+                     <TableCell>
+                       <DocumentOriginBadge relatedEntityType={(doc as any).related_entity_type} />
+                     </TableCell>
+                     <TableCell>
                           <div className="flex items-center gap-1">
                             <CheckCircle className="h-4 w-4 text-emerald-500" />
                             <span className="text-xs text-muted-foreground">
