@@ -80,7 +80,7 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
     setLoading(true);
     try {
       // Use only columns that exist in the table
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employee_documents?company_id=eq.${companyId}&select=id,employee_id,document_name,document_type,file_url,file_size,mime_type,expiry_date,is_confidential,ai_indexed,ai_summary,ai_document_type,ai_confidence,created_at,erp_hr_employees(first_name,last_name)&order=created_at.desc`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/erp_hr_employee_documents?company_id=eq.${companyId}&select=id,employee_id,document_name,document_type,file_url,file_size,mime_type,expiry_date,is_confidential,ai_indexed,ai_summary,ai_document_type,ai_confidence,related_entity_type,related_entity_id,created_at,erp_hr_employees(first_name,last_name)&order=created_at.desc`;
       
       const response = await fetch(url, {
         headers: {
