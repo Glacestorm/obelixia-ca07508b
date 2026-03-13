@@ -156,6 +156,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
 
           {/* V2-ES.3 Paso 2: Linked documents */}
           <LinkedDocumentsSection
+            key={docsRefreshKey}
             companyId={request.company_id}
             entityType="admin_request"
             entityId={request.id}
@@ -167,6 +168,15 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* V2-ES.4 Paso 5.3: Auto-generate documents button */}
+          <DocAutoGenerateButton
+            companyId={request.company_id}
+            employeeId={request.employee_id}
+            employeeName={request.employee_name}
+            requestType={request.request_type}
+            requestId={request.id}
+            onGenerated={handleDocsGenerated}
+          />
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Información</CardTitle>
