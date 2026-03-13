@@ -236,6 +236,45 @@ export function useHRDocumentStorage(companyId: string) {
     qc.invalidateQueries({ queryKey: ['hr-documents', companyId] });
   }, [qc, companyId]);
 
+  /**
+   * Log file storage audit event to erp_hr_document_access_log.
+   * Best-effort — never blocks or fails the parent operation.
+   */
+  const logFileAudit = useCallback(async (
+    action: 'file_upload' | 'file_replace' | 'file_download' | 'file_preview' | 'file_delete',
+    documentId: string,
+    success: boolean,
+    meta?: {
+      employee_id?: string;
+      file_name?: string;
+      mime_type?: string;
+      file_size_bytes?: number;
+      storage_path?: string;
+      checksum?: string;
+      error_message?: string;
+    },
+  ) => {
+    try {
+      await (supabase as any)
+        .from('erp_hr_document_access_log')
+        .insert({
+          company_id: companyId,
+          document_id: documentId,
+          document_table: 'erp_hr_employee_documents',
+          action,
+          user_agent: navigator.userAgent,
+          metadata: {
+            ...meta,
+            success,
+            storage_provider: 'supabase',
+            storage_bucket: HR_DOC_BUCKET,
+          },
+        });
+    } catch (e) {
+      console.warn('[useHRDocumentStorage] audit log failed (non-blocking):', e);
+    }
+  }, [companyId]);
+
   // ── Upload ─────────────────────────────────────────────────────────────────
 
   /**
