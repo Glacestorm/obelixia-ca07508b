@@ -26,6 +26,7 @@ import { DocReconciliationBadge, isReconcilableDocType } from '../shared/DocReco
 import { DocReconciliationToggle } from '../shared/DocReconciliationToggle';
 import { DocFileUpload } from '../shared/DocFileUpload';
 import { DocFilePreview } from '../shared/DocFilePreview';
+import { DocVersionHistory } from '../shared/DocVersionHistory';
 
 interface Props {
   companyId: string;
