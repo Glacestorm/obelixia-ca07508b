@@ -160,6 +160,33 @@ const ES_CONCEPT_CATALOG: ESPayrollConceptDef[] = [
   { code: 'ES_COSTE_EMPRESA_TOTAL', name: 'Coste total empresa', line_type: 'informative', category: 'informative', taxable: false, contributable: false, is_percentage: false, sort_order: 310 },
 ];
 
+// ── V2-ES.1 Paso 3: Types ──
+
+export interface PayrollDiff {
+  concept_code: string;
+  concept_name: string;
+  previous_amount: number;
+  current_amount: number;
+  diff_amount: number;
+  diff_pct: number;
+}
+
+export interface DiffVsPrevious {
+  employee_id: string;
+  previous_period_id: string;
+  current_period_id: string;
+  previous_gross: number;
+  current_gross: number;
+  previous_net: number;
+  current_net: number;
+  diff_gross: number;
+  diff_net: number;
+  line_diffs: PayrollDiff[];
+  computed_at: string;
+}
+
+export type ReviewAction = 'approve' | 'flag' | 'reviewed';
+
 // ── Hook ──
 
 export function useESPayrollBridge(companyId?: string) {
