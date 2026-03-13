@@ -19,6 +19,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getCatalogEntry } from '../shared/documentCatalogES';
 import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
+import { DocStatusBadge } from '../shared/DocStatusBadge';
+import { DocReconciliationBadge, isReconcilableDocType } from '../shared/DocReconciliationBadge';
+import { DocReconciliationToggle } from '../shared/DocReconciliationToggle';
 
 interface Props {
   companyId: string;
@@ -70,12 +73,22 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
             <Badge variant="outline">{doc.category}</Badge>
             <Badge variant="secondary">v{doc.version}</Badge>
             <Badge variant="outline">{doc.source}</Badge>
+            <DocStatusBadge status={doc.document_status} />
             {doc.is_confidential && <Badge variant="destructive">Confidencial</Badge>}
             {doc.integrity_verified && (
               <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">
                 <CheckCircle2 className="h-3 w-3 mr-1" /> Verificado
               </Badge>
             )}
+            <DocReconciliationBadge
+              documentType={doc.document_type}
+              flags={{
+                reconciled_with_payroll: doc.reconciled_with_payroll,
+                reconciled_with_social_security: doc.reconciled_with_social_security,
+                reconciled_with_tax: doc.reconciled_with_tax,
+                reconciliation_notes: doc.reconciliation_notes,
+              }}
+            />
           </div>
 
           {/* Actions */}
@@ -163,6 +176,23 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
                         <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <span className="text-xs">{catalogEntry.description}</span>
                       </div>
+                    </div>
+                  )}
+
+                  {/* V2-ES.4 Paso 2.4: Conciliación manual */}
+                  {isReconcilableDocType(doc.document_type) && (
+                    <div className="mt-3 pt-3 border-t space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Conciliación contable</p>
+                      <DocReconciliationToggle
+                        documentId={doc.id}
+                        documentType={doc.document_type}
+                        currentFlags={{
+                          reconciled_with_payroll: doc.reconciled_with_payroll,
+                          reconciled_with_social_security: doc.reconciled_with_social_security,
+                          reconciled_with_tax: doc.reconciled_with_tax,
+                          reconciliation_notes: doc.reconciliation_notes,
+                        }}
+                      />
                     </div>
                   )}
                 </CardContent>
