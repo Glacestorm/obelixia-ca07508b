@@ -9,6 +9,7 @@ import {
   User, Calendar, Link2, Tag, Zap
 } from 'lucide-react';
 import type { HRTask } from '@/hooks/erp/hr/useHRTasksEngine';
+import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 
 interface Props {
   task: HRTask;
@@ -177,6 +178,19 @@ export function TaskDetail({ task, engine, onClose }: Props) {
         {task.completed_at && <p>Completada: {new Date(task.completed_at).toLocaleString('es-ES')}</p>}
         {task.escalation_at && <p>Escalada: {new Date(task.escalation_at).toLocaleString('es-ES')}</p>}
       </div>
+
+      {/* V2-ES.3 Paso 2: Linked documents */}
+      {task.company_id && (
+        <>
+          <Separator />
+          <LinkedDocumentsSection
+            companyId={task.company_id}
+            entityType="hr_task"
+            entityId={task.id}
+            employeeId={task.employee_id}
+          />
+        </>
+      )}
 
       {/* Actions */}
       {isActive && (
