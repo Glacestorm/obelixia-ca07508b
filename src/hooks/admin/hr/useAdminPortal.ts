@@ -470,16 +470,21 @@ export function useAdminPortal(companyId: string) {
   // === FETCH DETAIL ===
   const fetchDetail = useCallback(async (id: string) => {
     try {
-      const [reqRes, commRes, actRes] = await Promise.all([
+      const [reqRes, commRes, actRes, tasksRes] = await Promise.all([
         supabase.from('hr_admin_requests').select('*').eq('id', id).single(),
         supabase.from('hr_admin_request_comments').select('*').eq('request_id', id).order('created_at', { ascending: true }),
         supabase.from('hr_admin_request_activity').select('*').eq('request_id', id).order('created_at', { ascending: false }),
+        // V2-ES.2 Paso 5: Fetch linked tasks for unified timeline
+        supabase.from('hr_tasks').select('id, title, status, priority, created_at, updated_at')
+          .eq('related_entity_type', 'admin_request').eq('related_entity_id', id)
+          .order('created_at', { ascending: false }),
       ]);
 
       if (reqRes.error) throw reqRes.error;
       setDetail(reqRes.data as AdminRequest);
       setComments((commRes.data || []) as AdminRequestComment[]);
       setActivity((actRes.data || []) as AdminRequestActivity[]);
+      setLinkedTasks((tasksRes.data || []) as LinkedTask[]);
     } catch (err) {
       console.error('[useAdminPortal] fetchDetail:', err);
       toast.error('Error al cargar detalle');
