@@ -1,6 +1,7 @@
 /**
  * HRAdminRequestDetail — Full detail view with actions, timeline, comments
  */
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,8 @@ import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
+import { DocumentCompletenessIndicator } from '../shared/DocumentCompletenessIndicator';
+import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
@@ -34,6 +37,7 @@ interface Props {
 
 export function HRAdminRequestDetail({ request, comments, activity, linkedTasks = [], onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
   const meta = (request.metadata || {}) as Record<string, any>;
+  const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
 
   return (
     <div className="space-y-4">
@@ -147,6 +151,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
             entityId={request.id}
             employeeId={request.employee_id}
             managementType={request.request_type}
+            onDocsLoaded={setLinkedDocs}
           />
         </div>
 
@@ -181,6 +186,11 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                   <span>{new Date(request.resolved_at).toLocaleDateString('es')}</span>
                 </div>
               )}
+              <Separator />
+              <DocumentCompletenessIndicator
+                managementType={request.request_type}
+                docs={linkedDocs}
+              />
               <Separator />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
