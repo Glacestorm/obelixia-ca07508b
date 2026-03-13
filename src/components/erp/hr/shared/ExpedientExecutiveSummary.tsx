@@ -166,6 +166,17 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, doc
     });
   }
 
+  // 7. V2-ES.4 Paso 4: Documentos con historial de versiones
+  if (docsWithVersionHistory != null && docsWithVersionHistory > 0) {
+    metrics.push({
+      icon: History,
+      label: 'Con historial',
+      value: String(docsWithVersionHistory),
+      severity: 'ok',
+      tooltip: `${docsWithVersionHistory} documento(s) con versiones previas de archivo`,
+    });
+  }
+
   const SEVERITY_STYLE: Record<string, string> = {
     ok: 'text-emerald-600',
     warn: 'text-amber-600',
