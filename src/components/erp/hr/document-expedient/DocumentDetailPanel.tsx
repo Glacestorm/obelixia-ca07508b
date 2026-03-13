@@ -12,11 +12,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   FileText, History, MessageSquare, Eye, ShieldCheck,
-  Download, CheckCircle2, Send, Clock
+  Download, CheckCircle2, Send, Clock, Scale, RefreshCw, BookOpen
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentVersion, type DocumentComment, type DocumentAccessLog } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getCatalogEntry } from '../shared/documentCatalogES';
+import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
 
 interface Props {
   companyId: string;
