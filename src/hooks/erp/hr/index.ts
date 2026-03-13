@@ -309,3 +309,6 @@ export type {
   HolidayEntry,
   HolidayCalendarContext,
 } from './useHRHolidayCalendar';
+
+// V2-ES.4+: Version counts batch hook
+export { useDocumentVersionCounts } from './useDocumentVersionCounts';
