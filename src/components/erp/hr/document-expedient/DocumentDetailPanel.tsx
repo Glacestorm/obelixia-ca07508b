@@ -73,12 +73,22 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
             <Badge variant="outline">{doc.category}</Badge>
             <Badge variant="secondary">v{doc.version}</Badge>
             <Badge variant="outline">{doc.source}</Badge>
+            <DocStatusBadge status={doc.document_status} />
             {doc.is_confidential && <Badge variant="destructive">Confidencial</Badge>}
             {doc.integrity_verified && (
               <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">
                 <CheckCircle2 className="h-3 w-3 mr-1" /> Verificado
               </Badge>
             )}
+            <DocReconciliationBadge
+              documentType={doc.document_type}
+              flags={{
+                reconciled_with_payroll: doc.reconciled_with_payroll,
+                reconciled_with_social_security: doc.reconciled_with_social_security,
+                reconciled_with_tax: doc.reconciled_with_tax,
+                reconciliation_notes: doc.reconciliation_notes,
+              }}
+            />
           </div>
 
           {/* Actions */}
