@@ -153,6 +153,7 @@ export function HRPayrollPeriodManager({
           const cfg = STATUS_CONFIG[p.status] || STATUS_CONFIG.draft;
           const isCalcing = batchCalcLoading === p.id;
           const isDiffing = batchDiffLoading === p.id;
+          const isApproving = approvalLoading === p.id;
           const result = batchResult?.periodId === p.id ? batchResult : null;
 
           return (
