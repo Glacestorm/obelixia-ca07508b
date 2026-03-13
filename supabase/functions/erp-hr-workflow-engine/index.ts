@@ -178,6 +178,31 @@ serve(async (req) => {
           _severity: decision === 'rejected' ? 'warning' : 'info'
         });
 
+        // V2-ES.2 Paso 1 fix: Reverse sync to hr_payroll_records when entity_type = 'payroll_record'
+        if (instance.entity_type === 'payroll_record' && instance.entity_id) {
+          // Determine final workflow status after this decision
+          const isLastStep = decision === 'approved' && !steps.find((s: any) => s.step_order === currentStep.step_order + 1);
+          const reviewStatusMap: Record<string, string> = {
+            approved: isLastStep ? 'approved' : 'reviewed',  // Only 'approved' when all steps done
+            rejected: 'flagged',
+            returned: 'flagged',
+          };
+          const reviewStatus = reviewStatusMap[decision] || 'reviewed';
+
+          try {
+            await supabase.from('hr_payroll_records').update({
+              review_status: reviewStatus,
+              reviewed_by: user.id,
+              reviewed_at: new Date().toISOString(),
+              review_notes: comment || `Decisión workflow: ${decision}`,
+            }).eq('id', instance.entity_id);
+            console.log(`[decide_step] Synced review_status=${reviewStatus} for payroll_record ${instance.entity_id}`);
+          } catch (syncErr) {
+            console.warn('[decide_step] Reverse sync to hr_payroll_records failed:', syncErr);
+            // Non-blocking: workflow decision is authoritative
+          }
+        }
+
         result = dec;
         break;
       }
