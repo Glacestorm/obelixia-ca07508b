@@ -73,10 +73,8 @@ export function computeDueDate(
       break;
 
     case 'business_days': {
-      // MVP approximation: multiply by ~1.4 to account for weekends
-      const approxCalendarDays = Math.ceil(rule.due_offset_days * 1.4);
-      dueDate = new Date(triggerDate);
-      dueDate.setDate(dueDate.getDate() + approxCalendarDays);
+      // Exclude weekends (sat/sun). No public holidays yet.
+      dueDate = addBusinessDays(triggerDate, rule.due_offset_days);
       break;
     }
 

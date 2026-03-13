@@ -45,6 +45,13 @@ export interface EmployeeDocument {
   reconciliation_notes: string | null;
   reconciled_at: string | null;
   reconciled_by: string | null;
+  /** Storage fields (V2-ES.4 Paso 2) */
+  storage_path: string | null;
+  storage_bucket: string | null;
+  file_size_bytes: number | null;
+  mime_type: string | null;
+  last_action_at: string | null;
+  escalation_level: number;
   created_at: string;
   updated_at: string;
 }
