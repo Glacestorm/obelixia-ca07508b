@@ -131,7 +131,7 @@ export function useHRDocumentGenerator() {
               related_entity_id: context.relatedEntityId ?? null,
               uploaded_by: userId ?? null,
               metadata: {
-                generation_mode: 'auto',
+                generation_mode: rule.generation_mode ?? 'auto',
                 generation_rule_id: rule.id,
                 process_type: context.requestType,
                 generated_at: new Date().toISOString(),
