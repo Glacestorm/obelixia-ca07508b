@@ -23,6 +23,21 @@ const PRIORITY_STYLES: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
 };
 
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  manual: 'Manual',
+  workflow: 'Workflow',
+  admin_request: 'Solicitud administrativa',
+  system: 'Sistema',
+  scheduled: 'Programada',
+};
+
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+  admin_request: 'Solicitud',
+  payroll_record: 'Nómina',
+  contract: 'Contrato',
+  employee: 'Empleado',
+};
+
 export function TaskDetail({ task, engine, onClose }: Props) {
   const isActive = task.status === 'pending' || task.status === 'in_progress';
 
