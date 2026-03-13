@@ -623,6 +623,14 @@ export function useESPayrollBridge(companyId?: string) {
         return null;
       }
 
+      // 2b. Idempotency guard: fetch existing records for this period
+      const { data: existingRecords } = await supabase
+        .from('hr_payroll_records')
+        .select('id, employee_id')
+        .eq('payroll_period_id', periodId);
+      const existingByEmployee = new Map<string, string>();
+      (existingRecords || []).forEach((r: any) => existingByEmployee.set(r.employee_id, r.id));
+
       // 3. Get labor data for all employees
       const employeeIds = employees.map(e => e.id);
       const { data: laborDataList } = await supabase
@@ -657,6 +665,12 @@ export function useESPayrollBridge(companyId?: string) {
       // 7. Calculate for each employee
       for (const emp of employees) {
         try {
+          // Idempotency: skip if already calculated for this period
+          if (existingByEmployee.has(emp.id)) {
+            results.push({ employeeId: emp.id, success: false, error: 'skipped_already_exists' });
+            continue;
+          }
+
           const laborData = (laborDataList || []).find((ld: any) => ld.employee_id === emp.id);
           if (!laborData) {
             results.push({ employeeId: emp.id, success: false, error: 'Sin datos laborales ES' });
@@ -745,10 +759,13 @@ export function useESPayrollBridge(companyId?: string) {
       }
 
       const calculated = results.filter(r => r.success).length;
-      const errors = results.filter(r => !r.success).length;
+      const skipped = results.filter(r => !r.success && r.error === 'skipped_already_exists').length;
+      const errors = results.filter(r => !r.success && r.error !== 'skipped_already_exists').length;
 
       if (calculated > 0) {
-        toast.success(`${calculated} nóminas calculadas${errors > 0 ? `, ${errors} errores` : ''}`);
+        toast.success(`${calculated} nóminas calculadas${skipped > 0 ? `, ${skipped} ya existentes` : ''}${errors > 0 ? `, ${errors} errores` : ''}`);
+      } else if (skipped > 0 && errors === 0) {
+        toast.info(`Todas las nóminas ya están calculadas (${skipped} existentes)`);
       } else {
         toast.error(`Ninguna nómina calculada. ${errors} errores.`);
       }
