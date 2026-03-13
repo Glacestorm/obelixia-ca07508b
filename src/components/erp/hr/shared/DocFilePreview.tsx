@@ -52,7 +52,7 @@ export function DocFilePreview({
   const isImage = mimeType?.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
 
-  const auditMeta = { file_name: fileName ?? undefined, mime_type: mimeType ?? undefined, file_size_bytes: fileSizeBytes ?? undefined, storage_path: storagePath ?? undefined };
+  const auditMeta = useMemo(() => ({ file_name: fileName ?? undefined, mime_type: mimeType ?? undefined, file_size_bytes: fileSizeBytes ?? undefined, storage_path: storagePath ?? undefined }), [fileName, mimeType, fileSizeBytes, storagePath]);
 
   // ── Load preview URL ──
   const handlePreview = useCallback(async () => {
