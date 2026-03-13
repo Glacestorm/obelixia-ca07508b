@@ -665,6 +665,12 @@ export function useESPayrollBridge(companyId?: string) {
       // 7. Calculate for each employee
       for (const emp of employees) {
         try {
+          // Idempotency: skip if already calculated for this period
+          if (existingByEmployee.has(emp.id)) {
+            results.push({ employeeId: emp.id, success: false, error: 'skipped_already_exists' });
+            continue;
+          }
+
           const laborData = (laborDataList || []).find((ld: any) => ld.employee_id === emp.id);
           if (!laborData) {
             results.push({ employeeId: emp.id, success: false, error: 'Sin datos laborales ES' });
