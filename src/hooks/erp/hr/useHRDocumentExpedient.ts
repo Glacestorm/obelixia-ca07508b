@@ -493,6 +493,7 @@ export function useHRDocumentExpedient(companyId: string) {
     documents: documentsQuery.data ?? [],
     isLoadingDocuments: documentsQuery.isLoading,
     fetchDocumentsByEmployee,
+    fetchDocumentsByEntity,
     uploadDocument,
     deleteDocument,
     verifyIntegrity,
