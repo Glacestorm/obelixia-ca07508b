@@ -178,6 +178,23 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
                       </div>
                     </div>
                   )}
+
+                  {/* V2-ES.4 Paso 2.4: Conciliación manual */}
+                  {isReconcilableDocType(doc.document_type) && (
+                    <div className="mt-3 pt-3 border-t space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Conciliación contable</p>
+                      <DocReconciliationToggle
+                        documentId={doc.id}
+                        documentType={doc.document_type}
+                        currentFlags={{
+                          reconciled_with_payroll: doc.reconciled_with_payroll,
+                          reconciled_with_social_security: doc.reconciled_with_social_security,
+                          reconciled_with_tax: doc.reconciled_with_tax,
+                          reconciliation_notes: doc.reconciliation_notes,
+                        }}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
