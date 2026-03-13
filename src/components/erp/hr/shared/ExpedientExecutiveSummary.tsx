@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import {
   FileText, ShieldAlert, XCircle, Clock, Send,
   CheckCircle2, AlertCircle, AlertTriangle, Scale,
-  ChevronDown, ChevronUp, Zap, History,
+  ChevronDown, ChevronUp, Zap, History, FilePlus2,
 } from 'lucide-react';
 import { normalizeDocStatus } from './DocStatusBadge';
 import { isReconcilableDocType } from './DocReconciliationBadge';
