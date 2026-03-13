@@ -57,6 +57,8 @@ export interface EmployeeDocument {
   uploaded_at: string | null;
   last_action_at: string | null;
   escalation_level: number;
+  /** Metadata JSON (V2-ES.4 Paso 5) — includes generation_mode for auto-generated docs */
+  metadata: Record<string, any> | null;
   created_at: string;
   updated_at: string;
 }
