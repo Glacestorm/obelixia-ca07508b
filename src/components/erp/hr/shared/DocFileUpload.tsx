@@ -92,8 +92,9 @@ export function DocFileUpload({
         setState('success');
         onUploadComplete?.();
       } else {
+        const err = result as { ok: false; error: { message: string } };
         setState('error');
-        setErrorMessage(result.error.message);
+        setErrorMessage(err.error.message);
         setProgress(0);
       }
     } catch {
