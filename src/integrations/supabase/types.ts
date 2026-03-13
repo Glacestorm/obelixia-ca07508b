@@ -80818,6 +80818,10 @@ export type Database = {
         Returns: undefined
       }
       seed_default_taxes: { Args: { p_company_id: string }; Returns: undefined }
+      storage_hr_doc_company_id: {
+        Args: { object_name: string }
+        Returns: string
+      }
       subscribe_to_channel: {
         Args: {
           p_channel_name: string
