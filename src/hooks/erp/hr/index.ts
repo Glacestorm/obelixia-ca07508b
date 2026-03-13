@@ -220,6 +220,16 @@ export type {
   ExpedientStats,
 } from './useHRDocumentExpedient';
 
+// V2-ES.4 Paso 2: Cola de acciones documentales
+export { useHRDocActionQueue, computePendingActions } from './useHRDocActionQueue';
+export type {
+  DocActionType,
+  DocActionPriority,
+  DocActionStatus,
+  DocAction,
+  DocActionSummary,
+} from './useHRDocActionQueue';
+
 // People Analytics + IA (PA)
 export { usePeopleAnalytics } from './usePeopleAnalytics';
 export type {
