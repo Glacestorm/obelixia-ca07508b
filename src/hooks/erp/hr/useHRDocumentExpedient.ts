@@ -38,6 +38,13 @@ export interface EmployeeDocument {
   related_entity_id: string | null;
   /** Estado operativo del documento (V2-ES.4). Legacy docs default to 'draft'. */
   document_status: string;
+  /** Conciliación documental (V2-ES.4 subfase). Flags manuales. */
+  reconciled_with_payroll: boolean;
+  reconciled_with_social_security: boolean;
+  reconciled_with_tax: boolean;
+  reconciliation_notes: string | null;
+  reconciled_at: string | null;
+  reconciled_by: string | null;
   created_at: string;
   updated_at: string;
 }
