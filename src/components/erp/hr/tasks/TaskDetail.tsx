@@ -179,6 +179,19 @@ export function TaskDetail({ task, engine, onClose }: Props) {
         {task.escalation_at && <p>Escalada: {new Date(task.escalation_at).toLocaleString('es-ES')}</p>}
       </div>
 
+      {/* V2-ES.3 Paso 2: Linked documents */}
+      {task.company_id && (
+        <>
+          <Separator />
+          <LinkedDocumentsSection
+            companyId={task.company_id}
+            entityType="hr_task"
+            entityId={task.id}
+            employeeId={task.employee_id}
+          />
+        </>
+      )}
+
       {/* Actions */}
       {isActive && (
         <>
