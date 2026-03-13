@@ -143,6 +143,29 @@ export function useHRDocumentGenerator() {
 
           if (insertError) throw insertError;
 
+          // Audit: log generation event (best-effort)
+          if (newDoc?.id) {
+            (supabase as any)
+              .from('erp_hr_document_access_log')
+              .insert({
+                document_id: newDoc.id,
+                document_table: 'erp_hr_employee_documents',
+                user_id: userId ?? null,
+                action: 'doc_auto_generated',
+                metadata: {
+                  generation_mode: rule.generation_mode ?? 'auto',
+                  generation_rule_id: rule.id,
+                  process_type: context.requestType,
+                  document_type_code: rule.document_type_code,
+                  related_entity_type: context.relatedEntityType,
+                  related_entity_id: context.relatedEntityId,
+                },
+              })
+              .then(({ error: auditErr }: any) => {
+                if (auditErr) console.warn('[useHRDocumentGenerator] Audit log failed (non-blocking):', auditErr.message);
+              });
+          }
+
           result.generated++;
           result.details.push({
             documentType: rule.document_type_code,
