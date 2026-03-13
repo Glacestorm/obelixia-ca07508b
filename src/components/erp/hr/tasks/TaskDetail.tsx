@@ -9,6 +9,7 @@ import {
   User, Calendar, Link2, Tag, Zap
 } from 'lucide-react';
 import type { HRTask } from '@/hooks/erp/hr/useHRTasksEngine';
+import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 
 interface Props {
   task: HRTask;
