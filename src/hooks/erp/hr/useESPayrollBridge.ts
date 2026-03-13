@@ -895,6 +895,279 @@ export function useESPayrollBridge(companyId?: string) {
     }
   }, [companyId]);
 
+  // ── V2-ES.1 Paso 3: Comparativa vs período anterior ──
+  export interface PayrollDiff {
+    concept_code: string;
+    concept_name: string;
+    previous_amount: number;
+    current_amount: number;
+    diff_amount: number;
+    diff_pct: number;
+  }
+
+  export interface DiffVsPrevious {
+    employee_id: string;
+    previous_period_id: string;
+    current_period_id: string;
+    previous_gross: number;
+    current_gross: number;
+    previous_net: number;
+    current_net: number;
+    diff_gross: number;
+    diff_net: number;
+    line_diffs: PayrollDiff[];
+    computed_at: string;
+  }
+
+  const computeDiffVsPrevious = useCallback(async (
+    recordId: string,
+    currentPeriodId: string,
+  ): Promise<DiffVsPrevious | null> => {
+    if (!companyId) return null;
+
+    try {
+      // 1. Get current record
+      const { data: currentRec } = await supabase
+        .from('hr_payroll_records')
+        .select('id, employee_id, gross_salary, net_salary, payroll_period_id')
+        .eq('id', recordId)
+        .single();
+      if (!currentRec) throw new Error('Record no encontrado');
+      const cur = currentRec as any;
+
+      // 2. Find the previous period (same company, period_number - 1 or by date)
+      const { data: currentPeriod } = await supabase
+        .from('hr_payroll_periods')
+        .select('fiscal_year, period_number')
+        .eq('id', currentPeriodId)
+        .single();
+      if (!currentPeriod) throw new Error('Período actual no encontrado');
+      const cp = currentPeriod as any;
+
+      const prevPeriodNumber = cp.period_number - 1;
+      const prevFiscalYear = prevPeriodNumber <= 0 ? cp.fiscal_year - 1 : cp.fiscal_year;
+      const prevPeriodNum = prevPeriodNumber <= 0 ? 12 : prevPeriodNumber;
+
+      const { data: prevPeriod } = await supabase
+        .from('hr_payroll_periods')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('fiscal_year', prevFiscalYear)
+        .eq('period_number', prevPeriodNum)
+        .single();
+
+      if (!prevPeriod) {
+        // No previous period exists — store empty diff
+        const emptyDiff: DiffVsPrevious = {
+          employee_id: cur.employee_id,
+          previous_period_id: '',
+          current_period_id: currentPeriodId,
+          previous_gross: 0,
+          current_gross: cur.gross_salary,
+          previous_net: 0,
+          current_net: cur.net_salary,
+          diff_gross: cur.gross_salary,
+          diff_net: cur.net_salary,
+          line_diffs: [],
+          computed_at: new Date().toISOString(),
+        };
+        await supabase.from('hr_payroll_records').update({
+          diff_vs_previous: emptyDiff as any,
+        } as any).eq('id', recordId);
+        return emptyDiff;
+      }
+
+      // 3. Get previous record for same employee
+      const { data: prevRec } = await supabase
+        .from('hr_payroll_records')
+        .select('id, gross_salary, net_salary')
+        .eq('payroll_period_id', (prevPeriod as any).id)
+        .eq('employee_id', cur.employee_id)
+        .single();
+
+      if (!prevRec) {
+        const noPrevDiff: DiffVsPrevious = {
+          employee_id: cur.employee_id,
+          previous_period_id: (prevPeriod as any).id,
+          current_period_id: currentPeriodId,
+          previous_gross: 0,
+          current_gross: cur.gross_salary,
+          previous_net: 0,
+          current_net: cur.net_salary,
+          diff_gross: cur.gross_salary,
+          diff_net: cur.net_salary,
+          line_diffs: [],
+          computed_at: new Date().toISOString(),
+        };
+        await supabase.from('hr_payroll_records').update({
+          diff_vs_previous: noPrevDiff as any,
+        } as any).eq('id', recordId);
+        return noPrevDiff;
+      }
+
+      const prev = prevRec as any;
+
+      // 4. Get lines for both records
+      const { data: currentLines } = await supabase
+        .from('hr_payroll_record_lines')
+        .select('concept_code, concept_name, amount')
+        .eq('payroll_record_id', recordId);
+
+      const { data: prevLines } = await supabase
+        .from('hr_payroll_record_lines')
+        .select('concept_code, concept_name, amount')
+        .eq('payroll_record_id', prev.id);
+
+      // 5. Build line-level diff
+      const allCodes = new Set<string>();
+      (currentLines || []).forEach((l: any) => allCodes.add(l.concept_code));
+      (prevLines || []).forEach((l: any) => allCodes.add(l.concept_code));
+
+      const lineDiffs: PayrollDiff[] = [];
+      for (const code of allCodes) {
+        const curLine = (currentLines || []).find((l: any) => l.concept_code === code) as any;
+        const prevLine = (prevLines || []).find((l: any) => l.concept_code === code) as any;
+        const curAmt = curLine ? curLine.amount : 0;
+        const prevAmt = prevLine ? prevLine.amount : 0;
+        const diffAmt = Math.round((curAmt - prevAmt) * 100) / 100;
+        if (diffAmt === 0) continue; // skip unchanged
+        lineDiffs.push({
+          concept_code: code,
+          concept_name: curLine?.concept_name || prevLine?.concept_name || code,
+          previous_amount: prevAmt,
+          current_amount: curAmt,
+          diff_amount: diffAmt,
+          diff_pct: prevAmt !== 0 ? Math.round((diffAmt / prevAmt) * 10000) / 100 : 100,
+        });
+      }
+
+      const diff: DiffVsPrevious = {
+        employee_id: cur.employee_id,
+        previous_period_id: (prevPeriod as any).id,
+        current_period_id: currentPeriodId,
+        previous_gross: prev.gross_salary,
+        current_gross: cur.gross_salary,
+        previous_net: prev.net_salary,
+        current_net: cur.net_salary,
+        diff_gross: Math.round((cur.gross_salary - prev.gross_salary) * 100) / 100,
+        diff_net: Math.round((cur.net_salary - prev.net_salary) * 100) / 100,
+        line_diffs: lineDiffs,
+        computed_at: new Date().toISOString(),
+      };
+
+      // 6. Persist into diff_vs_previous
+      await supabase.from('hr_payroll_records').update({
+        diff_vs_previous: diff as any,
+      } as any).eq('id', recordId);
+
+      return diff;
+    } catch (err) {
+      console.error('[useESPayrollBridge] computeDiffVsPrevious:', err);
+      toast.error('Error calculando comparativa');
+      return null;
+    }
+  }, [companyId]);
+
+  // ── V2-ES.1 Paso 3: Comparativa masiva para todo el período ──
+  const computeBatchDiff = useCallback(async (periodId: string): Promise<{ computed: number; errors: number } | null> => {
+    if (!companyId) return null;
+    setIsCalculating(true);
+
+    try {
+      const { data: records } = await supabase
+        .from('hr_payroll_records')
+        .select('id')
+        .eq('payroll_period_id', periodId);
+
+      if (!records || records.length === 0) {
+        toast.info('No hay nóminas en el período');
+        return { computed: 0, errors: 0 };
+      }
+
+      let computed = 0;
+      let errors = 0;
+      for (const rec of records) {
+        const result = await computeDiffVsPrevious((rec as any).id, periodId);
+        if (result) { computed++; } else { errors++; }
+      }
+
+      toast.success(`Comparativa calculada: ${computed} nóminas${errors > 0 ? `, ${errors} errores` : ''}`);
+      return { computed, errors };
+    } catch (err) {
+      console.error('[useESPayrollBridge] computeBatchDiff:', err);
+      toast.error('Error en comparativa masiva');
+      return null;
+    } finally {
+      setIsCalculating(false);
+    }
+  }, [companyId, computeDiffVsPrevious]);
+
+  // ── V2-ES.1 Paso 3: Revisión de nómina ──
+  export type ReviewAction = 'approve' | 'flag' | 'reviewed';
+
+  const reviewRecord = useCallback(async (
+    recordId: string,
+    action: ReviewAction,
+    notes?: string,
+  ): Promise<boolean> => {
+    if (!companyId) return false;
+
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No autenticado');
+
+      const statusMap: Record<ReviewAction, string> = {
+        approve: 'approved',
+        flag: 'flagged',
+        reviewed: 'reviewed',
+      };
+
+      const { error } = await supabase.from('hr_payroll_records').update({
+        review_status: statusMap[action],
+        review_notes: notes || null,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      } as any).eq('id', recordId);
+
+      if (error) throw error;
+
+      const actionLabels: Record<ReviewAction, string> = {
+        approve: 'aprobada',
+        flag: 'marcada para revisión',
+        reviewed: 'revisada',
+      };
+      toast.success(`Nómina ${actionLabels[action]}`);
+      return true;
+    } catch (err) {
+      console.error('[useESPayrollBridge] reviewRecord:', err);
+      toast.error('Error al revisar nómina');
+      return false;
+    }
+  }, [companyId]);
+
+  // ── V2-ES.1 Paso 3: Obtener estado de revisión de un registro ──
+  const fetchReviewStatus = useCallback(async (recordId: string): Promise<{
+    review_status: string;
+    review_notes: string | null;
+    reviewed_by: string | null;
+    reviewed_at: string | null;
+    diff_vs_previous: DiffVsPrevious | null;
+  } | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('hr_payroll_records')
+        .select('review_status, review_notes, reviewed_by, reviewed_at, diff_vs_previous')
+        .eq('id', recordId)
+        .single();
+      if (error) throw error;
+      return data as any;
+    } catch (err) {
+      console.error('[useESPayrollBridge] fetchReviewStatus:', err);
+      return null;
+    }
+  }, []);
+
   return {
     // State
     isCalculating,
@@ -907,9 +1180,14 @@ export function useESPayrollBridge(companyId?: string) {
     // Calculation
     calculateESPayroll,
     simulateES,
-    // V2-ES.1: Batch & incidents
+    // V2-ES.1 Paso 2: Batch & incidents
     calculateBatch,
     injectIncidentsToPayroll,
+    // V2-ES.1 Paso 3: Diff & review
+    computeDiffVsPrevious,
+    computeBatchDiff,
+    reviewRecord,
+    fetchReviewStatus,
     // Validation
     validateESPreClose,
     // Reporting
