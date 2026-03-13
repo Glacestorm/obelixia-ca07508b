@@ -1341,6 +1341,8 @@ export function useESPayrollBridge(companyId?: string) {
     computeBatchDiff,
     reviewRecord,
     fetchReviewStatus,
+    // V2-ES.2 Paso 1: Workflow integration
+    startPayrollApprovalWorkflow,
     // Validation
     validateESPreClose,
     // Reporting
