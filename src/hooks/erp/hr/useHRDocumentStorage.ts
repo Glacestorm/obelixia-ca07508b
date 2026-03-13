@@ -456,6 +456,7 @@ export function useHRDocumentStorage(companyId: string) {
         .remove([storagePath]);
 
       if (removeError) {
+        logFileAudit('file_delete', documentId, false, { storage_path: storagePath, error_message: 'Storage remove failed' });
         return fail(createStorageError('DELETE_FAILED', 'Error al eliminar archivo', removeError));
       }
 
