@@ -451,10 +451,10 @@ export function useESPayrollBridge(companyId?: string) {
     setIsCalculating(true);
     try {
       const checks: ESPreCloseValidation[] = [];
-      // Fetch records for the period
+      // Fetch records for the period (include review + diff fields)
       const { data: records } = await supabase
         .from('hr_payroll_records')
-        .select('id, employee_id, gross_salary, net_salary, total_deductions, status')
+        .select('id, employee_id, gross_salary, net_salary, total_deductions, status, review_status, diff_vs_previous')
         .eq('payroll_period_id', periodId);
 
       const recordCount = records?.length || 0;
