@@ -187,8 +187,12 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pb-3">
+                    <TooltipProvider delayDuration={200}>
                     <div className="space-y-2">
-                      {docs.map(doc => (
+                      {docs.map(doc => {
+                        const hasFile = !!(doc as any).storage_path || !!(doc as any).file_name;
+                        const vCount = versionCounts.get(doc.id) ?? 0;
+                        return (
                           <div
                             key={doc.id}
                             className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
@@ -204,6 +208,28 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
+                              {hasFile && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">Archivo adjunto</TooltipContent>
+                                </Tooltip>
+                              )}
+                              {vCount > 1 && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 bg-sky-500/10 text-sky-700 border-sky-500/20">
+                                      <History className="h-2.5 w-2.5" />v{vCount}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">{vCount} versiones de archivo</TooltipContent>
+                                </Tooltip>
+                              )}
+                              <DocGenerationBadge
+                                metadata={doc.metadata as Record<string, any> | null}
+                                source={doc.source}
+                              />
                               {doc.integrity_verified ? (
                                 <span title="Integridad verificada"><CheckCircle2 className="h-4 w-4 text-emerald-500" /></span>
                               ) : (
@@ -221,8 +247,10 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
                               </Button>
                             </div>
                           </div>
-                        ))}
+                        );
+                      })}
                     </div>
+                    </TooltipProvider>
                   </AccordionContent>
                 </AccordionItem>
               );

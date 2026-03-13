@@ -14,8 +14,16 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle2, CircleDashed, ShieldAlert, History } from 'lucide-react';
-
-const ENTITY_LABELS: Record<RelatedEntityType, string> = {
+import { useHRDocumentExpedient, type RelatedEntityType, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
+import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
+import { DocStatusBadge } from './DocStatusBadge';
+import { DocReconciliationBadge } from './DocReconciliationBadge';
+import { DocReconciliationToggle } from './DocReconciliationToggle';
+import { DocActionQueuePanel } from './DocActionQueuePanel';
+import { DocumentAlertsSummary } from './DocumentAlertsSummary';
+import { DocGenerationBadge } from './DocGenerationBadge';
   admin_request: 'solicitud',
   hr_task: 'tarea',
 };
