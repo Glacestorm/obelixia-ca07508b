@@ -118,6 +118,10 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
                     <div><span className="text-muted-foreground">Categoría:</span> {doc.category}</div>
                     <div><span className="text-muted-foreground">Fuente:</span> {doc.source}</div>
                     <div><span className="text-muted-foreground">Versión:</span> {doc.version}</div>
+                    <div className="col-span-2 flex items-center gap-2">
+                      <span className="text-muted-foreground">Estado:</span>
+                      <DocTrafficLightBadge documentType={doc.document_type} expiryDate={doc.expiry_date} />
+                    </div>
                     {doc.expiry_date && (
                       <div className="col-span-2">
                         <span className="text-muted-foreground">Vencimiento:</span> {doc.expiry_date}
@@ -134,6 +138,33 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
                       {formatDistanceToNow(new Date(doc.created_at), { locale: es, addSuffix: true })}
                     </div>
                   </div>
+
+                  {/* Catalog metadata */}
+                  {catalogEntry && (
+                    <div className="mt-3 pt-3 border-t space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Información del catálogo</p>
+                      {catalogEntry.legalBasis && (
+                        <div className="flex items-start gap-2">
+                          <Scale className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                          <span className="text-xs">{catalogEntry.legalBasis}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-xs">Retención: {catalogEntry.retentionYears} años</span>
+                      </div>
+                      {catalogEntry.renewable && (
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-xs">Documento renovable{catalogEntry.defaultExpiryMonths ? ` (cada ${catalogEntry.defaultExpiryMonths} meses)` : ''}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-xs">{catalogEntry.description}</span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
