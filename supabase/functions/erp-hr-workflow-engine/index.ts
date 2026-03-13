@@ -64,6 +64,22 @@ serve(async (req) => {
       // ===== START WORKFLOW =====
       case 'start_workflow': {
         const { company_id, process_type, entity_type, entity_id, entity_summary, priority } = params;
+
+        // V2-ES.2 Paso 2: Idempotency — check for existing active instance
+        const { data: existingInstances } = await supabase
+          .from('erp_hr_workflow_instances')
+          .select('id, status')
+          .eq('entity_type', entity_type)
+          .eq('entity_id', entity_id)
+          .in('status', ['in_progress', 'pending'])
+          .limit(1);
+
+        if (existingInstances && existingInstances.length > 0) {
+          console.log(`[start_workflow] Idempotent: active instance already exists for ${entity_type}/${entity_id}`);
+          result = existingInstances[0];
+          break;
+        }
+
         // Find matching active definition
         const { data: defs } = await supabase
           .from('erp_hr_workflow_definitions')
