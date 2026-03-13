@@ -173,6 +173,16 @@ export type {
   HRDocumentCategory,
 } from './useHRDocumentCatalog';
 
+// Reglas de plazos documentales (V2-ES.4)
+export { useHRDocumentDueRules } from './useHRDocumentDueRules';
+export type {
+  DocumentDueRule,
+  DueRuleType,
+  DueSeverity,
+  DueUrgency,
+  DueDateResult,
+} from './useHRDocumentDueRules';
+
 // Tasks Engine (WT)
 export { useHRTasksEngine } from './useHRTasksEngine';
 export type {
