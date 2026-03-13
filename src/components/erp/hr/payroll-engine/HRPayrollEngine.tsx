@@ -30,7 +30,10 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
 
   // Wrap bridge functions to match expected signatures
   const handleBatchCalcES = useCallback(async (periodId: string) => {
-    return bridge.calculateBatch(periodId);
+    const result = await bridge.calculateBatch(periodId);
+    if (!result) return null;
+    const skipped = result.details.filter(d => d.error === 'skipped_already_exists').length;
+    return { calculated: result.calculated, skipped, errors: result.errors };
   }, [bridge.calculateBatch]);
 
   const handleBatchDiff = useCallback(async (periodId: string) => {
