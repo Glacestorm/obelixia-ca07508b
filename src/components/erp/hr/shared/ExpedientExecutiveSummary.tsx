@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import {
   FileText, ShieldAlert, XCircle, Clock, Send,
   CheckCircle2, AlertCircle, AlertTriangle, Scale,
-  ChevronDown, ChevronUp, Zap, History, FilePlus2,
+  ChevronDown, ChevronUp, Zap, History, FilePlus2, CalendarDays,
 } from 'lucide-react';
 import { normalizeDocStatus } from './DocStatusBadge';
 import { isReconcilableDocType } from './DocReconciliationBadge';
@@ -31,6 +31,8 @@ interface Props {
   processType?: string;
   /** V2-ES.4 Paso 4: count of docs with version history (>1 version). Optional — omit to hide. */
   docsWithVersionHistory?: number;
+  /** V2-ES.4 Paso 6: calendar precision label ('Nacional', 'CT', 'Base', etc.). Optional — omit to hide. */
+  calendarLabel?: string;
   className?: string;
 }
 
@@ -73,7 +75,7 @@ function countByStatus(docs: EmployeeDocument[]): Record<string, number> {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function ExpedientExecutiveSummary({ docs, completeness, processType, docsWithVersionHistory, className }: Props) {
+export function ExpedientExecutiveSummary({ docs, completeness, processType, docsWithVersionHistory, calendarLabel, className }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const statusCounts = useMemo(() => countByStatus(docs), [docs]);
@@ -210,6 +212,20 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, doc
       value: String(generationStats.placeholders),
       severity: 'warn',
       tooltip: `${generationStats.placeholders} placeholder(s) pendientes de completar`,
+    });
+  }
+
+  // 10. V2-ES.4 Paso 6: Calendario laboral activo
+  if (calendarLabel) {
+    const isBase = calendarLabel === 'Base';
+    metrics.push({
+      icon: CalendarDays,
+      label: 'Calendario',
+      value: calendarLabel,
+      severity: isBase ? 'warn' : 'ok',
+      tooltip: isBase
+        ? 'Solo fines de semana — sin festivos configurados'
+        : `Festivos ${calendarLabel} aplicados a plazos laborables`,
     });
   }
 

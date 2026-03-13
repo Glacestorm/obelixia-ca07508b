@@ -18,6 +18,7 @@ import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type 
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
 import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -43,6 +44,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
   const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
   const [docsRefreshKey, setDocsRefreshKey] = useState(0);
   const { getCompleteness } = useHRProcessDocRequirements();
+  const { calendarLabel } = useHRHolidayCalendar();
   const completeness = getCompleteness(request.request_type, linkedDocs);
 
   const handleDocsGenerated = useCallback(() => {
@@ -212,6 +214,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 docs={linkedDocs}
                 completeness={completeness}
                 processType={request.request_type}
+                calendarLabel={calendarLabel}
               />
               <ProcessDeadlinesSummary
                 processType={request.request_type}
