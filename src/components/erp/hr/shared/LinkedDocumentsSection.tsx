@@ -15,6 +15,7 @@ import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle
 import { useHRDocumentExpedient, type RelatedEntityType, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { computeDocCompleteness, type ExpectedDocType } from './documentExpectedTypes';
+import { DocStatusBadge } from './DocStatusBadge';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
