@@ -401,7 +401,7 @@ export function useHRDocumentStorage(companyId: string) {
             replace_reason: isReplace ? (replaceReason || null) : null,
           });
 
-        // 7d. Audit version event
+        // 7d. Audit: file operation + version creation
         logFileAudit(
           isReplace ? 'file_replace' : 'file_upload',
           documentId,
@@ -411,6 +411,18 @@ export function useHRDocumentStorage(companyId: string) {
             file_name: file.name,
             mime_type: file.type,
             file_size_bytes: file.size,
+            storage_path: storagePath,
+            checksum,
+          },
+        );
+        // Separate version audit entry for traceability
+        logFileAudit(
+          'file_version_created' as any,
+          documentId,
+          true,
+          {
+            employee_id: employeeId,
+            file_name: file.name,
             storage_path: storagePath,
             checksum,
           },
