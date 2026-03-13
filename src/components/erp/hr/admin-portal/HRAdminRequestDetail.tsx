@@ -17,6 +17,8 @@ import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type 
 import { DocumentCompletenessIndicator } from '../shared/DocumentCompletenessIndicator';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { DocActionQueuePanel } from '../shared/DocActionQueuePanel';
+import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
+import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -40,6 +42,8 @@ interface Props {
 export function HRAdminRequestDetail({ request, comments, activity, linkedTasks = [], onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
   const meta = (request.metadata || {}) as Record<string, any>;
   const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
+  const { getCompleteness } = useHRProcessDocRequirements();
+  const completeness = getCompleteness(request.request_type, linkedDocs);
 
   return (
     <div className="space-y-4">
@@ -196,6 +200,11 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
               <ProcessDeadlinesSummary
                 processType={request.request_type}
                 triggerDate={request.created_at}
+              />
+              <DocumentAlertsSummary
+                docs={linkedDocs}
+                mandatoryMissing={completeness?.mandatoryMissing}
+                maxVisible={4}
               />
               <DocActionQueuePanel
                 employeeId={request.employee_id}

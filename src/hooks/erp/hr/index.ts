@@ -234,6 +234,14 @@ export type {
   EnrichedDocAction,
 } from './useHRDocActionQueue';
 
+// V2-ES.4 Paso 2.2: Motor de alertas y severidad (re-export from component layer)
+export { computeExpedientAlerts } from '@/components/erp/hr/shared/expedientAlertEngine';
+export type {
+  AlertSeverity,
+  ExpedientAlert,
+  ExpedientAlertSummary,
+} from '@/components/erp/hr/shared/expedientAlertEngine';
+
 // People Analytics + IA (PA)
 export { usePeopleAnalytics } from './usePeopleAnalytics';
 export type {

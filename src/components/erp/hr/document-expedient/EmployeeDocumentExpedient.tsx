@@ -19,6 +19,7 @@ import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type Origin
 import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
 import { DocStatusBadge } from '../shared/DocStatusBadge';
+import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
 
 interface Props {
   companyId: string;
@@ -97,8 +98,11 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
           </CardContent></Card>
         </div>
 
-        {/* Alerts summary bar */}
+        {/* Alerts summary bar (legacy) */}
         <DocAlertsSummaryBar docs={filtered} />
+
+        {/* V2-ES.4 Paso 2.2: Alertas consolidadas con severidad */}
+        <DocumentAlertsSummary docs={filtered} maxVisible={4} />
 
         {/* Filters */}
         <div className="flex flex-wrap gap-2">
