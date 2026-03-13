@@ -26,6 +26,8 @@ interface Props {
   // V2-ES.1 Paso 4
   onBatchCalculateES?: (periodId: string) => Promise<{ calculated: number; skipped: number; errors: number } | null>;
   onBatchDiff?: (periodId: string) => Promise<{ computed: number; errors: number } | null>;
+  // V2-ES.2 Paso 1
+  onStartApprovalWorkflow?: (periodId: string) => Promise<{ started: number; skipped: number; errors: number } | null>;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
