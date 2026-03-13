@@ -54,6 +54,7 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
     return esChecks;
   }, [bridge.validateESPreClose]);
 
+  return (
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-bold">Motor de Nómina</h2>
