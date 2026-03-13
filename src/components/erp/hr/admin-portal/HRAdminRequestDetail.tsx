@@ -1,7 +1,7 @@
 /**
  * HRAdminRequestDetail — Full detail view with actions, timeline, comments
  */
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
+import { DocAutoGenerateButton } from '../shared/DocAutoGenerateButton';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
