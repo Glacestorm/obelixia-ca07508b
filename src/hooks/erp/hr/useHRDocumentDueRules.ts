@@ -206,10 +206,11 @@ export function computeProcessDeadlines(
   processType: string,
   triggerDate: Date,
   referenceDate: Date = new Date(),
+  holidays: HolidayCalendar = EMPTY_CALENDAR,
 ): DueDateResult[] {
   return rules
     .filter(r => r.process_type === processType && r.is_active)
-    .map(r => computeDueDate(r, triggerDate, referenceDate))
+    .map(r => computeDueDate(r, triggerDate, referenceDate, holidays))
     .sort((a, b) => (a.daysRemaining ?? 999) - (b.daysRemaining ?? 999));
 }
 
