@@ -377,6 +377,7 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
                      <TableHead>Documento</TableHead>
                      <TableHead>Empleado</TableHead>
                      <TableHead>Tipo</TableHead>
+                     <TableHead>Estado</TableHead>
                      <TableHead>Origen</TableHead>
                      <TableHead>IA</TableHead>
                      <TableHead>Vencimiento</TableHead>
