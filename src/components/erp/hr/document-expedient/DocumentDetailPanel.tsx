@@ -19,6 +19,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getCatalogEntry } from '../shared/documentCatalogES';
 import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
+import { DocStatusBadge } from '../shared/DocStatusBadge';
+import { DocReconciliationBadge, isReconcilableDocType } from '../shared/DocReconciliationBadge';
+import { DocReconciliationToggle } from '../shared/DocReconciliationToggle';
 
 interface Props {
   companyId: string;
