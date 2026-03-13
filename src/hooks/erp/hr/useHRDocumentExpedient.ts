@@ -14,6 +14,7 @@ export type DocumentSource = 'upload' | 'generated' | 'integration' | 'migration
 export type ConsentType = 'gdpr' | 'medical' | 'background_check' | 'data_processing' | 'image_rights' | 'training_commitment';
 export type ConsentStatus = 'active' | 'revoked' | 'expired';
 export type AccessAction = 'view' | 'download' | 'print' | 'share' | 'export';
+export type RelatedEntityType = 'admin_request' | 'hr_task';
 
 export interface EmployeeDocument {
   id: string;
