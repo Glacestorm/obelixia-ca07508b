@@ -29,6 +29,8 @@ interface Props {
   docs: EmployeeDocument[];
   completeness: EnrichedCompleteness | null;
   processType?: string;
+  /** V2-ES.4 Paso 4: count of docs with version history (>1 version). Optional — omit to hide. */
+  docsWithVersionHistory?: number;
   className?: string;
 }
 
