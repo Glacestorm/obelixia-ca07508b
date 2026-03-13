@@ -54,6 +54,7 @@ export function HRPayrollPeriodManager({
   const [validatingPeriodId, setValidatingPeriodId] = useState<string | null>(null);
   const [batchCalcLoading, setBatchCalcLoading] = useState<string | null>(null);
   const [batchDiffLoading, setBatchDiffLoading] = useState<string | null>(null);
+  const [approvalLoading, setApprovalLoading] = useState<string | null>(null);
   const [batchResult, setBatchResult] = useState<{ periodId: string; type: string; message: string } | null>(null);
 
   const handleCreate = async () => {

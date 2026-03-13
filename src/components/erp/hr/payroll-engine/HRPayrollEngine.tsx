@@ -87,6 +87,7 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
             onRefresh={() => engine.fetchPeriods()}
             onBatchCalculateES={handleBatchCalcES}
             onBatchDiff={handleBatchDiff}
+            onStartApprovalWorkflow={handleStartApprovalWorkflow}
           />
         </TabsContent>
 
