@@ -31507,6 +31507,8 @@ export type Database = {
           metadata: Json | null
           mime_type: string | null
           notes: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
           retention_policy_id: string | null
           searchable_content: string | null
           source: string | null
@@ -31541,6 +31543,8 @@ export type Database = {
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
           retention_policy_id?: string | null
           searchable_content?: string | null
           source?: string | null
@@ -31575,6 +31579,8 @@ export type Database = {
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
           retention_policy_id?: string | null
           searchable_content?: string | null
           source?: string | null

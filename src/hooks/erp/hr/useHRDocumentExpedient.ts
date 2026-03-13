@@ -14,6 +14,7 @@ export type DocumentSource = 'upload' | 'generated' | 'integration' | 'migration
 export type ConsentType = 'gdpr' | 'medical' | 'background_check' | 'data_processing' | 'image_rights' | 'training_commitment';
 export type ConsentStatus = 'active' | 'revoked' | 'expired';
 export type AccessAction = 'view' | 'download' | 'print' | 'share' | 'export';
+export type RelatedEntityType = 'admin_request' | 'hr_task';
 
 export interface EmployeeDocument {
   id: string;
@@ -33,6 +34,8 @@ export interface EmployeeDocument {
   integrity_verified_at: string | null;
   retention_policy_id: string | null;
   consent_id: string | null;
+  related_entity_type: RelatedEntityType | null;
+  related_entity_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -156,6 +159,21 @@ export function useHRDocumentExpedient(companyId: string) {
     return (data ?? []) as unknown as EmployeeDocument[];
   }, [companyId]);
 
+  const fetchDocumentsByEntity = useCallback(async (
+    entityType: RelatedEntityType,
+    entityId: string
+  ) => {
+    const { data, error } = await supabase
+      .from('erp_hr_employee_documents')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('related_entity_type', entityType as any)
+      .eq('related_entity_id', entityId as any)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as unknown as EmployeeDocument[];
+  }, [companyId]);
+
   const uploadDocument = useMutation({
     mutationFn: async (doc: {
       employee_id: string;
@@ -168,6 +186,8 @@ export function useHRDocumentExpedient(companyId: string) {
       source?: DocumentSource;
       is_confidential?: boolean;
       expiry_date?: string;
+      related_entity_type?: RelatedEntityType;
+      related_entity_id?: string;
     }) => {
       const { data, error } = await supabase
         .from('erp_hr_employee_documents')
@@ -184,6 +204,8 @@ export function useHRDocumentExpedient(companyId: string) {
           is_confidential: doc.is_confidential ?? false,
           expiry_date: doc.expiry_date ?? null,
           version: 1,
+          related_entity_type: doc.related_entity_type ?? null,
+          related_entity_id: doc.related_entity_id ?? null,
         } as any)
         .select()
         .single();
@@ -471,6 +493,7 @@ export function useHRDocumentExpedient(companyId: string) {
     documents: documentsQuery.data ?? [],
     isLoadingDocuments: documentsQuery.isLoading,
     fetchDocumentsByEmployee,
+    fetchDocumentsByEntity,
     uploadDocument,
     deleteDocument,
     verifyIntegrity,
