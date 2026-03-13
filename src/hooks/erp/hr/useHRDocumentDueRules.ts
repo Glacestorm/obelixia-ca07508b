@@ -182,9 +182,8 @@ export function computeDueDate(
 
   // For business day rules, also compute business days remaining
   let businessDaysRemaining: number | null = null;
-  if (calendarType === 'business' && daysRemaining !== null) {
-    // Approximate: ~71% of calendar days are business days (5/7)
-    businessDaysRemaining = Math.max(0, Math.round(daysRemaining * (5 / 7)));
+  if (calendarType === 'business') {
+    businessDaysRemaining = countBusinessDaysBetween(referenceDate, dueDate, holidays);
   }
 
   return {
