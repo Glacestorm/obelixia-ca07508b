@@ -31624,6 +31624,12 @@ export type Database = {
           metadata: Json | null
           mime_type: string | null
           notes: string | null
+          reconciled_at: string | null
+          reconciled_by: string | null
+          reconciled_with_payroll: boolean | null
+          reconciled_with_social_security: boolean | null
+          reconciled_with_tax: boolean | null
+          reconciliation_notes: string | null
           related_entity_id: string | null
           related_entity_type: string | null
           retention_policy_id: string | null
@@ -31661,6 +31667,12 @@ export type Database = {
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciled_with_payroll?: boolean | null
+          reconciled_with_social_security?: boolean | null
+          reconciled_with_tax?: boolean | null
+          reconciliation_notes?: string | null
           related_entity_id?: string | null
           related_entity_type?: string | null
           retention_policy_id?: string | null
@@ -31698,6 +31710,12 @@ export type Database = {
           metadata?: Json | null
           mime_type?: string | null
           notes?: string | null
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          reconciled_with_payroll?: boolean | null
+          reconciled_with_social_security?: boolean | null
+          reconciled_with_tax?: boolean | null
+          reconciliation_notes?: string | null
           related_entity_id?: string | null
           related_entity_type?: string | null
           retention_policy_id?: string | null
