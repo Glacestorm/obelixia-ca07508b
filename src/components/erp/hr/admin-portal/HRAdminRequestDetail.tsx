@@ -197,6 +197,11 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 processType={request.request_type}
                 triggerDate={request.created_at}
               />
+              <DocActionQueuePanel
+                employeeId={request.employee_id}
+                relatedEntityType="admin_request"
+                relatedEntityId={request.id}
+              />
               <Separator />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
