@@ -292,8 +292,8 @@ export function useAdminPortal(companyId: string) {
   const updateStatus = useCallback(async (id: string, newStatus: AdminRequestStatus, comment?: string) => {
     if (!user?.id) return false;
     try {
-      const req = requests.find(r => r.id === id);
-      const oldStatus = req?.status || 'unknown';
+      const req = requests.find(r => r.id === id) || detail;
+      const oldStatus = (req?.status || 'unknown') as string;
 
       const updates: any = { status: newStatus, updated_at: new Date().toISOString() };
       if (newStatus === 'completed' || newStatus === 'rejected') {
@@ -323,6 +323,34 @@ export function useAdminPortal(companyId: string) {
         }] as any);
       }
 
+      // V2-ES.2 Paso 2: If transitioning from draft to operational, start workflow
+      if (!WORKFLOW_TRIGGER_STATUSES.includes(oldStatus as AdminRequestStatus) &&
+          WORKFLOW_TRIGGER_STATUSES.includes(newStatus)) {
+        const updatedReq = req ? { ...req, status: newStatus } : null;
+        if (updatedReq) {
+          await startWorkflowForRequest(updatedReq as AdminRequest);
+        }
+      }
+
+      // V2-ES.2 Paso 2: Best-effort sync to workflow engine if active instance exists
+      if (req?.workflow_instance_id && ['approved', 'rejected', 'returned'].includes(newStatus)) {
+        const decisionMap: Record<string, string> = { approved: 'approved', rejected: 'rejected', returned: 'returned' };
+        try {
+          await supabase.functions.invoke('erp-hr-workflow-engine', {
+            body: {
+              action: 'decide_step',
+              params: {
+                instance_id: req.workflow_instance_id,
+                decision: decisionMap[newStatus] || newStatus,
+                comment: comment || `Status changed to ${newStatus} from Admin Portal`,
+              }
+            }
+          });
+        } catch (syncErr) {
+          console.warn('[useAdminPortal] Workflow sync failed (non-blocking):', syncErr);
+        }
+      }
+
       toast.success(`Estado actualizado a ${newStatus}`);
       await fetchRequests();
       if (detail?.id === id) await fetchDetail(id);
@@ -332,7 +360,7 @@ export function useAdminPortal(companyId: string) {
       toast.error('Error al actualizar estado');
       return false;
     }
-  }, [user, requests, detail, fetchRequests]);
+  }, [user, requests, detail, fetchRequests, startWorkflowForRequest]);
 
   // === ASSIGN REQUEST ===
   const assignRequest = useCallback(async (id: string, assignedTo: string, assigneeName: string) => {

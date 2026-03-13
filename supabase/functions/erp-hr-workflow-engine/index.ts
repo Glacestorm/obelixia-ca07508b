@@ -194,12 +194,11 @@ serve(async (req) => {
           _severity: decision === 'rejected' ? 'warning' : 'info'
         });
 
-        // V2-ES.2 Paso 1 fix: Reverse sync to hr_payroll_records when entity_type = 'payroll_record'
+        // V2-ES.2 Paso 1: Reverse sync to hr_payroll_records when entity_type = 'payroll_record'
         if (instance.entity_type === 'payroll_record' && instance.entity_id) {
-          // Determine final workflow status after this decision
           const isLastStep = decision === 'approved' && !steps.find((s: any) => s.step_order === currentStep.step_order + 1);
           const reviewStatusMap: Record<string, string> = {
-            approved: isLastStep ? 'approved' : 'reviewed',  // Only 'approved' when all steps done
+            approved: isLastStep ? 'approved' : 'reviewed',
             rejected: 'flagged',
             returned: 'flagged',
           };
@@ -215,7 +214,59 @@ serve(async (req) => {
             console.log(`[decide_step] Synced review_status=${reviewStatus} for payroll_record ${instance.entity_id}`);
           } catch (syncErr) {
             console.warn('[decide_step] Reverse sync to hr_payroll_records failed:', syncErr);
-            // Non-blocking: workflow decision is authoritative
+          }
+        }
+
+        /**
+         * V2-ES.2 Paso 2: Reverse sync to hr_admin_requests when entity_type = 'admin_request'
+         * 
+         * DECISION → STATUS MAPPING:
+         * ┌─────────────┬──────────────────────────────────────────────┐
+         * │ Decision     │ hr_admin_requests.status                    │
+         * ├─────────────┼──────────────────────────────────────────────┤
+         * │ approved     │ 'approved' (if last step) / 'reviewing'    │
+         * │ rejected     │ 'rejected'                                 │
+         * │ returned     │ 'returned'                                 │
+         * └─────────────┴──────────────────────────────────────────────┘
+         */
+        if (instance.entity_type === 'admin_request' && instance.entity_id) {
+          const isLastStep = decision === 'approved' && !steps.find((s: any) => s.step_order === currentStep.step_order + 1);
+          const adminStatusMap: Record<string, string> = {
+            approved: isLastStep ? 'approved' : 'reviewing',
+            rejected: 'rejected',
+            returned: 'returned',
+          };
+          const newAdminStatus = adminStatusMap[decision] || 'reviewing';
+
+          try {
+            const adminUpdates: Record<string, any> = {
+              status: newAdminStatus,
+              updated_at: new Date().toISOString(),
+            };
+            if (newAdminStatus === 'approved' || newAdminStatus === 'rejected') {
+              adminUpdates.resolved_at = new Date().toISOString();
+              adminUpdates.resolved_by = user.id;
+              adminUpdates.resolution = comment || `Decisión workflow: ${decision}`;
+            }
+
+            await supabase.from('hr_admin_requests')
+              .update(adminUpdates)
+              .eq('id', instance.entity_id);
+
+            // Log activity in the admin request timeline
+            await supabase.from('hr_admin_request_activity').insert([{
+              request_id: instance.entity_id,
+              action: `workflow_${decision}`,
+              actor_id: user.id,
+              actor_name: user.email || 'Workflow Engine',
+              old_value: null,
+              new_value: newAdminStatus,
+              metadata: { workflow_instance_id: instance.id, step: currentStep.name, comment },
+            }]);
+
+            console.log(`[decide_step] Synced status=${newAdminStatus} for admin_request ${instance.entity_id}`);
+          } catch (syncErr) {
+            console.warn('[decide_step] Reverse sync to hr_admin_requests failed:', syncErr);
           }
         }
 
