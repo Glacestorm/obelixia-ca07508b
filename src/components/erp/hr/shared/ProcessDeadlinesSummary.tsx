@@ -6,6 +6,7 @@
 import { Clock, AlertTriangle, AlertOctagon, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useHRDocumentDueRules, type DueDateResult } from '@/hooks/erp/hr/useHRDocumentDueRules';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import { DocDeadlineBadge } from './DocDeadlineBadge';
 
 interface Props {
@@ -34,10 +35,11 @@ export function ProcessDeadlinesSummary({
   className,
 }: Props) {
   const { getProcessDeadlines, isLoading } = useHRDocumentDueRules();
+  const { holidaySet } = useHRHolidayCalendar();
 
   const mappedProcess = REQUEST_TO_PROCESS[processType] ?? processType;
   const trigger = typeof triggerDate === 'string' ? new Date(triggerDate) : triggerDate;
-  const deadlines = getProcessDeadlines(mappedProcess, trigger);
+  const deadlines = getProcessDeadlines(mappedProcess, trigger, holidaySet);
 
   if (isLoading || deadlines.length === 0) return null;
 

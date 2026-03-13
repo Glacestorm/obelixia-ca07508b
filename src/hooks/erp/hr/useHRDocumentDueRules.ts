@@ -206,10 +206,11 @@ export function computeProcessDeadlines(
   processType: string,
   triggerDate: Date,
   referenceDate: Date = new Date(),
+  holidays: HolidayCalendar = EMPTY_CALENDAR,
 ): DueDateResult[] {
   return rules
     .filter(r => r.process_type === processType && r.is_active)
-    .map(r => computeDueDate(r, triggerDate, referenceDate))
+    .map(r => computeDueDate(r, triggerDate, referenceDate, holidays))
     .sort((a, b) => (a.daysRemaining ?? 999) - (b.daysRemaining ?? 999));
 }
 
@@ -252,8 +253,12 @@ export function useHRDocumentDueRules() {
   /**
    * Calcula todos los plazos de un proceso dado un trigger date.
    */
-  function getProcessDeadlines(processType: string, triggerDate: Date): DueDateResult[] {
-    return computeProcessDeadlines(rules, processType, triggerDate);
+  function getProcessDeadlines(
+    processType: string,
+    triggerDate: Date,
+    holidays: HolidayCalendar = EMPTY_CALENDAR,
+  ): DueDateResult[] {
+    return computeProcessDeadlines(rules, processType, triggerDate, new Date(), holidays);
   }
 
   return {
