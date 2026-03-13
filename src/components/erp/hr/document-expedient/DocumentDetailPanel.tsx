@@ -109,6 +109,12 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
             fileStatus={fileStatus}
           />
 
+          {/* V2-ES.4 Paso 4.4: File version history */}
+          <DocVersionHistory
+            companyId={companyId}
+            documentId={doc.id}
+          />
+
           {/* Verify integrity */}
           {!doc.integrity_verified && fileStatus === 'attached' && (
             <Button
