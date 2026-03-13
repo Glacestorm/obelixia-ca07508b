@@ -31,6 +31,8 @@ interface Props {
   processType?: string;
   /** V2-ES.4 Paso 4: count of docs with version history (>1 version). Optional — omit to hide. */
   docsWithVersionHistory?: number;
+  /** V2-ES.4 Paso 6: calendar precision label ('Nacional', 'CT', 'Base', etc.). Optional — omit to hide. */
+  calendarLabel?: string;
   className?: string;
 }
 
