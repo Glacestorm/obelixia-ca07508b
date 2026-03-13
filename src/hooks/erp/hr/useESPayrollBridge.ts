@@ -623,6 +623,14 @@ export function useESPayrollBridge(companyId?: string) {
         return null;
       }
 
+      // 2b. Idempotency guard: fetch existing records for this period
+      const { data: existingRecords } = await supabase
+        .from('hr_payroll_records')
+        .select('id, employee_id')
+        .eq('payroll_period_id', periodId);
+      const existingByEmployee = new Map<string, string>();
+      (existingRecords || []).forEach((r: any) => existingByEmployee.set(r.employee_id, r.id));
+
       // 3. Get labor data for all employees
       const employeeIds = employees.map(e => e.id);
       const { data: laborDataList } = await supabase
