@@ -26,6 +26,7 @@ import { DocReconciliationBadge, isReconcilableDocType } from '../shared/DocReco
 import { DocReconciliationToggle } from '../shared/DocReconciliationToggle';
 import { DocFileUpload } from '../shared/DocFileUpload';
 import { DocFilePreview } from '../shared/DocFilePreview';
+import { DocVersionHistory } from '../shared/DocVersionHistory';
 
 interface Props {
   companyId: string;
@@ -106,6 +107,12 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
             mimeType={doc.mime_type}
             fileSizeBytes={doc.file_size_bytes}
             fileStatus={fileStatus}
+          />
+
+          {/* V2-ES.4 Paso 4.4: File version history */}
+          <DocVersionHistory
+            companyId={companyId}
+            documentId={doc.id}
           />
 
           {/* Verify integrity */}
