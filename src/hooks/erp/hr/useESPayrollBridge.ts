@@ -470,7 +470,28 @@ export function useESPayrollBridge(companyId?: string) {
         detail: uncalculated.length > 0 ? `${uncalculated.length} nóminas sin calcular` : 'OK', severity: uncalculated.length > 0 ? 'error' : 'info',
       });
 
-      // Check for zero net salary
+      // V2-ES.1 Paso 5: Check all records have review_status = 'approved'
+      const notApproved = records?.filter((r: any) => r.review_status !== 'approved') || [];
+      checks.push({
+        id: 'all_reviewed_approved', label: 'Todas las nóminas aprobadas (revisión)',
+        passed: notApproved.length === 0,
+        detail: notApproved.length > 0
+          ? `${notApproved.length} nóminas sin aprobar (${notApproved.map((r: any) => r.review_status || 'null').filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).join(', ')})`
+          : 'OK',
+        severity: notApproved.length > 0 ? 'error' : 'info',
+      });
+
+      // V2-ES.1 Paso 5: Warning if diff_vs_previous not computed
+      const withoutDiff = records?.filter((r: any) => !r.diff_vs_previous) || [];
+      checks.push({
+        id: 'diff_computed', label: 'Comparativa vs período anterior',
+        passed: withoutDiff.length === 0,
+        detail: withoutDiff.length > 0
+          ? `${withoutDiff.length} nóminas sin comparativa (no bloqueante)`
+          : 'OK',
+        severity: withoutDiff.length > 0 ? 'warning' : 'info',
+      });
+
       const zeroNet = records?.filter(r => r.net_salary <= 0) || [];
       checks.push({
         id: 'no_zero_net', label: 'Sin líquidos negativos o cero', passed: zeroNet.length === 0,
