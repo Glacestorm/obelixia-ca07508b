@@ -39,15 +39,13 @@ interface Props {
 }
 
 export function DocReconciliationToggle({ documentId, documentType, currentFlags, onUpdated, className }: Props) {
-  if (!isReconcilableDocType(documentType)) return null;
-
-  const channels = getApplicableChannels(documentType);
-  if (channels.length === 0) return null;
-
   const [flags, setFlags] = useState(currentFlags);
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(currentFlags.reconciliation_notes ?? '');
   const [saving, setSaving] = useState(false);
+
+  const channels = getApplicableChannels(documentType);
+  if (!isReconcilableDocType(documentType) || channels.length === 0) return null;
 
   const handleToggle = useCallback(async (channel: ReconciliationChannel, checked: boolean) => {
     const col = CHANNEL_COLUMNS[channel];
