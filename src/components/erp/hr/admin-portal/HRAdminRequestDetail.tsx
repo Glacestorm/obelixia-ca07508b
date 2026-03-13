@@ -112,19 +112,19 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
             </CardContent>
           </Card>
 
-          {/* Tabs: Timeline + Comments */}
+          {/* V2-ES.2 Paso 5: Unified timeline + comments */}
           <Card>
             <Tabs defaultValue="timeline">
               <CardHeader className="pb-0">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="timeline" className="text-xs">Actividad</TabsTrigger>
+                  <TabsTrigger value="timeline" className="text-xs">Timeline unificado</TabsTrigger>
                   <TabsTrigger value="comments" className="text-xs">Comentarios ({comments.length})</TabsTrigger>
                 </TabsList>
               </CardHeader>
               <CardContent className="pt-4">
                 <TabsContent value="timeline" className="mt-0">
                   <ScrollArea className="h-[350px]">
-                    <HRAdminRequestTimeline activity={activity} />
+                    <HRAdminRequestTimeline activity={activity} comments={comments} linkedTasks={linkedTasks} />
                   </ScrollArea>
                 </TabsContent>
                 <TabsContent value="comments" className="mt-0">
