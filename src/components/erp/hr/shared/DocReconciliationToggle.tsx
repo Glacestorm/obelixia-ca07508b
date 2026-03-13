@@ -45,7 +45,7 @@ export function DocReconciliationToggle({ documentId, documentType, currentFlags
   const [saving, setSaving] = useState(false);
 
   const channels = getApplicableChannels(documentType);
-  if (!isReconcilableDocType(documentType) || channels.length === 0) return null;
+  const isReconcilable = isReconcilableDocType(documentType) && channels.length > 0;
 
   const handleToggle = useCallback(async (channel: ReconciliationChannel, checked: boolean) => {
     const col = CHANNEL_COLUMNS[channel];
