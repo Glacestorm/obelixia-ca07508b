@@ -94,6 +94,16 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   return (
     <>
       <div className="space-y-4">
+        {/* V2-ES.4+: Executive summary */}
+        {!isLoadingDocuments && filtered.length > 0 && (
+          <ExpedientExecutiveSummary
+            docs={filtered}
+            completeness={null}
+            docsWithVersionHistory={docsWithVersionHistory}
+            calendarLabel={calendarLabel}
+          />
+        )}
+
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <Card><CardContent className="p-3 text-center">
