@@ -44,7 +44,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 export function HRPayrollPeriodManager({
   companyId, periods, isLoading, onOpenPeriod, onUpdateStatus,
   onValidatePreClose, onSelectPeriod, onRefresh,
-  onBatchCalculateES, onBatchDiff,
+  onBatchCalculateES, onBatchDiff, onStartApprovalWorkflow,
 }: Props) {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [newYear, setNewYear] = useState(new Date().getFullYear());
