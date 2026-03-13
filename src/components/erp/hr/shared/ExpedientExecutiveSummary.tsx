@@ -73,7 +73,7 @@ function countByStatus(docs: EmployeeDocument[]): Record<string, number> {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function ExpedientExecutiveSummary({ docs, completeness, processType, className }: Props) {
+export function ExpedientExecutiveSummary({ docs, completeness, processType, docsWithVersionHistory, className }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const statusCounts = useMemo(() => countByStatus(docs), [docs]);
