@@ -2,7 +2,7 @@
  * DocumentDetailPanel — Slide-over con detalle completo de un documento
  * Versiones, comentarios, access log, integridad, retención
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import {
   HardDrive, FileUp
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentVersion, type DocumentComment, type DocumentAccessLog } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { getFileAttachmentStatus } from '@/hooks/erp/hr/useHRDocumentStorage';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getCatalogEntry } from '../shared/documentCatalogES';
@@ -23,6 +24,7 @@ import { DocTrafficLightBadge } from '../shared/DocTrafficLightBadge';
 import { DocStatusBadge } from '../shared/DocStatusBadge';
 import { DocReconciliationBadge, isReconcilableDocType } from '../shared/DocReconciliationBadge';
 import { DocReconciliationToggle } from '../shared/DocReconciliationToggle';
+import { DocFileUpload } from '../shared/DocFileUpload';
 
 interface Props {
   companyId: string;
@@ -56,6 +58,8 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
   };
 
   if (!doc) return null;
+
+  const fileStatus = getFileAttachmentStatus(doc);
 
   const catalogEntry = getCatalogEntry(doc.document_type);
   return (
@@ -209,6 +213,22 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
                       </div>
                     </div>
                   )}
+
+                  {/* V2-ES.4 Paso 3.3: Upload / replace file */}
+                  <div className="mt-3 pt-3 border-t space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <FileUp className="h-3 w-3" />
+                      {fileStatus === 'attached' ? 'Reemplazar archivo' : 'Adjuntar archivo'}
+                    </p>
+                    <DocFileUpload
+                      companyId={companyId}
+                      employeeId={doc.employee_id}
+                      documentId={doc.id}
+                      hasExistingFile={fileStatus === 'attached'}
+                      existingFileName={doc.file_name}
+                      existingStoragePath={doc.storage_path}
+                    />
+                  </div>
 
                   {/* Catalog metadata */}
                   {catalogEntry && (
