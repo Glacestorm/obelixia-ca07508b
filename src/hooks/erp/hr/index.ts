@@ -280,3 +280,11 @@ export type {
   UploadResult,
   FileAttachmentStatus,
 } from './useHRDocumentStorage';
+
+// V2-ES.4 Paso 4: Versionado avanzado de archivo documental
+export { useDocumentFileVersions, hasVersionHistory, getCurrentVersion, getPreviousVersions } from './useDocumentFileVersions';
+export type {
+  DocumentFileVersion,
+  CreateVersionParams,
+  VersioningResult,
+} from './useDocumentFileVersions';
