@@ -24,7 +24,7 @@
 |------|--------|----------|
 | **V2-ES.1 - Motor nómina ES operativo** | ✅ **Completada** | 5 pasos · calculation_trace JSONB · cálculo masivo idempotente · inyección incidencias · comparativa período-a-período · review/approval workflow · cierre con validación de revisión · UNIQUE(payroll_period_id, employee_id) · 3 subcomponentes UI nuevos · 0 rutas/menús nuevos |
 | **V2-ES.2 - Workflows y aprobaciones reales** | ✅ **Completada** | 5 pasos · Mapping 14 request_types → workflow process_types · Start workflow idempotente + sync inverso decide_step → admin_request status · Trazabilidad estructurada (source_type, source_id, related_entity_type, related_entity_id, workflow_instance_id) · Sync automático decision → task status (approved→in_progress, rejected→cancelled, returned→on_hold) · Timeline unificado (activity + comments + linked tasks) · 0 migraciones · 0 rutas/menús nuevos |
-| V2-ES.3 - Expediente documental operativo | 🔜 Pendiente | |
+| **V2-ES.3 - Expediente documental operativo** | 🔄 **En curso** | Paso 1 ✅: Migración related_entity_type/related_entity_id + índice compuesto + RelatedEntityType tipado ('admin_request' | 'hr_task') + fetchDocumentsByEntity + uploadDocument extendido · 0 cambios UI · 0 rutas nuevas |
 | V2-ES.4 - Integraciones oficiales España | 🔜 Pendiente | |
 
 ## Estado de Implementación — Fases Base
