@@ -41,8 +41,13 @@ interface Props {
 export function HRAdminRequestDetail({ request, comments, activity, linkedTasks = [], onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
   const meta = (request.metadata || {}) as Record<string, any>;
   const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
+  const [docsRefreshKey, setDocsRefreshKey] = useState(0);
   const { getCompleteness } = useHRProcessDocRequirements();
   const completeness = getCompleteness(request.request_type, linkedDocs);
+
+  const handleDocsGenerated = useCallback(() => {
+    setDocsRefreshKey(prev => prev + 1);
+  }, []);
 
   return (
     <div className="space-y-4">
