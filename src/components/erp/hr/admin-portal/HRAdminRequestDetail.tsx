@@ -18,6 +18,7 @@ import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type 
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
 import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 const PRIORITY_COLORS: Record<string, string> = {
