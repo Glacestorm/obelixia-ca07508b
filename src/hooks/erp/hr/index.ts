@@ -258,3 +258,25 @@ export type {
   PAInsight,
   PACopilotMessage,
 } from './usePeopleAnalytics';
+
+// V2-ES.4 Paso 3.2: Storage real para expediente documental
+export { useHRDocumentStorage } from './useHRDocumentStorage';
+export {
+  HR_DOC_BUCKET,
+  HR_DOC_MAX_SIZE_BYTES,
+  HR_DOC_ALLOWED_MIME_TYPES,
+  HR_DOC_ALLOWED_EXTENSIONS,
+  buildStoragePath,
+  computeFileChecksum,
+  validateFile,
+  formatFileSize,
+  isPreviewableMime,
+  getFileAttachmentStatus,
+} from './useHRDocumentStorage';
+export type {
+  StorageErrorCode,
+  StorageError,
+  StorageResult,
+  UploadResult,
+  FileAttachmentStatus,
+} from './useHRDocumentStorage';
