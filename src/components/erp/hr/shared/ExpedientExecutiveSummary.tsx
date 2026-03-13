@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import {
   FileText, ShieldAlert, XCircle, Clock, Send,
   CheckCircle2, AlertCircle, AlertTriangle, Scale,
-  ChevronDown, ChevronUp, Zap,
+  ChevronDown, ChevronUp, Zap, History,
 } from 'lucide-react';
 import { normalizeDocStatus } from './DocStatusBadge';
 import { isReconcilableDocType } from './DocReconciliationBadge';
@@ -29,6 +29,8 @@ interface Props {
   docs: EmployeeDocument[];
   completeness: EnrichedCompleteness | null;
   processType?: string;
+  /** V2-ES.4 Paso 4: count of docs with version history (>1 version). Optional — omit to hide. */
+  docsWithVersionHistory?: number;
   className?: string;
 }
 
@@ -71,7 +73,7 @@ function countByStatus(docs: EmployeeDocument[]): Record<string, number> {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function ExpedientExecutiveSummary({ docs, completeness, processType, className }: Props) {
+export function ExpedientExecutiveSummary({ docs, completeness, processType, docsWithVersionHistory, className }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const statusCounts = useMemo(() => countByStatus(docs), [docs]);
@@ -161,6 +163,17 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, cla
       value: String(reconciliationPending),
       severity: 'warn',
       tooltip: `${reconciliationPending} documento(s) reconciliable(s) sin conciliar`,
+    });
+  }
+
+  // 7. V2-ES.4 Paso 4: Documentos con historial de versiones
+  if (docsWithVersionHistory != null && docsWithVersionHistory > 0) {
+    metrics.push({
+      icon: History,
+      label: 'Con historial',
+      value: String(docsWithVersionHistory),
+      severity: 'ok',
+      tooltip: `${docsWithVersionHistory} documento(s) con versiones previas de archivo`,
     });
   }
 
