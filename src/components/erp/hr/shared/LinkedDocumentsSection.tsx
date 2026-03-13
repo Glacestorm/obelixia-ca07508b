@@ -305,52 +305,76 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
             Sin documentos vinculados a esta {label}
           </p>
         ) : (
+          <TooltipProvider delayDuration={200}>
           <div className="space-y-1.5">
-            {docs.map(doc => (
-              <div
-                key={doc.id}
-                className="p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors text-sm space-y-1"
-              >
-                <div className="flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate text-xs">{doc.document_name}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('es-ES')}
-                    </p>
+            {docs.map(doc => {
+              const hasFile = !!(doc as any).storage_path || !!(doc as any).file_name;
+              const vCount = versionCounts.get(doc.id) ?? 0;
+              return (
+                <div
+                  key={doc.id}
+                  className="p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors text-sm space-y-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate text-xs">{doc.document_name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {doc.document_type} · {new Date(doc.created_at).toLocaleDateString('es-ES')}
+                      </p>
+                    </div>
+                    {hasFile && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Paperclip className="h-3 w-3 text-muted-foreground shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">Archivo adjunto</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {vCount > 1 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 gap-0.5 bg-sky-500/10 text-sky-700 border-sky-500/20 shrink-0">
+                            <History className="h-2.5 w-2.5" />v{vCount}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">{vCount} versiones de archivo</TooltipContent>
+                      </Tooltip>
+                    )}
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {CATEGORY_LABELS[doc.category] || doc.category}
+                    </Badge>
+                    <DocGenerationBadge
+                      metadata={doc.metadata as Record<string, any> | null}
+                      source={doc.source}
+                    />
+                    <DocStatusBadge status={doc.document_status} />
+                    <DocReconciliationBadge
+                      documentType={doc.document_type}
+                      flags={{
+                        reconciled_with_payroll: doc.reconciled_with_payroll,
+                        reconciled_with_social_security: doc.reconciled_with_social_security,
+                        reconciled_with_tax: doc.reconciled_with_tax,
+                        reconciliation_notes: doc.reconciliation_notes,
+                      }}
+                    />
                   </div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {CATEGORY_LABELS[doc.category] || doc.category}
-                  </Badge>
-                  <DocGenerationBadge
-                    metadata={doc.metadata as Record<string, any> | null}
-                    source={doc.source}
-                  />
-                  <DocStatusBadge status={doc.document_status} />
-                  <DocReconciliationBadge
+                  <DocReconciliationToggle
+                    documentId={doc.id}
                     documentType={doc.document_type}
-                    flags={{
+                    currentFlags={{
                       reconciled_with_payroll: doc.reconciled_with_payroll,
                       reconciled_with_social_security: doc.reconciled_with_social_security,
                       reconciled_with_tax: doc.reconciled_with_tax,
                       reconciliation_notes: doc.reconciliation_notes,
                     }}
+                    onUpdated={loadDocs}
                   />
                 </div>
-                <DocReconciliationToggle
-                  documentId={doc.id}
-                  documentType={doc.document_type}
-                  currentFlags={{
-                    reconciled_with_payroll: doc.reconciled_with_payroll,
-                    reconciled_with_social_security: doc.reconciled_with_social_security,
-                    reconciled_with_tax: doc.reconciled_with_tax,
-                    reconciliation_notes: doc.reconciliation_notes,
-                  }}
-                  onUpdated={loadDocs}
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
+          </TooltipProvider>
         )}
       </CardContent>
     </Card>
