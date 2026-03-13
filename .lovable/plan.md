@@ -23,7 +23,7 @@
 | Subfase V2 | Estado | Detalles |
 |------|--------|----------|
 | **V2-ES.1 - Motor nómina ES operativo** | ✅ **Completada** | 5 pasos · calculation_trace JSONB · cálculo masivo idempotente · inyección incidencias · comparativa período-a-período · review/approval workflow · cierre con validación de revisión · UNIQUE(payroll_period_id, employee_id) · 3 subcomponentes UI nuevos · 0 rutas/menús nuevos |
-| V2-ES.2 - Workflows y aprobaciones reales | 🔜 Pendiente | |
+| **V2-ES.2 - Workflows y aprobaciones reales** | ✅ **Completada** | 5 pasos · Mapping 14 request_types → workflow process_types · Start workflow idempotente + sync inverso decide_step → admin_request status · Trazabilidad estructurada (source_type, source_id, related_entity_type, related_entity_id, workflow_instance_id) · Sync automático decision → task status (approved→in_progress, rejected→cancelled, returned→on_hold) · Timeline unificado (activity + comments + linked tasks) · 0 migraciones · 0 rutas/menús nuevos |
 | V2-ES.3 - Expediente documental operativo | 🔜 Pendiente | |
 | V2-ES.4 - Integraciones oficiales España | 🔜 Pendiente | |
 
@@ -120,3 +120,51 @@
 
 ### Navegación:
 - 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+
+## V2-ES.2 — Acta de cierre
+
+### Paso 1: Mapping request_type → workflow process_type
+- 14 tipos de solicitud mapeados a process_types del workflow engine
+- Constante `REQUEST_TYPE_TO_PROCESS` en useAdminPortal
+- Guard `WORKFLOW_TRIGGER_STATUSES` (solo submitted/pending_approval inician workflow)
+
+### Paso 2: Workflow engine integration
+- `startWorkflowForRequest` — idempotente, verifica instancia activa antes de crear
+- `createRequest` inicia workflow automáticamente si status es operativo
+- `updateStatus` sincroniza inversamente al workflow engine via `decide_step`
+- `HRApprovalInbox` soporta `entity_type='admin_request'` sin cambios
+- Sync inverso: approved→approved/reviewing, rejected→rejected, returned→returned
+
+### Paso 3: Trazabilidad estructurada
+- `generateTasks` inserta tareas con campos estructurados:
+  - `source_type='admin_request'`, `source_id=request.id`
+  - `related_entity_type='admin_request'`, `related_entity_id=request.id`
+  - `workflow_instance_id` propagado si existe
+- `TaskDetail` muestra sección "Origen de la tarea" con labels legibles
+- Triángulo cerrado: request↔workflow↔tasks
+
+### Paso 4: Sync automático decision → task status
+- `syncTasksFromDecision` en useAdminPortal
+- Mapeo: approved→in_progress, rejected→cancelled, returned→on_hold
+- Solo afecta tareas con related_entity_type='admin_request' en estados pending/in_progress
+- Best-effort con console.warn si falla
+
+### Paso 5: Timeline unificado
+- `fetchDetail` extendido: trae linkedTasks (hr_tasks vinculadas)
+- `HRAdminRequestTimeline` reescrita: fusiona activity + comments + tasks cronológicamente
+- Deduplicación: activity.action='commented' excluida (se usa fuente real de comments)
+- Tab "Timeline unificado" + tab "Comentarios" (con formulario)
+
+### Archivos modificados
+- `src/hooks/admin/hr/useAdminPortal.ts` — generateTasks, fetchDetail, syncTasksFromDecision, LinkedTask type
+- `src/components/erp/hr/tasks/TaskDetail.tsx` — sección Origen + labels
+- `src/components/erp/hr/admin-portal/HRAdminRequestTimeline.tsx` — timeline unificado
+- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — linkedTasks prop
+- `src/components/erp/hr/admin-portal/HRAdminPortal.tsx` — linkedTasks passthrough
+
+### Sin cambios en
+- Edge Functions (erp-hr-workflow-engine intacta)
+- Tablas/migraciones (0 migraciones)
+- Rutas/menús (0 nuevos)
+- Lógica de payroll/cierre de período (V2-ES.1 intacta)
+- HRApprovalInbox (sin modificaciones directas)
