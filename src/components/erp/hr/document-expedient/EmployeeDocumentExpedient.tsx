@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentCategory, type EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from './DocumentDetailPanel';
+import { DocumentOriginBadge, ORIGIN_FILTER_OPTIONS, filterByOrigin, type OriginFilterValue } from '../shared/DocumentOriginBadge';
 
 interface Props {
   companyId: string;
