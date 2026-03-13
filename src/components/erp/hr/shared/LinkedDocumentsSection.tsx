@@ -308,7 +308,7 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
           <TooltipProvider delayDuration={200}>
           <div className="space-y-1.5">
             {docs.map(doc => {
-              const hasFile = !!(doc as any).storage_path || !!(doc as any).file_name;
+              const hasFile = !!doc.storage_path || !!doc.file_name;
               const vCount = versionCounts.get(doc.id) ?? 0;
               return (
                 <div
