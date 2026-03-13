@@ -46,10 +46,10 @@ function computeHealth(
   alertSummary: ExpedientAlertSummary,
   statusCounts: Record<string, number>,
 ): OverallHealth {
-  if (alertSummary.critical > 0) return 'critical';
+  if (alertSummary.criticalCount > 0) return 'critical';
   if (completeness && !completeness.mandatoryComplete) return 'critical';
   if ((statusCounts.rejected || 0) > 0) return 'critical';
-  if (alertSummary.warning > 0) return 'attention';
+  if (alertSummary.warningCount > 0) return 'attention';
   if ((statusCounts.pending_submission || 0) > 0) return 'attention';
   return 'healthy';
 }
