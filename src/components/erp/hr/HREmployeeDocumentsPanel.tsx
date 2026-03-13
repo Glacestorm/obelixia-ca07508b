@@ -416,6 +416,9 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
                         </Badge>
                       </TableCell>
                      <TableCell>
+                       <DocStatusBadge status={(doc as any).document_status} />
+                     </TableCell>
+                     <TableCell>
                        <DocumentOriginBadge relatedEntityType={(doc as any).related_entity_type} />
                      </TableCell>
                      <TableCell>
