@@ -31130,6 +31130,57 @@ export type Database = {
           },
         ]
       }
+      erp_hr_doc_generation_rules: {
+        Row: {
+          created_at: string | null
+          default_category: string | null
+          default_document_name: string
+          default_subcategory: string | null
+          document_type_code: string
+          id: string
+          is_active: boolean | null
+          is_confidential_default: boolean | null
+          label: string
+          metadata_defaults: Json | null
+          notes_template: string | null
+          process_type: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_category?: string | null
+          default_document_name: string
+          default_subcategory?: string | null
+          document_type_code: string
+          id?: string
+          is_active?: boolean | null
+          is_confidential_default?: boolean | null
+          label: string
+          metadata_defaults?: Json | null
+          notes_template?: string | null
+          process_type: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_category?: string | null
+          default_document_name?: string
+          default_subcategory?: string | null
+          document_type_code?: string
+          id?: string
+          is_active?: boolean | null
+          is_confidential_default?: boolean | null
+          label?: string
+          metadata_defaults?: Json | null
+          notes_template?: string | null
+          process_type?: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_document_ai_processing: {
         Row: {
           company_id: string
