@@ -200,6 +200,17 @@ export function HRPayrollPeriodManager({
                         Comparativa
                       </Button>
                     )}
+                    {(p.status === 'calculated' || p.status === 'reviewing') && onStartApprovalWorkflow && (
+                      <Button
+                        variant="outline" size="sm"
+                        className="text-xs gap-1"
+                        onClick={() => handleStartApproval(p.id)}
+                        disabled={isApproving}
+                      >
+                        {isApproving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                        Enviar a aprobación
+                      </Button>
+                    )}
                     {(p.status === 'calculated' || p.status === 'reviewing') && (
                       <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleValidate(p.id)}>
                         <CheckCircle className="h-3 w-3" /> Validar cierre
