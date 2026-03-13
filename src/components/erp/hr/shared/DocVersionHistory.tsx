@@ -29,7 +29,7 @@ interface DocVersionHistoryProps {
 
 export function DocVersionHistory({ companyId, documentId, className }: DocVersionHistoryProps) {
   const { versions, isLoading, fetchVersions, previousVersions, hasHistory } = useDocumentFileVersions(documentId);
-  const { getDownloadUrl, downloadFile } = useHRDocumentStorage(companyId);
+  const { getDownloadUrl, downloadFile, logFileAudit } = useHRDocumentStorage(companyId);
   const [expanded, setExpanded] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewVersion, setPreviewVersion] = useState<string | null>(null);
@@ -55,6 +55,14 @@ export function DocVersionHistory({ companyId, documentId, className }: DocVersi
   // Only 1 version (current) = no history to show
   if (!hasHistory) return null;
 
+  const versionAuditMeta = (v: DocumentFileVersion) => ({
+    file_name: v.file_name,
+    mime_type: v.mime_type ?? undefined,
+    file_size_bytes: v.file_size_bytes ?? undefined,
+    storage_path: v.storage_path,
+    checksum: v.checksum ?? undefined,
+  });
+
   const handlePreview = async (version: DocumentFileVersion) => {
     if (!isPreviewableMime(version.mime_type)) return;
     setLoadingPreview(true);
@@ -62,12 +70,16 @@ export function DocVersionHistory({ companyId, documentId, className }: DocVersi
     if (result.ok) {
       setPreviewUrl(result.data);
       setPreviewVersion(version.id);
+      logFileAudit('file_preview', documentId, true, versionAuditMeta(version));
+    } else {
+      logFileAudit('file_preview', documentId, false, { ...versionAuditMeta(version), error_message: 'Failed to get URL' });
     }
     setLoadingPreview(false);
   };
 
   const handleDownload = async (version: DocumentFileVersion) => {
-    await downloadFile(version.storage_path, version.file_name);
+    const result = await downloadFile(version.storage_path, version.file_name);
+    logFileAudit('file_download', documentId, result.ok, versionAuditMeta(version));
   };
 
   return (
