@@ -67,7 +67,9 @@ export function HRPayrollPeriodManager({
   };
 
   const handleClose = async () => {
-    if (validatingPeriodId && validationResults.every(v => v.passed)) {
+    // Only block on error severity, warnings are allowed
+    const hasBlockingErrors = validationResults.some(v => !v.passed && (v as any).severity === 'error');
+    if (validatingPeriodId && !hasBlockingErrors) {
       await onUpdateStatus(validatingPeriodId, 'closed');
       setShowValidation(false);
     }
@@ -239,19 +241,31 @@ export function HRPayrollPeriodManager({
         <DialogContent>
           <DialogHeader><DialogTitle>Validación Pre-Cierre</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            {validationResults.map(v => (
-              <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg border">
-                {v.passed ? <CheckCircle className="h-5 w-5 text-emerald-500" /> : <AlertTriangle className="h-5 w-5 text-destructive" />}
-                <div>
-                  <p className="text-sm font-medium">{v.label}</p>
-                  {v.detail && <p className="text-xs text-muted-foreground">{v.detail}</p>}
+            {validationResults.map(v => {
+              const sev = (v as any).severity || 'info';
+              return (
+                <div key={v.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                  {v.passed ? (
+                    <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+                  ) : sev === 'error' ? (
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                  ) : (
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">{v.label}</p>
+                    {v.detail && <p className="text-xs text-muted-foreground">{v.detail}</p>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowValidation(false)}>Cancelar</Button>
-            <Button onClick={handleClose} disabled={!validationResults.every(v => v.passed)}>
+            <Button
+              onClick={handleClose}
+              disabled={validationResults.some(v => !v.passed && (v as any).severity === 'error')}
+            >
               Cerrar período
             </Button>
           </DialogFooter>

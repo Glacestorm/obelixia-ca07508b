@@ -48,6 +48,12 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
     return bridge.computeDiffVsPrevious(recordId, periodId);
   }, [bridge.computeDiffVsPrevious]);
 
+  // Combine generic + ES pre-close validation
+  const handleValidatePreClose = useCallback(async (periodId: string) => {
+    const esChecks = await bridge.validateESPreClose(periodId);
+    return esChecks;
+  }, [bridge.validateESPreClose]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -71,7 +77,7 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
             isLoading={engine.isLoading}
             onOpenPeriod={engine.openPeriod}
             onUpdateStatus={engine.updatePeriodStatus}
-            onValidatePreClose={engine.validatePreClose}
+            onValidatePreClose={handleValidatePreClose}
             onSelectPeriod={(id) => { setSelectedPeriodId(id); setActiveTab('payslips'); }}
             onRefresh={() => engine.fetchPeriods()}
             onBatchCalculateES={handleBatchCalcES}
