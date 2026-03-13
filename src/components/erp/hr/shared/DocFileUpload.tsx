@@ -187,9 +187,19 @@ export function DocFileUpload({
           </Button>
         </div>
         {hasExistingFile && (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            ⚠ Esto reemplazará el archivo actual{existingFileName ? ` (${existingFileName})` : ''}
-          </p>
+          <div className="space-y-1.5">
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              ⚠ Esto reemplazará el archivo actual{existingFileName ? ` (${existingFileName})` : ''}
+            </p>
+            <textarea
+              value={replaceReason}
+              onChange={(e) => setReplaceReason(e.target.value)}
+              placeholder="Motivo del reemplazo (opcional)"
+              className="w-full text-xs rounded border border-input bg-background px-2 py-1.5 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+              rows={2}
+              maxLength={500}
+            />
+          </div>
         )}
         <Button size="sm" className="w-full gap-1.5 h-8" onClick={executeUpload}>
           <FileUp className="h-3.5 w-3.5" />
