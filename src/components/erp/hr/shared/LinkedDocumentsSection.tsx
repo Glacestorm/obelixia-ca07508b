@@ -2,8 +2,9 @@
  * LinkedDocumentsSection — Reusable section to view/upload documents
  * linked to an admin_request or hr_task via related_entity_type/id.
  * V2-ES.3 Paso 2 + V2-ES.4 Paso 1 parte 4 (checklist enriquecido obligatorio/opcional)
+ * V2-ES.4+: Indicadores de archivo adjunto y versiones
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,16 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle2, CircleDashed, ShieldAlert } from 'lucide-react';
-import { useHRDocumentExpedient, type RelatedEntityType, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
-import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
-import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
-import { DocStatusBadge } from './DocStatusBadge';
-import { DocReconciliationBadge } from './DocReconciliationBadge';
-import { DocReconciliationToggle } from './DocReconciliationToggle';
-import { DocActionQueuePanel } from './DocActionQueuePanel';
-import { DocumentAlertsSummary } from './DocumentAlertsSummary';
-import { DocGenerationBadge } from './DocGenerationBadge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle2, CircleDashed, ShieldAlert, History } from 'lucide-react';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
