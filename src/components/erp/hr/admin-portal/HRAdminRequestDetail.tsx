@@ -1,7 +1,7 @@
 /**
  * HRAdminRequestDetail — Full detail view with actions, timeline, comments
  */
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,7 @@ import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
+import { DocAutoGenerateButton } from '../shared/DocAutoGenerateButton';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
@@ -40,8 +41,13 @@ interface Props {
 export function HRAdminRequestDetail({ request, comments, activity, linkedTasks = [], onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
   const meta = (request.metadata || {}) as Record<string, any>;
   const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
+  const [docsRefreshKey, setDocsRefreshKey] = useState(0);
   const { getCompleteness } = useHRProcessDocRequirements();
   const completeness = getCompleteness(request.request_type, linkedDocs);
+
+  const handleDocsGenerated = useCallback(() => {
+    setDocsRefreshKey(prev => prev + 1);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -150,6 +156,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
 
           {/* V2-ES.3 Paso 2: Linked documents */}
           <LinkedDocumentsSection
+            key={docsRefreshKey}
             companyId={request.company_id}
             entityType="admin_request"
             entityId={request.id}
@@ -161,6 +168,15 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* V2-ES.4 Paso 5.3: Auto-generate documents button */}
+          <DocAutoGenerateButton
+            companyId={request.company_id}
+            employeeId={request.employee_id}
+            employeeName={request.employee_name}
+            requestType={request.request_type}
+            requestId={request.id}
+            onGenerated={handleDocsGenerated}
+          />
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Información</CardTitle>
