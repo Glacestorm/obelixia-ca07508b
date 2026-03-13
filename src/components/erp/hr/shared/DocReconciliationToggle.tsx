@@ -90,6 +90,8 @@ export function DocReconciliationToggle({ documentId, documentType, currentFlags
     }
   }, [notes, documentId, onUpdated]);
 
+  if (!isReconcilable) return null;
+
   return (
     <div className={cn('space-y-1', className)}>
       <div className="flex items-center gap-3">
