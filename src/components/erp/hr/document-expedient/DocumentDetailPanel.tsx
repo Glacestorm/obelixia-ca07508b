@@ -59,6 +59,8 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
 
   if (!doc) return null;
 
+  const fileStatus = getFileAttachmentStatus(doc);
+
   const catalogEntry = getCatalogEntry(doc.document_type);
   return (
     <Sheet open onOpenChange={() => onClose()}>
