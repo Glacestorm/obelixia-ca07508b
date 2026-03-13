@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   Calendar, Plus, Lock, Unlock, RefreshCw, CheckCircle,
-  AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2
+  AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2, Send
 } from 'lucide-react';
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
 
