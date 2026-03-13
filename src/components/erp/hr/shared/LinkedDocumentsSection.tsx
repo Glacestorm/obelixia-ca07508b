@@ -19,6 +19,7 @@ import { DocStatusBadge } from './DocStatusBadge';
 import { DocReconciliationBadge } from './DocReconciliationBadge';
 import { DocReconciliationToggle } from './DocReconciliationToggle';
 import { DocActionQueuePanel } from './DocActionQueuePanel';
+import { DocumentAlertsSummary } from './DocumentAlertsSummary';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
