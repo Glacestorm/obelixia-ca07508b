@@ -57,6 +57,9 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
   const { getCompleteness } = useHRProcessDocRequirements();
   const [docs, setDocs] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  // Version counts for indicators
+  const docIds = useMemo(() => docs.map(d => d.id), [docs]);
+  const { countsMap: versionCounts } = useDocumentVersionCounts(docIds);
   const [showForm, setShowForm] = useState(false);
   const [uploading, setUploading] = useState(false);
 
