@@ -14,6 +14,8 @@ import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
+import { DocumentCompletenessIndicator } from '../shared/DocumentCompletenessIndicator';
+import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 const PRIORITY_COLORS: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
