@@ -17,6 +17,8 @@ import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type 
 import { DocumentCompletenessIndicator } from '../shared/DocumentCompletenessIndicator';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
 import { DocActionQueuePanel } from '../shared/DocActionQueuePanel';
+import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
+import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 const PRIORITY_COLORS: Record<string, string> = {
