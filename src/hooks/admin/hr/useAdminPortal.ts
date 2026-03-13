@@ -465,7 +465,13 @@ export function useAdminPortal(companyId: string) {
           status: 'pending',
           priority: req.priority,
           category: 'admin_request',
-          metadata: { source_request_id: req.id, request_type: req.request_type },
+          // V2-ES.2 Paso 3: Structured traceability fields
+          source_type: 'admin_request',
+          source_id: req.id,
+          related_entity_type: 'admin_request',
+          related_entity_id: req.id,
+          ...(req.workflow_instance_id ? { workflow_instance_id: req.workflow_instance_id } : {}),
+          metadata: { source_request_id: req.id, request_type: req.request_type, reference_number: req.reference_number },
         }] as any);
       }
 

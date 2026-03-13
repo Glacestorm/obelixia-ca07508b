@@ -23,6 +23,21 @@ const PRIORITY_STYLES: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
 };
 
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+  manual: 'Manual',
+  workflow: 'Workflow',
+  admin_request: 'Solicitud administrativa',
+  system: 'Sistema',
+  scheduled: 'Programada',
+};
+
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+  admin_request: 'Solicitud',
+  payroll_record: 'Nómina',
+  contract: 'Contrato',
+  employee: 'Empleado',
+};
+
 export function TaskDetail({ task, engine, onClose }: Props) {
   const isActive = task.status === 'pending' || task.status === 'in_progress';
 
@@ -94,6 +109,38 @@ export function TaskDetail({ task, engine, onClose }: Props) {
           </div>
         )}
       </div>
+
+      {/* Source / Origin context — V2-ES.2 Paso 3 */}
+      {(task.source_type || task.related_entity_type || task.workflow_instance_id) && (
+        <>
+          <Separator />
+          <div>
+            <p className="text-sm font-medium mb-2 flex items-center gap-1"><Zap className="h-3 w-3" /> Origen de la tarea</p>
+            <div className="space-y-1 text-sm">
+              {task.source_type && (
+                <p className="text-muted-foreground">
+                  Fuente: <span className="font-medium text-foreground">{SOURCE_TYPE_LABELS[task.source_type] || task.source_type}</span>
+                </p>
+              )}
+              {task.related_entity_type && task.related_entity_id && (
+                <p className="text-muted-foreground">
+                  {ENTITY_TYPE_LABELS[task.related_entity_type] || task.related_entity_type}: <span className="font-medium text-foreground">{task.related_entity_id.slice(0, 8)}...</span>
+                </p>
+              )}
+              {task.workflow_instance_id && (
+                <p className="text-muted-foreground">
+                  Workflow: <span className="font-medium text-foreground">{task.workflow_instance_id.slice(0, 8)}...</span>
+                </p>
+              )}
+              {task.source_id && task.source_id !== task.related_entity_id && (
+                <p className="text-muted-foreground">
+                  Ref. origen: <span className="font-medium text-foreground">{task.source_id.slice(0, 8)}...</span>
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Related entities */}
       {(task.employee_id || task.contract_id || task.payroll_record_id || task.submission_id || task.assignment_id) && (
