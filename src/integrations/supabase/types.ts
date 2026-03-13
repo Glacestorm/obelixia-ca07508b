@@ -37513,6 +37513,45 @@ export type Database = {
           },
         ]
       }
+      erp_hr_process_doc_requirements: {
+        Row: {
+          created_at: string
+          document_type_code: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          label: string
+          notes: string | null
+          process_type: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_type_code: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          label: string
+          notes?: string | null
+          process_type: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_type_code?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          label?: string
+          notes?: string | null
+          process_type?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_quality_of_hire: {
         Row: {
           company_id: string

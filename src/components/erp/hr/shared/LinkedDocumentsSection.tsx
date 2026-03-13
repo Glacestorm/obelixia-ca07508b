@@ -1,7 +1,7 @@
 /**
  * LinkedDocumentsSection — Reusable section to view/upload documents
  * linked to an admin_request or hr_task via related_entity_type/id.
- * V2-ES.3 Paso 2 + Paso 4 (completitud documental informativa)
+ * V2-ES.3 Paso 2 + V2-ES.4 Paso 1 parte 4 (checklist enriquecido obligatorio/opcional)
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle2, CircleDashed } from 'lucide-react';
+import { Paperclip, Upload, FileText, AlertTriangle, Loader2, Link2, CheckCircle2, CircleDashed, ShieldAlert } from 'lucide-react';
 import { useHRDocumentExpedient, type RelatedEntityType, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
-import { computeDocCompleteness, type ExpectedDocType } from './documentExpectedTypes';
+import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequirements';
 import { DocStatusBadge } from './DocStatusBadge';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
@@ -46,6 +46,7 @@ interface Props {
 
 export function LinkedDocumentsSection({ companyId, entityType, entityId, employeeId, managementType, onDocsLoaded }: Props) {
   const { fetchDocumentsByEntity, uploadDocument } = useHRDocumentExpedient(companyId);
+  const { getCompleteness } = useHRProcessDocRequirements();
   const [docs, setDocs] = useState<EmployeeDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -60,7 +61,6 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
     setLoading(true);
     try {
       const result = await fetchDocumentsByEntity(entityType, entityId);
-      // Deduplicate by id (safety net)
       const unique = Array.from(new Map(result.map(d => [d.id, d])).values());
       setDocs(unique);
       onDocsLoaded?.(unique);
@@ -96,8 +96,8 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
 
   const label = ENTITY_LABELS[entityType];
 
-  // V2-ES.3 Paso 4: Completitud documental (informativa)
-  const completeness = computeDocCompleteness(managementType, docs);
+  // V2-ES.4 Paso 1 parte 4: Enriched completeness with mandatory/optional
+  const completeness = getCompleteness(managementType, docs);
 
   return (
     <Card className="border-dashed">
@@ -109,16 +109,24 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
           </CardTitle>
           <div className="flex items-center gap-2">
             {completeness && (
-              <Badge
-                variant="outline"
-                className={
-                  completeness.percentage === 100
-                    ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-[10px]'
-                    : 'bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px]'
-                }
-              >
-                {completeness.completed}/{completeness.total} docs
-              </Badge>
+              <div className="flex items-center gap-1">
+                <Badge
+                  variant="outline"
+                  className={
+                    completeness.percentage === 100
+                      ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-[10px]'
+                      : 'bg-amber-500/10 text-amber-700 border-amber-500/30 text-[10px]'
+                  }
+                >
+                  {completeness.completed}/{completeness.total} docs
+                </Badge>
+                {!completeness.mandatoryComplete && (
+                  <Badge variant="outline" className="bg-red-500/10 text-red-700 border-red-500/30 text-[10px] gap-0.5">
+                    <ShieldAlert className="h-2.5 w-2.5" />
+                    {completeness.mandatoryMissing.length} oblig.
+                  </Badge>
+                )}
+              </div>
             )}
             {employeeId && !showForm && (
               <Button variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={() => setShowForm(true)}>
@@ -136,7 +144,7 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* V2-ES.3 Paso 4: Checklist de completitud */}
+        {/* V2-ES.4 Checklist enriquecido con obligatorio/opcional */}
         {completeness && (
           <div className="p-3 rounded-lg border bg-muted/20 space-y-2">
             <div className="flex items-center justify-between text-xs">
@@ -146,28 +154,64 @@ export function LinkedDocumentsSection({ companyId, entityType, entityId, employ
               </span>
             </div>
             <Progress value={completeness.percentage} className="h-1.5" />
-            <div className="space-y-1 mt-1">
-              {completeness.expected.map((exp) => {
-                const isPresent = completeness.present.includes(exp.type);
-                return (
-                  <div key={exp.type} className="flex items-center gap-2 text-xs">
-                    {isPresent ? (
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                    ) : (
-                      <CircleDashed className="h-3 w-3 text-amber-500 shrink-0" />
-                    )}
-                    <span className={isPresent ? 'text-muted-foreground' : 'text-foreground'}>
-                      {exp.label}
-                    </span>
-                    {!isPresent && (
-                      <Badge variant="outline" className="text-[9px] h-4 px-1 bg-amber-500/5 text-amber-600 border-amber-500/20">
-                        Pendiente
-                      </Badge>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+
+            {/* Mandatory section */}
+            {completeness.totalMandatory > 0 && (
+              <div className="space-y-1 mt-1">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Obligatorios ({completeness.completedMandatory}/{completeness.totalMandatory})
+                </p>
+                {completeness.requirements.filter(r => r.is_mandatory).map((req) => {
+                  const isPresent = completeness.present.includes(req.document_type_code);
+                  return (
+                    <div key={req.id} className="flex items-center gap-2 text-xs">
+                      {isPresent ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                      ) : (
+                        <ShieldAlert className="h-3 w-3 text-red-500 shrink-0" />
+                      )}
+                      <span className={isPresent ? 'text-muted-foreground' : 'text-foreground font-medium'}>
+                        {req.label}
+                      </span>
+                      {!isPresent && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 bg-red-500/5 text-red-600 border-red-500/20">
+                          Obligatorio
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Optional section */}
+            {completeness.totalOptional > 0 && (
+              <div className="space-y-1 mt-1">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Opcionales ({completeness.completedOptional}/{completeness.totalOptional})
+                </p>
+                {completeness.requirements.filter(r => !r.is_mandatory).map((req) => {
+                  const isPresent = completeness.present.includes(req.document_type_code);
+                  return (
+                    <div key={req.id} className="flex items-center gap-2 text-xs">
+                      {isPresent ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                      ) : (
+                        <CircleDashed className="h-3 w-3 text-amber-500 shrink-0" />
+                      )}
+                      <span className={isPresent ? 'text-muted-foreground' : 'text-foreground'}>
+                        {req.label}
+                      </span>
+                      {!isPresent && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 bg-amber-500/5 text-amber-600 border-amber-500/20">
+                          Pendiente
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

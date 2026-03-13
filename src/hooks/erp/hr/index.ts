@@ -173,6 +173,13 @@ export type {
   HRDocumentCategory,
 } from './useHRDocumentCatalog';
 
+// Checklist documental por proceso (V2-ES.4)
+export { useHRProcessDocRequirements } from './useHRProcessDocRequirements';
+export type {
+  ProcessDocRequirement,
+  EnrichedCompleteness,
+} from './useHRProcessDocRequirements';
+
 // Reglas de plazos documentales (V2-ES.4)
 export { useHRDocumentDueRules } from './useHRDocumentDueRules';
 export type {
