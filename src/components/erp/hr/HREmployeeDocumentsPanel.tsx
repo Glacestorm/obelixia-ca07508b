@@ -371,17 +371,18 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
               </div>
             ) : (
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Documento</TableHead>
-                    <TableHead>Empleado</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>IA</TableHead>
-                    <TableHead>Vencimiento</TableHead>
-                    <TableHead>Tamaño</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>Documento</TableHead>
+                     <TableHead>Empleado</TableHead>
+                     <TableHead>Tipo</TableHead>
+                     <TableHead>Origen</TableHead>
+                     <TableHead>IA</TableHead>
+                     <TableHead>Vencimiento</TableHead>
+                     <TableHead>Tamaño</TableHead>
+                     <TableHead></TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {filteredDocuments.map((doc) => (
                     <TableRow key={doc.id}>
