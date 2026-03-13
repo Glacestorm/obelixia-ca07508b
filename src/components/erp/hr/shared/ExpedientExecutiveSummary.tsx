@@ -149,7 +149,7 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, cla
       label: 'Acciones pend.',
       value: String(pendingActions.length),
       severity: pendingActions.some(a => a.priority === 'critical') ? 'error' : 'warn',
-      tooltip: pendingActions.slice(0, 3).map(a => a.title).join('; '),
+      tooltip: pendingActions.slice(0, 3).map(a => a.reason).join('; '),
     });
   }
 
