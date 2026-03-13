@@ -87,6 +87,16 @@ export interface AdminRequestActivity {
   created_at: string;
 }
 
+// V2-ES.2 Paso 5: Linked task summary for unified timeline
+export interface LinkedTask {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AdminPortalFilters {
   status?: string;
   request_type?: string;
