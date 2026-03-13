@@ -44,6 +44,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
   const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
   const [docsRefreshKey, setDocsRefreshKey] = useState(0);
   const { getCompleteness } = useHRProcessDocRequirements();
+  const { calendarLabel } = useHRHolidayCalendar();
   const completeness = getCompleteness(request.request_type, linkedDocs);
 
   const handleDocsGenerated = useCallback(() => {
