@@ -139,6 +139,14 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
               </CardContent>
             </Tabs>
           </Card>
+
+          {/* V2-ES.3 Paso 2: Linked documents */}
+          <LinkedDocumentsSection
+            companyId={request.company_id}
+            entityType="admin_request"
+            entityId={request.id}
+            employeeId={request.employee_id}
+          />
         </div>
 
         {/* Sidebar */}
