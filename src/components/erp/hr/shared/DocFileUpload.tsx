@@ -27,6 +27,7 @@ interface DocFileUploadProps {
   /** If file is already attached, show replace mode */
   hasExistingFile?: boolean;
   existingFileName?: string | null;
+  existingStoragePath?: string | null;
   onUploadComplete?: () => void;
   className?: string;
 }
@@ -37,6 +38,7 @@ export function DocFileUpload({
   documentId,
   hasExistingFile = false,
   existingFileName,
+  existingStoragePath,
   onUploadComplete,
   className,
 }: DocFileUploadProps) {
@@ -47,7 +49,7 @@ export function DocFileUpload({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { uploadFile } = useHRDocumentStorage();
+  const { uploadFile } = useHRDocumentStorage(companyId);
 
   const allowedExtsLabel = Array.from(HR_DOC_ALLOWED_EXTENSIONS).join(', ');
   const maxSizeLabel = formatFileSize(HR_DOC_MAX_SIZE_BYTES);
@@ -76,13 +78,12 @@ export function DocFileUpload({
     setState('uploading');
     setProgress(10);
 
-    // Simulate incremental progress (real upload doesn't provide progress events)
     const progressTimer = setInterval(() => {
       setProgress(prev => Math.min(prev + 15, 85));
     }, 300);
 
     try {
-      const result = await uploadFile(companyId, employeeId, documentId, selectedFile);
+      const result = await uploadFile(documentId, employeeId, selectedFile, existingStoragePath);
 
       clearInterval(progressTimer);
 
@@ -101,7 +102,7 @@ export function DocFileUpload({
       setErrorMessage('Error inesperado al subir el archivo');
       setProgress(0);
     }
-  }, [selectedFile, companyId, employeeId, documentId, uploadFile, onUploadComplete]);
+  }, [selectedFile, documentId, employeeId, existingStoragePath, uploadFile, onUploadComplete]);
 
   // ── Reset ──
   const reset = useCallback(() => {
@@ -209,8 +210,8 @@ export function DocFileUpload({
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click(); }}
         className={cn(
           'rounded-lg border-2 border-dashed p-4 text-center cursor-pointer transition-colors',
-          'hover:border-primary/50 hover:bg-primary/5',
-          dragOver && 'border-primary bg-primary/10',
+          'hover:border-primary/50 hover:bg-accent/50',
+          dragOver && 'border-primary bg-accent',
           state === 'error' && 'border-destructive/50 bg-destructive/5',
         )}
       >
