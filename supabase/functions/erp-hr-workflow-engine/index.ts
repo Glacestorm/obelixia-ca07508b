@@ -64,6 +64,22 @@ serve(async (req) => {
       // ===== START WORKFLOW =====
       case 'start_workflow': {
         const { company_id, process_type, entity_type, entity_id, entity_summary, priority } = params;
+
+        // V2-ES.2 Paso 2: Idempotency — check for existing active instance
+        const { data: existingInstances } = await supabase
+          .from('erp_hr_workflow_instances')
+          .select('id, status')
+          .eq('entity_type', entity_type)
+          .eq('entity_id', entity_id)
+          .in('status', ['in_progress', 'pending'])
+          .limit(1);
+
+        if (existingInstances && existingInstances.length > 0) {
+          console.log(`[start_workflow] Idempotent: active instance already exists for ${entity_type}/${entity_id}`);
+          result = existingInstances[0];
+          break;
+        }
+
         // Find matching active definition
         const { data: defs } = await supabase
           .from('erp_hr_workflow_definitions')
@@ -178,12 +194,11 @@ serve(async (req) => {
           _severity: decision === 'rejected' ? 'warning' : 'info'
         });
 
-        // V2-ES.2 Paso 1 fix: Reverse sync to hr_payroll_records when entity_type = 'payroll_record'
+        // V2-ES.2 Paso 1: Reverse sync to hr_payroll_records when entity_type = 'payroll_record'
         if (instance.entity_type === 'payroll_record' && instance.entity_id) {
-          // Determine final workflow status after this decision
           const isLastStep = decision === 'approved' && !steps.find((s: any) => s.step_order === currentStep.step_order + 1);
           const reviewStatusMap: Record<string, string> = {
-            approved: isLastStep ? 'approved' : 'reviewed',  // Only 'approved' when all steps done
+            approved: isLastStep ? 'approved' : 'reviewed',
             rejected: 'flagged',
             returned: 'flagged',
           };
@@ -199,7 +214,59 @@ serve(async (req) => {
             console.log(`[decide_step] Synced review_status=${reviewStatus} for payroll_record ${instance.entity_id}`);
           } catch (syncErr) {
             console.warn('[decide_step] Reverse sync to hr_payroll_records failed:', syncErr);
-            // Non-blocking: workflow decision is authoritative
+          }
+        }
+
+        /**
+         * V2-ES.2 Paso 2: Reverse sync to hr_admin_requests when entity_type = 'admin_request'
+         * 
+         * DECISION → STATUS MAPPING:
+         * ┌─────────────┬──────────────────────────────────────────────┐
+         * │ Decision     │ hr_admin_requests.status                    │
+         * ├─────────────┼──────────────────────────────────────────────┤
+         * │ approved     │ 'approved' (if last step) / 'reviewing'    │
+         * │ rejected     │ 'rejected'                                 │
+         * │ returned     │ 'returned'                                 │
+         * └─────────────┴──────────────────────────────────────────────┘
+         */
+        if (instance.entity_type === 'admin_request' && instance.entity_id) {
+          const isLastStep = decision === 'approved' && !steps.find((s: any) => s.step_order === currentStep.step_order + 1);
+          const adminStatusMap: Record<string, string> = {
+            approved: isLastStep ? 'approved' : 'reviewing',
+            rejected: 'rejected',
+            returned: 'returned',
+          };
+          const newAdminStatus = adminStatusMap[decision] || 'reviewing';
+
+          try {
+            const adminUpdates: Record<string, any> = {
+              status: newAdminStatus,
+              updated_at: new Date().toISOString(),
+            };
+            if (newAdminStatus === 'approved' || newAdminStatus === 'rejected') {
+              adminUpdates.resolved_at = new Date().toISOString();
+              adminUpdates.resolved_by = user.id;
+              adminUpdates.resolution = comment || `Decisión workflow: ${decision}`;
+            }
+
+            await supabase.from('hr_admin_requests')
+              .update(adminUpdates)
+              .eq('id', instance.entity_id);
+
+            // Log activity in the admin request timeline
+            await supabase.from('hr_admin_request_activity').insert([{
+              request_id: instance.entity_id,
+              action: `workflow_${decision}`,
+              actor_id: user.id,
+              actor_name: user.email || 'Workflow Engine',
+              old_value: null,
+              new_value: newAdminStatus,
+              metadata: { workflow_instance_id: instance.id, step: currentStep.name, comment },
+            }]);
+
+            console.log(`[decide_step] Synced status=${newAdminStatus} for admin_request ${instance.entity_id}`);
+          } catch (syncErr) {
+            console.warn('[decide_step] Reverse sync to hr_admin_requests failed:', syncErr);
           }
         }
 
@@ -371,6 +438,116 @@ serve(async (req) => {
             steps: [
               { name: 'Revisión Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 48, comments_required: false, delegation_enabled: true },
               { name: 'Aprobación Responsable RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, escalation_hours: 72, escalation_to_role: 'HR_DIRECTOR', comments_required: true, delegation_enabled: true },
+            ]
+          },
+          // V2-ES.2 Paso 2: Admin Request workflow definitions
+          {
+            company_id, name: 'Alta de Empleado (Admin)', process_type: 'admin_employee_registration',
+            description: 'Aprobación de solicitud de alta de nuevo empleado desde portal administrativo',
+            steps: [
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 48, comments_required: true, delegation_enabled: true },
+              { name: 'Aprobación Responsable', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, escalation_hours: 72, escalation_to_role: 'HR_DIRECTOR', comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Modificación Contractual (Admin)', process_type: 'admin_contract_modification',
+            description: 'Aprobación de modificación de contrato desde portal administrativo',
+            steps: [
+              { name: 'Revisión RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
+              { name: 'Aprobación Responsable', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Cambio Salarial (Admin)', process_type: 'admin_salary_change',
+            description: 'Aprobación de cambio salarial desde portal administrativo',
+            steps: [
+              { name: 'Validación Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 48, comments_required: true },
+              { name: 'Aprobación RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, comments_required: true },
+              { name: 'Aprobación Dirección', step_type: 'approval', approver_role: 'HR_DIRECTOR', sla_hours: 72, comments_required: false },
+            ]
+          },
+          {
+            company_id, name: 'Baja de Empleado (Admin)', process_type: 'admin_termination',
+            description: 'Aprobación de baja desde portal administrativo',
+            steps: [
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_MANAGER', sla_hours: 24, comments_required: true },
+              { name: 'Validación Legal', step_type: 'approval', approver_role: 'HR_DIRECTOR', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Finiquito (Admin)', process_type: 'admin_settlement',
+            description: 'Aprobación de finiquito desde portal administrativo',
+            steps: [
+              { name: 'Cálculo Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 24, comments_required: true },
+              { name: 'Aprobación RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 24, comments_required: true },
+              { name: 'Aprobación Legal', step_type: 'approval', approver_role: 'HR_DIRECTOR', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Baja Médica (Admin)', process_type: 'admin_sick_leave',
+            description: 'Registro y validación de IT desde portal administrativo',
+            steps: [
+              { name: 'Registro RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Accidente Laboral (Admin)', process_type: 'admin_work_accident',
+            description: 'Gestión de accidente desde portal administrativo',
+            steps: [
+              { name: 'Registro e Investigación', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
+              { name: 'Validación RRHH', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Vacaciones (Admin)', process_type: 'admin_vacation',
+            description: 'Aprobación de vacaciones desde portal administrativo',
+            steps: [
+              { name: 'Aprobación Manager', step_type: 'approval', approver_role: 'MANAGER', sla_hours: 48, delegation_enabled: true },
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24 },
+            ]
+          },
+          {
+            company_id, name: 'Solicitud Genérica (Admin)', process_type: 'admin_schedule_change',
+            description: 'Cambio de jornada desde portal administrativo',
+            steps: [
+              { name: 'Revisión RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 48, comments_required: true },
+              { name: 'Aprobación Responsable', step_type: 'approval', approver_role: 'HR_MANAGER', sla_hours: 48 },
+            ]
+          },
+          {
+            company_id, name: 'Certificado Empresa (Admin)', process_type: 'admin_company_certificate',
+            description: 'Generación de certificado desde portal administrativo',
+            steps: [
+              { name: 'Generación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24 },
+            ]
+          },
+          {
+            company_id, name: 'Envío Documentación (Admin)', process_type: 'admin_document_submission',
+            description: 'Registro de documentación desde portal administrativo',
+            steps: [
+              { name: 'Verificación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 48 },
+            ]
+          },
+          {
+            company_id, name: 'Incidencias Mensuales (Admin)', process_type: 'admin_monthly_incidents',
+            description: 'Registro de incidencias mensuales desde portal administrativo',
+            steps: [
+              { name: 'Registro Nóminas', step_type: 'review', approver_role: 'PAYROLL_ADMIN', sla_hours: 48, comments_required: true },
+            ]
+          },
+          {
+            company_id, name: 'Permiso No Retribuido (Admin)', process_type: 'admin_unpaid_leave',
+            description: 'Solicitud de permiso no retribuido',
+            steps: [
+              { name: 'Aprobación Manager', step_type: 'approval', approver_role: 'MANAGER', sla_hours: 48, comments_required: true },
+              { name: 'Validación RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24 },
+            ]
+          },
+          {
+            company_id, name: 'Nacimiento / Paternidad (Admin)', process_type: 'admin_birth_leave',
+            description: 'Gestión de permiso por nacimiento desde portal administrativo',
+            steps: [
+              { name: 'Registro RRHH', step_type: 'review', approver_role: 'HR_SPECIALIST', sla_hours: 24, comments_required: true },
             ]
           },
         ];
