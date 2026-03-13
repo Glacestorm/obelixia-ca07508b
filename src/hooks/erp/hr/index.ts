@@ -301,3 +301,11 @@ export type {
   GenerationContext,
   GenerationResult,
 } from './useHRDocumentGenerator';
+
+// V2-ES.4 Paso 6: Calendario laboral y festivos
+export { useHRHolidayCalendar } from './useHRHolidayCalendar';
+export type {
+  HolidayScope,
+  HolidayEntry,
+  HolidayCalendarContext,
+} from './useHRHolidayCalendar';
