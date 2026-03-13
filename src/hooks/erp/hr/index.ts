@@ -185,6 +185,7 @@ export type {
   ConsentType as HRConsentType,
   ConsentStatus as HRConsentStatus,
   AccessAction,
+  RelatedEntityType,
   EmployeeDocument,
   DocumentVersion,
   DocumentAccessLog,
