@@ -31233,6 +31233,69 @@ export type Database = {
           },
         ]
       }
+      erp_hr_document_types: {
+        Row: {
+          alert_before_days: number
+          category: string
+          code: string
+          created_at: string
+          default_expiry_months: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_mandatory_default: boolean
+          legal_basis: string | null
+          name: string
+          organism: string | null
+          renewable: boolean
+          retention_years: number
+          sort_order: number
+          supports_external_response: boolean
+          supports_versions: boolean
+          updated_at: string
+        }
+        Insert: {
+          alert_before_days?: number
+          category: string
+          code: string
+          created_at?: string
+          default_expiry_months?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_mandatory_default?: boolean
+          legal_basis?: string | null
+          name: string
+          organism?: string | null
+          renewable?: boolean
+          retention_years?: number
+          sort_order?: number
+          supports_external_response?: boolean
+          supports_versions?: boolean
+          updated_at?: string
+        }
+        Update: {
+          alert_before_days?: number
+          category?: string
+          code?: string
+          created_at?: string
+          default_expiry_months?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_mandatory_default?: boolean
+          legal_basis?: string | null
+          name?: string
+          organism?: string | null
+          renewable?: boolean
+          retention_years?: number
+          sort_order?: number
+          supports_external_response?: boolean
+          supports_versions?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_employee_benefits: {
         Row: {
           approved_at: string | null
