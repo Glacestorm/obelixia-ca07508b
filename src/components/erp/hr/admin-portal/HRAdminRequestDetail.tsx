@@ -24,13 +24,14 @@ interface Props {
   request: AdminRequest;
   comments: AdminRequestComment[];
   activity: AdminRequestActivity[];
+  linkedTasks?: LinkedTask[];
   onBack: () => void;
   onUpdateStatus: (id: string, status: AdminRequestStatus, comment?: string) => Promise<boolean>;
   onAddComment: (requestId: string, content: string, isInternal: boolean) => Promise<boolean>;
   onGenerateTasks: (requestId: string) => Promise<void>;
 }
 
-export function HRAdminRequestDetail({ request, comments, activity, onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
+export function HRAdminRequestDetail({ request, comments, activity, linkedTasks = [], onBack, onUpdateStatus, onAddComment, onGenerateTasks }: Props) {
   const meta = (request.metadata || {}) as Record<string, any>;
 
   return (
