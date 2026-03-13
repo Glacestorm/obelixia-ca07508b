@@ -417,6 +417,7 @@ export function HREmployeeDocumentsPanel({ companyId }: HREmployeeDocumentsPanel
                        <DocumentOriginBadge relatedEntityType={(doc as any).related_entity_type} />
                      </TableCell>
                      <TableCell>
+                       {doc.ai_indexed ? (
                           <div className="flex items-center gap-1">
                             <CheckCircle className="h-4 w-4 text-emerald-500" />
                             <span className="text-xs text-muted-foreground">
