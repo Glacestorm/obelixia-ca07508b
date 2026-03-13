@@ -12,7 +12,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   FileText, History, MessageSquare, Eye, ShieldCheck,
-  Download, CheckCircle2, Send, Clock, Scale, RefreshCw, BookOpen
+  Download, CheckCircle2, Send, Clock, Scale, RefreshCw, BookOpen,
+  HardDrive, FileUp
 } from 'lucide-react';
 import { useHRDocumentExpedient, type DocumentVersion, type DocumentComment, type DocumentAccessLog } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { formatDistanceToNow } from 'date-fns';
@@ -151,6 +152,63 @@ export function DocumentDetailPanel({ companyId, documentId, onClose }: Props) {
                       {formatDistanceToNow(new Date(doc.created_at), { locale: es, addSuffix: true })}
                     </div>
                   </div>
+
+                  {/* V2-ES.4 Paso 2.5: File / Storage metadata (read-only, compact) */}
+                  {(doc.file_name || doc.storage_path || doc.mime_type || doc.file_size_bytes) && (
+                    <div className="mt-3 pt-3 border-t space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <HardDrive className="h-3 w-3" /> Archivo físico
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {doc.file_name && (
+                          <div className="col-span-2 flex items-center gap-1.5">
+                            <FileUp className="h-3 w-3 text-muted-foreground shrink-0" />
+                            <span className="truncate" title={doc.file_name}>{doc.file_name}</span>
+                          </div>
+                        )}
+                        {doc.mime_type && (
+                          <div>
+                            <span className="text-muted-foreground">Tipo:</span>{' '}
+                            <code className="bg-muted px-1 py-0.5 rounded">{doc.mime_type}</code>
+                          </div>
+                        )}
+                        {doc.file_size_bytes != null && (
+                          <div>
+                            <span className="text-muted-foreground">Tamaño:</span>{' '}
+                            {doc.file_size_bytes < 1024
+                              ? `${doc.file_size_bytes} B`
+                              : doc.file_size_bytes < 1048576
+                                ? `${(doc.file_size_bytes / 1024).toFixed(1)} KB`
+                                : `${(doc.file_size_bytes / 1048576).toFixed(1)} MB`}
+                          </div>
+                        )}
+                        {doc.storage_provider && (
+                          <div>
+                            <span className="text-muted-foreground">Proveedor:</span>{' '}
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{doc.storage_provider}</Badge>
+                          </div>
+                        )}
+                        {doc.checksum && (
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Checksum:</span>{' '}
+                            <code className="bg-muted px-1 py-0.5 rounded text-[10px]">{doc.checksum.slice(0, 20)}…</code>
+                          </div>
+                        )}
+                        {doc.uploaded_at && (
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Subido:</span>{' '}
+                            {formatDistanceToNow(new Date(doc.uploaded_at), { locale: es, addSuffix: true })}
+                          </div>
+                        )}
+                        {doc.external_reference && (
+                          <div className="col-span-2">
+                            <span className="text-muted-foreground">Ref. externa:</span>{' '}
+                            <code className="bg-muted px-1 py-0.5 rounded">{doc.external_reference}</code>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Catalog metadata */}
                   {catalogEntry && (

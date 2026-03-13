@@ -31677,6 +31677,7 @@ export type Database = {
           ai_indexed_at: string | null
           ai_summary: string | null
           category: string | null
+          checksum: string | null
           company_id: string
           consent_id: string | null
           created_at: string | null
@@ -31687,7 +31688,9 @@ export type Database = {
           employee_id: string
           escalation_level: number | null
           expiry_date: string | null
+          external_reference: string | null
           file_hash: string | null
+          file_name: string | null
           file_size: number | null
           file_size_bytes: number | null
           id: string
@@ -31711,8 +31714,10 @@ export type Database = {
           source: string | null
           storage_bucket: string | null
           storage_path: string | null
+          storage_provider: string | null
           subcategory: string | null
           updated_at: string | null
+          uploaded_at: string | null
           uploaded_by: string | null
           version: number | null
         }
@@ -31725,6 +31730,7 @@ export type Database = {
           ai_indexed_at?: string | null
           ai_summary?: string | null
           category?: string | null
+          checksum?: string | null
           company_id: string
           consent_id?: string | null
           created_at?: string | null
@@ -31735,7 +31741,9 @@ export type Database = {
           employee_id: string
           escalation_level?: number | null
           expiry_date?: string | null
+          external_reference?: string | null
           file_hash?: string | null
+          file_name?: string | null
           file_size?: number | null
           file_size_bytes?: number | null
           id?: string
@@ -31759,8 +31767,10 @@ export type Database = {
           source?: string | null
           storage_bucket?: string | null
           storage_path?: string | null
+          storage_provider?: string | null
           subcategory?: string | null
           updated_at?: string | null
+          uploaded_at?: string | null
           uploaded_by?: string | null
           version?: number | null
         }
@@ -31773,6 +31783,7 @@ export type Database = {
           ai_indexed_at?: string | null
           ai_summary?: string | null
           category?: string | null
+          checksum?: string | null
           company_id?: string
           consent_id?: string | null
           created_at?: string | null
@@ -31783,7 +31794,9 @@ export type Database = {
           employee_id?: string
           escalation_level?: number | null
           expiry_date?: string | null
+          external_reference?: string | null
           file_hash?: string | null
+          file_name?: string | null
           file_size?: number | null
           file_size_bytes?: number | null
           id?: string
@@ -31807,8 +31820,10 @@ export type Database = {
           source?: string | null
           storage_bucket?: string | null
           storage_path?: string | null
+          storage_provider?: string | null
           subcategory?: string | null
           updated_at?: string | null
+          uploaded_at?: string | null
           uploaded_by?: string | null
           version?: number | null
         }
