@@ -77,7 +77,7 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
             isLoading={engine.isLoading}
             onOpenPeriod={engine.openPeriod}
             onUpdateStatus={engine.updatePeriodStatus}
-            onValidatePreClose={engine.validatePreClose}
+            onValidatePreClose={handleValidatePreClose}
             onSelectPeriod={(id) => { setSelectedPeriodId(id); setActiveTab('payslips'); }}
             onRefresh={() => engine.fetchPeriods()}
             onBatchCalculateES={handleBatchCalcES}
