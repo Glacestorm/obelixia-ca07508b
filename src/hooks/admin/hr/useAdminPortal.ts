@@ -288,6 +288,43 @@ export function useAdminPortal(companyId: string) {
     }
   }, [companyId, user, fetchRequests, startWorkflowForRequest]);
 
+  // === V2-ES.2 Paso 4: SYNC TASKS FROM DECISION ===
+  const DECISION_TO_TASK_STATUS: Record<string, string> = {
+    approved: 'in_progress',
+    rejected: 'cancelled',
+    returned: 'on_hold',
+  };
+
+  const syncTasksFromDecision = useCallback(async (requestId: string, decision: string) => {
+    const targetStatus = DECISION_TO_TASK_STATUS[decision];
+    if (!targetStatus) return;
+
+    try {
+      // Only update tasks that are linked and in transitional states (not completed/cancelled)
+      const { data: linkedTasks, error: fetchErr } = await supabase
+        .from('hr_tasks')
+        .select('id, status')
+        .eq('related_entity_type', 'admin_request')
+        .eq('related_entity_id', requestId)
+        .in('status', ['pending', 'in_progress']);
+
+      if (fetchErr) throw fetchErr;
+      if (!linkedTasks || linkedTasks.length === 0) return;
+
+      const ids = linkedTasks.map(t => t.id);
+      const { error: updateErr } = await supabase
+        .from('hr_tasks')
+        .update({ status: targetStatus, updated_at: new Date().toISOString() } as any)
+        .in('id', ids);
+
+      if (updateErr) throw updateErr;
+
+      console.log(`[useAdminPortal] Paso 4: Synced ${ids.length} tasks to '${targetStatus}' for request ${requestId}`);
+    } catch (err) {
+      console.warn(`[useAdminPortal] syncTasksFromDecision failed (non-blocking) for request ${requestId}:`, err);
+    }
+  }, []);
+
   // === UPDATE STATUS ===
   const updateStatus = useCallback(async (id: string, newStatus: AdminRequestStatus, comment?: string) => {
     if (!user?.id) return false;
