@@ -215,7 +215,20 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, doc
     });
   }
 
-  const SEVERITY_STYLE: Record<string, string> = {
+  // 10. V2-ES.4 Paso 6: Calendario laboral activo
+  if (calendarLabel) {
+    const isBase = calendarLabel === 'Base';
+    metrics.push({
+      icon: CalendarDays,
+      label: 'Calendario',
+      value: calendarLabel,
+      severity: isBase ? 'warn' : 'ok',
+      tooltip: isBase
+        ? 'Solo fines de semana — sin festivos configurados'
+        : `Festivos ${calendarLabel} aplicados a plazos laborables`,
+    });
+  }
+
     ok: 'text-emerald-600',
     warn: 'text-amber-600',
     error: 'text-red-600 font-semibold',
