@@ -18,6 +18,7 @@ import { useHRProcessDocRequirements } from '@/hooks/erp/hr/useHRProcessDocRequi
 import { DocStatusBadge } from './DocStatusBadge';
 import { DocReconciliationBadge } from './DocReconciliationBadge';
 import { DocReconciliationToggle } from './DocReconciliationToggle';
+import { DocActionQueuePanel } from './DocActionQueuePanel';
 
 const ENTITY_LABELS: Record<RelatedEntityType, string> = {
   admin_request: 'solicitud',
