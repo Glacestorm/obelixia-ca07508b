@@ -759,10 +759,13 @@ export function useESPayrollBridge(companyId?: string) {
       }
 
       const calculated = results.filter(r => r.success).length;
-      const errors = results.filter(r => !r.success).length;
+      const skipped = results.filter(r => !r.success && r.error === 'skipped_already_exists').length;
+      const errors = results.filter(r => !r.success && r.error !== 'skipped_already_exists').length;
 
       if (calculated > 0) {
-        toast.success(`${calculated} nóminas calculadas${errors > 0 ? `, ${errors} errores` : ''}`);
+        toast.success(`${calculated} nóminas calculadas${skipped > 0 ? `, ${skipped} ya existentes` : ''}${errors > 0 ? `, ${errors} errores` : ''}`);
+      } else if (skipped > 0 && errors === 0) {
+        toast.info(`Todas las nóminas ya están calculadas (${skipped} existentes)`);
       } else {
         toast.error(`Ninguna nómina calculada. ${errors} errores.`);
       }
