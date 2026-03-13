@@ -97,6 +97,9 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
           </CardContent></Card>
         </div>
 
+        {/* Alerts summary bar */}
+        <DocAlertsSummaryBar docs={filtered} />
+
         {/* Filters */}
         <div className="flex flex-wrap gap-2">
           <div className="relative flex-1 min-w-[200px]">
