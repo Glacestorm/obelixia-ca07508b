@@ -1,6 +1,7 @@
 /**
  * HRAdminRequestDetail — Full detail view with actions, timeline, comments
  */
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
