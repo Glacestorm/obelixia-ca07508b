@@ -896,7 +896,7 @@ export function useESPayrollBridge(companyId?: string) {
   }, [companyId]);
 
   // ── V2-ES.1 Paso 3: Comparativa vs período anterior ──
-  export interface PayrollDiff {
+  interface PayrollDiff {
     concept_code: string;
     concept_name: string;
     previous_amount: number;
