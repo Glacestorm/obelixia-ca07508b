@@ -1224,6 +1224,8 @@ export function useESPayrollBridge(companyId?: string) {
   }, [companyId]);
 
   // ── V2-ES.2 Paso 1: Revisión de nómina sincronizada con workflow engine ──
+  // Workflow engine = authoritative source. Edge function handles reverse sync to review_status.
+  // Direct update only as fallback when no workflow instance exists.
 
   const reviewRecord = useCallback(async (
     recordId: string,
@@ -1233,7 +1235,6 @@ export function useESPayrollBridge(companyId?: string) {
     if (!companyId) return false;
 
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No autenticado');
 
@@ -1243,18 +1244,7 @@ export function useESPayrollBridge(companyId?: string) {
         reviewed: 'reviewed',
       };
 
-      // 1. Update review_status on payroll record (operational mirror)
-      const { error } = await supabase.from('hr_payroll_records').update({
-        review_status: statusMap[action],
-        review_notes: notes || null,
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      } as any).eq('id', recordId);
-
-      if (error) throw error;
-
-      // 2. Sync with workflow engine (authoritative source)
-      // Find the workflow instance for this record
+      // 1. Try workflow engine first (authoritative source)
       const { data: instances } = await supabase
         .from('erp_hr_workflow_instances')
         .select('id, status')
@@ -1265,24 +1255,42 @@ export function useESPayrollBridge(companyId?: string) {
         .limit(1);
 
       if (instances?.length) {
+        // Workflow exists → decide via edge function (which handles reverse sync)
         const instanceId = instances[0].id;
         const wfDecision = action === 'approve' ? 'approved' : action === 'flag' ? 'returned' : 'approved';
 
-        try {
-          await supabase.functions.invoke('erp-hr-workflow-engine', {
-            body: {
-              action: 'decide_step',
-              params: {
-                instance_id: instanceId,
-                decision: wfDecision,
-                comment: notes || `Revisión desde motor de nómina: ${statusMap[action]}`,
-              },
+        const { error: wfErr } = await supabase.functions.invoke('erp-hr-workflow-engine', {
+          body: {
+            action: 'decide_step',
+            params: {
+              instance_id: instanceId,
+              decision: wfDecision,
+              comment: notes || `Revisión desde motor de nómina: ${statusMap[action]}`,
             },
-          });
-        } catch (wfErr) {
-          // Non-blocking: workflow sync is best-effort
-          console.warn('[useESPayrollBridge] reviewRecord workflow sync failed:', wfErr);
+          },
+        });
+
+        if (wfErr) {
+          console.warn('[useESPayrollBridge] reviewRecord workflow failed, falling back:', wfErr);
+          // Fallback: direct update if workflow call fails
+          await supabase.from('hr_payroll_records').update({
+            review_status: statusMap[action],
+            review_notes: notes || null,
+            reviewed_by: user.id,
+            reviewed_at: new Date().toISOString(),
+          } as any).eq('id', recordId);
         }
+        // If workflow succeeded, edge function already synced review_status
+      } else {
+        // 2. No workflow instance → direct update (pre-workflow or no-workflow records)
+        const { error } = await supabase.from('hr_payroll_records').update({
+          review_status: statusMap[action],
+          review_notes: notes || null,
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString(),
+        } as any).eq('id', recordId);
+
+        if (error) throw error;
       }
 
       const actionLabels: Record<ReviewAction, string> = {
