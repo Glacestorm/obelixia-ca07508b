@@ -432,20 +432,28 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => {
                 if (!summary) return;
-                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness }));
+                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness, expirationDate: c.expiration_date }));
+                const alertData = proactiveAlerts.summary?.alerts.map(a => ({ severity: a.severity, category: a.category, title: a.title, status: a.status })) || [];
                 exportReadiness('pdf', summary, domainStats, {
                   certificates: certData,
                   approvals: { pending: approvalPendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+                  deadlines: calendar || undefined,
+                  alerts: alertData,
+                  multiEntity: multiEntityReport || undefined,
                 });
               }}>
                 <FileText className="h-4 w-4 mr-2" /> Exportar PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 if (!summary) return;
-                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness }));
+                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness, expirationDate: c.expiration_date }));
+                const alertData = proactiveAlerts.summary?.alerts.map(a => ({ severity: a.severity, category: a.category, title: a.title, status: a.status })) || [];
                 exportReadiness('excel', summary, domainStats, {
                   certificates: certData,
                   approvals: { pending: approvalPendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+                  deadlines: calendar || undefined,
+                  alerts: alertData,
+                  multiEntity: multiEntityReport || undefined,
                 });
               }}>
                 <FileSpreadsheet className="h-4 w-4 mr-2" /> Exportar Excel
