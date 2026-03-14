@@ -10,6 +10,43 @@
 
 export type ConnectorEnvironment = 'sandbox' | 'test' | 'preprod' | 'production';
 
+export type EnvironmentStatus =
+  | 'not_configured'   // Sin configuración mínima
+  | 'configured'       // Credenciales/config presentes
+  | 'gated'            // Configurado pero gates no cumplidos
+  | 'sandbox_ready'    // Gates cumplidos, listo para habilitar
+  | 'sandbox_enabled'  // Activo y ejecutable
+  | 'prod_blocked';    // Invariante permanente para producción
+
+export type SandboxDomain = 'TGSS' | 'CONTRATA' | 'AEAT';
+
+export const SANDBOX_DOMAINS: { id: SandboxDomain; label: string; system: string }[] = [
+  { id: 'TGSS', label: 'TGSS / SILTRA', system: 'siltra' },
+  { id: 'CONTRATA', label: 'Contrat@ / SEPE', system: 'contrata' },
+  { id: 'AEAT', label: 'AEAT (Modelo 111/190)', system: 'aeat' },
+];
+
+/** Per-domain, per-environment configuration record */
+export interface DomainEnvironmentRecord {
+  domain: SandboxDomain;
+  environment: ConnectorEnvironment;
+  status: EnvironmentStatus;
+  companyId: string;
+  legalEntityId: string | null;
+  sandboxEnabled: boolean;
+  prodEnabled: false; // INVARIANT: always false
+  certificateBinding: string | null; // alias from erp_hr_domain_certificates
+  configBinding: Record<string, unknown> | null;
+  credentialAlias: string | null;
+  metadata: {
+    lastStatusChange: string;
+    changedBy: string | null;
+    gateSnapshot: GateEvaluationResult[];
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EnvironmentDefinition {
   id: ConnectorEnvironment;
   label: string;
@@ -108,6 +145,8 @@ export interface EnvironmentSummary {
   totalSandboxExecutions: number;
   lastSandboxExecution: string | null;
   pendingGates: { environment: ConnectorEnvironment; gates: string[] }[];
+  /** Domain-level status overview */
+  domainStatuses: { domain: SandboxDomain; environment: ConnectorEnvironment; status: EnvironmentStatus }[];
 }
 
 // ======================== CONSTANTS ========================
@@ -422,6 +461,35 @@ export function completeExecution(
   };
 }
 
+// ======================== DOMAIN STATUS RESOLVER ========================
+
+/** Resolve the EnvironmentStatus for a given domain + environment combo */
+export function resolveDomainEnvironmentStatus(
+  env: ConnectorEnvironment,
+  context: {
+    adapterConfigured: boolean;
+    hasCredentials: boolean;
+    gatesPassed: boolean;
+    isEnabled: boolean;
+  }
+): EnvironmentStatus {
+  if (env === 'production') return 'prod_blocked';
+  if (!context.adapterConfigured) return 'not_configured';
+  if (!context.hasCredentials && env !== 'sandbox') return 'configured'; // sandbox doesn't require credentials
+  if (!context.gatesPassed) return 'gated';
+  if (!context.isEnabled) return 'sandbox_ready';
+  return 'sandbox_enabled';
+}
+
+export const ENVIRONMENT_STATUS_LABELS: Record<EnvironmentStatus, { label: string; color: string }> = {
+  not_configured: { label: 'No configurado', color: 'text-muted-foreground' },
+  configured: { label: 'Configurado', color: 'text-blue-600' },
+  gated: { label: 'Gates pendientes', color: 'text-amber-600' },
+  sandbox_ready: { label: 'Listo', color: 'text-emerald-600' },
+  sandbox_enabled: { label: 'Habilitado', color: 'text-emerald-700' },
+  prod_blocked: { label: 'Bloqueado', color: 'text-destructive' },
+};
+
 // ======================== DISCLAIMERS ========================
 
 export const SANDBOX_DISCLAIMERS = {
@@ -471,5 +539,10 @@ export function buildEnvironmentSummary(
     totalSandboxExecutions: configs.reduce((sum, c) => sum + c.executionCount, 0),
     lastSandboxExecution: allExecutions.sort((a, b) => b.at.localeCompare(a.at))[0]?.at || null,
     pendingGates,
+    domainStatuses: SANDBOX_DOMAINS.map(d => ({
+      domain: d.id,
+      environment: 'sandbox' as ConnectorEnvironment,
+      status: 'not_configured' as EnvironmentStatus,
+    })),
   };
 }
