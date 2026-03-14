@@ -1,5 +1,6 @@
 /**
  * OfficialIntegrationsHub — Panel principal de integraciones oficiales
+ * V2-ES.8: Added Readiness Dashboard tab
  */
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,11 +11,12 @@ import { SubmissionForm } from './SubmissionForm';
 import { SubmissionDetail } from './SubmissionDetail';
 import { AdaptersPanel } from './AdaptersPanel';
 import { ReceiptsPanel } from './ReceiptsPanel';
+import { ReadinessDashboard } from './ReadinessDashboard';
 
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('readiness');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -56,13 +58,17 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="readiness" className="text-xs">Readiness</TabsTrigger>
           <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
           <TabsTrigger value="submissions" className="text-xs">Envíos</TabsTrigger>
           <TabsTrigger value="adapters" className="text-xs">Conectores</TabsTrigger>
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="readiness">
+          <ReadinessDashboard companyId={companyId} adapters={hub.adapters} />
+        </TabsContent>
         <TabsContent value="dashboard">
           <IntegrationsHubDashboard stats={hub.stats} submissions={hub.submissions} adapters={hub.adapters} onRefresh={hub.loadAll} isLoading={hub.isLoading} />
         </TabsContent>
