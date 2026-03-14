@@ -165,7 +165,7 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
 
       {/* Sub tabs */}
       <Tabs value={subTab} onValueChange={setSubTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="text-xs">Resumen</TabsTrigger>
           <TabsTrigger value="eligibility" className="text-xs">Elegibilidad</TabsTrigger>
           <TabsTrigger value="connectors" className="text-xs">Conectores</TabsTrigger>
@@ -176,6 +176,19 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
                 {sandbox.executionRecords.length}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">
+            <History className="h-3 w-3 mr-1" />
+            Historial
+            {sandbox.persistedHistoryCount > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[9px] h-4 min-w-4 px-1">
+                {sandbox.persistedHistoryCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="comparison" className="text-xs">
+            <GitCompare className="h-3 w-3 mr-1" />
+            Comparar
           </TabsTrigger>
         </TabsList>
 
@@ -202,6 +215,19 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
           <ExecutionRecordsList
             records={sandbox.executionRecords}
             activeEnv={sandbox.activeEnvironment}
+          />
+        </TabsContent>
+
+        <TabsContent value="history">
+          <SandboxHistoryPanel
+            sandbox={sandbox}
+          />
+        </TabsContent>
+
+        <TabsContent value="comparison">
+          <SandboxComparisonPanel
+            sandbox={sandbox}
+            companyId={companyId}
           />
         </TabsContent>
       </Tabs>
