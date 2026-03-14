@@ -147,6 +147,15 @@ export function usePreparatorySubmissions(companyId: string) {
 
       const sub = data as unknown as PreparatorySubmission;
       setSubmissions(prev => [sub, ...prev]);
+
+      // Granular audit: creation
+      await logDryRunEvent('dry_run_created', {
+        submissionId: sub.id,
+        domain: input.domain,
+        submissionType: input.submissionType,
+        status: 'draft',
+      });
+
       toast.success(`Envío preparatorio ${getDomainMeta(input.domain).label} creado`);
       return sub;
     } catch (err) {
