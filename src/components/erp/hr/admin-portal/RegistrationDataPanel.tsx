@@ -8,7 +8,7 @@
  * - Show readiness indicator combining data + doc checklist
  * - Manage registration-specific states
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,9 +80,11 @@ interface Props {
   companyId: string;
   employeeId: string;
   linkedDocs: EmployeeDocument[];
+  /** V2-ES.5 Paso 2: Callback to lift deadline summary to parent */
+  onDeadlinesComputed?: (summary: import('../shared/registrationDeadlineEngine').RegistrationDeadlineSummary) => void;
 }
 
-export function RegistrationDataPanel({ requestId, companyId, employeeId, linkedDocs }: Props) {
+export function RegistrationDataPanel({ requestId, companyId, employeeId, linkedDocs, onDeadlinesComputed }: Props) {
   const {
     registrationData,
     loading,
@@ -90,6 +92,7 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     upsertRegistrationData,
     updateRegistrationStatus,
     computeReadiness,
+    persistDeadlineAndPayload,
   } = useHRRegistrationProcess(companyId);
   const { holidaySet } = useHRHolidayCalendar();
 
@@ -121,6 +124,15 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     return buildTGSSPayload(registrationData);
   }, [registrationData]);
 
+  // Lift deadline summary to parent for executive summary integration
+  const prevDeadlineRef = useRef(deadlineSummary.worstUrgency);
+  useEffect(() => {
+    if (onDeadlinesComputed && deadlineSummary.deadlines.length > 0) {
+      onDeadlinesComputed(deadlineSummary);
+    }
+    prevDeadlineRef.current = deadlineSummary.worstUrgency;
+  }, [deadlineSummary, onDeadlinesComputed]);
+
   const set = useCallback((k: string, v: any) => {
     setFormData(prev => ({ ...prev, [k]: v || null }));
   }, []);
@@ -131,10 +143,12 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
       const { id, request_id, company_id, employee_id, created_at, updated_at, ...updates } = formData as any;
       await upsertRegistrationData(requestId, employeeId, updates);
       setEditMode(false);
+      // Persist computed deadline + payload state
+      setTimeout(() => persistDeadlineAndPayload(requestId, holidaySet), 500);
     } finally {
       setSaving(false);
     }
-  }, [formData, requestId, employeeId, upsertRegistrationData]);
+  }, [formData, requestId, employeeId, upsertRegistrationData, persistDeadlineAndPayload, holidaySet]);
 
   const handleInitialize = useCallback(async () => {
     await upsertRegistrationData(requestId, employeeId, {

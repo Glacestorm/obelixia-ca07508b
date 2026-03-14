@@ -38227,14 +38227,24 @@ export type Database = {
           created_at: string
           data_validated_at: string | null
           data_validated_by: string | null
+          deadline_computed_at: string | null
+          deadline_urgency: string | null
           dni_nie: string | null
           docs_validated_at: string | null
           docs_validated_by: string | null
           employee_id: string
           id: string
+          internal_deadline_at: string | null
+          is_overdue: boolean | null
+          last_payload_computed_at: string | null
           legal_entity: string | null
           naf: string | null
           occupation_code: string | null
+          payload_format_errors: string[] | null
+          payload_missing_fields: string[] | null
+          payload_ready: boolean | null
+          payload_snapshot: Json | null
+          payload_status: string | null
           ready_at: string | null
           regime: string | null
           registration_date: string | null
@@ -38259,14 +38269,24 @@ export type Database = {
           created_at?: string
           data_validated_at?: string | null
           data_validated_by?: string | null
+          deadline_computed_at?: string | null
+          deadline_urgency?: string | null
           dni_nie?: string | null
           docs_validated_at?: string | null
           docs_validated_by?: string | null
           employee_id: string
           id?: string
+          internal_deadline_at?: string | null
+          is_overdue?: boolean | null
+          last_payload_computed_at?: string | null
           legal_entity?: string | null
           naf?: string | null
           occupation_code?: string | null
+          payload_format_errors?: string[] | null
+          payload_missing_fields?: string[] | null
+          payload_ready?: boolean | null
+          payload_snapshot?: Json | null
+          payload_status?: string | null
           ready_at?: string | null
           regime?: string | null
           registration_date?: string | null
@@ -38291,14 +38311,24 @@ export type Database = {
           created_at?: string
           data_validated_at?: string | null
           data_validated_by?: string | null
+          deadline_computed_at?: string | null
+          deadline_urgency?: string | null
           dni_nie?: string | null
           docs_validated_at?: string | null
           docs_validated_by?: string | null
           employee_id?: string
           id?: string
+          internal_deadline_at?: string | null
+          is_overdue?: boolean | null
+          last_payload_computed_at?: string | null
           legal_entity?: string | null
           naf?: string | null
           occupation_code?: string | null
+          payload_format_errors?: string[] | null
+          payload_missing_fields?: string[] | null
+          payload_ready?: boolean | null
+          payload_snapshot?: Json | null
+          payload_status?: string | null
           ready_at?: string | null
           regime?: string | null
           registration_date?: string | null

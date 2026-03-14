@@ -2,6 +2,7 @@
  * HRAdminRequestDetail — Full detail view with actions, timeline, comments
  */
 import { useState, useCallback } from 'react';
+import type { RegistrationDeadlineSummary } from '../shared/registrationDeadlineEngine';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
   const meta = (request.metadata || {}) as Record<string, any>;
   const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
   const [docsRefreshKey, setDocsRefreshKey] = useState(0);
+  const [registrationDeadlines, setRegistrationDeadlines] = useState<RegistrationDeadlineSummary | null>(null);
   const { getCompleteness } = useHRProcessDocRequirements();
   const { calendarLabel } = useHRHolidayCalendar();
   const completeness = getCompleteness(request.request_type, linkedDocs);
@@ -164,6 +166,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
               companyId={request.company_id}
               employeeId={request.employee_id}
               linkedDocs={linkedDocs}
+              onDeadlinesComputed={setRegistrationDeadlines}
             />
           )}
 
@@ -226,6 +229,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 completeness={completeness}
                 processType={request.request_type}
                 calendarLabel={calendarLabel}
+                registrationDeadlines={registrationDeadlines}
               />
               <ProcessDeadlinesSummary
                 processType={request.request_type}

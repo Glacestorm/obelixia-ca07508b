@@ -13,6 +13,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRProcessDocRequirements';
+import { computeRegistrationDeadlines, type RegistrationDeadlineSummary } from '@/components/erp/hr/shared/registrationDeadlineEngine';
+import { buildTGSSPayload, type TGSSPayloadResult } from '@/components/erp/hr/shared/tgssPayloadBuilder';
+import { addBusinessDays, type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -70,6 +73,18 @@ export interface RegistrationData {
   confirmed_at: string | null;
   confirmed_reference: string | null;
   validation_notes: string | null;
+  // V2-ES.5 Paso 2: Deadline & payload tracking
+  internal_deadline_at: string | null;
+  deadline_urgency: string | null;
+  is_overdue: boolean;
+  payload_status: string | null;
+  payload_ready: boolean;
+  payload_missing_fields: string[] | null;
+  payload_format_errors: string[] | null;
+  payload_snapshot: Record<string, unknown> | null;
+  last_payload_computed_at: string | null;
+  deadline_computed_at: string | null;
+  // Timestamps
   created_at: string;
   updated_at: string;
 }
@@ -399,6 +414,48 @@ export function useHRRegistrationProcess(companyId: string) {
     }
   }, [companyId]);
 
+  /** Persist computed deadline + payload state to DB (fire-and-forget) */
+  const persistDeadlineAndPayload = useCallback(async (
+    requestId: string,
+    holidays: HolidayCalendar = EMPTY_CALENDAR,
+  ) => {
+    if (!registrationData || registrationData.request_id !== requestId) return;
+
+    const deadlines = computeRegistrationDeadlines(registrationData, holidays);
+    const tgss = buildTGSSPayload(registrationData);
+
+    // Compute internal_deadline_at (pre-alta deadline date)
+    let internalDeadlineAt: string | null = null;
+    if (registrationData.registration_date) {
+      const regDate = new Date(registrationData.registration_date);
+      const preDeadline = addBusinessDays(regDate, -3, holidays);
+      internalDeadlineAt = preDeadline.toISOString();
+    }
+
+    const payloadStatus = tgss.isReady ? 'ready' : (tgss.formatErrors.length > 0 ? 'has_errors' : 'incomplete');
+
+    try {
+      await supabase
+        .from('erp_hr_registration_data')
+        .update({
+          internal_deadline_at: internalDeadlineAt,
+          deadline_urgency: deadlines.worstUrgency,
+          is_overdue: deadlines.worstUrgency === 'overdue',
+          payload_status: payloadStatus,
+          payload_ready: tgss.isReady,
+          payload_missing_fields: tgss.missingFields.map(f => f.field),
+          payload_format_errors: tgss.formatErrors.map(f => `${f.field}: ${f.error}`),
+          payload_snapshot: tgss.payload as any,
+          last_payload_computed_at: new Date().toISOString(),
+          deadline_computed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('request_id', requestId);
+    } catch (err) {
+      console.error('[useHRRegistrationProcess] persistDeadlineAndPayload error:', err);
+    }
+  }, [registrationData]);
+
   return {
     registrationData,
     loading,
@@ -408,6 +465,7 @@ export function useHRRegistrationProcess(companyId: string) {
     computeReadiness,
     computeDataReadiness: () => computeDataReadiness(registrationData),
     fetchByEmployee,
+    persistDeadlineAndPayload,
     REGISTRATION_STATUS_CONFIG,
   };
 }
