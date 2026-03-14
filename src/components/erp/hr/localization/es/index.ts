@@ -10,3 +10,4 @@ export { ESPermisosPanel } from './ESPermisosPanel';
 export { ESSettlementCalculator } from './ESSettlementCalculator';
 export { ESPayrollBridge } from './ESPayrollBridge';
 export { ESPayrollSlipDetail } from './ESPayrollSlipDetail';
+export { FiscalMonthlyExpedientTab } from './FiscalMonthlyExpedientTab';

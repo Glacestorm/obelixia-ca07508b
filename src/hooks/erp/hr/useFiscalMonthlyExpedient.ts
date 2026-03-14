@@ -93,11 +93,11 @@ export function useFiscalMonthlyExpedient(companyId: string) {
   const extractFiscalData = useCallback(async (periodId: string) => {
     try {
       // Get payroll records for this period
-      const { data: records } = await supabase
+      const { data: records } = await (supabase
         .from('hr_payroll_records')
         .select('id, employee_id')
         .eq('company_id', companyId)
-        .eq('period_id', periodId);
+        .eq('period_id', periodId) as any);
 
       if (!records || records.length === 0) return null;
 

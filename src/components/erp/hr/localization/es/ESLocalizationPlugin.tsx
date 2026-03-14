@@ -1,8 +1,9 @@
 /**
  * ESLocalizationPlugin — Panel principal del plugin España
- * MVP: Datos laborales | Seg. Social | IRPF | Nómina ES
+ * MVP: Datos laborales | Seg. Social | IRPF | Nómina ES | Fiscal
  * Full: + Contratos | Permisos | Finiquito
  */
+import { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Flag, Shield, Calculator, FileText, Calendar, BookOpen, Euro } from 'lucide-react';
 import { ESEmployeeLaborDataForm } from './ESEmployeeLaborDataForm';
@@ -12,6 +13,8 @@ import { ESContractTypesPanel } from './ESContractTypesPanel';
 import { ESPermisosPanel } from './ESPermisosPanel';
 import { ESSettlementCalculator } from './ESSettlementCalculator';
 import { ESPayrollBridge } from './ESPayrollBridge';
+import { FiscalMonthlyExpedientTab } from './FiscalMonthlyExpedientTab';
+import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 
 interface Props {
   companyId: string;
@@ -21,6 +24,9 @@ interface Props {
 
 export function ESLocalizationPlugin({ companyId, employeeId, mvpMode = true }: Props) {
   const showFull = !mvpMode;
+  const { periods, fetchPeriods } = usePayrollEngine(companyId);
+
+  useEffect(() => { fetchPeriods(); }, [fetchPeriods]);
 
   return (
     <div className="space-y-4">
@@ -34,11 +40,12 @@ export function ESLocalizationPlugin({ companyId, employeeId, mvpMode = true }: 
       </div>
 
       <Tabs defaultValue="labor-data">
-        <TabsList className={`grid w-full ${showFull ? 'grid-cols-7' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${showFull ? 'grid-cols-8' : 'grid-cols-5'}`}>
           <TabsTrigger value="labor-data" className="text-xs gap-1"><BookOpen className="h-3.5 w-3.5" /> Datos</TabsTrigger>
           <TabsTrigger value="ss" className="text-xs gap-1"><Shield className="h-3.5 w-3.5" /> Seg. Social</TabsTrigger>
           <TabsTrigger value="irpf" className="text-xs gap-1"><Calculator className="h-3.5 w-3.5" /> IRPF</TabsTrigger>
           <TabsTrigger value="payroll" className="text-xs gap-1"><Euro className="h-3.5 w-3.5" /> Nómina ES</TabsTrigger>
+          <TabsTrigger value="fiscal" className="text-xs gap-1"><FileText className="h-3.5 w-3.5" /> Fiscal</TabsTrigger>
           {showFull && <TabsTrigger value="contracts" className="text-xs gap-1"><FileText className="h-3.5 w-3.5" /> Contratos</TabsTrigger>}
           {showFull && <TabsTrigger value="leaves" className="text-xs gap-1"><Calendar className="h-3.5 w-3.5" /> Permisos</TabsTrigger>}
           {showFull && <TabsTrigger value="settlement" className="text-xs gap-1"><Calculator className="h-3.5 w-3.5" /> Finiquito</TabsTrigger>}
@@ -55,6 +62,9 @@ export function ESLocalizationPlugin({ companyId, employeeId, mvpMode = true }: 
         </TabsContent>
         <TabsContent value="payroll" className="mt-4">
           <ESPayrollBridge companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="fiscal" className="mt-4">
+          <FiscalMonthlyExpedientTab companyId={companyId} periods={periods} />
         </TabsContent>
         {showFull && (
           <TabsContent value="contracts" className="mt-4">
