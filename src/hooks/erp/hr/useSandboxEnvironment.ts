@@ -354,13 +354,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       toast.error('Error en ejecución sandbox', { description: msg });
 
-      await logSandboxAudit('sandbox_execution_error', {
-        adapterId: params.adapterId,
-        domain: params.domain,
-        environment: activeEnvironment,
-        error: msg,
-        companyId,
-      });
+      await auditExecutionFailed(companyId, activeEnvironment, params.adapterId, params.domain, 'error', msg);
 
       return null;
     } finally {
