@@ -1,6 +1,6 @@
 /**
  * HRComplianceEvidencePanel — Evidencias documentales de cumplimiento
- * V2-ES.8 T2: Integra evidencias vinculadas a dry-runs
+ * V2-ES.8 T2+T9: Integra evidencias vinculadas a dry-runs y sandbox executions
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,12 +10,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import {
   Shield, Plus, FileCheck, FlaskConical, Info,
   History, Paperclip, CheckCircle2, Clock,
-  Download, FileText, FileSpreadsheet,
+  Download, FileText, FileSpreadsheet, Lock, TestTube,
 } from 'lucide-react';
 import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { useDryRunPersistence, type DryRunEvidence } from '@/hooks/erp/hr/useDryRunPersistence';
-import { format } from 'date-fns';
+import { useSandboxPersistence } from '@/hooks/erp/hr/useSandboxPersistence';
+import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Props { companyId: string; }
