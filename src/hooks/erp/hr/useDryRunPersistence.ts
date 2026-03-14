@@ -32,6 +32,14 @@ export interface DryRunResult {
   executed_by: string | null;
   notes: string | null;
   metadata: Record<string, unknown> | null;
+  // V2-ES.8 T2 extended fields
+  related_period_id: string | null;
+  related_process_id: string | null;
+  related_run_id: string | null;
+  execution_mode: string;
+  simulated_result: string;
+  readiness_status: string;
+  submission_status: string;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +67,14 @@ export interface CreateDryRunInput {
   durationMs?: number;
   notes?: string;
   status?: 'success' | 'partial' | 'failed' | 'skipped';
+  // Extended traceability
+  relatedPeriodId?: string;
+  relatedProcessId?: string;
+  relatedRunId?: string;
+  executionMode?: string;
+  simulatedResult?: string;
+  readinessStatus?: string;
+  submissionStatus?: string;
 }
 
 export interface CreateEvidenceInput {
