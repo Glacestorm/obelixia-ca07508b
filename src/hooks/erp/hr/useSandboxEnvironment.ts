@@ -183,7 +183,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
 
   const acceptDisclaimers = useCallback(() => {
     setDisclaimersAccepted(true);
-    logSandboxAudit('sandbox_disclaimers_accepted', { companyId, environment: activeEnvironment });
+    auditDisclaimersAccepted(companyId, activeEnvironment);
     toast.success('Disclaimers de sandbox aceptados');
   }, [companyId, activeEnvironment]);
 
