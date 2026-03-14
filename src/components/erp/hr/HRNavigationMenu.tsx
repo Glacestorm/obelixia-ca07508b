@@ -495,7 +495,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
               >
                 <MenuIcon className="h-4 w-4" />
                 {menu.label}
-                {menu.badge && menu.badge > 0 && (
+                {typeof menu.badge === 'number' && menu.badge > 0 && (
                   <Badge variant="secondary" className="ml-0.5 text-xs h-5 min-w-5 justify-center">
                     {menu.badge}
                   </Badge>
