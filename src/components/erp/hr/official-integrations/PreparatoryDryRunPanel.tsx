@@ -669,6 +669,7 @@ function SubmissionCard({
 
 export function PreparatoryDryRunPanel({ companyId }: Props) {
   const [domainFilter, setDomainFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('active');
   const [evidenceCache, setEvidenceCache] = useState<Record<string, DryRunEvidence[]>>({});
@@ -768,6 +769,18 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
 
   const domains = getSubmissionDomains();
 
+  const filteredHistory = useMemo(() => {
+    if (statusFilter === 'all') return dryRunHistory;
+    return dryRunHistory.filter(r => r.status === statusFilter);
+  }, [dryRunHistory, statusFilter]);
+
+  // Auto-diff: latest 2 consecutive runs for executive summary
+  const latestDiff = useMemo(() => {
+    if (dryRunHistory.length < 2) return null;
+    const sorted = [...dryRunHistory].sort((a, b) => b.execution_number - a.execution_number);
+    return computeDryRunDiff(sorted[1], sorted[0]);
+  }, [dryRunHistory]);
+
   const dryRunCount = submissions.filter(s => s.status === 'dry_run_executed').length;
   const readyCount = submissions.filter(s => s.status === 'ready_for_dry_run').length;
   const draftCount = submissions.filter(s => ['draft', 'payload_generated', 'validated_internal'].includes(s.status)).length;
@@ -861,9 +874,19 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
             <FlaskConical className="h-3 w-3" /> Envíos activos ({submissions.length})
           </TabsTrigger>
           <TabsTrigger value="history" className="text-xs gap-1">
-            <History className="h-3 w-3" /> Historial persistido ({dryRunHistory.length})
+            <History className="h-3 w-3" /> Historial ({dryRunHistory.length})
           </TabsTrigger>
         </TabsList>
+
+        {/* Executive auto-diff summary (visible on history tab when available) */}
+        {activeTab === 'history' && latestDiff && (
+          <div className="mt-3 mb-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+              Último cambio detectado
+            </p>
+            <DiffReportCard report={latestDiff} />
+          </div>
+        )}
 
         <TabsContent value="active" className="space-y-2 mt-3">
           {submissions.map(sub => (
@@ -889,34 +912,50 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-2 mt-3">
-          {/* Diff controls */}
-          {dryRunHistory.length >= 2 && (
-            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border text-[11px]">
-              <div className="flex items-center gap-1.5">
+          {/* Filters and diff controls */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Status filter */}
+            <div className="flex items-center gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[130px] h-7 text-[11px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs">Todos</SelectItem>
+                  <SelectItem value="success" className="text-xs">Éxito</SelectItem>
+                  <SelectItem value="partial" className="text-xs">Parcial</SelectItem>
+                  <SelectItem value="failed" className="text-xs">Fallido</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-[10px] text-muted-foreground">{filteredHistory.length} resultado(s)</span>
+            </div>
+
+            {/* Diff controls */}
+            {dryRunHistory.length >= 2 && (
+              <div className="flex items-center gap-1.5 text-[11px]">
                 <ArrowUpDown className="h-3.5 w-3.5 text-primary" />
-                <span className="font-medium">Comparar dry-runs:</span>
                 <span className="text-muted-foreground">
                   {diffSelection.length === 0
-                    ? 'Selecciona 2 ejecuciones para comparar'
+                    ? 'Selecciona 2 para comparar'
                     : diffSelection.length === 1
-                    ? '1 seleccionado — elige otro'
+                    ? '1 seleccionado'
                     : '2 seleccionados'}
                 </span>
+                {diffSelection.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-[10px] px-1.5"
+                    onClick={() => { setDiffSelection([]); setActiveDiff(null); }}
+                  >
+                    <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Limpiar
+                  </Button>
+                )}
               </div>
-              {diffSelection.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 text-[10px] px-1.5"
-                  onClick={() => { setDiffSelection([]); setActiveDiff(null); }}
-                >
-                  <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Limpiar
-                </Button>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
-          {dryRunHistory.map(result => (
+          {filteredHistory.map(result => (
             <PersistedDryRunCard
               key={result.id}
               result={result}
@@ -930,7 +969,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               isSelectedForDiff={diffSelection.includes(result.id)}
             />
           ))}
-          {dryRunHistory.length === 0 && !historyLoading && (
+          {filteredHistory.length === 0 && !historyLoading && (
             <Card className="border-dashed">
               <CardContent className="py-10 text-center">
                 <History className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />

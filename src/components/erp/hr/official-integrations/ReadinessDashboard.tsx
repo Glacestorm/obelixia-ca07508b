@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   RefreshCw,
   Shield,
@@ -309,6 +310,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
   const { certificates, fetchCertificates, getCertificateSummary } = useHRDomainCertificates(companyId);
   const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
+  const [entityFilter, setEntityFilter] = useState<string>('all');
   const {
     report: multiEntityReport,
     isLoading: multiEntityLoading,
@@ -554,6 +556,19 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
                 </Badge>
               </p>
               <div className="flex items-center gap-3 text-[10px]">
+                {/* Entity filter */}
+                {multiEntityReport.entities.length > 2 && (
+                  <Select value={entityFilter} onValueChange={setEntityFilter}>
+                    <SelectTrigger className="w-[140px] h-6 text-[10px]">
+                      <SelectValue placeholder="Filtrar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-xs">Todas</SelectItem>
+                      <SelectItem value="gaps" className="text-xs">Con gaps</SelectItem>
+                      <SelectItem value="ready" className="text-xs">Listas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 {entityCounts.fullyReady > 0 && (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle2 className="h-3 w-3" /> {entityCounts.fullyReady} lista(s)
@@ -578,7 +593,13 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
 
             {/* Per-entity summary with gap details */}
             <div className="space-y-1">
-              {multiEntityReport.entities.map(ent => {
+              {multiEntityReport.entities
+                .filter(ent => {
+                  if (entityFilter === 'gaps') return ent.summary.totalBlockers > 0 || ent.summary.overallPercent < 70;
+                  if (entityFilter === 'ready') return ent.summary.overallPercent >= 70 && ent.summary.totalBlockers === 0;
+                  return true;
+                })
+                .map(ent => {
                 const topBlockers = ent.summary.connectors
                   .flatMap(c => c.blockers.map(b => ({ connector: c.label, blocker: b })))
                   .slice(0, 2);
