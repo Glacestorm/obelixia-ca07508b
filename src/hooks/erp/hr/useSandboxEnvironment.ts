@@ -59,6 +59,14 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
   const [disclaimersAccepted, setDisclaimersAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // ===================== PERSISTENCE (T9) =====================
+  const persistence = useSandboxPersistence(companyId);
+
+  // Load history on mount
+  useEffect(() => {
+    persistence.fetchHistory();
+  }, [companyId]);
+
   // ===================== GATE CONTEXT BUILDER =====================
 
   const buildGateContext = useCallback((adapter: IntegrationAdapter) => {
