@@ -521,6 +521,118 @@ export function useHRContractProcess(companyId: string) {
     }
   }, [contractData, user]);
 
+  /** Close the contract process internally with an immutable snapshot */
+  const closeContractProcess = useCallback(async (
+    requestId: string,
+    closureContext?: ContrataPreIntegrationContext,
+    notes?: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!user?.id) return { success: false, error: 'No autenticado' };
+    if (!contractData || contractData.request_id !== requestId) {
+      return { success: false, error: 'Datos no disponibles' };
+    }
+
+    const preIntegration = evaluateContrataPreIntegrationReadiness(contractData, closureContext);
+    const snapshot = buildContractClosureSnapshot(preIntegration, contractData);
+
+    try {
+      const { error } = await supabase
+        .from('erp_hr_contract_process_data')
+        .update({
+          closure_status: 'closed',
+          closed_at: new Date().toISOString(),
+          closed_by: user.id,
+          closure_notes: notes || null,
+          closure_snapshot: snapshot as any,
+          closure_blockers: null,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('request_id', requestId);
+
+      if (error) throw error;
+
+      setContractData(prev => prev ? {
+        ...prev,
+        closure_status: 'closed',
+        closed_at: snapshot.closed_at,
+        closed_by: user.id,
+        closure_notes: notes || null,
+        closure_snapshot: snapshot as any,
+        closure_blockers: null,
+      } : null);
+
+      toast.success('Contratación cerrada internamente');
+      logContractAudit(
+        'CONTRACT_INTERNALLY_CLOSED',
+        companyId,
+        user.id,
+        requestId,
+        null,
+        { snapshot, notes },
+        'important',
+        ['closure_status'],
+      );
+      return { success: true };
+    } catch (err) {
+      console.error('[useHRContractProcess] closeContractProcess error:', err);
+      toast.error('Error al cerrar contratación');
+      return { success: false, error: 'Error de base de datos' };
+    }
+  }, [user, contractData, companyId]);
+
+  /** Reopen a previously closed contract process */
+  const reopenContractProcess = useCallback(async (
+    requestId: string,
+    reason?: string,
+  ): Promise<boolean> => {
+    if (!user?.id) return false;
+    try {
+      const prevSnapshot = contractData?.closure_snapshot ?? null;
+
+      const { error } = await supabase
+        .from('erp_hr_contract_process_data')
+        .update({
+          closure_status: null,
+          closed_at: null,
+          closed_by: null,
+          closure_notes: null,
+          closure_snapshot: null,
+          closure_blockers: null,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('request_id', requestId);
+
+      if (error) throw error;
+
+      setContractData(prev => prev ? {
+        ...prev,
+        closure_status: null,
+        closed_at: null,
+        closed_by: null,
+        closure_notes: null,
+        closure_snapshot: null,
+        closure_blockers: null,
+      } : null);
+
+      toast.success('Proceso de contratación reabierto');
+      logContractAudit(
+        'CONTRACT_CLOSURE_REOPENED',
+        companyId,
+        user.id,
+        requestId,
+        { previous_snapshot: prevSnapshot },
+        { reason },
+        'warning',
+        ['closure_status'],
+      );
+      return true;
+    } catch (err) {
+      console.error('[useHRContractProcess] reopenContractProcess error:', err);
+      toast.error('Error al reabrir proceso');
+      return false;
+    }
+  }, [user, contractData, companyId]);
+
   return {
     contractData,
     loading,
@@ -531,6 +643,8 @@ export function useHRContractProcess(companyId: string) {
     computeDataReadiness: () => computeContractDataReadiness(contractData),
     fetchByEmployee,
     persistDeadlineAndPayload,
+    closeContractProcess,
+    reopenContractProcess,
     CONTRACT_PROCESS_STATUS_CONFIG,
   };
 }
