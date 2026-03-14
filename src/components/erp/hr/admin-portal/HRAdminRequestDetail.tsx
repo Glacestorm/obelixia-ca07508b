@@ -229,6 +229,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
                 completeness={completeness}
                 processType={request.request_type}
                 calendarLabel={calendarLabel}
+                registrationDeadlines={registrationDeadlines}
               />
               <ProcessDeadlinesSummary
                 processType={request.request_type}
