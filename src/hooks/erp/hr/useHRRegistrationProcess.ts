@@ -170,6 +170,38 @@ export function computeRegistrationStatus(
   return 'ready_to_submit';
 }
 
+// ─── Audit helper ────────────────────────────────────────────────────────────
+
+async function logRegistrationAudit(
+  action: string,
+  companyId: string,
+  userId: string | undefined,
+  recordId: string | null,
+  oldData: Record<string, unknown> | null,
+  newData: Record<string, unknown> | null,
+  severity: string = 'info',
+  changedFields?: string[],
+) {
+  if (!userId) return;
+  try {
+    await supabase.from('erp_hr_audit_log').insert([{
+      action,
+      table_name: 'erp_hr_registration_data',
+      record_id: recordId,
+      company_id: companyId,
+      user_id: userId,
+      old_data: oldData as any,
+      new_data: newData as any,
+      category: 'registration',
+      severity,
+      changed_fields: changedFields ?? null,
+      metadata: { process: 'alta_afiliacion', version: 'v2-es5-p1' } as any,
+    }]);
+  } catch (err) {
+    console.error('[RegistrationAudit] log error:', err);
+  }
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useHRRegistrationProcess(companyId: string) {
@@ -224,6 +256,9 @@ export function useHRRegistrationProcess(companyId: string) {
         if (error) throw error;
         const updated = data as RegistrationData;
         setRegistrationData(updated);
+        // Audit: data update
+        const changedKeys = Object.keys(updates).filter(k => (existing as any)[k] !== (updates as any)[k]);
+        logRegistrationAudit('REGISTRATION_DATA_UPDATE', companyId, user.id, requestId, { previous: existing }, { updated: updates }, 'info', changedKeys);
         return updated;
       } else {
         // Insert
@@ -243,6 +278,8 @@ export function useHRRegistrationProcess(companyId: string) {
         const created = data as RegistrationData;
         setRegistrationData(created);
         toast.success('Datos de alta inicializados');
+        // Audit: process initialized
+        logRegistrationAudit('REGISTRATION_INITIALIZED', companyId, user.id, requestId, null, { employee_id: employeeId, request_id: requestId }, 'info');
         return created;
       }
     } catch (err) {
@@ -289,8 +326,20 @@ export function useHRRegistrationProcess(companyId: string) {
 
       if (error) throw error;
 
+      const oldStatus = registrationData?.registration_status || 'pending_data';
       setRegistrationData(prev => prev ? { ...prev, ...timestamps } : null);
       toast.success(`Estado actualizado: ${REGISTRATION_STATUS_CONFIG[newStatus].labelES}`);
+      // Audit: status transition
+      logRegistrationAudit(
+        'REGISTRATION_STATUS_CHANGE',
+        registrationData?.company_id || '',
+        user.id,
+        requestId,
+        { status: oldStatus },
+        { status: newStatus },
+        newStatus === 'confirmed' ? 'important' : 'info',
+        ['registration_status'],
+      );
       return true;
     } catch (err) {
       console.error('[useHRRegistrationProcess] updateStatus error:', err);
