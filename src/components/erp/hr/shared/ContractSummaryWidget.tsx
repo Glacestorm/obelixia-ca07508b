@@ -57,6 +57,10 @@ export function ContractSummaryWidget({ companyId, employeeId, className }: Prop
 
   const deadlineSummary = useMemo(() => computeContractDeadlines(data, holidaySet), [data, holidaySet]);
 
+  const preIntegrationSummary = useMemo(() =>
+    evaluateContrataPreIntegrationReadiness(data, { deadlineSummary }),
+    [data, deadlineSummary],
+  );
   if (loading || !data) return null;
 
   const status = data.contract_process_status as ContractProcessStatus;
