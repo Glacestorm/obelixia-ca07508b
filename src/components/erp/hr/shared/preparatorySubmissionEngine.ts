@@ -29,6 +29,9 @@ export type PreparatorySubmissionStatus =
   | 'validated_internal'
   | 'ready_for_dry_run'
   | 'dry_run_executed'
+  // V2-ES.8 T5: Pre-real approval gate
+  | 'pending_approval'
+  | 'approved_pre_real'
   | 'ready_for_real'
   | 'submitted_real'
   | 'acknowledged'
