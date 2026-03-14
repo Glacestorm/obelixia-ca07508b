@@ -159,23 +159,35 @@ function EvidenceList({ evidence, onGenerateOnDemand }: {
   );
 }
 
-// ─── Diff Report Card ───────────────────────────────────────────────────────
+// ─── Diff Report Card (enhanced V2-ES.8 T4) ────────────────────────────────
 
-function DiffReportCard({ report }: { report: DryRunDiffReport }) {
+function DiffReportCard({ report, showAdvanced = false }: { report: DryRunDiffReport; showAdvanced?: boolean }) {
+  const [expanded, setExpanded] = useState(false);
   const DirIcon = report.overallDirection === 'improved' ? TrendingUp :
     report.overallDirection === 'degraded' ? TrendingDown : Minus;
 
+  const hasConfigChanges = report.configDiff.configHashChanged || report.configDiff.certificateChanged;
+  const hasDeadlineChanges = report.deadlineDiff.deadlinesChanged;
+  const hasBlockerChanges = report.blockerWarningDiff.blockersResolved.length > 0 || report.blockerWarningDiff.blockersAdded.length > 0;
+
   return (
-    <div className="p-2 rounded-lg border bg-muted/30 space-y-1.5">
+    <div className="p-2.5 rounded-lg border bg-muted/30 space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-medium flex items-center gap-1">
           <ArrowUpDown className="h-3 w-3" />
           Comparativa #{report.baselineExecNumber} → #{report.comparisonExecNumber}
         </p>
-        <Badge variant="outline" className={cn('text-[9px] h-4 gap-0.5', getDiffDirectionColor(report.overallDirection))}>
-          <DirIcon className="h-2.5 w-2.5" />
-          {getDiffDirectionLabel(report.overallDirection)}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className={cn('text-[9px] h-4 gap-0.5', getDiffDirectionColor(report.overallDirection))}>
+            <DirIcon className="h-2.5 w-2.5" />
+            {getDiffDirectionLabel(report.overallDirection)}
+          </Badge>
+          {(hasConfigChanges || hasDeadlineChanges || hasBlockerChanges) && (
+            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setExpanded(!expanded)}>
+              {expanded ? <ChevronDown className="h-2.5 w-2.5" /> : <ChevronRight className="h-2.5 w-2.5" />}
+            </Button>
+          )}
+        </div>
       </div>
       <p className="text-[10px] text-muted-foreground">{report.summaryText}</p>
 
@@ -189,11 +201,27 @@ function DiffReportCard({ report }: { report: DryRunDiffReport }) {
         </div>
       )}
 
+      {/* Blocker/warning changes (always visible — high value) */}
+      {hasBlockerChanges && (
+        <div className="space-y-0.5">
+          {report.blockerWarningDiff.blockersResolved.map((b, i) => (
+            <div key={`br-${i}`} className="flex items-center gap-1 text-[9px] text-green-600">
+              <CheckCircle2 className="h-2.5 w-2.5" /> <span className="line-through opacity-70">{b}</span> <span>(resuelto)</span>
+            </div>
+          ))}
+          {report.blockerWarningDiff.blockersAdded.map((b, i) => (
+            <div key={`ba-${i}`} className="flex items-center gap-1 text-[9px] text-destructive">
+              <XCircle className="h-2.5 w-2.5" /> {b} <span className="text-muted-foreground">(nuevo)</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Validation diff */}
       {report.validationDiff && report.validationDiff.changedChecks.length > 0 && (
         <div className="space-y-0.5">
           <p className="text-[9px] text-muted-foreground">Checks cambiados:</p>
-          {report.validationDiff.changedChecks.slice(0, 3).map((c, i) => (
+          {report.validationDiff.changedChecks.slice(0, 4).map((c, i) => (
             <div key={i} className="flex items-center gap-1 text-[9px]">
               {c.newPassed ? (
                 <CheckCircle2 className="h-2.5 w-2.5 text-green-500" />
@@ -217,6 +245,78 @@ function DiffReportCard({ report }: { report: DryRunDiffReport }) {
           )}
           {report.payloadKeysDiff.modified.length > 0 && (
             <span className="text-amber-600">~{report.payloadKeysDiff.modified.length} modificados</span>
+          )}
+        </div>
+      )}
+
+      {/* Expanded: config, deadlines, detailed lines */}
+      {expanded && (
+        <div className="pt-1.5 border-t space-y-1.5">
+          {hasConfigChanges && (
+            <div className="text-[9px] space-y-0.5">
+              <p className="font-medium text-muted-foreground">Configuración / Certificados</p>
+              {report.configDiff.configHashChanged && (
+                <div className="flex items-center gap-1 text-blue-600">
+                  <Info className="h-2.5 w-2.5" /> Configuración cambió entre ejecuciones
+                </div>
+              )}
+              {report.configDiff.certificateDetails && (
+                <div className="flex items-center gap-1 text-amber-600">
+                  <AlertTriangle className="h-2.5 w-2.5" /> {report.configDiff.certificateDetails}
+                </div>
+              )}
+            </div>
+          )}
+
+          {hasDeadlineChanges && (
+            <div className="text-[9px] space-y-0.5">
+              <p className="font-medium text-muted-foreground">Plazos regulatorios</p>
+              <div className="flex items-center gap-1 text-blue-600">
+                <Clock className="h-2.5 w-2.5" /> {report.deadlineDiff.details || `Plazos: ${report.deadlineDiff.oldDeadlineCount} → ${report.deadlineDiff.newDeadlineCount}`}
+              </div>
+            </div>
+          )}
+
+          {/* Warning changes */}
+          {(report.blockerWarningDiff.warningsResolved.length > 0 || report.blockerWarningDiff.warningsAdded.length > 0) && (
+            <div className="text-[9px] space-y-0.5">
+              <p className="font-medium text-muted-foreground">Avisos</p>
+              {report.blockerWarningDiff.warningsResolved.map((w, i) => (
+                <div key={`wr-${i}`} className="flex items-center gap-1 text-green-600">
+                  <CheckCircle2 className="h-2 w-2" /> <span className="line-through opacity-70">{w}</span>
+                </div>
+              ))}
+              {report.blockerWarningDiff.warningsAdded.map((w, i) => (
+                <div key={`wa-${i}`} className="flex items-center gap-1 text-amber-600">
+                  <AlertTriangle className="h-2 w-2" /> {w}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Detailed summary lines for advanced profile */}
+          {showAdvanced && report.detailedSummaryLines.length > 0 && (
+            <div className="text-[9px] space-y-0.5 pt-1 border-t">
+              <p className="font-medium text-muted-foreground">Detalle avanzado</p>
+              {report.detailedSummaryLines.map((line, i) => (
+                <p key={i} className="text-muted-foreground">• {line}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Payload field names for advanced */}
+          {showAdvanced && report.payloadKeysDiff.modified.length > 0 && (
+            <div className="text-[9px] space-y-0.5 pt-1 border-t">
+              <p className="font-medium text-muted-foreground">Campos modificados</p>
+              <div className="flex flex-wrap gap-1">
+                {report.payloadKeysDiff.modified.slice(0, 10).map(k => (
+                  <span key={k} className="px-1 py-0.5 bg-amber-500/10 text-amber-700 rounded font-mono">{k.split('.').pop()}</span>
+                ))}
+                {report.payloadKeysDiff.modified.length > 10 && (
+                  <span className="text-muted-foreground">+{report.payloadKeysDiff.modified.length - 10} más</span>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}
