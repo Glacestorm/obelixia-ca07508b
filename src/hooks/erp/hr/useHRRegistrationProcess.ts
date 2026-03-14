@@ -74,6 +74,13 @@ export interface RegistrationData {
   confirmed_at: string | null;
   confirmed_reference: string | null;
   validation_notes: string | null;
+  // V2-ES.5 Paso 4: Operational closure
+  closure_status: string | null;
+  closed_at: string | null;
+  closed_by: string | null;
+  closure_notes: string | null;
+  closure_snapshot: Record<string, unknown> | null;
+  closure_blockers: Record<string, unknown>[] | null;
   // V2-ES.5 Paso 2: Deadline & payload tracking
   internal_deadline_at: string | null;
   deadline_urgency: string | null;
