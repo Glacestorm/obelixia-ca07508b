@@ -124,6 +124,15 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     return buildTGSSPayload(registrationData);
   }, [registrationData]);
 
+  // Lift deadline summary to parent for executive summary integration
+  const prevDeadlineRef = useRef(deadlineSummary.worstUrgency);
+  useEffect(() => {
+    if (onDeadlinesComputed && deadlineSummary.deadlines.length > 0) {
+      onDeadlinesComputed(deadlineSummary);
+    }
+    prevDeadlineRef.current = deadlineSummary.worstUrgency;
+  }, [deadlineSummary, onDeadlinesComputed]);
+
   const set = useCallback((k: string, v: any) => {
     setFormData(prev => ({ ...prev, [k]: v || null }));
   }, []);
