@@ -88,16 +88,34 @@ function ReadinessIndicator({ readiness }: { readiness: ExpedientReadinessSummar
         <span className="font-medium">Expedientes internos: {cfg.label}</span>
         <div className="flex gap-3 mt-0.5 text-[10px]">
           {readiness.ss_status && (
-            <span>SS: {readiness.ss_status}{readiness.ss_score !== null ? ` (${readiness.ss_score}%)` : ''}</span>
+            <span>
+              SS: {readiness.ss_status}
+              {readiness.ss_score !== null ? ` (${readiness.ss_score}%)` : ''}
+            </span>
           )}
           {readiness.fiscal_status && (
-            <span>Fiscal: {readiness.fiscal_status}{readiness.fiscal_score !== null ? ` (${readiness.fiscal_score}%)` : ''}</span>
+            <span>
+              Fiscal: {readiness.fiscal_status}
+              {readiness.fiscal_score !== null ? ` (${readiness.fiscal_score}%)` : ''}
+            </span>
+          )}
+          {!readiness.ss_status && !readiness.fiscal_status && (
+            <span className="text-muted-foreground italic">Pendiente de generación</span>
           )}
         </div>
       </div>
-      <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0 text-muted-foreground border-muted">
-        Interno
-      </Badge>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0 text-muted-foreground border-muted cursor-help">
+              Interno
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs max-w-[220px]">
+            Expedientes preparatorios internos. No constituyen presentación oficial ante AEAT ni TGSS.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }
