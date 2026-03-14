@@ -158,14 +158,14 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            📊 Incidencias y Variables de Nómina
+          📊 Incidencias y Variables de Nómina
           </h3>
           <p className="text-sm text-muted-foreground">
             Registro de variables mensuales para el cálculo de nómina · Operativa interna
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {selectedPeriodId && readiness.pending > 0 && (
+          {selectedPeriodId && readiness.pending > 0 && !isPeriodReadOnly && (
             <Button
               size="sm"
               variant="outline"
@@ -176,7 +176,7 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
               Validar todas ({readiness.pending})
             </Button>
           )}
-          <Button size="sm" onClick={handleOpenForm} disabled={!selectedPeriodId} className="gap-1.5">
+          <Button size="sm" onClick={handleOpenForm} disabled={!selectedPeriodId || !!isPeriodReadOnly} className="gap-1.5">
             <Plus className="h-4 w-4" /> Nueva incidencia
           </Button>
         </div>
