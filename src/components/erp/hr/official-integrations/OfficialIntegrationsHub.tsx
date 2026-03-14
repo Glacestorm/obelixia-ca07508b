@@ -1,6 +1,6 @@
 /**
  * OfficialIntegrationsHub — Panel principal de integraciones oficiales
- * V2-ES.8 T5+T6: + Aprobaciones pre-real tab + Proactive alerts visibility
+ * V2-ES.8 T8: + Sandbox real controlado tab + Environment indicator
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
