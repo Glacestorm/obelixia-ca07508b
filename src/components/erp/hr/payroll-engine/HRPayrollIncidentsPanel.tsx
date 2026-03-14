@@ -457,6 +457,37 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
               )}
             </div>
 
+            {/* Operational flags */}
+            <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+              <p className="text-xs font-medium">Flags operativos</p>
+              <div className="flex gap-6 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={(form as any).requires_ss_action ?? false}
+                    onCheckedChange={v => setForm(p => ({ ...p, requires_ss_action: v } as any))}
+                  />
+                  <Label className="text-xs">Requiere acción SS</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={(form as any).requires_tax_adjustment ?? false}
+                    onCheckedChange={v => setForm(p => ({ ...p, requires_tax_adjustment: v } as any))}
+                  />
+                  <Label className="text-xs">Requiere ajuste IRPF</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={(form as any).requires_external_filing ?? false}
+                    onCheckedChange={v => setForm(p => ({ ...p, requires_external_filing: v } as any))}
+                  />
+                  <Label className="text-xs">Requiere presentación externa</Label>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Marcado operativo interno — no implica transmisión oficial
+              </p>
+            </div>
+
             {/* Description */}
             <div>
               <Label>Descripción / notas</Label>
