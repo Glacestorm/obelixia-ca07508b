@@ -9,3 +9,5 @@ export { HRPayrollIncidentsPanel } from './HRPayrollIncidentsPanel';
 export { HRPayrollRunsPanel } from './HRPayrollRunsPanel';
 export { HRPayrollSimulator } from './HRPayrollSimulator';
 export { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
+export { PayrollRunDiffCard } from './PayrollRunDiffCard';
+export { PayrollRunVersionHistory } from './PayrollRunVersionHistory';
