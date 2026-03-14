@@ -1,6 +1,7 @@
 /**
- * PreparatoryDryRunPanel — V2-ES.8 Tramo 2
- * Domain-aware dry-run panel with persistence, evidence linking, and audit trail.
+ * PreparatoryDryRunPanel — V2-ES.8 Tramo 4
+ * Domain-aware dry-run panel with persistence, evidence linking, audit trail,
+ * diff between runs, and connector hardening.
  */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,6 +27,12 @@ import {
   History,
   Paperclip,
   Eye,
+  ArrowUpDown,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  HeartPulse,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -39,6 +46,18 @@ import {
   type SubmissionDomain,
   type PreparatorySubmissionStatus,
 } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
+import {
+  computeDryRunDiff,
+  getDiffDirectionLabel,
+  getDiffDirectionColor,
+  type DryRunDiffReport,
+} from '@/components/erp/hr/shared/dryRunDiffEngine';
+import {
+  evaluateDryRunHealth,
+  evaluateRetry,
+  canExecuteDryRun,
+  type DryRunHealthCheck,
+} from '@/components/erp/hr/shared/connectorHardeningEngine';
 
 interface Props {
   companyId: string;
@@ -140,6 +159,76 @@ function EvidenceList({ evidence, onGenerateOnDemand }: {
   );
 }
 
+// ─── Diff Report Card ───────────────────────────────────────────────────────
+
+function DiffReportCard({ report }: { report: DryRunDiffReport }) {
+  const DirIcon = report.overallDirection === 'improved' ? TrendingUp :
+    report.overallDirection === 'degraded' ? TrendingDown : Minus;
+
+  return (
+    <div className="p-2 rounded-lg border bg-muted/30 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-medium flex items-center gap-1">
+          <ArrowUpDown className="h-3 w-3" />
+          Comparativa #{report.baselineExecNumber} → #{report.comparisonExecNumber}
+        </p>
+        <Badge variant="outline" className={cn('text-[9px] h-4 gap-0.5', getDiffDirectionColor(report.overallDirection))}>
+          <DirIcon className="h-2.5 w-2.5" />
+          {getDiffDirectionLabel(report.overallDirection)}
+        </Badge>
+      </div>
+      <p className="text-[10px] text-muted-foreground">{report.summaryText}</p>
+
+      {/* Score delta */}
+      {report.readinessScoreDelta !== 0 && (
+        <div className="flex items-center gap-2 text-[10px]">
+          <span className="text-muted-foreground">Score:</span>
+          <span className={cn('font-mono font-medium', getDiffDirectionColor(report.readinessScoreDelta > 0 ? 'improved' : 'degraded'))}>
+            {report.readinessScoreDelta > 0 ? '+' : ''}{report.readinessScoreDelta}%
+          </span>
+        </div>
+      )}
+
+      {/* Validation diff */}
+      {report.validationDiff && report.validationDiff.changedChecks.length > 0 && (
+        <div className="space-y-0.5">
+          <p className="text-[9px] text-muted-foreground">Checks cambiados:</p>
+          {report.validationDiff.changedChecks.slice(0, 3).map((c, i) => (
+            <div key={i} className="flex items-center gap-1 text-[9px]">
+              {c.newPassed ? (
+                <CheckCircle2 className="h-2.5 w-2.5 text-green-500" />
+              ) : (
+                <XCircle className="h-2.5 w-2.5 text-destructive" />
+              )}
+              <span className="truncate">{c.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Payload keys diff */}
+      {(report.payloadKeysDiff.added.length > 0 || report.payloadKeysDiff.removed.length > 0 || report.payloadKeysDiff.modified.length > 0) && (
+        <div className="flex gap-3 text-[9px]">
+          {report.payloadKeysDiff.added.length > 0 && (
+            <span className="text-green-600">+{report.payloadKeysDiff.added.length} campos</span>
+          )}
+          {report.payloadKeysDiff.removed.length > 0 && (
+            <span className="text-destructive">-{report.payloadKeysDiff.removed.length} campos</span>
+          )}
+          {report.payloadKeysDiff.modified.length > 0 && (
+            <span className="text-amber-600">~{report.payloadKeysDiff.modified.length} modificados</span>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-start gap-1 text-[8px] text-muted-foreground pt-0.5">
+        <Info className="h-2 w-2 mt-0.5 shrink-0" />
+        <span>Comparativa interna entre dry-runs — no implica comparación con respuesta oficial.</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Persisted History Card ─────────────────────────────────────────────────
 
 function PersistedDryRunCard({
@@ -148,12 +237,20 @@ function PersistedDryRunCard({
   onLoadEvidence,
   isEvidenceLoaded,
   onGenerateEvidence,
+  health,
+  diffReport,
+  onSelectForDiff,
+  isSelectedForDiff,
 }: {
   result: DryRunResult;
   evidence: DryRunEvidence[];
   onLoadEvidence: (id: string) => void;
   isEvidenceLoaded: boolean;
   onGenerateEvidence?: (dryRunId: string) => void;
+  health?: DryRunHealthCheck;
+  diffReport?: DryRunDiffReport | null;
+  onSelectForDiff?: (id: string) => void;
+  isSelectedForDiff?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const DomainIcon = DOMAIN_ICONS[result.submission_domain] || FileText;
@@ -165,7 +262,7 @@ function PersistedDryRunCard({
     : 'text-destructive bg-destructive/10';
 
   return (
-    <Card className="hover:bg-muted/20 transition-colors">
+    <Card className={cn('hover:bg-muted/20 transition-colors', isSelectedForDiff && 'ring-2 ring-primary/40')}>
       <CardContent className="py-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -187,11 +284,34 @@ function PersistedDryRunCard({
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            {/* Health badge */}
+            {health && (
+              <Badge variant="outline" className={cn('text-[9px] h-4 gap-0.5',
+                health.recommendation === 'use' ? 'text-green-600 border-green-300' :
+                health.recommendation === 'refresh' ? 'text-amber-600 border-amber-300' :
+                'text-muted-foreground border-border'
+              )}>
+                <HeartPulse className="h-2.5 w-2.5" />
+                {health.recommendation === 'use' ? 'Vigente' : health.recommendation === 'refresh' ? 'Actualizar' : 'Obsoleto'}
+              </Badge>
+            )}
             <Badge className={cn('text-[10px]', statusColor)}>
               {result.status === 'success' ? 'Éxito' : result.status === 'partial' ? 'Parcial' : 'Fallido'}
             </Badge>
             {result.readiness_score > 0 && (
               <span className="text-[10px] font-mono text-muted-foreground">{result.readiness_score}%</span>
+            )}
+            {/* Diff selection button */}
+            {onSelectForDiff && (
+              <Button
+                variant={isSelectedForDiff ? 'default' : 'ghost'}
+                size="icon"
+                className="h-6 w-6"
+                title="Seleccionar para comparar"
+                onClick={() => onSelectForDiff(result.id)}
+              >
+                <ArrowUpDown className="h-3 w-3" />
+              </Button>
             )}
             <Button
               variant="ghost"
@@ -211,6 +331,22 @@ function PersistedDryRunCard({
 
         {expanded && (
           <div className="pt-2 border-t space-y-2">
+            {/* Health warnings */}
+            {health && health.warnings.length > 0 && (
+              <div className="space-y-0.5">
+                {health.warnings.map((w, i) => (
+                  <div key={i} className="flex items-center gap-1 text-[10px] text-amber-600">
+                    <AlertTriangle className="h-2.5 w-2.5 shrink-0" /> {w}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Diff report inline */}
+            {diffReport && (
+              <DiffReportCard report={diffReport} />
+            )}
+
             {/* Validation summary */}
             {result.validation_result && (
               <div className="flex items-center gap-3 text-[11px]">
@@ -436,6 +572,8 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('active');
   const [evidenceCache, setEvidenceCache] = useState<Record<string, DryRunEvidence[]>>({});
+  const [diffSelection, setDiffSelection] = useState<string[]>([]);
+  const [activeDiff, setActiveDiff] = useState<DryRunDiffReport | null>(null);
 
   const {
     submissions,
@@ -498,6 +636,35 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
   const handleExpand = useCallback((id: string) => {
     setExpandedId(prev => prev === id ? null : id);
   }, []);
+
+  // ── Diff selection logic ──
+  const handleSelectForDiff = useCallback((id: string) => {
+    setDiffSelection(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      const next = [...prev, id].slice(-2); // Keep max 2
+      if (next.length === 2) {
+        const [aId, bId] = next;
+        const a = dryRunHistory.find(r => r.id === aId);
+        const b = dryRunHistory.find(r => r.id === bId);
+        if (a && b) {
+          const [baseline, comparison] = a.execution_number < b.execution_number ? [a, b] : [b, a];
+          setActiveDiff(computeDryRunDiff(baseline, comparison));
+        }
+      } else {
+        setActiveDiff(null);
+      }
+      return next;
+    });
+  }, [dryRunHistory]);
+
+  // ── Health checks for all history items ──
+  const healthMap = useMemo(() => {
+    const map: Record<string, DryRunHealthCheck> = {};
+    for (const r of dryRunHistory) {
+      map[r.id] = evaluateDryRunHealth(r, dryRunHistory);
+    }
+    return map;
+  }, [dryRunHistory]);
 
   const domains = getSubmissionDomains();
 
@@ -622,6 +789,33 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-2 mt-3">
+          {/* Diff controls */}
+          {dryRunHistory.length >= 2 && (
+            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border text-[11px]">
+              <div className="flex items-center gap-1.5">
+                <ArrowUpDown className="h-3.5 w-3.5 text-primary" />
+                <span className="font-medium">Comparar dry-runs:</span>
+                <span className="text-muted-foreground">
+                  {diffSelection.length === 0
+                    ? 'Selecciona 2 ejecuciones para comparar'
+                    : diffSelection.length === 1
+                    ? '1 seleccionado — elige otro'
+                    : '2 seleccionados'}
+                </span>
+              </div>
+              {diffSelection.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 text-[10px] px-1.5"
+                  onClick={() => { setDiffSelection([]); setActiveDiff(null); }}
+                >
+                  <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Limpiar
+                </Button>
+              )}
+            </div>
+          )}
+
           {dryRunHistory.map(result => (
             <PersistedDryRunCard
               key={result.id}
@@ -630,6 +824,10 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               onLoadEvidence={handleLoadEvidence}
               isEvidenceLoaded={!!evidenceCache[result.id]}
               onGenerateEvidence={handleGenerateEvidence}
+              health={healthMap[result.id]}
+              diffReport={activeDiff && (activeDiff.baselineId === result.id || activeDiff.comparisonId === result.id) ? activeDiff : null}
+              onSelectForDiff={handleSelectForDiff}
+              isSelectedForDiff={diffSelection.includes(result.id)}
             />
           ))}
           {dryRunHistory.length === 0 && !historyLoading && (
