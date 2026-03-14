@@ -12,6 +12,7 @@ import { SubmissionForm } from './SubmissionForm';
 import { SubmissionDetail } from './SubmissionDetail';
 import { AdaptersPanel } from './AdaptersPanel';
 import { ReceiptsPanel } from './ReceiptsPanel';
+import { ExportHubPanel } from './ExportHubPanel';
 import { ReadinessDashboard } from './ReadinessDashboard';
 import { PreparatoryDryRunPanel } from './PreparatoryDryRunPanel';
 import { PreRealApprovalPanel } from './PreRealApprovalPanel';
