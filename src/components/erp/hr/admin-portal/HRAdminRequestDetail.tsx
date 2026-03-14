@@ -157,6 +157,16 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
             </Tabs>
           </Card>
 
+          {/* V2-ES.5 Paso 1: Registration/affiliation panel for employee_registration */}
+          {request.request_type === 'employee_registration' && (
+            <RegistrationDataPanel
+              requestId={request.id}
+              companyId={request.company_id}
+              employeeId={request.employee_id}
+              linkedDocs={linkedDocs}
+            />
+          )}
+
           {/* V2-ES.3 Paso 2: Linked documents */}
           <LinkedDocumentsSection
             key={docsRefreshKey}
