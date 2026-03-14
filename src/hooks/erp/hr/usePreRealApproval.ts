@@ -68,6 +68,11 @@ export interface RequestApprovalInput {
   hasCertificate: boolean;
   notes?: string;
   requiredRole?: ApprovalRole;
+  /** Extended eligibility context (V2-ES.8 T5 P3) */
+  readinessPercent?: number;
+  hasLinkedEvidence?: boolean;
+  evidenceCount?: number;
+  certificateStatus?: 'valid' | 'expiring' | 'expired' | 'not_configured';
 }
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
