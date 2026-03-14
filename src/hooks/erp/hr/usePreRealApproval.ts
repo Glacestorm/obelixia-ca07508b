@@ -138,6 +138,10 @@ export function usePreRealApproval(companyId: string) {
       dryRunCount: input.dryRunCount,
       hasCertificate: input.hasCertificate,
       domain: input.domain,
+      readinessPercent: input.readinessPercent,
+      hasLinkedEvidence: input.hasLinkedEvidence,
+      evidenceCount: input.evidenceCount,
+      certificateStatus: input.certificateStatus,
     });
 
     if (!eligibility.eligible) {
