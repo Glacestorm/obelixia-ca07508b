@@ -72,17 +72,17 @@ function computeDirection(a: number, b: number): DiffDirection {
 }
 
 function extractDryRunErrorCount(dr: DryRunResult): number {
-  const val = dr.validation_result as Record<string, unknown> | null;
+  const val = dr.validation_result as unknown as Record<string, unknown> | null;
   return (val?.errorCount as number) || 0;
 }
 
 function extractDryRunWarningCount(dr: DryRunResult): number {
-  const val = dr.validation_result as Record<string, unknown> | null;
+  const val = dr.validation_result as unknown as Record<string, unknown> | null;
   return (val?.warningCount as number) || 0;
 }
 
 function extractDryRunPassed(dr: DryRunResult): boolean {
-  const val = dr.validation_result as Record<string, unknown> | null;
+  const val = dr.validation_result as unknown as Record<string, unknown> | null;
   return (val?.passed as boolean) || dr.status === 'success';
 }
 
