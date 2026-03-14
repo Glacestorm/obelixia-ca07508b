@@ -434,6 +434,7 @@ export function useHRRegistrationProcess(companyId: string) {
     }
 
     const payloadStatus = tgss.isReady ? 'ready' : (tgss.formatErrors.length > 0 ? 'has_errors' : 'incomplete');
+    const preIntegration = evaluatePreIntegrationReadiness(registrationData);
     const prevUrgency = registrationData.deadline_urgency || 'ok';
     const prevPayloadReady = registrationData.payload_ready ?? false;
 
