@@ -222,14 +222,7 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
         <ContractDeadlineAlert summary={deadlineSummary} />
 
         {/* V2-ES.6 Paso 2: Pre-integration readiness badge */}
-        {!editing && (() => {
-          const preIntegrationSummary = evaluateContrataPreIntegrationReadiness(contractData, {
-            docReadinessPercent: readiness.docs.percentage,
-            docMandatoryComplete: readiness.docs.mandatoryComplete,
-            deadlineSummary: deadlineSummary,
-          });
-          return <ContrataPreIntegrationBadge summary={preIntegrationSummary} showDetails />;
-        })()}
+        {!editing && <ContrataPreIntegrationBadge summary={preIntegrationSummary} showDetails />}
 
         {/* Status transitions */}
         {allowedTransitions.length > 0 && !editing && (
