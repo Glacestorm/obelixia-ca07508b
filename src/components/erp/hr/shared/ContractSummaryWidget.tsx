@@ -110,7 +110,9 @@ export function ContractSummaryWidget({ companyId, employeeId, className }: Prop
           )}
         </div>
 
-        {/* Deadline risk signal */}
+        {/* V2-ES.6 Paso 2: Pre-integration readiness */}
+        {!isComplete && <ContrataPreIntegrationBadge summary={preIntegrationSummary} />}
+
         {deadlineSummary.hasRisk && !isComplete && (
           <div className={cn(
             'flex items-center gap-1 text-[10px]',
