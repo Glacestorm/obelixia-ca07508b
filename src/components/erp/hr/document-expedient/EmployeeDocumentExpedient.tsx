@@ -101,6 +101,11 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
           <RegistrationSummaryWidget companyId={companyId} employeeId={employeeId} />
         )}
 
+        {/* V2-ES.6 Paso 1.1: Contract process summary */}
+        {employeeId && (
+          <ContractSummaryWidget companyId={companyId} employeeId={employeeId} />
+        )}
+
         {/* V2-ES.4+: Executive summary */}
         {!isLoadingDocuments && filtered.length > 0 && (
           <ExpedientExecutiveSummary
