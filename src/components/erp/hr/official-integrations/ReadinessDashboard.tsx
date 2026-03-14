@@ -555,6 +555,19 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
                 </Badge>
               </p>
               <div className="flex items-center gap-3 text-[10px]">
+                {/* Entity filter */}
+                {multiEntityReport.entities.length > 2 && (
+                  <Select value={entityFilter} onValueChange={setEntityFilter}>
+                    <SelectTrigger className="w-[140px] h-6 text-[10px]">
+                      <SelectValue placeholder="Filtrar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all" className="text-xs">Todas</SelectItem>
+                      <SelectItem value="gaps" className="text-xs">Con gaps</SelectItem>
+                      <SelectItem value="ready" className="text-xs">Listas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 {entityCounts.fullyReady > 0 && (
                   <span className="flex items-center gap-1 text-green-600">
                     <CheckCircle2 className="h-3 w-3" /> {entityCounts.fullyReady} lista(s)
