@@ -133,6 +133,11 @@ export function HRPayrollRecordsList({
         </Select>
       </div>
 
+      {/* Active run context banner */}
+      {selectedPeriodId && (
+        <ActiveRunIndicator companyId={companyId} periodId={selectedPeriodId} variant="full" />
+      )}
+
       {!selectedPeriodId && (
         <Card className="border-dashed"><CardContent className="py-8 text-center text-muted-foreground">Selecciona un período para ver las nóminas</CardContent></Card>
       )}
