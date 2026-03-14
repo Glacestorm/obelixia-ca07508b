@@ -11,6 +11,13 @@ import type { OfficialReadinessSummary } from './officialReadinessEngine';
 import type { DryRunDiffReport } from './dryRunDiffEngine';
 import type { RegulatoryCalendarSummary } from './regulatoryCalendarEngine';
 import type { DryRunResult, DryRunEvidence } from '@/hooks/erp/hr/useDryRunPersistence';
+import type { SandboxEvidenceData } from './sandboxEvidencePackExtension';
+import {
+  formatSandboxExecutionsForPDF,
+  formatSandboxComparisonsForPDF,
+  formatSandboxExecutionsForExcel,
+  formatSandboxComparisonsForExcel,
+} from './sandboxEvidencePackExtension';
 import {
   createPDFDocument,
   addPDFHeader,
