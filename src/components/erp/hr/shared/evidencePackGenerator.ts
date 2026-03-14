@@ -400,6 +400,16 @@ export function generateEvidencePackExcel(input: EvidencePackInput): ExportResul
       })), 'Certificados');
     }
 
+    // Sandbox executions (T9)
+    if (input.sandboxData?.sandboxExecutions && input.sandboxData.sandboxExecutions.length > 0) {
+      addSheet(wb, formatSandboxExecutionsForExcel(input.sandboxData.sandboxExecutions), 'Sandbox Ejecuciones');
+    }
+
+    // Sandbox comparisons (T9)
+    if (input.sandboxData?.sandboxComparisons && input.sandboxData.sandboxComparisons.length > 0) {
+      addSheet(wb, formatSandboxComparisonsForExcel(input.sandboxData.sandboxComparisons), 'Sandbox vs Dry-Run');
+    }
+
     addMetadataSheet(wb, meta);
 
     const fileName = generateFileName('evidence_pack', 'excel', input.domain);
