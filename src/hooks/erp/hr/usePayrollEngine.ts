@@ -240,6 +240,11 @@ export function usePayrollEngine(companyId?: string) {
   const updatePeriodStatus = useCallback(async (periodId: string, newStatus: PeriodStatus) => {
     try {
       const old = periods.find(p => p.id === periodId);
+      // Enforce state machine
+      if (old && !canTransitionPeriod(old.status, newStatus)) {
+        toast.error(`Transición no permitida: ${old.status} → ${newStatus}`);
+        return;
+      }
       const updates: any = { status: newStatus, updated_at: new Date().toISOString() };
       if (newStatus === 'closed') { updates.closed_at = new Date().toISOString(); }
       if (newStatus === 'locked') { updates.locked_at = new Date().toISOString(); }
