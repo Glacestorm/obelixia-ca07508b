@@ -16,7 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   Play, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw,
   ChevronRight, ArrowUpDown, Eye, Loader2, Info, Archive, FileText,
-  ThumbsUp, ShieldCheck
+  ThumbsUp, ShieldCheck, Lock
 } from 'lucide-react';
 import { usePayrollRuns } from '@/hooks/erp/hr/usePayrollRuns';
 import {

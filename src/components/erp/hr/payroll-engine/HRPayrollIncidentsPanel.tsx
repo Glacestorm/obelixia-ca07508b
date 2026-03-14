@@ -302,7 +302,7 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
-                        {i.status === 'pending' && (
+                        {i.status === 'pending' && !isPeriodReadOnly && (
                           <>
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => validateIncident(i.id)} title="Validar">
                               <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />

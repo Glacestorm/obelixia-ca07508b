@@ -234,7 +234,7 @@ export function HRPayrollRecordsList({
                             </Button>
                           </>
                         )}
-                        {!onReviewRecord && r.status === 'draft' && (
+                        {!onReviewRecord && !isPeriodClosed && r.status === 'draft' && (
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" onClick={() => onUpdateStatus(r.id, 'reviewing')}>
                             <CheckCircle className="h-4 w-4" />
                           </Button>
