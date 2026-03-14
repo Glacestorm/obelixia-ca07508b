@@ -32,7 +32,10 @@ export type DryRunAuditAction =
   | 'approval_granted'
   | 'approval_rejected'
   | 'approval_correction_requested'
-  | 'approval_cancelled';
+  | 'approval_cancelled'
+  // V2-ES.8 T5 P5: Security audit events
+  | 'approval_ineligible_attempt'
+  | 'approval_real_blocked';
 
 const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   dry_run_created: 'info',
