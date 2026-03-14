@@ -25,6 +25,7 @@ interface Props {
 export function ContractSummaryWidget({ companyId, employeeId, className }: Props) {
   const [data, setData] = useState<ContractProcessData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { holidaySet } = useHRHolidayCalendar();
 
   useEffect(() => {
     let cancelled = false;
