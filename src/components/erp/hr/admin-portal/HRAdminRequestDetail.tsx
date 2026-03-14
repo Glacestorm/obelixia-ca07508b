@@ -15,6 +15,7 @@ import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 import { RegistrationDataPanel } from './RegistrationDataPanel';
+import { ContractDataPanel } from './ContractDataPanel';
 import { DocAutoGenerateButton } from '../shared/DocAutoGenerateButton';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
