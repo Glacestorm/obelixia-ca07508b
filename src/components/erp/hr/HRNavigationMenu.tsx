@@ -70,7 +70,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'work-calendars',
     // Payroll
     'payroll', 'payroll-periods', 'payroll-engine',
-    'ss', 'compensation-suite', 'benefits',
+    'ss', 'integration', 'compensation-suite', 'benefits',
     // Laboral
     'vacations', 'time-clock', 'leave-incidents',
     'admin-requests', 'hr-tasks', 'approval-inbox',
@@ -152,6 +152,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-blue-600',
           items: [
             { id: 'ss', label: 'Seg. Social', icon: Landmark, description: 'Cotizaciones y RED' },
+            { id: 'integration', label: 'Integración', icon: Link2, description: 'Contabilidad, Tesorería, SS, Fiscal' },
             { id: 'compensation-suite', label: 'Compensación', icon: Coins, description: 'Retribución total' },
             { id: 'benefits', label: 'Beneficios', icon: Gift, description: 'Retribución flexible' },
           ]

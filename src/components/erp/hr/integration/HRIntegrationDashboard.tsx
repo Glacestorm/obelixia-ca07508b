@@ -164,6 +164,17 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
           syncedItems: hookMetrics.syncedToSS,
           errorCount: 0,
           healthScore: hookMetrics.syncHealthScore
+        },
+        {
+          id: 'fiscal-int',
+          name: 'Fiscalidad (IRPF · M111/190)',
+          module: 'accounting' as const,
+          status: 'pending' as const,
+          lastSync: null,
+          pendingItems: 0,
+          syncedItems: 0,
+          errorCount: 0,
+          healthScore: 0
         }
       ];
       setIntegrations(mockIntegrations);
@@ -392,6 +403,12 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
                           <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                             <Shield className="h-2.5 w-2.5" />
                             Expediente interno SS · No presentación oficial
+                          </p>
+                        )}
+                        {integration.id === 'fiscal-int' && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <FileText className="h-2.5 w-2.5" />
+                            Expediente fiscal interno · No presentación oficial AEAT
                           </p>
                         )}
                       </div>
