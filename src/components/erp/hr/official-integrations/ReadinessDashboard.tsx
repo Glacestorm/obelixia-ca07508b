@@ -49,6 +49,14 @@ import {
   isCertificateExpiringSoon,
   type CertificateDomain,
 } from '@/hooks/erp/hr/useHRDomainCertificates';
+import {
+  evaluateMultiEntityReadiness,
+  getEntityReadinessColor,
+  type MultiEntityReadinessReport,
+  type EntityReadinessInput,
+} from '@/components/erp/hr/shared/multiEntityReadinessEngine';
+import { supabase } from '@/integrations/supabase/client';
+import { Building2 } from 'lucide-react';
 
 interface Props {
   companyId: string;
