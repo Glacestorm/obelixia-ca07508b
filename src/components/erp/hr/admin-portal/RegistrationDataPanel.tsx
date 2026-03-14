@@ -91,6 +91,7 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     updateRegistrationStatus,
     computeReadiness,
   } = useHRRegistrationProcess(companyId);
+  const { holidaySet } = useHRHolidayCalendar();
 
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<Partial<RegistrationData>>({});
