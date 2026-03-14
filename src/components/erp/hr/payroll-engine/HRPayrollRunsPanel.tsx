@@ -32,6 +32,8 @@ import {
 } from '@/engines/erp/hr/payrollRunEngine';
 import { supabase } from '@/integrations/supabase/client';
 import type { PayrollPeriod } from '@/hooks/erp/hr/usePayrollEngine';
+import { PayrollRunDiffCard } from './PayrollRunDiffCard';
+import { PayrollRunVersionHistory } from './PayrollRunVersionHistory';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
