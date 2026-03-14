@@ -61,7 +61,8 @@ import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
 import { getApprovalStatusMeta, type ApprovalStatus } from '@/components/erp/hr/shared/preRealApprovalEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2, ShieldCheck } from 'lucide-react';
-
+import { useProactiveAlertSignals } from '@/hooks/erp/hr/useProactiveAlertSignals';
+import { ProactiveAlertsSummaryWidget } from './ProactiveAlertsSummaryWidget';
 interface Props {
   companyId: string;
   adapters: IntegrationAdapter[];
