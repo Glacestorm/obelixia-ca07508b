@@ -31,6 +31,8 @@ import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { computeContractDeadlines, type ContractDeadlineSummary } from '../shared/contractDeadlineEngine';
 import { buildContrataPayload } from '../shared/contrataPayloadBuilder';
 import { ContractDeadlineAlert } from '../shared/ContractDeadlineAlert';
+import { ContrataPreIntegrationBadge } from '../shared/ContrataPreIntegrationBadge';
+import { evaluateContrataPreIntegrationReadiness } from '../shared/contrataPreIntegrationReadiness';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
