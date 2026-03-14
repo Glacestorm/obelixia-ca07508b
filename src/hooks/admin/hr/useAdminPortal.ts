@@ -106,6 +106,7 @@ export interface AdminPortalFilters {
 
 const REQUEST_TYPE_LABELS: Record<AdminRequestType, string> = {
   employee_registration: 'Alta de empleado',
+  contract_registration: 'Contratación / SEPE',
   contract_modification: 'Modificación contractual',
   schedule_change: 'Cambio de jornada',
   salary_change: 'Cambio salarial',
