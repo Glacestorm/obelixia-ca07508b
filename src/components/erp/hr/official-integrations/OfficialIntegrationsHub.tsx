@@ -23,7 +23,9 @@ import { useRegulatoryCalendar } from '@/hooks/erp/hr/useRegulatoryCalendar';
 import { useHRDomainCertificates } from '@/hooks/erp/hr/useHRDomainCertificates';
 import { usePreparatorySubmissions } from '@/hooks/erp/hr/usePreparatorySubmissions';
 import { ProactiveAlertsSummaryWidget } from './ProactiveAlertsSummaryWidget';
-
+import { SandboxControlPanel } from './SandboxControlPanel';
+import { EnvironmentIndicatorWidget } from './EnvironmentIndicatorWidget';
+import { useSandboxEnvironment } from '@/hooks/erp/hr/useSandboxEnvironment';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
