@@ -53,6 +53,10 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
   const [selectedPeriod, setSelectedPeriod] = useState('2026-01');
   const [activeTab, setActiveTab] = useState('cotizaciones');
   const [loading, setLoading] = useState<string | null>(null);
+  const { periods, fetchPeriods } = usePayrollEngine(companyId);
+
+  // Fetch periods for expedient tab
+  useState(() => { fetchPeriods(); });
   
   // Dialog states
   const [showNewCommDialog, setShowNewCommDialog] = useState(false);
