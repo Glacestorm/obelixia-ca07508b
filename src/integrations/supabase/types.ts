@@ -37777,6 +37777,8 @@ export type Database = {
           period: string
           recalculated_values: Json | null
           risk_level: string | null
+          run_id: string | null
+          source_run_id: string | null
           status: string | null
           total_difference: number | null
           updated_at: string | null
@@ -37807,6 +37809,8 @@ export type Database = {
           period: string
           recalculated_values?: Json | null
           risk_level?: string | null
+          run_id?: string | null
+          source_run_id?: string | null
           status?: string | null
           total_difference?: number | null
           updated_at?: string | null
@@ -37837,6 +37841,8 @@ export type Database = {
           period?: string
           recalculated_values?: Json | null
           risk_level?: string | null
+          run_id?: string | null
+          source_run_id?: string | null
           status?: string | null
           total_difference?: number | null
           updated_at?: string | null
@@ -37854,6 +37860,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_recalculations_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_recalculations_source_run_id_fkey"
+            columns: ["source_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_payroll_runs"
             referencedColumns: ["id"]
           },
         ]
