@@ -222,7 +222,7 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
               {payloadResult.consistency.errors.length > 0 && ` — ${payloadResult.consistency.errors.length} inconsistencia(s)`}
             </span>
           </div>
-        )
+        )}
 
         {/* Status transitions */}
         {allowedTransitions.length > 0 && !editing && (
