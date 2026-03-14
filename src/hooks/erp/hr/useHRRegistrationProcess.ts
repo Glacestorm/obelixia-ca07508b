@@ -16,6 +16,11 @@ import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRP
 import { computeRegistrationDeadlines, type RegistrationDeadlineSummary } from '@/components/erp/hr/shared/registrationDeadlineEngine';
 import { buildTGSSPayload, type TGSSPayloadResult } from '@/components/erp/hr/shared/tgssPayloadBuilder';
 import { evaluatePreIntegrationReadiness } from '@/components/erp/hr/shared/tgssPreIntegrationReadiness';
+import {
+  evaluateClosureReadiness,
+  buildClosureSnapshot,
+  type ClosureReadinessResult,
+} from '@/components/erp/hr/shared/registrationClosureEngine';
 import { addBusinessDays, type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
