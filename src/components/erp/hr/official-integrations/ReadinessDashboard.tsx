@@ -297,12 +297,14 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
   const { summary, isEvaluating, lastEvaluatedAt, evaluate } = useOfficialReadiness(companyId);
   const { submissions, fetchPreparatory } = usePreparatorySubmissions(companyId);
   const { certificates, fetchCertificates, getCertificateSummary } = useHRDomainCertificates(companyId);
+  const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
 
   useEffect(() => {
     evaluate(adapters);
     fetchPreparatory();
     fetchCertificates();
+    evaluateCalendar();
   }, []);
 
   // Compute per-domain submission stats
