@@ -59,6 +59,13 @@ export function usePayrollRuns(companyId?: string) {
   ): Promise<PayrollRun | null> => {
     if (!companyId) return null;
     try {
+      // Guard: reject if period is closed or locked
+      const periodStatus = snapshotInput.period.status;
+      if (!isPeriodWritable(periodStatus)) {
+        toast.error(`Período ${periodStatus === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden crear nuevos runs`);
+        return null;
+      }
+
       const snapshot = buildSnapshot(snapshotInput);
       const snapshotHash = computeSnapshotHash(snapshot);
       const validation = validatePreRun(snapshot);
