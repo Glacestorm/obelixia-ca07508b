@@ -1,13 +1,13 @@
 /**
  * RegistrationSummaryWidget — Compact registration status for employee expedient
- * V2-ES.5 Paso 1: Read-only summary without duplicating orchestration logic
+ * V2-ES.5 Paso 1+2: Read-only summary with deadline risk signal
  *
- * Shows: status, key missing items, dates — fetches from erp_hr_registration_data by employee
+ * Shows: status, key missing items, dates, deadline urgency
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserCheck, AlertTriangle, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
+import { UserCheck, AlertTriangle, CheckCircle2, Clock, AlertOctagon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -16,6 +16,8 @@ import {
   type RegistrationStatus,
 } from '@/hooks/erp/hr/useHRRegistrationProcess';
 import { RegistrationStatusBadge } from './RegistrationStatusBadge';
+import { computeRegistrationDeadlines } from './registrationDeadlineEngine';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 interface Props {
   companyId: string;
@@ -26,6 +28,7 @@ interface Props {
 export function RegistrationSummaryWidget({ companyId, employeeId, className }: Props) {
   const [data, setData] = useState<RegistrationData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { holidaySet } = useHRHolidayCalendar();
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +55,10 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
     fetch();
     return () => { cancelled = true; };
   }, [employeeId, companyId]);
+
+  const deadlineSummary = useMemo(() => {
+    return computeRegistrationDeadlines(data, holidaySet);
+  }, [data, holidaySet]);
 
   // Don't render if no registration process exists
   if (loading || !data) return null;
@@ -100,8 +107,24 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
           )}
         </div>
 
+        {/* V2-ES.5 Paso 2: Deadline risk signal */}
+        {deadlineSummary.hasRisk && !isComplete && (
+          <div className={cn(
+            'flex items-center gap-1 text-[10px]',
+            deadlineSummary.worstUrgency === 'overdue' || deadlineSummary.worstUrgency === 'blocked'
+              ? 'text-red-600'
+              : 'text-amber-600',
+          )}>
+            {deadlineSummary.worstUrgency === 'overdue' || deadlineSummary.worstUrgency === 'blocked'
+              ? <AlertOctagon className="h-3 w-3 shrink-0" />
+              : <AlertTriangle className="h-3 w-3 shrink-0" />
+            }
+            <span>{deadlineSummary.summaryLabel}: {deadlineSummary.deadlines[0]?.message}</span>
+          </div>
+        )}
+
         {/* Missing fields warning */}
-        {isPending && (
+        {isPending && !deadlineSummary.hasRisk && (
           <div className="flex items-center gap-1 text-[10px] text-amber-600">
             <AlertTriangle className="h-3 w-3 shrink-0" />
             <span>
