@@ -9,6 +9,8 @@ import { FileSignature, AlertTriangle, CheckCircle2, Clock, Lock, AlertOctagon }
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { computeContractDeadlines } from './contractDeadlineEngine';
+import { evaluateContrataPreIntegrationReadiness } from './contrataPreIntegrationReadiness';
+import { ContrataPreIntegrationBadge } from './ContrataPreIntegrationBadge';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import {
   CONTRACT_PROCESS_STATUS_CONFIG,
