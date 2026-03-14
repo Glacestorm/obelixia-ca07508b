@@ -118,6 +118,8 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
         ai_validation: rec.ai_validation as RecalculationRecord['ai_validation'],
         legal_validation: rec.legal_validation as RecalculationRecord['legal_validation'],
         hr_approval: rec.hr_approval as RecalculationRecord['hr_approval'],
+        run_id: (rec as any).run_id || null,
+        source_run_id: (rec as any).source_run_id || null,
         created_at: rec.created_at
       }));
       
