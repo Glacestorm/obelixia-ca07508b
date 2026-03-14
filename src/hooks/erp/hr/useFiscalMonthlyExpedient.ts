@@ -115,11 +115,10 @@ export function useFiscalMonthlyExpedient(companyId: string) {
       let totalBase = 0;
       let totalRetencion = 0;
 
-      for (const line of lines) {
+      for (const line of (lines as any[])) {
         if (line.line_type === 'earning' && line.is_taxable) {
           totalBase += Math.abs(line.amount || 0);
         }
-        // IRPF retention lines (concept codes containing 'irpf' or specific deduction)
         if (line.line_type === 'deduction' && (
           line.concept_code?.toLowerCase().includes('irpf') ||
           line.concept_code === 'IRPF' ||
