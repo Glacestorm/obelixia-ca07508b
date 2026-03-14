@@ -955,7 +955,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
             )}
           </div>
 
-          {dryRunHistory.map(result => (
+          {filteredHistory.map(result => (
             <PersistedDryRunCard
               key={result.id}
               result={result}
@@ -969,7 +969,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               isSelectedForDiff={diffSelection.includes(result.id)}
             />
           ))}
-          {dryRunHistory.length === 0 && !historyLoading && (
+          {filteredHistory.length === 0 && !historyLoading && (
             <Card className="border-dashed">
               <CardContent className="py-10 text-center">
                 <History className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
