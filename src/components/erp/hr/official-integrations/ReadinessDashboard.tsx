@@ -319,6 +319,12 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     evaluate: evaluateMultiEntity,
     entityCounts,
   } = useMultiEntityReadiness(companyId);
+  const {
+    pendingCount: approvalPendingCount,
+    approvedCount: approvalApprovedCount,
+    rejectedCount: approvalRejectedCount,
+    fetchApprovals,
+  } = usePreRealApproval(companyId);
 
   useEffect(() => {
     evaluate(adapters);
@@ -326,6 +332,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     fetchCertificates();
     evaluateCalendar();
     evaluateMultiEntity(adapters);
+    fetchApprovals();
   }, []);
 
   // Compute per-domain submission stats
