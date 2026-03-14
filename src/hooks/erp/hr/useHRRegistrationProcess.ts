@@ -256,6 +256,9 @@ export function useHRRegistrationProcess(companyId: string) {
         if (error) throw error;
         const updated = data as RegistrationData;
         setRegistrationData(updated);
+        // Audit: data update
+        const changedKeys = Object.keys(updates).filter(k => (existing as any)[k] !== (updates as any)[k]);
+        logRegistrationAudit('REGISTRATION_DATA_UPDATE', companyId, user.id, requestId, { previous: existing }, { updated: updates }, 'info', changedKeys);
         return updated;
       } else {
         // Insert
