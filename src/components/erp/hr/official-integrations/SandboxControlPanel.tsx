@@ -1,6 +1,6 @@
 /**
  * SandboxControlPanel — Panel de control de entornos sandbox para conectores
- * V2-ES.8 T8 P3+P4: Gates de elegibilidad, ejecución sandbox y trazabilidad reforzada
+ * V2-ES.8 T8+T9: Gates, ejecución, trazabilidad, persistencia, comparación y historial
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,10 +10,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Shield, ShieldAlert, ShieldCheck, FlaskConical, TestTube, ServerCog,
   Ban, CheckCircle2, XCircle, Clock, Activity, AlertTriangle, Lock,
-  ChevronRight, RefreshCw, Play, FileCheck, Zap,
+  ChevronRight, RefreshCw, Play, FileCheck, Zap, History, GitCompare,
+  Database, Filter,
 } from 'lucide-react';
 import { useSandboxEnvironment } from '@/hooks/erp/hr/useSandboxEnvironment';
 import {
@@ -28,6 +30,12 @@ import {
   type SandboxEligibilityResult,
 } from '@/components/erp/hr/shared/sandboxEligibilityEngine';
 import type { SandboxExecutionRecord } from '@/components/erp/hr/shared/sandboxExecutionService';
+import {
+  compareSandboxVsDryRun,
+  getComparisonDirectionLabel,
+  getComparisonDirectionColor,
+  type SandboxVsDryRunReport,
+} from '@/components/erp/hr/shared/sandboxDryRunComparisonEngine';
 import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
