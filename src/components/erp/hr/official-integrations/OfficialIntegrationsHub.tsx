@@ -95,8 +95,16 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Environment indicator */}
+      <div className="flex items-center justify-between">
+        <EnvironmentIndicatorWidget
+          activeEnvironment={sandboxEnv.activeEnvironment}
+          productionBlocked={sandboxEnv.productionBlocked}
+        />
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="readiness" className="text-xs relative">
             Readiness
             {activeAlertCount > 0 && activeTab !== 'readiness' && (
@@ -106,6 +114,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
             )}
           </TabsTrigger>
           <TabsTrigger value="dry-run" className="text-xs">Dry-Run</TabsTrigger>
+          <TabsTrigger value="sandbox" className="text-xs">Sandbox</TabsTrigger>
           <TabsTrigger value="approvals" className="text-xs relative">
             Aprobaciones
             {pendingCount > 0 && (
