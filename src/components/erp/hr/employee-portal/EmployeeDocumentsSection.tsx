@@ -177,14 +177,20 @@ export function EmployeeDocumentsSection({ employee }: Props) {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : viewDocs.length === 0 ? (
-            <Card className="mt-4">
+            <Card className="mt-4 border-dashed">
               <CardContent className="py-10 text-center">
                 <FolderOpen className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">
-                  {activeView === 'alerts' ? 'No hay documentos con alertas'
-                    : activeView === 'pending' ? 'No hay documentos pendientes'
-                    : 'No hay documentos'}
+                  {activeView === 'alerts' ? 'No hay documentos con alertas — ¡todo en orden!'
+                    : activeView === 'pending' ? 'No hay documentos pendientes de aportar'
+                    : search ? 'No se encontraron documentos con ese criterio'
+                    : 'Tu expediente documental está vacío'}
                 </p>
+                {activeView === 'all' && !search && myDocs.length === 0 && (
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    Los documentos aparecerán aquí cuando RRHH los registre en tu expediente
+                  </p>
+                )}
               </CardContent>
             </Card>
           ) : (

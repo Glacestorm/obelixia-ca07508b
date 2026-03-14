@@ -119,7 +119,7 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <InfoRow icon={Briefcase} label="Puesto" value={employee.job_title || 'No definido'} />
                 <InfoRow icon={Building2} label="Categoría" value={employee.category || 'No definida'} />
-                <InfoRow icon={CalendarDays} label="Antigüedad desde" value={format(new Date(employee.hire_date), 'dd MMM yyyy', { locale: es })} />
+                <InfoRow icon={CalendarDays} label="Antigüedad desde" value={employee.hire_date ? format(new Date(employee.hire_date), 'dd MMM yyyy', { locale: es }) : 'No registrada'} />
                 <InfoRow icon={FileText} label="Tipo contrato" value={employee.contract_type || 'No definido'} />
                 {employee.employee_number && (
                   <InfoRow icon={User} label="Nº empleado" value={employee.employee_number} />
@@ -177,6 +177,17 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
               )}
             </CardContent>
           </Card>
+
+          {/* No dashboard data after loading */}
+          {!isDashboardLoading && !dashboard && (
+            <Card className="border-dashed">
+              <CardContent className="py-6 text-center">
+                <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">No se pudieron cargar los datos del dashboard</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Navega a las secciones directamente desde las acciones rápidas</p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Active requests */}
           {dashboard && dashboard.activeRequests.length > 0 && (

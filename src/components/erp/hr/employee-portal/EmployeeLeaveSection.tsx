@@ -253,6 +253,25 @@ export function EmployeeLeaveSection({ employee, onNavigate }: Props) {
           />
         </div>
 
+        {/* No balance configured — info banner */}
+        {!kpis.hasBalance && (
+          <Card className="border-dashed">
+            <CardContent className="p-4 flex items-start gap-3">
+              <Info className="h-5 w-5 text-muted-foreground/60 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">No hay saldos de vacaciones configurados todavía</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Tu departamento de RRHH aún no ha registrado los saldos para {currentYear}. 
+                  Si crees que esto es un error, puedes crear una solicitud para consultarlo.
+                </p>
+                <Button variant="outline" size="sm" className="mt-2 gap-2" onClick={() => onNavigate('requests')}>
+                  <Send className="h-3.5 w-3.5" /> Consultar a RRHH
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Balance progress (if balance exists) */}
         {kpis.hasBalance && (
           <Card>
