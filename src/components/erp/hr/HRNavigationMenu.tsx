@@ -28,6 +28,7 @@ interface HRNavigationMenuProps {
   activeModule: string;
   onModuleChange: (module: string) => void;
   mvpMode?: boolean;
+  isAdmin?: boolean;
   stats: {
     pendingPayrolls: number;
     pendingVacations: number;
