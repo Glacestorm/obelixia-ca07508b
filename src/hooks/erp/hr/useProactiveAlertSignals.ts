@@ -83,7 +83,7 @@ export function mapDryRunSignals(submissions: PreparatorySubmission[]): DryRunSi
   return submissions
     .filter(s => s.submission_mode === 'dry_run' && s.status === 'dry_run_executed')
     .map(s => {
-      const vr = s.validation_result as Record<string, unknown> | null;
+      const vr = s.validation_result as unknown as Record<string, unknown> | null;
       const errors = (vr?.errors as unknown[])?.length ?? 0;
       const warnings = (vr?.warnings as unknown[])?.length ?? 0;
 
