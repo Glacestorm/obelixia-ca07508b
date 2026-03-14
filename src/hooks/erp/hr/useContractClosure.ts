@@ -8,7 +8,6 @@
  */
 import { useMemo } from 'react';
 import type { ContractProcessData } from '@/hooks/erp/hr/useHRContractProcess';
-import type { EnrichedCompleteness } from '@/hooks/erp/hr/useHRProcessDocRequirements';
 import type { ContractDeadlineSummary } from '@/components/erp/hr/shared/contractDeadlineEngine';
 import {
   evaluateContractClosureReadiness,
