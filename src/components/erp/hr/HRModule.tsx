@@ -419,6 +419,7 @@ export function HRModule() {
         {activeModule === 'official-submissions' && <OfficialIntegrationsHub companyId={companyId} />}
         {activeModule === 'mobility-assignments' && <GlobalMobilityModule companyId={companyId} />}
         {activeModule === 'mobility-dashboard' && <GlobalMobilityModule companyId={companyId} />}
+        {activeModule === 'mobility-international' && <GlobalMobilityModule companyId={companyId} />}
         {activeModule === 'payroll-periods' && <HRPayrollPeriodsPanel companyId={companyId} />}
         {activeModule === 'payroll-engine' && <HRPayrollEngine companyId={companyId} />}
         {activeModule === 'compliance-evidence' && <HRComplianceEvidencePanel companyId={companyId} />}
