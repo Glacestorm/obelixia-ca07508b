@@ -52,7 +52,17 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
   const { summary } = useOfficialReadiness(companyId);
   const { submissions } = usePreparatorySubmissions(companyId);
   const { certificates } = useHRDomainCertificates(companyId);
-  const { pendingCount, approvedCount: approvalApprovedCount, rejectedCount: approvalRejectedCount } = usePreRealApproval(companyId);
+  const { pendingCount, approvedCount: approvalApprovedCount, rejectedCount: approvalRejectedCount, approvals } = usePreRealApproval(companyId);
+  const { calendar } = useRegulatoryCalendar(companyId);
+  const { report: multiEntityReport } = useMultiEntityReadiness(companyId);
+  const proactiveAlerts = useProactiveAlertSignals({
+    readinessSummary: summary,
+    calendar,
+    certificates,
+    submissions,
+    approvals,
+    enabled: !!summary,
+  });
   const { isExporting, exportReadiness, lastExport } = useOfficialExport(companyId);
 
   const domainStats = useMemo(() => {
@@ -74,11 +84,18 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
         domain: c.domain,
         status: c.certificate_status,
         completeness: c.configuration_completeness,
+        expirationDate: c.expiration_date,
       }));
+      const alertData = proactiveAlerts.summary?.alerts.map(a => ({
+        severity: a.severity, category: a.category, title: a.title, status: a.status,
+      })) || [];
       exportReadiness(format, summary, domainStats, {
         companyId,
         certificates: certData,
         approvals: { pending: pendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+        deadlines: calendar || undefined,
+        alerts: alertData,
+        multiEntity: multiEntityReport || undefined,
       });
     }
     // dry_run and evidence_pack exports will be added in T7-P2 and T7-P3
