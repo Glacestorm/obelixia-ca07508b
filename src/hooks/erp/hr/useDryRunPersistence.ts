@@ -160,6 +160,14 @@ export function useDryRunPersistence(companyId: string) {
         executed_by: userData?.user?.id || null,
         notes: input.notes || null,
         metadata: { version: '1.0', phase: 'V2-ES.8-T2' },
+        // Extended traceability fields
+        related_period_id: input.relatedPeriodId || null,
+        related_process_id: input.relatedProcessId || null,
+        related_run_id: input.relatedRunId || null,
+        execution_mode: input.executionMode || 'dry_run',
+        simulated_result: input.simulatedResult || 'success',
+        readiness_status: input.readinessStatus || 'pending',
+        submission_status: input.submissionStatus || 'draft',
       };
 
       const { data, error } = await supabase

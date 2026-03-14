@@ -363,6 +363,14 @@ export function usePreparatorySubmissions(companyId: string) {
           executed_by: userData?.user?.id || null,
           notes: 'Simulación automática desde panel preparatorio',
           metadata: { version: '1.0', phase: 'V2-ES.8-T2' },
+          // Extended traceability
+          related_period_id: (sub as any).reference_period_id || null,
+          related_process_id: (sub as any).related_process_id || null,
+          related_run_id: sub.related_run_id || null,
+          execution_mode: 'dry_run',
+          simulated_result: 'success',
+          readiness_status: sub.readiness_status || 'ready',
+          submission_status: 'dry_run_executed',
         }]);
 
       // Auto-generate evidence records
