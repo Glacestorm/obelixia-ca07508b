@@ -12,6 +12,7 @@ import { SubmissionForm } from './SubmissionForm';
 import { SubmissionDetail } from './SubmissionDetail';
 import { AdaptersPanel } from './AdaptersPanel';
 import { ReceiptsPanel } from './ReceiptsPanel';
+import { ExportHubPanel } from './ExportHubPanel';
 import { ReadinessDashboard } from './ReadinessDashboard';
 import { PreparatoryDryRunPanel } from './PreparatoryDryRunPanel';
 import { PreRealApprovalPanel } from './PreRealApprovalPanel';
@@ -92,7 +93,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="readiness" className="text-xs relative">
             Readiness
             {activeAlertCount > 0 && activeTab !== 'readiness' && (
@@ -114,6 +115,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
           <TabsTrigger value="submissions" className="text-xs">Envíos</TabsTrigger>
           <TabsTrigger value="adapters" className="text-xs">Conectores</TabsTrigger>
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
+          <TabsTrigger value="export" className="text-xs">Exportación</TabsTrigger>
         </TabsList>
 
         <TabsContent value="readiness">
@@ -155,6 +157,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         </TabsContent>
         <TabsContent value="receipts">
           <ReceiptsPanel hub={hub} />
+        </TabsContent>
+        <TabsContent value="export">
+          <ExportHubPanel companyId={companyId} adapters={hub.adapters} />
         </TabsContent>
       </Tabs>
     </div>

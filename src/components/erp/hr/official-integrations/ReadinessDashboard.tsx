@@ -1,12 +1,13 @@
 /**
- * ReadinessDashboard — V2-ES.8 Tramo 4+6
+ * ReadinessDashboard — V2-ES.8 Tramo 4+6+7
  * Enhanced: operational visibility, credential status, payload/dry-run tracking,
- * 5-level score system, multi-entity readiness, proactive alerts, and clear disclaimers.
+ * 5-level score system, multi-entity readiness, proactive alerts, export buttons, and clear disclaimers.
  */
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,6 +30,8 @@ import {
   Lock,
   ServerCrash,
   Sparkles,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -63,6 +66,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, ShieldCheck } from 'lucide-react';
 import { useProactiveAlertSignals } from '@/hooks/erp/hr/useProactiveAlertSignals';
 import { ProactiveAlertsSummaryWidget } from './ProactiveAlertsSummaryWidget';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
 interface Props {
   companyId: string;
   adapters: IntegrationAdapter[];
@@ -332,6 +336,8 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     fetchApprovals,
   } = usePreRealApproval(companyId);
 
+  const { isExporting, exportReadiness } = useOfficialExport(companyId);
+
   // ─── Proactive Alerts (V2-ES.8 T6) ───
   const proactiveAlerts = useProactiveAlertSignals({
     readinessSummary: summary,
@@ -415,10 +421,42 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             Pre-validación y preparación para envíos oficiales · Modo preparatorio
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); fetchApprovals(); }} disabled={isEvaluating}>
-          <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
-          Reevaluar
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting || !summary}>
+                <Download className={cn('h-4 w-4 mr-1.5', isExporting && 'animate-spin')} />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                if (!summary) return;
+                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness }));
+                exportReadiness('pdf', summary, domainStats, {
+                  certificates: certData,
+                  approvals: { pending: approvalPendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+                });
+              }}>
+                <FileText className="h-4 w-4 mr-2" /> Exportar PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                if (!summary) return;
+                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness }));
+                exportReadiness('excel', summary, domainStats, {
+                  certificates: certData,
+                  approvals: { pending: approvalPendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+                });
+              }}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Exportar Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); fetchApprovals(); }} disabled={isEvaluating}>
+            <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
+            Reevaluar
+          </Button>
+        </div>
       </div>
 
       {/* Overall summary */}
