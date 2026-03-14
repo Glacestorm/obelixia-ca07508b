@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   User, Building2, Briefcase, Calendar, Phone, Mail,
   MapPin, CreditCard, Shield, Lock, Edit2, Save,
-  Loader2, AlertTriangle, CheckCircle2, Info,
+  Loader2, AlertTriangle, CheckCircle2, Info, Clock,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
