@@ -1,14 +1,16 @@
 /**
- * usePayrollIncidents — V2-ES.7 Paso 1 (enriquecido)
+ * usePayrollIncidents — V2-ES.7 Paso 1 (enriquecido) + Paso 7 (hardened)
  * CRUD para incidencias y variables de nómina
  * Filtrado por período, empleado, año/mes y estado
  * Soporte de trazabilidad a solicitudes, tareas y documentos
+ * Guards: escritura bloqueada en períodos closed/locked
  */
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PayrollIncident, IncidentStatus } from '@/engines/erp/hr/payrollIncidentEngine';
 import { deriveOperationalFlags } from '@/engines/erp/hr/payrollIncidentEngine';
+import { isPeriodWritable } from '@/engines/erp/hr/payrollRunEngine';
 
 export function usePayrollIncidents(companyId?: string) {
   const [incidents, setIncidents] = useState<PayrollIncident[]>([]);
