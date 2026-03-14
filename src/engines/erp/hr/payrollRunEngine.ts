@@ -413,7 +413,7 @@ export function getLatestCompletedRun(runs: PayrollRun[]): PayrollRun | null {
 // V2-ES.7 Paso 3 — Period Close Engine
 // ══════════════════════════════════════════════════════════
 
-import type { PeriodStatus, PayrollRecordStatus } from '@/hooks/erp/hr/usePayrollEngine';
+// Types used inline as strings to avoid circular imports with usePayrollEngine
 
 // ── Period State Machine ──
 
