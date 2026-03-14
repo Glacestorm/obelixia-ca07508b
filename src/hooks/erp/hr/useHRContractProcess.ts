@@ -11,6 +11,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRProcessDocRequirements';
+import { computeContractDeadlines, type ContractDeadlineSummary } from '@/components/erp/hr/shared/contractDeadlineEngine';
+import { buildContrataPayload, type ContrataPayloadResult } from '@/components/erp/hr/shared/contrataPayloadBuilder';
+import { type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
