@@ -874,9 +874,19 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
             <FlaskConical className="h-3 w-3" /> Envíos activos ({submissions.length})
           </TabsTrigger>
           <TabsTrigger value="history" className="text-xs gap-1">
-            <History className="h-3 w-3" /> Historial persistido ({dryRunHistory.length})
+            <History className="h-3 w-3" /> Historial ({dryRunHistory.length})
           </TabsTrigger>
         </TabsList>
+
+        {/* Executive auto-diff summary (visible on history tab when available) */}
+        {activeTab === 'history' && latestDiff && (
+          <div className="mt-3 mb-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+              Último cambio detectado
+            </p>
+            <DiffReportCard report={latestDiff} />
+          </div>
+        )}
 
         <TabsContent value="active" className="space-y-2 mt-3">
           {submissions.map(sub => (
