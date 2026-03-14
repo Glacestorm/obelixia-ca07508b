@@ -368,7 +368,18 @@ export function usePayrollEngine(companyId?: string) {
 
   const updateLine = useCallback(async (lineId: string, updates: Partial<PayrollLine>) => {
     try {
+      // Guard: find the record → period to check writability
       const old = lines.find(l => l.id === lineId);
+      if (old) {
+        const record = records.find(r => r.id === (old as any).payroll_record_id);
+        if (record) {
+          const period = periods.find(p => p.id === record.payroll_period_id);
+          if (period && !isPeriodWritable(period.status)) {
+            toast.error(`Período ${period.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden modificar líneas`);
+            return;
+          }
+        }
+      }
       const { error } = await supabase.from('hr_payroll_record_lines').update(updates as any).eq('id', lineId);
       if (error) throw error;
       await logAudit('line_modified', 'line', lineId, old, updates);
@@ -376,7 +387,7 @@ export function usePayrollEngine(companyId?: string) {
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);
     }
-  }, [lines]);
+  }, [lines, records, periods]);
 
   const deleteLine = useCallback(async (lineId: string) => {
     try {
