@@ -30,7 +30,7 @@ export function useOfficialReadiness(companyId: string): UseOfficialReadinessRet
     setIsEvaluating(true);
     try {
       // Gather context from lightweight queries
-      const [employeesRes, contractsRes, payrollRes, ssRes] = await Promise.all([
+      const [employeesRes, contractsRes, payrollRes, ssRes, certsRes] = await Promise.all([
         supabase.from('hr_employees' as any).select('id, status, registration_status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'active'),
         supabase.from('hr_contracts' as any).select('id, status, contract_type', { count: 'exact' })
@@ -38,6 +38,9 @@ export function useOfficialReadiness(companyId: string): UseOfficialReadinessRet
         supabase.from('hr_payroll_periods' as any).select('id, status', { count: 'exact' })
           .eq('company_id', companyId).eq('status', 'closed'),
         supabase.from('erp_hr_ss_contributions' as any).select('id', { count: 'exact' })
+          .eq('company_id', companyId),
+        supabase.from('erp_hr_domain_certificates' as any)
+          .select('domain, certificate_status, certificate_type, configuration_completeness, expiration_date, readiness_impact')
           .eq('company_id', companyId),
       ]);
 
