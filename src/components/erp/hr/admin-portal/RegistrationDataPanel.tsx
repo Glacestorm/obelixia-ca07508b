@@ -35,6 +35,8 @@ import { RegistrationStatusBadge } from '../shared/RegistrationStatusBadge';
 import { RegistrationDeadlineAlert } from '../shared/RegistrationDeadlineAlert';
 import { computeRegistrationDeadlines } from '../shared/registrationDeadlineEngine';
 import { buildTGSSPayload } from '../shared/tgssPayloadBuilder';
+import { evaluatePreIntegrationReadiness } from '../shared/tgssPreIntegrationReadiness';
+import { TGSSPreIntegrationBadge } from '../shared/TGSSPreIntegrationBadge';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
@@ -123,6 +125,14 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
   const tgssValidation = useMemo(() => {
     return buildTGSSPayload(registrationData);
   }, [registrationData]);
+
+  const preIntegration = useMemo(() => {
+    return evaluatePreIntegrationReadiness(registrationData, {
+      docReadinessPercent: readiness.docs?.percentage ?? undefined,
+      docMandatoryComplete: readiness.docs?.mandatoryComplete ?? undefined,
+      deadlineSummary: deadlineSummary,
+    });
+  }, [registrationData, readiness.docs, deadlineSummary]);
 
   // Lift deadline summary to parent for executive summary integration
   const prevDeadlineRef = useRef(deadlineSummary.worstUrgency);
@@ -390,43 +400,40 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                   {registrationData.legal_entity && <FieldRow label="Entidad legal" value={registrationData.legal_entity} />}
                 </div>
 
-                {/* V2-ES.5 Paso 2: TGSS readiness indicator */}
-                <div className="flex items-center gap-2 pt-1 border-t mt-1">
-                  <Shield className="h-3 w-3 shrink-0 text-primary" />
-                  <span className="text-[10px] text-muted-foreground">Payload TGSS:</span>
-                  {tgssValidation.isReady ? (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
-                      ✓ Ready ({tgssValidation.readinessPercent}%)
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-700 border-amber-500/30">
-                      {tgssValidation.readinessPercent}% — {tgssValidation.missingFields.length > 0
-                        ? `${tgssValidation.missingFields.length} campo(s) faltante(s)`
-                        : `${tgssValidation.formatErrors.length} error(es) formato`
-                      }
-                    </Badge>
-                  )}
+                {/* V2-ES.5 Paso 3: Pre-integration readiness */}
+                <div className="pt-1 border-t mt-1">
+                  <TGSSPreIntegrationBadge
+                    summary={preIntegration}
+                    showDetails={preIntegration.consistency.errorCount > 0 || preIntegration.consistency.warningCount > 0}
+                  />
                 </div>
               </div>
             )}
           </>
         )}
 
-        {/* Next Actions */}
-        {readiness.nextActions.length > 0 && !editMode && (
-          <>
-            <Separator />
-            <div className="space-y-1">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Próximos pasos</p>
-              {readiness.nextActions.map((action, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-xs">
-                  <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
-                  <span>{action}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+        {/* Next Actions (merged from readiness + pre-integration) */}
+        {!editMode && (() => {
+          const allSteps = [
+            ...readiness.nextActions,
+            ...preIntegration.nextSteps.filter(s => !readiness.nextActions.some(a => a === s)),
+          ];
+          if (allSteps.length === 0) return null;
+          return (
+            <>
+              <Separator />
+              <div className="space-y-1">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Próximos pasos</p>
+                {allSteps.slice(0, 5).map((action, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-xs">
+                    <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                    <span>{action}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
 
         {/* Status transition actions */}
         {allowedTransitions.length > 0 && !editMode && currentStatus !== 'confirmed' && (

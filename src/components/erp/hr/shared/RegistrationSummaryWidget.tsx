@@ -17,6 +17,7 @@ import {
 } from '@/hooks/erp/hr/useHRRegistrationProcess';
 import { RegistrationStatusBadge } from './RegistrationStatusBadge';
 import { computeRegistrationDeadlines } from './registrationDeadlineEngine';
+import { evaluatePreIntegrationReadiness } from './tgssPreIntegrationReadiness';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 interface Props {
@@ -59,6 +60,10 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
   const deadlineSummary = useMemo(() => {
     return computeRegistrationDeadlines(data, holidaySet);
   }, [data, holidaySet]);
+
+  const preIntegration = useMemo(() => {
+    return evaluatePreIntegrationReadiness(data);
+  }, [data]);
 
   // Don't render if no registration process exists
   if (loading || !data) return null;
@@ -133,6 +138,14 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
                 : 'Documentación obligatoria pendiente'
               }
             </span>
+          </div>
+        )}
+
+        {/* V2-ES.5 Paso 3: Pre-integration consistency signal */}
+        {!isComplete && preIntegration.consistency.errorCount > 0 && (
+          <div className="flex items-center gap-1 text-[10px] text-red-600">
+            <AlertOctagon className="h-3 w-3 shrink-0" />
+            <span>{preIntegration.consistency.errorCount} inconsistencia(s) pre-integración</span>
           </div>
         )}
 

@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRProcessDocRequirements';
 import { computeRegistrationDeadlines, type RegistrationDeadlineSummary } from '@/components/erp/hr/shared/registrationDeadlineEngine';
 import { buildTGSSPayload, type TGSSPayloadResult } from '@/components/erp/hr/shared/tgssPayloadBuilder';
+import { evaluatePreIntegrationReadiness } from '@/components/erp/hr/shared/tgssPreIntegrationReadiness';
 import { addBusinessDays, type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -433,6 +434,7 @@ export function useHRRegistrationProcess(companyId: string) {
     }
 
     const payloadStatus = tgss.isReady ? 'ready' : (tgss.formatErrors.length > 0 ? 'has_errors' : 'incomplete');
+    const preIntegration = evaluatePreIntegrationReadiness(registrationData);
     const prevUrgency = registrationData.deadline_urgency || 'ok';
     const prevPayloadReady = registrationData.payload_ready ?? false;
 
@@ -457,6 +459,7 @@ export function useHRRegistrationProcess(companyId: string) {
       // Audit: log significant state changes only
       const urgencyChanged = prevUrgency !== deadlines.worstUrgency;
       const payloadReadyChanged = prevPayloadReady !== tgss.isReady;
+      const hasConsistencyErrors = !preIntegration.consistency.consistent;
 
       if (urgencyChanged || payloadReadyChanged) {
         const changedFields: string[] = [];
@@ -473,9 +476,34 @@ export function useHRRegistrationProcess(companyId: string) {
           user?.id,
           requestId,
           { deadline_urgency: prevUrgency, payload_ready: prevPayloadReady },
-          { deadline_urgency: deadlines.worstUrgency, payload_ready: tgss.isReady, payload_status: payloadStatus },
+          {
+            deadline_urgency: deadlines.worstUrgency,
+            payload_ready: tgss.isReady,
+            payload_status: payloadStatus,
+            pre_integration_status: preIntegration.status,
+            consistency_errors: preIntegration.consistency.errorCount,
+            consistency_warnings: preIntegration.consistency.warningCount,
+          },
           severity,
           changedFields,
+        );
+      }
+
+      // Audit consistency blockers separately (only when there are errors)
+      if (hasConsistencyErrors) {
+        logRegistrationAudit(
+          'REGISTRATION_CONSISTENCY_CHECK',
+          registrationData.company_id,
+          user?.id,
+          requestId,
+          null,
+          {
+            status: preIntegration.status,
+            errors: preIntegration.consistency.errors,
+            warnings: preIntegration.consistency.warnings,
+          },
+          'warning',
+          ['consistency'],
         );
       }
     } catch (err) {
