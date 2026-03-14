@@ -17,6 +17,7 @@ import {
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
 import type { PeriodClosureSnapshot } from '@/engines/erp/hr/payrollRunEngine';
 import { ActiveRunIndicator } from './ActiveRunIndicator';
+import { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 
 interface Props {
   companyId: string;
@@ -313,7 +314,7 @@ export function HRPayrollPeriodManager({
                       </div>
                     </div>
                     {closureSnapshot && (
-                      <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+                      <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground items-center">
                         <span>Run #{closureSnapshot.approved_run_number} ({closureSnapshot.run_type})</span>
                         <span>·</span>
                         <span>Incidencias: {closureSnapshot.incidents_summary.validated}/{closureSnapshot.incidents_summary.total}</span>
@@ -335,12 +336,23 @@ export function HRPayrollPeriodManager({
                             <span>Bloqueado: {new Date(p.locked_at).toLocaleDateString('es-ES')}</span>
                           </>
                         )}
+                        <span>·</span>
+                        <SSExpedientPeriodBadge
+                          companyId={companyId}
+                          periodYear={p.fiscal_year}
+                          periodMonth={p.period_number}
+                        />
                       </div>
                     )}
                     {!closureSnapshot && p.total_gross > 0 && (
-                      <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                         <Info className="h-3 w-3" />
                         <span>Período cerrado sin snapshot detallado (legacy)</span>
+                        <SSExpedientPeriodBadge
+                          companyId={companyId}
+                          periodYear={p.fiscal_year}
+                          periodMonth={p.period_number}
+                        />
                       </div>
                     )}
                   </div>

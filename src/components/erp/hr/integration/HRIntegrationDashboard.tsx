@@ -388,6 +388,12 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
                             </span>
                           )}
                         </p>
+                        {integration.module === 'social_security' && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <Shield className="h-2.5 w-2.5" />
+                            Expediente interno SS · No presentación oficial
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
