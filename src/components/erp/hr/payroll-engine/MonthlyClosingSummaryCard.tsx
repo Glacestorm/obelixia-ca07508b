@@ -1,23 +1,20 @@
 /**
  * MonthlyClosingSummaryCard — V2-ES.7 Paso 6
- * Executive KPIs + period comparison + expedient readiness
+ * Executive KPIs + period comparison + expedient readiness + auto-generation
  * Embedded in HRPayrollPeriodManager for closed/locked periods.
- * 
- * Features:
- * - KPIs con comparativa vs mes anterior
- * - Readiness de expedientes SS y Fiscal
- * - Auto-generación de expedientes post-cierre
- * - Badge explícito "Interno / No presentado oficialmente"
+ *
+ * ZERO-FETCH: All data derived from period props (metadata, totals).
+ * Auto-generation writes are delegated to onAutoGenerate callback.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
-  Users, Euro, TrendingUp, TrendingDown, Minus, ShieldCheck,
-  Calculator, FileText, Loader2, Zap, CheckCircle, AlertTriangle, Info,
+  Users, Euro, TrendingUp, TrendingDown, Minus,
+  Calculator, Loader2, Zap, CheckCircle, AlertTriangle, Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +34,8 @@ interface MonthlyClosingSummaryCardProps {
   period: PayrollPeriod;
   previousPeriod?: PayrollPeriod | null;
   companyId: string;
+  /** SS expedient data extracted by parent (zero-fetch) */
+  ssExpedient?: { status: string; score: number } | null;
   className?: string;
 }
 
@@ -107,81 +106,48 @@ export function MonthlyClosingSummaryCard({
   period,
   previousPeriod,
   companyId,
+  ssExpedient,
   className,
 }: MonthlyClosingSummaryCardProps) {
-  const [kpis, setKpis] = useState<MonthlyKPIs | null>(null);
-  const [deltas, setDeltas] = useState<MonthlyKPIDeltas | null>(null);
-  const [readiness, setReadiness] = useState<ExpedientReadinessSummary | null>(null);
   const [autoGenResult, setAutoGenResult] = useState<AutoGenerationResult | null>(null);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
 
-  // Compute KPIs
-  useEffect(() => {
-    const currentKPIs = computeMonthlyKPIs(
-      period.employee_count, period.total_gross, period.total_net, period.total_employer_cost,
+  // ── Zero-fetch KPI computation from props ──
+  const kpis = useMemo<MonthlyKPIs>(() =>
+    computeMonthlyKPIs(period.employee_count, period.total_gross, period.total_net, period.total_employer_cost),
+    [period.employee_count, period.total_gross, period.total_net, period.total_employer_cost],
+  );
+
+  const deltas = useMemo<MonthlyKPIDeltas | null>(() => {
+    if (!previousPeriod || previousPeriod.total_gross <= 0) return null;
+    const prevKPIs = computeMonthlyKPIs(
+      previousPeriod.employee_count, previousPeriod.total_gross,
+      previousPeriod.total_net, previousPeriod.total_employer_cost,
     );
-    setKpis(currentKPIs);
+    return computePeriodComparison(kpis, prevKPIs).deltas;
+  }, [kpis, previousPeriod]);
 
-    if (previousPeriod && previousPeriod.total_gross > 0) {
-      const prevKPIs = computeMonthlyKPIs(
-        previousPeriod.employee_count, previousPeriod.total_gross,
-        previousPeriod.total_net, previousPeriod.total_employer_cost,
-      );
-      const comparison = computePeriodComparison(currentKPIs, prevKPIs);
-      setDeltas(comparison.deltas);
-    } else {
-      setDeltas(null);
-    }
-  }, [period, previousPeriod]);
-
-  // Load expedient readiness from metadata
-  useEffect(() => {
+  // ── Readiness from metadata (zero-fetch) ──
+  const readiness = useMemo<ExpedientReadinessSummary>(() => {
     const meta = period.metadata as any;
-    const ssExp = meta?.ss_expedient;
     const fiscalExp = meta?.fiscal_expedient;
 
-    // Also check ss_contributions for SS expedient
-    async function loadReadiness() {
-      let ssData: { status: string; score: number } | null = null;
-      let fiscalData: { status: string; score: number } | null = null;
+    const fiscalData = fiscalExp?.status
+      ? { status: fiscalExp.status, score: fiscalExp.reconciliation?.score ?? 0 }
+      : null;
 
-      // SS from erp_hr_ss_contributions
-      try {
-        const { data } = await supabase
-          .from('erp_hr_ss_contributions')
-          .select('metadata')
-          .eq('company_id', companyId)
-          .eq('period_year', period.fiscal_year)
-          .eq('period_month', period.period_number)
-          .maybeSingle();
+    return computeExpedientReadiness(ssExpedient ?? null, fiscalData);
+  }, [period.metadata, ssExpedient]);
 
-        if (data?.metadata) {
-          const m = data.metadata as any;
-          ssData = m?.expedient_status
-            ? { status: m.expedient_status, score: m.reconciliation?.score ?? 0 }
-            : null;
-        }
-      } catch { /* non-blocking */ }
+  // ── Existing auto-gen result from metadata ──
+  const existingAutoGen = useMemo(() => {
+    const meta = period.metadata as any;
+    return meta?.auto_generation as AutoGenerationResult | null;
+  }, [period.metadata]);
 
-      // Fiscal from period metadata
-      if (fiscalExp?.status) {
-        fiscalData = {
-          status: fiscalExp.status,
-          score: fiscalExp.reconciliation?.score ?? 0,
-        };
-      }
+  const effectiveAutoGen = autoGenResult || existingAutoGen;
 
-      setReadiness(computeExpedientReadiness(ssData, fiscalData));
-
-      // Check for auto-gen result
-      const autoGen = meta?.auto_generation;
-      if (autoGen) setAutoGenResult(autoGen);
-    }
-
-    loadReadiness();
-  }, [period, companyId]);
-
-  // Auto-generate expedients post-close
+  // ── Auto-generate handler (writes to DB) ──
   const handleAutoGenerate = useCallback(async () => {
     setIsAutoGenerating(true);
     const result: AutoGenerationResult = {
@@ -195,7 +161,7 @@ export function MonthlyClosingSummaryCard({
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id || 'system';
 
-      // Auto-generate SS expedient (consolidated state)
+      // SS expedient → consolidated
       try {
         const { data: ssData } = await supabase
           .from('erp_hr_ss_contributions')
@@ -218,12 +184,9 @@ export function MonthlyClosingSummaryCard({
                 trace: [
                   ...(existingMeta.trace || []),
                   {
-                    action: 'auto_consolidate',
-                    status_from: existingMeta.expedient_status || 'draft',
-                    status_to: 'consolidated',
-                    performed_by: userId,
-                    performed_at: new Date().toISOString(),
-                    notes: 'Auto-generado al cerrar período',
+                    action: 'auto_consolidate', status_from: existingMeta.expedient_status || 'draft',
+                    status_to: 'consolidated', performed_by: userId,
+                    performed_at: new Date().toISOString(), notes: 'Auto-generado al cerrar período',
                     period_id: period.id,
                   },
                 ],
@@ -236,7 +199,7 @@ export function MonthlyClosingSummaryCard({
         result.ss_error = e.message;
       }
 
-      // Auto-generate Fiscal expedient (consolidated state)
+      // Fiscal expedient → consolidated
       try {
         const meta = (period.metadata || {}) as any;
         const fiscalExp = meta.fiscal_expedient;
@@ -246,19 +209,14 @@ export function MonthlyClosingSummaryCard({
               ...meta,
               fiscal_expedient: {
                 ...(fiscalExp || {}),
-                status: 'consolidated',
-                consolidated_at: new Date().toISOString(),
-                consolidated_by: userId,
-                auto_generated: true,
+                status: 'consolidated', consolidated_at: new Date().toISOString(),
+                consolidated_by: userId, auto_generated: true,
                 trace: [
                   ...(fiscalExp?.trace || []),
                   {
-                    action: 'auto_consolidate',
-                    status_from: fiscalExp?.status || 'draft',
-                    status_to: 'consolidated',
-                    performed_by: userId,
-                    performed_at: new Date().toISOString(),
-                    notes: 'Auto-generado al cerrar período',
+                    action: 'auto_consolidate', status_from: fiscalExp?.status || 'draft',
+                    status_to: 'consolidated', performed_by: userId,
+                    performed_at: new Date().toISOString(), notes: 'Auto-generado al cerrar período',
                     period_id: period.id,
                   },
                 ],
@@ -272,16 +230,12 @@ export function MonthlyClosingSummaryCard({
         result.fiscal_error = e.message;
       }
 
-      // Log to audit
+      // Audit trail
       await supabase.from('hr_payroll_audit_log').insert({
-        company_id: companyId,
-        action: 'expedients_auto_generated',
-        entity_type: 'period',
-        entity_id: period.id,
-        actor_id: userId,
-        actor_name: user?.email || 'system',
-        new_value: result,
-        period_id: period.id,
+        company_id: companyId, action: 'expedients_auto_generated',
+        entity_type: 'period', entity_id: period.id,
+        actor_id: userId, actor_name: user?.email || 'system',
+        new_value: result, period_id: period.id,
       } as any);
 
       setAutoGenResult(result);
@@ -292,17 +246,16 @@ export function MonthlyClosingSummaryCard({
     }
   }, [period, companyId]);
 
-  if (!kpis) return null;
-
+  // ── Visibility guard ──
   const isClosed = period.status === 'closed' || period.status === 'locked';
   if (!isClosed) return null;
 
-  const needsAutoGen = readiness && shouldAutoGenerateExpedients(
+  const needsAutoGen = shouldAutoGenerateExpedients(
     period.status,
     readiness.ss_status ? { status: readiness.ss_status } : null,
     readiness.fiscal_status ? { status: readiness.fiscal_status } : null,
   );
-  const showAutoGenButton = needsAutoGen && (needsAutoGen.ss || needsAutoGen.fiscal) && !autoGenResult;
+  const showAutoGenButton = (needsAutoGen.ss || needsAutoGen.fiscal) && !effectiveAutoGen;
 
   return (
     <div className={cn('space-y-2', className)}>
@@ -356,7 +309,7 @@ export function MonthlyClosingSummaryCard({
       </div>
 
       {/* Expedient Readiness */}
-      {readiness && <ReadinessIndicator readiness={readiness} />}
+      <ReadinessIndicator readiness={readiness} />
 
       {/* Auto-generation button */}
       {showAutoGenButton && (
@@ -379,13 +332,13 @@ export function MonthlyClosingSummaryCard({
       )}
 
       {/* Auto-generation result */}
-      {autoGenResult && (
+      {effectiveAutoGen && (
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground px-1">
           <Zap className="h-3 w-3 text-primary" />
           <span>
-            Auto-generado: {autoGenResult.ss_generated ? '✓ SS' : ''} {autoGenResult.fiscal_generated ? '✓ Fiscal' : ''}
-            {autoGenResult.ss_error && ` ⚠ SS: ${autoGenResult.ss_error}`}
-            {autoGenResult.fiscal_error && ` ⚠ Fiscal: ${autoGenResult.fiscal_error}`}
+            Auto-generado: {effectiveAutoGen.ss_generated ? '✓ SS' : ''} {effectiveAutoGen.fiscal_generated ? '✓ Fiscal' : ''}
+            {effectiveAutoGen.ss_error && ` ⚠ SS: ${effectiveAutoGen.ss_error}`}
+            {effectiveAutoGen.fiscal_error && ` ⚠ Fiscal: ${effectiveAutoGen.fiscal_error}`}
           </span>
         </div>
       )}
