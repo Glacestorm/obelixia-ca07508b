@@ -4,3 +4,5 @@ export { EmployeePortalNav } from './EmployeePortalNav';
 export { EmployeePortalHeader } from './EmployeePortalHeader';
 export { EmployeePortalHome } from './EmployeePortalHome';
 export { EmployeeDocumentsSection } from './EmployeeDocumentsSection';
+export { EmployeePayslipsSection } from './EmployeePayslipsSection';
+export { EmployeeRequestsSection } from './EmployeeRequestsSection';

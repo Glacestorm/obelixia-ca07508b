@@ -9,6 +9,8 @@ import { EmployeePortalNav, type PortalSection } from './EmployeePortalNav';
 import { EmployeePortalHome } from './EmployeePortalHome';
 import { EmployeePortalHeader } from './EmployeePortalHeader';
 import { EmployeeDocumentsSection } from './EmployeeDocumentsSection';
+import { EmployeePayslipsSection } from './EmployeePayslipsSection';
+import { EmployeeRequestsSection } from './EmployeeRequestsSection';
 import { Card, CardContent } from '@/components/ui/card';
 import { Construction } from 'lucide-react';
 
@@ -52,9 +54,9 @@ export function EmployeePortalShell() {
       case 'documents':
         return <EmployeeDocumentsSection employee={employee} />;
       case 'payslips':
-        return <PlaceholderSection title="Mis Nóminas" description="Consulta y descarga tus recibos de nómina. Módulo en preparación." />;
+        return <EmployeePayslipsSection employee={employee} onNavigate={handleNavigate} />;
       case 'requests':
-        return <PlaceholderSection title="Mis Solicitudes" description="Envía y consulta solicitudes administrativas. Módulo en preparación." />;
+        return <EmployeeRequestsSection employee={employee} onNavigate={handleNavigate} />;
       case 'time':
         return <PlaceholderSection title="Mi Tiempo" description="Fichaje, horarios y registro de jornada. Módulo en preparación." />;
       case 'leave':
