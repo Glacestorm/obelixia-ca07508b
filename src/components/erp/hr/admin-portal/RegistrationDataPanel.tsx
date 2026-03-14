@@ -412,21 +412,28 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
           </>
         )}
 
-        {/* Next Actions */}
-        {readiness.nextActions.length > 0 && !editMode && (
-          <>
-            <Separator />
-            <div className="space-y-1">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Próximos pasos</p>
-              {readiness.nextActions.map((action, i) => (
-                <div key={i} className="flex items-start gap-1.5 text-xs">
-                  <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
-                  <span>{action}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+        {/* Next Actions (merged from readiness + pre-integration) */}
+        {!editMode && (() => {
+          const allSteps = [
+            ...readiness.nextActions,
+            ...preIntegration.nextSteps.filter(s => !readiness.nextActions.some(a => a === s)),
+          ];
+          if (allSteps.length === 0) return null;
+          return (
+            <>
+              <Separator />
+              <div className="space-y-1">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Próximos pasos</p>
+                {allSteps.slice(0, 5).map((action, i) => (
+                  <div key={i} className="flex items-start gap-1.5 text-xs">
+                    <ChevronRight className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                    <span>{action}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
 
         {/* Status transition actions */}
         {allowedTransitions.length > 0 && !editMode && currentStatus !== 'confirmed' && (
