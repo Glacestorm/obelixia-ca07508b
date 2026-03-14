@@ -1,6 +1,7 @@
 /**
- * PreparatoryDryRunPanel — V2-ES.8 Tramo 2
- * Domain-aware dry-run panel with persistence, evidence linking, and audit trail.
+ * PreparatoryDryRunPanel — V2-ES.8 Tramo 4
+ * Domain-aware dry-run panel with persistence, evidence linking, audit trail,
+ * diff between runs, and connector hardening.
  */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,6 +27,12 @@ import {
   History,
   Paperclip,
   Eye,
+  ArrowUpDown,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  HeartPulse,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -39,6 +46,18 @@ import {
   type SubmissionDomain,
   type PreparatorySubmissionStatus,
 } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
+import {
+  computeDryRunDiff,
+  getDiffDirectionLabel,
+  getDiffDirectionColor,
+  type DryRunDiffReport,
+} from '@/components/erp/hr/shared/dryRunDiffEngine';
+import {
+  evaluateDryRunHealth,
+  evaluateRetry,
+  canExecuteDryRun,
+  type DryRunHealthCheck,
+} from '@/components/erp/hr/shared/connectorHardeningEngine';
 
 interface Props {
   companyId: string;
