@@ -38,6 +38,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
 
 export function HRApprovalInbox({ companyId }: Props) {
   const { inbox, fetchInbox, decideStep, stats, fetchStats, loading } = useHRWorkflowEngine();
+  const { pendingCount: preRealPending, approvedCount: preRealApproved, rejectedCount: preRealRejected, fetchApprovals } = usePreRealApproval(companyId);
   const [statusFilter, setStatusFilter] = useState('in_progress');
   const [decisionDialog, setDecisionDialog] = useState<{ instance: WorkflowInstance; type: string } | null>(null);
   const [comment, setComment] = useState('');
@@ -45,6 +46,7 @@ export function HRApprovalInbox({ companyId }: Props) {
   useEffect(() => {
     fetchInbox(companyId, statusFilter);
     fetchStats(companyId);
+    fetchApprovals();
   }, [companyId, statusFilter]);
 
   const handleDecision = async () => {
