@@ -55,6 +55,7 @@ import {
   type MultiEntityReadinessReport,
   type EntityReadinessInput,
 } from '@/components/erp/hr/shared/multiEntityReadinessEngine';
+import { useMultiEntityReadiness } from '@/hooks/erp/hr/useMultiEntityReadiness';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2 } from 'lucide-react';
 
