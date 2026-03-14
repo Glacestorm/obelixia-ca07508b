@@ -60,13 +60,37 @@ export function usePayrollIncidents(companyId?: string) {
     }
   }, [companyId]);
 
+  const fetchByYearMonth = useCallback(async (year: number, month: number) => {
+    if (!companyId) return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_payroll_incidents' as any)
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('period_year', year)
+        .eq('period_month', month)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setIncidents((data ?? []) as unknown as PayrollIncident[]);
+    } catch (err) {
+      console.error('[usePayrollIncidents] fetchByYearMonth:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [companyId]);
+
   // ── Create ──
 
   const createIncident = useCallback(async (incident: Partial<PayrollIncident>): Promise<PayrollIncident | null> => {
     if (!companyId) return null;
     try {
       const { data: userData } = await supabase.auth.getUser();
+      // Auto-derive operational flags from type
+      const flags = incident.incident_type ? deriveOperationalFlags(incident.incident_type) : {};
       const row = {
+        ...flags,
         ...incident,
         company_id: companyId,
         status: 'pending',
