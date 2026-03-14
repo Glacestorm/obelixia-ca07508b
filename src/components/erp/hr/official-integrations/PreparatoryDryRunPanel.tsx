@@ -669,6 +669,7 @@ function SubmissionCard({
 
 export function PreparatoryDryRunPanel({ companyId }: Props) {
   const [domainFilter, setDomainFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('active');
   const [evidenceCache, setEvidenceCache] = useState<Record<string, DryRunEvidence[]>>({});
