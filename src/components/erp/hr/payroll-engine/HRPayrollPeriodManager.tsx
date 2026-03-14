@@ -13,6 +13,7 @@ import {
   AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2, Send
 } from 'lucide-react';
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
+import { ActiveRunIndicator } from './ActiveRunIndicator';
 
 interface Props {
   companyId: string;
