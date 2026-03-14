@@ -174,7 +174,11 @@ export function buildClosureSnapshot(
       required_total: preIntegration.fieldReadiness.requiredTotal,
       percent: preIntegration.fieldReadiness.percent,
     },
-    doc_readiness: preIntegration.docReadiness,
-    deadline_status: preIntegration.deadlineStatus,
+    doc_readiness: preIntegration.docReadiness
+      ? { percent: preIntegration.docReadiness.percent, mandatory_complete: preIntegration.docReadiness.mandatoryComplete }
+      : null,
+    deadline_status: preIntegration.deadlineStatus
+      ? { has_risk: preIntegration.deadlineStatus.hasRisk, urgency: preIntegration.deadlineStatus.urgency }
+      : null,
   };
 }
