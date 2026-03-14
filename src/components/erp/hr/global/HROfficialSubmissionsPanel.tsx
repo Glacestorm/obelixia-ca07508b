@@ -2,17 +2,19 @@
  * HROfficialSubmissionsPanel — Envíos a organismos oficiales
  * V2-ES.8 T3: Certificate status, regulatory deadlines, and dry-run history
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Send, Plus, FlaskConical, Shield, Info, Lock,
   History, CheckCircle2, XCircle, Clock, Paperclip,
-  Calculator, FileText, AlertTriangle, KeyRound,
-  CalendarClock,
+  Calculator, FileText, FileSpreadsheet, AlertTriangle, KeyRound,
+  CalendarClock, Download,
 } from 'lucide-react';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { useDryRunPersistence, type DryRunResult } from '@/hooks/erp/hr/useDryRunPersistence';
 import { getDomainMeta, getSubmissionDomains, type SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
