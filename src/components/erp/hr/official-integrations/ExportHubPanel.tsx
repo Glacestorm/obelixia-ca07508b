@@ -1,16 +1,16 @@
 /**
  * ExportHubPanel — V2-ES.8 Tramo 7
- * Centralized export panel for evidence packs and reporting.
+ * Centralized export panel for readiness reports, dry-run diffs, and evidence packs.
  * Tab inside OfficialIntegrationsHub.
  *
  * DISCLAIMER: All exports are internal preparatory documents.
  * They do NOT constitute official submissions or validations.
  */
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Download,
   FileText,
@@ -18,9 +18,9 @@ import {
   Package,
   Gauge,
   FlaskConical,
-  Shield,
   Info,
   Clock,
+  GitCompareArrows,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useOfficialReadiness } from '@/hooks/erp/hr/useOfficialReadiness';
@@ -30,7 +30,9 @@ import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
 import { useRegulatoryCalendar } from '@/hooks/erp/hr/useRegulatoryCalendar';
 import { useMultiEntityReadiness } from '@/hooks/erp/hr/useMultiEntityReadiness';
 import { useProactiveAlertSignals } from '@/hooks/erp/hr/useProactiveAlertSignals';
+import { useDryRunPersistence } from '@/hooks/erp/hr/useDryRunPersistence';
 import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
+import { computeDryRunDiff } from '@/components/erp/hr/shared/dryRunDiffEngine';
 import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
 import type { SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
 
@@ -42,6 +44,13 @@ const CONNECTOR_TO_DOMAIN: Record<string, SubmissionDomain> = {
   certifica2: 'CERTIFICA2',
   delta: 'DELTA',
 };
+
+const DOMAIN_OPTIONS = [
+  { value: 'all', label: 'Todos los dominios' },
+  { value: 'TGSS', label: 'TGSS / SILTRA' },
+  { value: 'CONTRATA', label: 'Contrat@ / SEPE' },
+  { value: 'AEAT', label: 'AEAT' },
+];
 
 interface Props {
   companyId: string;
@@ -55,6 +64,7 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
   const { pendingCount, approvedCount: approvalApprovedCount, rejectedCount: approvalRejectedCount, approvals } = usePreRealApproval(companyId);
   const { calendar } = useRegulatoryCalendar(companyId);
   const { report: multiEntityReport } = useMultiEntityReadiness(companyId);
+  const { results: dryRuns, evidence: dryRunEvidence, fetchResults, fetchEvidence } = useDryRunPersistence(companyId);
   const proactiveAlerts = useProactiveAlertSignals({
     readinessSummary: summary,
     calendar,
@@ -63,7 +73,18 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
     approvals,
     enabled: !!summary,
   });
-  const { isExporting, exportReadiness, lastExport } = useOfficialExport(companyId);
+  const { isExporting, exportReadiness, exportDiff, exportEvidencePack, lastExport } = useOfficialExport(companyId);
+
+  const [selectedDomain, setSelectedDomain] = useState<string>('all');
+
+  useEffect(() => { fetchResults({ limit: 50 }); }, [fetchResults]);
+
+  // Load evidence for latest dry-runs
+  useEffect(() => {
+    if (dryRuns.length > 0) {
+      fetchEvidence(dryRuns[0].id);
+    }
+  }, [dryRuns, fetchEvidence]);
 
   const domainStats = useMemo(() => {
     const stats: Record<string, { payloads: number; validated: number; dryRuns: number }> = {};
@@ -78,53 +99,97 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
     return stats;
   }, [submissions]);
 
-  const handleExport = (format: 'pdf' | 'excel', category: string) => {
-    if (category === 'readiness' && summary) {
-      const certData = certificates.map(c => ({
-        domain: c.domain,
-        status: c.certificate_status,
-        completeness: c.configuration_completeness,
-        expirationDate: c.expiration_date,
-      }));
-      const alertData = proactiveAlerts.summary?.alerts.map(a => ({
-        severity: a.severity, category: a.category, title: a.title, status: a.status,
-      })) || [];
-      exportReadiness(format, summary, domainStats, {
-        companyId,
-        certificates: certData,
-        approvals: { pending: pendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
-        deadlines: calendar || undefined,
-        alerts: alertData,
-        multiEntity: multiEntityReport || undefined,
-      });
+  const certData = useMemo(() => certificates.map(c => ({
+    domain: c.domain,
+    status: c.certificate_status,
+    completeness: c.configuration_completeness,
+    expirationDate: c.expiration_date,
+  })), [certificates]);
+
+  const alertData = useMemo(() =>
+    proactiveAlerts.summary?.alerts.map(a => ({
+      severity: a.severity, category: a.category, title: a.title, status: a.status,
+    })) || []
+  , [proactiveAlerts.summary]);
+
+  // Can we generate a diff? (need ≥2 runs in same domain)
+  const diffPair = useMemo(() => {
+    if (dryRuns.length < 2) return null;
+    // Find latest 2 runs in same domain
+    const domainGroups: Record<string, typeof dryRuns> = {};
+    for (const r of dryRuns) {
+      const d = r.submission_domain;
+      if (!domainGroups[d]) domainGroups[d] = [];
+      domainGroups[d].push(r);
     }
-    // dry_run and evidence_pack exports will be added in T7-P2 and T7-P3
-  };
+    for (const group of Object.values(domainGroups)) {
+      if (group.length >= 2) return { baseline: group[1], comparison: group[0] };
+    }
+    return null;
+  }, [dryRuns]);
+
+  const handleReadinessExport = useCallback((format: 'pdf' | 'excel') => {
+    if (!summary) return;
+    exportReadiness(format, summary, domainStats, {
+      companyId,
+      certificates: certData,
+      approvals: { pending: pendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+      deadlines: calendar || undefined,
+      alerts: alertData,
+      multiEntity: multiEntityReport || undefined,
+    });
+  }, [summary, domainStats, companyId, certData, pendingCount, approvalApprovedCount, approvalRejectedCount, calendar, alertData, multiEntityReport, exportReadiness]);
+
+  const handleDiffExport = useCallback((format: 'pdf' | 'excel') => {
+    if (!diffPair) return;
+    const diff = computeDryRunDiff(diffPair.baseline, diffPair.comparison);
+    exportDiff(format, diff);
+  }, [diffPair, exportDiff]);
+
+  const handleEvidencePackExport = useCallback((format: 'pdf' | 'excel') => {
+    exportEvidencePack(format, {
+      companyId,
+      domain: selectedDomain !== 'all' ? selectedDomain : undefined,
+      readiness: summary || undefined,
+      domainStats,
+      dryRuns,
+      evidence: dryRunEvidence,
+      approvals: { pending: pendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+      deadlines: calendar || undefined,
+      alerts: alertData,
+      certificates: certData,
+    });
+  }, [companyId, selectedDomain, summary, domainStats, dryRuns, dryRunEvidence, pendingCount, approvalApprovedCount, approvalRejectedCount, calendar, alertData, certData, exportEvidencePack]);
 
   const exportOptions = [
     {
       id: 'readiness',
       label: 'Informe de Readiness',
-      description: 'Estado de preparacion de todos los conectores, señales, bloqueantes y pipeline operativo.',
+      description: 'Estado de preparación de todos los conectores, señales, bloqueantes y pipeline operativo.',
       icon: Gauge,
       available: !!summary,
       color: 'text-blue-500',
+      onExport: handleReadinessExport,
     },
     {
-      id: 'dry_run',
-      label: 'Resumen de Dry-Runs',
-      description: 'Historial y resultados de simulaciones internas por dominio.',
-      icon: FlaskConical,
-      available: false, // T7-P2
+      id: 'dry_run_diff',
+      label: 'Comparativa Dry-Runs',
+      description: diffPair
+        ? `Última comparativa: #${diffPair.baseline.execution_number} vs #${diffPair.comparison.execution_number} (${diffPair.comparison.submission_domain})`
+        : 'Compara dos ejecuciones sucesivas. Necesita ≥2 dry-runs en el mismo dominio.',
+      icon: GitCompareArrows,
+      available: !!diffPair,
       color: 'text-amber-500',
+      onExport: handleDiffExport,
     },
     {
       id: 'evidence_pack',
       label: 'Evidence Pack',
-      description: 'Paquete documental completo por dominio/entidad/periodo.',
+      description: 'Paquete documental completo con readiness, dry-runs, evidencias, aprobaciones y alertas.',
       icon: Package,
-      available: false, // T7-P3
+      available: true,
       color: 'text-purple-500',
+      onExport: handleEvidencePackExport,
     },
   ];
 
@@ -135,14 +200,14 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
           <Download className="h-5 w-5 text-primary" /> Exportación y Reporting
         </h3>
         <p className="text-sm text-muted-foreground">
-          Genera informes internos de readiness, dry-runs y evidence packs para auditoría y compliance.
+          Genera informes internos de readiness, comparativas de dry-runs y evidence packs para auditoría y compliance.
         </p>
       </div>
 
       {/* Disclaimer */}
-      <Card className="border-amber-200 bg-amber-50/50">
+      <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800/30">
         <CardContent className="py-3">
-          <div className="flex items-start gap-2 text-xs text-amber-700">
+          <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
             <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <p>
               Todos los documentos generados son <strong>informes internos preparatorios</strong>.
@@ -152,6 +217,21 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Domain filter for evidence packs */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Filtro dominio (Evidence Pack):</span>
+        <Select value={selectedDomain} onValueChange={setSelectedDomain}>
+          <SelectTrigger className="w-[180px] h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DOMAIN_OPTIONS.map(o => (
+              <SelectItem key={o.value} value={o.value} className="text-xs">{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Export options */}
       <div className="grid gap-3">
@@ -169,10 +249,10 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
                       <p className="text-sm font-semibold flex items-center gap-2">
                         {opt.label}
                         {!opt.available && (
-                          <Badge variant="outline" className="text-[9px] h-4">Próximamente</Badge>
+                          <Badge variant="outline" className="text-[9px] h-4">No disponible</Badge>
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 max-w-md">{opt.description}</p>
                     </div>
                   </div>
                   {opt.available && (
@@ -181,7 +261,7 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
                         variant="outline"
                         size="sm"
                         disabled={isExporting}
-                        onClick={() => handleExport('pdf', opt.id)}
+                        onClick={() => opt.onExport('pdf')}
                       >
                         <FileText className="h-3.5 w-3.5 mr-1.5" />
                         PDF
@@ -190,7 +270,7 @@ export function ExportHubPanel({ companyId, adapters }: Props) {
                         variant="outline"
                         size="sm"
                         disabled={isExporting}
-                        onClick={() => handleExport('excel', opt.id)}
+                        onClick={() => opt.onExport('excel')}
                       >
                         <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
                         Excel
