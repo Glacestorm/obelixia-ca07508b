@@ -159,6 +159,76 @@ function EvidenceList({ evidence, onGenerateOnDemand }: {
   );
 }
 
+// ─── Diff Report Card ───────────────────────────────────────────────────────
+
+function DiffReportCard({ report }: { report: DryRunDiffReport }) {
+  const DirIcon = report.overallDirection === 'improved' ? TrendingUp :
+    report.overallDirection === 'degraded' ? TrendingDown : Minus;
+
+  return (
+    <div className="p-2 rounded-lg border bg-muted/30 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-medium flex items-center gap-1">
+          <ArrowUpDown className="h-3 w-3" />
+          Comparativa #{report.baselineExecNumber} → #{report.comparisonExecNumber}
+        </p>
+        <Badge variant="outline" className={cn('text-[9px] h-4 gap-0.5', getDiffDirectionColor(report.overallDirection))}>
+          <DirIcon className="h-2.5 w-2.5" />
+          {getDiffDirectionLabel(report.overallDirection)}
+        </Badge>
+      </div>
+      <p className="text-[10px] text-muted-foreground">{report.summaryText}</p>
+
+      {/* Score delta */}
+      {report.readinessScoreDelta !== 0 && (
+        <div className="flex items-center gap-2 text-[10px]">
+          <span className="text-muted-foreground">Score:</span>
+          <span className={cn('font-mono font-medium', getDiffDirectionColor(report.readinessScoreDelta > 0 ? 'improved' : 'degraded'))}>
+            {report.readinessScoreDelta > 0 ? '+' : ''}{report.readinessScoreDelta}%
+          </span>
+        </div>
+      )}
+
+      {/* Validation diff */}
+      {report.validationDiff && report.validationDiff.changedChecks.length > 0 && (
+        <div className="space-y-0.5">
+          <p className="text-[9px] text-muted-foreground">Checks cambiados:</p>
+          {report.validationDiff.changedChecks.slice(0, 3).map((c, i) => (
+            <div key={i} className="flex items-center gap-1 text-[9px]">
+              {c.newPassed ? (
+                <CheckCircle2 className="h-2.5 w-2.5 text-green-500" />
+              ) : (
+                <XCircle className="h-2.5 w-2.5 text-destructive" />
+              )}
+              <span className="truncate">{c.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Payload keys diff */}
+      {(report.payloadKeysDiff.added.length > 0 || report.payloadKeysDiff.removed.length > 0 || report.payloadKeysDiff.modified.length > 0) && (
+        <div className="flex gap-3 text-[9px]">
+          {report.payloadKeysDiff.added.length > 0 && (
+            <span className="text-green-600">+{report.payloadKeysDiff.added.length} campos</span>
+          )}
+          {report.payloadKeysDiff.removed.length > 0 && (
+            <span className="text-destructive">-{report.payloadKeysDiff.removed.length} campos</span>
+          )}
+          {report.payloadKeysDiff.modified.length > 0 && (
+            <span className="text-amber-600">~{report.payloadKeysDiff.modified.length} modificados</span>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-start gap-1 text-[8px] text-muted-foreground pt-0.5">
+        <Info className="h-2 w-2 mt-0.5 shrink-0" />
+        <span>Comparativa interna entre dry-runs — no implica comparación con respuesta oficial.</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Persisted History Card ─────────────────────────────────────────────────
 
 function PersistedDryRunCard({
