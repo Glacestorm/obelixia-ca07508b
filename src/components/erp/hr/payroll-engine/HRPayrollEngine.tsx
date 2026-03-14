@@ -69,8 +69,9 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${showFull ? 'grid-cols-6' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${showFull ? 'grid-cols-7' : 'grid-cols-5'}`}>
           <TabsTrigger value="periods" className="gap-1.5 text-xs"><Calendar className="h-3.5 w-3.5" />Períodos</TabsTrigger>
+          <TabsTrigger value="runs" className="gap-1.5 text-xs"><Play className="h-3.5 w-3.5" />Runs</TabsTrigger>
           <TabsTrigger value="payslips" className="gap-1.5 text-xs"><FileText className="h-3.5 w-3.5" />Nóminas</TabsTrigger>
           <TabsTrigger value="concepts" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" />Conceptos</TabsTrigger>
           <TabsTrigger value="incidents" className="gap-1.5 text-xs"><AlertCircle className="h-3.5 w-3.5" />Incidencias</TabsTrigger>
