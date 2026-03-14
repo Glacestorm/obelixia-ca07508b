@@ -11,3 +11,4 @@ export { HRPayrollSimulator } from './HRPayrollSimulator';
 export { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
 export { PayrollRunDiffCard } from './PayrollRunDiffCard';
 export { PayrollRunVersionHistory } from './PayrollRunVersionHistory';
+export { ActiveRunIndicator } from './ActiveRunIndicator';

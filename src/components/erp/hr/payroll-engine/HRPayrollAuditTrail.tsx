@@ -30,6 +30,14 @@ const ACTION_CONFIG: Record<string, { icon: typeof Shield; color: string; label:
   recalculated: { icon: Calculator, color: 'text-blue-500', label: 'Recalculado' },
   exported: { icon: Eye, color: 'text-muted-foreground', label: 'Exportado' },
   simulated: { icon: Calculator, color: 'text-purple-500', label: 'Simulado' },
+  // Run-specific events
+  run_created: { icon: FileText, color: 'text-emerald-500', label: 'Run creado' },
+  run_started: { icon: Clock, color: 'text-blue-500', label: 'Run iniciado' },
+  run_calculated: { icon: Calculator, color: 'text-emerald-600', label: 'Run calculado' },
+  run_reviewed: { icon: Eye, color: 'text-blue-500', label: 'Run revisado' },
+  run_approved: { icon: CheckCircle, color: 'text-emerald-500', label: 'Run aprobado' },
+  run_failed: { icon: XCircle, color: 'text-destructive', label: 'Run fallido' },
+  run_superseded: { icon: RefreshCw, color: 'text-muted-foreground', label: 'Run sustituido' },
 };
 
 export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {
@@ -70,6 +78,9 @@ export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{cfg.label}</Badge>
                     <span className="text-xs text-muted-foreground">{entry.entity_type}</span>
+                    {entry.entity_type === 'payroll_run' && (
+                      <Badge variant="secondary" className="text-[8px] px-1 py-0">Run</Badge>
+                    )}
                   </div>
                   <p className="text-sm mt-1">
                     <span className="font-medium">{entry.actor_name || 'Sistema'}</span>

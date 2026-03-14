@@ -21,6 +21,7 @@ import type { DiffVsPrevious, ReviewAction } from '@/hooks/erp/hr/useESPayrollBr
 import { PayrollReviewBadge } from './PayrollReviewBadge';
 import { PayrollDiffPanel } from './PayrollDiffPanel';
 import { PayrollTraceLine } from './PayrollTraceLine';
+import { ActiveRunIndicator } from './ActiveRunIndicator';
 
 interface Props {
   companyId: string;
@@ -131,6 +132,11 @@ export function HRPayrollRecordsList({
           </SelectContent>
         </Select>
       </div>
+
+      {/* Active run context banner */}
+      {selectedPeriodId && (
+        <ActiveRunIndicator companyId={companyId} periodId={selectedPeriodId} variant="full" />
+      )}
 
       {!selectedPeriodId && (
         <Card className="border-dashed"><CardContent className="py-8 text-center text-muted-foreground">Selecciona un período para ver las nóminas</CardContent></Card>

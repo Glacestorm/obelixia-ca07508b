@@ -13,6 +13,7 @@ import {
   AlertTriangle, Play, Eye, Calculator, TrendingUp, Loader2, Send
 } from 'lucide-react';
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
+import { ActiveRunIndicator } from './ActiveRunIndicator';
 
 interface Props {
   companyId: string;
@@ -171,6 +172,7 @@ export function HRPayrollPeriodManager({
                         {p.employee_count > 0 && ` · ${p.employee_count} empleados`}
                         {p.total_gross > 0 && ` · Bruto: ${p.total_gross.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}`}
                       </p>
+                      <ActiveRunIndicator companyId={companyId} periodId={p.id} variant="compact" className="mt-1" />
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
