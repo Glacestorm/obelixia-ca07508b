@@ -278,6 +278,8 @@ export function useHRRegistrationProcess(companyId: string) {
         const created = data as RegistrationData;
         setRegistrationData(created);
         toast.success('Datos de alta inicializados');
+        // Audit: process initialized
+        logRegistrationAudit('REGISTRATION_INITIALIZED', companyId, user.id, requestId, null, { employee_id: employeeId, request_id: requestId }, 'info');
         return created;
       }
     } catch (err) {
