@@ -90,6 +90,7 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     upsertRegistrationData,
     updateRegistrationStatus,
     computeReadiness,
+    persistDeadlineAndPayload,
   } = useHRRegistrationProcess(companyId);
   const { holidaySet } = useHRHolidayCalendar();
 
