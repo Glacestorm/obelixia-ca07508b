@@ -21,6 +21,7 @@ import type { DiffVsPrevious, ReviewAction } from '@/hooks/erp/hr/useESPayrollBr
 import { PayrollReviewBadge } from './PayrollReviewBadge';
 import { PayrollDiffPanel } from './PayrollDiffPanel';
 import { PayrollTraceLine } from './PayrollTraceLine';
+import { ActiveRunIndicator } from './ActiveRunIndicator';
 
 interface Props {
   companyId: string;
