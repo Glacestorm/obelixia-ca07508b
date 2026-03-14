@@ -136,11 +136,13 @@ function PersistedDryRunCard({
   evidence,
   onLoadEvidence,
   isEvidenceLoaded,
+  onGenerateEvidence,
 }: {
   result: DryRunResult;
   evidence: DryRunEvidence[];
   onLoadEvidence: (id: string) => void;
   isEvidenceLoaded: boolean;
+  onGenerateEvidence?: (dryRunId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const DomainIcon = DOMAIN_ICONS[result.submission_domain] || FileText;
@@ -229,8 +231,11 @@ function PersistedDryRunCard({
               </div>
             )}
 
-            {/* Evidence */}
-            <EvidenceList evidence={evidence} />
+            {/* Evidence with on-demand generation */}
+            <EvidenceList
+              evidence={evidence}
+              onGenerateOnDemand={onGenerateEvidence ? () => onGenerateEvidence(result.id) : undefined}
+            />
 
             {/* Notes */}
             {result.notes && (
@@ -240,7 +245,11 @@ function PersistedDryRunCard({
             {/* Disclaimer */}
             <div className="flex items-start gap-1.5 p-1.5 rounded bg-muted/50 text-[10px] text-muted-foreground">
               <Info className="h-3 w-3 mt-0.5 shrink-0 text-blue-500" />
-              <span>Resultado <strong>persistido</strong> de simulación dry-run. No constituye envío oficial.</span>
+              <span>
+                Resultado <strong>persistido</strong> de simulación dry-run.
+                No constituye envío oficial ni acuse de organismo.
+                Las evidencias vinculadas son <strong>internas y preparatorias</strong>.
+              </span>
             </div>
           </div>
         )}
