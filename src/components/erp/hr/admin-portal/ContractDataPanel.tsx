@@ -62,9 +62,10 @@ interface Props {
   companyId: string;
   employeeId: string;
   linkedDocs?: EmployeeDocument[];
+  onDeadlinesComputed?: (summary: ContractDeadlineSummary) => void;
 }
 
-export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs = [] }: Props) {
+export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs = [], onDeadlinesComputed }: Props) {
   const {
     contractData,
     loading,
@@ -72,16 +73,41 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
     upsertContractData,
     updateContractStatus,
     computeReadiness,
+    persistDeadlineAndPayload,
   } = useHRContractProcess(companyId);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Partial<ContractProcessData>>({});
   const [showRecommended, setShowRecommended] = useState(false);
 
+  const { holidaySet } = useHRHolidayCalendar();
+
   // Fetch on mount
   useEffect(() => {
     fetchContractData(requestId);
   }, [requestId, fetchContractData]);
+
+  // Compute deadlines
+  const deadlineSummary = useMemo(() => {
+    return computeContractDeadlines(contractData, holidaySet);
+  }, [contractData, holidaySet]);
+
+  // Compute payload readiness
+  const payloadResult = useMemo(() => {
+    return buildContrataPayload(contractData);
+  }, [contractData]);
+
+  // Notify parent of deadline changes
+  useEffect(() => {
+    onDeadlinesComputed?.(deadlineSummary);
+  }, [deadlineSummary, onDeadlinesComputed]);
+
+  // Persist deadline + payload on data change
+  useEffect(() => {
+    if (contractData && contractData.request_id === requestId) {
+      persistDeadlineAndPayload(requestId, holidaySet);
+    }
+  }, [contractData?.contract_start_date, contractData?.contract_process_status, contractData?.contract_type_code]);
 
   // Readiness
   const readiness = useMemo(() => {
