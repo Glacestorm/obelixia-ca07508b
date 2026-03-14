@@ -31787,15 +31787,22 @@ export type Database = {
           dry_run_output: Json | null
           duration_ms: number | null
           executed_by: string | null
+          execution_mode: string
           execution_number: number
           id: string
           metadata: Json | null
           notes: string | null
           payload_snapshot: Json | null
           readiness_score: number | null
+          readiness_status: string
+          related_period_id: string | null
+          related_process_id: string | null
+          related_run_id: string | null
+          simulated_result: string
           status: string
           submission_domain: string
           submission_id: string | null
+          submission_status: string
           submission_type: string
           updated_at: string
           validation_result: Json | null
@@ -31806,15 +31813,22 @@ export type Database = {
           dry_run_output?: Json | null
           duration_ms?: number | null
           executed_by?: string | null
+          execution_mode?: string
           execution_number?: number
           id?: string
           metadata?: Json | null
           notes?: string | null
           payload_snapshot?: Json | null
           readiness_score?: number | null
+          readiness_status?: string
+          related_period_id?: string | null
+          related_process_id?: string | null
+          related_run_id?: string | null
+          simulated_result?: string
           status?: string
           submission_domain?: string
           submission_id?: string | null
+          submission_status?: string
           submission_type: string
           updated_at?: string
           validation_result?: Json | null
@@ -31825,15 +31839,22 @@ export type Database = {
           dry_run_output?: Json | null
           duration_ms?: number | null
           executed_by?: string | null
+          execution_mode?: string
           execution_number?: number
           id?: string
           metadata?: Json | null
           notes?: string | null
           payload_snapshot?: Json | null
           readiness_score?: number | null
+          readiness_status?: string
+          related_period_id?: string | null
+          related_process_id?: string | null
+          related_run_id?: string | null
+          simulated_result?: string
           status?: string
           submission_domain?: string
           submission_id?: string | null
+          submission_status?: string
           submission_type?: string
           updated_at?: string
           validation_result?: Json | null
