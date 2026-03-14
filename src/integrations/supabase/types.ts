@@ -37858,6 +37858,118 @@ export type Database = {
           },
         ]
       }
+      erp_hr_payroll_runs: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          context_snapshot: Json
+          created_at: string
+          diff_summary: Json | null
+          employees_calculated: number | null
+          employees_errored: number | null
+          employees_skipped: number | null
+          errors: Json | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          period_id: string
+          previous_run_id: string | null
+          run_number: number
+          run_type: string
+          started_at: string | null
+          started_by: string | null
+          status: string
+          total_deductions: number | null
+          total_employees: number | null
+          total_employer_cost: number | null
+          total_gross: number | null
+          total_net: number | null
+          updated_at: string
+          validation_summary: Json | null
+          warnings: Json | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          context_snapshot?: Json
+          created_at?: string
+          diff_summary?: Json | null
+          employees_calculated?: number | null
+          employees_errored?: number | null
+          employees_skipped?: number | null
+          errors?: Json | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          period_id: string
+          previous_run_id?: string | null
+          run_number?: number
+          run_type?: string
+          started_at?: string | null
+          started_by?: string | null
+          status?: string
+          total_deductions?: number | null
+          total_employees?: number | null
+          total_employer_cost?: number | null
+          total_gross?: number | null
+          total_net?: number | null
+          updated_at?: string
+          validation_summary?: Json | null
+          warnings?: Json | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          context_snapshot?: Json
+          created_at?: string
+          diff_summary?: Json | null
+          employees_calculated?: number | null
+          employees_errored?: number | null
+          employees_skipped?: number | null
+          errors?: Json | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          period_id?: string
+          previous_run_id?: string | null
+          run_number?: number
+          run_type?: string
+          started_at?: string | null
+          started_by?: string | null
+          status?: string
+          total_deductions?: number | null
+          total_employees?: number | null
+          total_employer_cost?: number | null
+          total_gross?: number | null
+          total_net?: number | null
+          updated_at?: string
+          validation_summary?: Json | null
+          warnings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_payroll_runs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_runs_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_runs_previous_run_id_fkey"
+            columns: ["previous_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_payrolls: {
         Row: {
           approved_at: string | null
@@ -57303,6 +57415,7 @@ export type Database = {
           review_status: string
           reviewed_at: string | null
           reviewed_by: string | null
+          run_id: string | null
           status: string
           total_deductions: number
           updated_at: string
@@ -57333,6 +57446,7 @@ export type Database = {
           review_status?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          run_id?: string | null
           status?: string
           total_deductions?: number
           updated_at?: string
@@ -57363,6 +57477,7 @@ export type Database = {
           review_status?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          run_id?: string | null
           status?: string
           total_deductions?: number
           updated_at?: string
@@ -57389,6 +57504,13 @@ export type Database = {
             columns: ["payroll_period_id"]
             isOneToOne: false
             referencedRelation: "hr_payroll_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_payroll_records_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_payroll_runs"
             referencedColumns: ["id"]
           },
         ]

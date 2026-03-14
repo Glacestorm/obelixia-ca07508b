@@ -1,17 +1,18 @@
 /**
- * HRPayrollEngine — V2-ES.1 Paso 4: Wires useESPayrollBridge into UI
- * MVP: Períodos + Nóminas + Conceptos
+ * HRPayrollEngine — V2-ES.1 Paso 4 + V2-ES.7 Paso 2
+ * MVP: Períodos + Nóminas + Conceptos + Incidencias + Runs
  * Full: + Simulación + Auditoría
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, FileText, BookOpen, FlaskConical, Shield, AlertCircle } from 'lucide-react';
+import { Calendar, FileText, BookOpen, FlaskConical, Shield, AlertCircle, Play } from 'lucide-react';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 import { useESPayrollBridge } from '@/hooks/erp/hr/useESPayrollBridge';
 import { HRPayrollPeriodManager } from './HRPayrollPeriodManager';
 import { HRPayrollRecordsList } from './HRPayrollRecordsList';
 import { HRPayrollConceptsCatalog } from './HRPayrollConceptsCatalog';
 import { HRPayrollIncidentsPanel } from './HRPayrollIncidentsPanel';
+import { HRPayrollRunsPanel } from './HRPayrollRunsPanel';
 import { HRPayrollSimulator } from './HRPayrollSimulator';
 import { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
 
@@ -68,8 +69,9 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${showFull ? 'grid-cols-6' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${showFull ? 'grid-cols-7' : 'grid-cols-5'}`}>
           <TabsTrigger value="periods" className="gap-1.5 text-xs"><Calendar className="h-3.5 w-3.5" />Períodos</TabsTrigger>
+          <TabsTrigger value="runs" className="gap-1.5 text-xs"><Play className="h-3.5 w-3.5" />Runs</TabsTrigger>
           <TabsTrigger value="payslips" className="gap-1.5 text-xs"><FileText className="h-3.5 w-3.5" />Nóminas</TabsTrigger>
           <TabsTrigger value="concepts" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" />Conceptos</TabsTrigger>
           <TabsTrigger value="incidents" className="gap-1.5 text-xs"><AlertCircle className="h-3.5 w-3.5" />Incidencias</TabsTrigger>
@@ -90,6 +92,16 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
             onBatchCalculateES={handleBatchCalcES}
             onBatchDiff={handleBatchDiff}
             onStartApprovalWorkflow={handleStartApprovalWorkflow}
+          />
+        </TabsContent>
+
+        <TabsContent value="runs" className="mt-4">
+          <HRPayrollRunsPanel
+            companyId={companyId}
+            periods={engine.periods}
+            selectedPeriodId={selectedPeriodId}
+            onSelectPeriod={setSelectedPeriodId}
+            onBatchCalculateES={handleBatchCalcES}
           />
         </TabsContent>
 
