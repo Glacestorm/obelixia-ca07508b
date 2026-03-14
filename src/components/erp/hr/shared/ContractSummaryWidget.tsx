@@ -9,6 +9,8 @@ import { FileSignature, AlertTriangle, CheckCircle2, Clock, Lock, AlertOctagon }
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { computeContractDeadlines } from './contractDeadlineEngine';
+import { evaluateContrataPreIntegrationReadiness } from './contrataPreIntegrationReadiness';
+import { ContrataPreIntegrationBadge } from './ContrataPreIntegrationBadge';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import {
   CONTRACT_PROCESS_STATUS_CONFIG,
@@ -55,6 +57,10 @@ export function ContractSummaryWidget({ companyId, employeeId, className }: Prop
 
   const deadlineSummary = useMemo(() => computeContractDeadlines(data, holidaySet), [data, holidaySet]);
 
+  const preIntegrationSummary = useMemo(() =>
+    evaluateContrataPreIntegrationReadiness(data, { deadlineSummary }),
+    [data, deadlineSummary],
+  );
   if (loading || !data) return null;
 
   const status = data.contract_process_status as ContractProcessStatus;
@@ -104,7 +110,9 @@ export function ContractSummaryWidget({ companyId, employeeId, className }: Prop
           )}
         </div>
 
-        {/* Deadline risk signal */}
+        {/* V2-ES.6 Paso 2: Pre-integration readiness */}
+        {!isComplete && <ContrataPreIntegrationBadge summary={preIntegrationSummary} />}
+
         {deadlineSummary.hasRisk && !isComplete && (
           <div className={cn(
             'flex items-center gap-1 text-[10px]',

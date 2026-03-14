@@ -31,6 +31,8 @@ import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { computeContractDeadlines, type ContractDeadlineSummary } from '../shared/contractDeadlineEngine';
 import { buildContrataPayload } from '../shared/contrataPayloadBuilder';
 import { ContractDeadlineAlert } from '../shared/ContractDeadlineAlert';
+import { ContrataPreIntegrationBadge } from '../shared/ContrataPreIntegrationBadge';
+import { evaluateContrataPreIntegrationReadiness } from '../shared/contrataPreIntegrationReadiness';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
@@ -209,20 +211,15 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
         {/* Deadline alert */}
         <ContractDeadlineAlert summary={deadlineSummary} />
 
-        {/* Payload readiness signal */}
-        {payloadResult.readinessLevel !== 'none' && !editing && (
-          <div className="flex items-center gap-1.5 text-[10px]">
-            {payloadResult.isReady ? (
-              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-            ) : (
-              <AlertTriangle className="h-3 w-3 text-amber-600" />
-            )}
-            <span className="text-muted-foreground">
-              Payload Contrat@: {payloadResult.readinessPercent}%
-              {payloadResult.consistency.errors.length > 0 && ` — ${payloadResult.consistency.errors.length} inconsistencia(s)`}
-            </span>
-          </div>
-        )}
+        {/* V2-ES.6 Paso 2: Pre-integration readiness badge */}
+        {!editing && (() => {
+          const preIntegrationSummary = evaluateContrataPreIntegrationReadiness(contractData, {
+            docReadinessPercent: readiness.docs.percentage,
+            docMandatoryComplete: readiness.docs.mandatoryComplete,
+            deadlineSummary: deadlineSummary,
+          });
+          return <ContrataPreIntegrationBadge summary={preIntegrationSummary} showDetails />;
+        })()}
 
         {/* Status transitions */}
         {allowedTransitions.length > 0 && !editing && (
