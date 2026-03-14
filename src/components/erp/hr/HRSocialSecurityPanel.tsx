@@ -18,7 +18,7 @@ import {
 import { 
   Shield, Calculator, FileUp, FileDown, Search,
   CheckCircle, Clock, AlertTriangle, Users, Calendar,
-  Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download
+  Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download, FileCheck
 } from 'lucide-react';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 import { SSMonthlyExpedientTab } from './payroll-engine/SSMonthlyExpedientTab';
