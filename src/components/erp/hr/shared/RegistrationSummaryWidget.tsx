@@ -17,6 +17,7 @@ import {
 } from '@/hooks/erp/hr/useHRRegistrationProcess';
 import { RegistrationStatusBadge } from './RegistrationStatusBadge';
 import { computeRegistrationDeadlines } from './registrationDeadlineEngine';
+import { evaluatePreIntegrationReadiness } from './tgssPreIntegrationReadiness';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 interface Props {
