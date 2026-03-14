@@ -159,7 +159,7 @@ export function usePayrollIncidents(companyId?: string) {
       toast.error('Error al actualizar incidencia');
       return false;
     }
-  }, []);
+  }, [incidents]);
 
   // ── Validate ──
 
