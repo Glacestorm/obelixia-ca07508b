@@ -38217,6 +38217,12 @@ export type Database = {
       erp_hr_registration_data: {
         Row: {
           ccc: string | null
+          closed_at: string | null
+          closed_by: string | null
+          closure_blockers: Json | null
+          closure_notes: string | null
+          closure_snapshot: Json | null
+          closure_status: string | null
           collective_agreement: string | null
           company_id: string
           confirmed_at: string | null
@@ -38259,6 +38265,12 @@ export type Database = {
         }
         Insert: {
           ccc?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_blockers?: Json | null
+          closure_notes?: string | null
+          closure_snapshot?: Json | null
+          closure_status?: string | null
           collective_agreement?: string | null
           company_id: string
           confirmed_at?: string | null
@@ -38301,6 +38313,12 @@ export type Database = {
         }
         Update: {
           ccc?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_blockers?: Json | null
+          closure_notes?: string | null
+          closure_snapshot?: Json | null
+          closure_status?: string | null
           collective_agreement?: string | null
           company_id?: string
           confirmed_at?: string | null
