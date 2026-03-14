@@ -290,6 +290,14 @@ export function usePayrollEngine(companyId?: string) {
   const updateRecordStatus = useCallback(async (recordId: string, newStatus: PayrollRecordStatus) => {
     try {
       const old = records.find(r => r.id === recordId);
+      // Guard: check period is writable
+      if (old) {
+        const period = periods.find(p => p.id === old.payroll_period_id);
+        if (period && !isPeriodWritable(period.status)) {
+          toast.error(`El período está ${period.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se permiten cambios en nóminas`);
+          return;
+        }
+      }
       const updates: any = { status: newStatus, updated_at: new Date().toISOString() };
       if (newStatus === 'approved' || newStatus === 'reviewing') {
         const { data: { user } } = await supabase.auth.getUser();
