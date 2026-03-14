@@ -141,6 +141,13 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
           </div>
         )}
 
+        {/* V2-ES.5 Paso 3: Pre-integration consistency signal */}
+        {!isComplete && preIntegration.consistency.errorCount > 0 && (
+          <div className="flex items-center gap-1 text-[10px] text-red-600">
+            <AlertOctagon className="h-3 w-3 shrink-0" />
+            <span>{preIntegration.consistency.errorCount} inconsistencia(s) pre-integración</span>
+          </div>
+
         {isComplete && data.confirmed_at && (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600">
             <CheckCircle2 className="h-3 w-3 shrink-0" />
