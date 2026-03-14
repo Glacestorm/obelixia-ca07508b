@@ -31736,6 +31736,66 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_domain_certificates: {
+        Row: {
+          certificate_label: string | null
+          certificate_status: string
+          certificate_type: string
+          company_id: string
+          configuration_completeness: number
+          created_at: string
+          created_by: string | null
+          domain: string
+          environment: string
+          expiration_date: string | null
+          id: string
+          issuer_info: Json | null
+          metadata: Json | null
+          notes: string | null
+          readiness_impact: string
+          serial_number_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          certificate_label?: string | null
+          certificate_status?: string
+          certificate_type?: string
+          company_id: string
+          configuration_completeness?: number
+          created_at?: string
+          created_by?: string | null
+          domain: string
+          environment?: string
+          expiration_date?: string | null
+          id?: string
+          issuer_info?: Json | null
+          metadata?: Json | null
+          notes?: string | null
+          readiness_impact?: string
+          serial_number_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          certificate_label?: string | null
+          certificate_status?: string
+          certificate_type?: string
+          company_id?: string
+          configuration_completeness?: number
+          created_at?: string
+          created_by?: string | null
+          domain?: string
+          environment?: string
+          expiration_date?: string | null
+          id?: string
+          issuer_info?: Json | null
+          metadata?: Json | null
+          notes?: string | null
+          readiness_impact?: string
+          serial_number_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_dry_run_evidence: {
         Row: {
           created_at: string
