@@ -14,8 +14,7 @@ import { EmployeeRequestsSection } from './EmployeeRequestsSection';
 import { EmployeeTimeSection } from './EmployeeTimeSection';
 import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { EmployeeHelpSection } from './EmployeeHelpSection';
-import { Card, CardContent } from '@/components/ui/card';
-import { Construction } from 'lucide-react';
+import { EmployeeLeaveSection } from './EmployeeLeaveSection';
 
 function PlaceholderSection({ title, description }: { title: string; description: string }) {
   return (
