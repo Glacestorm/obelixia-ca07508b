@@ -41,6 +41,7 @@ import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsH
 import { useOfficialReadiness } from '@/hooks/erp/hr/useOfficialReadiness';
 import { usePreparatorySubmissions } from '@/hooks/erp/hr/usePreparatorySubmissions';
 import { getDomainMeta, type SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
+import { useRegulatoryCalendar } from '@/hooks/erp/hr/useRegulatoryCalendar';
 import {
   useHRDomainCertificates,
   DOMAIN_LABELS as CERT_DOMAIN_LABELS,
@@ -297,12 +298,14 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
   const { summary, isEvaluating, lastEvaluatedAt, evaluate } = useOfficialReadiness(companyId);
   const { submissions, fetchPreparatory } = usePreparatorySubmissions(companyId);
   const { certificates, fetchCertificates, getCertificateSummary } = useHRDomainCertificates(companyId);
+  const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
 
   useEffect(() => {
     evaluate(adapters);
     fetchPreparatory();
     fetchCertificates();
+    evaluateCalendar();
   }, []);
 
   // Compute per-domain submission stats
@@ -369,7 +372,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             Pre-validación y preparación para envíos oficiales · Modo preparatorio
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); }} disabled={isEvaluating}>
+        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); }} disabled={isEvaluating}>
           <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
           Reevaluar
         </Button>
