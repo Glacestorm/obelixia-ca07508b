@@ -233,6 +233,21 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, doc
     });
   }
 
+  // 11. V2-ES.5 Paso 2: Registration deadlines
+  if (registrationDeadlines && registrationDeadlines.deadlines.length > 0) {
+    const rd = registrationDeadlines;
+    const urgencyToSeverity: Record<string, 'ok' | 'warn' | 'error'> = {
+      ok: 'ok', resolved: 'ok', upcoming: 'warn', urgent: 'warn', blocked: 'error', overdue: 'error',
+    };
+    metrics.push({
+      icon: UserCheck,
+      label: 'Alta',
+      value: rd.summaryLabel,
+      severity: urgencyToSeverity[rd.worstUrgency] || 'ok',
+      tooltip: rd.deadlines.map(d => d.message).join(' | '),
+    });
+  }
+
   const SEVERITY_STYLE: Record<string, string> = {
     ok: 'text-emerald-600',
     warn: 'text-amber-600',
