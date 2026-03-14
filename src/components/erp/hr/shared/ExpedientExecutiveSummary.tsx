@@ -13,6 +13,7 @@ import {
   FileText, ShieldAlert, XCircle, Clock, Send,
   CheckCircle2, AlertCircle, AlertTriangle, Scale,
   ChevronDown, ChevronUp, Zap, History, FilePlus2, CalendarDays,
+  UserCheck,
 } from 'lucide-react';
 import { normalizeDocStatus } from './DocStatusBadge';
 import { isReconcilableDocType } from './DocReconciliationBadge';
@@ -20,6 +21,7 @@ import { computeExpedientAlerts, type ExpedientAlertSummary } from './expedientA
 import { computePendingActions, type PendingAction } from '@/hooks/erp/hr/useHRDocActionQueue';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import type { EnrichedCompleteness } from '@/hooks/erp/hr/useHRProcessDocRequirements';
+import type { RegistrationDeadlineSummary } from './registrationDeadlineEngine';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
