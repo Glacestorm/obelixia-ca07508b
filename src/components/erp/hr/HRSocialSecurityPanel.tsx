@@ -1,6 +1,6 @@
 /**
  * HRSocialSecurityPanel - Gestión de Seguridad Social
- * Cotizaciones, presentaciones RED/SILTRA, certificados
+ * Cotizaciones, presentaciones RED/SILTRA, certificados, expediente mensual
  */
 
 import { useState, useCallback } from 'react';
