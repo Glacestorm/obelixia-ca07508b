@@ -19,6 +19,7 @@ import type { PeriodClosureSnapshot } from '@/engines/erp/hr/payrollRunEngine';
 import { ActiveRunIndicator } from './ActiveRunIndicator';
 import { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 import { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
+import { MonthlyClosingSummaryCard } from './MonthlyClosingSummaryCard';
 
 interface Props {
   companyId: string;
@@ -286,55 +287,35 @@ export function HRPayrollPeriodManager({
                     <div className="flex items-center gap-2 mb-2">
                       <ShieldCheck className="h-4 w-4 text-emerald-600" />
                       <span className="text-xs font-semibold text-foreground">
-                        Resumen de cierre
+                        Resumen ejecutivo mensual
                         {p.status === 'locked' && (
                           <Badge variant="destructive" className="ml-2 text-[10px] px-1.5 py-0">Bloqueado</Badge>
                         )}
                       </span>
+                      {closureSnapshot && (
+                        <span className="text-[10px] text-muted-foreground ml-auto">
+                          Run #{closureSnapshot.approved_run_number} ({closureSnapshot.run_type})
+                          {p.closed_at && ` · Cerrado: ${new Date(p.closed_at).toLocaleDateString('es-ES')}`}
+                          {p.locked_at && ` · Bloqueado: ${new Date(p.locked_at).toLocaleDateString('es-ES')}`}
+                        </span>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="text-center">
-                        <Users className="h-3.5 w-3.5 mx-auto text-muted-foreground mb-0.5" />
-                        <p className="text-lg font-bold">{closureSnapshot?.employee_count || p.employee_count || '—'}</p>
-                        <p className="text-[10px] text-muted-foreground">Empleados</p>
-                      </div>
-                      <div className="text-center">
-                        <Euro className="h-3.5 w-3.5 mx-auto text-muted-foreground mb-0.5" />
-                        <p className="text-sm font-bold">{fmt(closureSnapshot?.totals.gross || p.total_gross || 0)}</p>
-                        <p className="text-[10px] text-muted-foreground">Bruto</p>
-                      </div>
-                      <div className="text-center">
-                        <Euro className="h-3.5 w-3.5 mx-auto text-emerald-500 mb-0.5" />
-                        <p className="text-sm font-bold">{fmt(closureSnapshot?.totals.net || p.total_net || 0)}</p>
-                        <p className="text-[10px] text-muted-foreground">Neto</p>
-                      </div>
-                      <div className="text-center">
-                        <Euro className="h-3.5 w-3.5 mx-auto text-amber-500 mb-0.5" />
-                        <p className="text-sm font-bold">{fmt(closureSnapshot?.totals.employer_cost || p.total_employer_cost || 0)}</p>
-                        <p className="text-[10px] text-muted-foreground">Coste empresa</p>
-                      </div>
-                    </div>
+                    <MonthlyClosingSummaryCard
+                      period={p}
+                      previousPeriod={periods.find(prev =>
+                        prev.id !== p.id &&
+                        (prev.status === 'closed' || prev.status === 'locked') &&
+                        (prev.fiscal_year < p.fiscal_year || (prev.fiscal_year === p.fiscal_year && prev.period_number < p.period_number))
+                      ) || null}
+                      companyId={companyId}
+                    />
                     {closureSnapshot && (
                       <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground items-center">
-                        <span>Run #{closureSnapshot.approved_run_number} ({closureSnapshot.run_type})</span>
-                        <span>·</span>
                         <span>Incidencias: {closureSnapshot.incidents_summary.validated}/{closureSnapshot.incidents_summary.total}</span>
                         {closureSnapshot.recalculations_count > 0 && (
                           <>
                             <span>·</span>
                             <span>{closureSnapshot.recalculations_count} recálculo(s)</span>
-                          </>
-                        )}
-                        {p.closed_at && (
-                          <>
-                            <span>·</span>
-                            <span>Cerrado: {new Date(p.closed_at).toLocaleDateString('es-ES')}</span>
-                          </>
-                        )}
-                        {p.locked_at && (
-                          <>
-                            <span>·</span>
-                            <span>Bloqueado: {new Date(p.locked_at).toLocaleDateString('es-ES')}</span>
                           </>
                         )}
                         <span>·</span>
