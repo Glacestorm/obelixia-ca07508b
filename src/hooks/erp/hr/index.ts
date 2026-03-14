@@ -347,3 +347,16 @@ export type {
   ConsistencyIssue,
   ConsistencyResult,
 } from '@/components/erp/hr/shared/tgssConsistencyChecker';
+
+export { evaluatePreIntegrationReadiness } from '@/components/erp/hr/shared/tgssPreIntegrationReadiness';
+export type {
+  PreIntegrationStatus,
+  PreIntegrationSummary,
+  PreIntegrationContext,
+} from '@/components/erp/hr/shared/tgssPreIntegrationReadiness';
+
+export { useTGSSReadiness } from './useTGSSReadiness';
+export type {
+  UseTGSSReadinessInput,
+  UseTGSSReadinessReturn,
+} from './useTGSSReadiness';
