@@ -22,6 +22,7 @@ import {
   getNextRunNumber,
   determineRunType,
   canTransition,
+  isPeriodWritable,
   type SnapshotInput,
 } from '@/engines/erp/hr/payrollRunEngine';
 
@@ -58,6 +59,13 @@ export function usePayrollRuns(companyId?: string) {
   ): Promise<PayrollRun | null> => {
     if (!companyId) return null;
     try {
+      // Guard: reject if period is closed or locked
+      const periodStatus = snapshotInput.period.status;
+      if (!isPeriodWritable(periodStatus)) {
+        toast.error(`Período ${periodStatus === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden crear nuevos runs`);
+        return null;
+      }
+
       const snapshot = buildSnapshot(snapshotInput);
       const snapshotHash = computeSnapshotHash(snapshot);
       const validation = validatePreRun(snapshot);
@@ -139,6 +147,19 @@ export function usePayrollRuns(companyId?: string) {
       if (run && !canTransition(run.status, newStatus)) {
         toast.error(`Transición no permitida: ${run.status} → ${newStatus}`);
         return false;
+      }
+
+      // Guard: reject mutations on locked period runs
+      if (run) {
+        const { data: periodData } = await supabase
+          .from('hr_payroll_periods')
+          .select('status')
+          .eq('id', run.period_id)
+          .single();
+        if (periodData?.status === 'locked') {
+          toast.error('Período bloqueado — no se puede modificar el estado del run');
+          return false;
+        }
       }
 
       const updates: Record<string, unknown> = {
