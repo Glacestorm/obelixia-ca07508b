@@ -32,7 +32,7 @@ import { computeContractDeadlines, type ContractDeadlineSummary } from '../share
 import { buildContrataPayload } from '../shared/contrataPayloadBuilder';
 import { ContractDeadlineAlert } from '../shared/ContractDeadlineAlert';
 import { ContrataPreIntegrationBadge } from '../shared/ContrataPreIntegrationBadge';
-import { evaluateContrataPreIntegrationReadiness } from '../shared/contrataPreIntegrationReadiness';
+import { useContrataReadiness } from '@/hooks/erp/hr/useContrataReadiness';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
@@ -119,6 +119,16 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
   const readiness = useMemo(() => {
     return computeReadiness(linkedDocs.map(d => ({ document_type: d.document_type })));
   }, [computeReadiness, linkedDocs]);
+
+  // V2-ES.6 Paso 2: Pre-integration readiness (memoized via hook)
+  const { summary: preIntegrationSummary } = useContrataReadiness({
+    contractData,
+    docCompleteness: {
+      percentage: readiness.docs.percentage,
+      mandatoryComplete: readiness.docs.mandatoryComplete,
+    },
+    deadlineSummary,
+  });
 
   // Start editing
   const startEdit = useCallback(() => {
@@ -212,14 +222,7 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
         <ContractDeadlineAlert summary={deadlineSummary} />
 
         {/* V2-ES.6 Paso 2: Pre-integration readiness badge */}
-        {!editing && (() => {
-          const preIntegrationSummary = evaluateContrataPreIntegrationReadiness(contractData, {
-            docReadinessPercent: readiness.docs.percentage,
-            docMandatoryComplete: readiness.docs.mandatoryComplete,
-            deadlineSummary: deadlineSummary,
-          });
-          return <ContrataPreIntegrationBadge summary={preIntegrationSummary} showDetails />;
-        })()}
+        {!editing && <ContrataPreIntegrationBadge summary={preIntegrationSummary} showDetails />}
 
         {/* Status transitions */}
         {allowedTransitions.length > 0 && !editing && (

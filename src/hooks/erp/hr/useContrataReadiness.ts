@@ -8,7 +8,6 @@
  */
 import { useMemo } from 'react';
 import type { ContractProcessData } from '@/hooks/erp/hr/useHRContractProcess';
-import type { EnrichedCompleteness } from '@/hooks/erp/hr/useHRProcessDocRequirements';
 import type { ContractDeadlineSummary } from '@/components/erp/hr/shared/contractDeadlineEngine';
 import {
   evaluateContrataPreIntegrationReadiness,
@@ -16,11 +15,17 @@ import {
   type ContrataPreIntegrationContext,
 } from '@/components/erp/hr/shared/contrataPreIntegrationReadiness';
 
+/** Minimal doc readiness shape — avoids requiring full EnrichedCompleteness */
+export interface DocReadinessInput {
+  percentage: number;
+  mandatoryComplete: boolean;
+}
+
 export interface UseContrataReadinessInput {
   /** Contract process data (already loaded) */
   contractData: ContractProcessData | null;
   /** Doc completeness (already loaded, optional) */
-  docCompleteness?: EnrichedCompleteness | null;
+  docCompleteness?: DocReadinessInput | null;
   /** Deadline summary (already computed, optional) */
   deadlineSummary?: ContractDeadlineSummary | null;
 }
