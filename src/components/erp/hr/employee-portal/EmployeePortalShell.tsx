@@ -67,7 +67,7 @@ export function EmployeePortalShell() {
       case 'profile':
         return <EmployeeProfileSection employee={employee} onNavigate={handleNavigate} onRefresh={refresh} />;
       case 'help':
-        return <PlaceholderSection title="Ayuda RRHH" description="Preguntas frecuentes y contacto con RRHH. Módulo en preparación." />;
+        return <EmployeeHelpSection employee={employee} dashboard={dashboard} onNavigate={handleNavigate} />;
       default:
         return null;
     }
