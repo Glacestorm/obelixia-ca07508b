@@ -26,7 +26,13 @@ export type DryRunAuditAction =
   | 'dry_run_retried'
   | 'dry_run_superseded'
   | 'dry_run_payload_guard_blocked'
-  | 'dry_run_concurrency_blocked';
+  | 'dry_run_concurrency_blocked'
+  // V2-ES.8 T5: Pre-real approval events
+  | 'approval_requested'
+  | 'approval_granted'
+  | 'approval_rejected'
+  | 'approval_correction_requested'
+  | 'approval_cancelled';
 
 const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   dry_run_created: 'info',
@@ -48,6 +54,12 @@ const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   dry_run_superseded: 'info',
   dry_run_payload_guard_blocked: 'warning',
   dry_run_concurrency_blocked: 'warning',
+  // V2-ES.8 T5
+  approval_requested: 'info',
+  approval_granted: 'info',
+  approval_rejected: 'warning',
+  approval_correction_requested: 'warning',
+  approval_cancelled: 'warning',
 };
 
 const ACTION_LABELS: Record<DryRunAuditAction, string> = {
@@ -70,6 +82,12 @@ const ACTION_LABELS: Record<DryRunAuditAction, string> = {
   dry_run_superseded: 'Dry-run anterior superado por nueva ejecución',
   dry_run_payload_guard_blocked: 'Ejecución bloqueada por payload ausente',
   dry_run_concurrency_blocked: 'Ejecución bloqueada por concurrencia',
+  // V2-ES.8 T5
+  approval_requested: 'Solicitud de aprobación pre-real enviada',
+  approval_granted: 'Aprobación pre-real concedida',
+  approval_rejected: 'Aprobación pre-real rechazada',
+  approval_correction_requested: 'Correcciones solicitadas por aprobador',
+  approval_cancelled: 'Solicitud de aprobación cancelada',
 };
 
 // ─── Public API ─────────────────────────────────────────────────────────────

@@ -29,6 +29,9 @@ export type PreparatorySubmissionStatus =
   | 'validated_internal'
   | 'ready_for_dry_run'
   | 'dry_run_executed'
+  // V2-ES.8 T5: Pre-real approval gate
+  | 'pending_approval'
+  | 'approved_pre_real'
   | 'ready_for_real'
   | 'submitted_real'
   | 'acknowledged'
@@ -46,7 +49,10 @@ const PREPARATORY_TRANSITIONS: Record<PreparatorySubmissionStatus, PreparatorySu
   payload_generated:    ['validated_internal', 'draft', 'cancelled'],
   validated_internal:   ['ready_for_dry_run', 'draft', 'cancelled'],
   ready_for_dry_run:    ['dry_run_executed', 'cancelled'],
-  dry_run_executed:     ['ready_for_real', 'draft', 'cancelled'],
+  dry_run_executed:     ['pending_approval', 'ready_for_real', 'draft', 'cancelled'],
+  // V2-ES.8 T5: Approval gate states
+  pending_approval:     ['approved_pre_real', 'dry_run_executed', 'cancelled'],
+  approved_pre_real:    ['ready_for_real', 'cancelled'],
   ready_for_real:       ['submitted_real', 'cancelled'],   // BLOCKED by default in code
   submitted_real:       ['acknowledged', 'rejected', 'failed', 'cancelled'],
   acknowledged:         ['accepted', 'rejected', 'correction_required'],
@@ -92,6 +98,17 @@ const STATUS_META: Record<PreparatorySubmissionStatus, StatusMeta> = {
   dry_run_executed: {
     label: 'Dry-run ejecutado',
     description: 'Simulación completada — NO es un envío oficial',
+    phase: 'preparatory', isOfficial: false, color: 'green',
+  },
+  // V2-ES.8 T5: Approval gate states
+  pending_approval: {
+    label: 'Pendiente de aprobación',
+    description: 'Solicitud de aprobación pre-real enviada, esperando decisión',
+    phase: 'preparatory', isOfficial: false, color: 'amber',
+  },
+  approved_pre_real: {
+    label: 'Aprobado (pre-real)',
+    description: 'Aprobación interna concedida — NO implica envío real',
     phase: 'preparatory', isOfficial: false, color: 'green',
   },
   ready_for_real: {

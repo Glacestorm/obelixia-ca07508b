@@ -57,8 +57,10 @@ import {
   type EntityReadinessInput,
 } from '@/components/erp/hr/shared/multiEntityReadinessEngine';
 import { useMultiEntityReadiness } from '@/hooks/erp/hr/useMultiEntityReadiness';
+import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
+import { getApprovalStatusMeta, type ApprovalStatus } from '@/components/erp/hr/shared/preRealApprovalEngine';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2 } from 'lucide-react';
+import { Building2, ShieldCheck } from 'lucide-react';
 
 interface Props {
   companyId: string;
@@ -210,6 +212,10 @@ function ConnectorCard({
           <PipelineStep done={stats.dryRuns > 0} label={`Dry-run ${stats.dryRuns > 0 ? `(${stats.dryRuns})` : ''}`} />
           <span className="text-muted-foreground">→</span>
           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <ShieldCheck className="h-2 w-2" /> Aprobación
+          </span>
+          <span className="text-muted-foreground">→</span>
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
             <Lock className="h-2 w-2" /> Real
           </span>
         </div>
@@ -317,6 +323,12 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     evaluate: evaluateMultiEntity,
     entityCounts,
   } = useMultiEntityReadiness(companyId);
+  const {
+    pendingCount: approvalPendingCount,
+    approvedCount: approvalApprovedCount,
+    rejectedCount: approvalRejectedCount,
+    fetchApprovals,
+  } = usePreRealApproval(companyId);
 
   useEffect(() => {
     evaluate(adapters);
@@ -324,6 +336,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     fetchCertificates();
     evaluateCalendar();
     evaluateMultiEntity(adapters);
+    fetchApprovals();
   }, []);
 
   // Compute per-domain submission stats
@@ -390,7 +403,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             Pre-validación y preparación para envíos oficiales · Modo preparatorio
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); }} disabled={isEvaluating}>
+        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); fetchApprovals(); }} disabled={isEvaluating}>
           <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
           Reevaluar
         </Button>
@@ -478,6 +491,40 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Approval Status Widget — V2-ES.8 T5 */}
+      {(approvalPendingCount > 0 || approvalApprovedCount > 0 || approvalRejectedCount > 0) && (
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" /> Aprobaciones Pre-Real
+              </p>
+              <div className="flex items-center gap-3 text-[10px]">
+                {approvalPendingCount > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <Clock className="h-3 w-3" /> {approvalPendingCount} pendiente(s)
+                  </span>
+                )}
+                {approvalApprovedCount > 0 && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle2 className="h-3 w-3" /> {approvalApprovedCount} aprobado(s)
+                  </span>
+                )}
+                {approvalRejectedCount > 0 && (
+                  <span className="flex items-center gap-1 text-destructive">
+                    <XCircle className="h-3 w-3" /> {approvalRejectedCount} rechazado(s)
+                  </span>
+                )}
+              </div>
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1">
+              <Lock className="h-2.5 w-2.5" />
+              Gate interno de autorización · Aprobado ≠ enviado · El envío real permanece bloqueado
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Regulatory Calendar Widget */}
       {calendar && calendar.deadlines.length > 0 && (
