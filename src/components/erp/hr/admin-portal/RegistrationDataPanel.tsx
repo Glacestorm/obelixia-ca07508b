@@ -113,6 +113,14 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     return computeReadiness(linkedDocs.map(d => ({ document_type: d.document_type })));
   }, [computeReadiness, linkedDocs]);
 
+  const deadlineSummary = useMemo(() => {
+    return computeRegistrationDeadlines(registrationData, holidaySet);
+  }, [registrationData, holidaySet]);
+
+  const tgssValidation = useMemo(() => {
+    return buildTGSSPayload(registrationData);
+  }, [registrationData]);
+
   const set = useCallback((k: string, v: any) => {
     setFormData(prev => ({ ...prev, [k]: v || null }));
   }, []);
