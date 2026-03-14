@@ -40608,6 +40608,90 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_sandbox_executions: {
+        Row: {
+          adapter_id: string
+          adapter_name: string
+          audit_event_ids: string[] | null
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          disclaimers: string[]
+          domain: string
+          duration_ms: number | null
+          environment: string
+          executed_at: string
+          executed_by: string
+          execution_mode: string
+          id: string
+          legal_entity_id: string | null
+          metadata: Json
+          payload_hash: string
+          payload_snapshot: Json
+          reference_period: string | null
+          related_approval_id: string | null
+          related_dry_run_id: string | null
+          result: Json | null
+          status: string
+          submission_type: string
+          updated_at: string
+        }
+        Insert: {
+          adapter_id: string
+          adapter_name: string
+          audit_event_ids?: string[] | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          disclaimers?: string[]
+          domain: string
+          duration_ms?: number | null
+          environment?: string
+          executed_at?: string
+          executed_by?: string
+          execution_mode?: string
+          id?: string
+          legal_entity_id?: string | null
+          metadata?: Json
+          payload_hash: string
+          payload_snapshot?: Json
+          reference_period?: string | null
+          related_approval_id?: string | null
+          related_dry_run_id?: string | null
+          result?: Json | null
+          status?: string
+          submission_type: string
+          updated_at?: string
+        }
+        Update: {
+          adapter_id?: string
+          adapter_name?: string
+          audit_event_ids?: string[] | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          disclaimers?: string[]
+          domain?: string
+          duration_ms?: number | null
+          environment?: string
+          executed_at?: string
+          executed_by?: string
+          execution_mode?: string
+          id?: string
+          legal_entity_id?: string | null
+          metadata?: Json
+          payload_hash?: string
+          payload_snapshot?: Json
+          reference_period?: string | null
+          related_approval_id?: string | null
+          related_dry_run_id?: string | null
+          result?: Json | null
+          status?: string
+          submission_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_scenarios: {
         Row: {
           assumptions: Json | null
