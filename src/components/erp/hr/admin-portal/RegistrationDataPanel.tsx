@@ -241,6 +241,19 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
           )}
         </div>
 
+        {/* Deadline alerts — inline */}
+        <RegistrationDeadlineAlert summary={deadlineSummary} />
+
+        {/* TGSS format errors (when data present but invalid) */}
+        {!editMode && tgssValidation.formatErrors.length > 0 && (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 space-y-1">
+            <p className="text-[10px] font-medium text-amber-700">Errores de formato TGSS</p>
+            {tgssValidation.formatErrors.map((fe, i) => (
+              <p key={i} className="text-[10px] text-amber-600">• {fe.label}: {fe.error}</p>
+            ))}
+          </div>
+        )}
+
         <Separator />
 
         {/* TGSS Data Form */}
