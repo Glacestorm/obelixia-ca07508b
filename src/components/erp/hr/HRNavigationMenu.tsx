@@ -1,6 +1,9 @@
 /**
  * HRNavigationMenu - Navegación agrupada del módulo RRHH
  * Mega-menu multi-columna con sub-grupos lógicos y diseño enterprise
+ * 
+ * Estructura validada pre-V2-ES.8:
+ *   Dashboard | People | Payroll | Workforce | Global
  */
 
 import { useState } from 'react';
@@ -11,13 +14,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   TrendingUp, Users, UserPlus, UserMinus, Award, DollarSign, Landmark, Calendar,
-  FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
+  FileText, UserCog, Building2, Gift, Shield, GraduationCap, BarChart3,
   Brain, HelpCircle, Rocket, ChevronDown,
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
   Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane
 } from 'lucide-react';
+
+// ─── Types ───
 
 interface HRNavigationMenuProps {
   activeModule: string;
@@ -56,35 +61,37 @@ interface MegaMenuCategory {
   width: string;
   headerTitle: string;
   headerDescription: string;
-  /** Tailwind gradient for the header accent stripe */
   headerAccent: string;
-  /** Optional footer hint text */
   footerHint?: string;
 }
+
+// ─── Component ───
 
 export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode = true }: HRNavigationMenuProps) {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
 
-  // MVP mode IDs — only these categories and items are shown
+  // ── MVP visibility ──
   const mvpCategories = new Set(['core-hr', 'payroll', 'laboral', 'global']);
   const mvpItems = new Set([
-    // Core HR
+    // People
     'employees', 'contracts', 'document-expedient',
-    'departments', 'legal-entities', 'work-centers',
+    'departments', 'work-centers', 'legal-entities',
     'work-calendars',
     // Payroll
     'payroll', 'payroll-engine',
-    'ss', 'integration', 'compensation-suite', 'benefits',
-    // Laboral
+    'ss', 'integration', 'compensation-suite',
+    // Workforce
     'vacations', 'time-clock', 'leave-incidents',
     'admin-requests', 'hr-tasks', 'approval-inbox',
     // Global
     'country-registry', 'es-localization',
-    'mobility-assignments', 'mobility-dashboard',
+    'mobility-international',
     'official-submissions', 'compliance-evidence',
   ]);
 
+  // ── Menu definitions ──
   const megaMenus: MegaMenuCategory[] = [
+    // ━━━ PEOPLE ━━━
     {
       id: 'core-hr',
       label: 'People',
@@ -96,14 +103,13 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       headerAccent: 'from-blue-500/20 via-sky-500/10 to-transparent',
       subGroups: [
         {
-          title: 'Directorio',
+          title: 'Directorio & Relación Laboral',
           icon: Users,
           color: 'text-blue-500',
           items: [
             { id: 'employees', label: 'Empleados', icon: Users, description: 'Directorio y expedientes' },
             { id: 'contracts', label: 'Contratos', icon: FileText, description: 'Gestión contractual' },
-            { id: 'documents', label: 'Documentos', icon: FolderOpen, description: 'Archivo digital' },
-            { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Docs, evidencias y compliance' },
+            { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Documentos, evidencias y compliance' },
           ]
         },
         {
@@ -112,8 +118,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-emerald-500',
           items: [
             { id: 'departments', label: 'Departamentos', icon: Building2, description: 'Estructura organizativa' },
-            { id: 'legal-entities', label: 'Entidades Legales', icon: Building2, description: 'Sociedades y filiales' },
             { id: 'work-centers', label: 'Centros de Trabajo', icon: MapPin, description: 'Ubicaciones físicas' },
+            { id: 'legal-entities', label: 'Entidades Legales', icon: Building2, description: 'Sociedades y filiales' },
             { id: 'org-structure', label: 'Organigrama', icon: Network, description: 'Estructura jerárquica' },
           ]
         },
@@ -124,55 +130,59 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'work-calendars', label: 'Calendarios Laborales', icon: Calendar, description: 'Festivos y jornadas' },
             { id: 'enterprise-roles', label: 'Roles y Permisos', icon: Lock, description: 'Control de acceso' },
-            { id: 'unions', label: 'Sindicatos', icon: UserCog, description: 'Rel. laborales' },
+            { id: 'unions', label: 'Sindicatos', icon: UserCog, description: 'Relaciones laborales' },
           ]
         },
       ]
     },
+
+    // ━━━ PAYROLL ━━━
     {
       id: 'payroll',
       label: 'Payroll',
       icon: DollarSign,
       badge: stats.pendingPayrolls,
       columns: 2,
-      width: 'w-[540px]',
+      width: 'w-[560px]',
       headerTitle: 'Payroll & Compensation',
       headerDescription: 'Nóminas, cotizaciones, fiscalidad y retribución',
       headerAccent: 'from-emerald-500/20 via-teal-500/10 to-transparent',
-      footerHint: 'Motor de Nómina incluye períodos, runs, conceptos e incidencias',
+      footerHint: 'Motor de Nómina centraliza períodos, runs, conceptos e incidencias',
       subGroups: [
         {
-          title: 'Ciclo de Nómina',
+          title: 'Nómina Mensual',
           icon: DollarSign,
           color: 'text-emerald-500',
           items: [
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
             { id: 'payroll-engine', label: 'Motor de Nómina', icon: Calculator, description: 'Períodos · Runs · Conceptos' },
+            { id: 'ss', label: 'Seguridad Social', icon: Landmark, description: 'Cotizaciones y expediente SS' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
-            { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones' },
-            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Ciclo mensual de cierre' },
+            { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones y ceses' },
+            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Acceso directo al ciclo mensual' },
           ]
         },
         {
-          title: 'Cotización & Retribución',
-          icon: Landmark,
+          title: 'Compensación & ERP',
+          icon: Link2,
           color: 'text-blue-500',
           items: [
-            { id: 'ss', label: 'Seguridad Social', icon: Landmark, description: 'Cotizaciones y expediente SS' },
-            { id: 'integration', label: 'Integración ERP', icon: Link2, description: 'Contabilidad · Tesorería · Fiscal' },
+            { id: 'integration', label: 'Integración ERP', icon: Link2, description: 'Contabilidad, Tesorería, SS y Fiscal' },
             { id: 'compensation-suite', label: 'Compensación', icon: Coins, description: 'Retribución total' },
             { id: 'benefits', label: 'Beneficios', icon: Gift, description: 'Retribución flexible' },
           ]
         },
       ]
     },
+
+    // ━━━ WORKFORCE ━━━
     {
       id: 'laboral',
       label: 'Workforce',
       icon: Briefcase,
       badge: stats.pendingVacations,
       columns: 2,
-      width: 'w-[540px]',
+      width: 'w-[560px]',
       headerTitle: 'Workforce Management',
       headerDescription: 'Tiempo, ausencias, solicitudes y operativa diaria',
       headerAccent: 'from-amber-500/20 via-orange-500/10 to-transparent',
@@ -188,7 +198,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           ]
         },
         {
-          title: 'Operativa',
+          title: 'Gestión Operativa',
           icon: ClipboardList,
           color: 'text-violet-500',
           items: [
@@ -201,6 +211,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         },
       ]
     },
+
+    // ━━━ GLOBAL ━━━
     {
       id: 'global',
       label: 'Global',
@@ -217,20 +229,19 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-blue-500',
           items: [
             { id: 'country-registry', label: 'Country Registry', icon: Globe, description: 'Países y políticas' },
-            { id: 'es-localization', label: '🇪🇸 España', icon: Flag, description: 'IRPF, SS, contratos, permisos' },
+            { id: 'es-localization', label: '🇪🇸 España', icon: Flag, description: 'IRPF, SS, contratos y permisos' },
           ]
         },
         {
-          title: 'Global Mobility',
+          title: 'Movilidad',
           icon: Plane,
           color: 'text-emerald-500',
           items: [
-            { id: 'mobility-assignments', label: 'Asignaciones', icon: Plane, description: 'Asignaciones internacionales' },
-            { id: 'mobility-dashboard', label: 'Mobility Hub', icon: Gauge, description: 'KPIs de movilidad' },
+            { id: 'mobility-international', label: 'Movilidad Internacional', icon: Plane, description: 'Asignaciones y KPIs globales' },
           ]
         },
         {
-          title: 'Compliance & Envíos',
+          title: 'Oficial & Compliance',
           icon: Send,
           color: 'text-indigo-500',
           items: [
@@ -240,13 +251,15 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         },
       ]
     },
+
+    // ━━━ TALENT (admin/advanced only) ━━━
     {
       id: 'talent',
-      label: 'Talento',
+      label: 'Talent',
       icon: Award,
       columns: 3,
       width: 'w-[740px]',
-      headerTitle: 'Gestión del Talento',
+      headerTitle: 'Talent Management',
       headerDescription: 'Ciclo de vida, formación, desempeño y analítica',
       headerAccent: 'from-amber-500/20 via-yellow-500/10 to-transparent',
       subGroups: [
@@ -284,6 +297,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         },
       ]
     },
+
+    // ━━━ ENTERPRISE (admin/advanced only) ━━━
     {
       id: 'enterprise',
       label: 'Enterprise',
@@ -348,6 +363,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         },
       ]
     },
+
+    // ━━━ UTILITIES (admin/advanced only) ━━━
     {
       id: 'utilities',
       label: 'Utilidades',
@@ -400,7 +417,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     },
   ];
 
-  // Filter menus in MVP mode
+  // ── Filter for MVP mode ──
   const filteredMenus = mvpMode
     ? megaMenus
         .filter(m => mvpCategories.has(m.id))
@@ -420,8 +437,12 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
 
   const getActiveCategory = () => {
     if (activeModule === 'util-grid') return 'utilities';
+    // Support legacy mobility IDs mapping to unified entry
+    const effectiveModule = (activeModule === 'mobility-assignments' || activeModule === 'mobility-dashboard')
+      ? 'mobility-international'
+      : activeModule;
     for (const [catId, ids] of Object.entries(allIds)) {
-      if (ids.includes(activeModule)) return catId;
+      if (ids.includes(effectiveModule) || ids.includes(activeModule)) return catId;
     }
     return null;
   };
@@ -432,7 +453,9 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
 
   const renderMegaMenuItem = (item: MenuItem, onSelect: () => void) => {
     const ItemIcon = item.icon;
-    const isItemActive = activeModule === item.id;
+    const isItemActive = activeModule === item.id
+      || (item.id === 'mobility-international' && (activeModule === 'mobility-assignments' || activeModule === 'mobility-dashboard'));
+
     return (
       <button
         key={item.id}
@@ -584,11 +607,9 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
                         key={group.title}
                         className={cn(
                           "p-2.5 rounded-xl",
-                          // subtle alternating bg for visual separation
                           gIdx % 2 === 0 ? "bg-transparent" : "bg-muted/20"
                         )}
                       >
-                        {/* Sub-group label */}
                         <div className="flex items-center gap-1.5 px-2.5 mb-2">
                           <div className={cn("p-0.5 rounded", group.color.replace('text-', 'bg-').replace('500', '500/15'))}>
                             <GroupIcon className={cn("h-3 w-3", group.color)} />
@@ -597,7 +618,6 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
                             {group.title}
                           </span>
                         </div>
-                        {/* Items */}
                         <div className="space-y-0.5">
                           {group.items.map((item) =>
                             renderMegaMenuItem(item, () => {
