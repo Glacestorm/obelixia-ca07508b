@@ -1,5 +1,6 @@
 /**
  * HRApprovalInbox - Bandeja de aprobaciones con SLA
+ * V2-ES.8 T5 P4: + Pre-real approval summary widget
  */
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Inbox, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
+import { Inbox, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare, ShieldCheck, Lock } from 'lucide-react';
 import { useHRWorkflowEngine, type WorkflowInstance } from '@/hooks/admin/hr/useHRWorkflowEngine';
+import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
