@@ -308,13 +308,76 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
   const { certificates, fetchCertificates, getCertificateSummary } = useHRDomainCertificates(companyId);
   const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
+  const [multiEntityReport, setMultiEntityReport] = useState<MultiEntityReadinessReport | null>(null);
 
   useEffect(() => {
     evaluate(adapters);
     fetchPreparatory();
     fetchCertificates();
     evaluateCalendar();
+    loadMultiEntityReadiness();
   }, []);
+
+  // ── Multi-entity readiness (lightweight) ──
+  const loadMultiEntityReadiness = useCallback(async () => {
+    try {
+      const { data: entities } = await supabase
+        .from('erp_hr_legal_entities' as any)
+        .select('id, legal_name, cif, is_active')
+        .eq('company_id', companyId)
+        .eq('is_active', true);
+
+      if (!entities || entities.length <= 1) {
+        setMultiEntityReport(null);
+        return;
+      }
+
+      // For each entity, create a lightweight context (reuses company-level data as baseline)
+      // In a real scenario each entity would have its own employees/contracts counts
+      const { data: employeesData } = await supabase
+        .from('hr_employees' as any)
+        .select('id, status, registration_status, legal_entity_id', { count: 'exact' })
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+
+      const employees = (employeesData || []) as any[];
+
+      const inputs: EntityReadinessInput[] = (entities as any[]).map((ent: any) => {
+        const entityEmployees = employees.filter((e: any) => e.legal_entity_id === ent.id);
+        const complete = entityEmployees.filter((e: any) =>
+          e.registration_status === 'completed' || e.registration_status === 'tgss_prepared'
+        ).length;
+
+        const ctx: import('@/components/erp/hr/shared/officialReadinessEngine').ConnectorDataContext = {
+          employeesWithCompleteData: complete,
+          totalActiveEmployees: entityEmployees.length,
+          contractsWithCompleteData: 0,
+          totalActiveContracts: 0,
+          hasClosedPayrollPeriods: false,
+          closedPayrollPeriodsCount: 0,
+          hasSSExpedient: false,
+          hasFiscalExpedient: false,
+          docCompletenessAvg: entityEmployees.length > 0 ? Math.round((complete / entityEmployees.length) * 100) : 0,
+          configuredAdapters: adapters.map(a => ({
+            id: a.id, adapter_type: a.adapter_type, system_name: a.system_name, is_active: a.is_active, status: a.status,
+          })),
+        };
+
+        return {
+          entityId: ent.id,
+          entityName: ent.legal_name,
+          entityType: 'legal_entity' as const,
+          fiscalId: ent.cif,
+          dataContext: ctx,
+        };
+      });
+
+      const report = evaluateMultiEntityReadiness(inputs);
+      setMultiEntityReport(report);
+    } catch (err) {
+      console.error('[ReadinessDashboard] multi-entity readiness error:', err);
+    }
+  }, [companyId, adapters]);
 
   // Compute per-domain submission stats
   const domainStats = useMemo(() => {
