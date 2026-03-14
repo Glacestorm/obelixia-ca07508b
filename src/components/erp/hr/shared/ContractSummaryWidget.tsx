@@ -104,7 +104,21 @@ export function ContractSummaryWidget({ companyId, employeeId, className }: Prop
           )}
         </div>
 
-        {isPending && (
+        {/* Deadline risk signal */}
+        {deadlineSummary.hasRisk && !isComplete && (
+          <div className={cn(
+            'flex items-center gap-1 text-[10px]',
+            deadlineSummary.worstUrgency === 'overdue' || deadlineSummary.worstUrgency === 'blocked' ? 'text-red-600' : 'text-amber-600',
+          )}>
+            {deadlineSummary.worstUrgency === 'overdue' || deadlineSummary.worstUrgency === 'blocked'
+              ? <AlertOctagon className="h-3 w-3 shrink-0" />
+              : <AlertTriangle className="h-3 w-3 shrink-0" />
+            }
+            <span>{deadlineSummary.summaryLabel}: {deadlineSummary.deadlines[0]?.message}</span>
+          </div>
+        )}
+
+        {isPending && !deadlineSummary.hasRisk && (
           <div className="flex items-center gap-1 text-[10px] text-amber-600">
             <AlertTriangle className="h-3 w-3 shrink-0" />
             <span>{status === 'pending_data' ? 'Datos obligatorios pendientes' : 'Documentación pendiente'}</span>
