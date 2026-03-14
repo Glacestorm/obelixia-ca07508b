@@ -35,6 +35,8 @@ import { RegistrationStatusBadge } from '../shared/RegistrationStatusBadge';
 import { RegistrationDeadlineAlert } from '../shared/RegistrationDeadlineAlert';
 import { computeRegistrationDeadlines } from '../shared/registrationDeadlineEngine';
 import { buildTGSSPayload } from '../shared/tgssPayloadBuilder';
+import { evaluatePreIntegrationReadiness } from '../shared/tgssPreIntegrationReadiness';
+import { TGSSPreIntegrationBadge } from '../shared/TGSSPreIntegrationBadge';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
