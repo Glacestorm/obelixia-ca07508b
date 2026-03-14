@@ -1,9 +1,11 @@
 /**
  * HROfficialSubmissionsPanel — Envíos a organismos oficiales
+ * V2-ES.8: Añade widget de readiness preparatorio
  */
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Send, Plus, FileCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Send, Plus, FileCheck, FlaskConical, Shield, Info, Lock } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 
 interface Props { companyId: string; }
@@ -28,6 +30,40 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
         </div>
         <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Nuevo envío</Button>
       </div>
+
+      {/* V2-ES.8 Preparatory readiness banner */}
+      <Card className="border-blue-500/20 bg-blue-500/5">
+        <CardContent className="py-3">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <FlaskConical className="h-4 w-4 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium flex items-center gap-2">
+                Integración preparatoria activa
+                <Badge variant="outline" className="text-[9px] h-4 gap-0.5">
+                  <FlaskConical className="h-2 w-2" /> Dry-run
+                </Badge>
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Los conectores TGSS, Contrat@ y AEAT operan en modo preparatorio. Se generan y validan payloads
+                sin envío oficial. Accede al <strong>Hub de Integraciones</strong> para ver readiness y ejecutar dry-runs.
+              </p>
+              <div className="flex items-center gap-3 mt-2 text-[10px]">
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Lock className="h-2.5 w-2.5" /> Envío real bloqueado
+                </span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Shield className="h-2.5 w-2.5" /> Certificado no configurado
+                </span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Info className="h-2.5 w-2.5" /> Cero irreversibilidad
+                </span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-3">
         {DEMO_SUBMISSIONS.map(sub => (
