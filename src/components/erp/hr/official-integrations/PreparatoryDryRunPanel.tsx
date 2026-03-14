@@ -167,12 +167,20 @@ function PersistedDryRunCard({
   onLoadEvidence,
   isEvidenceLoaded,
   onGenerateEvidence,
+  health,
+  diffReport,
+  onSelectForDiff,
+  isSelectedForDiff,
 }: {
   result: DryRunResult;
   evidence: DryRunEvidence[];
   onLoadEvidence: (id: string) => void;
   isEvidenceLoaded: boolean;
   onGenerateEvidence?: (dryRunId: string) => void;
+  health?: DryRunHealthCheck;
+  diffReport?: DryRunDiffReport | null;
+  onSelectForDiff?: (id: string) => void;
+  isSelectedForDiff?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const DomainIcon = DOMAIN_ICONS[result.submission_domain] || FileText;
