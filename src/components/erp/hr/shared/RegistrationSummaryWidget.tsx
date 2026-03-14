@@ -61,6 +61,10 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
     return computeRegistrationDeadlines(data, holidaySet);
   }, [data, holidaySet]);
 
+  const preIntegration = useMemo(() => {
+    return evaluatePreIntegrationReadiness(data);
+  }, [data]);
+
   // Don't render if no registration process exists
   if (loading || !data) return null;
 
