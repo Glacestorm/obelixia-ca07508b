@@ -196,7 +196,16 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
 
       {/* Runs list */}
       {selectedPeriodId && (
-        <div className="space-y-2">
+        <div className="space-y-3">
+          {/* Version history timeline */}
+          {runs.length > 1 && (
+            <PayrollRunVersionHistory
+              runs={runs}
+              activeRunId={activeRun?.id}
+              onSelectRun={(run) => { setActiveRun(run); setShowDetailSheet(true); }}
+            />
+          )}
+
           {runs.length === 0 && !isLoading && (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center text-muted-foreground">
