@@ -29,9 +29,9 @@ export type ContractProcessStatus =
 export const CONTRACT_PROCESS_STATUS_CONFIG: Record<ContractProcessStatus, { label: string; labelES: string; color: string }> = {
   pending_data:       { label: 'Pending Data',      labelES: 'Pendiente datos',    color: 'bg-amber-500/10 text-amber-700 border-amber-500/30' },
   pending_documents:  { label: 'Pending Documents', labelES: 'Pendiente docs',     color: 'bg-orange-500/10 text-orange-700 border-orange-500/30' },
-  ready_to_submit:    { label: 'Ready to Submit',   labelES: 'Listo para envío',   color: 'bg-blue-500/10 text-blue-700 border-blue-500/30' },
-  submitted:          { label: 'Submitted',          labelES: 'Comunicado',         color: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/30' },
-  confirmed:          { label: 'Confirmed',          labelES: 'Confirmado',         color: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30' },
+  ready_to_submit:    { label: 'Internally Ready',   labelES: 'Preparado internamente', color: 'bg-blue-500/10 text-blue-700 border-blue-500/30' },
+  submitted:          { label: 'Submitted (internal)', labelES: 'Comunicado (interno)',  color: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/30' },
+  confirmed:          { label: 'Confirmed (internal)', labelES: 'Confirmado (interno)',  color: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30' },
 };
 
 export const CONTRACT_PROCESS_STATUS_TRANSITIONS: Record<ContractProcessStatus, ContractProcessStatus[]> = {
