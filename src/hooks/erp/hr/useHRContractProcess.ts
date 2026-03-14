@@ -434,6 +434,91 @@ export function useHRContractProcess(companyId: string) {
     }
   }, [companyId]);
 
+  /** Persist computed deadline + payload state to DB (fire-and-forget) */
+  const persistDeadlineAndPayload = useCallback(async (
+    requestId: string,
+    holidays: HolidayCalendar = EMPTY_CALENDAR,
+  ) => {
+    if (!contractData || contractData.request_id !== requestId) return;
+
+    const deadlines = computeContractDeadlines(contractData, holidays);
+    const contrata = buildContrataPayload(contractData);
+
+    const payloadStatus = contrata.isReady ? 'ready' : (contrata.formatErrors.length > 0 ? 'has_errors' : 'incomplete');
+
+    // Compute internal deadline (SEPE 10 business days from start)
+    let internalDeadlineAt: string | null = null;
+    if (contractData.contract_start_date) {
+      const startDate = new Date(contractData.contract_start_date);
+      const { addBusinessDays } = await import('@/components/erp/hr/shared/calendarHelpers');
+      const deadline = addBusinessDays(startDate, 10, holidays);
+      internalDeadlineAt = deadline.toISOString();
+    }
+
+    const prevUrgency = contractData.deadline_urgency || 'ok';
+    const prevPayloadReady = contractData.payload_ready ?? false;
+
+    try {
+      await supabase
+        .from('erp_hr_contract_process_data')
+        .update({
+          internal_deadline_at: internalDeadlineAt,
+          deadline_urgency: deadlines.worstUrgency,
+          is_overdue: deadlines.worstUrgency === 'overdue',
+          payload_status: payloadStatus,
+          payload_ready: contrata.isReady,
+          payload_missing_fields: contrata.missingFields.map(f => f.field),
+          payload_format_errors: contrata.formatErrors.map(f => `${f.field}: ${f.error}`),
+          payload_snapshot: contrata.payload as any,
+          last_payload_computed_at: new Date().toISOString(),
+          deadline_computed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('request_id', requestId);
+
+      // Audit significant changes
+      const urgencyChanged = prevUrgency !== deadlines.worstUrgency;
+      const payloadReadyChanged = prevPayloadReady !== contrata.isReady;
+
+      if (urgencyChanged || payloadReadyChanged) {
+        const changedFields: string[] = [];
+        if (urgencyChanged) changedFields.push('deadline_urgency');
+        if (payloadReadyChanged) changedFields.push('payload_ready');
+
+        const severity = deadlines.worstUrgency === 'overdue' ? 'warning'
+          : contrata.isReady && !prevPayloadReady ? 'important'
+          : 'info';
+
+        logContractAudit(
+          'CONTRACT_DEADLINE_PAYLOAD_UPDATE',
+          contractData.company_id,
+          user?.id,
+          requestId,
+          { deadline_urgency: prevUrgency, payload_ready: prevPayloadReady },
+          { deadline_urgency: deadlines.worstUrgency, payload_ready: contrata.isReady, payload_status: payloadStatus },
+          severity,
+          changedFields,
+        );
+      }
+
+      // Audit consistency errors
+      if (!contrata.consistency.isConsistent) {
+        logContractAudit(
+          'CONTRACT_CONSISTENCY_CHECK',
+          contractData.company_id,
+          user?.id,
+          requestId,
+          null,
+          { errors: contrata.consistency.errors, warnings: contrata.consistency.warnings },
+          'warning',
+          ['consistency'],
+        );
+      }
+    } catch (err) {
+      console.error('[useHRContractProcess] persistDeadlineAndPayload error:', err);
+    }
+  }, [contractData, user]);
+
   return {
     contractData,
     loading,
@@ -443,6 +528,7 @@ export function useHRContractProcess(companyId: string) {
     computeReadiness,
     computeDataReadiness: () => computeContractDataReadiness(contractData),
     fetchByEmployee,
+    persistDeadlineAndPayload,
     CONTRACT_PROCESS_STATUS_CONFIG,
   };
 }
