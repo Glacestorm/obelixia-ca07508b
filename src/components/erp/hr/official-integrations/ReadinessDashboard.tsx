@@ -57,8 +57,10 @@ import {
   type EntityReadinessInput,
 } from '@/components/erp/hr/shared/multiEntityReadinessEngine';
 import { useMultiEntityReadiness } from '@/hooks/erp/hr/useMultiEntityReadiness';
+import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
+import { getApprovalStatusMeta, type ApprovalStatus } from '@/components/erp/hr/shared/preRealApprovalEngine';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2 } from 'lucide-react';
+import { Building2, ShieldCheck } from 'lucide-react';
 
 interface Props {
   companyId: string;
