@@ -1,8 +1,8 @@
 /**
  * useSandboxEnvironment — Hook para gestión de entornos sandbox de conectores regulatorios
- * V2-ES.8 T8 P3+P4: Gates de elegibilidad, ejecución sandbox diferenciada y trazabilidad
+ * V2-ES.8 T8+T9: Gates de elegibilidad, ejecución sandbox diferenciada, trazabilidad y persistencia
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   ConnectorEnvironment,
@@ -41,9 +41,9 @@ import {
   auditExecutionCompleted,
   auditExecutionFailed,
   auditGateNotMet,
-  auditEligibilityEvaluated,
   logSandboxAuditEvent,
 } from '@/lib/security/sandboxAuditHelper';
+import { useSandboxPersistence, type SandboxHistoryFilters } from './useSandboxPersistence';
 
 interface UseSandboxEnvironmentParams {
   companyId: string;
@@ -58,6 +58,14 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
   const [eligibilityResults, setEligibilityResults] = useState<Map<string, SandboxEligibilityResult>>(new Map());
   const [disclaimersAccepted, setDisclaimersAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // ===================== PERSISTENCE (T9) =====================
+  const persistence = useSandboxPersistence(companyId);
+
+  // Load history on mount
+  useEffect(() => {
+    persistence.fetchHistory();
+  }, [companyId]);
 
   // ===================== GATE CONTEXT BUILDER =====================
 
@@ -310,8 +318,17 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
 
       const record = await executeSandboxSimulation(request);
 
-      // Persist record in state
+      // Persist record in state and DB
       setExecutionRecords(prev => [record, ...prev]);
+      
+      // T9: Persist to database
+      persistence.persistRecord(record).then(ok => {
+        if (ok) {
+          console.log('[useSandboxEnvironment] Record persisted to DB:', record.id);
+        } else {
+          console.warn('[useSandboxEnvironment] Failed to persist record to DB:', record.id);
+        }
+      });
 
       // Also add to legacy executions for backward compat
       const legacyExec = createSandboxExecution({
@@ -401,6 +418,14 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     eligibilityResults,
     disclaimersAccepted,
     isLoading,
+
+    // Persistence (T9)
+    persistedHistory: persistence.history,
+    persistedHistoryLoading: persistence.isLoading,
+    persistedHistoryCount: persistence.totalCount,
+    fetchPersistedHistory: persistence.fetchHistory,
+    getPersistedRecord: persistence.getRecord,
+    getLatestForDomain: persistence.getLatestForDomain,
 
     // Actions
     switchEnvironment,

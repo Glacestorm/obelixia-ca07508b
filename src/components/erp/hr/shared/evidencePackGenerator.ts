@@ -11,6 +11,13 @@ import type { OfficialReadinessSummary } from './officialReadinessEngine';
 import type { DryRunDiffReport } from './dryRunDiffEngine';
 import type { RegulatoryCalendarSummary } from './regulatoryCalendarEngine';
 import type { DryRunResult, DryRunEvidence } from '@/hooks/erp/hr/useDryRunPersistence';
+import type { SandboxEvidenceData } from './sandboxEvidencePackExtension';
+import {
+  formatSandboxExecutionsForPDF,
+  formatSandboxComparisonsForPDF,
+  formatSandboxExecutionsForExcel,
+  formatSandboxComparisonsForExcel,
+} from './sandboxEvidencePackExtension';
 import {
   createPDFDocument,
   addPDFHeader,
@@ -57,6 +64,8 @@ export interface EvidencePackInput {
   alerts?: Array<{ severity: string; category: string; title: string; status: string }>;
   /** Certificates */
   certificates?: Array<{ domain: string; status: string; completeness: number; expirationDate?: string }>;
+  /** V2-ES.8 T9: Sandbox execution data */
+  sandboxData?: SandboxEvidenceData;
 }
 
 const LEVEL_LABELS: Record<string, string> = {
@@ -236,6 +245,32 @@ export function generateEvidencePackPDF(input: EvidencePackInput): ExportResult 
       }
     }
 
+    // 9. Sandbox executions (T9)
+    if (input.sandboxData?.sandboxExecutions && input.sandboxData.sandboxExecutions.length > 0) {
+      y = sectionTitle(doc, sec++, 'Ejecuciones Sandbox', y, margin);
+      const { headers, body } = formatSandboxExecutionsForPDF(input.sandboxData.sandboxExecutions);
+      y = addAutoTable(doc, y, headers, body);
+      y += 2;
+      doc.setFont('times', 'italic');
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text(sanitizeForPDF('Ejecuciones sandbox preparatorias — no constituyen envios oficiales'), margin, y, { maxWidth: pw - margin * 2 });
+      y += 6;
+    }
+
+    // 10. Sandbox vs Dry-run comparisons (T9)
+    if (input.sandboxData?.sandboxComparisons && input.sandboxData.sandboxComparisons.length > 0) {
+      y = sectionTitle(doc, sec++, 'Comparativa Sandbox vs Dry-Run', y, margin);
+      const { headers: cHeaders, body: cBody } = formatSandboxComparisonsForPDF(input.sandboxData.sandboxComparisons);
+      y = addAutoTable(doc, y, cHeaders, cBody);
+      y += 2;
+      doc.setFont('times', 'italic');
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text(sanitizeForPDF('Comparativa interna — no constituye validacion de organismo'), margin, y, { maxWidth: pw - margin * 2 });
+      y += 6;
+    }
+
     // Final disclaimer
     y = checkPageBreak(doc, y, 20);
     doc.setFont('times', 'italic');
@@ -363,6 +398,16 @@ export function generateEvidencePackExcel(input: EvidencePackInput): ExportResul
         'Completitud (%)': c.completeness,
         Expiracion: c.expirationDate || 'N/A',
       })), 'Certificados');
+    }
+
+    // Sandbox executions (T9)
+    if (input.sandboxData?.sandboxExecutions && input.sandboxData.sandboxExecutions.length > 0) {
+      addSheet(wb, formatSandboxExecutionsForExcel(input.sandboxData.sandboxExecutions), 'Sandbox Ejecuciones');
+    }
+
+    // Sandbox comparisons (T9)
+    if (input.sandboxData?.sandboxComparisons && input.sandboxData.sandboxComparisons.length > 0) {
+      addSheet(wb, formatSandboxComparisonsForExcel(input.sandboxData.sandboxComparisons), 'Sandbox vs Dry-Run');
     }
 
     addMetadataSheet(wb, meta);
