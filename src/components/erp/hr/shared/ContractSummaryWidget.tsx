@@ -53,6 +53,8 @@ export function ContractSummaryWidget({ companyId, employeeId, className }: Prop
     return () => { cancelled = true; };
   }, [employeeId, companyId]);
 
+  const deadlineSummary = useMemo(() => computeContractDeadlines(data, holidaySet), [data, holidaySet]);
+
   if (loading || !data) return null;
 
   const status = data.contract_process_status as ContractProcessStatus;
