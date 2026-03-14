@@ -35,6 +35,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
 
   const hub = useOfficialIntegrationsHub(companyId);
   const { pendingCount, approvals, fetchApprovals } = usePreRealApproval(companyId);
+  const sandboxEnv = useSandboxEnvironment({ companyId, adapters: hub.adapters });
 
   // Data sources for proactive alerts at hub level
   const { summary: readinessSummary } = useOfficialReadiness(companyId);
