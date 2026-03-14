@@ -170,12 +170,27 @@ function evaluateConnector(
         ? 'configured'
         : 'active';
 
+  // ── V2-ES.8 T3: Evaluate certificate status for this connector ──
+  const certDomainMap: Record<ConnectorId, string> = {
+    tgss_siltra: 'tgss_siltra',
+    contrata_sepe: 'contrata_sepe',
+    aeat_111: 'aeat',
+    aeat_190: 'aeat',
+    certifica2: 'contrata_sepe',
+    delta: 'tgss_siltra',
+  };
+  const certConfig = ctx.certificateConfigs?.find(c => c.domain === certDomainMap[connectorId]);
+  const credentialsPresent = certConfig
+    ? (certConfig.certificate_status === 'cert_loaded_placeholder' || certConfig.certificate_status === 'cert_ready_preparatory')
+    : false;
+  const certExpired = certConfig?.certificate_status === 'expired';
+  const certCompleteness = certConfig?.configuration_completeness ?? 0;
+
   // ── Evaluate signals per connector ──
   let dataComplete = false;
   let formatValid = false;
   let consistencyOk = false;
   let docsReady: boolean | null = null;
-  const credentialsPresent = false; // always false in dry-run phase
   const adapterConfigured = adapterStatus === 'configured' || adapterStatus === 'active';
 
   switch (connectorId) {
