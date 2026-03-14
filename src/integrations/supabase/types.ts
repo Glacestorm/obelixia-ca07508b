@@ -37509,6 +37509,7 @@ export type Database = {
       }
       erp_hr_payroll_concepts: {
         Row: {
+          calculation_type: string | null
           category: string | null
           code: string
           company_id: string
@@ -37517,10 +37518,18 @@ export type Database = {
           country_code: string | null
           created_at: string | null
           default_amount: number | null
+          default_sign: string | null
+          description: string | null
           id: string
+          impacts_cra: boolean | null
+          impacts_irpf: boolean | null
+          impacts_net_payment: boolean | null
           is_active: boolean | null
           is_percentage: boolean | null
           is_prorrateado: boolean | null
+          is_salary: boolean | null
+          is_ss_contributable: boolean | null
+          is_taxable: boolean | null
           legal_reference: string | null
           name: string
           percentage_base: string | null
@@ -37531,6 +37540,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          calculation_type?: string | null
           category?: string | null
           code: string
           company_id: string
@@ -37539,10 +37549,18 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           default_amount?: number | null
+          default_sign?: string | null
+          description?: string | null
           id?: string
+          impacts_cra?: boolean | null
+          impacts_irpf?: boolean | null
+          impacts_net_payment?: boolean | null
           is_active?: boolean | null
           is_percentage?: boolean | null
           is_prorrateado?: boolean | null
+          is_salary?: boolean | null
+          is_ss_contributable?: boolean | null
+          is_taxable?: boolean | null
           legal_reference?: string | null
           name: string
           percentage_base?: string | null
@@ -37553,6 +37571,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          calculation_type?: string | null
           category?: string | null
           code?: string
           company_id?: string
@@ -37561,10 +37580,18 @@ export type Database = {
           country_code?: string | null
           created_at?: string | null
           default_amount?: number | null
+          default_sign?: string | null
+          description?: string | null
           id?: string
+          impacts_cra?: boolean | null
+          impacts_irpf?: boolean | null
+          impacts_net_payment?: boolean | null
           is_active?: boolean | null
           is_percentage?: boolean | null
           is_prorrateado?: boolean | null
+          is_salary?: boolean | null
+          is_ss_contributable?: boolean | null
+          is_taxable?: boolean | null
           legal_reference?: string | null
           name?: string
           percentage_base?: string | null
@@ -37605,8 +37632,16 @@ export type Database = {
           is_prorrateado: boolean | null
           metadata: Json | null
           notes: string | null
+          percent: number | null
           period_id: string | null
+          period_month: number | null
+          period_year: number | null
+          requires_external_filing: boolean | null
+          requires_ss_action: boolean | null
+          requires_tax_adjustment: boolean | null
           source: string
+          source_document_id: string | null
+          source_task_id: string | null
           status: string
           tributa_irpf: boolean | null
           unit_price: number | null
@@ -37635,8 +37670,16 @@ export type Database = {
           is_prorrateado?: boolean | null
           metadata?: Json | null
           notes?: string | null
+          percent?: number | null
           period_id?: string | null
+          period_month?: number | null
+          period_year?: number | null
+          requires_external_filing?: boolean | null
+          requires_ss_action?: boolean | null
+          requires_tax_adjustment?: boolean | null
           source?: string
+          source_document_id?: string | null
+          source_task_id?: string | null
           status?: string
           tributa_irpf?: boolean | null
           unit_price?: number | null
@@ -37665,8 +37708,16 @@ export type Database = {
           is_prorrateado?: boolean | null
           metadata?: Json | null
           notes?: string | null
+          percent?: number | null
           period_id?: string | null
+          period_month?: number | null
+          period_year?: number | null
+          requires_external_filing?: boolean | null
+          requires_ss_action?: boolean | null
+          requires_tax_adjustment?: boolean | null
           source?: string
+          source_document_id?: string | null
+          source_task_id?: string | null
           status?: string
           tributa_irpf?: boolean | null
           unit_price?: number | null
