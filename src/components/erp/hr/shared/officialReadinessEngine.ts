@@ -258,10 +258,23 @@ function evaluateConnector(
     }
   }
 
+  // ── V2-ES.8 T3: Certificate warnings (cross-connector) ──
+  if (certExpired) {
+    warnings.push('Certificado digital expirado — renovar antes de envío real');
+  } else if (!credentialsPresent && certConfig && certConfig.certificate_status !== 'not_configured') {
+    warnings.push(`Certificado ${certConfig.certificate_status === 'partially_configured' ? 'parcialmente configurado' : 'sin cargar'}`);
+  }
+  if (certConfig && certConfig.expiration_date) {
+    const daysToExpiry = Math.ceil((new Date(certConfig.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (daysToExpiry > 0 && daysToExpiry <= 30) {
+      warnings.push(`Certificado expira en ${daysToExpiry} días`);
+    }
+  }
+
   // ── Calculate level & percent ──
-  const signalCount = [dataComplete, formatValid, consistencyOk, docsReady !== false, adapterConfigured]
+  const signalCount = [dataComplete, formatValid, consistencyOk, docsReady !== false, adapterConfigured, credentialsPresent]
     .filter(Boolean).length;
-  const signalTotal = docsReady === null ? 4 : 5;
+  const signalTotal = docsReady === null ? 5 : 6;
   const percent = Math.round((signalCount / signalTotal) * 100);
 
   let level: ReadinessLevel;
