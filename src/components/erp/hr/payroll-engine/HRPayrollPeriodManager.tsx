@@ -314,7 +314,7 @@ export function HRPayrollPeriodManager({
                       </div>
                     </div>
                     {closureSnapshot && (
-                      <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+                      <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-muted-foreground items-center">
                         <span>Run #{closureSnapshot.approved_run_number} ({closureSnapshot.run_type})</span>
                         <span>·</span>
                         <span>Incidencias: {closureSnapshot.incidents_summary.validated}/{closureSnapshot.incidents_summary.total}</span>
@@ -336,6 +336,12 @@ export function HRPayrollPeriodManager({
                             <span>Bloqueado: {new Date(p.locked_at).toLocaleDateString('es-ES')}</span>
                           </>
                         )}
+                        <span>·</span>
+                        <SSExpedientPeriodBadge
+                          companyId={companyId}
+                          periodYear={p.fiscal_year}
+                          periodMonth={p.period_number}
+                        />
                       </div>
                     )}
                     {!closureSnapshot && p.total_gross > 0 && (
