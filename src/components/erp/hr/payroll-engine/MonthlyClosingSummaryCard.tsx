@@ -88,16 +88,34 @@ function ReadinessIndicator({ readiness }: { readiness: ExpedientReadinessSummar
         <span className="font-medium">Expedientes internos: {cfg.label}</span>
         <div className="flex gap-3 mt-0.5 text-[10px]">
           {readiness.ss_status && (
-            <span>SS: {readiness.ss_status}{readiness.ss_score !== null ? ` (${readiness.ss_score}%)` : ''}</span>
+            <span>
+              SS: {readiness.ss_status}
+              {readiness.ss_score !== null ? ` (${readiness.ss_score}%)` : ''}
+            </span>
           )}
           {readiness.fiscal_status && (
-            <span>Fiscal: {readiness.fiscal_status}{readiness.fiscal_score !== null ? ` (${readiness.fiscal_score}%)` : ''}</span>
+            <span>
+              Fiscal: {readiness.fiscal_status}
+              {readiness.fiscal_score !== null ? ` (${readiness.fiscal_score}%)` : ''}
+            </span>
+          )}
+          {!readiness.ss_status && !readiness.fiscal_status && (
+            <span className="text-muted-foreground italic">Pendiente de generación</span>
           )}
         </div>
       </div>
-      <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0 text-muted-foreground border-muted">
-        Interno
-      </Badge>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 shrink-0 text-muted-foreground border-muted cursor-help">
+              Interno
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs max-w-[220px]">
+            Expedientes preparatorios internos. No constituyen presentación oficial ante AEAT ni TGSS.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }
@@ -354,12 +372,15 @@ export function MonthlyClosingSummaryCard({
 
       {/* Auto-generation result */}
       {effectiveAutoGen && (
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground px-1">
-          <Zap className="h-3 w-3 text-primary" />
-          <span>
-            Auto-generado: {effectiveAutoGen.ss_generated ? '✓ SS' : ''} {effectiveAutoGen.fiscal_generated ? '✓ Fiscal' : ''}
-            {effectiveAutoGen.ss_error && ` ⚠ SS: ${effectiveAutoGen.ss_error}`}
-            {effectiveAutoGen.fiscal_error && ` ⚠ Fiscal: ${effectiveAutoGen.fiscal_error}`}
+        <div className="flex items-center gap-2 text-[10px] px-1 p-1.5 rounded bg-primary/5 border border-primary/10">
+          <Zap className="h-3 w-3 text-primary shrink-0" />
+          <span className="text-muted-foreground">
+            Auto-consolidado:{' '}
+            {effectiveAutoGen.ss_generated && <Badge variant="outline" className="text-[9px] px-1 py-0 mx-0.5">✓ SS</Badge>}
+            {effectiveAutoGen.fiscal_generated && <Badge variant="outline" className="text-[9px] px-1 py-0 mx-0.5">✓ Fiscal</Badge>}
+            {!effectiveAutoGen.ss_generated && !effectiveAutoGen.fiscal_generated && 'Sin cambios'}
+            {effectiveAutoGen.ss_error && <span className="text-destructive ml-1">⚠ SS: {effectiveAutoGen.ss_error}</span>}
+            {effectiveAutoGen.fiscal_error && <span className="text-destructive ml-1">⚠ Fiscal: {effectiveAutoGen.fiscal_error}</span>}
           </span>
         </div>
       )}
