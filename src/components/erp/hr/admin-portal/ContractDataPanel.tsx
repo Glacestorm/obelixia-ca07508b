@@ -33,6 +33,8 @@ import { buildContrataPayload } from '../shared/contrataPayloadBuilder';
 import { ContractDeadlineAlert } from '../shared/ContractDeadlineAlert';
 import { ContrataPreIntegrationBadge } from '../shared/ContrataPreIntegrationBadge';
 import { useContrataReadiness } from '@/hooks/erp/hr/useContrataReadiness';
+import { useContractClosure } from '@/hooks/erp/hr/useContractClosure';
+import { ContractClosureSection } from '../shared/ContractClosureSection';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
