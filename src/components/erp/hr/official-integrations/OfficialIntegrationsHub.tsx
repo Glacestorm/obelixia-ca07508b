@@ -93,7 +93,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="readiness" className="text-xs relative">
             Readiness
             {activeAlertCount > 0 && activeTab !== 'readiness' && (
@@ -115,6 +115,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
           <TabsTrigger value="submissions" className="text-xs">Envíos</TabsTrigger>
           <TabsTrigger value="adapters" className="text-xs">Conectores</TabsTrigger>
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
+          <TabsTrigger value="export" className="text-xs">Exportación</TabsTrigger>
         </TabsList>
 
         <TabsContent value="readiness">
