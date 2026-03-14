@@ -224,6 +224,21 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
         )}
       </div>
 
+      {/* Read-only banner for closed/locked periods */}
+      {selectedPeriodId && isPeriodReadOnly && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg border text-sm ${
+          selectedPeriod.status === 'locked'
+            ? 'bg-destructive/5 border-destructive/20 text-destructive'
+            : 'bg-muted/50 border-border'
+        }`}>
+          {selectedPeriod.status === 'locked' ? (
+            <><AlertTriangle className="h-4 w-4 shrink-0" /><span className="font-medium">Período bloqueado</span><span className="text-muted-foreground">— Solo lectura.</span></>
+          ) : (
+            <><CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" /><span className="font-medium">Período cerrado (interno)</span><span className="text-muted-foreground">— Solo lectura.</span></>
+          )}
+        </div>
+      )}
+
       {/* Filters */}
       {selectedPeriodId && (
         <div className="flex gap-3">
