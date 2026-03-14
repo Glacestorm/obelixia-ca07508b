@@ -327,7 +327,7 @@ export function buildTGSSPayload(
         work_center: data.work_center || null,
       },
       banking: {
-        iban: ((data as Record<string, unknown>).iban as string) || null,
+        iban: ((data as unknown as Record<string, unknown>).iban as string) || null,
       },
     };
   }
