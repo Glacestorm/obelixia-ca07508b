@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Play,
   FileText,
+  FileSpreadsheet,
   Shield,
   Calculator,
   Clock,
@@ -33,6 +34,7 @@ import {
   Minus,
   HeartPulse,
   RotateCcw,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
