@@ -592,7 +592,13 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
 
             {/* Per-entity summary with gap details */}
             <div className="space-y-1">
-              {multiEntityReport.entities.map(ent => {
+              {multiEntityReport.entities
+                .filter(ent => {
+                  if (entityFilter === 'gaps') return ent.summary.totalBlockers > 0 || ent.summary.overallPercent < 70;
+                  if (entityFilter === 'ready') return ent.summary.overallPercent >= 70 && ent.summary.totalBlockers === 0;
+                  return true;
+                })
+                .map(ent => {
                 const topBlockers = ent.summary.connectors
                   .flatMap(c => c.blockers.map(b => ({ connector: c.label, blocker: b })))
                   .slice(0, 2);
