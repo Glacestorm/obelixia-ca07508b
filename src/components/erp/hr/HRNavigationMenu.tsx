@@ -68,11 +68,13 @@ interface MegaMenuCategory {
 
 // ─── Component ───
 
-export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode = true }: HRNavigationMenuProps) {
+export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode = true, isAdmin = false }: HRNavigationMenuProps) {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
 
-  // ── MVP visibility ──
+  // ── 3-tier visibility: visible_mvp | visible_advanced | hidden ──
   const mvpCategories = new Set(['core-hr', 'payroll', 'laboral', 'global']);
+
+  // Tier 1: visible_mvp — shown to all users
   const mvpItems = new Set([
     // People
     'employees', 'contracts', 'document-expedient',
@@ -88,6 +90,32 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'country-registry', 'es-localization',
     'mobility-international',
     'official-submissions', 'compliance-evidence',
+  ]);
+
+  // Tier 2: visible_advanced — shown only to admin/advanced profiles in MVP mode
+  const advancedItems = new Set([
+    // People > Organización & Configuración
+    'org-structure',        // Organigrama — mature, enterprise value
+    'enterprise-roles',     // Roles y Permisos — admin-only by nature
+    'unions',               // Sindicatos — specialized, not mainstream
+    // Payroll > Nómina Mensual
+    'payroll-recalc',       // Recálculo — admin operation
+    'settlements',          // Finiquitos — specialized HR operation
+    'payroll-periods',      // Períodos — direct access for power users
+    // Payroll > Compensación & ERP
+    'benefits',             // Beneficios — retribución flexible
+    // Workforce > Gestión Operativa
+    'safety',               // PRL — regulatory, admin responsibility
+    'regulatory-watch',     // Vigilancia Normativa — compliance, admin
+  ]);
+
+  // Tier 3: hidden — talent/enterprise/utilities menus, only visible when mvpMode=false
+  // (controlled by mvpCategories filter — these menus don't appear in MVP mode)
+
+  // Effective visible items based on role
+  const effectiveItems = new Set([
+    ...mvpItems,
+    ...(isAdmin ? advancedItems : []),
   ]);
 
   // ── Menu definitions ──
