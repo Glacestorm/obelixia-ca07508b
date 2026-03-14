@@ -486,7 +486,7 @@ export function mapAlertToNotificationRow(
   priority: number;
   action_url: string | null;
   action_label: string | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, string | number | boolean | null>;
   user_id: string | null;
   expires_at: string | null;
 } {
@@ -500,12 +500,16 @@ export function mapAlertToNotificationRow(
     action_url: alert.actionUrl ?? null,
     action_label: alert.actionLabel ?? null,
     metadata: {
-      ...alert.metadata,
       deduplicationKey: alert.deduplicationKey,
       domain: alert.domain,
       category: alert.category,
-      entityRef: alert.entityRef,
-    },
+      entityRef: alert.entityRef ?? null,
+      ...Object.fromEntries(
+        Object.entries(alert.metadata).filter(
+          ([, v]) => v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean',
+        ),
+      ),
+    } as Record<string, string | number | boolean | null>,
     user_id: userId ?? null,
     expires_at: alert.expiresAt?.toISOString() ?? null,
   };
