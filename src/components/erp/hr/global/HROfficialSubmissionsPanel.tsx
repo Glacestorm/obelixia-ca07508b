@@ -123,7 +123,7 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
         </div>
       </div>
 
-      {/* V2-ES.8 T3: Preparatory banner + cert & deadline status */}
+      {/* V2-ES.8 T8: Preparatory banner + sandbox/env visibility */}
       <Card className="border-blue-500/20 bg-blue-500/5">
         <CardContent className="py-3">
           <div className="flex items-start gap-3">
@@ -134,6 +134,9 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium flex items-center gap-2">
                   Integración preparatoria activa
+                  <Badge variant="outline" className="text-[9px] h-4 gap-0.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                    <FlaskConical className="h-2 w-2" /> Sandbox
+                  </Badge>
                   <Badge variant="outline" className="text-[9px] h-4 gap-0.5">
                     <FlaskConical className="h-2 w-2" /> Dry-run
                   </Badge>
@@ -149,12 +152,15 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Los conectores TGSS, Contrat@ y AEAT operan en modo preparatorio. Se generan y validan payloads
-                sin envío oficial. Accede al <strong>Hub de Integraciones</strong> para ver readiness y ejecutar dry-runs.
+                Los conectores TGSS, Contrat@ y AEAT operan en modo preparatorio (dry-run + sandbox).
+                Se generan y validan payloads sin envío oficial. Accede al <strong>Hub de Integraciones</strong> para sandbox y readiness.
               </p>
               <div className="flex items-center gap-3 mt-2 text-[10px] flex-wrap">
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Lock className="h-2.5 w-2.5" /> Envío real bloqueado
+                <span className="flex items-center gap-1 text-destructive">
+                  <Lock className="h-2.5 w-2.5" /> Producción bloqueada
+                </span>
+                <span className="flex items-center gap-1 text-emerald-600">
+                  <FlaskConical className="h-2.5 w-2.5" /> Sandbox: activo
                 </span>
                 <span className="flex items-center gap-1 text-muted-foreground">
                   <KeyRound className="h-2.5 w-2.5" /> Certificados: {certSummary.configured}/{certSummary.total}
@@ -166,12 +172,12 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
                   </span>
                 )}
                 {calendar && !calendar.hasRisk && (
-                  <span className="flex items-center gap-1 text-green-600">
+                  <span className="flex items-center gap-1 text-emerald-600">
                     <CalendarClock className="h-2.5 w-2.5" /> Plazos en regla
                   </span>
                 )}
                 <span className="flex items-center gap-1 text-muted-foreground">
-                  <Info className="h-2.5 w-2.5" /> Cero irreversibilidad
+                  <Info className="h-2.5 w-2.5" /> Sandbox ≠ oficial · No produce efectos legales
                 </span>
               </div>
             </div>

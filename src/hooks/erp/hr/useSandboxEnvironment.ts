@@ -3,7 +3,6 @@
  * V2-ES.8 T8 P3+P4: Gates de elegibilidad, ejecución sandbox diferenciada y trazabilidad
  */
 import { useState, useCallback, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   ConnectorEnvironment,
@@ -33,6 +32,18 @@ import {
   type SandboxExecutionRequest,
 } from '@/components/erp/hr/shared/sandboxExecutionService';
 import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
+import {
+  auditEnvironmentSwitched,
+  auditSandboxEnabled,
+  auditDisclaimersAccepted,
+  auditProductionBlocked,
+  auditExecutionAttempted,
+  auditExecutionCompleted,
+  auditExecutionFailed,
+  auditGateNotMet,
+  auditEligibilityEvaluated,
+  logSandboxAuditEvent,
+} from '@/lib/security/sandboxAuditHelper';
 
 interface UseSandboxEnvironmentParams {
   companyId: string;
@@ -171,7 +182,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
 
   const acceptDisclaimers = useCallback(() => {
     setDisclaimersAccepted(true);
-    logSandboxAudit('sandbox_disclaimers_accepted', { companyId, environment: activeEnvironment });
+    auditDisclaimersAccepted(companyId, activeEnvironment);
     toast.success('Disclaimers de sandbox aceptados');
   }, [companyId, activeEnvironment]);
 
@@ -180,6 +191,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
   const switchEnvironment = useCallback((env: ConnectorEnvironment) => {
     if (env === 'production') {
       toast.error('Producción está bloqueada en esta fase del sistema');
+      auditProductionBlocked(companyId, undefined, 'Intento de cambio a producción rechazado');
       return false;
     }
 
@@ -189,16 +201,12 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     }
 
     setActiveEnvironmentState(env);
-    setDisclaimersAccepted(false); // Reset disclaimers on env change
+    setDisclaimersAccepted(false);
     toast.info(`Entorno activo: ${ENVIRONMENT_DEFINITIONS[env].label}`, {
       description: getEnvironmentDisclaimer(env),
     });
 
-    logSandboxAudit('environment_switched', {
-      from: activeEnvironment,
-      to: env,
-      companyId,
-    });
+    auditEnvironmentSwitched(companyId, activeEnvironment, env);
 
     return true;
   }, [activeEnvironment, companyId]);
@@ -211,6 +219,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
   ): Promise<boolean> => {
     if (env === 'production') {
       toast.error('No se puede habilitar un conector en producción');
+      auditProductionBlocked(companyId, adapterId, 'Intento de habilitar conector en producción');
       return false;
     }
 
@@ -228,6 +237,10 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       toast.error(`No se cumplen los requisitos para ${ENVIRONMENT_DEFINITIONS[env].label}`, {
         description: failedGates.map(g => g.reason).join('. '),
       });
+      // Audit each failed gate
+      for (const fg of failedGates) {
+        auditGateNotMet(companyId, env, fg.gateId, fg.reason, adapterId);
+      }
       return false;
     }
 
@@ -239,12 +252,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       )
     );
 
-    logSandboxAudit('adapter_enabled_in_environment', {
-      adapterId,
-      adapterName: adapter.adapter_name,
-      environment: env,
-      companyId,
-    });
+    auditSandboxEnabled(companyId, env, adapterId, adapter.adapter_name);
 
     toast.success(`${adapter.adapter_name} habilitado en ${ENVIRONMENT_DEFINITIONS[env].label}`);
     return true;
@@ -323,10 +331,12 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       });
       setExecutions(prev => [completed, ...prev]);
 
-      // Build and persist audit events
-      const auditEvents = buildSandboxAuditEvents(record);
-      for (const evt of auditEvents) {
-        await logSandboxAudit(evt.action, evt.details);
+      // Centralized audit: execution attempted + completed/failed
+      await auditExecutionAttempted(companyId, activeEnvironment, params.adapterId, params.domain, record.id);
+      if (record.status === 'completed') {
+        await auditExecutionCompleted(companyId, activeEnvironment, params.adapterId, params.domain, record.id, record.result?.payloadConformance || 0);
+      } else {
+        await auditExecutionFailed(companyId, activeEnvironment, params.adapterId, params.domain, record.id, record.result?.structuralErrors.map(e => e.message).join('; ') || 'Unknown');
       }
 
       if (record.status === 'completed') {
@@ -344,13 +354,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       toast.error('Error en ejecución sandbox', { description: msg });
 
-      await logSandboxAudit('sandbox_execution_error', {
-        adapterId: params.adapterId,
-        domain: params.domain,
-        environment: activeEnvironment,
-        error: msg,
-        companyId,
-      });
+      await auditExecutionFailed(companyId, activeEnvironment, params.adapterId, params.domain, 'error', msg);
 
       return null;
     } finally {
@@ -358,31 +362,21 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     }
   }, [activeEnvironment, adapters, companyId, evaluateEligibility]);
 
-  // ===================== AUDIT =====================
+  // ===================== AUDIT (delegated to sandboxAuditHelper) =====================
 
   const logSandboxAudit = useCallback(async (
     eventType: string,
     metadata: Record<string, unknown>
   ) => {
-    try {
-      await supabase.from('erp_hr_audit_log').insert({
-        company_id: companyId,
-        action: eventType,
-        entity_type: 'sandbox_environment',
-        entity_id: (metadata.adapterId as string) || (metadata.entityId as string) || companyId,
-        details: {
-          ...metadata,
-          _disclaimer: 'Operación en entorno sandbox/preparatorio — no constituye acción oficial',
-          _phase: 'V2-ES.8-T8',
-          _production_blocked: true,
-          _is_dry_run: false,
-          _is_official: false,
-        },
-      } as any);
-    } catch {
-      console.warn('[useSandboxEnvironment] Audit log failed silently');
-    }
-  }, [companyId]);
+    await logSandboxAuditEvent(eventType as any, {
+      companyId,
+      environment: (metadata.environment as ConnectorEnvironment) || activeEnvironment,
+      adapterId: metadata.adapterId as string | undefined,
+      adapterName: metadata.adapterName as string | undefined,
+      executionId: metadata.executionId as string | undefined,
+      metadata,
+    });
+  }, [companyId, activeEnvironment]);
 
   // ===================== SUMMARY =====================
 

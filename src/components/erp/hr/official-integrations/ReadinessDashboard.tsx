@@ -208,7 +208,7 @@ function ConnectorCard({
           <SignalBadge ok={connector.signals.credentialsPresent} label="Certificado" icon={<KeyRound className="h-2.5 w-2.5" />} />
         </div>
 
-        {/* Operational pipeline mini */}
+        {/* Operational pipeline: dry-run → sandbox → approval → real(blocked) */}
         <div className="flex items-center gap-1 text-[10px]">
           <PipelineStep done={stats.payloads > 0} label={`Payload ${stats.payloads > 0 ? `(${stats.payloads})` : ''}`} />
           <span className="text-muted-foreground">→</span>
@@ -216,12 +216,16 @@ function ConnectorCard({
           <span className="text-muted-foreground">→</span>
           <PipelineStep done={stats.dryRuns > 0} label={`Dry-run ${stats.dryRuns > 0 ? `(${stats.dryRuns})` : ''}`} />
           <span className="text-muted-foreground">→</span>
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600">
+            <FlaskConical className="h-2 w-2" /> Sandbox
+          </span>
+          <span className="text-muted-foreground">→</span>
           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
             <ShieldCheck className="h-2 w-2" /> Aprobación
           </span>
           <span className="text-muted-foreground">→</span>
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-            <Lock className="h-2 w-2" /> Real
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">
+            <Lock className="h-2 w-2" /> Prod bloq.
           </span>
         </div>
 
