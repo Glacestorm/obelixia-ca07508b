@@ -127,7 +127,7 @@ export function ActiveRunIndicator({ companyId, periodId, variant = 'compact', c
           {STATUS_LABELS[summary.status]}
         </Badge>
         {summary.has_recalculation && (
-          <RefreshCw className="h-2.5 w-2.5 text-amber-500" title="Incluye recálculos" />
+          <RefreshCw className="h-2.5 w-2.5 text-amber-500" />
         )}
         {summary.total_runs > 1 && (
           <span className="text-[9px] text-muted-foreground/60">
