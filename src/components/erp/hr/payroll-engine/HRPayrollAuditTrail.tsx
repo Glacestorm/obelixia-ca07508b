@@ -61,6 +61,10 @@ const ACTION_CONFIG: Record<string, { icon: typeof Shield; color: string; label:
   fiscal_expedient_cancelled: { icon: Calculator, color: 'text-muted-foreground', label: 'Exp. Fiscal cancelado' },
   fiscal_expedient_reset: { icon: RefreshCw, color: 'text-amber-500', label: 'Exp. Fiscal reiniciado' },
   fiscal_expedient_error: { icon: Calculator, color: 'text-destructive', label: 'Exp. Fiscal error' },
+  // Auto-generation events (V2-ES.7 Paso 6)
+  expedients_auto_generated: { icon: RefreshCw, color: 'text-primary', label: 'Expedientes auto-generados' },
+  ss_auto_consolidated: { icon: Shield, color: 'text-blue-500', label: 'SS auto-consolidado' },
+  fiscal_auto_consolidated: { icon: Calculator, color: 'text-blue-500', label: 'Fiscal auto-consolidado' },
 };
 
 export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {
