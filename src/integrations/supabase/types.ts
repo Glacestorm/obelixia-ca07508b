@@ -37584,6 +37584,121 @@ export type Database = {
           },
         ]
       }
+      erp_hr_payroll_incidents: {
+        Row: {
+          admin_request_id: string | null
+          amount: number | null
+          applied_at: string | null
+          applied_to_record_id: string | null
+          applies_from: string | null
+          applies_to: string | null
+          company_id: string
+          concept_code: string
+          concept_id: string | null
+          cotiza_ss: boolean | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          employee_id: string
+          id: string
+          incident_type: string
+          is_prorrateado: boolean | null
+          metadata: Json | null
+          notes: string | null
+          period_id: string | null
+          source: string
+          status: string
+          tributa_irpf: boolean | null
+          unit_price: number | null
+          units: number | null
+          updated_at: string | null
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          admin_request_id?: string | null
+          amount?: number | null
+          applied_at?: string | null
+          applied_to_record_id?: string | null
+          applies_from?: string | null
+          applies_to?: string | null
+          company_id: string
+          concept_code: string
+          concept_id?: string | null
+          cotiza_ss?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          employee_id: string
+          id?: string
+          incident_type?: string
+          is_prorrateado?: boolean | null
+          metadata?: Json | null
+          notes?: string | null
+          period_id?: string | null
+          source?: string
+          status?: string
+          tributa_irpf?: boolean | null
+          unit_price?: number | null
+          units?: number | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          admin_request_id?: string | null
+          amount?: number | null
+          applied_at?: string | null
+          applied_to_record_id?: string | null
+          applies_from?: string | null
+          applies_to?: string | null
+          company_id?: string
+          concept_code?: string
+          concept_id?: string | null
+          cotiza_ss?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          employee_id?: string
+          id?: string
+          incident_type?: string
+          is_prorrateado?: boolean | null
+          metadata?: Json | null
+          notes?: string | null
+          period_id?: string | null
+          source?: string
+          status?: string
+          tributa_irpf?: boolean | null
+          unit_price?: number | null
+          units?: number | null
+          updated_at?: string | null
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_payroll_incidents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_incidents_concept_id_fkey"
+            columns: ["concept_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_payroll_concepts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_incidents_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "hr_payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_payroll_recalculations: {
         Row: {
           agreement_id: string | null
