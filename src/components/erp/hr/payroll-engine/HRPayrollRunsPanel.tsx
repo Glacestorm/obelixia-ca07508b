@@ -1,10 +1,10 @@
 /**
  * HRPayrollRunsPanel — V2-ES.7 Paso 2
- * Gestión visual de payroll runs: crear, ejecutar, comparar, auditar
+ * Gestión visual de payroll runs: crear, ejecutar, revisar, aprobar, comparar
  * Se integra como tab en HRPayrollEngine
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,21 +15,22 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import {
   Play, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw,
-  ChevronRight, ArrowUpDown, Eye, Loader2, Info, Archive, FileText
+  ChevronRight, ArrowUpDown, Eye, Loader2, Info, Archive, FileText,
+  ThumbsUp, ShieldCheck
 } from 'lucide-react';
 import { usePayrollRuns } from '@/hooks/erp/hr/usePayrollRuns';
 import {
   type PayrollRun,
-  type PayrollRunStatus,
+  type PayrollRunType,
   RUN_STATUS_CONFIG,
   RUN_TYPE_LABELS,
   formatRunLabel,
   isRunTerminal,
-  isRunActive,
   type SnapshotInput,
   type PayrollRunSnapshot,
   type PayrollRunValidationSummary,
 } from '@/engines/erp/hr/payrollRunEngine';
+import { supabase } from '@/integrations/supabase/client';
 import type { PayrollPeriod } from '@/hooks/erp/hr/usePayrollEngine';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -47,16 +48,19 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   clock: <Clock className="h-3.5 w-3.5" />,
   loader: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
   check: <CheckCircle className="h-3.5 w-3.5" />,
+  'check-double': <ShieldCheck className="h-3.5 w-3.5" />,
+  eye: <Eye className="h-3.5 w-3.5" />,
   alert: <AlertTriangle className="h-3.5 w-3.5" />,
   x: <XCircle className="h-3.5 w-3.5" />,
   archive: <Archive className="h-3.5 w-3.5" />,
 };
 
 export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSelectPeriod, onBatchCalculateES }: Props) {
-  const { runs, activeRun, isLoading, setActiveRun, fetchRuns, createRun, executeRun } = usePayrollRuns(companyId);
+  const { runs, activeRun, isLoading, setActiveRun, fetchRuns, createRun, executeRun, reviewRun, approveRun } = usePayrollRuns(companyId);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [createNotes, setCreateNotes] = useState('');
+  const [selectedRunType, setSelectedRunType] = useState<PayrollRunType | ''>('');
   const [isExecuting, setIsExecuting] = useState(false);
 
   const selectedPeriod = useMemo(
@@ -82,50 +86,47 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
         end_date: selectedPeriod.end_date,
         status: selectedPeriod.status,
       },
-      incidents: [],  // Will be enriched when incidents are loaded
+      incidents: [],
       conceptCount: 44,
       earningCount: 24,
       deductionCount: 10,
-      employeeIds: [],  // Will be populated from employee scope
+      employeeIds: [],
       runParams: {},
     };
 
-    // Fetch employees in scope
+    // Fetch employees + incidents in parallel
     try {
-      const { data: employees } = await (await import('@/integrations/supabase/client')).supabase
-        .from('erp_hr_employees')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('status', 'active');
-      
-      if (employees) {
-        snapshotInput.employeeIds = employees.map((e: any) => e.id);
-      }
+      const [empRes, incRes] = await Promise.all([
+        supabase
+          .from('erp_hr_employees')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('status', 'active'),
+        supabase
+          .from('erp_hr_payroll_incidents')
+          .select('status, incident_type')
+          .eq('company_id', companyId)
+          .eq('period_id', selectedPeriod.id),
+      ]);
 
-      // Fetch incidents for period
-      const { data: incidents } = await (await import('@/integrations/supabase/client')).supabase
-        .from('erp_hr_payroll_incidents')
-        .select('status, incident_type')
-        .eq('company_id', companyId)
-        .eq('period_id', selectedPeriod.id);
-
-      if (incidents) {
-        snapshotInput.incidents = incidents as any[];
-      }
+      if (empRes.data) snapshotInput.employeeIds = empRes.data.map((e: any) => e.id);
+      if (incRes.data) snapshotInput.incidents = incRes.data as any[];
     } catch { /* graceful degradation */ }
 
-    const run = await createRun(snapshotInput, createNotes || undefined);
+    const run = await createRun(snapshotInput, {
+      notes: createNotes || undefined,
+      runType: (selectedRunType as PayrollRunType) || undefined,
+    });
     if (run) {
       setShowCreateDialog(false);
       setCreateNotes('');
+      setSelectedRunType('');
     }
-  }, [selectedPeriod, companyId, createNotes, createRun]);
+  }, [selectedPeriod, companyId, createNotes, selectedRunType, createRun]);
 
   // ── Execute Run ──
   const handleExecuteRun = useCallback(async (run: PayrollRun) => {
-    if (!onBatchCalculateES) {
-      return;
-    }
+    if (!onBatchCalculateES) return;
     setIsExecuting(true);
     try {
       await executeRun(run.id, onBatchCalculateES);
@@ -140,6 +141,8 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
     if (run.total_employees === 0) return 0;
     return Math.round(((run.employees_calculated + run.employees_errored + run.employees_skipped) / run.total_employees) * 100);
   };
+
+  const eurFmt = (n: number) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
 
   return (
     <div className="space-y-4">
@@ -226,6 +229,8 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                       <div>
                         <p className="text-sm font-medium">{formatRunLabel(run)}</p>
                         <p className="text-xs text-muted-foreground">
+                          v{run.version || run.run_number}
+                          {' · '}
                           {run.started_at
                             ? formatDistanceToNow(new Date(run.started_at), { locale: es, addSuffix: true })
                             : 'Pendiente'}
@@ -239,7 +244,7 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                       {/* Totals badge */}
                       {isRunTerminal(run.status) && run.status !== 'failed' && run.status !== 'cancelled' && (
                         <Badge variant="outline" className="text-xs font-mono">
-                          {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(run.total_net)}
+                          {eurFmt(run.total_net)}
                         </Badge>
                       )}
 
@@ -248,17 +253,33 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                         {statusCfg.label}
                       </Badge>
 
-                      {/* Execute button */}
-                      {run.status === 'pending' && onBatchCalculateES && (
+                      {/* Action buttons */}
+                      {run.status === 'draft' && onBatchCalculateES && (
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 h-7 text-xs"
+                          size="sm" variant="outline" className="gap-1 h-7 text-xs"
                           disabled={isExecuting}
                           onClick={(e) => { e.stopPropagation(); handleExecuteRun(run); }}
                         >
                           {isExecuting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
                           Ejecutar
+                        </Button>
+                      )}
+
+                      {run.status === 'calculated' && (
+                        <Button
+                          size="sm" variant="outline" className="gap-1 h-7 text-xs"
+                          onClick={(e) => { e.stopPropagation(); reviewRun(run.id); if (selectedPeriodId) fetchRuns(selectedPeriodId); }}
+                        >
+                          <Eye className="h-3 w-3" /> Revisar
+                        </Button>
+                      )}
+
+                      {(run.status === 'calculated' || run.status === 'reviewed') && (
+                        <Button
+                          size="sm" variant="outline" className="gap-1 h-7 text-xs text-emerald-700"
+                          onClick={(e) => { e.stopPropagation(); approveRun(run.id); if (selectedPeriodId) fetchRuns(selectedPeriodId); }}
+                        >
+                          <ThumbsUp className="h-3 w-3" /> Aprobar
                         </Button>
                       )}
 
@@ -276,11 +297,19 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                     </div>
                   )}
 
-                  {/* Warnings/errors summary */}
-                  {run.warnings && (run.warnings as any[]).length > 0 && (
-                    <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600">
-                      <AlertTriangle className="h-3 w-3" />
-                      {(run.warnings as any[]).length} aviso(s)
+                  {/* Warnings/errors counters */}
+                  {(run.warnings_count > 0 || run.errors_count > 0) && (
+                    <div className="mt-2 flex items-center gap-3 text-xs">
+                      {run.warnings_count > 0 && (
+                        <span className="flex items-center gap-1 text-amber-600">
+                          <AlertTriangle className="h-3 w-3" /> {run.warnings_count} aviso(s)
+                        </span>
+                      )}
+                      {run.errors_count > 0 && (
+                        <span className="flex items-center gap-1 text-destructive">
+                          <XCircle className="h-3 w-3" /> {run.errors_count} error(es)
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -290,10 +319,10 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                       <ArrowUpDown className="h-3 w-3" />
                       <span>vs Run #{(run.diff_summary as any).previous_run_number}: </span>
                       <span className={cn(
-                        (run.diff_summary as any).diff_net > 0 ? 'text-green-600' : (run.diff_summary as any).diff_net < 0 ? 'text-destructive' : ''
+                        (run.diff_summary as any).diff_net > 0 ? 'text-emerald-600' : (run.diff_summary as any).diff_net < 0 ? 'text-destructive' : ''
                       )}>
                         {(run.diff_summary as any).diff_net > 0 ? '+' : ''}
-                        {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format((run.diff_summary as any).diff_net)} neto
+                        {eurFmt((run.diff_summary as any).diff_net)} neto
                       </span>
                     </div>
                   )}
@@ -320,6 +349,22 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                 <p><strong>Período:</strong> {selectedPeriod.period_name}</p>
                 <p><strong>Estado:</strong> {selectedPeriod.status}</p>
                 <p><strong>Fechas:</strong> {selectedPeriod.start_date} → {selectedPeriod.end_date}</p>
+              </div>
+
+              {/* Run type selector */}
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Tipo de ejecución</label>
+                <Select value={selectedRunType} onValueChange={(v) => setSelectedRunType(v as PayrollRunType)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Automático (según historial)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="initial">Cálculo inicial</SelectItem>
+                    <SelectItem value="recalculation">Recálculo</SelectItem>
+                    <SelectItem value="correction">Corrección</SelectItem>
+                    <SelectItem value="simulation">Simulación</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs text-amber-700 flex items-start gap-2">
@@ -366,7 +411,7 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
 
               <ScrollArea className="max-h-[60vh]">
                 <div className="space-y-4 pr-2">
-                  {/* Status */}
+                  {/* Status + version */}
                   <div className="flex items-center gap-2">
                     <Badge className={cn(RUN_STATUS_CONFIG[activeRun.status].color, "text-xs")}>
                       {STATUS_ICON[RUN_STATUS_CONFIG[activeRun.status].icon]}
@@ -375,6 +420,12 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                     <span className="text-xs text-muted-foreground">
                       {RUN_TYPE_LABELS[activeRun.run_type]}
                     </span>
+                    <Badge variant="outline" className="text-[10px] font-mono">
+                      v{activeRun.version || activeRun.run_number}
+                    </Badge>
+                    {activeRun.snapshot_hash && (
+                      <span className="text-[9px] font-mono text-muted-foreground">{activeRun.snapshot_hash}</span>
+                    )}
                   </div>
 
                   {/* Totals */}
@@ -382,36 +433,23 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                     <>
                       <Separator />
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase">Bruto</p>
-                          <p className="text-sm font-bold font-mono">
-                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(activeRun.total_gross)}
-                          </p>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase">Neto</p>
-                          <p className="text-sm font-bold font-mono">
-                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(activeRun.total_net)}
-                          </p>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase">Deducciones</p>
-                          <p className="text-sm font-bold font-mono">
-                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(activeRun.total_deductions)}
-                          </p>
-                        </div>
-                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase">Coste empresa</p>
-                          <p className="text-sm font-bold font-mono">
-                            {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(activeRun.total_employer_cost)}
-                          </p>
-                        </div>
+                        {[
+                          { label: 'Bruto', value: activeRun.total_gross },
+                          { label: 'Neto', value: activeRun.total_net },
+                          { label: 'Deducciones', value: activeRun.total_deductions },
+                          { label: 'Coste empresa', value: activeRun.total_employer_cost },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="p-2.5 rounded-lg bg-muted/50 text-center">
+                            <p className="text-[10px] text-muted-foreground uppercase">{label}</p>
+                            <p className="text-sm font-bold font-mono">{eurFmt(value)}</p>
+                          </div>
+                        ))}
                       </div>
 
                       <div className="grid grid-cols-3 gap-2 text-center text-xs">
                         <div>
                           <p className="text-muted-foreground">Calculados</p>
-                          <p className="font-bold text-green-600">{activeRun.employees_calculated}</p>
+                          <p className="font-bold text-emerald-600">{activeRun.employees_calculated}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Omitidos</p>
@@ -435,7 +473,7 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                           {((activeRun.validation_summary as PayrollRunValidationSummary).checks || []).map((check) => (
                             <div key={check.id} className="flex items-center gap-2 text-xs">
                               {check.passed
-                                ? <CheckCircle className="h-3 w-3 text-green-500" />
+                                ? <CheckCircle className="h-3 w-3 text-emerald-500" />
                                 : check.severity === 'error'
                                   ? <XCircle className="h-3 w-3 text-destructive" />
                                   : <AlertTriangle className="h-3 w-3 text-amber-500" />
@@ -454,7 +492,7 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                     <>
                       <Separator />
                       <div>
-                        <p className="text-xs font-medium mb-2 text-amber-600">Avisos ({(activeRun.warnings as any[]).length})</p>
+                        <p className="text-xs font-medium mb-2 text-amber-600">Avisos ({activeRun.warnings_count})</p>
                         {(activeRun.warnings as any[]).map((w: any, i: number) => (
                           <div key={i} className="flex items-start gap-2 text-xs mb-1.5">
                             <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5" />
@@ -470,7 +508,7 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                     <>
                       <Separator />
                       <div>
-                        <p className="text-xs font-medium mb-2 text-destructive">Errores ({(activeRun.errors as any[]).length})</p>
+                        <p className="text-xs font-medium mb-2 text-destructive">Errores ({activeRun.errors_count})</p>
                         {(activeRun.errors as any[]).map((e: any, i: number) => (
                           <div key={i} className="flex items-start gap-2 text-xs mb-1.5">
                             <XCircle className="h-3 w-3 text-destructive mt-0.5" />
@@ -495,14 +533,21 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                           ].map(({ label, value }) => (
                             <div key={label} className="p-2 rounded bg-muted/50">
                               <p className="text-muted-foreground">{label}</p>
-                              <p className={cn("font-mono font-bold", value > 0 ? 'text-green-600' : value < 0 ? 'text-destructive' : '')}>
-                                {value > 0 ? '+' : ''}{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(value)}
+                              <p className={cn("font-mono font-bold", value > 0 ? 'text-emerald-600' : value < 0 ? 'text-destructive' : '')}>
+                                {value > 0 ? '+' : ''}{eurFmt(value)}
                               </p>
                             </div>
                           ))}
                         </div>
                       </div>
                     </>
+                  )}
+
+                  {/* Recalculation reference */}
+                  {activeRun.recalculation_reference && (
+                    <div className="text-xs text-muted-foreground">
+                      Referencia de recálculo: <span className="font-mono">{activeRun.recalculation_reference}</span>
+                    </div>
                   )}
 
                   {/* Snapshot info */}
@@ -539,12 +584,27 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                     <p>Creado: {new Date(activeRun.created_at).toLocaleString('es-ES')}</p>
                     {activeRun.started_at && <p>Iniciado: {new Date(activeRun.started_at).toLocaleString('es-ES')}</p>}
                     {activeRun.completed_at && <p>Completado: {new Date(activeRun.completed_at).toLocaleString('es-ES')}</p>}
+                    {activeRun.locked_at && <p>Bloqueado: {new Date(activeRun.locked_at).toLocaleString('es-ES')}</p>}
                   </div>
 
                   {/* Disclaimer */}
                   <div className="p-2.5 rounded-lg border border-muted bg-muted/30 text-[10px] text-muted-foreground">
                     <strong>Nota:</strong> Este run es una ejecución interna de cálculo. No constituye liquidación oficial, ni comunicación a TGSS, AEAT o SEPE.
                   </div>
+
+                  {/* Action buttons in detail */}
+                  {(activeRun.status === 'calculated' || activeRun.status === 'reviewed') && (
+                    <div className="flex gap-2">
+                      {activeRun.status === 'calculated' && (
+                        <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => { reviewRun(activeRun.id); if (selectedPeriodId) fetchRuns(selectedPeriodId); setShowDetailSheet(false); }}>
+                          <Eye className="h-3 w-3" /> Marcar revisado
+                        </Button>
+                      )}
+                      <Button size="sm" className="gap-1 text-xs" onClick={() => { approveRun(activeRun.id); if (selectedPeriodId) fetchRuns(selectedPeriodId); setShowDetailSheet(false); }}>
+                        <ThumbsUp className="h-3 w-3" /> Aprobar
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </>

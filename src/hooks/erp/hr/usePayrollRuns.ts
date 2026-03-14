@@ -15,6 +15,7 @@ import {
   type PayrollRunError,
   type PayrollRunDiffSummary,
   buildSnapshot,
+  computeSnapshotHash,
   validatePreRun,
   classifyRunResult,
   computeRunDiff,
@@ -53,11 +54,12 @@ export function usePayrollRuns(companyId?: string) {
   // ── Create a new run ──
   const createRun = useCallback(async (
     snapshotInput: SnapshotInput,
-    notes?: string
+    options?: { notes?: string; runType?: PayrollRunType }
   ): Promise<PayrollRun | null> => {
     if (!companyId) return null;
     try {
       const snapshot = buildSnapshot(snapshotInput);
+      const snapshotHash = computeSnapshotHash(snapshot);
       const validation = validatePreRun(snapshot);
 
       // Block if critical errors
@@ -68,28 +70,39 @@ export function usePayrollRuns(companyId?: string) {
       }
 
       const runNumber = getNextRunNumber(runs);
-      const runType = determineRunType(runs);
+      const runType = determineRunType(runs, options?.runType);
 
-      // Mark previous completed runs as superseded
-      const latestCompleted = runs.find(r => r.status === 'completed' || r.status === 'completed_with_warnings');
-      
+      // Find latest completed run for reference
+      const latestCompleted = runs.find(r =>
+        r.status === 'calculated' || r.status === 'reviewed' || r.status === 'approved'
+      );
+
       const { data: { user } } = await supabase.auth.getUser();
+
+      const insertPayload: Record<string, unknown> = {
+        company_id: companyId,
+        period_id: snapshotInput.period.id,
+        period_year: snapshotInput.period.fiscal_year,
+        period_month: snapshotInput.period.period_number,
+        run_number: runNumber,
+        run_type: runType,
+        version: runNumber, // version tracks the iteration
+        status: 'draft',
+        context_snapshot: snapshot,
+        snapshot_hash: snapshotHash,
+        validation_summary: validation,
+        previous_run_id: latestCompleted?.id || null,
+        recalculation_reference: runType === 'recalculation' ? (latestCompleted?.id || null) : null,
+        started_by: user?.id || null,
+        notes: options?.notes || null,
+        total_employees: snapshot.employees.total_in_scope,
+        warnings_count: validation.warnings,
+        errors_count: 0,
+      };
 
       const { data, error } = await supabase
         .from('erp_hr_payroll_runs')
-        .insert({
-          company_id: companyId,
-          period_id: snapshotInput.period.id,
-          run_number: runNumber,
-          run_type: runType,
-          status: 'pending' as string,
-          context_snapshot: snapshot as any,
-          validation_summary: validation as any,
-          previous_run_id: latestCompleted?.id || null,
-          started_by: user?.id || null,
-          notes: notes || null,
-          total_employees: snapshot.employees.total_in_scope,
-        } as any)
+        .insert(insertPayload as any)
         .select()
         .single();
 
@@ -128,7 +141,7 @@ export function usePayrollRuns(companyId?: string) {
         return false;
       }
 
-      const updates: any = {
+      const updates: Record<string, unknown> = {
         status: newStatus,
         updated_at: new Date().toISOString(),
       };
@@ -137,12 +150,22 @@ export function usePayrollRuns(companyId?: string) {
         updates.started_at = new Date().toISOString();
       }
 
-      if (['completed', 'completed_with_warnings', 'failed'].includes(newStatus)) {
+      if (['calculated', 'failed'].includes(newStatus)) {
         updates.completed_at = new Date().toISOString();
       }
 
-      if (extras?.warnings) updates.warnings = extras.warnings;
-      if (extras?.errors) updates.errors = extras.errors;
+      if (newStatus === 'approved') {
+        updates.locked_at = new Date().toISOString();
+      }
+
+      if (extras?.warnings) {
+        updates.warnings = extras.warnings;
+        updates.warnings_count = extras.warnings.length;
+      }
+      if (extras?.errors) {
+        updates.errors = extras.errors;
+        updates.errors_count = extras.errors.length;
+      }
       if (extras?.totals) {
         updates.total_gross = extras.totals.gross;
         updates.total_net = extras.totals.net;
@@ -156,14 +179,14 @@ export function usePayrollRuns(companyId?: string) {
 
       const { error } = await supabase
         .from('erp_hr_payroll_runs')
-        .update(updates)
+        .update(updates as any)
         .eq('id', runId);
 
       if (error) throw error;
 
-      setRuns(prev => prev.map(r => r.id === runId ? { ...r, ...updates } : r));
+      setRuns(prev => prev.map(r => r.id === runId ? { ...r, ...updates } as PayrollRun : r));
       if (activeRun?.id === runId) {
-        setActiveRun(prev => prev ? { ...prev, ...updates } : null);
+        setActiveRun(prev => prev ? { ...prev, ...updates } as PayrollRun : null);
       }
 
       return true;
@@ -178,21 +201,25 @@ export function usePayrollRuns(companyId?: string) {
   const supersedePreviousRuns = useCallback(async (periodId: string, currentRunId: string) => {
     try {
       const previousCompleted = runs.filter(
-        r => r.period_id === periodId && 
-        r.id !== currentRunId && 
-        (r.status === 'completed' || r.status === 'completed_with_warnings')
+        r => r.period_id === periodId &&
+        r.id !== currentRunId &&
+        (r.status === 'calculated' || r.status === 'reviewed' || r.status === 'approved')
       );
 
       for (const run of previousCompleted) {
         await supabase
           .from('erp_hr_payroll_runs')
-          .update({ status: 'superseded', updated_at: new Date().toISOString() } as any)
+          .update({
+            status: 'superseded',
+            superseded_by: currentRunId,
+            updated_at: new Date().toISOString(),
+          } as any)
           .eq('id', run.id);
       }
 
-      setRuns(prev => prev.map(r => 
-        previousCompleted.some(pc => pc.id === r.id) 
-          ? { ...r, status: 'superseded' as PayrollRunStatus } 
+      setRuns(prev => prev.map(r =>
+        previousCompleted.some(pc => pc.id === r.id)
+          ? { ...r, status: 'superseded' as PayrollRunStatus, superseded_by: currentRunId }
           : r
       ));
     } catch (e: any) {
@@ -284,7 +311,7 @@ export function usePayrollRuns(companyId?: string) {
       });
 
       // 8. Supersede previous completed runs
-      if (finalStatus === 'completed' || finalStatus === 'completed_with_warnings') {
+      if (finalStatus === 'calculated') {
         await supersedePreviousRuns(run.period_id, runId);
       }
 
@@ -299,6 +326,15 @@ export function usePayrollRuns(companyId?: string) {
     }
   }, [runs, updateRunStatus, supersedePreviousRuns]);
 
+  // ── Review / Approve helpers ──
+  const reviewRun = useCallback(async (runId: string) => {
+    return updateRunStatus(runId, 'reviewed');
+  }, [updateRunStatus]);
+
+  const approveRun = useCallback(async (runId: string) => {
+    return updateRunStatus(runId, 'approved');
+  }, [updateRunStatus]);
+
   return {
     runs,
     activeRun,
@@ -308,6 +344,8 @@ export function usePayrollRuns(companyId?: string) {
     createRun,
     updateRunStatus,
     executeRun,
+    reviewRun,
+    approveRun,
   };
 }
 

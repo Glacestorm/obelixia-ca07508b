@@ -6,15 +6,18 @@
 
 // ── Types ──
 
-export type PayrollRunStatus = 'pending' | 'running' | 'completed' | 'completed_with_warnings' | 'failed' | 'cancelled' | 'superseded';
+export type PayrollRunStatus = 'draft' | 'running' | 'calculated' | 'reviewed' | 'approved' | 'failed' | 'cancelled' | 'superseded';
 export type PayrollRunType = 'initial' | 'recalculation' | 'correction' | 'simulation';
 
 export interface PayrollRun {
   id: string;
   company_id: string;
   period_id: string;
+  period_year: number | null;
+  period_month: number | null;
   run_number: number;
   run_type: PayrollRunType;
+  version: number;
   status: PayrollRunStatus;
   context_snapshot: PayrollRunSnapshot;
   total_employees: number;
@@ -25,13 +28,19 @@ export interface PayrollRun {
   total_net: number;
   total_deductions: number;
   total_employer_cost: number;
+  warnings_count: number;
+  errors_count: number;
   warnings: PayrollRunWarning[];
   errors: PayrollRunError[];
   validation_summary: PayrollRunValidationSummary;
   previous_run_id: string | null;
+  recalculation_reference: string | null;
+  superseded_by: string | null;
   diff_summary: PayrollRunDiffSummary | null;
+  snapshot_hash: string | null;
   started_at: string | null;
   completed_at: string | null;
+  locked_at: string | null;
   started_by: string | null;
   notes: string | null;
   metadata: Record<string, unknown>;
@@ -62,6 +71,7 @@ export interface PayrollRunSnapshot {
     total_active: number;
     earning_count: number;
     deduction_count: number;
+    applied_codes?: string[];
   };
   employees: {
     total_in_scope: number;
@@ -75,6 +85,7 @@ export interface PayrollRunSnapshot {
     fp_worker: number;
     mei: number;
   };
+  rules_snapshot?: Record<string, unknown>;
   run_params: Record<string, unknown>;
 }
 
@@ -125,10 +136,11 @@ export interface PayrollRunDiffSummary {
 // ── Status Labels ──
 
 export const RUN_STATUS_CONFIG: Record<PayrollRunStatus, { label: string; color: string; icon: string }> = {
-  pending: { label: 'Pendiente', color: 'bg-muted text-muted-foreground', icon: 'clock' },
+  draft: { label: 'Borrador', color: 'bg-muted text-muted-foreground', icon: 'clock' },
   running: { label: 'Calculando...', color: 'bg-blue-500/10 text-blue-700', icon: 'loader' },
-  completed: { label: 'Completado', color: 'bg-green-500/10 text-green-700', icon: 'check' },
-  completed_with_warnings: { label: 'Completado con avisos', color: 'bg-amber-500/10 text-amber-700', icon: 'alert' },
+  calculated: { label: 'Calculado', color: 'bg-emerald-500/10 text-emerald-700', icon: 'check' },
+  reviewed: { label: 'Revisado', color: 'bg-blue-500/10 text-blue-700', icon: 'eye' },
+  approved: { label: 'Aprobado', color: 'bg-green-500/10 text-green-700', icon: 'check-double' },
   failed: { label: 'Fallido', color: 'bg-destructive/10 text-destructive', icon: 'x' },
   cancelled: { label: 'Cancelado', color: 'bg-muted text-muted-foreground', icon: 'x' },
   superseded: { label: 'Sustituido', color: 'bg-muted text-muted-foreground/60', icon: 'archive' },
@@ -144,11 +156,12 @@ export const RUN_TYPE_LABELS: Record<PayrollRunType, string> = {
 // ── State Machine ──
 
 const VALID_TRANSITIONS: Record<PayrollRunStatus, PayrollRunStatus[]> = {
-  pending: ['running', 'cancelled'],
-  running: ['completed', 'completed_with_warnings', 'failed'],
-  completed: ['superseded'],
-  completed_with_warnings: ['superseded'],
-  failed: ['pending', 'cancelled'],  // allow retry
+  draft: ['running', 'cancelled'],
+  running: ['calculated', 'failed'],
+  calculated: ['reviewed', 'approved', 'superseded'],
+  reviewed: ['approved', 'superseded'],
+  approved: ['superseded'],
+  failed: ['draft', 'cancelled'],  // allow retry
   cancelled: [],
   superseded: [],
 };
@@ -162,8 +175,14 @@ export function getNextRunNumber(existingRuns: Pick<PayrollRun, 'run_number'>[])
   return Math.max(...existingRuns.map(r => r.run_number)) + 1;
 }
 
-export function determineRunType(existingRuns: Pick<PayrollRun, 'status' | 'run_type'>[]): PayrollRunType {
-  const completedRuns = existingRuns.filter(r => r.status === 'completed' || r.status === 'completed_with_warnings');
+export function determineRunType(
+  existingRuns: Pick<PayrollRun, 'status' | 'run_type'>[],
+  explicit?: PayrollRunType
+): PayrollRunType {
+  if (explicit) return explicit;
+  const completedRuns = existingRuns.filter(r =>
+    r.status === 'calculated' || r.status === 'reviewed' || r.status === 'approved'
+  );
   if (completedRuns.length === 0) return 'initial';
   return 'recalculation';
 }
@@ -187,7 +206,9 @@ export interface SnapshotInput {
   conceptCount: number;
   earningCount: number;
   deductionCount: number;
+  appliedCodes?: string[];
   employeeIds: string[];
+  rulesSnapshot?: Record<string, unknown>;
   runParams?: Record<string, unknown>;
 }
 
@@ -205,7 +226,7 @@ export function buildSnapshot(input: SnapshotInput): PayrollRunSnapshot {
   }
 
   return {
-    version: '2.0',
+    version: '2.1',
     captured_at: new Date().toISOString(),
     period: {
       id: input.period.id,
@@ -227,6 +248,7 @@ export function buildSnapshot(input: SnapshotInput): PayrollRunSnapshot {
       total_active: input.conceptCount,
       earning_count: input.earningCount,
       deduction_count: input.deductionCount,
+      applied_codes: input.appliedCodes,
     },
     employees: {
       total_in_scope: input.employeeIds.length,
@@ -240,8 +262,24 @@ export function buildSnapshot(input: SnapshotInput): PayrollRunSnapshot {
       fp_worker: 0.10,
       mei: 0.58,
     },
+    rules_snapshot: input.rulesSnapshot,
     run_params: input.runParams || {},
   };
+}
+
+/**
+ * Simple hash for snapshot integrity check.
+ * Uses a stable JSON stringification + basic hash.
+ */
+export function computeSnapshotHash(snapshot: PayrollRunSnapshot): string {
+  const str = JSON.stringify(snapshot, Object.keys(snapshot).sort());
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0; // 32bit int
+  }
+  return `sha-v1-${Math.abs(hash).toString(16).padStart(8, '0')}`;
 }
 
 // ── Pre-Run Validation ──
@@ -321,7 +359,7 @@ export function computeRunDiff(
   const previousSet = new Set(previousEmployeeIds);
   const added = currentEmployeeIds.filter(id => !previousSet.has(id)).length;
   const removed = previousEmployeeIds.filter(id => !currentSet.has(id)).length;
-  const changed = currentEmployeeIds.filter(id => previousSet.has(id)).length; // simplified
+  const changed = currentEmployeeIds.filter(id => previousSet.has(id)).length;
 
   return {
     previous_run_number: previousRun.run_number,
@@ -340,11 +378,10 @@ export function computeRunDiff(
 export function classifyRunResult(
   employeesCalculated: number,
   employeesErrored: number,
-  warnings: PayrollRunWarning[]
+  _warnings: PayrollRunWarning[]
 ): PayrollRunStatus {
   if (employeesCalculated === 0 && employeesErrored > 0) return 'failed';
-  if (employeesErrored > 0 || warnings.length > 0) return 'completed_with_warnings';
-  return 'completed';
+  return 'calculated';
 }
 
 // ── Formatters ──
@@ -355,15 +392,19 @@ export function formatRunLabel(run: Pick<PayrollRun, 'run_number' | 'run_type' |
 }
 
 export function isRunTerminal(status: PayrollRunStatus): boolean {
-  return ['completed', 'completed_with_warnings', 'failed', 'cancelled', 'superseded'].includes(status);
+  return ['calculated', 'reviewed', 'approved', 'failed', 'cancelled', 'superseded'].includes(status);
 }
 
 export function isRunActive(status: PayrollRunStatus): boolean {
-  return status === 'pending' || status === 'running';
+  return status === 'draft' || status === 'running';
+}
+
+export function isRunLocked(run: Pick<PayrollRun, 'locked_at' | 'status'>): boolean {
+  return !!run.locked_at || run.status === 'approved' || run.status === 'superseded';
 }
 
 export function getLatestCompletedRun(runs: PayrollRun[]): PayrollRun | null {
   return runs
-    .filter(r => r.status === 'completed' || r.status === 'completed_with_warnings')
+    .filter(r => r.status === 'calculated' || r.status === 'reviewed' || r.status === 'approved')
     .sort((a, b) => b.run_number - a.run_number)[0] || null;
 }
