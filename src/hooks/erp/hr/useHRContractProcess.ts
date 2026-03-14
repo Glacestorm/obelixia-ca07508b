@@ -1,6 +1,6 @@
 /**
  * useHRContractProcess — Hook for employee contract/hiring process
- * V2-ES.6 Paso 1.1: Data validation, readiness, SEPE/Contrat@-oriented structure
+ * V2-ES.6 Paso 1.1 + Paso 3: Data validation, readiness, closure
  *
  * Mirrors the pattern from useHRRegistrationProcess (alta/afiliación).
  * Single source of truth: erp_hr_contract_process_data linked to admin_request.
