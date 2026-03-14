@@ -683,3 +683,284 @@ function ConnectorEnvironmentList({
     </ScrollArea>
   );
 }
+
+// ======================== HISTORY PANEL (T9) ========================
+
+function SandboxHistoryPanel({
+  sandbox,
+}: {
+  sandbox: ReturnType<typeof useSandboxEnvironment>;
+}) {
+  const [domainFilter, setDomainFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const handleRefresh = useCallback(() => {
+    const filters: any = {};
+    if (domainFilter !== 'all') filters.domain = domainFilter;
+    if (statusFilter !== 'all') filters.status = statusFilter;
+    sandbox.fetchPersistedHistory(filters);
+  }, [domainFilter, statusFilter, sandbox.fetchPersistedHistory]);
+
+  useEffect(() => { handleRefresh(); }, [domainFilter, statusFilter]);
+
+  const records = sandbox.persistedHistory;
+
+  return (
+    <div className="space-y-3">
+      {/* Filters */}
+      <Card className="p-3">
+        <div className="flex items-center gap-3">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={domainFilter} onValueChange={setDomainFilter}>
+            <SelectTrigger className="h-8 text-xs w-[140px]">
+              <SelectValue placeholder="Dominio" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los dominios</SelectItem>
+              {SANDBOX_DOMAINS.map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-8 text-xs w-[140px]">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="completed">Completado</SelectItem>
+              <SelectItem value="failed">Fallido</SelectItem>
+              <SelectItem value="pending">Pendiente</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" className="h-8 text-xs ml-auto" onClick={handleRefresh} disabled={sandbox.persistedHistoryLoading}>
+            <RefreshCw className={`h-3 w-3 mr-1.5 ${sandbox.persistedHistoryLoading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
+          <Badge variant="secondary" className="text-[9px]">
+            <Database className="h-3 w-3 mr-1" />
+            {sandbox.persistedHistoryCount} registros
+          </Badge>
+        </div>
+      </Card>
+
+      {/* Disclaimer */}
+      <Alert className="border-muted bg-muted/30">
+        <Lock className="h-3.5 w-3.5" />
+        <AlertDescription className="text-[10px]">
+          Historial de ejecuciones sandbox persistidas. No constituyen envíos oficiales. Producción bloqueada.
+        </AlertDescription>
+      </Alert>
+
+      {records.length === 0 ? (
+        <Card className="p-6 text-center">
+          <History className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">Sin ejecuciones sandbox persistidas</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Las ejecuciones futuras se almacenarán automáticamente
+          </p>
+        </Card>
+      ) : (
+        <ScrollArea className="h-[450px]">
+          <div className="space-y-2">
+            {records.map(record => (
+              <Card key={record.id} className="p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-[9px] ${ENV_BADGE_VARIANTS[record.environment]}`}>
+                      {record.domain}
+                    </Badge>
+                    <span className="text-xs font-medium">{record.adapterName}</span>
+                    <Badge variant="outline" className="text-[9px]">{record.executionMode === 'advanced_simulation' ? 'Sim. avanzada' : 'Staged'}</Badge>
+                  </div>
+                  <Badge
+                    variant={record.status === 'completed' ? 'secondary' : 'destructive'}
+                    className="text-[9px]"
+                  >
+                    {record.status}
+                  </Badge>
+                </div>
+
+                {record.result && (
+                  <div className="flex items-center gap-3 mb-1.5">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-[10px] mb-0.5">
+                        <span className="text-muted-foreground">Conformidad</span>
+                        <span className="font-medium">{record.result.payloadConformance}%</span>
+                      </div>
+                      <Progress value={record.result.payloadConformance} className="h-1" />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {record.result.executionStages.filter(s => s.status === 'passed').length}/{record.result.executionStages.length} etapas
+                    </span>
+                    {record.durationMs && (
+                      <span className="text-[10px] text-muted-foreground">{record.durationMs}ms</span>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 text-[9px] text-muted-foreground pt-1 border-t">
+                  <span>{new Date(record.executedAt).toLocaleString('es-ES')}</span>
+                  <span>Hash: {record.payloadHash}</span>
+                  {record.relatedDryRunId && <span>Dry-run: {record.relatedDryRunId.slice(0, 8)}</span>}
+                  <span className="text-[8px] italic ml-auto">Sandbox preparatorio — no oficial</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+    </div>
+  );
+}
+
+// ======================== COMPARISON PANEL (T9) ========================
+
+function SandboxComparisonPanel({
+  sandbox,
+  companyId,
+}: {
+  sandbox: ReturnType<typeof useSandboxEnvironment>;
+  companyId: string;
+}) {
+  const [report, setReport] = useState<SandboxVsDryRunReport | null>(null);
+  const [selectedSandbox, setSelectedSandbox] = useState<string>('');
+
+  const sandboxRecords = sandbox.persistedHistory.length > 0
+    ? sandbox.persistedHistory
+    : sandbox.executionRecords;
+
+  // For now, comparison needs both sandbox and dry-run records.
+  // Dry-run records would come from useDryRunPersistence which is external.
+  // We show the comparison UI with sandbox records available.
+
+  return (
+    <div className="space-y-3">
+      <Alert className="border-muted bg-muted/30">
+        <GitCompare className="h-3.5 w-3.5" />
+        <AlertDescription className="text-[10px]">
+          Comparativa sandbox vs dry-run: muestra las diferencias semánticas entre validación local (dry-run) y simulación avanzada (sandbox).
+          <strong> No constituye validación de organismo.</strong>
+        </AlertDescription>
+      </Alert>
+
+      {sandboxRecords.length === 0 ? (
+        <Card className="p-6 text-center">
+          <GitCompare className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">Sin ejecuciones sandbox para comparar</p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Ejecuta un sandbox desde la pestaña Elegibilidad y un dry-run para generar comparativas
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {/* List of sandbox records with comparison potential */}
+          <Card className="p-3">
+            <p className="text-xs font-medium mb-2">Ejecuciones sandbox disponibles para comparación</p>
+            <ScrollArea className="h-[180px]">
+              <div className="space-y-1.5">
+                {sandboxRecords.slice(0, 20).map(record => (
+                  <div
+                    key={record.id}
+                    className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all ${
+                      selectedSandbox === record.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                    }`}
+                    onClick={() => setSelectedSandbox(record.id)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[9px]">{record.domain}</Badge>
+                      <span className="text-[10px]">{record.adapterName}</span>
+                      <span className="text-[9px] text-muted-foreground">
+                        {new Date(record.executedAt).toLocaleString('es-ES')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-medium">
+                        {record.result?.payloadConformance ?? 0}%
+                      </span>
+                      <Badge
+                        variant={record.status === 'completed' ? 'secondary' : 'destructive'}
+                        className="text-[8px]"
+                      >
+                        {record.status}
+                      </Badge>
+                      {record.relatedDryRunId && (
+                        <Badge variant="outline" className="text-[8px]">
+                          Con dry-run
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </Card>
+
+          {/* Selected sandbox detail */}
+          {selectedSandbox && (() => {
+            const record = sandboxRecords.find(r => r.id === selectedSandbox);
+            if (!record) return null;
+
+            return (
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <GitCompare className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Detalle de ejecución sandbox</span>
+                  <Badge variant="outline" className="text-[9px]">{record.domain}</Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-muted/30 text-[10px]">
+                    <p className="font-medium mb-1">Sandbox</p>
+                    <p>Conformidad: <strong>{record.result?.payloadConformance ?? 0}%</strong></p>
+                    <p>Etapas: {record.result?.executionStages.filter(s => s.status === 'passed').length ?? 0}/{record.result?.executionStages.length ?? 0}</p>
+                    <p>Errores: {record.result?.structuralErrors.length ?? 0}</p>
+                    <p>Avisos: {record.result?.fieldWarnings.length ?? 0}</p>
+                    {record.result?.simulatedOrganismResponse && (
+                      <p className="mt-1">Respuesta: [{record.result.simulatedOrganismResponse.code}]</p>
+                    )}
+                  </div>
+                  <div className="p-2 rounded-lg bg-muted/30 text-[10px]">
+                    <p className="font-medium mb-1">Metadata</p>
+                    <p>Modo: {record.executionMode}</p>
+                    <p>Entorno: {record.environment}</p>
+                    <p>Hash: {record.payloadHash}</p>
+                    <p>Duración: {record.durationMs ?? 0}ms</p>
+                    {record.relatedDryRunId && (
+                      <p>Dry-run vinculado: {record.relatedDryRunId.slice(0, 12)}...</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Execution stages detail */}
+                {record.result?.executionStages && (
+                  <div className="space-y-0.5 mb-3">
+                    <p className="text-[10px] font-medium mb-1">Etapas de simulación</p>
+                    {record.result.executionStages.map((stage, i) => (
+                      <div key={i} className="flex items-center gap-1.5 text-[9px]">
+                        {stage.status === 'passed' ? (
+                          <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
+                        ) : (
+                          <XCircle className="h-2.5 w-2.5 text-destructive shrink-0" />
+                        )}
+                        <span className={stage.status === 'passed' ? 'text-muted-foreground' : 'font-medium'}>
+                          {stage.label}
+                        </span>
+                        <span className="ml-auto text-muted-foreground/60">{stage.durationMs}ms</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="text-[8px] text-muted-foreground/60 italic pt-2 border-t">
+                  Ejecución sandbox preparatoria — no constituye envío oficial ni validación de organismo.
+                  Producción bloqueada por invariante de seguridad.
+                </div>
+              </Card>
+            );
+          })()}
+        </div>
+      )}
+    </div>
+  );
+}
