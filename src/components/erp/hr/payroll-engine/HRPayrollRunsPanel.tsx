@@ -32,6 +32,8 @@ import {
 } from '@/engines/erp/hr/payrollRunEngine';
 import { supabase } from '@/integrations/supabase/client';
 import type { PayrollPeriod } from '@/hooks/erp/hr/usePayrollEngine';
+import { PayrollRunDiffCard } from './PayrollRunDiffCard';
+import { PayrollRunVersionHistory } from './PayrollRunVersionHistory';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -194,7 +196,16 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
 
       {/* Runs list */}
       {selectedPeriodId && (
-        <div className="space-y-2">
+        <div className="space-y-3">
+          {/* Version history timeline */}
+          {runs.length > 1 && (
+            <PayrollRunVersionHistory
+              runs={runs}
+              activeRunId={activeRun?.id}
+              onSelectRun={(run) => { setActiveRun(run); setShowDetailSheet(true); }}
+            />
+          )}
+
           {runs.length === 0 && !isLoading && (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center text-muted-foreground">
@@ -519,27 +530,14 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
                     </>
                   )}
 
-                  {/* Diff */}
+                  {/* Diff — reusable card */}
                   {activeRun.diff_summary && (
                     <>
                       <Separator />
-                      <div>
-                        <p className="text-xs font-medium mb-2">Comparación vs Run #{(activeRun.diff_summary as any).previous_run_number}</p>
-                        <div className="grid grid-cols-3 gap-2 text-xs text-center">
-                          {[
-                            { label: 'Δ Bruto', value: (activeRun.diff_summary as any).diff_gross },
-                            { label: 'Δ Neto', value: (activeRun.diff_summary as any).diff_net },
-                            { label: 'Δ Coste', value: (activeRun.diff_summary as any).diff_employer_cost },
-                          ].map(({ label, value }) => (
-                            <div key={label} className="p-2 rounded bg-muted/50">
-                              <p className="text-muted-foreground">{label}</p>
-                              <p className={cn("font-mono font-bold", value > 0 ? 'text-emerald-600' : value < 0 ? 'text-destructive' : '')}>
-                                {value > 0 ? '+' : ''}{eurFmt(value)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <PayrollRunDiffCard
+                        diff={activeRun.diff_summary as any}
+                        currentRunLabel={formatRunLabel(activeRun)}
+                      />
                     </>
                   )}
 

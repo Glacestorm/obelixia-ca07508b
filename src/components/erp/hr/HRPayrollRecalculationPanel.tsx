@@ -53,6 +53,8 @@ interface RecalculationRecord {
   ai_validation?: { status: string; analysis: string; recommendations: string[] };
   legal_validation?: { status: string; opinion: string; risk_level: string };
   hr_approval?: { status: string; approver: string; notes: string; approved_at: string };
+  run_id?: string | null;
+  source_run_id?: string | null;
   created_at: string;
 }
 
@@ -92,7 +94,7 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
     try {
       const { data, error } = await supabase
         .from('erp_hr_payroll_recalculations')
-        .select('*')
+        .select('*, run_id, source_run_id')
         .eq('company_id', companyId)
         .eq('period', selectedPeriod)
         .order('created_at', { ascending: false });
@@ -116,6 +118,8 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
         ai_validation: rec.ai_validation as RecalculationRecord['ai_validation'],
         legal_validation: rec.legal_validation as RecalculationRecord['legal_validation'],
         hr_approval: rec.hr_approval as RecalculationRecord['hr_approval'],
+        run_id: (rec as any).run_id || null,
+        source_run_id: (rec as any).source_run_id || null,
         created_at: rec.created_at
       }));
       
@@ -431,6 +435,7 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
                   <TableHead>Empleado</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead>Run</TableHead>
                   <TableHead>Validación IA</TableHead>
                   <TableHead>Validación Legal</TableHead>
                   <TableHead>Incidencias</TableHead>
@@ -440,7 +445,7 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
               <TableBody>
                 {filteredRecalculations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {isLoading ? 'Cargando...' : 'No hay recálculos para este período'}
                     </TableCell>
                   </TableRow>
@@ -452,6 +457,15 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
                       </TableCell>
                       <TableCell>{rec.period}</TableCell>
                       <TableCell>{getStatusBadge(rec.status)}</TableCell>
+                      <TableCell>
+                        {rec.run_id ? (
+                          <Badge variant="outline" className="text-[10px] font-mono">
+                            Run vinculado
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {rec.ai_validation_status ? (
                           <Badge variant={rec.ai_validation_status === 'approved' ? 'default' : 'secondary'}>

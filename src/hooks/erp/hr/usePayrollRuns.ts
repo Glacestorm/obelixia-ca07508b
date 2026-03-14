@@ -335,6 +335,77 @@ export function usePayrollRuns(companyId?: string) {
     return updateRunStatus(runId, 'approved');
   }, [updateRunStatus]);
 
+  // ── Link a recalculation to a run ──
+  const linkRecalculationToRun = useCallback(async (
+    recalculationId: string,
+    runId: string,
+    sourceRunId?: string
+  ) => {
+    try {
+      const updates: Record<string, unknown> = { run_id: runId };
+      if (sourceRunId) updates.source_run_id = sourceRunId;
+
+      const { error } = await supabase
+        .from('erp_hr_payroll_recalculations')
+        .update(updates as any)
+        .eq('id', recalculationId);
+
+      if (error) throw error;
+      return true;
+    } catch (e: any) {
+      console.error('[usePayrollRuns] linkRecalculationToRun:', e);
+      return false;
+    }
+  }, []);
+
+  // ── Fetch recalculations linked to a run ──
+  const fetchLinkedRecalculations = useCallback(async (runId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_payroll_recalculations')
+        .select('id, employee_id, status, total_difference, differences, created_at, run_id, source_run_id')
+        .eq('run_id', runId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as Array<{
+        id: string;
+        employee_id: string;
+        status: string;
+        total_difference: number | null;
+        differences: Record<string, unknown> | null;
+        created_at: string;
+        run_id: string | null;
+        source_run_id: string | null;
+      }>;
+    } catch (e: any) {
+      console.error('[usePayrollRuns] fetchLinkedRecalculations:', e);
+      return [];
+    }
+  }, []);
+
+  // ── Create a recalculation run from an existing run ──
+  const createRecalculationRun = useCallback(async (
+    sourceRunId: string,
+    snapshotInput: SnapshotInput,
+    notes?: string
+  ) => {
+    const run = await createRun(snapshotInput, {
+      notes: notes || `Recálculo basado en Run anterior`,
+      runType: 'recalculation',
+    });
+
+    if (run) {
+      // Update the recalculation_reference to point to the source
+      await supabase
+        .from('erp_hr_payroll_runs')
+        .update({ recalculation_reference: sourceRunId } as any)
+        .eq('id', run.id);
+    }
+
+    return run;
+  }, [createRun]);
+
   return {
     runs,
     activeRun,
@@ -346,6 +417,9 @@ export function usePayrollRuns(companyId?: string) {
     executeRun,
     reviewRun,
     approveRun,
+    linkRecalculationToRun,
+    fetchLinkedRecalculations,
+    createRecalculationRun,
   };
 }
 
