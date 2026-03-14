@@ -55,6 +55,7 @@ import {
   type MultiEntityReadinessReport,
   type EntityReadinessInput,
 } from '@/components/erp/hr/shared/multiEntityReadinessEngine';
+import { useMultiEntityReadiness } from '@/hooks/erp/hr/useMultiEntityReadiness';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2 } from 'lucide-react';
 
@@ -308,76 +309,20 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
   const { certificates, fetchCertificates, getCertificateSummary } = useHRDomainCertificates(companyId);
   const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
-  const [multiEntityReport, setMultiEntityReport] = useState<MultiEntityReadinessReport | null>(null);
+  const {
+    report: multiEntityReport,
+    isLoading: multiEntityLoading,
+    evaluate: evaluateMultiEntity,
+    entityCounts,
+  } = useMultiEntityReadiness(companyId);
 
   useEffect(() => {
     evaluate(adapters);
     fetchPreparatory();
     fetchCertificates();
     evaluateCalendar();
-    loadMultiEntityReadiness();
+    evaluateMultiEntity(adapters);
   }, []);
-
-  // ── Multi-entity readiness (lightweight) ──
-  const loadMultiEntityReadiness = useCallback(async () => {
-    try {
-      const { data: entities } = await supabase
-        .from('erp_hr_legal_entities' as any)
-        .select('id, legal_name, cif, is_active')
-        .eq('company_id', companyId)
-        .eq('is_active', true);
-
-      if (!entities || entities.length <= 1) {
-        setMultiEntityReport(null);
-        return;
-      }
-
-      // For each entity, create a lightweight context (reuses company-level data as baseline)
-      // In a real scenario each entity would have its own employees/contracts counts
-      const { data: employeesData } = await supabase
-        .from('hr_employees' as any)
-        .select('id, status, registration_status, legal_entity_id', { count: 'exact' })
-        .eq('company_id', companyId)
-        .eq('status', 'active');
-
-      const employees = (employeesData || []) as any[];
-
-      const inputs: EntityReadinessInput[] = (entities as any[]).map((ent: any) => {
-        const entityEmployees = employees.filter((e: any) => e.legal_entity_id === ent.id);
-        const complete = entityEmployees.filter((e: any) =>
-          e.registration_status === 'completed' || e.registration_status === 'tgss_prepared'
-        ).length;
-
-        const ctx: import('@/components/erp/hr/shared/officialReadinessEngine').ConnectorDataContext = {
-          employeesWithCompleteData: complete,
-          totalActiveEmployees: entityEmployees.length,
-          contractsWithCompleteData: 0,
-          totalActiveContracts: 0,
-          hasClosedPayrollPeriods: false,
-          closedPayrollPeriodsCount: 0,
-          hasSSExpedient: false,
-          hasFiscalExpedient: false,
-          docCompletenessAvg: entityEmployees.length > 0 ? Math.round((complete / entityEmployees.length) * 100) : 0,
-          configuredAdapters: adapters.map(a => ({
-            id: a.id, adapter_type: a.adapter_type, system_name: a.system_name, is_active: a.is_active, status: a.status,
-          })),
-        };
-
-        return {
-          entityId: ent.id,
-          entityName: ent.legal_name,
-          entityType: 'legal_entity' as const,
-          fiscalId: ent.cif,
-          dataContext: ctx,
-        };
-      });
-
-      const report = evaluateMultiEntityReadiness(inputs);
-      setMultiEntityReport(report);
-    } catch (err) {
-      console.error('[ReadinessDashboard] multi-entity readiness error:', err);
-    }
-  }, [companyId, adapters]);
 
   // Compute per-domain submission stats
   const domainStats = useMemo(() => {
@@ -443,7 +388,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             Pre-validación y preparación para envíos oficiales · Modo preparatorio
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); }} disabled={isEvaluating}>
+        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); }} disabled={isEvaluating}>
           <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
           Reevaluar
         </Button>
@@ -597,18 +542,33 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
         </Card>
       )}
 
-      {/* Multi-entity readiness (only shown when >1 legal entity) */}
-      {multiEntityReport && multiEntityReport.entities.length > 1 && (
+      {/* Multi-entity readiness (shown for any entity count via hook) */}
+      {multiEntityReport && multiEntityReport.entities.length > 0 && (
         <Card>
           <CardContent className="py-3 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" /> Readiness Multi-Sociedad
+                <Building2 className="h-4 w-4 text-primary" /> Readiness {multiEntityReport.entities.length > 1 ? 'Multi-Sociedad' : 'por Entidad'}
                 <Badge variant="outline" className="text-[9px] h-4">
-                  {multiEntityReport.entities.length} entidades
+                  {multiEntityReport.entities.length} entidad(es)
                 </Badge>
               </p>
-              <div className="flex items-center gap-2 text-[10px]">
+              <div className="flex items-center gap-3 text-[10px]">
+                {entityCounts.fullyReady > 0 && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle2 className="h-3 w-3" /> {entityCounts.fullyReady} lista(s)
+                  </span>
+                )}
+                {entityCounts.partiallyReady > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <AlertTriangle className="h-3 w-3" /> {entityCounts.partiallyReady} parcial(es)
+                  </span>
+                )}
+                {entityCounts.notReady > 0 && (
+                  <span className="flex items-center gap-1 text-destructive">
+                    <XCircle className="h-3 w-3" /> {entityCounts.notReady} pendiente(s)
+                  </span>
+                )}
                 <span className="text-muted-foreground">Promedio:</span>
                 <span className={cn('font-mono font-bold', getEntityReadinessColor(multiEntityReport.consolidated.avgPercent))}>
                   {multiEntityReport.consolidated.avgPercent}%
@@ -616,48 +576,75 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
               </div>
             </div>
 
-            {/* Per-entity summary */}
+            {/* Per-entity summary with gap details */}
             <div className="space-y-1">
-              {multiEntityReport.entities.map(ent => (
-                <div key={ent.entityId} className="flex items-center justify-between py-1.5 px-2 rounded border text-[11px]">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="font-medium truncate">{ent.entityName}</span>
-                    {ent.fiscalId && (
-                      <span className="text-[9px] text-muted-foreground font-mono">{ent.fiscalId}</span>
+              {multiEntityReport.entities.map(ent => {
+                const topBlockers = ent.summary.connectors
+                  .flatMap(c => c.blockers.map(b => ({ connector: c.label, blocker: b })))
+                  .slice(0, 2);
+                const missingCerts = ent.summary.connectors
+                  .filter(c => !c.signals.credentialsPresent)
+                  .map(c => c.label);
+
+                return (
+                  <div key={ent.entityId} className="py-1.5 px-2 rounded border text-[11px] space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="font-medium truncate">{ent.entityName}</span>
+                        {ent.fiscalId && (
+                          <span className="text-[9px] text-muted-foreground font-mono">{ent.fiscalId}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Progress
+                          value={ent.summary.overallPercent}
+                          className={cn('h-1.5 w-16',
+                            ent.summary.overallPercent >= 70 ? '[&>div]:bg-green-500' :
+                            ent.summary.overallPercent >= 40 ? '[&>div]:bg-amber-500' : '[&>div]:bg-destructive'
+                          )}
+                        />
+                        <span className={cn('font-mono text-[10px] font-medium w-8 text-right', getEntityReadinessColor(ent.summary.overallPercent))}>
+                          {ent.summary.overallPercent}%
+                        </span>
+                        {ent.summary.totalBlockers > 0 && (
+                          <Badge variant="outline" className="text-[8px] h-3.5 text-destructive border-destructive/30">
+                            {ent.summary.totalBlockers} bloq.
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    {/* Per-entity gaps (compact) */}
+                    {(topBlockers.length > 0 || missingCerts.length > 0) && (
+                      <div className="flex flex-wrap gap-1 pl-5">
+                        {topBlockers.map((tb, i) => (
+                          <span key={`b-${i}`} className="text-[8px] px-1 py-0.5 rounded bg-destructive/5 text-destructive">
+                            {tb.connector}: {tb.blocker.substring(0, 40)}
+                          </span>
+                        ))}
+                        {missingCerts.length > 0 && (
+                          <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/5 text-amber-600">
+                            Cert. pendiente: {missingCerts.join(', ')}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Progress
-                      value={ent.summary.overallPercent}
-                      className={cn('h-1.5 w-16',
-                        ent.summary.overallPercent >= 70 ? '[&>div]:bg-green-500' :
-                        ent.summary.overallPercent >= 40 ? '[&>div]:bg-amber-500' : '[&>div]:bg-destructive'
-                      )}
-                    />
-                    <span className={cn('font-mono text-[10px] font-medium', getEntityReadinessColor(ent.summary.overallPercent))}>
-                      {ent.summary.overallPercent}%
-                    </span>
-                    {ent.summary.totalBlockers > 0 && (
-                      <Badge variant="outline" className="text-[8px] h-3.5 text-destructive border-destructive/30">
-                        {ent.summary.totalBlockers} bloq.
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Per-domain consolidated */}
             <div className="flex flex-wrap gap-2 pt-1">
               {Object.entries(multiEntityReport.byDomain)
                 .filter(([_, d]) => d.totalEntities > 0)
-                .slice(0, 4)
+                .slice(0, 6)
                 .map(([cId, d]) => (
                   <div key={cId} className="text-[9px] px-1.5 py-0.5 rounded bg-muted flex items-center gap-1">
                     <span className="font-medium">{d.label}:</span>
                     <span className={cn('font-mono', getEntityReadinessColor(d.avgPercent))}>{d.avgPercent}%</span>
                     <span className="text-muted-foreground">({d.entitiesReady}/{d.totalEntities})</span>
+                    {d.hasBlockers && <XCircle className="h-2 w-2 text-destructive" />}
                   </div>
                 ))}
             </div>
@@ -665,8 +652,8 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             <div className="flex items-start gap-1.5 pt-1 text-[9px] text-muted-foreground">
               <Info className="h-2.5 w-2.5 mt-0.5 shrink-0 text-blue-400" />
               <span>
-                Readiness consolidado por sociedad. Cada entidad legal se evalúa de forma independiente.
-                Este análisis es <strong>preparatorio</strong> — no implica aprobación global ni envío real.
+                Readiness consolidado por sociedad. Cada entidad se evalúa de forma independiente.
+                Un readiness alto en una entidad <strong>no implica readiness global</strong> ni habilita envío real.
               </span>
             </div>
           </CardContent>
