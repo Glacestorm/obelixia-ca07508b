@@ -1,9 +1,10 @@
 /**
  * OfficialIntegrationsHub — Panel principal de integraciones oficiales
- * V2-ES.8: Readiness Dashboard + Preparatory Dry-Run
+ * V2-ES.8 T5: + Aprobaciones pre-real tab
  */
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useOfficialIntegrationsHub } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
 import { IntegrationsHubDashboard } from './IntegrationsHubDashboard';
 import { SubmissionsList } from './SubmissionsList';
@@ -13,6 +14,8 @@ import { AdaptersPanel } from './AdaptersPanel';
 import { ReceiptsPanel } from './ReceiptsPanel';
 import { ReadinessDashboard } from './ReadinessDashboard';
 import { PreparatoryDryRunPanel } from './PreparatoryDryRunPanel';
+import { PreRealApprovalPanel } from './PreRealApprovalPanel';
+import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
 
 interface Props { companyId: string; }
 
@@ -22,8 +25,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   const [showForm, setShowForm] = useState(false);
 
   const hub = useOfficialIntegrationsHub(companyId);
+  const { pendingCount, fetchApprovals } = usePreRealApproval(companyId);
 
-  useEffect(() => { hub.loadAll(); }, []);
+  useEffect(() => { hub.loadAll(); fetchApprovals(); }, []);
 
   const handleViewDetail = (id: string) => {
     setSelectedSubmissionId(id);
@@ -59,9 +63,17 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="readiness" className="text-xs">Readiness</TabsTrigger>
           <TabsTrigger value="dry-run" className="text-xs">Dry-Run</TabsTrigger>
+          <TabsTrigger value="approvals" className="text-xs relative">
+            Aprobaciones
+            {pendingCount > 0 && (
+              <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-4 min-w-4 text-[8px] px-1 flex items-center justify-center">
+                {pendingCount}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
           <TabsTrigger value="submissions" className="text-xs">Envíos</TabsTrigger>
           <TabsTrigger value="adapters" className="text-xs">Conectores</TabsTrigger>
@@ -73,6 +85,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         </TabsContent>
         <TabsContent value="dry-run">
           <PreparatoryDryRunPanel companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="approvals">
+          <PreRealApprovalPanel companyId={companyId} />
         </TabsContent>
         <TabsContent value="dashboard">
           <IntegrationsHubDashboard stats={hub.stats} submissions={hub.submissions} adapters={hub.adapters} onRefresh={hub.loadAll} isLoading={hub.isLoading} />
