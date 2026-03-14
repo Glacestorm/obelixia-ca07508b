@@ -20,6 +20,7 @@ interface Props {
 /** Maps request_type → process_type for due rules lookup */
 const REQUEST_TO_PROCESS: Record<string, string> = {
   employee_registration: 'employee_registration',
+  contract_registration: 'contract_registration',
   termination: 'termination',
   sick_leave: 'sick_leave',
   work_accident: 'work_accident',

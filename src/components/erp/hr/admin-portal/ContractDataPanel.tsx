@@ -28,6 +28,10 @@ import {
   type ContractProcessStatus,
 } from '@/hooks/erp/hr/useHRContractProcess';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { computeContractDeadlines, type ContractDeadlineSummary } from '../shared/contractDeadlineEngine';
+import { buildContrataPayload } from '../shared/contrataPayloadBuilder';
+import { ContractDeadlineAlert } from '../shared/ContractDeadlineAlert';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
 
@@ -62,9 +66,10 @@ interface Props {
   companyId: string;
   employeeId: string;
   linkedDocs?: EmployeeDocument[];
+  onDeadlinesComputed?: (summary: ContractDeadlineSummary) => void;
 }
 
-export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs = [] }: Props) {
+export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs = [], onDeadlinesComputed }: Props) {
   const {
     contractData,
     loading,
@@ -72,16 +77,41 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
     upsertContractData,
     updateContractStatus,
     computeReadiness,
+    persistDeadlineAndPayload,
   } = useHRContractProcess(companyId);
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Partial<ContractProcessData>>({});
   const [showRecommended, setShowRecommended] = useState(false);
 
+  const { holidaySet } = useHRHolidayCalendar();
+
   // Fetch on mount
   useEffect(() => {
     fetchContractData(requestId);
   }, [requestId, fetchContractData]);
+
+  // Compute deadlines
+  const deadlineSummary = useMemo(() => {
+    return computeContractDeadlines(contractData, holidaySet);
+  }, [contractData, holidaySet]);
+
+  // Compute payload readiness
+  const payloadResult = useMemo(() => {
+    return buildContrataPayload(contractData);
+  }, [contractData]);
+
+  // Notify parent of deadline changes
+  useEffect(() => {
+    onDeadlinesComputed?.(deadlineSummary);
+  }, [deadlineSummary, onDeadlinesComputed]);
+
+  // Persist deadline + payload on data change
+  useEffect(() => {
+    if (contractData && contractData.request_id === requestId) {
+      persistDeadlineAndPayload(requestId, holidaySet);
+    }
+  }, [contractData?.contract_start_date, contractData?.contract_process_status, contractData?.contract_type_code]);
 
   // Readiness
   const readiness = useMemo(() => {
@@ -175,6 +205,24 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
           </div>
           <Progress value={readiness.data.percentage} className="h-1.5" />
         </div>
+
+        {/* Deadline alert */}
+        <ContractDeadlineAlert summary={deadlineSummary} />
+
+        {/* Payload readiness signal */}
+        {payloadResult.readinessLevel !== 'none' && !editing && (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            {payloadResult.isReady ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="h-3 w-3 text-amber-600" />
+            )}
+            <span className="text-muted-foreground">
+              Payload Contrat@: {payloadResult.readinessPercent}%
+              {payloadResult.consistency.errors.length > 0 && ` — ${payloadResult.consistency.errors.length} inconsistencia(s)`}
+            </span>
+          </div>
+        )}
 
         {/* Status transitions */}
         {allowedTransitions.length > 0 && !editing && (
