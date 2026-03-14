@@ -1,5 +1,6 @@
 /**
  * HRApprovalInbox - Bandeja de aprobaciones con SLA
+ * V2-ES.8 T5 P4: + Pre-real approval summary widget
  */
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Inbox, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
+import { Inbox, CheckCircle, XCircle, Clock, AlertTriangle, RefreshCw, MessageSquare, ShieldCheck, Lock } from 'lucide-react';
 import { useHRWorkflowEngine, type WorkflowInstance } from '@/hooks/admin/hr/useHRWorkflowEngine';
+import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -36,6 +38,7 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
 
 export function HRApprovalInbox({ companyId }: Props) {
   const { inbox, fetchInbox, decideStep, stats, fetchStats, loading } = useHRWorkflowEngine();
+  const { pendingCount: preRealPending, approvedCount: preRealApproved, rejectedCount: preRealRejected, fetchApprovals } = usePreRealApproval(companyId);
   const [statusFilter, setStatusFilter] = useState('in_progress');
   const [decisionDialog, setDecisionDialog] = useState<{ instance: WorkflowInstance; type: string } | null>(null);
   const [comment, setComment] = useState('');
@@ -43,6 +46,7 @@ export function HRApprovalInbox({ companyId }: Props) {
   useEffect(() => {
     fetchInbox(companyId, statusFilter);
     fetchStats(companyId);
+    fetchApprovals();
   }, [companyId, statusFilter]);
 
   const handleDecision = async () => {
@@ -69,6 +73,41 @@ export function HRApprovalInbox({ companyId }: Props) {
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} /> Actualizar
         </Button>
       </div>
+
+      {/* Pre-Real Approval Summary — V2-ES.8 T5 */}
+      {(preRealPending > 0 || preRealApproved > 0 || preRealRejected > 0) && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Aprobaciones Pre-Real (Integraciones)</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                {preRealPending > 0 && (
+                  <Badge variant="outline" className="gap-1 text-amber-600 border-amber-500/30">
+                    <Clock className="h-3 w-3" /> {preRealPending} pendiente(s)
+                  </Badge>
+                )}
+                {preRealApproved > 0 && (
+                  <Badge variant="outline" className="gap-1 text-green-600 border-green-500/30">
+                    <CheckCircle className="h-3 w-3" /> {preRealApproved} aprobado(s)
+                  </Badge>
+                )}
+                {preRealRejected > 0 && (
+                  <Badge variant="outline" className="gap-1 text-destructive border-destructive/30">
+                    <XCircle className="h-3 w-3" /> {preRealRejected}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <Lock className="h-2.5 w-2.5" />
+              Gate interno preparatorio · Gestión completa en RRHH → Integraciones → Aprobaciones
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       {stats && (

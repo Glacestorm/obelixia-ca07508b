@@ -68,6 +68,11 @@ export interface RequestApprovalInput {
   hasCertificate: boolean;
   notes?: string;
   requiredRole?: ApprovalRole;
+  /** Extended eligibility context (V2-ES.8 T5 P3) */
+  readinessPercent?: number;
+  hasLinkedEvidence?: boolean;
+  evidenceCount?: number;
+  certificateStatus?: 'valid' | 'expiring' | 'expired' | 'not_configured';
 }
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
@@ -114,6 +119,10 @@ export function usePreRealApproval(companyId: string) {
       dryRunCount: input.dryRunCount,
       hasCertificate: input.hasCertificate,
       domain: input.domain,
+      readinessPercent: input.readinessPercent,
+      hasLinkedEvidence: input.hasLinkedEvidence,
+      evidenceCount: input.evidenceCount,
+      certificateStatus: input.certificateStatus,
     });
   }, []);
 
@@ -129,6 +138,10 @@ export function usePreRealApproval(companyId: string) {
       dryRunCount: input.dryRunCount,
       hasCertificate: input.hasCertificate,
       domain: input.domain,
+      readinessPercent: input.readinessPercent,
+      hasLinkedEvidence: input.hasLinkedEvidence,
+      evidenceCount: input.evidenceCount,
+      certificateStatus: input.certificateStatus,
     });
 
     if (!eligibility.eligible) {
