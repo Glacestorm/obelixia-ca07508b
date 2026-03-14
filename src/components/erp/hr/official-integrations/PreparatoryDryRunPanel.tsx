@@ -438,6 +438,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
     results: dryRunHistory,
     isLoading: historyLoading,
     fetchResults,
+    generateEvidenceOnDemand,
   } = useDryRunPersistence(companyId);
 
   useEffect(() => {
