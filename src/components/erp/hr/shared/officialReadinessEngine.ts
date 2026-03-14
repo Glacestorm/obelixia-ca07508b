@@ -109,6 +109,15 @@ export interface ConnectorDataContext {
     is_active: boolean;
     status: string;
   }>;
+  /** V2-ES.8 T3: Certificate configurations per domain */
+  certificateConfigs?: Array<{
+    domain: string;
+    certificate_status: string;
+    certificate_type: string;
+    configuration_completeness: number;
+    expiration_date: string | null;
+    readiness_impact: string;
+  }>;
 }
 
 // ─── Evaluator ──────────────────────────────────────────────────────────────
