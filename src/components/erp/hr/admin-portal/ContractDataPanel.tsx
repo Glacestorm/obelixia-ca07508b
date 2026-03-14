@@ -206,6 +206,24 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
           <Progress value={readiness.data.percentage} className="h-1.5" />
         </div>
 
+        {/* Deadline alert */}
+        <ContractDeadlineAlert summary={deadlineSummary} />
+
+        {/* Payload readiness signal */}
+        {payloadResult.readinessLevel !== 'none' && !editing && (
+          <div className="flex items-center gap-1.5 text-[10px]">
+            {payloadResult.isReady ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="h-3 w-3 text-amber-600" />
+            )}
+            <span className="text-muted-foreground">
+              Payload Contrat@: {payloadResult.readinessPercent}%
+              {payloadResult.consistency.errors.length > 0 && ` — ${payloadResult.consistency.errors.length} inconsistencia(s)`}
+            </span>
+          </div>
+        )
+
         {/* Status transitions */}
         {allowedTransitions.length > 0 && !editing && (
           <div className="flex flex-wrap gap-1.5">
