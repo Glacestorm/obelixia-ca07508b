@@ -1,6 +1,6 @@
 /**
  * OfficialIntegrationsHub — Panel principal de integraciones oficiales
- * V2-ES.8 T5+T6: + Aprobaciones pre-real tab + Proactive alerts visibility
+ * V2-ES.8 T8: + Sandbox real controlado tab + Environment indicator
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,7 +23,9 @@ import { useRegulatoryCalendar } from '@/hooks/erp/hr/useRegulatoryCalendar';
 import { useHRDomainCertificates } from '@/hooks/erp/hr/useHRDomainCertificates';
 import { usePreparatorySubmissions } from '@/hooks/erp/hr/usePreparatorySubmissions';
 import { ProactiveAlertsSummaryWidget } from './ProactiveAlertsSummaryWidget';
-
+import { SandboxControlPanel } from './SandboxControlPanel';
+import { EnvironmentIndicatorWidget } from './EnvironmentIndicatorWidget';
+import { useSandboxEnvironment } from '@/hooks/erp/hr/useSandboxEnvironment';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
@@ -33,6 +35,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
 
   const hub = useOfficialIntegrationsHub(companyId);
   const { pendingCount, approvals, fetchApprovals } = usePreRealApproval(companyId);
+  const sandboxEnv = useSandboxEnvironment({ companyId, adapters: hub.adapters });
 
   // Data sources for proactive alerts at hub level
   const { summary: readinessSummary } = useOfficialReadiness(companyId);
@@ -92,8 +95,16 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Environment indicator */}
+      <div className="flex items-center justify-between">
+        <EnvironmentIndicatorWidget
+          activeEnvironment={sandboxEnv.activeEnvironment}
+          productionBlocked={sandboxEnv.productionBlocked}
+        />
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="readiness" className="text-xs relative">
             Readiness
             {activeAlertCount > 0 && activeTab !== 'readiness' && (
@@ -103,6 +114,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
             )}
           </TabsTrigger>
           <TabsTrigger value="dry-run" className="text-xs">Dry-Run</TabsTrigger>
+          <TabsTrigger value="sandbox" className="text-xs">Sandbox</TabsTrigger>
           <TabsTrigger value="approvals" className="text-xs relative">
             Aprobaciones
             {pendingCount > 0 && (
@@ -123,6 +135,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         </TabsContent>
         <TabsContent value="dry-run">
           <PreparatoryDryRunPanel companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="sandbox">
+          <SandboxControlPanel companyId={companyId} adapters={hub.adapters} />
         </TabsContent>
         <TabsContent value="approvals">
           <PreRealApprovalPanel companyId={companyId} />
