@@ -33,6 +33,8 @@ import { buildContrataPayload } from '../shared/contrataPayloadBuilder';
 import { ContractDeadlineAlert } from '../shared/ContractDeadlineAlert';
 import { ContrataPreIntegrationBadge } from '../shared/ContrataPreIntegrationBadge';
 import { useContrataReadiness } from '@/hooks/erp/hr/useContrataReadiness';
+import { useContractClosure } from '@/hooks/erp/hr/useContractClosure';
+import { ContractClosureSection } from '../shared/ContractClosureSection';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 
 // ─── Contract type options (common Spanish codes) ────────────────────────────
@@ -80,6 +82,8 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
     updateContractStatus,
     computeReadiness,
     persistDeadlineAndPayload,
+    closeContractProcess,
+    reopenContractProcess,
   } = useHRContractProcess(companyId);
 
   const [editing, setEditing] = useState(false);
@@ -130,7 +134,31 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
     deadlineSummary,
   });
 
-  // Start editing
+  // V2-ES.6 Paso 3: Closure readiness
+  const closure = useContractClosure({
+    contractData,
+    docCompleteness: readiness.docs ? {
+      percentage: readiness.docs.percentage,
+      mandatoryComplete: readiness.docs.mandatoryComplete,
+    } : null,
+    deadlineSummary,
+  });
+
+  // Closure action handlers
+  const handleClose = useCallback(async (notes?: string) => {
+    if (!contractData) return { success: false, error: 'No data' };
+    return closeContractProcess(requestId, {
+      docReadinessPercent: readiness.docs?.percentage ?? 0,
+      docMandatoryComplete: readiness.docs?.mandatoryComplete ?? false,
+      deadlineSummary,
+    }, notes);
+  }, [contractData, requestId, closeContractProcess, readiness.docs, deadlineSummary]);
+
+  const handleReopen = useCallback(async (reason?: string) => {
+    return reopenContractProcess(requestId, reason);
+  }, [requestId, reopenContractProcess]);
+
+
   const startEdit = useCallback(() => {
     setDraft({
       contract_type_code: contractData?.contract_type_code ?? '',
@@ -566,6 +594,21 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     </div>
                   </>
                 )}
+
+                {/* V2-ES.6 Paso 3: Operational closure */}
+                <Separator />
+                <ContractClosureSection
+                  canClose={closure.canClose}
+                  isClosed={closure.isClosed}
+                  isConfirmed={closure.isConfirmed}
+                  blockers={closure.blockers}
+                  warnings={closure.warnings}
+                  existingSnapshot={closure.existingSnapshot}
+                  closedAt={closure.closedAt}
+                  closureNotes={closure.closureNotes}
+                  onClose={handleClose}
+                  onReopen={handleReopen}
+                />
               </>
             )}
           </div>
