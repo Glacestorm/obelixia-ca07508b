@@ -326,8 +326,20 @@ export function useHRRegistrationProcess(companyId: string) {
 
       if (error) throw error;
 
+      const oldStatus = registrationData?.registration_status || 'pending_data';
       setRegistrationData(prev => prev ? { ...prev, ...timestamps } : null);
       toast.success(`Estado actualizado: ${REGISTRATION_STATUS_CONFIG[newStatus].labelES}`);
+      // Audit: status transition
+      logRegistrationAudit(
+        'REGISTRATION_STATUS_CHANGE',
+        registrationData?.company_id || '',
+        user.id,
+        requestId,
+        { status: oldStatus },
+        { status: newStatus },
+        newStatus === 'confirmed' ? 'important' : 'info',
+        ['registration_status'],
+      );
       return true;
     } catch (err) {
       console.error('[useHRRegistrationProcess] updateStatus error:', err);
