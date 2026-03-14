@@ -171,6 +171,16 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
             />
           )}
 
+          {/* V2-ES.6 Paso 1.1: Contract process panel for contract_registration */}
+          {request.request_type === 'contract_registration' && (
+            <ContractDataPanel
+              requestId={request.id}
+              companyId={request.company_id}
+              employeeId={request.employee_id}
+              linkedDocs={linkedDocs}
+            />
+          )}
+
           {/* V2-ES.3 Paso 2: Linked documents */}
           <LinkedDocumentsSection
             key={docsRefreshKey}
