@@ -150,6 +150,7 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
   );
 
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId);
+  const isPeriodReadOnly = selectedPeriod && (selectedPeriod.status === 'closed' || selectedPeriod.status === 'locked');
 
   return (
     <div className="space-y-4">
