@@ -433,6 +433,8 @@ export function useHRRegistrationProcess(companyId: string) {
     }
 
     const payloadStatus = tgss.isReady ? 'ready' : (tgss.formatErrors.length > 0 ? 'has_errors' : 'incomplete');
+    const prevUrgency = registrationData.deadline_urgency || 'ok';
+    const prevPayloadReady = registrationData.payload_ready ?? false;
 
     try {
       await supabase
@@ -451,10 +453,35 @@ export function useHRRegistrationProcess(companyId: string) {
           updated_at: new Date().toISOString(),
         } as any)
         .eq('request_id', requestId);
+
+      // Audit: log significant state changes only
+      const urgencyChanged = prevUrgency !== deadlines.worstUrgency;
+      const payloadReadyChanged = prevPayloadReady !== tgss.isReady;
+
+      if (urgencyChanged || payloadReadyChanged) {
+        const changedFields: string[] = [];
+        if (urgencyChanged) changedFields.push('deadline_urgency');
+        if (payloadReadyChanged) changedFields.push('payload_ready');
+
+        const severity = deadlines.worstUrgency === 'overdue' ? 'warning'
+          : tgss.isReady && !prevPayloadReady ? 'important'
+          : 'info';
+
+        logRegistrationAudit(
+          'REGISTRATION_DEADLINE_PAYLOAD_UPDATE',
+          registrationData.company_id,
+          user?.id,
+          requestId,
+          { deadline_urgency: prevUrgency, payload_ready: prevPayloadReady },
+          { deadline_urgency: deadlines.worstUrgency, payload_ready: tgss.isReady, payload_status: payloadStatus },
+          severity,
+          changedFields,
+        );
+      }
     } catch (err) {
       console.error('[useHRRegistrationProcess] persistDeadlineAndPayload error:', err);
     }
-  }, [registrationData]);
+  }, [registrationData, user]);
 
   return {
     registrationData,
