@@ -16,13 +16,13 @@ import {
   XCircle, Filter, Loader2,
 } from 'lucide-react';
 import { useHRDocumentExpedient, type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
-import { DocumentDetailPanel } from '../../document-expedient/DocumentDetailPanel';
-import { DocTrafficLightBadge } from '../../shared/DocTrafficLightBadge';
-import { DocAlertsSummaryBar } from '../../shared/DocAlertsSummaryBar';
-import { DocStatusBadge } from '../../shared/DocStatusBadge';
-import { ExpedientExecutiveSummary } from '../../shared/ExpedientExecutiveSummary';
+import { DocumentDetailPanel } from '@/components/erp/hr/document-expedient/DocumentDetailPanel';
+import { DocTrafficLightBadge } from '@/components/erp/hr/shared/DocTrafficLightBadge';
+import { DocAlertsSummaryBar } from '@/components/erp/hr/shared/DocAlertsSummaryBar';
+import { DocStatusBadge } from '@/components/erp/hr/shared/DocStatusBadge';
+import { ExpedientExecutiveSummary } from '@/components/erp/hr/shared/ExpedientExecutiveSummary';
 import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
-import { computeDocStatus } from '../../shared/documentStatusEngine';
+import { computeDocStatus } from '@/components/erp/hr/shared/documentStatusEngine';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
 
 interface Props {

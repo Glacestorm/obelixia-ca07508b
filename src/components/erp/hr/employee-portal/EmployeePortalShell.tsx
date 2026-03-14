@@ -8,6 +8,7 @@ import { useEmployeePortal } from '@/hooks/erp/hr/useEmployeePortal';
 import { EmployeePortalNav, type PortalSection } from './EmployeePortalNav';
 import { EmployeePortalHome } from './EmployeePortalHome';
 import { EmployeePortalHeader } from './EmployeePortalHeader';
+import { EmployeeDocumentsSection } from './EmployeeDocumentsSection';
 import { Card, CardContent } from '@/components/ui/card';
 import { Construction } from 'lucide-react';
 
@@ -25,7 +26,7 @@ function PlaceholderSection({ title, description }: { title: string; description
 
 export function EmployeePortalShell() {
   const { signOut } = useAuth();
-  const { employee } = useEmployeePortal();
+  const { employee, dashboard, isDashboardLoading } = useEmployeePortal();
   const [activeSection, setActiveSection] = useState<PortalSection>('home');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -40,21 +41,28 @@ export function EmployeePortalShell() {
 
     switch (activeSection) {
       case 'home':
-        return <EmployeePortalHome employee={employee} onNavigate={handleNavigate} />;
-      case 'payslips':
-        return <PlaceholderSection title="Mis Nóminas" description="Consulta y descarga tus recibos de nómina. Módulo en preparación para V2-ES.9.2." />;
+        return (
+          <EmployeePortalHome
+            employee={employee}
+            dashboard={dashboard}
+            isDashboardLoading={isDashboardLoading}
+            onNavigate={handleNavigate}
+          />
+        );
       case 'documents':
-        return <PlaceholderSection title="Mis Documentos" description="Accede a tu expediente documental personal. Módulo en preparación para V2-ES.9.3." />;
+        return <EmployeeDocumentsSection employee={employee} />;
+      case 'payslips':
+        return <PlaceholderSection title="Mis Nóminas" description="Consulta y descarga tus recibos de nómina. Módulo en preparación." />;
       case 'requests':
-        return <PlaceholderSection title="Mis Solicitudes" description="Envía y consulta solicitudes administrativas. Módulo en preparación para V2-ES.9.4." />;
+        return <PlaceholderSection title="Mis Solicitudes" description="Envía y consulta solicitudes administrativas. Módulo en preparación." />;
       case 'time':
-        return <PlaceholderSection title="Mi Tiempo" description="Fichaje, horarios y registro de jornada. Módulo en preparación para V2-ES.9.5." />;
+        return <PlaceholderSection title="Mi Tiempo" description="Fichaje, horarios y registro de jornada. Módulo en preparación." />;
       case 'leave':
-        return <PlaceholderSection title="Vacaciones y Permisos" description="Solicita vacaciones, permisos y consulta tu saldo. Módulo en preparación para V2-ES.9.6." />;
+        return <PlaceholderSection title="Vacaciones y Permisos" description="Solicita vacaciones y consulta tu saldo. Módulo en preparación." />;
       case 'profile':
-        return <PlaceholderSection title="Mi Perfil" description="Consulta y actualiza tus datos personales. Módulo en preparación para V2-ES.9.7." />;
+        return <PlaceholderSection title="Mi Perfil" description="Consulta y actualiza tus datos personales. Módulo en preparación." />;
       case 'help':
-        return <PlaceholderSection title="Ayuda RRHH" description="Preguntas frecuentes y contacto con RRHH. Módulo en preparación para V2-ES.9.8." />;
+        return <PlaceholderSection title="Ayuda RRHH" description="Preguntas frecuentes y contacto con RRHH. Módulo en preparación." />;
       default:
         return null;
     }
@@ -62,13 +70,7 @@ export function EmployeePortalShell() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top header */}
-      <EmployeePortalHeader
-        employeeName={employeeName}
-        onSignOut={signOut}
-      />
-
-      {/* Main area: sidebar + content */}
+      <EmployeePortalHeader employeeName={employeeName} onSignOut={signOut} />
       <div className="flex flex-1 overflow-hidden">
         <EmployeePortalNav
           activeSection={activeSection}
@@ -77,8 +79,6 @@ export function EmployeePortalShell() {
           collapsed={collapsed}
           onToggleCollapse={() => setCollapsed(!collapsed)}
         />
-
-        {/* Content */}
         <main className="flex-1 overflow-auto">
           <div className="max-w-5xl mx-auto p-4 md:p-6 lg:p-8">
             {renderContent()}
