@@ -57042,16 +57042,22 @@ export type Database = {
           next_retry_at: string | null
           notes: string | null
           payload: Json
+          payload_snapshot: Json | null
           payroll_record_id: string | null
           priority: string
+          readiness_status: string
           reference_period: string | null
+          related_run_id: string | null
           response_deadline: string | null
           status: string
+          submission_domain: string
+          submission_mode: string
           submission_subtype: string | null
           submission_type: string
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
+          validation_result: Json | null
         }
         Insert: {
           adapter_id?: string | null
@@ -57075,16 +57081,22 @@ export type Database = {
           next_retry_at?: string | null
           notes?: string | null
           payload?: Json
+          payload_snapshot?: Json | null
           payroll_record_id?: string | null
           priority?: string
+          readiness_status?: string
           reference_period?: string | null
+          related_run_id?: string | null
           response_deadline?: string | null
           status?: string
+          submission_domain?: string
+          submission_mode?: string
           submission_subtype?: string | null
           submission_type: string
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
+          validation_result?: Json | null
         }
         Update: {
           adapter_id?: string | null
@@ -57108,16 +57120,22 @@ export type Database = {
           next_retry_at?: string | null
           notes?: string | null
           payload?: Json
+          payload_snapshot?: Json | null
           payroll_record_id?: string | null
           priority?: string
+          readiness_status?: string
           reference_period?: string | null
+          related_run_id?: string | null
           response_deadline?: string | null
           status?: string
+          submission_domain?: string
+          submission_mode?: string
           submission_subtype?: string | null
           submission_type?: string
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
+          validation_result?: Json | null
         }
         Relationships: [
           {
