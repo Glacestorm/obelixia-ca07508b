@@ -239,6 +239,17 @@ export function usePayrollIncidents(companyId?: string) {
   const validateAllPending = useCallback(async (periodId: string): Promise<number> => {
     if (!companyId) return 0;
     try {
+      // Guard: check period writability
+      const { data: periodData } = await supabase
+        .from('hr_payroll_periods')
+        .select('status')
+        .eq('id', periodId)
+        .single();
+      if (periodData && !isPeriodWritable(periodData.status as string)) {
+        toast.error(`Período ${periodData.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden validar incidencias`);
+        return 0;
+      }
+
       const { data: userData } = await supabase.auth.getUser();
       const pendingIds = incidents.filter(i => i.status === 'pending' && i.period_id === periodId).map(i => i.id);
       if (pendingIds.length === 0) return 0;
