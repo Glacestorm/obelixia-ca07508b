@@ -419,6 +419,14 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     disclaimersAccepted,
     isLoading,
 
+    // Persistence (T9)
+    persistedHistory: persistence.history,
+    persistedHistoryLoading: persistence.isLoading,
+    persistedHistoryCount: persistence.totalCount,
+    fetchPersistedHistory: persistence.fetchHistory,
+    getPersistedRecord: persistence.getRecord,
+    getLatestForDomain: persistence.getLatestForDomain,
+
     // Actions
     switchEnvironment,
     enableAdapterInEnvironment,
