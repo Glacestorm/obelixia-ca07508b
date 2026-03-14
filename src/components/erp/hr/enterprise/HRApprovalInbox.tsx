@@ -74,6 +74,41 @@ export function HRApprovalInbox({ companyId }: Props) {
         </Button>
       </div>
 
+      {/* Pre-Real Approval Summary — V2-ES.8 T5 */}
+      {(preRealPending > 0 || preRealApproved > 0 || preRealRejected > 0) && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Aprobaciones Pre-Real (Integraciones)</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                {preRealPending > 0 && (
+                  <Badge variant="outline" className="gap-1 text-amber-600 border-amber-500/30">
+                    <Clock className="h-3 w-3" /> {preRealPending} pendiente(s)
+                  </Badge>
+                )}
+                {preRealApproved > 0 && (
+                  <Badge variant="outline" className="gap-1 text-green-600 border-green-500/30">
+                    <CheckCircle className="h-3 w-3" /> {preRealApproved} aprobado(s)
+                  </Badge>
+                )}
+                {preRealRejected > 0 && (
+                  <Badge variant="outline" className="gap-1 text-destructive border-destructive/30">
+                    <XCircle className="h-3 w-3" /> {preRealRejected}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <Lock className="h-2.5 w-2.5" />
+              Gate interno preparatorio · Gestión completa en RRHH → Integraciones → Aprobaciones
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-5 gap-3">
