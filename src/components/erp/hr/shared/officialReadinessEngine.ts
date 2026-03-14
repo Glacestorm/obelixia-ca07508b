@@ -109,6 +109,15 @@ export interface ConnectorDataContext {
     is_active: boolean;
     status: string;
   }>;
+  /** V2-ES.8 T3: Certificate configurations per domain */
+  certificateConfigs?: Array<{
+    domain: string;
+    certificate_status: string;
+    certificate_type: string;
+    configuration_completeness: number;
+    expiration_date: string | null;
+    readiness_impact: string;
+  }>;
 }
 
 // ─── Evaluator ──────────────────────────────────────────────────────────────
@@ -161,12 +170,27 @@ function evaluateConnector(
         ? 'configured'
         : 'active';
 
+  // ── V2-ES.8 T3: Evaluate certificate status for this connector ──
+  const certDomainMap: Record<ConnectorId, string> = {
+    tgss_siltra: 'tgss_siltra',
+    contrata_sepe: 'contrata_sepe',
+    aeat_111: 'aeat',
+    aeat_190: 'aeat',
+    certifica2: 'contrata_sepe',
+    delta: 'tgss_siltra',
+  };
+  const certConfig = ctx.certificateConfigs?.find(c => c.domain === certDomainMap[connectorId]);
+  const credentialsPresent = certConfig
+    ? (certConfig.certificate_status === 'cert_loaded_placeholder' || certConfig.certificate_status === 'cert_ready_preparatory')
+    : false;
+  const certExpired = certConfig?.certificate_status === 'expired';
+  const certCompleteness = certConfig?.configuration_completeness ?? 0;
+
   // ── Evaluate signals per connector ──
   let dataComplete = false;
   let formatValid = false;
   let consistencyOk = false;
   let docsReady: boolean | null = null;
-  const credentialsPresent = false; // always false in dry-run phase
   const adapterConfigured = adapterStatus === 'configured' || adapterStatus === 'active';
 
   switch (connectorId) {
@@ -234,10 +258,23 @@ function evaluateConnector(
     }
   }
 
+  // ── V2-ES.8 T3: Certificate warnings (cross-connector) ──
+  if (certExpired) {
+    warnings.push('Certificado digital expirado — renovar antes de envío real');
+  } else if (!credentialsPresent && certConfig && certConfig.certificate_status !== 'not_configured') {
+    warnings.push(`Certificado ${certConfig.certificate_status === 'partially_configured' ? 'parcialmente configurado' : 'sin cargar'}`);
+  }
+  if (certConfig && certConfig.expiration_date) {
+    const daysToExpiry = Math.ceil((new Date(certConfig.expiration_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (daysToExpiry > 0 && daysToExpiry <= 30) {
+      warnings.push(`Certificado expira en ${daysToExpiry} días`);
+    }
+  }
+
   // ── Calculate level & percent ──
-  const signalCount = [dataComplete, formatValid, consistencyOk, docsReady !== false, adapterConfigured]
+  const signalCount = [dataComplete, formatValid, consistencyOk, docsReady !== false, adapterConfigured, credentialsPresent]
     .filter(Boolean).length;
-  const signalTotal = docsReady === null ? 4 : 5;
+  const signalTotal = docsReady === null ? 5 : 6;
   const percent = Math.round((signalCount / signalTotal) * 100);
 
   let level: ReadinessLevel;

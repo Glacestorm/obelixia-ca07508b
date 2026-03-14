@@ -41,6 +41,13 @@ import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsH
 import { useOfficialReadiness } from '@/hooks/erp/hr/useOfficialReadiness';
 import { usePreparatorySubmissions } from '@/hooks/erp/hr/usePreparatorySubmissions';
 import { getDomainMeta, type SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
+import {
+  useHRDomainCertificates,
+  DOMAIN_LABELS as CERT_DOMAIN_LABELS,
+  STATUS_LABELS as CERT_STATUS_LABELS,
+  isCertificateExpiringSoon,
+  type CertificateDomain,
+} from '@/hooks/erp/hr/useHRDomainCertificates';
 
 interface Props {
   companyId: string;
@@ -289,11 +296,13 @@ function PipelineStep({ done, label }: { done: boolean; label: string }) {
 export function ReadinessDashboard({ companyId, adapters }: Props) {
   const { summary, isEvaluating, lastEvaluatedAt, evaluate } = useOfficialReadiness(companyId);
   const { submissions, fetchPreparatory } = usePreparatorySubmissions(companyId);
+  const { certificates, fetchCertificates, getCertificateSummary } = useHRDomainCertificates(companyId);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
 
   useEffect(() => {
     evaluate(adapters);
     fetchPreparatory();
+    fetchCertificates();
   }, []);
 
   // Compute per-domain submission stats
@@ -360,7 +369,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             Pre-validación y preparación para envíos oficiales · Modo preparatorio
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); }} disabled={isEvaluating}>
+        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); }} disabled={isEvaluating}>
           <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
           Reevaluar
         </Button>
@@ -510,12 +519,49 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-amber-500" /> Requisitos de configuración
+            <KeyRound className="h-4 w-4 text-amber-500" /> Certificados y configuración por dominio
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1.5">
+          {(['tgss_siltra', 'contrata_sepe', 'aeat'] as CertificateDomain[]).map(domain => {
+            const cert = certificates.find(c => c.domain === domain);
+            const statusLabel = cert ? CERT_STATUS_LABELS[cert.certificate_status] : 'No configurado';
+            const isReady = cert && (cert.certificate_status === 'cert_loaded_placeholder' || cert.certificate_status === 'cert_ready_preparatory');
+            const isExpiring = cert ? isCertificateExpiringSoon(cert) : false;
+            const isExpired = cert?.certificate_status === 'expired';
+
+            return (
+              <div key={domain} className="flex items-center justify-between text-[11px] py-1.5 border-b last:border-0">
+                <div className="flex items-center gap-1.5">
+                  {isReady ? (
+                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  ) : isExpired ? (
+                    <XCircle className="h-3 w-3 text-destructive" />
+                  ) : (
+                    <Clock className="h-3 w-3 text-amber-500" />
+                  )}
+                  <span className="font-medium">{CERT_DOMAIN_LABELS[domain]}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isExpiring && (
+                    <Badge variant="outline" className="text-[8px] h-3.5 px-1 text-amber-600 border-amber-300">
+                      Próximo a expirar
+                    </Badge>
+                  )}
+                  <span className={cn(
+                    'text-[10px]',
+                    isReady ? 'text-green-600' : isExpired ? 'text-destructive' : 'text-muted-foreground'
+                  )}>
+                    {statusLabel}
+                  </span>
+                  {cert && (
+                    <span className="text-[9px] text-muted-foreground font-mono">{cert.configuration_completeness}%</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
           {[
-            { label: 'Certificado FNMT / electrónico', required: true, configured: false, domains: 'TGSS, Contrat@, AEAT' },
             { label: 'CCC (Código Cuenta Cotización)', required: true, configured: summary.connectors.find(c => c.connectorId === 'tgss_siltra')?.signals.dataComplete || false, domains: 'TGSS' },
             { label: 'NIF empresa declarante', required: true, configured: summary.connectors.find(c => c.connectorId === 'aeat_111')?.signals.dataComplete || false, domains: 'AEAT' },
             { label: 'Conector SILTRA activo', required: false, configured: summary.connectors.find(c => c.connectorId === 'tgss_siltra')?.signals.adapterConfigured || false, domains: 'TGSS' },
@@ -534,9 +580,13 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
               <span className="text-muted-foreground">{req.domains}</span>
             </div>
           ))}
-          <p className="text-[10px] text-muted-foreground pt-1">
-            Los certificados digitales solo son necesarios para envío real. El modo dry-run funciona sin ellos.
-          </p>
+          <div className="flex items-start gap-1.5 pt-2 text-[10px] text-muted-foreground">
+            <Info className="h-3 w-3 mt-0.5 shrink-0" />
+            <p>
+              Los certificados configurados aquí son <strong>preparatorios</strong>. Un certificado con estado "preparatorio" 
+              <strong> NO activa firma real ni envío oficial</strong>. El modo dry-run funciona sin certificados.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
