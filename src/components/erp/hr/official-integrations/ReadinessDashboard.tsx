@@ -328,8 +328,19 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     pendingCount: approvalPendingCount,
     approvedCount: approvalApprovedCount,
     rejectedCount: approvalRejectedCount,
+    approvals,
     fetchApprovals,
   } = usePreRealApproval(companyId);
+
+  // ─── Proactive Alerts (V2-ES.8 T6) ───
+  const proactiveAlerts = useProactiveAlertSignals({
+    readinessSummary: summary,
+    calendar,
+    certificates,
+    submissions,
+    approvals,
+    enabled: !!summary,
+  });
 
   useEffect(() => {
     evaluate(adapters);
