@@ -400,22 +400,12 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                   {registrationData.legal_entity && <FieldRow label="Entidad legal" value={registrationData.legal_entity} />}
                 </div>
 
-                {/* V2-ES.5 Paso 2: TGSS readiness indicator */}
-                <div className="flex items-center gap-2 pt-1 border-t mt-1">
-                  <Shield className="h-3 w-3 shrink-0 text-primary" />
-                  <span className="text-[10px] text-muted-foreground">Payload TGSS:</span>
-                  {tgssValidation.isReady ? (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
-                      ✓ Ready ({tgssValidation.readinessPercent}%)
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-700 border-amber-500/30">
-                      {tgssValidation.readinessPercent}% — {tgssValidation.missingFields.length > 0
-                        ? `${tgssValidation.missingFields.length} campo(s) faltante(s)`
-                        : `${tgssValidation.formatErrors.length} error(es) formato`
-                      }
-                    </Badge>
-                  )}
+                {/* V2-ES.5 Paso 3: Pre-integration readiness */}
+                <div className="pt-1 border-t mt-1">
+                  <TGSSPreIntegrationBadge
+                    summary={preIntegration}
+                    showDetails={preIntegration.consistency.errorCount > 0 || preIntegration.consistency.warningCount > 0}
+                  />
                 </div>
               </div>
             )}
