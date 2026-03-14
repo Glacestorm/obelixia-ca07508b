@@ -142,6 +142,7 @@ export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const { currentCompany } = useERPContext();
+  const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
   
   // Estados para dialogs
