@@ -594,6 +594,21 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
                     </div>
                   </>
                 )}
+
+                {/* V2-ES.6 Paso 3: Operational closure */}
+                <Separator />
+                <ContractClosureSection
+                  canClose={closure.canClose}
+                  isClosed={closure.isClosed}
+                  isConfirmed={closure.isConfirmed}
+                  blockers={closure.blockers}
+                  warnings={closure.warnings}
+                  existingSnapshot={closure.existingSnapshot}
+                  closedAt={closure.closedAt}
+                  closureNotes={closure.closureNotes}
+                  onClose={handleClose}
+                  onReopen={handleReopen}
+                />
               </>
             )}
           </div>
