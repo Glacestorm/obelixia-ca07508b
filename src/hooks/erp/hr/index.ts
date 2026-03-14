@@ -312,3 +312,13 @@ export type {
 
 // V2-ES.4+: Version counts batch hook
 export { useDocumentVersionCounts } from './useDocumentVersionCounts';
+
+// V2-ES.5 Paso 1: Proceso de alta/afiliación
+export { useHRRegistrationProcess } from './useHRRegistrationProcess';
+export type {
+  RegistrationStatus,
+  RegistrationData,
+  DataReadiness,
+  RegistrationReadiness,
+} from './useHRRegistrationProcess';
+export { REGISTRATION_STATUS_CONFIG, REGISTRATION_STATUS_TRANSITIONS } from './useHRRegistrationProcess';
