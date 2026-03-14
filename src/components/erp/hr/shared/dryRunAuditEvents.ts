@@ -26,7 +26,13 @@ export type DryRunAuditAction =
   | 'dry_run_retried'
   | 'dry_run_superseded'
   | 'dry_run_payload_guard_blocked'
-  | 'dry_run_concurrency_blocked';
+  | 'dry_run_concurrency_blocked'
+  // V2-ES.8 T5: Pre-real approval events
+  | 'approval_requested'
+  | 'approval_granted'
+  | 'approval_rejected'
+  | 'approval_correction_requested'
+  | 'approval_cancelled';
 
 const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   dry_run_created: 'info',
