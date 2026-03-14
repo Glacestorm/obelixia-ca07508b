@@ -312,7 +312,7 @@ export function usePayrollEngine(companyId?: string) {
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);
     }
-  }, [records]);
+  }, [records, periods]);
 
   // ---- LINES ----
 
