@@ -22,6 +22,7 @@ import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
 import { DocStatusBadge } from '../shared/DocStatusBadge';
 import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
 import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
+import { RegistrationSummaryWidget } from '../shared/RegistrationSummaryWidget';
 import { DocGenerationBadge } from '../shared/DocGenerationBadge';
 import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
