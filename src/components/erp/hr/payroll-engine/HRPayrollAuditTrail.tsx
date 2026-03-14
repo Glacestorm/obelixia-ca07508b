@@ -78,6 +78,9 @@ export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{cfg.label}</Badge>
                     <span className="text-xs text-muted-foreground">{entry.entity_type}</span>
+                    {entry.entity_type === 'payroll_run' && (
+                      <Badge variant="secondary" className="text-[8px] px-1 py-0">Run</Badge>
+                    )}
                   </div>
                   <p className="text-sm mt-1">
                     <span className="font-medium">{entry.actor_name || 'Sistema'}</span>
