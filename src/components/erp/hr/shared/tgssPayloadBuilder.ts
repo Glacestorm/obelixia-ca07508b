@@ -1,11 +1,12 @@
 /**
  * tgssPayloadBuilder — Construcción y validación del payload preparatorio TGSS
- * V2-ES.5 Paso 2: Estructura + validación de formato
+ * V2-ES.5 Paso 3: Estructura enriquecida + validación de formato + consistencia
  *
  * NO genera fichero oficial ni transmite a TGSS.
  * NO es validación oficial — es readiness interno.
  */
 import type { RegistrationData } from '@/hooks/erp/hr/useHRRegistrationProcess';
+import { checkTGSSConsistency, type ConsistencyResult, type ConsistencyIssue } from './tgssConsistencyChecker';
 
 // ─── Validation rules ───────────────────────────────────────────────────────
 
@@ -27,13 +28,23 @@ export interface TGSSPayloadResult {
   missingFields: FieldValidation[];
   /** Fields present but with format errors */
   formatErrors: FieldValidation[];
-  /** Overall readiness */
+  /** Cross-field consistency checks (V2-ES.5 Paso 3) */
+  consistency: ConsistencyResult;
+  /** Overall readiness (fields + format + consistency errors) */
   isReady: boolean;
-  /** Readiness percentage (required fields only) */
+  /** Readiness percentage (required fields only, penalized by consistency errors) */
   readinessPercent: number;
+  /** Readiness level for UI display */
+  readinessLevel: 'complete' | 'high' | 'medium' | 'low' | 'none';
 }
 
 export interface TGSSPayload {
+  /** Action metadata (V2-ES.5 Paso 3) */
+  action: {
+    type: TGSSActionType;
+    prepared_at: string;
+    version: string;
+  };
   // Worker identification
   worker: {
     naf: string;
@@ -53,6 +64,7 @@ export interface TGSSPayload {
     trial_period_days: number | null;
     working_coefficient: number | null;
     collective_agreement: string | null;
+    is_temporary: boolean;
   };
   // Social Security
   social_security: {
@@ -64,7 +76,14 @@ export interface TGSSPayload {
   workplace: {
     work_center: string | null;
   };
+  // Banking (V2-ES.5 Paso 3)
+  banking: {
+    iban: string | null;
+  };
 }
+
+/** TGSS action types for future integration */
+export type TGSSActionType = 'alta_inicial' | 'alta_reingreso' | 'alta_pluriempleo' | 'alta_transferencia';
 
 // ─── Format validators ──────────────────────────────────────────────────────
 
@@ -96,9 +115,6 @@ function validateDNINIE(value: string): { valid: boolean; type: 'DNI' | 'NIE'; e
   const cleaned = value.trim().toUpperCase();
   if (/^\d{8}[A-Z]$/.test(cleaned)) return { valid: true, type: 'DNI', error: null };
   if (/^[XYZ]\d{7}[A-Z]$/.test(cleaned)) return { valid: true, type: 'NIE', error: null };
-  // Try DNI first
-  const dniErr = validateDNI(cleaned);
-  const nieErr = validateNIE(cleaned);
   return {
     valid: false,
     type: /^[XYZ]/.test(cleaned) ? 'NIE' : 'DNI',
@@ -152,16 +168,44 @@ function validateRegime(value: string): string | null {
   return null;
 }
 
+/** IBAN: ES + 2 check digits + 20 digits (V2-ES.5 Paso 3) */
+function validateIBAN(value: string): string | null {
+  const cleaned = value.replace(/[\s\-]/g, '').toUpperCase();
+  // Spanish IBAN: ES + 22 digits = 24 chars
+  if (/^ES\d{22}$/.test(cleaned)) return null;
+  // Accept other EU IBANs loosely
+  if (/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(cleaned)) return null;
+  return 'IBAN español: ES + 22 dígitos (ej: ES9121000418450200051332)';
+}
+
+/** Temporary contract codes */
+const TEMPORARY_CONTRACT_CODES = ['401', '402', '410', '420', '421', '501', '502'];
+
 // ─── Builder ────────────────────────────────────────────────────────────────
 
-export function buildTGSSPayload(data: RegistrationData | null): TGSSPayloadResult {
+export interface BuildTGSSPayloadOptions {
+  /** Doc completeness percentage for cross-validation */
+  docReadinessPercent?: number;
+}
+
+export function buildTGSSPayload(
+  data: RegistrationData | null,
+  options?: BuildTGSSPayloadOptions,
+): TGSSPayloadResult {
+  const emptyConsistency: ConsistencyResult = {
+    issues: [], errors: [], warnings: [], infos: [],
+    isConsistent: true, issueCount: 0,
+  };
+
   const empty: TGSSPayloadResult = {
     payload: null,
     validations: [],
     missingFields: [],
     formatErrors: [],
+    consistency: emptyConsistency,
     isReady: false,
     readinessPercent: 0,
+    readinessLevel: 'none',
   };
 
   if (!data) return empty;
@@ -195,40 +239,67 @@ export function buildTGSSPayload(data: RegistrationData | null): TGSSPayloadResu
   };
 
   // Required fields
-  const nafV = check('naf', 'NAF (Nº Afiliación SS)', data.naf, true, validateNAF);
+  check('naf', 'NAF (Nº Afiliación SS)', data.naf, true, validateNAF);
 
   let dniType: 'DNI' | 'NIE' = 'DNI';
-  const dniV = check('dni_nie', 'DNI/NIE', data.dni_nie, true, (v) => {
+  check('dni_nie', 'DNI/NIE', data.dni_nie, true, (v) => {
     const result = validateDNINIE(v);
     dniType = result.type;
     return result.error;
   });
 
-  const cccV = check('ccc', 'CCC (Cuenta Cotización)', data.ccc, true, validateCCC);
-  const regDateV = check('registration_date', 'Fecha de alta', data.registration_date, true, validateDate);
-  const contractV = check('contract_type_code', 'Tipo de contrato', data.contract_type_code, true, validateContractType);
-  const groupV = check('contribution_group', 'Grupo de cotización', data.contribution_group, true, validateContributionGroup);
-  const regimeV = check('regime', 'Régimen', data.regime, true, validateRegime);
+  check('ccc', 'CCC (Cuenta Cotización)', data.ccc, true, validateCCC);
+  check('registration_date', 'Fecha de alta', data.registration_date, true, validateDate);
+  check('contract_type_code', 'Tipo de contrato', data.contract_type_code, true, validateContractType);
+  check('contribution_group', 'Grupo de cotización', data.contribution_group, true, validateContributionGroup);
+  check('regime', 'Régimen', data.regime, true, validateRegime);
 
-  // Recommended fields (no format validation)
+  // Recommended fields
   check('work_center', 'Centro de trabajo', data.work_center, false);
   check('legal_entity', 'Entidad legal', data.legal_entity, false);
   check('working_coefficient', 'Coef. jornada', data.working_coefficient, false);
   check('occupation_code', 'Código CNO', data.occupation_code, false);
   check('collective_agreement', 'Convenio colectivo', data.collective_agreement, false);
   check('contract_end_date', 'Fecha fin contrato', data.contract_end_date, false, (v) => v ? validateDate(v) : null);
+  // V2-ES.5 Paso 3: IBAN
+  check('iban', 'IBAN domiciliación', (data as unknown as Record<string, unknown>).iban as string | null ?? null, false, (v) => v ? validateIBAN(v) : null);
 
+  // ── Field-level metrics ───────────────────────────────────────────────
   const missingFields = validations.filter(v => v.required && !v.present);
   const formatErrors = validations.filter(v => v.present && !v.valid);
   const requiredValid = validations.filter(v => v.required && v.valid).length;
   const totalRequired = validations.filter(v => v.required).length;
-  const isReady = missingFields.length === 0 && formatErrors.length === 0;
-  const readinessPercent = totalRequired > 0 ? Math.round((requiredValid / totalRequired) * 100) : 0;
 
-  // Build payload only if all required present (even with format errors, for preview)
+  // ── Consistency checks (V2-ES.5 Paso 3) ──────────────────────────────
+  const consistency = checkTGSSConsistency(data, options?.docReadinessPercent);
+
+  // ── Readiness calculation (penalized by consistency errors) ───────────
+  const basePercent = totalRequired > 0 ? (requiredValid / totalRequired) * 100 : 0;
+  // Each consistency error penalizes 5%, each warning 2%
+  const penalty = (consistency.errors.length * 5) + (consistency.warnings.length * 2);
+  const readinessPercent = Math.max(0, Math.round(basePercent - penalty));
+
+  const isReady = missingFields.length === 0 && formatErrors.length === 0 && consistency.isConsistent;
+
+  const readinessLevel: TGSSPayloadResult['readinessLevel'] =
+    isReady ? 'complete' :
+    readinessPercent >= 80 ? 'high' :
+    readinessPercent >= 50 ? 'medium' :
+    readinessPercent > 0 ? 'low' : 'none';
+
+  // ── Build payload ─────────────────────────────────────────────────────
   let payload: TGSSPayload | null = null;
   if (missingFields.length === 0) {
+    const isTemporary = data.contract_type_code
+      ? TEMPORARY_CONTRACT_CODES.includes(data.contract_type_code)
+      : false;
+
     payload = {
+      action: {
+        type: 'alta_inicial',
+        prepared_at: new Date().toISOString(),
+        version: '3.0',
+      },
       worker: {
         naf: String(data.naf).replace(/[\s\-\/]/g, ''),
         dni_nie: String(data.dni_nie).trim().toUpperCase(),
@@ -245,6 +316,7 @@ export function buildTGSSPayload(data: RegistrationData | null): TGSSPayloadResu
         trial_period_days: data.trial_period_days ?? null,
         working_coefficient: data.working_coefficient ?? null,
         collective_agreement: data.collective_agreement || null,
+        is_temporary: isTemporary,
       },
       social_security: {
         regime: String(data.regime),
@@ -254,6 +326,9 @@ export function buildTGSSPayload(data: RegistrationData | null): TGSSPayloadResu
       workplace: {
         work_center: data.work_center || null,
       },
+      banking: {
+        iban: ((data as unknown as Record<string, unknown>).iban as string) || null,
+      },
     };
   }
 
@@ -262,7 +337,9 @@ export function buildTGSSPayload(data: RegistrationData | null): TGSSPayloadResu
     validations,
     missingFields,
     formatErrors,
+    consistency,
     isReady,
     readinessPercent,
+    readinessLevel,
   };
 }
