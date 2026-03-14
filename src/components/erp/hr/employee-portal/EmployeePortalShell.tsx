@@ -51,7 +51,7 @@ export function EmployeePortalShell() {
       case 'time':
         return <EmployeeTimeSection employee={employee} onNavigate={handleNavigate} />;
       case 'leave':
-        return <PlaceholderSection title="Vacaciones y Permisos" description="Solicita vacaciones y consulta tu saldo. Módulo en preparación." />;
+        return <EmployeeLeaveSection employee={employee} onNavigate={handleNavigate} />;
       case 'profile':
         return <EmployeeProfileSection employee={employee} onNavigate={handleNavigate} onRefresh={refresh} />;
       case 'help':

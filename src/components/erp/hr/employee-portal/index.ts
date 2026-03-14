@@ -9,3 +9,4 @@ export { EmployeeRequestsSection } from './EmployeeRequestsSection';
 export { EmployeeTimeSection } from './EmployeeTimeSection';
 export { EmployeeProfileSection } from './EmployeeProfileSection';
 export { EmployeeHelpSection } from './EmployeeHelpSection';
+export { EmployeeLeaveSection } from './EmployeeLeaveSection';
