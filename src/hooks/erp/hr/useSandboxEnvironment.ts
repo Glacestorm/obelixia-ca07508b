@@ -41,9 +41,9 @@ import {
   auditExecutionCompleted,
   auditExecutionFailed,
   auditGateNotMet,
-  auditEligibilityEvaluated,
   logSandboxAuditEvent,
 } from '@/lib/security/sandboxAuditHelper';
+import { useSandboxPersistence, type SandboxHistoryFilters } from './useSandboxPersistence';
 
 interface UseSandboxEnvironmentParams {
   companyId: string;
