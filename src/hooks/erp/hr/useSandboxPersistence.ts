@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { SandboxExecutionRecord } from '@/components/erp/hr/shared/sandboxExecutionService';
 import type { SandboxDomain, ConnectorEnvironment } from '@/components/erp/hr/shared/sandboxEnvironmentEngine';
+import { auditExecutionPersisted, auditPersistenceFailed } from '@/lib/security/sandboxAuditHelper';
 
 // ─── DB Row Type ────────────────────────────────────────────────────────────
 
