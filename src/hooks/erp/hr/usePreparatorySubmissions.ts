@@ -29,6 +29,7 @@ import {
   createEmptyValidationResult,
   isRealSubmissionBlocked,
 } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
+import { logDryRunEvent } from '@/components/erp/hr/shared/dryRunAuditEvents';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
