@@ -1,6 +1,6 @@
 /**
  * OfficialIntegrationsHub — Panel principal de integraciones oficiales
- * V2-ES.8: Added Readiness Dashboard tab
+ * V2-ES.8: Readiness Dashboard + Preparatory Dry-Run
  */
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +12,7 @@ import { SubmissionDetail } from './SubmissionDetail';
 import { AdaptersPanel } from './AdaptersPanel';
 import { ReceiptsPanel } from './ReceiptsPanel';
 import { ReadinessDashboard } from './ReadinessDashboard';
+import { PreparatoryDryRunPanel } from './PreparatoryDryRunPanel';
 
 interface Props { companyId: string; }
 
@@ -58,8 +59,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="readiness" className="text-xs">Readiness</TabsTrigger>
+          <TabsTrigger value="dry-run" className="text-xs">Dry-Run</TabsTrigger>
           <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
           <TabsTrigger value="submissions" className="text-xs">Envíos</TabsTrigger>
           <TabsTrigger value="adapters" className="text-xs">Conectores</TabsTrigger>
@@ -68,6 +70,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
 
         <TabsContent value="readiness">
           <ReadinessDashboard companyId={companyId} adapters={hub.adapters} />
+        </TabsContent>
+        <TabsContent value="dry-run">
+          <PreparatoryDryRunPanel companyId={companyId} />
         </TabsContent>
         <TabsContent value="dashboard">
           <IntegrationsHubDashboard stats={hub.stats} submissions={hub.submissions} adapters={hub.adapters} onRefresh={hub.loadAll} isLoading={hub.isLoading} />
