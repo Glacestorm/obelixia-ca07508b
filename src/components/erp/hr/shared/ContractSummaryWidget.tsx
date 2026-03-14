@@ -2,12 +2,14 @@
  * ContractSummaryWidget — Compact contract process status for employee expedient
  * V2-ES.6 Paso 1.1: Read-only summary (mirrors RegistrationSummaryWidget)
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FileSignature, AlertTriangle, CheckCircle2, Clock, Lock } from 'lucide-react';
+import { FileSignature, AlertTriangle, CheckCircle2, Clock, Lock, AlertOctagon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { computeContractDeadlines } from './contractDeadlineEngine';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import {
   CONTRACT_PROCESS_STATUS_CONFIG,
   type ContractProcessData,
