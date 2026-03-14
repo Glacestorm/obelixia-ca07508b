@@ -165,7 +165,7 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, [companyId]);
 
-  // ── Transition status with validation ──
+  // ── Transition status with validation + audit ──
   const transitionStatus = useCallback(async (
     id: string,
     newStatus: PreparatorySubmissionStatus,
@@ -185,12 +185,26 @@ export function usePreparatorySubmissions(companyId: string) {
 
     // Block real submission
     if (newStatus === 'submitted_real' && isRealSubmissionBlocked(sub.submission_mode as SubmissionMode)) {
+      await logDryRunEvent('dry_run_real_blocked', {
+        submissionId: id,
+        domain: sub.submission_domain,
+        submissionType: sub.submission_type,
+        status: sub.status,
+        extra: { attempted_transition: 'submitted_real' },
+      });
       toast.error('Envío real bloqueado en modo preparatorio (V2-ES.8)');
       return false;
     }
 
     // Block ready_for_real
     if (newStatus === 'ready_for_real' && isRealSubmissionBlocked(sub.submission_mode as SubmissionMode)) {
+      await logDryRunEvent('dry_run_real_blocked', {
+        submissionId: id,
+        domain: sub.submission_domain,
+        submissionType: sub.submission_type,
+        status: sub.status,
+        extra: { attempted_transition: 'ready_for_real' },
+      });
       toast.error('Envío real no disponible en esta fase');
       return false;
     }
@@ -212,6 +226,22 @@ export function usePreparatorySubmissions(companyId: string) {
       setSubmissions(prev => prev.map(s =>
         s.id === id ? { ...s, ...updates } as PreparatorySubmission : s
       ));
+
+      // Granular audit for specific transitions
+      const auditActionMap: Partial<Record<PreparatorySubmissionStatus, import('@/components/erp/hr/shared/dryRunAuditEvents').DryRunAuditAction>> = {
+        ready_for_dry_run: 'dry_run_ready',
+        cancelled: 'dry_run_cancelled',
+        draft: 'dry_run_reset',
+      };
+      const auditAction = auditActionMap[newStatus];
+      if (auditAction) {
+        await logDryRunEvent(auditAction, {
+          submissionId: id,
+          domain: sub.submission_domain,
+          submissionType: sub.submission_type,
+          status: newStatus,
+        });
+      }
 
       toast.success(`Estado actualizado: ${getStatusMeta(newStatus).label}`);
       return true;
