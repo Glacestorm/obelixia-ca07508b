@@ -83,22 +83,22 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
   const megaMenus: MegaMenuCategory[] = [
     {
       id: 'core-hr',
-      label: 'Core HR',
+      label: 'People',
       icon: Users,
       columns: 3,
       width: 'w-[720px]',
-      headerTitle: 'Core HR',
-      headerDescription: 'Empleados, contratos, organización y documentos',
+      headerTitle: 'People & Organization',
+      headerDescription: 'Directorio, contratos, estructura y documentación',
       subGroups: [
         {
-          title: 'Personas',
+          title: 'Directorio',
           icon: Users,
           color: 'text-blue-600',
           items: [
             { id: 'employees', label: 'Empleados', icon: Users, description: 'Directorio y expedientes' },
             { id: 'contracts', label: 'Contratos', icon: FileText, description: 'Gestión contractual' },
             { id: 'documents', label: 'Documentos', icon: FolderOpen, description: 'Archivo digital' },
-            { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Documentos, evidencias y compliance', badge: 'Nuevo' },
+            { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Documentos, evidencias y compliance' },
           ]
         },
         {
@@ -131,28 +131,28 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       badge: stats.pendingPayrolls,
       columns: 2,
       width: 'w-[520px]',
-      headerTitle: 'Payroll & Retribución',
-      headerDescription: 'Nóminas, seguridad social y compensación',
+      headerTitle: 'Payroll & Compensation',
+      headerDescription: 'Nóminas, cotizaciones, fiscalidad y retribución',
       subGroups: [
         {
-          title: 'Nóminas',
+          title: 'Ciclo de Nómina',
           icon: DollarSign,
           color: 'text-emerald-600',
           items: [
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
-            { id: 'payroll-engine', label: 'Motor Nómina', icon: Calculator, description: 'Períodos, registros y conceptos', badge: 'Nuevo' },
+            { id: 'payroll-engine', label: 'Motor de Nómina', icon: Calculator, description: 'Períodos, runs y conceptos' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones' },
-            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Gestión de períodos' },
+            { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Ciclo mensual de cierre' },
           ]
         },
         {
-          title: 'Cotización & Fiscal',
+          title: 'Cotización & Retribución',
           icon: Landmark,
           color: 'text-blue-600',
           items: [
-            { id: 'ss', label: 'Seg. Social', icon: Landmark, description: 'Cotizaciones y RED' },
-            { id: 'integration', label: 'Integración', icon: Link2, description: 'Contabilidad, Tesorería, SS, Fiscal' },
+            { id: 'ss', label: 'Seguridad Social', icon: Landmark, description: 'Cotizaciones y expediente SS' },
+            { id: 'integration', label: 'Integración ERP', icon: Link2, description: 'Contabilidad · Tesorería · Fiscal' },
             { id: 'compensation-suite', label: 'Compensación', icon: Coins, description: 'Retribución total' },
             { id: 'benefits', label: 'Beneficios', icon: Gift, description: 'Retribución flexible' },
           ]
@@ -161,13 +161,13 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     },
     {
       id: 'laboral',
-      label: 'Laboral',
+      label: 'Workforce',
       icon: Briefcase,
       badge: stats.pendingVacations,
       columns: 2,
       width: 'w-[520px]',
-      headerTitle: 'Administración Laboral',
-      headerDescription: 'Tiempo, ausencias, solicitudes y tareas',
+      headerTitle: 'Workforce Management',
+      headerDescription: 'Tiempo, ausencias, solicitudes y operativa diaria',
       subGroups: [
         {
           title: 'Tiempo & Ausencias',
@@ -175,17 +175,17 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-amber-600',
           items: [
             { id: 'vacations', label: 'Vacaciones', icon: Calendar, description: 'Solicitudes y saldos', badge: stats.pendingVacations, badgeVariant: 'secondary' },
-            { id: 'time-clock', label: 'Control Fichaje', icon: Clock, description: 'Registro de jornada' },
-            { id: 'leave-incidents', label: 'Incidencias', icon: AlertTriangle, description: 'Bajas, maternidad, IT', badge: 'Nuevo' },
+            { id: 'time-clock', label: 'Control Horario', icon: Clock, description: 'Registro de jornada' },
+            { id: 'leave-incidents', label: 'Incidencias', icon: AlertTriangle, description: 'IT, maternidad, permisos' },
           ]
         },
         {
-          title: 'Gestión Operativa',
+          title: 'Operativa',
           icon: ClipboardList,
           color: 'text-violet-600',
           items: [
-            { id: 'admin-requests', label: 'Solicitudes', icon: Briefcase, description: 'Solicitudes administrativas', badge: 'Nuevo' },
-            { id: 'hr-tasks', label: 'Tareas RRHH', icon: ClipboardList, description: 'Tareas asignables', badge: 'Nuevo' },
+            { id: 'admin-requests', label: 'Solicitudes', icon: Briefcase, description: 'Certificados, cambios de datos' },
+            { id: 'hr-tasks', label: 'Tareas RRHH', icon: ClipboardList, description: 'Tareas asignables' },
             { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox, description: 'Bandeja de aprobaciones' },
             { id: 'regulatory-watch', label: 'Vigilancia Normativa', icon: Shield, description: 'Alertas legales' },
             { id: 'safety', label: 'PRL', icon: Shield, description: 'Prevención de riesgos', badge: stats.safetyAlerts, badgeVariant: 'destructive' },
@@ -200,33 +200,33 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       columns: 3,
       width: 'w-[720px]',
       headerTitle: 'Global HR Platform',
-      headerDescription: 'Multi-país, movilidad, integraciones oficiales y compliance',
+      headerDescription: 'Multi-país, movilidad internacional y compliance',
       subGroups: [
         {
           title: 'Localización',
           icon: Flag,
           color: 'text-blue-600',
           items: [
-            { id: 'country-registry', label: 'Country Registry', icon: Globe, description: 'Países y políticas', badge: 'G1' },
-            { id: 'es-localization', label: '🇪🇸 España', icon: Flag, description: 'IRPF, SS, contratos, permisos', badge: 'Nuevo' },
+            { id: 'country-registry', label: 'Country Registry', icon: Globe, description: 'Países y políticas' },
+            { id: 'es-localization', label: '🇪🇸 España', icon: Flag, description: 'IRPF, SS, contratos, permisos' },
           ]
         },
         {
           title: 'Global Mobility',
-          icon: Globe,
+          icon: Plane,
           color: 'text-emerald-600',
           items: [
-            { id: 'mobility-assignments', label: 'Asignaciones', icon: Globe, description: 'Asignaciones internacionales', badge: 'Nuevo' },
-            { id: 'mobility-dashboard', label: 'Mobility Dashboard', icon: Gauge, description: 'KPIs de movilidad', badge: 'Nuevo' },
+            { id: 'mobility-assignments', label: 'Asignaciones', icon: Plane, description: 'Asignaciones internacionales' },
+            { id: 'mobility-dashboard', label: 'Mobility Hub', icon: Gauge, description: 'KPIs de movilidad' },
           ]
         },
         {
-          title: 'Integraciones Oficiales',
+          title: 'Compliance & Envíos',
           icon: Send,
           color: 'text-indigo-600',
           items: [
-            { id: 'official-submissions', label: 'Envíos Oficiales', icon: Send, description: 'SILTRA, Milena PA, AEAT', badge: 'Nuevo' },
-            { id: 'compliance-evidence', label: 'Evidencias', icon: Shield, description: 'Cumplimiento documental', badge: 'Nuevo' },
+            { id: 'official-submissions', label: 'Envíos Oficiales', icon: Send, description: 'SILTRA, Contrat@, AEAT' },
+            { id: 'compliance-evidence', label: 'Evidencias', icon: Shield, description: 'Cumplimiento documental' },
           ]
         },
       ]
@@ -446,7 +446,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
             )}>
               {item.label}
             </p>
-            {item.badge && (typeof item.badge === 'string' || Number(item.badge) > 0) && (
+            {item.badge !== undefined && item.badge !== null && (typeof item.badge === 'string' ? item.badge.length > 0 : Number(item.badge) > 0) && (
               <Badge variant={item.badgeVariant || 'secondary'} className="text-[10px] h-4 min-w-4 px-1 justify-center">
                 {item.badge}
               </Badge>
@@ -495,7 +495,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
               >
                 <MenuIcon className="h-4 w-4" />
                 {menu.label}
-                {menu.badge && menu.badge > 0 && (
+                {typeof menu.badge === 'number' && menu.badge > 0 && (
                   <Badge variant="secondary" className="ml-0.5 text-xs h-5 min-w-5 justify-center">
                     {menu.badge}
                   </Badge>
