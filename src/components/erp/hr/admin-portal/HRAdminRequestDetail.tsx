@@ -166,6 +166,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
               companyId={request.company_id}
               employeeId={request.employee_id}
               linkedDocs={linkedDocs}
+              onDeadlinesComputed={setRegistrationDeadlines}
             />
           )}
 
