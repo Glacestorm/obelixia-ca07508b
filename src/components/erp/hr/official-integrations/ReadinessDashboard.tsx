@@ -1,7 +1,7 @@
 /**
- * ReadinessDashboard — V2-ES.8 Paso 5
+ * ReadinessDashboard — V2-ES.8 Tramo 4
  * Enhanced: operational visibility, credential status, payload/dry-run tracking,
- * 5-level score system, and clear disclaimers.
+ * 5-level score system, multi-entity readiness, and clear disclaimers.
  */
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
