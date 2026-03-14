@@ -817,6 +817,24 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               ))}
             </SelectContent>
           </Select>
+          {latestDiff && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className={cn('h-4 w-4 mr-1.5', isExporting && 'animate-spin')} />
+                  Exportar diff
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportDiff('pdf', latestDiff)}>
+                  <FileText className="h-4 w-4 mr-2" /> PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportDiff('excel', latestDiff)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading || historyLoading}>
             <RefreshCw className={cn('h-4 w-4 mr-1.5', (isLoading || historyLoading) && 'animate-spin')} />
             Actualizar

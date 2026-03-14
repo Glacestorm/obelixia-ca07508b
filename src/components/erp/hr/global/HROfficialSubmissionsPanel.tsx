@@ -102,7 +102,25 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
           </h3>
           <p className="text-sm text-muted-foreground">SILTRA, Milena PA, Contrat@, AEAT, Certifica2</p>
         </div>
-        <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Nuevo envío</Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting}>
+                <Download className={cn('h-4 w-4 mr-1.5', isExporting && 'animate-spin')} />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleQuickExport('pdf')}>
+                <FileText className="h-4 w-4 mr-2" /> Evidence Pack PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleQuickExport('excel')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Evidence Pack Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Nuevo envío</Button>
+        </div>
       </div>
 
       {/* V2-ES.8 T3: Preparatory banner + cert & deadline status */}

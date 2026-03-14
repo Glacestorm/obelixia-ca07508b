@@ -102,6 +102,21 @@ export function HRComplianceEvidencePanel({ companyId }: Props) {
             <FlaskConical className="h-3 w-3" />
             {showDryRunEvidence ? 'Ocultar dry-run' : `Evidencias dry-run (${results.length})`}
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting}>
+                <Download className="h-4 w-4 mr-1.5" /> Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleEvidenceExport('pdf')}>
+                <FileText className="h-4 w-4 mr-2" /> Evidence Pack PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEvidenceExport('excel')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Evidence Pack Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Registrar evidencia</Button>
         </div>
       </div>
