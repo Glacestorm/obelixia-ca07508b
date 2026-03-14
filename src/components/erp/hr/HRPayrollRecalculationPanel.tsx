@@ -53,6 +53,8 @@ interface RecalculationRecord {
   ai_validation?: { status: string; analysis: string; recommendations: string[] };
   legal_validation?: { status: string; opinion: string; risk_level: string };
   hr_approval?: { status: string; approver: string; notes: string; approved_at: string };
+  run_id?: string | null;
+  source_run_id?: string | null;
   created_at: string;
 }
 
