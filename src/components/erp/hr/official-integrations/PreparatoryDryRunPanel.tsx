@@ -60,6 +60,8 @@ import {
   canExecuteDryRun,
   type DryRunHealthCheck,
 } from '@/components/erp/hr/shared/connectorHardeningEngine';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface Props {
   companyId: string;
