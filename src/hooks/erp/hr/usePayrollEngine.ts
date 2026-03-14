@@ -391,6 +391,18 @@ export function usePayrollEngine(companyId?: string) {
 
   const deleteLine = useCallback(async (lineId: string) => {
     try {
+      // Guard: find the record → period to check writability
+      const line = lines.find(l => l.id === lineId);
+      if (line) {
+        const record = records.find(r => r.id === (line as any).payroll_record_id);
+        if (record) {
+          const period = periods.find(p => p.id === record.payroll_period_id);
+          if (period && !isPeriodWritable(period.status)) {
+            toast.error(`Período ${period.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden eliminar líneas`);
+            return;
+          }
+        }
+      }
       const { error } = await supabase.from('hr_payroll_record_lines').delete().eq('id', lineId);
       if (error) throw error;
       setLines(prev => prev.filter(l => l.id !== lineId));
@@ -398,7 +410,7 @@ export function usePayrollEngine(companyId?: string) {
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);
     }
-  }, []);
+  }, [lines, records, periods]);
 
   // ---- CONCEPT TEMPLATES ----
 
