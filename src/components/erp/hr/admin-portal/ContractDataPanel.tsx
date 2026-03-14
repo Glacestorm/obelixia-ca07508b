@@ -120,6 +120,16 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
     return computeReadiness(linkedDocs.map(d => ({ document_type: d.document_type })));
   }, [computeReadiness, linkedDocs]);
 
+  // V2-ES.6 Paso 2: Pre-integration readiness (memoized via hook)
+  const { summary: preIntegrationSummary } = useContrataReadiness({
+    contractData,
+    docCompleteness: {
+      percentage: readiness.docs.percentage,
+      mandatoryComplete: readiness.docs.mandatoryComplete,
+    },
+    deadlineSummary,
+  });
+
   // Start editing
   const startEdit = useCallback(() => {
     setDraft({
