@@ -145,6 +145,18 @@ export function usePreRealApproval(companyId: string) {
     });
 
     if (!eligibility.eligible) {
+      // Audit: ineligible attempt
+      await logDryRunEvent('approval_ineligible_attempt', {
+        submissionId: input.submissionId,
+        domain: input.domain,
+        submissionType: input.submissionType,
+        score: input.validationResult?.score,
+        extra: {
+          eligibility_level: eligibility.level,
+          blockers: eligibility.blockers,
+          eligibility_score: eligibility.score,
+        },
+      });
       toast.error('No cumple los requisitos mínimos para solicitar aprobación');
       return null;
     }

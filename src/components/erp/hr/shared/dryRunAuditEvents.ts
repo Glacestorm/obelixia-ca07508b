@@ -94,6 +94,9 @@ const ACTION_LABELS: Record<DryRunAuditAction, string> = {
   approval_rejected: 'Aprobación pre-real rechazada',
   approval_correction_requested: 'Correcciones solicitadas por aprobador',
   approval_cancelled: 'Solicitud de aprobación cancelada',
+  // V2-ES.8 T5 P5
+  approval_ineligible_attempt: 'Intento de aprobación sobre envío no elegible',
+  approval_real_blocked: 'Intento de activar envío real bloqueado por invariante de seguridad',
 };
 
 // ─── Public API ─────────────────────────────────────────────────────────────

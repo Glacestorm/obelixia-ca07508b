@@ -423,6 +423,17 @@ export function PreRealApprovalPanel({ companyId }: Props) {
                           Decidido {formatDistanceToNow(new Date(approval.decided_at), { locale: es, addSuffix: true })}
                         </p>
                       )}
+                      {/* Disclaimer on approved items */}
+                      {approval.status === 'approved' && (
+                        <div className="flex items-start gap-1.5 p-2 rounded bg-amber-500/5 border border-amber-500/20 text-[10px] text-amber-700">
+                          <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span>
+                            <strong>Aprobado internamente (pre-real)</strong> — Esta aprobación NO constituye un envío oficial, 
+                            NO ha sido firmado digitalmente y NO ha sido transmitido a ningún organismo. 
+                            El envío real permanece bloqueado.
+                          </span>
+                        </div>
+                      )}
                       {approval.status === 'pending_approval' && (
                         <Button
                           variant="ghost"
