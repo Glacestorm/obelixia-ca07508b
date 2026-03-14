@@ -14,3 +14,4 @@ export { PayrollRunVersionHistory } from './PayrollRunVersionHistory';
 export { ActiveRunIndicator } from './ActiveRunIndicator';
 export { SSMonthlyExpedientTab } from './SSMonthlyExpedientTab';
 export { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
+export { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
