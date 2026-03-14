@@ -95,6 +95,16 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
           />
         </TabsContent>
 
+        <TabsContent value="runs" className="mt-4">
+          <HRPayrollRunsPanel
+            companyId={companyId}
+            periods={engine.periods}
+            selectedPeriodId={selectedPeriodId}
+            onSelectPeriod={setSelectedPeriodId}
+            onBatchCalculateES={handleBatchCalcES}
+          />
+        </TabsContent>
+
         <TabsContent value="payslips" className="mt-4">
           <HRPayrollRecordsList
             companyId={companyId}
