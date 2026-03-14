@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserCheck, AlertTriangle, CheckCircle2, Clock, AlertOctagon } from 'lucide-react';
+import { UserCheck, AlertTriangle, CheckCircle2, Clock, AlertOctagon, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import {
