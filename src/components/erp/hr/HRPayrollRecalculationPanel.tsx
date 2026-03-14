@@ -94,7 +94,7 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
     try {
       const { data, error } = await supabase
         .from('erp_hr_payroll_recalculations')
-        .select('*')
+        .select('*, run_id, source_run_id')
         .eq('company_id', companyId)
         .eq('period', selectedPeriod)
         .order('created_at', { ascending: false });
