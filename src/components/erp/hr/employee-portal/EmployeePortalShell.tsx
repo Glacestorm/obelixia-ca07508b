@@ -14,20 +14,8 @@ import { EmployeeRequestsSection } from './EmployeeRequestsSection';
 import { EmployeeTimeSection } from './EmployeeTimeSection';
 import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { EmployeeHelpSection } from './EmployeeHelpSection';
-import { Card, CardContent } from '@/components/ui/card';
-import { Construction } from 'lucide-react';
+import { EmployeeLeaveSection } from './EmployeeLeaveSection';
 
-function PlaceholderSection({ title, description }: { title: string; description: string }) {
-  return (
-    <Card className="border-dashed">
-      <CardContent className="py-12 text-center">
-        <Construction className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-        <h3 className="font-semibold text-lg mb-1">{title}</h3>
-        <p className="text-sm text-muted-foreground max-w-md mx-auto">{description}</p>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function EmployeePortalShell() {
   const { signOut } = useAuth();
@@ -63,7 +51,7 @@ export function EmployeePortalShell() {
       case 'time':
         return <EmployeeTimeSection employee={employee} onNavigate={handleNavigate} />;
       case 'leave':
-        return <PlaceholderSection title="Vacaciones y Permisos" description="Solicita vacaciones y consulta tu saldo. Módulo en preparación." />;
+        return <EmployeeLeaveSection employee={employee} onNavigate={handleNavigate} />;
       case 'profile':
         return <EmployeeProfileSection employee={employee} onNavigate={handleNavigate} onRefresh={refresh} />;
       case 'help':
