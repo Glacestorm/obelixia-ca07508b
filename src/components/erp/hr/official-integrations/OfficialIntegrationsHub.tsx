@@ -136,6 +136,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         <TabsContent value="dry-run">
           <PreparatoryDryRunPanel companyId={companyId} />
         </TabsContent>
+        <TabsContent value="sandbox">
+          <SandboxControlPanel companyId={companyId} adapters={hub.adapters} />
+        </TabsContent>
         <TabsContent value="approvals">
           <PreRealApprovalPanel companyId={companyId} />
         </TabsContent>
