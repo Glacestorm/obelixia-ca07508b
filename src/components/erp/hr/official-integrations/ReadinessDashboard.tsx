@@ -1,12 +1,13 @@
 /**
- * ReadinessDashboard — V2-ES.8 Tramo 4+6
+ * ReadinessDashboard — V2-ES.8 Tramo 4+6+7
  * Enhanced: operational visibility, credential status, payload/dry-run tracking,
- * 5-level score system, multi-entity readiness, proactive alerts, and clear disclaimers.
+ * 5-level score system, multi-entity readiness, proactive alerts, export buttons, and clear disclaimers.
  */
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
