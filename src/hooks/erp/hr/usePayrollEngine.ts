@@ -761,6 +761,8 @@ export function usePayrollEngine(companyId?: string) {
     periods, records, lines, concepts, simulations, auditLog, isLoading,
     // Periods
     fetchPeriods, openPeriod, updatePeriodStatus,
+    // Period Close (V2-ES.7 Paso 3)
+    closePeriod, lockPeriod, reopenPeriod, assertPeriodWritable,
     // Records
     fetchRecords, updateRecordStatus,
     // Lines
