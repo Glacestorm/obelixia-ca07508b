@@ -245,6 +245,32 @@ export function generateEvidencePackPDF(input: EvidencePackInput): ExportResult 
       }
     }
 
+    // 9. Sandbox executions (T9)
+    if (input.sandboxData?.sandboxExecutions && input.sandboxData.sandboxExecutions.length > 0) {
+      y = sectionTitle(doc, sec++, 'Ejecuciones Sandbox', y, margin);
+      const { headers, body } = formatSandboxExecutionsForPDF(input.sandboxData.sandboxExecutions);
+      y = addAutoTable(doc, y, headers, body);
+      y += 2;
+      doc.setFont('times', 'italic');
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text(sanitizeForPDF('Ejecuciones sandbox preparatorias — no constituyen envios oficiales'), margin, y, { maxWidth: pw - margin * 2 });
+      y += 6;
+    }
+
+    // 10. Sandbox vs Dry-run comparisons (T9)
+    if (input.sandboxData?.sandboxComparisons && input.sandboxData.sandboxComparisons.length > 0) {
+      y = sectionTitle(doc, sec++, 'Comparativa Sandbox vs Dry-Run', y, margin);
+      const { headers: cHeaders, body: cBody } = formatSandboxComparisonsForPDF(input.sandboxData.sandboxComparisons);
+      y = addAutoTable(doc, y, cHeaders, cBody);
+      y += 2;
+      doc.setFont('times', 'italic');
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text(sanitizeForPDF('Comparativa interna — no constituye validacion de organismo'), margin, y, { maxWidth: pw - margin * 2 });
+      y += 6;
+    }
+
     // Final disclaimer
     y = checkPageBreak(doc, y, 20);
     doc.setFont('times', 'italic');
