@@ -501,28 +501,52 @@ export function PreRealApprovalPanel({ companyId }: Props) {
                     </div>
                   </div>
 
-                  {/* Eligibility checks */}
+                  {/* Eligibility checks — grouped by category */}
                   <div className="space-y-1.5">
-                    <p className="text-xs font-medium">Elegibilidad:</p>
-                    <div className="space-y-1">
-                      {eligibility.checks.map(c => (
-                        <div key={c.checkId} className={cn(
-                          'flex items-start gap-1.5 text-xs py-1 px-2 rounded',
-                          c.passed ? 'bg-green-500/5' : c.required ? 'bg-destructive/5' : 'bg-amber-500/5'
-                        )}>
-                          {c.passed ? <CheckCircle2 className="h-3 w-3 mt-0.5 text-green-500 shrink-0" /> :
-                           c.required ? <XCircle className="h-3 w-3 mt-0.5 text-destructive shrink-0" /> :
-                           <AlertTriangle className="h-3 w-3 mt-0.5 text-amber-500 shrink-0" />}
-                          <div>
-                            <span className="font-medium">{c.label}</span>
-                            <p className="text-[10px] text-muted-foreground">{c.message}</p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium">Elegibilidad:</p>
+                      <Badge variant="outline" className={cn('text-[9px] h-4',
+                        eligibility.level === 'eligible' ? 'border-green-500/30 text-green-600' :
+                        eligibility.level === 'partially_eligible' ? 'border-amber-500/30 text-amber-600' :
+                        'border-destructive/30 text-destructive'
+                      )}>
+                        {eligibility.levelLabel}
+                      </Badge>
                     </div>
+                    {/* Group by category */}
+                    {(['status', 'dry_run', 'validation', 'data', 'certificate', 'evidence'] as const).map(cat => {
+                      const catChecks = eligibility.checks.filter(c => c.category === cat);
+                      if (catChecks.length === 0) return null;
+                      const catLabels: Record<string, string> = {
+                        status: 'Estado', dry_run: 'Dry-run', validation: 'Validación',
+                        data: 'Datos', certificate: 'Certificados', evidence: 'Evidencia',
+                      };
+                      return (
+                        <div key={cat} className="space-y-0.5">
+                          <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">{catLabels[cat]}</p>
+                          {catChecks.map(c => (
+                            <div key={c.checkId} className={cn(
+                              'flex items-start gap-1.5 text-xs py-1 px-2 rounded',
+                              c.passed ? 'bg-green-500/5' : c.required ? 'bg-destructive/5' : 'bg-amber-500/5'
+                            )}>
+                              {c.passed ? <CheckCircle2 className="h-3 w-3 mt-0.5 text-green-500 shrink-0" /> :
+                               c.required ? <XCircle className="h-3 w-3 mt-0.5 text-destructive shrink-0" /> :
+                               <AlertTriangle className="h-3 w-3 mt-0.5 text-amber-500 shrink-0" />}
+                              <div>
+                                <span className="font-medium">{c.label}</span>
+                                <p className="text-[10px] text-muted-foreground">{c.message}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
                     <Progress value={eligibility.score} className={cn('h-1.5',
-                      eligibility.eligible ? '[&>div]:bg-green-500' : '[&>div]:bg-destructive'
+                      eligibility.level === 'eligible' ? '[&>div]:bg-green-500' :
+                      eligibility.level === 'partially_eligible' ? '[&>div]:bg-amber-500' :
+                      '[&>div]:bg-destructive'
                     )} />
+                    <p className="text-[10px] text-muted-foreground">{eligibility.summary}</p>
                   </div>
 
                   <div className="space-y-1.5">
