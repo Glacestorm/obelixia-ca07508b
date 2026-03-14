@@ -296,6 +296,8 @@ export const dashboardRoutes: RouteConfig[] = [
   // Strategic Planning & Financial Viability
   { path: '/strategic-planning', component: StrategicPlanningPage, layout: 'none', priority: 'high', meta: { title: 'Planificación Estratégica', requiresAuth: true } },
   { path: '/financial-viability', component: FinancialViabilityPage, layout: 'none', priority: 'high', meta: { title: 'Viabilidad Financiera', requiresAuth: true } },
+  // Portal del Empleado (V2-ES.9)
+  { path: '/mi-portal', component: EmployeePortalPage, layout: 'none', priority: 'high', meta: { title: 'Portal del Empleado', requiresAuth: true } },
 ];
 
 // ============================================
