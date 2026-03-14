@@ -318,8 +318,17 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
 
       const record = await executeSandboxSimulation(request);
 
-      // Persist record in state
+      // Persist record in state and DB
       setExecutionRecords(prev => [record, ...prev]);
+      
+      // T9: Persist to database
+      persistence.persistRecord(record).then(ok => {
+        if (ok) {
+          console.log('[useSandboxEnvironment] Record persisted to DB:', record.id);
+        } else {
+          console.warn('[useSandboxEnvironment] Failed to persist record to DB:', record.id);
+        }
+      });
 
       // Also add to legacy executions for backward compat
       const legacyExec = createSandboxExecution({
