@@ -49,7 +49,6 @@ import {
   isCertificateExpiringSoon,
   type CertificateDomain,
 } from '@/hooks/erp/hr/useHRDomainCertificates';
-import { useRegulatoryCalendar } from '@/hooks/erp/hr/useRegulatoryCalendar';
 
 interface Props {
   companyId: string;
