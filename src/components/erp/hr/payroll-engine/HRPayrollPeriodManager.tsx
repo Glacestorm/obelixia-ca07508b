@@ -19,6 +19,7 @@ import type { PeriodClosureSnapshot } from '@/engines/erp/hr/payrollRunEngine';
 import { ActiveRunIndicator } from './ActiveRunIndicator';
 import { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 import { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
+import { MonthlyClosingSummaryCard } from './MonthlyClosingSummaryCard';
 
 interface Props {
   companyId: string;
