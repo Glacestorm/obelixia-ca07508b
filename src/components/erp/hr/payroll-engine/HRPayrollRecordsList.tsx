@@ -117,6 +117,9 @@ export function HRPayrollRecordsList({
 
   const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2 });
 
+  const selectedPeriod = periods.find(p => p.id === selectedPeriodId);
+  const isPeriodClosed = selectedPeriod && (selectedPeriod.status === 'closed' || selectedPeriod.status === 'locked');
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
@@ -133,8 +136,36 @@ export function HRPayrollRecordsList({
         </Select>
       </div>
 
-      {/* Active run context banner */}
-      {selectedPeriodId && (
+      {/* Closed/locked banner */}
+      {selectedPeriodId && isPeriodClosed && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg border text-sm ${
+          selectedPeriod.status === 'locked'
+            ? 'bg-destructive/5 border-destructive/20 text-destructive'
+            : 'bg-muted/50 border-border'
+        }`}>
+          {selectedPeriod.status === 'locked' ? (
+            <>
+              <Lock className="h-4 w-4 shrink-0" />
+              <span className="font-medium">Período bloqueado</span>
+              <span className="text-muted-foreground">— No se permiten cambios.</span>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span className="font-medium">Período cerrado</span>
+              <span className="text-muted-foreground">— Modo solo lectura.</span>
+            </>
+          )}
+          {selectedPeriod.closed_at && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              Cerrado: {new Date(selectedPeriod.closed_at).toLocaleDateString('es-ES')}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Active run context banner (only for non-closed periods) */}
+      {selectedPeriodId && !isPeriodClosed && (
         <ActiveRunIndicator companyId={companyId} periodId={selectedPeriodId} variant="full" />
       )}
 
