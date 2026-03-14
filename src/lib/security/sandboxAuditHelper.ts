@@ -30,7 +30,12 @@ export type SandboxAuditEventType =
   | 'sandbox_environment_switched'
   | 'sandbox_gate_not_met'
   | 'sandbox_disclaimers_accepted'
-  | 'sandbox_eligibility_evaluated';
+  | 'sandbox_eligibility_evaluated'
+  // T9: Persistence & comparison events
+  | 'sandbox_execution_persisted'
+  | 'sandbox_persistence_failed'
+  | 'sandbox_comparison_generated'
+  | 'sandbox_evidence_pack_generated';
 
 interface SandboxAuditPayload {
   companyId: string;
