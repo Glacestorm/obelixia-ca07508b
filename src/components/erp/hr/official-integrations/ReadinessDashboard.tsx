@@ -1,7 +1,7 @@
 /**
- * ReadinessDashboard — V2-ES.8 Tramo 4
+ * ReadinessDashboard — V2-ES.8 Tramo 4+6
  * Enhanced: operational visibility, credential status, payload/dry-run tracking,
- * 5-level score system, multi-entity readiness, and clear disclaimers.
+ * 5-level score system, multi-entity readiness, proactive alerts, and clear disclaimers.
  */
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,7 +61,8 @@ import { usePreRealApproval } from '@/hooks/erp/hr/usePreRealApproval';
 import { getApprovalStatusMeta, type ApprovalStatus } from '@/components/erp/hr/shared/preRealApprovalEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { Building2, ShieldCheck } from 'lucide-react';
-
+import { useProactiveAlertSignals } from '@/hooks/erp/hr/useProactiveAlertSignals';
+import { ProactiveAlertsSummaryWidget } from './ProactiveAlertsSummaryWidget';
 interface Props {
   companyId: string;
   adapters: IntegrationAdapter[];
@@ -327,8 +328,19 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     pendingCount: approvalPendingCount,
     approvedCount: approvalApprovedCount,
     rejectedCount: approvalRejectedCount,
+    approvals,
     fetchApprovals,
   } = usePreRealApproval(companyId);
+
+  // ─── Proactive Alerts (V2-ES.8 T6) ───
+  const proactiveAlerts = useProactiveAlertSignals({
+    readinessSummary: summary,
+    calendar,
+    certificates,
+    submissions,
+    approvals,
+    enabled: !!summary,
+  });
 
   useEffect(() => {
     evaluate(adapters);
@@ -525,6 +537,16 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
           </CardContent>
         </Card>
       )}
+
+      {/* Proactive Alerts Widget — V2-ES.8 T6 */}
+      <ProactiveAlertsSummaryWidget
+        summary={proactiveAlerts.summary}
+        isEvaluating={proactiveAlerts.isEvaluating}
+        lastEvaluatedAt={proactiveAlerts.lastEvaluatedAt}
+        onAcknowledge={proactiveAlerts.acknowledge}
+        onDismiss={proactiveAlerts.dismiss}
+        onResolve={proactiveAlerts.resolve}
+      />
 
       {/* Regulatory Calendar Widget */}
       {calendar && calendar.deadlines.length > 0 && (
