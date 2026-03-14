@@ -337,4 +337,13 @@ export type {
   FieldValidation,
   TGSSPayloadResult,
   TGSSPayload,
+  TGSSActionType,
+  BuildTGSSPayloadOptions,
 } from '@/components/erp/hr/shared/tgssPayloadBuilder';
+
+export { checkTGSSConsistency } from '@/components/erp/hr/shared/tgssConsistencyChecker';
+export type {
+  ConsistencySeverity,
+  ConsistencyIssue,
+  ConsistencyResult,
+} from '@/components/erp/hr/shared/tgssConsistencyChecker';
