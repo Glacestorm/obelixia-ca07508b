@@ -115,6 +115,15 @@ export function HRComplianceEvidencePanel({ companyId }: Props) {
             <FlaskConical className="h-3 w-3" />
             {showDryRunEvidence ? 'Ocultar dry-run' : `Evidencias dry-run (${results.length})`}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[10px] gap-1"
+            onClick={() => setShowSandboxEvidence(!showSandboxEvidence)}
+          >
+            <TestTube className="h-3 w-3" />
+            {showSandboxEvidence ? 'Ocultar sandbox' : `Sandbox (${sandboxPersistence.totalCount})`}
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={isExporting}>
