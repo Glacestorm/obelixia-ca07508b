@@ -453,7 +453,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         .map(m => ({
           ...m,
           subGroups: m.subGroups
-            .map(sg => ({ ...sg, items: sg.items.filter(i => mvpItems.has(i.id)) }))
+            .map(sg => ({ ...sg, items: sg.items.filter(i => effectiveItems.has(i.id)) }))
             .filter(sg => sg.items.length > 0),
         }))
     : megaMenus;
