@@ -1,6 +1,6 @@
 /**
  * HRNavigationMenu - Navegación agrupada del módulo RRHH
- * Todos los menús usan mega-menu multi-columna con sub-grupos lógicos
+ * Mega-menu multi-columna con sub-grupos lógicos y diseño enterprise
  */
 
 import { useState } from 'react';
@@ -12,11 +12,11 @@ import { cn } from '@/lib/utils';
 import {
   TrendingUp, Users, UserPlus, UserMinus, Award, DollarSign, Landmark, Calendar,
   FileText, UserCog, FolderOpen, Building2, Gift, Shield, GraduationCap, BarChart3,
-  Brain, Newspaper, BookOpen, HelpCircle, Rocket, ChevronDown,
+  Brain, HelpCircle, Rocket, ChevronDown,
   Calculator, Link2, Database, MapPin, Network, Lock, ClipboardList, GitBranch,
   Inbox, Timer, Coins, Heart, Leaf, Bot, Layers, ShieldAlert, Target, Scale, Gavel,
   Zap, Gauge, Globe, Cpu, Briefcase, Clock, FileCheck, UserCheck, LineChart,
-  Sparkles, Wrench, MessageSquare, Search, Activity, Flag, Send, AlertTriangle, Plane
+  Sparkles, Wrench, Search, Activity, Flag, Send, AlertTriangle, Plane
 } from 'lucide-react';
 
 interface HRNavigationMenuProps {
@@ -56,6 +56,10 @@ interface MegaMenuCategory {
   width: string;
   headerTitle: string;
   headerDescription: string;
+  /** Tailwind gradient for the header accent stripe */
+  headerAccent: string;
+  /** Optional footer hint text */
+  footerHint?: string;
 }
 
 export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode = true }: HRNavigationMenuProps) {
@@ -65,11 +69,11 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
   const mvpCategories = new Set(['core-hr', 'payroll', 'laboral', 'global']);
   const mvpItems = new Set([
     // Core HR
-    'employees', 'contracts', 'documents', 'document-expedient',
+    'employees', 'contracts', 'document-expedient',
     'departments', 'legal-entities', 'work-centers',
     'work-calendars',
     // Payroll
-    'payroll', 'payroll-periods', 'payroll-engine',
+    'payroll', 'payroll-engine',
     'ss', 'integration', 'compensation-suite', 'benefits',
     // Laboral
     'vacations', 'time-clock', 'leave-incidents',
@@ -86,25 +90,26 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       label: 'People',
       icon: Users,
       columns: 3,
-      width: 'w-[720px]',
+      width: 'w-[740px]',
       headerTitle: 'People & Organization',
       headerDescription: 'Directorio, contratos, estructura y documentación',
+      headerAccent: 'from-blue-500/20 via-sky-500/10 to-transparent',
       subGroups: [
         {
           title: 'Directorio',
           icon: Users,
-          color: 'text-blue-600',
+          color: 'text-blue-500',
           items: [
             { id: 'employees', label: 'Empleados', icon: Users, description: 'Directorio y expedientes' },
             { id: 'contracts', label: 'Contratos', icon: FileText, description: 'Gestión contractual' },
             { id: 'documents', label: 'Documentos', icon: FolderOpen, description: 'Archivo digital' },
-            { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Documentos, evidencias y compliance' },
+            { id: 'document-expedient', label: 'Expediente Documental', icon: FileCheck, description: 'Docs, evidencias y compliance' },
           ]
         },
         {
           title: 'Organización',
           icon: Building2,
-          color: 'text-emerald-600',
+          color: 'text-emerald-500',
           items: [
             { id: 'departments', label: 'Departamentos', icon: Building2, description: 'Estructura organizativa' },
             { id: 'legal-entities', label: 'Entidades Legales', icon: Building2, description: 'Sociedades y filiales' },
@@ -115,9 +120,9 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Configuración',
           icon: Calendar,
-          color: 'text-amber-600',
+          color: 'text-amber-500',
           items: [
-            { id: 'work-calendars', label: 'Calendarios', icon: Calendar, description: 'Festivos y jornadas' },
+            { id: 'work-calendars', label: 'Calendarios Laborales', icon: Calendar, description: 'Festivos y jornadas' },
             { id: 'enterprise-roles', label: 'Roles y Permisos', icon: Lock, description: 'Control de acceso' },
             { id: 'unions', label: 'Sindicatos', icon: UserCog, description: 'Rel. laborales' },
           ]
@@ -130,17 +135,19 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       icon: DollarSign,
       badge: stats.pendingPayrolls,
       columns: 2,
-      width: 'w-[520px]',
+      width: 'w-[540px]',
       headerTitle: 'Payroll & Compensation',
       headerDescription: 'Nóminas, cotizaciones, fiscalidad y retribución',
+      headerAccent: 'from-emerald-500/20 via-teal-500/10 to-transparent',
+      footerHint: 'Motor de Nómina incluye períodos, runs, conceptos e incidencias',
       subGroups: [
         {
           title: 'Ciclo de Nómina',
           icon: DollarSign,
-          color: 'text-emerald-600',
+          color: 'text-emerald-500',
           items: [
             { id: 'payroll', label: 'Nóminas', icon: DollarSign, description: 'Procesamiento mensual', badge: stats.pendingPayrolls, badgeVariant: 'secondary' },
-            { id: 'payroll-engine', label: 'Motor de Nómina', icon: Calculator, description: 'Períodos, runs y conceptos' },
+            { id: 'payroll-engine', label: 'Motor de Nómina', icon: Calculator, description: 'Períodos · Runs · Conceptos' },
             { id: 'payroll-recalc', label: 'Recálculo', icon: Calculator, description: 'Ajustes retroactivos' },
             { id: 'settlements', label: 'Finiquitos', icon: FileCheck, description: 'Liquidaciones' },
             { id: 'payroll-periods', label: 'Períodos', icon: Calendar, description: 'Ciclo mensual de cierre' },
@@ -149,7 +156,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Cotización & Retribución',
           icon: Landmark,
-          color: 'text-blue-600',
+          color: 'text-blue-500',
           items: [
             { id: 'ss', label: 'Seguridad Social', icon: Landmark, description: 'Cotizaciones y expediente SS' },
             { id: 'integration', label: 'Integración ERP', icon: Link2, description: 'Contabilidad · Tesorería · Fiscal' },
@@ -165,14 +172,15 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       icon: Briefcase,
       badge: stats.pendingVacations,
       columns: 2,
-      width: 'w-[520px]',
+      width: 'w-[540px]',
       headerTitle: 'Workforce Management',
       headerDescription: 'Tiempo, ausencias, solicitudes y operativa diaria',
+      headerAccent: 'from-amber-500/20 via-orange-500/10 to-transparent',
       subGroups: [
         {
           title: 'Tiempo & Ausencias',
           icon: Clock,
-          color: 'text-amber-600',
+          color: 'text-amber-500',
           items: [
             { id: 'vacations', label: 'Vacaciones', icon: Calendar, description: 'Solicitudes y saldos', badge: stats.pendingVacations, badgeVariant: 'secondary' },
             { id: 'time-clock', label: 'Control Horario', icon: Clock, description: 'Registro de jornada' },
@@ -182,7 +190,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Operativa',
           icon: ClipboardList,
-          color: 'text-violet-600',
+          color: 'text-violet-500',
           items: [
             { id: 'admin-requests', label: 'Solicitudes', icon: Briefcase, description: 'Certificados, cambios de datos' },
             { id: 'hr-tasks', label: 'Tareas RRHH', icon: ClipboardList, description: 'Tareas asignables' },
@@ -198,14 +206,15 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       label: 'Global',
       icon: Globe,
       columns: 3,
-      width: 'w-[720px]',
+      width: 'w-[740px]',
       headerTitle: 'Global HR Platform',
       headerDescription: 'Multi-país, movilidad internacional y compliance',
+      headerAccent: 'from-indigo-500/20 via-violet-500/10 to-transparent',
       subGroups: [
         {
           title: 'Localización',
           icon: Flag,
-          color: 'text-blue-600',
+          color: 'text-blue-500',
           items: [
             { id: 'country-registry', label: 'Country Registry', icon: Globe, description: 'Países y políticas' },
             { id: 'es-localization', label: '🇪🇸 España', icon: Flag, description: 'IRPF, SS, contratos, permisos' },
@@ -214,7 +223,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Global Mobility',
           icon: Plane,
-          color: 'text-emerald-600',
+          color: 'text-emerald-500',
           items: [
             { id: 'mobility-assignments', label: 'Asignaciones', icon: Plane, description: 'Asignaciones internacionales' },
             { id: 'mobility-dashboard', label: 'Mobility Hub', icon: Gauge, description: 'KPIs de movilidad' },
@@ -223,7 +232,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Compliance & Envíos',
           icon: Send,
-          color: 'text-indigo-600',
+          color: 'text-indigo-500',
           items: [
             { id: 'official-submissions', label: 'Envíos Oficiales', icon: Send, description: 'SILTRA, Contrat@, AEAT' },
             { id: 'compliance-evidence', label: 'Evidencias', icon: Shield, description: 'Cumplimiento documental' },
@@ -236,14 +245,15 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       label: 'Talento',
       icon: Award,
       columns: 3,
-      width: 'w-[720px]',
+      width: 'w-[740px]',
       headerTitle: 'Gestión del Talento',
       headerDescription: 'Ciclo de vida, formación, desempeño y analítica',
+      headerAccent: 'from-amber-500/20 via-yellow-500/10 to-transparent',
       subGroups: [
         {
           title: 'Ciclo de Vida',
           icon: UserCheck,
-          color: 'text-blue-600',
+          color: 'text-blue-500',
           items: [
             { id: 'recruitment', label: 'Reclutamiento', icon: UserPlus, description: 'Ofertas y candidatos' },
             { id: 'onboarding', label: 'Onboarding', icon: UserPlus, description: 'Plan de acogida' },
@@ -253,7 +263,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Rendimiento',
           icon: Award,
-          color: 'text-amber-600',
+          color: 'text-amber-500',
           items: [
             { id: 'performance', label: 'Desempeño', icon: Award, description: 'Evaluaciones y OKRs' },
             { id: 'skills-matrix', label: 'Competencias', icon: Brain, description: 'Matriz de skills' },
@@ -264,7 +274,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Formación & Crecimiento',
           icon: GraduationCap,
-          color: 'text-violet-600',
+          color: 'text-violet-500',
           items: [
             { id: 'training', label: 'Formación', icon: GraduationCap, description: 'Planes formativos' },
             { id: 'marketplace', label: 'Marketplace', icon: Rocket, description: 'Movilidad interna' },
@@ -282,6 +292,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       width: 'w-[780px]',
       headerTitle: 'Suite Enterprise',
       headerDescription: 'Módulos avanzados de gestión empresarial',
+      headerAccent: 'from-violet-500/20 via-purple-500/10 to-transparent',
       subGroups: [
         {
           title: 'Centro de Mando',
@@ -296,7 +307,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Gobernanza & Compliance',
           icon: Lock,
-          color: 'text-amber-600',
+          color: 'text-amber-500',
           items: [
             { id: 'workflow-designer', label: 'Workflows', icon: GitBranch, description: 'Diseño de flujos' },
             { id: 'audit-trail', label: 'Auditoría', icon: ClipboardList, description: 'Trazabilidad completa' },
@@ -317,7 +328,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Legal & Sectorial',
           icon: Gavel,
-          color: 'text-emerald-600',
+          color: 'text-emerald-500',
           items: [
             { id: 'legal-engine', label: 'Legal Engine', icon: Gavel, description: 'Motor documental legal' },
             { id: 'cnae-intelligence', label: 'CNAE Intelligence', icon: Globe, description: 'Inteligencia sectorial' },
@@ -326,7 +337,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Tecnología & IA',
           icon: Cpu,
-          color: 'text-violet-600',
+          color: 'text-violet-500',
           items: [
             { id: 'ai-governance', label: 'AI Governance', icon: Brain, description: 'Gobernanza de IA' },
             { id: 'security-governance', label: 'Security & SoD', icon: ShieldAlert, description: 'Seguridad avanzada' },
@@ -345,6 +356,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
       width: 'w-[780px]',
       headerTitle: 'Utilidades del Sistema',
       headerDescription: 'Centro de mando, inteligencia, administración y operaciones',
+      headerAccent: 'from-cyan-500/20 via-sky-500/10 to-transparent',
       subGroups: [
         {
           title: 'Centro de Mando',
@@ -360,10 +372,10 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Inteligencia & Análisis',
           icon: Sparkles,
-          color: 'text-violet-600',
+          color: 'text-violet-500',
           items: [
             { id: 'util-analytics-bi', label: 'Analytics BI', icon: LineChart, description: 'BI cross-module con IA' },
-            { id: 'people-analytics', label: 'People Analytics', icon: BarChart3, description: 'Analytics unificado + Copiloto IA', badge: 'Nuevo' },
+            { id: 'people-analytics', label: 'People Analytics', icon: BarChart3, description: 'Analytics unificado + Copiloto IA' },
             { id: 'util-reporting', label: 'Reporting Engine', icon: FileText, description: 'Reportes ejecutivos' },
             { id: 'util-regulatory', label: 'Compliance Regulatorio', icon: Shield, description: 'Igualdad, GDPR, EU AI Act' },
             { id: 'util-board-pack', label: 'Board Pack', icon: Briefcase, description: 'Packs para comités' },
@@ -374,7 +386,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         {
           title: 'Administración',
           icon: Wrench,
-          color: 'text-amber-600',
+          color: 'text-amber-500',
           items: [
             { id: 'util-api-webhooks', label: 'API & Webhooks', icon: Zap, description: 'Integración enterprise' },
             { id: 'util-integrations', label: 'Integraciones', icon: Globe, description: 'BI, DMS, Firma electrónica' },
@@ -416,6 +428,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
 
   const activeCategory = getActiveCategory();
 
+  // ─── Render helpers ───
+
   const renderMegaMenuItem = (item: MenuItem, onSelect: () => void) => {
     const ItemIcon = item.icon;
     const isItemActive = activeModule === item.id;
@@ -424,18 +438,20 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
         key={item.id}
         onClick={onSelect}
         className={cn(
-          "flex items-start gap-2.5 w-full px-2 py-2 rounded-lg text-left transition-all duration-150",
-          "hover:bg-accent/80 group",
-          isItemActive && "bg-primary/10 ring-1 ring-primary/20"
+          "flex items-start gap-2.5 w-full px-2.5 py-2 rounded-xl text-left transition-all duration-200",
+          "hover:bg-accent/60 group",
+          isItemActive && "bg-primary/8 shadow-sm shadow-primary/5 ring-1 ring-primary/15"
         )}
       >
         <div className={cn(
-          "mt-0.5 p-1 rounded-md transition-colors shrink-0",
-          isItemActive ? "bg-primary/15" : "bg-muted group-hover:bg-primary/10"
+          "mt-0.5 p-1.5 rounded-lg transition-colors shrink-0",
+          isItemActive
+            ? "bg-primary/12 shadow-sm"
+            : "bg-muted/80 group-hover:bg-primary/8"
         )}>
           <ItemIcon className={cn(
             "h-3.5 w-3.5 transition-colors",
-            isItemActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+            isItemActive ? "text-primary" : "text-muted-foreground group-hover:text-primary/80"
           )} />
         </div>
         <div className="flex-1 min-w-0">
@@ -447,13 +463,19 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
               {item.label}
             </p>
             {item.badge !== undefined && item.badge !== null && (typeof item.badge === 'string' ? item.badge.length > 0 : Number(item.badge) > 0) && (
-              <Badge variant={item.badgeVariant || 'secondary'} className="text-[10px] h-4 min-w-4 px-1 justify-center">
+              <Badge
+                variant={item.badgeVariant || 'secondary'}
+                className={cn(
+                  "text-[9px] h-[18px] min-w-[18px] px-1.5 justify-center font-semibold tracking-wide",
+                  item.badgeVariant === 'destructive' && "animate-pulse"
+                )}
+              >
                 {item.badge}
               </Badge>
             )}
           </div>
           {item.description && (
-            <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+            <p className="text-[11px] text-muted-foreground/80 leading-snug mt-0.5 truncate">
               {item.description}
             </p>
           )}
@@ -463,13 +485,16 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
   };
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="flex items-center gap-1 flex-wrap">
       {/* Dashboard */}
       <Button
         variant={activeModule === 'dashboard' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => onModuleChange('dashboard')}
-        className="gap-1.5"
+        className={cn(
+          "gap-1.5 h-9 rounded-lg font-medium",
+          activeModule === 'dashboard' && "shadow-sm"
+        )}
       >
         <TrendingUp className="h-4 w-4" />
         Dashboard
@@ -491,39 +516,50 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
               <Button
                 variant={isActive ? 'secondary' : 'ghost'}
                 size="sm"
-                className={cn("h-9 px-3 text-sm gap-1.5", isOpen && "bg-accent text-accent-foreground")}
+                className={cn(
+                  "h-9 px-3 text-sm gap-1.5 rounded-lg font-medium transition-all",
+                  isOpen && "bg-accent text-accent-foreground shadow-sm",
+                  isActive && "shadow-sm"
+                )}
               >
                 <MenuIcon className="h-4 w-4" />
                 {menu.label}
                 {typeof menu.badge === 'number' && menu.badge > 0 && (
-                  <Badge variant="secondary" className="ml-0.5 text-xs h-5 min-w-5 justify-center">
+                  <Badge variant="secondary" className="ml-0.5 text-[10px] h-5 min-w-5 justify-center font-semibold">
                     {menu.badge}
                   </Badge>
                 )}
-                <ChevronDown className={cn("ml-0.5 h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+                <ChevronDown className={cn("ml-0.5 h-3 w-3 transition-transform duration-200", isOpen && "rotate-180")} />
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              align="center"
+              align="start"
               side="bottom"
-              sideOffset={6}
-              className={cn(menu.width, "p-0 shadow-xl border-border/60")}
+              sideOffset={8}
+              className={cn(
+                menu.width,
+                "p-0 shadow-2xl border-border/50 rounded-xl overflow-hidden backdrop-blur-sm"
+              )}
             >
-              {/* Header */}
-              <div className="px-5 py-3 border-b bg-muted/30 rounded-t-md">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-primary/10">
-                    <MenuIcon className="h-4 w-4 text-primary" />
+              {/* Header with domain-colored accent */}
+              <div className={cn(
+                "relative px-5 py-3.5 border-b border-border/40",
+                "bg-gradient-to-r",
+                menu.headerAccent
+              )}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-background/80 shadow-sm border border-border/30">
+                    <MenuIcon className="h-4.5 w-4.5 text-foreground" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">{menu.headerTitle}</p>
-                    <p className="text-xs text-muted-foreground">{menu.headerDescription}</p>
+                    <p className="text-sm font-bold text-foreground tracking-tight">{menu.headerTitle}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{menu.headerDescription}</p>
                   </div>
                   {menu.id === 'utilities' && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-xs h-7 gap-1"
+                      className="text-xs h-7 gap-1 rounded-lg"
                       onClick={() => {
                         onModuleChange('util-grid');
                         setOpenCategory(null);
@@ -536,18 +572,32 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
               </div>
 
               {/* Grid */}
-              <ScrollArea className="max-h-[480px]">
-                <div className={cn("grid gap-0 p-2", menu.columns === 2 ? "grid-cols-2" : "grid-cols-3")}>
-                  {menu.subGroups.map((group) => {
+              <ScrollArea className="max-h-[460px]">
+                <div className={cn(
+                  "grid p-3 gap-px",
+                  menu.columns === 2 ? "grid-cols-2" : "grid-cols-3"
+                )}>
+                  {menu.subGroups.map((group, gIdx) => {
                     const GroupIcon = group.icon;
                     return (
-                      <div key={group.title} className="p-2">
-                        <div className="flex items-center gap-1.5 px-2 mb-1.5">
-                          <GroupIcon className={cn("h-3.5 w-3.5", group.color)} />
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <div
+                        key={group.title}
+                        className={cn(
+                          "p-2.5 rounded-xl",
+                          // subtle alternating bg for visual separation
+                          gIdx % 2 === 0 ? "bg-transparent" : "bg-muted/20"
+                        )}
+                      >
+                        {/* Sub-group label */}
+                        <div className="flex items-center gap-1.5 px-2.5 mb-2">
+                          <div className={cn("p-0.5 rounded", group.color.replace('text-', 'bg-').replace('500', '500/15'))}>
+                            <GroupIcon className={cn("h-3 w-3", group.color)} />
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground/70">
                             {group.title}
                           </span>
                         </div>
+                        {/* Items */}
                         <div className="space-y-0.5">
                           {group.items.map((item) =>
                             renderMegaMenuItem(item, () => {
@@ -561,6 +611,15 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
                   })}
                 </div>
               </ScrollArea>
+
+              {/* Optional footer hint */}
+              {menu.footerHint && (
+                <div className="px-5 py-2 border-t border-border/30 bg-muted/20">
+                  <p className="text-[10px] text-muted-foreground/60 text-center italic">
+                    {menu.footerHint}
+                  </p>
+                </div>
+              )}
             </PopoverContent>
           </Popover>
         );
@@ -572,7 +631,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           variant={activeModule === 'trends' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => onModuleChange('trends')}
-          className="gap-1.5"
+          className="gap-1.5 h-9 rounded-lg"
         >
           <Rocket className="h-4 w-4" />
           2026+
