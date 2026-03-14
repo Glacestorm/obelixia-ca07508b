@@ -192,6 +192,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
   const switchEnvironment = useCallback((env: ConnectorEnvironment) => {
     if (env === 'production') {
       toast.error('Producción está bloqueada en esta fase del sistema');
+      auditProductionBlocked(companyId, undefined, 'Intento de cambio a producción rechazado');
       return false;
     }
 
@@ -201,16 +202,12 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     }
 
     setActiveEnvironmentState(env);
-    setDisclaimersAccepted(false); // Reset disclaimers on env change
+    setDisclaimersAccepted(false);
     toast.info(`Entorno activo: ${ENVIRONMENT_DEFINITIONS[env].label}`, {
       description: getEnvironmentDisclaimer(env),
     });
 
-    logSandboxAudit('environment_switched', {
-      from: activeEnvironment,
-      to: env,
-      companyId,
-    });
+    auditEnvironmentSwitched(companyId, activeEnvironment, env);
 
     return true;
   }, [activeEnvironment, companyId]);
