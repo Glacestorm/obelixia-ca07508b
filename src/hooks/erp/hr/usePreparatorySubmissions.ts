@@ -147,6 +147,15 @@ export function usePreparatorySubmissions(companyId: string) {
 
       const sub = data as unknown as PreparatorySubmission;
       setSubmissions(prev => [sub, ...prev]);
+
+      // Granular audit: creation
+      await logDryRunEvent('dry_run_created', {
+        submissionId: sub.id,
+        domain: input.domain,
+        submissionType: input.submissionType,
+        status: 'draft',
+      });
+
       toast.success(`Envío preparatorio ${getDomainMeta(input.domain).label} creado`);
       return sub;
     } catch (err) {
@@ -156,7 +165,7 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, [companyId]);
 
-  // ── Transition status with validation ──
+  // ── Transition status with validation + audit ──
   const transitionStatus = useCallback(async (
     id: string,
     newStatus: PreparatorySubmissionStatus,
@@ -176,12 +185,26 @@ export function usePreparatorySubmissions(companyId: string) {
 
     // Block real submission
     if (newStatus === 'submitted_real' && isRealSubmissionBlocked(sub.submission_mode as SubmissionMode)) {
+      await logDryRunEvent('dry_run_real_blocked', {
+        submissionId: id,
+        domain: sub.submission_domain,
+        submissionType: sub.submission_type,
+        status: sub.status,
+        extra: { attempted_transition: 'submitted_real' },
+      });
       toast.error('Envío real bloqueado en modo preparatorio (V2-ES.8)');
       return false;
     }
 
     // Block ready_for_real
     if (newStatus === 'ready_for_real' && isRealSubmissionBlocked(sub.submission_mode as SubmissionMode)) {
+      await logDryRunEvent('dry_run_real_blocked', {
+        submissionId: id,
+        domain: sub.submission_domain,
+        submissionType: sub.submission_type,
+        status: sub.status,
+        extra: { attempted_transition: 'ready_for_real' },
+      });
       toast.error('Envío real no disponible en esta fase');
       return false;
     }
@@ -204,6 +227,22 @@ export function usePreparatorySubmissions(companyId: string) {
         s.id === id ? { ...s, ...updates } as PreparatorySubmission : s
       ));
 
+      // Granular audit for specific transitions
+      const auditActionMap: Partial<Record<PreparatorySubmissionStatus, import('@/components/erp/hr/shared/dryRunAuditEvents').DryRunAuditAction>> = {
+        ready_for_dry_run: 'dry_run_ready',
+        cancelled: 'dry_run_cancelled',
+        draft: 'dry_run_reset',
+      };
+      const auditAction = auditActionMap[newStatus];
+      if (auditAction) {
+        await logDryRunEvent(auditAction, {
+          submissionId: id,
+          domain: sub.submission_domain,
+          submissionType: sub.submission_type,
+          status: newStatus,
+        });
+      }
+
       toast.success(`Estado actualizado: ${getStatusMeta(newStatus).label}`);
       return true;
     } catch (err) {
@@ -213,7 +252,7 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, [submissions]);
 
-  // ── Generate payload snapshot ──
+  // ── Generate payload snapshot + audit ──
   const generatePayloadSnapshot = useCallback(async (
     id: string,
     domain: SubmissionDomain,
@@ -244,6 +283,12 @@ export function usePreparatorySubmissions(companyId: string) {
         } : s
       ));
 
+      await logDryRunEvent('dry_run_payload_generated', {
+        submissionId: id,
+        domain,
+        extra: { payload_size: JSON.stringify(payloadData).length, source },
+      });
+
       toast.success('Payload generado y snapshot capturado');
       return true;
     } catch (err) {
@@ -253,7 +298,7 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, []);
 
-  // ── Record validation result ──
+  // ── Record validation result + audit ──
   const recordValidation = useCallback(async (
     id: string,
     validation: SubmissionValidationResult,
@@ -276,6 +321,8 @@ export function usePreparatorySubmissions(companyId: string) {
 
       if (error) throw error;
 
+      const sub = submissions.find(s => s.id === id);
+
       setSubmissions(prev => prev.map(s =>
         s.id === id ? {
           ...s,
@@ -284,6 +331,23 @@ export function usePreparatorySubmissions(companyId: string) {
           status: newStatus,
         } : s
       ));
+
+      // Audit: validated or validation_failed
+      await logDryRunEvent(
+        validation.passed ? 'dry_run_validated' : 'dry_run_validation_failed',
+        {
+          submissionId: id,
+          domain: sub?.submission_domain,
+          submissionType: sub?.submission_type,
+          score: validation.score,
+          status: newStatus,
+          extra: {
+            errorCount: validation.errorCount,
+            warningCount: validation.warningCount,
+            readiness,
+          },
+        },
+      );
 
       if (validation.passed) {
         toast.success(`Validación interna superada (${validation.score}%)`);
@@ -296,7 +360,7 @@ export function usePreparatorySubmissions(companyId: string) {
       toast.error('Error al registrar validación');
       return false;
     }
-  }, []);
+  }, [submissions]);
 
   // ── Execute dry-run (simulated) with persistence ──
   const executeDryRun = useCallback(async (id: string): Promise<boolean> => {
@@ -383,14 +447,15 @@ export function usePreparatorySubmissions(companyId: string) {
         .single();
 
       if (dryRunRecord) {
+        const disclaimer = 'Evidencia interna preparatoria — NO constituye justificante oficial ni acuse de organismo';
         const evidenceRecords = [];
         if (sub.payload_snapshot) {
           evidenceRecords.push({
             dry_run_id: (dryRunRecord as any).id,
             evidence_type: 'payload_snapshot',
             label: `Snapshot payload ${sub.submission_domain}`,
-            description: 'Captura inmutable del payload generado',
-            metadata: { domain: sub.submission_domain },
+            description: `Captura inmutable del payload generado. ${disclaimer}`,
+            metadata: { domain: sub.submission_domain, internal_disclaimer: disclaimer },
           });
         }
         if (sub.validation_result) {
@@ -398,16 +463,31 @@ export function usePreparatorySubmissions(companyId: string) {
             dry_run_id: (dryRunRecord as any).id,
             evidence_type: 'validation_report',
             label: `Validación (${sub.validation_result.score}%)`,
-            description: `${sub.validation_result.errorCount} errores, ${sub.validation_result.warningCount} avisos`,
-            metadata: { score: sub.validation_result.score, passed: sub.validation_result.passed },
+            description: `${sub.validation_result.errorCount} errores, ${sub.validation_result.warningCount} avisos. ${disclaimer}`,
+            metadata: { score: sub.validation_result.score, passed: sub.validation_result.passed, internal_disclaimer: disclaimer },
           });
         }
+        // Readiness report
+        evidenceRecords.push({
+          dry_run_id: (dryRunRecord as any).id,
+          evidence_type: 'validation_report',
+          label: `Readiness report (${sub.validation_result?.score || 0}%)`,
+          description: `Estado: ${sub.readiness_status || 'N/A'} · Dominio: ${sub.submission_domain}. ${disclaimer}`,
+          metadata: {
+            evidence_subtype: 'readiness_report',
+            readinessScore: sub.validation_result?.score || 0,
+            readinessStatus: sub.readiness_status,
+            domain: sub.submission_domain,
+            internal_disclaimer: disclaimer,
+          },
+        });
+        // Simulation log
         evidenceRecords.push({
           dry_run_id: (dryRunRecord as any).id,
           evidence_type: 'simulation_log',
           label: 'Log de simulación',
-          description: 'Registro de ejecución simulada — sin efectos externos',
-          metadata: { timestamp: new Date().toISOString(), simulated: true },
+          description: `Registro de ejecución simulada — sin efectos externos. ${disclaimer}`,
+          metadata: { timestamp: new Date().toISOString(), simulated: true, internal_disclaimer: disclaimer },
         });
 
         if (evidenceRecords.length > 0) {

@@ -65,9 +65,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 // ─── Evidence Card ──────────────────────────────────────────────────────────
 
-function EvidenceList({ evidence }: { evidence: DryRunEvidence[] }) {
-  if (evidence.length === 0) return null;
-
+function EvidenceList({ evidence, onGenerateOnDemand }: {
+  evidence: DryRunEvidence[];
+  onGenerateOnDemand?: () => void;
+}) {
   const typeIcons: Record<string, typeof FileText> = {
     payload_snapshot: FileText,
     validation_report: CheckCircle2,
@@ -75,23 +76,55 @@ function EvidenceList({ evidence }: { evidence: DryRunEvidence[] }) {
     linked_document: Paperclip,
   };
 
+  const typeLabels: Record<string, string> = {
+    payload_snapshot: 'Payload',
+    validation_report: 'Validación',
+    simulation_log: 'Simulación',
+    linked_document: 'Documento',
+  };
+
   return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium flex items-center gap-1">
-        <Paperclip className="h-3 w-3" /> Evidencias ({evidence.length})
-      </p>
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium flex items-center gap-1">
+          <Paperclip className="h-3 w-3" /> Evidencias internas ({evidence.length})
+        </p>
+        {onGenerateOnDemand && (
+          <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5 gap-0.5" onClick={onGenerateOnDemand}>
+            <Paperclip className="h-2.5 w-2.5" /> Generar
+          </Button>
+        )}
+      </div>
+      {evidence.length === 0 && (
+        <p className="text-[10px] text-muted-foreground italic">Sin evidencias vinculadas aún</p>
+      )}
       {evidence.map(ev => {
         const Icon = typeIcons[ev.evidence_type] || FileText;
+        const isReadiness = (ev.metadata as any)?.evidence_subtype === 'readiness_report';
         return (
-          <div key={ev.id} className="flex items-center gap-2 text-[11px] py-0.5 px-1.5 rounded bg-muted/30">
+          <div key={ev.id} className="flex items-center gap-2 text-[11px] py-1 px-1.5 rounded bg-muted/30">
             <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
-            <span className="flex-1 truncate">{ev.label}</span>
-            <span className="text-muted-foreground text-[10px]">
+            <div className="flex-1 min-w-0">
+              <span className="truncate block">{ev.label}</span>
+              {isReadiness && (
+                <span className="text-[9px] text-blue-500">Readiness report</span>
+              )}
+            </div>
+            <Badge variant="outline" className="text-[9px] h-4 shrink-0">
+              {typeLabels[ev.evidence_type] || ev.evidence_type}
+            </Badge>
+            <span className="text-muted-foreground text-[10px] shrink-0">
               {format(new Date(ev.created_at), 'dd/MM HH:mm', { locale: es })}
             </span>
           </div>
         );
       })}
+      {evidence.length > 0 && (
+        <div className="flex items-start gap-1 p-1 rounded text-[9px] text-muted-foreground bg-muted/20">
+          <Info className="h-2.5 w-2.5 mt-0.5 shrink-0 text-blue-400" />
+          <span>Evidencias internas preparatorias — no equivalen a justificante oficial ni acuse de organismo</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -103,11 +136,13 @@ function PersistedDryRunCard({
   evidence,
   onLoadEvidence,
   isEvidenceLoaded,
+  onGenerateEvidence,
 }: {
   result: DryRunResult;
   evidence: DryRunEvidence[];
   onLoadEvidence: (id: string) => void;
   isEvidenceLoaded: boolean;
+  onGenerateEvidence?: (dryRunId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const DomainIcon = DOMAIN_ICONS[result.submission_domain] || FileText;
@@ -196,8 +231,11 @@ function PersistedDryRunCard({
               </div>
             )}
 
-            {/* Evidence */}
-            <EvidenceList evidence={evidence} />
+            {/* Evidence with on-demand generation */}
+            <EvidenceList
+              evidence={evidence}
+              onGenerateOnDemand={onGenerateEvidence ? () => onGenerateEvidence(result.id) : undefined}
+            />
 
             {/* Notes */}
             {result.notes && (
@@ -207,7 +245,11 @@ function PersistedDryRunCard({
             {/* Disclaimer */}
             <div className="flex items-start gap-1.5 p-1.5 rounded bg-muted/50 text-[10px] text-muted-foreground">
               <Info className="h-3 w-3 mt-0.5 shrink-0 text-blue-500" />
-              <span>Resultado <strong>persistido</strong> de simulación dry-run. No constituye envío oficial.</span>
+              <span>
+                Resultado <strong>persistido</strong> de simulación dry-run.
+                No constituye envío oficial ni acuse de organismo.
+                Las evidencias vinculadas son <strong>internas y preparatorias</strong>.
+              </span>
             </div>
           </div>
         )}
@@ -396,6 +438,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
     results: dryRunHistory,
     isLoading: historyLoading,
     fetchResults,
+    generateEvidenceOnDemand,
   } = useDryRunPersistence(companyId);
 
   useEffect(() => {
@@ -421,6 +464,25 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
       setEvidenceCache(prev => ({ ...prev, [dryRunId]: (data || []) as unknown as DryRunEvidence[] }));
     } catch { /* graceful */ }
   }, [evidenceCache]);
+
+  const handleGenerateEvidence = useCallback(async (dryRunId: string) => {
+    const result = dryRunHistory.find(r => r.id === dryRunId);
+    if (!result) return;
+    const ev = await generateEvidenceOnDemand(
+      dryRunId,
+      'simulation_log',
+      `Evidencia generada bajo demanda — ${getDomainMeta(result.submission_domain as SubmissionDomain).label}`,
+      `Generación manual para dry-run #${result.execution_number}`,
+      { domain: result.submission_domain, execution_number: result.execution_number },
+    );
+    if (ev) {
+      // Refresh evidence cache
+      setEvidenceCache(prev => ({
+        ...prev,
+        [dryRunId]: [...(prev[dryRunId] || []), ev],
+      }));
+    }
+  }, [dryRunHistory, generateEvidenceOnDemand]);
 
   const handleExpand = useCallback((id: string) => {
     setExpandedId(prev => prev === id ? null : id);
@@ -556,6 +618,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               evidence={evidenceCache[result.id] || []}
               onLoadEvidence={handleLoadEvidence}
               isEvidenceLoaded={!!evidenceCache[result.id]}
+              onGenerateEvidence={handleGenerateEvidence}
             />
           ))}
           {dryRunHistory.length === 0 && !historyLoading && (
