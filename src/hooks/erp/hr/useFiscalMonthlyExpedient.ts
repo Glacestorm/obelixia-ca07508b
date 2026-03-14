@@ -93,19 +93,19 @@ export function useFiscalMonthlyExpedient(companyId: string) {
   const extractFiscalData = useCallback(async (periodId: string) => {
     try {
       // Get payroll records for this period
-      const { data: records } = await (supabase
-        .from('hr_payroll_records')
+      const { data: records } = await supabase
+        .from('hr_payroll_records' as any)
         .select('id, employee_id')
         .eq('company_id', companyId)
-        .eq('period_id', periodId) as any);
+        .eq('period_id', periodId);
 
       if (!records || records.length === 0) return null;
 
-      const recordIds = records.map(r => r.id);
+      const recordIds = (records as any[]).map((r: any) => r.id);
 
       // Get taxable lines (IRPF)
       const { data: lines } = await supabase
-        .from('hr_payroll_record_lines')
+        .from('hr_payroll_record_lines' as any)
         .select('amount, line_type, is_taxable, concept_code, percentage')
         .in('payroll_record_id', recordIds);
 
