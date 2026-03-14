@@ -3,7 +3,7 @@
  * V2-ES.8 T8 P3+P4: Gates de elegibilidad, ejecución sandbox diferenciada y trazabilidad
  */
 import { useState, useCallback, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { toast } from 'sonner';
 import {
   ConnectorEnvironment,
