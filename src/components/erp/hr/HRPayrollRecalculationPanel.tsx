@@ -458,6 +458,15 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
                       <TableCell>{rec.period}</TableCell>
                       <TableCell>{getStatusBadge(rec.status)}</TableCell>
                       <TableCell>
+                        {rec.run_id ? (
+                          <Badge variant="outline" className="text-[10px] font-mono">
+                            Run vinculado
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {rec.ai_validation_status ? (
                           <Badge variant={rec.ai_validation_status === 'approved' ? 'default' : 'secondary'}>
                             <Brain className="h-3 w-3 mr-1" />
