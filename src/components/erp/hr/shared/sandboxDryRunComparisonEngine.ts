@@ -167,7 +167,7 @@ export function compareSandboxVsDryRun(
   }
 
   // 5. Payload hash comparison
-  const dryRunPayloadHash = (dryRun.payload_snapshot as Record<string, unknown>)?.hash as string || null;
+  const dryRunPayloadHash = (dryRun.payload_snapshot as unknown as Record<string, unknown>)?.hash as string || null;
   if (dryRunPayloadHash && sandbox.payloadHash) {
     const payloadMatch = dryRunPayloadHash === sandbox.payloadHash;
     diffs.push({

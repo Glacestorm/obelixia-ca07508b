@@ -101,7 +101,7 @@ function recordToRow(record: SandboxExecutionRecord): Partial<SandboxExecutionRo
     payload_snapshot: record.payloadSnapshot,
     payload_hash: record.payloadHash,
     status: record.status,
-    result: record.result as Record<string, unknown> | null,
+    result: record.result as unknown as Record<string, unknown> | null,
     executed_at: record.executedAt,
     completed_at: record.completedAt,
     executed_by: record.executedBy,
