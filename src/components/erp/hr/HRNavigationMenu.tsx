@@ -70,7 +70,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'work-calendars',
     // Payroll
     'payroll', 'payroll-periods', 'payroll-engine',
-    'ss', 'compensation-suite', 'benefits',
+    'ss', 'integration', 'compensation-suite', 'benefits',
     // Laboral
     'vacations', 'time-clock', 'leave-incidents',
     'admin-requests', 'hr-tasks', 'approval-inbox',

@@ -405,6 +405,12 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
                             Expediente interno SS · No presentación oficial
                           </p>
                         )}
+                        {integration.id === 'fiscal-int' && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <FileText className="h-2.5 w-2.5" />
+                            Expediente fiscal interno · No presentación oficial AEAT
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

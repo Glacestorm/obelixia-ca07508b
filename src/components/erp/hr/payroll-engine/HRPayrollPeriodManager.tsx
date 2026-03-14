@@ -355,6 +355,7 @@ export function HRPayrollPeriodManager({
                           periodYear={p.fiscal_year}
                           periodMonth={p.period_number}
                         />
+                        <FiscalExpedientPeriodBadge periodId={p.id} />
                       </div>
                     )}
                   </div>
