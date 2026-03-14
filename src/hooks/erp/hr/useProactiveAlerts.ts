@@ -1,17 +1,19 @@
 /**
- * useProactiveAlerts — V2-ES.8 Tramo 6 Paso 1
- * Hook that orchestrates proactive alert computation + persistence.
+ * useProactiveAlerts — V2-ES.8 Tramo 6 Paso 1+2
+ * Hook that orchestrates proactive alert computation + persistence + lifecycle.
  *
  * Responsibilities:
  * - Gather signals from readiness, deadlines, certificates, dry-runs, approvals
  * - Compute alerts via proactiveAlertEngine (pure)
  * - Persist new alerts to `notifications` table (deduplicated)
+ * - Manage alert lifecycle: acknowledge, resolve, dismiss
  * - Provide computed summary for UI consumption
  *
  * Does NOT:
  * - Send push/email (future)
  * - Block any operation
  * - Trigger real submissions
+ * - Confirm regulatory non-compliance
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -20,7 +22,9 @@ import {
   computeProactiveAlerts,
   filterNewAlerts,
   mapAlertToNotificationRow,
+  canTransition,
   type ProactiveAlertSummary,
+  type ProactiveAlertStatus,
   type ReadinessSignal,
   type DeadlineSignal,
   type CertificateSignal,
@@ -35,9 +39,7 @@ export interface ProactiveAlertsState {
   persistedCount: number;
 }
 
-/**
- * Cooldown between evaluations to prevent over-computation (ms)
- */
+/** Cooldown between evaluations to prevent over-computation (ms) */
 const EVALUATION_COOLDOWN_MS = 30_000; // 30 seconds
 
 export function useProactiveAlerts() {
@@ -98,39 +100,32 @@ export function useProactiveAlerts() {
       return summary;
     } catch (error) {
       console.error('[useProactiveAlerts] Evaluation error:', error);
-      // Graceful degradation: return empty summary
-      const emptySummary: ProactiveAlertSummary = {
-        alerts: [],
-        criticalCount: 0,
-        highCount: 0,
-        warningCount: 0,
-        infoCount: 0,
-        totalCount: 0,
-        overallSeverity: 'ok',
-        byDomain: {
-          tgss_siltra: [],
-          contrata_sepe: [],
-          aeat: [],
-          certificates: [],
-          approvals: [],
-          general: [],
-        },
-        deduplicationKeys: new Set(),
-      };
+      const emptySummary = createEmptySummary();
       setState(prev => ({ ...prev, isEvaluating: false, summary: emptySummary }));
       return emptySummary;
     }
   }, [state.summary]);
 
   /**
-   * Dismiss an alert (mark notification as read by deduplication key)
+   * Transition an alert to a new status (acknowledge, resolve, dismiss).
+   * Updates both the notification in DB and local state.
    */
-  const dismiss = useCallback(async (deduplicationKey: string) => {
+  const transitionAlert = useCallback(async (
+    deduplicationKey: string,
+    newStatus: ProactiveAlertStatus,
+  ): Promise<boolean> => {
     try {
-      // Find notification with this dedup key in metadata
+      // Validate transition in local state
+      const currentAlert = state.summary?.alerts.find(a => a.deduplicationKey === deduplicationKey);
+      if (currentAlert && !canTransition(currentAlert.status, newStatus)) {
+        console.warn(`[useProactiveAlerts] Invalid transition: ${currentAlert.status} → ${newStatus}`);
+        return false;
+      }
+
+      // Find and update notification in DB
       const { data } = await supabase
         .from('notifications')
-        .select('id')
+        .select('id, metadata')
         .eq('source_system', 'hr_integrations')
         .eq('is_read', false)
         .limit(100);
@@ -144,9 +139,20 @@ export function useProactiveAlerts() {
           .map((n: any) => n.id);
 
         if (matchingIds.length > 0) {
+          const isTerminal = newStatus === 'resolved' || newStatus === 'dismissed';
+          const now = new Date().toISOString();
+
           await supabase
             .from('notifications')
-            .update({ is_read: true })
+            .update({
+              is_read: isTerminal,
+              metadata: {
+                ...(currentAlert ? mapAlertToNotificationRow(currentAlert).metadata : {}),
+                alertStatus: newStatus,
+                ...(newStatus === 'acknowledged' ? { acknowledgedAt: now } : {}),
+                ...(newStatus === 'resolved' ? { resolvedAt: now } : {}),
+              },
+            } as any)
             .in('id', matchingIds);
         }
       }
@@ -154,33 +160,88 @@ export function useProactiveAlerts() {
       // Update local state
       setState(prev => {
         if (!prev.summary) return prev;
-        const filtered = prev.summary.alerts.filter(a => a.deduplicationKey !== deduplicationKey);
+        const updatedAlerts = prev.summary.alerts.map(a => {
+          if (a.deduplicationKey !== deduplicationKey) return a;
+          return {
+            ...a,
+            status: newStatus,
+            ...(newStatus === 'acknowledged' ? { acknowledgedAt: new Date() } : {}),
+            ...(newStatus === 'resolved' ? { resolvedAt: new Date() } : {}),
+          };
+        });
+
+        // Filter out terminal alerts from active counts
+        const activeAlerts = updatedAlerts.filter(a => a.status === 'active' || a.status === 'acknowledged');
         return {
           ...prev,
           summary: {
             ...prev.summary,
-            alerts: filtered,
-            totalCount: filtered.length,
-            criticalCount: filtered.filter(a => a.severity === 'critical').length,
-            highCount: filtered.filter(a => a.severity === 'high').length,
-            warningCount: filtered.filter(a => a.severity === 'warning').length,
-            infoCount: filtered.filter(a => a.severity === 'info').length,
+            alerts: updatedAlerts,
+            totalCount: updatedAlerts.length,
+            criticalCount: activeAlerts.filter(a => a.severity === 'critical').length,
+            highCount: activeAlerts.filter(a => a.severity === 'high').length,
+            warningCount: activeAlerts.filter(a => a.severity === 'warning').length,
+            infoCount: activeAlerts.filter(a => a.severity === 'info').length,
           },
         };
       });
+
+      return true;
     } catch (error) {
-      console.error('[useProactiveAlerts] Dismiss error:', error);
+      console.error('[useProactiveAlerts] Transition error:', error);
+      return false;
     }
-  }, []);
+  }, [state.summary]);
+
+  /** Acknowledge an alert */
+  const acknowledge = useCallback(
+    (deduplicationKey: string) => transitionAlert(deduplicationKey, 'acknowledged'),
+    [transitionAlert],
+  );
+
+  /** Resolve an alert (condition cleared) */
+  const resolve = useCallback(
+    (deduplicationKey: string) => transitionAlert(deduplicationKey, 'resolved'),
+    [transitionAlert],
+  );
+
+  /** Dismiss an alert (user explicitly discards) */
+  const dismiss = useCallback(
+    (deduplicationKey: string) => transitionAlert(deduplicationKey, 'dismissed'),
+    [transitionAlert],
+  );
 
   return {
     ...state,
     evaluate,
+    acknowledge,
+    resolve,
     dismiss,
   };
 }
 
 // ─── Internal helpers ───────────────────────────────────────────────────────
+
+function createEmptySummary(): ProactiveAlertSummary {
+  return {
+    alerts: [],
+    criticalCount: 0,
+    highCount: 0,
+    warningCount: 0,
+    infoCount: 0,
+    totalCount: 0,
+    overallSeverity: 'ok',
+    byDomain: {
+      tgss_siltra: [],
+      contrata_sepe: [],
+      aeat: [],
+      certificates: [],
+      approvals: [],
+      general: [],
+    },
+    deduplicationKeys: new Set(),
+  };
+}
 
 async function persistNewAlerts(
   summary: ProactiveAlertSummary,
