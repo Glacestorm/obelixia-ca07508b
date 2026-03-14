@@ -64,7 +64,8 @@ export interface EvidencePackInput {
   alerts?: Array<{ severity: string; category: string; title: string; status: string }>;
   /** Certificates */
   certificates?: Array<{ domain: string; status: string; completeness: number; expirationDate?: string }>;
-}
+  /** V2-ES.8 T9: Sandbox execution data */
+  sandboxData?: SandboxEvidenceData;
 
 const LEVEL_LABELS: Record<string, string> = {
   not_ready: 'No preparado',
