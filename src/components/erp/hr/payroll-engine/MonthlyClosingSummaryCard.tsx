@@ -160,6 +160,7 @@ export function MonthlyClosingSummaryCard({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id || 'system';
+      const actorName = user?.email || 'system';
 
       // SS expedient → consolidated
       try {
@@ -186,13 +187,23 @@ export function MonthlyClosingSummaryCard({
                   {
                     action: 'auto_consolidate', status_from: existingMeta.expedient_status || 'draft',
                     status_to: 'consolidated', performed_by: userId,
-                    performed_at: new Date().toISOString(), notes: 'Auto-generado al cerrar período',
+                    performed_at: new Date().toISOString(), notes: 'Auto-consolidado desde resumen ejecutivo',
                     period_id: period.id,
                   },
                 ],
               },
             } as any).eq('id', ssData.id);
             result.ss_generated = true;
+
+            // Individual audit entry for SS
+            await supabase.from('hr_payroll_audit_log').insert({
+              company_id: companyId, action: 'ss_auto_consolidated',
+              entity_type: 'ss_expedient', entity_id: ssData.id,
+              actor_id: userId, actor_name: actorName,
+              old_value: { status: existingMeta.expedient_status || 'draft' },
+              new_value: { status: 'consolidated', auto: true },
+              period_id: period.id,
+            } as any);
           }
         }
       } catch (e: any) {
@@ -216,7 +227,7 @@ export function MonthlyClosingSummaryCard({
                   {
                     action: 'auto_consolidate', status_from: fiscalExp?.status || 'draft',
                     status_to: 'consolidated', performed_by: userId,
-                    performed_at: new Date().toISOString(), notes: 'Auto-generado al cerrar período',
+                    performed_at: new Date().toISOString(), notes: 'Auto-consolidado desde resumen ejecutivo',
                     period_id: period.id,
                   },
                 ],
@@ -225,16 +236,26 @@ export function MonthlyClosingSummaryCard({
             },
           } as any).eq('id', period.id);
           result.fiscal_generated = true;
+
+          // Individual audit entry for Fiscal
+          await supabase.from('hr_payroll_audit_log').insert({
+            company_id: companyId, action: 'fiscal_auto_consolidated',
+            entity_type: 'fiscal_expedient', entity_id: period.id,
+            actor_id: userId, actor_name: actorName,
+            old_value: { status: fiscalExp?.status || 'draft' },
+            new_value: { status: 'consolidated', auto: true },
+            period_id: period.id,
+          } as any);
         }
       } catch (e: any) {
         result.fiscal_error = e.message;
       }
 
-      // Audit trail
+      // Summary audit entry
       await supabase.from('hr_payroll_audit_log').insert({
         company_id: companyId, action: 'expedients_auto_generated',
         entity_type: 'period', entity_id: period.id,
-        actor_id: userId, actor_name: user?.email || 'system',
+        actor_id: userId, actor_name: actorName,
         new_value: result, period_id: period.id,
       } as any);
 

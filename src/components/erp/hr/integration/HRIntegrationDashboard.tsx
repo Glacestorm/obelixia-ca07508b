@@ -466,22 +466,49 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
             </Card>
           </div>
 
-          {/* Resumen ejecutivo último cierre */}
+          {/* Expedient readiness & reporting cross-reference */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Euro className="h-5 w-5 text-primary" />
-                Último cierre mensual
+                Reporting y Expedientes Internos
               </CardTitle>
               <CardDescription className="text-xs">
-                KPIs del último período cerrado/bloqueado disponible
+                Estado de expedientes SS y Fiscal por período cerrado
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-6 text-muted-foreground text-sm">
-                <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                <p>Los KPIs ejecutivos del último cierre se muestran en el panel <strong>Períodos de Nómina</strong></p>
-                <p className="text-xs mt-1">Períodos → Resumen ejecutivo mensual (períodos cerrados/bloqueados)</p>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Shield className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-medium">Expediente SS</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Consolidación y reconciliación mensual de cuotas SS.
+                    Gestionado desde el panel Seguridad Social.
+                  </p>
+                  <Badge variant="outline" className="mt-2 text-[10px]">Interno · No presentación</Badge>
+                </div>
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-medium">Expediente Fiscal</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Consolidación IRPF y reconciliación M111/190.
+                    Gestionado desde Localización España.
+                  </p>
+                  <Badge variant="outline" className="mt-2 text-[10px]">Interno · No presentación AEAT</Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/10 text-xs text-muted-foreground">
+                <BarChart3 className="h-4 w-4 text-primary shrink-0" />
+                <span>
+                  Los KPIs ejecutivos y la auto-generación de expedientes se muestran en
+                  <strong className="text-foreground"> Períodos de Nómina → Resumen ejecutivo mensual</strong>
+                  (períodos cerrados/bloqueados).
+                </span>
               </div>
             </CardContent>
           </Card>
