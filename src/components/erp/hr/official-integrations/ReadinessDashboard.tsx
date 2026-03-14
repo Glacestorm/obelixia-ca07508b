@@ -388,7 +388,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             Pre-validación y preparación para envíos oficiales · Modo preparatorio
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); }} disabled={isEvaluating}>
+        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); }} disabled={isEvaluating}>
           <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
           Reevaluar
         </Button>
