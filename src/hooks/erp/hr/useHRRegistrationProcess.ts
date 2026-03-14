@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRProcessDocRequirements';
 import { computeRegistrationDeadlines, type RegistrationDeadlineSummary } from '@/components/erp/hr/shared/registrationDeadlineEngine';
 import { buildTGSSPayload, type TGSSPayloadResult } from '@/components/erp/hr/shared/tgssPayloadBuilder';
+import { evaluatePreIntegrationReadiness } from '@/components/erp/hr/shared/tgssPreIntegrationReadiness';
 import { addBusinessDays, type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
