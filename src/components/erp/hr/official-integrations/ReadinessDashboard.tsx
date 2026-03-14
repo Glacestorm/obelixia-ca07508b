@@ -41,7 +41,7 @@ import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsH
 import { useOfficialReadiness } from '@/hooks/erp/hr/useOfficialReadiness';
 import { usePreparatorySubmissions } from '@/hooks/erp/hr/usePreparatorySubmissions';
 import { getDomainMeta, type SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
-import {
+import { useRegulatoryCalendar } from '@/hooks/erp/hr/useRegulatoryCalendar';
   useHRDomainCertificates,
   DOMAIN_LABELS as CERT_DOMAIN_LABELS,
   STATUS_LABELS as CERT_STATUS_LABELS,
