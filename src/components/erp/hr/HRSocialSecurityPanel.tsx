@@ -1,9 +1,9 @@
 /**
  * HRSocialSecurityPanel - Gestión de Seguridad Social
- * Cotizaciones, presentaciones RED/SILTRA, certificados
+ * Cotizaciones, presentaciones RED/SILTRA, certificados, expediente mensual
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,8 +18,10 @@ import {
 import { 
   Shield, Calculator, FileUp, FileDown, Search,
   CheckCircle, Clock, AlertTriangle, Users, Calendar,
-  Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download
+  Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download, FileCheck
 } from 'lucide-react';
+import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
+import { SSMonthlyExpedientTab } from './payroll-engine/SSMonthlyExpedientTab';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SSNewCommunicationDialog } from './dialogs/SSNewCommunicationDialog';
@@ -51,6 +53,10 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
   const [selectedPeriod, setSelectedPeriod] = useState('2026-01');
   const [activeTab, setActiveTab] = useState('cotizaciones');
   const [loading, setLoading] = useState<string | null>(null);
+  const { periods, fetchPeriods } = usePayrollEngine(companyId);
+
+  // Fetch periods for expedient tab
+  useEffect(() => { fetchPeriods(); }, [fetchPeriods]);
   
   // Dialog states
   const [showNewCommDialog, setShowNewCommDialog] = useState(false);
@@ -372,10 +378,14 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-5 mb-4">
               <TabsTrigger value="cotizaciones" className="text-xs gap-1">
                 <Calculator className="h-3 w-3" />
                 Cotizaciones
+              </TabsTrigger>
+              <TabsTrigger value="expediente" className="text-xs gap-1">
+                <FileCheck className="h-3 w-3" />
+                Expediente
               </TabsTrigger>
               <TabsTrigger value="red" className="text-xs gap-1">
                 <Send className="h-3 w-3" />
@@ -477,6 +487,11 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Tab Expediente Mensual SS — V2-ES.7 Paso 4 */}
+            <TabsContent value="expediente" className="space-y-4">
+              <SSMonthlyExpedientTab companyId={companyId} periods={periods} />
             </TabsContent>
 
             {/* Tab Sistema RED */}

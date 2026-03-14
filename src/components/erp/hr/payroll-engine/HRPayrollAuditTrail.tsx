@@ -42,6 +42,11 @@ const ACTION_CONFIG: Record<string, { icon: typeof Shield; color: string; label:
   period_closed: { icon: Lock, color: 'text-emerald-600', label: 'Período cerrado' },
   period_locked: { icon: Lock, color: 'text-destructive', label: 'Período bloqueado' },
   period_reopened: { icon: RefreshCw, color: 'text-amber-500', label: 'Período reabierto' },
+  // SS Expedient events (V2-ES.7 Paso 4)
+  ss_expedient_consolidated: { icon: Shield, color: 'text-blue-500', label: 'Expediente SS consolidado' },
+  ss_expedient_reconciled: { icon: Shield, color: 'text-emerald-500', label: 'Expediente SS conciliado' },
+  ss_expedient_reviewed: { icon: Eye, color: 'text-indigo-500', label: 'Expediente SS revisado' },
+  ss_expedient_ready: { icon: CheckCircle, color: 'text-green-600', label: 'Expediente SS listo' },
 };
 
 export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {
