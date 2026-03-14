@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   FileText, Eye, CheckCircle, XCircle, Euro, Plus,
-  Flag, Loader2, MessageSquare
+  Flag, Loader2, MessageSquare, Lock
 } from 'lucide-react';
 import type { PayrollPeriod, PayrollRecord, PayrollLine, PayrollRecordStatus } from '@/hooks/erp/hr/usePayrollEngine';
 import type { DiffVsPrevious, ReviewAction } from '@/hooks/erp/hr/useESPayrollBridge';
