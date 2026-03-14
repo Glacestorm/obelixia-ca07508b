@@ -66,6 +66,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building2, ShieldCheck } from 'lucide-react';
 import { useProactiveAlertSignals } from '@/hooks/erp/hr/useProactiveAlertSignals';
 import { ProactiveAlertsSummaryWidget } from './ProactiveAlertsSummaryWidget';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
 interface Props {
   companyId: string;
   adapters: IntegrationAdapter[];
