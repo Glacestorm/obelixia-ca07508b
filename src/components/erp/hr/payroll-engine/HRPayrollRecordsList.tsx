@@ -214,7 +214,7 @@ export function HRPayrollRecordsList({
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDetail(r)} title="Ver detalle">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {onReviewRecord && (r.status === 'calculated' || r.status === 'reviewing') && (
+                        {onReviewRecord && !isPeriodClosed && (r.status === 'calculated' || r.status === 'reviewing') && (
                           <>
                             <Button
                               variant="ghost" size="icon"
