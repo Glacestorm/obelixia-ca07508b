@@ -1,6 +1,6 @@
 /**
  * EmployeePayslipsSection — "Mis nóminas" del Portal del Empleado
- * V2-ES.9.4: Centro de autoservicio salarial employee-facing
+ * V2-ES.9.4 + V2-ES.9.11: Centro de autoservicio salarial con descarga PDF integrada
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import {
   Euro, FileText, Download, ChevronRight, Calendar,
   TrendingUp, TrendingDown, Minus, MessageSquare,
   ArrowUpRight, ArrowDownRight, Loader2, Info, Paperclip,
+  CheckCircle2, AlertTriangle, FileWarning, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
@@ -55,6 +56,19 @@ interface PayslipRecord {
   };
 }
 
+interface PayslipDocument {
+  id: string;
+  storage_path: string | null;
+  storage_bucket: string | null;
+  document_name: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  mime_type: string | null;
+  related_entity_id: string | null;
+}
+
+type PdfStatus = 'available' | 'pending' | 'unavailable';
+
 const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
   draft: { label: 'Borrador', variant: 'outline' },
   calculated: { label: 'Calculada', variant: 'secondary' },
@@ -63,35 +77,68 @@ const STATUS_MAP: Record<string, { label: string; variant: 'default' | 'secondar
   cancelled: { label: 'Anulada', variant: 'destructive' },
 };
 
+const PDF_STATUS_CONFIG: Record<PdfStatus, { label: string; icon: React.ElementType; className: string }> = {
+  available: { label: 'PDF disponible', icon: CheckCircle2, className: 'text-emerald-600' },
+  pending: { label: 'Pendiente de archivo', icon: AlertTriangle, className: 'text-amber-500' },
+  unavailable: { label: 'PDF no disponible', icon: FileWarning, className: 'text-muted-foreground' },
+};
+
 const fmtCurrency = (v: number, currency = 'EUR') =>
   v.toLocaleString('es-ES', { style: 'currency', currency, minimumFractionDigits: 2 });
 
+function getPdfStatus(doc: PayslipDocument | undefined): PdfStatus {
+  if (!doc) return 'unavailable';
+  if (doc.storage_path) return 'available';
+  return 'pending';
+}
+
 export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
   const [payslips, setPayslips] = useState<PayslipRecord[]>([]);
+  const [payslipDocs, setPayslipDocs] = useState<Map<string, PayslipDocument>>(new Map());
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   const [selectedPayslip, setSelectedPayslip] = useState<PayslipRecord | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  // Fetch payslips with period info
+  // Fetch payslips with period info + linked documents
   const fetchPayslips = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('hr_payroll_records')
-        .select(`
-          id, gross_salary, net_salary, total_deductions, employer_cost,
-          status, review_status, paid_at, created_at, calculation_details,
-          diff_vs_previous, metadata, payroll_period_id, currency,
-          period:hr_payroll_periods!hr_payroll_records_payroll_period_id_fkey(
-            id, period_name, period_number, fiscal_year,
-            start_date, end_date, payment_date, status
-          )
-        `)
-        .eq('employee_id', employee.id)
-        .order('created_at', { ascending: false });
+      const [payslipRes, docsRes] = await Promise.all([
+        supabase
+          .from('hr_payroll_records')
+          .select(`
+            id, gross_salary, net_salary, total_deductions, employer_cost,
+            status, review_status, paid_at, created_at, calculation_details,
+            diff_vs_previous, metadata, payroll_period_id, currency,
+            period:hr_payroll_periods!hr_payroll_records_payroll_period_id_fkey(
+              id, period_name, period_number, fiscal_year,
+              start_date, end_date, payment_date, status
+            )
+          `)
+          .eq('employee_id', employee.id)
+          .order('created_at', { ascending: false }),
+        // Fetch documents linked to payroll records for this employee
+        supabase
+          .from('erp_hr_employee_documents')
+          .select('id, storage_path, storage_bucket, document_name, file_name, file_size, mime_type, related_entity_id')
+          .eq('employee_id', employee.id)
+          .eq('related_entity_type', 'payroll_record'),
+      ]);
 
-      if (error) throw error;
-      setPayslips((data || []) as unknown as PayslipRecord[]);
+      if (payslipRes.error) throw payslipRes.error;
+      setPayslips((payslipRes.data || []) as unknown as PayslipRecord[]);
+
+      // Build doc map: payroll_record_id -> document
+      const docMap = new Map<string, PayslipDocument>();
+      if (!docsRes.error && docsRes.data) {
+        for (const doc of docsRes.data as unknown as PayslipDocument[]) {
+          if (doc.related_entity_id) {
+            docMap.set(doc.related_entity_id, doc);
+          }
+        }
+      }
+      setPayslipDocs(docMap);
     } catch (err) {
       console.error('[EmployeePayslipsSection] fetch error:', err);
       toast.error('Error al cargar nóminas');
@@ -101,6 +148,57 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
   }, [employee.id]);
 
   useEffect(() => { fetchPayslips(); }, [fetchPayslips]);
+
+  // Download PDF handler
+  const handleDownloadPdf = useCallback(async (payslipId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const doc = payslipDocs.get(payslipId);
+    if (!doc?.storage_path) {
+      toast.error('Este recibo aún no tiene archivo PDF disponible');
+      return;
+    }
+
+    setDownloadingId(payslipId);
+    try {
+      const { data, error } = await supabase.storage
+        .from('hr-documents')
+        .createSignedUrl(doc.storage_path, 3600);
+
+      if (error || !data?.signedUrl) {
+        toast.error('No se pudo generar el enlace de descarga');
+        return;
+      }
+
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = data.signedUrl;
+      a.download = doc.file_name || doc.document_name || `nomina-${payslipId}.pdf`;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      toast.success('Descarga iniciada');
+
+      // Best-effort audit log
+      supabase
+        .from('erp_hr_document_access_log' as any)
+        .insert({
+          company_id: employee.company_id,
+          document_id: doc.id,
+          document_table: 'erp_hr_employee_documents',
+          action: 'file_download',
+          user_agent: navigator.userAgent,
+          metadata: { source: 'employee_portal', payroll_record_id: payslipId },
+        })
+        .then(() => {})
+        .catch(() => {});
+    } catch {
+      toast.error('Error al descargar el PDF');
+    } finally {
+      setDownloadingId(null);
+    }
+  }, [payslipDocs, employee.company_id]);
 
   // Available years
   const years = useMemo(() => {
@@ -183,11 +281,15 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
           </Card>
         ) : (
           <div className="space-y-2">
-            {filtered.map((p, idx) => {
+            {filtered.map((p) => {
               const st = STATUS_MAP[p.status] || { label: p.status, variant: 'outline' as const };
               const periodLabel = p.period?.period_name || format(new Date(p.created_at), 'MMMM yyyy', { locale: es });
               const diff = p.diff_vs_previous as any;
               const netDiff = diff?.net_salary_diff ?? null;
+              const doc = payslipDocs.get(p.id);
+              const pdfStatus = getPdfStatus(doc);
+              const pdfCfg = PDF_STATUS_CONFIG[pdfStatus];
+              const PdfIcon = pdfCfg.icon;
 
               return (
                 <Card
@@ -203,7 +305,7 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold capitalize truncate">{periodLabel}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                             {p.period?.payment_date && (
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
@@ -211,11 +313,22 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
                               </span>
                             )}
                             <Badge variant={st.variant} className="text-[10px] h-4 px-1.5">{st.label}</Badge>
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className={`flex items-center gap-0.5 ${pdfCfg.className}`}>
+                                    <PdfIcon className="h-3 w-3" />
+                                    <span className="text-[10px]">PDF</span>
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="text-xs">{pdfCfg.label}</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
                           <p className="text-base font-bold">{fmtCurrency(p.net_salary, p.currency)}</p>
                           <p className="text-xs text-muted-foreground">
@@ -224,6 +337,19 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
                         </div>
                         {netDiff !== null && netDiff !== 0 && (
                           <DiffIndicator value={netDiff} currency={p.currency} />
+                        )}
+                        {pdfStatus === 'available' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={(e) => handleDownloadPdf(p.id, e)}
+                            disabled={downloadingId === p.id}
+                          >
+                            {downloadingId === p.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <Download className="h-4 w-4 text-primary" />}
+                          </Button>
                         )}
                         <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
                       </div>
@@ -255,9 +381,16 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
             <PayslipDetail
               payslip={selectedPayslip}
               employee={employee}
+              doc={payslipDocs.get(selectedPayslip.id)}
+              onDownload={() => handleDownloadPdf(selectedPayslip.id)}
+              isDownloading={downloadingId === selectedPayslip.id}
               onOpenQuery={() => {
                 setSelectedPayslip(null);
                 onNavigate('requests');
+              }}
+              onNavigateDocuments={() => {
+                setSelectedPayslip(null);
+                onNavigate('documents');
               }}
             />
           )}
@@ -269,13 +402,22 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
 
 // ─── Detail view ─────────────────────────────────────────────────────────
 
-function PayslipDetail({ payslip, employee, onOpenQuery }: {
-  payslip: PayslipRecord; employee: EmployeeProfile; onOpenQuery: () => void;
+function PayslipDetail({ payslip, employee, doc, onDownload, isDownloading, onOpenQuery, onNavigateDocuments }: {
+  payslip: PayslipRecord;
+  employee: EmployeeProfile;
+  doc: PayslipDocument | undefined;
+  onDownload: () => void;
+  isDownloading: boolean;
+  onOpenQuery: () => void;
+  onNavigateDocuments: () => void;
 }) {
   const periodLabel = payslip.period?.period_name ||
     format(new Date(payslip.created_at), 'MMMM yyyy', { locale: es });
   const calc = payslip.calculation_details as any;
   const diff = payslip.diff_vs_previous as any;
+  const pdfStatus = getPdfStatus(doc);
+  const pdfCfg = PDF_STATUS_CONFIG[pdfStatus];
+  const PdfIcon = pdfCfg.icon;
 
   // Extract concepts from calculation_details if available
   const concepts = useMemo(() => {
@@ -284,7 +426,6 @@ function PayslipDetail({ payslip, employee, onOpenQuery }: {
     const deductions: Array<{ label: string; amount: number }> = [];
     const bases: Array<{ label: string; amount: number }> = [];
 
-    // Parse calculation trace or structured concepts
     if (calc.earnings && Array.isArray(calc.earnings)) {
       for (const e of calc.earnings) {
         earnings.push({ label: e.concept || e.label || 'Concepto', amount: Number(e.amount || 0) });
@@ -301,7 +442,6 @@ function PayslipDetail({ payslip, employee, onOpenQuery }: {
       }
     }
 
-    // Fallback: try to extract from trace
     if (earnings.length === 0 && calc.calculation_trace && Array.isArray(calc.calculation_trace)) {
       for (const t of calc.calculation_trace) {
         if (t.type === 'earning' || t.impact === 'earning') {
@@ -329,6 +469,48 @@ function PayslipDetail({ payslip, employee, onOpenQuery }: {
           )}
         </p>
       </SheetHeader>
+
+      {/* PDF Document status card */}
+      <Card className={
+        pdfStatus === 'available'
+          ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20'
+          : pdfStatus === 'pending'
+            ? 'border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20'
+            : 'border-dashed'
+      }>
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <PdfIcon className={`h-4 w-4 shrink-0 ${pdfCfg.className}`} />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{pdfCfg.label}</p>
+                {doc?.file_name && (
+                  <p className="text-[11px] text-muted-foreground truncate">{doc.file_name}</p>
+                )}
+                {pdfStatus === 'pending' && (
+                  <p className="text-[11px] text-amber-600">El documento está siendo procesado por RRHH</p>
+                )}
+                {pdfStatus === 'unavailable' && (
+                  <p className="text-[11px] text-muted-foreground">Este recibo aún no tiene documento archivado</p>
+                )}
+              </div>
+            </div>
+            {pdfStatus === 'available' && (
+              <Button
+                size="sm"
+                className="gap-2 shrink-0"
+                onClick={onDownload}
+                disabled={isDownloading}
+              >
+                {isDownloading
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Download className="h-4 w-4" />}
+                Descargar
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main figures */}
       <div className="grid grid-cols-2 gap-3">
@@ -383,6 +565,18 @@ function PayslipDetail({ payslip, employee, onOpenQuery }: {
       {/* Actions */}
       <Separator />
       <div className="flex flex-col gap-2">
+        {pdfStatus === 'available' && (
+          <Button className="gap-2 justify-start" onClick={onDownload} disabled={isDownloading}>
+            {isDownloading
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <Download className="h-4 w-4" />}
+            Descargar PDF de nómina
+          </Button>
+        )}
+        <Button variant="outline" className="gap-2 justify-start" onClick={onNavigateDocuments}>
+          <Paperclip className="h-4 w-4" />
+          Ver en expediente documental
+        </Button>
         <Button variant="outline" className="gap-2 justify-start" onClick={onOpenQuery}>
           <MessageSquare className="h-4 w-4" />
           Tengo una duda sobre esta nómina
