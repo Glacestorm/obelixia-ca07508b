@@ -30,6 +30,12 @@ import {
   isRealSubmissionBlocked,
 } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
 import { logDryRunEvent } from '@/components/erp/hr/shared/dryRunAuditEvents';
+import {
+  hasPayloadForExecution,
+  isConcurrentExecution,
+  executionLockMetadata,
+  buildSupersedeMetadata,
+} from '@/components/erp/hr/shared/connectorHardeningEngine';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
