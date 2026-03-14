@@ -243,3 +243,70 @@ export async function auditEligibilityEvaluated(
     },
   });
 }
+
+// ======================== T9: PERSISTENCE & COMPARISON EVENTS ========================
+
+/** Log: sandbox execution persisted to DB */
+export async function auditExecutionPersisted(
+  companyId: string,
+  environment: ConnectorEnvironment,
+  executionId: string,
+  domain: SandboxDomain
+) {
+  return logSandboxAuditEvent('sandbox_execution_persisted', {
+    companyId, environment, executionId, domain,
+    metadata: { action_detail: `Ejecución sandbox ${domain} persistida en BD` },
+  });
+}
+
+/** Log: sandbox persistence failed */
+export async function auditPersistenceFailed(
+  companyId: string,
+  environment: ConnectorEnvironment,
+  executionId: string,
+  errorSummary: string
+) {
+  return logSandboxAuditEvent('sandbox_persistence_failed', {
+    companyId, environment, executionId,
+    metadata: {
+      action_detail: `Fallo al persistir ejecución sandbox`,
+      errorSummary,
+      severity: 'warning',
+    },
+  });
+}
+
+/** Log: sandbox vs dry-run comparison generated */
+export async function auditComparisonGenerated(
+  companyId: string,
+  environment: ConnectorEnvironment,
+  domain: SandboxDomain,
+  sandboxId: string,
+  dryRunId: string
+) {
+  return logSandboxAuditEvent('sandbox_comparison_generated', {
+    companyId, environment, domain,
+    metadata: {
+      action_detail: `Comparativa sandbox vs dry-run generada para ${domain}`,
+      sandboxId,
+      dryRunId,
+    },
+  });
+}
+
+/** Log: evidence pack with sandbox data generated */
+export async function auditSandboxEvidencePackGenerated(
+  companyId: string,
+  environment: ConnectorEnvironment,
+  format: string,
+  sandboxCount: number
+) {
+  return logSandboxAuditEvent('sandbox_evidence_pack_generated', {
+    companyId, environment,
+    metadata: {
+      action_detail: `Evidence pack con ${sandboxCount} ejecuciones sandbox generado (${format})`,
+      format,
+      sandboxCount,
+    },
+  });
+}
