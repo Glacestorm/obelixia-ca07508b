@@ -37869,16 +37869,23 @@ export type Database = {
           employees_errored: number | null
           employees_skipped: number | null
           errors: Json | null
+          errors_count: number
           id: string
+          locked_at: string | null
           metadata: Json | null
           notes: string | null
           period_id: string
+          period_month: number | null
+          period_year: number | null
           previous_run_id: string | null
+          recalculation_reference: string | null
           run_number: number
           run_type: string
+          snapshot_hash: string | null
           started_at: string | null
           started_by: string | null
           status: string
+          superseded_by: string | null
           total_deductions: number | null
           total_employees: number | null
           total_employer_cost: number | null
@@ -37886,7 +37893,9 @@ export type Database = {
           total_net: number | null
           updated_at: string
           validation_summary: Json | null
+          version: number
           warnings: Json | null
+          warnings_count: number
         }
         Insert: {
           company_id: string
@@ -37898,16 +37907,23 @@ export type Database = {
           employees_errored?: number | null
           employees_skipped?: number | null
           errors?: Json | null
+          errors_count?: number
           id?: string
+          locked_at?: string | null
           metadata?: Json | null
           notes?: string | null
           period_id: string
+          period_month?: number | null
+          period_year?: number | null
           previous_run_id?: string | null
+          recalculation_reference?: string | null
           run_number?: number
           run_type?: string
+          snapshot_hash?: string | null
           started_at?: string | null
           started_by?: string | null
           status?: string
+          superseded_by?: string | null
           total_deductions?: number | null
           total_employees?: number | null
           total_employer_cost?: number | null
@@ -37915,7 +37931,9 @@ export type Database = {
           total_net?: number | null
           updated_at?: string
           validation_summary?: Json | null
+          version?: number
           warnings?: Json | null
+          warnings_count?: number
         }
         Update: {
           company_id?: string
@@ -37927,16 +37945,23 @@ export type Database = {
           employees_errored?: number | null
           employees_skipped?: number | null
           errors?: Json | null
+          errors_count?: number
           id?: string
+          locked_at?: string | null
           metadata?: Json | null
           notes?: string | null
           period_id?: string
+          period_month?: number | null
+          period_year?: number | null
           previous_run_id?: string | null
+          recalculation_reference?: string | null
           run_number?: number
           run_type?: string
+          snapshot_hash?: string | null
           started_at?: string | null
           started_by?: string | null
           status?: string
+          superseded_by?: string | null
           total_deductions?: number | null
           total_employees?: number | null
           total_employer_cost?: number | null
@@ -37944,7 +37969,9 @@ export type Database = {
           total_net?: number | null
           updated_at?: string
           validation_summary?: Json | null
+          version?: number
           warnings?: Json | null
+          warnings_count?: number
         }
         Relationships: [
           {
@@ -37964,6 +37991,20 @@ export type Database = {
           {
             foreignKeyName: "erp_hr_payroll_runs_previous_run_id_fkey"
             columns: ["previous_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_runs_recalculation_reference_fkey"
+            columns: ["recalculation_reference"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_payroll_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_payroll_runs_superseded_by_fkey"
+            columns: ["superseded_by"]
             isOneToOne: false
             referencedRelation: "erp_hr_payroll_runs"
             referencedColumns: ["id"]
