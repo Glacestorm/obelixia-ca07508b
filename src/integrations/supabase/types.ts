@@ -30000,6 +30000,186 @@ export type Database = {
           },
         ]
       }
+      erp_hr_contract_process_data: {
+        Row: {
+          ccc: string | null
+          closed_at: string | null
+          closed_by: string | null
+          closure_blockers: Json | null
+          closure_notes: string | null
+          closure_snapshot: Json | null
+          closure_status: string | null
+          collective_agreement: string | null
+          company_id: string
+          confirmed_at: string | null
+          confirmed_reference: string | null
+          contract_duration_type: string | null
+          contract_end_date: string | null
+          contract_process_status: string
+          contract_start_date: string | null
+          contract_subtype: string | null
+          contract_type_code: string | null
+          contrata_code: string | null
+          conversion_from_type: string | null
+          created_at: string
+          data_validated_at: string | null
+          data_validated_by: string | null
+          deadline_computed_at: string | null
+          deadline_urgency: string | null
+          dni_nie: string | null
+          docs_validated_at: string | null
+          docs_validated_by: string | null
+          employee_id: string
+          id: string
+          internal_deadline_at: string | null
+          is_conversion: boolean | null
+          is_overdue: boolean | null
+          job_title: string | null
+          last_payload_computed_at: string | null
+          legal_entity: string | null
+          naf: string | null
+          num_extra_payments: number | null
+          occupation_code: string | null
+          payload_format_errors: string[] | null
+          payload_missing_fields: string[] | null
+          payload_ready: boolean | null
+          payload_snapshot: Json | null
+          payload_status: string | null
+          previous_contract_id: string | null
+          ready_at: string | null
+          request_id: string
+          salary_base_monthly: number | null
+          salary_gross_annual: number | null
+          sepe_communication_date: string | null
+          submitted_at: string | null
+          trial_period_days: number | null
+          updated_at: string
+          validation_notes: string | null
+          weekly_hours: number | null
+          working_hours_percent: number | null
+          working_hours_type: string | null
+          workplace_address: string | null
+        }
+        Insert: {
+          ccc?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_blockers?: Json | null
+          closure_notes?: string | null
+          closure_snapshot?: Json | null
+          closure_status?: string | null
+          collective_agreement?: string | null
+          company_id: string
+          confirmed_at?: string | null
+          confirmed_reference?: string | null
+          contract_duration_type?: string | null
+          contract_end_date?: string | null
+          contract_process_status?: string
+          contract_start_date?: string | null
+          contract_subtype?: string | null
+          contract_type_code?: string | null
+          contrata_code?: string | null
+          conversion_from_type?: string | null
+          created_at?: string
+          data_validated_at?: string | null
+          data_validated_by?: string | null
+          deadline_computed_at?: string | null
+          deadline_urgency?: string | null
+          dni_nie?: string | null
+          docs_validated_at?: string | null
+          docs_validated_by?: string | null
+          employee_id: string
+          id?: string
+          internal_deadline_at?: string | null
+          is_conversion?: boolean | null
+          is_overdue?: boolean | null
+          job_title?: string | null
+          last_payload_computed_at?: string | null
+          legal_entity?: string | null
+          naf?: string | null
+          num_extra_payments?: number | null
+          occupation_code?: string | null
+          payload_format_errors?: string[] | null
+          payload_missing_fields?: string[] | null
+          payload_ready?: boolean | null
+          payload_snapshot?: Json | null
+          payload_status?: string | null
+          previous_contract_id?: string | null
+          ready_at?: string | null
+          request_id: string
+          salary_base_monthly?: number | null
+          salary_gross_annual?: number | null
+          sepe_communication_date?: string | null
+          submitted_at?: string | null
+          trial_period_days?: number | null
+          updated_at?: string
+          validation_notes?: string | null
+          weekly_hours?: number | null
+          working_hours_percent?: number | null
+          working_hours_type?: string | null
+          workplace_address?: string | null
+        }
+        Update: {
+          ccc?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          closure_blockers?: Json | null
+          closure_notes?: string | null
+          closure_snapshot?: Json | null
+          closure_status?: string | null
+          collective_agreement?: string | null
+          company_id?: string
+          confirmed_at?: string | null
+          confirmed_reference?: string | null
+          contract_duration_type?: string | null
+          contract_end_date?: string | null
+          contract_process_status?: string
+          contract_start_date?: string | null
+          contract_subtype?: string | null
+          contract_type_code?: string | null
+          contrata_code?: string | null
+          conversion_from_type?: string | null
+          created_at?: string
+          data_validated_at?: string | null
+          data_validated_by?: string | null
+          deadline_computed_at?: string | null
+          deadline_urgency?: string | null
+          dni_nie?: string | null
+          docs_validated_at?: string | null
+          docs_validated_by?: string | null
+          employee_id?: string
+          id?: string
+          internal_deadline_at?: string | null
+          is_conversion?: boolean | null
+          is_overdue?: boolean | null
+          job_title?: string | null
+          last_payload_computed_at?: string | null
+          legal_entity?: string | null
+          naf?: string | null
+          num_extra_payments?: number | null
+          occupation_code?: string | null
+          payload_format_errors?: string[] | null
+          payload_missing_fields?: string[] | null
+          payload_ready?: boolean | null
+          payload_snapshot?: Json | null
+          payload_status?: string | null
+          previous_contract_id?: string | null
+          ready_at?: string | null
+          request_id?: string
+          salary_base_monthly?: number | null
+          salary_gross_annual?: number | null
+          sepe_communication_date?: string | null
+          submitted_at?: string | null
+          trial_period_days?: number | null
+          updated_at?: string
+          validation_notes?: string | null
+          weekly_hours?: number | null
+          working_hours_percent?: number | null
+          working_hours_type?: string | null
+          workplace_address?: string | null
+        }
+        Relationships: []
+      }
       erp_hr_contracts: {
         Row: {
           annual_salary: number | null

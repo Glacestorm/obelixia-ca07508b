@@ -31,7 +31,7 @@ const WORKFLOW_TRIGGER_STATUSES: AdminRequestStatus[] = ['submitted', 'pending_a
 
 // === TYPES ===
 export type AdminRequestType =
-  | 'employee_registration' | 'contract_modification' | 'schedule_change'
+  | 'employee_registration' | 'contract_registration' | 'contract_modification' | 'schedule_change'
   | 'salary_change' | 'monthly_incidents' | 'sick_leave' | 'work_accident'
   | 'unpaid_leave' | 'birth_leave' | 'vacation' | 'termination'
   | 'settlement' | 'company_certificate' | 'document_submission';
@@ -106,6 +106,7 @@ export interface AdminPortalFilters {
 
 const REQUEST_TYPE_LABELS: Record<AdminRequestType, string> = {
   employee_registration: 'Alta de empleado',
+  contract_registration: 'Contratación / SEPE',
   contract_modification: 'Modificación contractual',
   schedule_change: 'Cambio de jornada',
   salary_change: 'Cambio salarial',

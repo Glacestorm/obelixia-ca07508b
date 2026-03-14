@@ -15,6 +15,7 @@ import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
 import { RegistrationDataPanel } from './RegistrationDataPanel';
+import { ContractDataPanel } from './ContractDataPanel';
 import { DocAutoGenerateButton } from '../shared/DocAutoGenerateButton';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
@@ -167,6 +168,16 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
               employeeId={request.employee_id}
               linkedDocs={linkedDocs}
               onDeadlinesComputed={setRegistrationDeadlines}
+            />
+          )}
+
+          {/* V2-ES.6 Paso 1.1: Contract process panel for contract_registration */}
+          {request.request_type === 'contract_registration' && (
+            <ContractDataPanel
+              requestId={request.id}
+              companyId={request.company_id}
+              employeeId={request.employee_id}
+              linkedDocs={linkedDocs}
             />
           )}
 
