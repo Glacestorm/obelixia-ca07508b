@@ -113,6 +113,7 @@ const AutomationPage = lazy(() => import('@/pages/crm/AutomationPage'));
 // Fase 3: Diferenciadores
 const CompliancePage = lazy(() => import('@/pages/compliance/CompliancePage'));
 const ERPPage = lazy(() => import('@/pages/erp/ERPPage'));
+const EmployeePortalPage = lazy(() => import('@/pages/erp/EmployeePortalPage'));
 const RevenuePage = lazy(() => import('@/pages/revenue/RevenuePage'));
 const GISPage = lazy(() => import('@/pages/gis/GISPage'));
 const DocsPage = lazy(() => import('@/pages/docs/DocsPage'));
