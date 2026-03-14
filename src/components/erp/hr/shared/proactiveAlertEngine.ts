@@ -1,5 +1,5 @@
 /**
- * proactiveAlertEngine — V2-ES.8 Tramo 6 Paso 1
+ * proactiveAlertEngine — V2-ES.8 Tramo 6 Paso 1+2
  * Motor base de alertas proactivas para integraciones oficiales.
  *
  * Evalúa señales de:
@@ -13,15 +13,20 @@
  * - Pure functions — sin side effects ni fetch
  * - Deduplicación por clave compuesta (domain + category + entityRef)
  * - Severidad estricta: critical > high > warning > info
+ * - Estados de ciclo de vida: active → acknowledged → resolved | dismissed
  * - alerta ≠ bloqueo, alerta ≠ envío real, recordatorio ≠ aprobación
  *
  * DISCLAIMER: Las alertas son orientativas para gestión interna.
  * NO sustituyen el criterio profesional ni constituyen asesoría legal.
+ * NO confirman incumplimiento oficial por sí solas.
+ * NO activan envíos reales ni sustituyen la aprobación humana.
  */
 
-// ─── Alert Severity & Category ──────────────────────────────────────────────
+// ─── Alert Severity, Status & Category ──────────────────────────────────────
 
 export type ProactiveAlertSeverity = 'critical' | 'high' | 'warning' | 'info';
+
+export type ProactiveAlertStatus = 'active' | 'acknowledged' | 'resolved' | 'dismissed';
 
 export type ProactiveAlertCategory =
   | 'readiness_drop'
@@ -54,12 +59,23 @@ export interface ProactiveAlert {
   category: ProactiveAlertCategory;
   /** Severity level */
   severity: ProactiveAlertSeverity;
+  /** Lifecycle status */
+  status: ProactiveAlertStatus;
   /** Human-readable title */
   title: string;
   /** Detailed description */
   message: string;
   /** Optional entity reference (connector ID, submission ID, etc.) */
   entityRef?: string;
+
+  // ─── Related entity IDs for audit linkage ─────────────────────────
+  /** Related submission ID (dry-run, official submission) */
+  relatedSubmissionId?: string;
+  /** Related approval request ID */
+  relatedApprovalId?: string;
+  /** Related period ID (payroll period, regulatory period) */
+  relatedPeriodId?: string;
+
   /** Priority (lower = higher priority, 1-100) */
   priority: number;
   /** Suggested action URL within the app */
@@ -72,10 +88,22 @@ export interface ProactiveAlert {
   sourceSystem: 'hr_integrations';
   /** Event type for notifications table */
   eventType: string;
-  /** Timestamp of evaluation */
+
+  // ─── Timestamps ───────────────────────────────────────────────────
+  /** Timestamp of evaluation / creation */
   evaluatedAt: Date;
+  /** When the alert was acknowledged by a user */
+  acknowledgedAt?: Date;
+  /** When the alert was resolved (condition cleared) */
+  resolvedAt?: Date;
   /** Optional expiration (auto-dismiss) */
   expiresAt?: Date;
+
+  // ─── Push/email readiness flags ───────────────────────────────────
+  /** Whether this alert type is eligible for future push notifications */
+  pushEligible: boolean;
+  /** Whether this alert type is eligible for future email notifications */
+  emailEligible: boolean;
 }
 
 export interface ProactiveAlertSummary {
@@ -121,6 +149,23 @@ export function worstSeverity(
   );
 }
 
+// ─── Status helpers ─────────────────────────────────────────────────────────
+
+const VALID_TRANSITIONS: Record<ProactiveAlertStatus, ProactiveAlertStatus[]> = {
+  active: ['acknowledged', 'resolved', 'dismissed'],
+  acknowledged: ['resolved', 'dismissed'],
+  resolved: [], // terminal
+  dismissed: [], // terminal
+};
+
+export function canTransition(from: ProactiveAlertStatus, to: ProactiveAlertStatus): boolean {
+  return VALID_TRANSITIONS[from].includes(to);
+}
+
+export function isTerminalStatus(status: ProactiveAlertStatus): boolean {
+  return status === 'resolved' || status === 'dismissed';
+}
+
 // ─── Deduplication key builder ──────────────────────────────────────────────
 
 export function buildDeduplicationKey(
@@ -131,10 +176,26 @@ export function buildDeduplicationKey(
   return `${domain}::${category}::${entityRef ?? 'global'}`;
 }
 
+// ─── Push/email eligibility by category ─────────────────────────────────────
+
+const PUSH_ELIGIBLE_CATEGORIES: Set<ProactiveAlertCategory> = new Set([
+  'deadline_overdue',
+  'deadline_urgent',
+  'certificate_expired',
+  'certificate_expiring',
+  'approval_expired',
+]);
+
+const EMAIL_ELIGIBLE_CATEGORIES: Set<ProactiveAlertCategory> = new Set([
+  'deadline_overdue',
+  'certificate_expired',
+  'approval_expired',
+]);
+
 // ─── Alert factory ──────────────────────────────────────────────────────────
 
 function createAlert(
-  params: Omit<ProactiveAlert, 'deduplicationKey' | 'priority' | 'sourceSystem' | 'evaluatedAt'> & {
+  params: Omit<ProactiveAlert, 'deduplicationKey' | 'priority' | 'sourceSystem' | 'evaluatedAt' | 'status' | 'pushEligible' | 'emailEligible'> & {
     priorityOverride?: number;
   },
 ): ProactiveAlert {
@@ -143,7 +204,10 @@ function createAlert(
     deduplicationKey: buildDeduplicationKey(params.domain, params.category, params.entityRef),
     priority: params.priorityOverride ?? SEVERITY_PRIORITY[params.severity],
     sourceSystem: 'hr_integrations',
+    status: 'active',
     evaluatedAt: new Date(),
+    pushEligible: PUSH_ELIGIBLE_CATEGORIES.has(params.category),
+    emailEligible: EMAIL_ELIGIBLE_CATEGORIES.has(params.category),
   };
 }
 
@@ -184,6 +248,10 @@ export interface DryRunSignal {
   errorCount: number;
   warningCount: number;
   createdAt: Date;
+  /** Related submission ID for audit linkage */
+  submissionId?: string;
+  /** Related period ID */
+  periodId?: string;
 }
 
 export interface ApprovalSignal {
@@ -193,6 +261,8 @@ export interface ApprovalSignal {
   requestedAt: Date;
   expiresAt: Date | null;
   isExpired: boolean;
+  /** Related submission ID */
+  submissionId?: string;
 }
 
 // ─── Evaluators ─────────────────────────────────────────────────────────────
@@ -247,8 +317,9 @@ export function evaluateDeadlineAlerts(signals: DeadlineSignal[]): ProactiveAler
         category: 'deadline_overdue',
         severity: 'critical',
         title: `Plazo vencido: ${s.label}`,
-        message: `El plazo regulatorio \"${s.label}\" (${s.referencePeriod}) ha vencido hace ${Math.abs(s.daysRemaining)} día${Math.abs(s.daysRemaining) !== 1 ? 's' : ''}. Este aviso es orientativo.`,
+        message: `El plazo regulatorio "${s.label}" (${s.referencePeriod}) ha vencido hace ${Math.abs(s.daysRemaining)} día${Math.abs(s.daysRemaining) !== 1 ? 's' : ''}. Este aviso es orientativo.`,
         entityRef: s.id,
+        relatedPeriodId: s.referencePeriod,
         eventType: 'deadline_overdue',
         actionLabel: 'Ver calendario',
         metadata: { deadlineId: s.id, domain: s.domain, daysRemaining: s.daysRemaining, period: s.referencePeriod },
@@ -259,8 +330,9 @@ export function evaluateDeadlineAlerts(signals: DeadlineSignal[]): ProactiveAler
         category: 'deadline_urgent',
         severity: 'high',
         title: `Plazo urgente: ${s.label}`,
-        message: `Quedan ${s.daysRemaining} día${s.daysRemaining !== 1 ? 's' : ''} para el plazo \"${s.label}\" (${s.referencePeriod}).`,
+        message: `Quedan ${s.daysRemaining} día${s.daysRemaining !== 1 ? 's' : ''} para el plazo "${s.label}" (${s.referencePeriod}).`,
         entityRef: s.id,
+        relatedPeriodId: s.referencePeriod,
         eventType: 'deadline_urgent',
         actionLabel: 'Ver calendario',
         metadata: { deadlineId: s.id, domain: s.domain, daysRemaining: s.daysRemaining, period: s.referencePeriod },
@@ -271,8 +343,9 @@ export function evaluateDeadlineAlerts(signals: DeadlineSignal[]): ProactiveAler
         category: 'deadline_upcoming',
         severity: 'info',
         title: `Plazo próximo: ${s.label}`,
-        message: `El plazo \"${s.label}\" (${s.referencePeriod}) vence en ${s.daysRemaining} días.`,
+        message: `El plazo "${s.label}" (${s.referencePeriod}) vence en ${s.daysRemaining} días.`,
         entityRef: s.id,
+        relatedPeriodId: s.referencePeriod,
         eventType: 'deadline_upcoming',
         actionLabel: 'Ver calendario',
         metadata: { deadlineId: s.id, domain: s.domain, daysRemaining: s.daysRemaining, period: s.referencePeriod },
@@ -296,11 +369,11 @@ export function evaluateCertificateAlerts(signals: CertificateSignal[]): Proacti
         category: 'certificate_expired',
         severity: 'critical',
         title: `Certificado expirado: ${s.name}`,
-        message: `El certificado \"${s.name}\" ha expirado. Las operaciones que lo requieran no podrán ejecutarse.`,
+        message: `El certificado "${s.name}" ha expirado. Las operaciones que lo requieran no podrán ejecutarse.`,
         entityRef: s.id,
         eventType: 'certificate_expired',
         actionLabel: 'Ver certificados',
-        metadata: { certId: s.id, name: s.name, expiresAt: s.expiresAt?.toISOString() },
+        metadata: { certId: s.id, name: s.name, expiresAt: s.expiresAt?.toISOString() ?? null },
       }));
     } else if (s.daysUntilExpiry !== null && s.daysUntilExpiry <= 30) {
       const severity: ProactiveAlertSeverity = s.daysUntilExpiry <= 7 ? 'high' : 'warning';
@@ -309,11 +382,11 @@ export function evaluateCertificateAlerts(signals: CertificateSignal[]): Proacti
         category: 'certificate_expiring',
         severity,
         title: `Certificado por vencer: ${s.name}`,
-        message: `El certificado \"${s.name}\" expira en ${s.daysUntilExpiry} día${s.daysUntilExpiry !== 1 ? 's' : ''}.`,
+        message: `El certificado "${s.name}" expira en ${s.daysUntilExpiry} día${s.daysUntilExpiry !== 1 ? 's' : ''}.`,
         entityRef: s.id,
         eventType: 'certificate_expiring',
         actionLabel: 'Ver certificados',
-        metadata: { certId: s.id, name: s.name, daysUntilExpiry: s.daysUntilExpiry, expiresAt: s.expiresAt?.toISOString() },
+        metadata: { certId: s.id, name: s.name, daysUntilExpiry: s.daysUntilExpiry, expiresAt: s.expiresAt?.toISOString() ?? null },
       }));
     }
   }
@@ -342,6 +415,8 @@ export function evaluateDryRunAlerts(signals: DryRunSignal[]): ProactiveAlert[] 
         title: `Dry-run con errores (${s.domain})`,
         message: `El último dry-run tiene ${s.errorCount} error${s.errorCount !== 1 ? 'es' : ''}. Revise y corrija antes de solicitar aprobación.`,
         entityRef: s.id,
+        relatedSubmissionId: s.submissionId ?? s.id,
+        relatedPeriodId: s.periodId,
         eventType: 'dryrun_failed',
         actionLabel: 'Ver dry-run',
         metadata: { submissionId: s.id, domain: s.domain, errors: s.errorCount, warnings: s.warningCount },
@@ -354,6 +429,8 @@ export function evaluateDryRunAlerts(signals: DryRunSignal[]): ProactiveAlert[] 
         title: `Dry-run con advertencias (${s.domain})`,
         message: `El dry-run tiene ${s.warningCount} advertencia${s.warningCount !== 1 ? 's' : ''} que conviene revisar.`,
         entityRef: s.id,
+        relatedSubmissionId: s.submissionId ?? s.id,
+        relatedPeriodId: s.periodId,
         eventType: 'dryrun_degraded',
         actionLabel: 'Ver dry-run',
         metadata: { submissionId: s.id, domain: s.domain, warnings: s.warningCount },
@@ -379,6 +456,8 @@ export function evaluateApprovalAlerts(signals: ApprovalSignal[]): ProactiveAler
         title: `Aprobación expirada (${s.domain})`,
         message: `La solicitud de aprobación ha expirado sin decisión. Se requiere nueva solicitud si se desea continuar.`,
         entityRef: s.id,
+        relatedApprovalId: s.id,
+        relatedSubmissionId: s.submissionId,
         eventType: 'approval_expired',
         actionLabel: 'Ver aprobaciones',
         metadata: { approvalId: s.id, domain: s.domain, requestedAt: s.requestedAt.toISOString() },
@@ -394,6 +473,8 @@ export function evaluateApprovalAlerts(signals: ApprovalSignal[]): ProactiveAler
           title: `Aprobación pendiente ${daysPending}d (${s.domain})`,
           message: `Hay una solicitud de aprobación pendiente desde hace ${daysPending} días. Recordatorio informativo.`,
           entityRef: s.id,
+          relatedApprovalId: s.id,
+          relatedSubmissionId: s.submissionId,
           eventType: 'approval_pending_reminder',
           actionLabel: 'Ver aprobaciones',
           metadata: { approvalId: s.id, domain: s.domain, daysPending, requestedAt: s.requestedAt.toISOString() },
@@ -472,7 +553,7 @@ export function computeProactiveAlerts(inputs: {
 
 /**
  * Map a ProactiveAlert to the shape expected by the `notifications` table.
- * Used for persistence and deduplication against existing rows.
+ * Includes alert_status, related IDs and timestamps for audit linkage.
  */
 export function mapAlertToNotificationRow(
   alert: ProactiveAlert,
@@ -503,7 +584,15 @@ export function mapAlertToNotificationRow(
       deduplicationKey: alert.deduplicationKey,
       domain: alert.domain,
       category: alert.category,
+      alertStatus: alert.status,
       entityRef: alert.entityRef ?? null,
+      relatedSubmissionId: alert.relatedSubmissionId ?? null,
+      relatedApprovalId: alert.relatedApprovalId ?? null,
+      relatedPeriodId: alert.relatedPeriodId ?? null,
+      pushEligible: alert.pushEligible,
+      emailEligible: alert.emailEligible,
+      acknowledgedAt: alert.acknowledgedAt?.toISOString() ?? null,
+      resolvedAt: alert.resolvedAt?.toISOString() ?? null,
       ...Object.fromEntries(
         Object.entries(alert.metadata).filter(
           ([, v]) => v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean',
@@ -593,6 +682,19 @@ export const PROACTIVE_SEVERITY_CONFIG: Record<ProactiveAlertSeverity, {
     borderClass: 'border-sky-500/20',
     textClass: 'text-sky-700',
   },
+};
+
+// ─── Status visual config (for UI consumption) ─────────────────────────────
+
+export const PROACTIVE_STATUS_CONFIG: Record<ProactiveAlertStatus, {
+  label: string;
+  icon: string;
+  badgeVariant: 'destructive' | 'default' | 'secondary' | 'outline';
+}> = {
+  active: { label: 'Activa', icon: 'bell', badgeVariant: 'destructive' },
+  acknowledged: { label: 'Reconocida', icon: 'eye', badgeVariant: 'default' },
+  resolved: { label: 'Resuelta', icon: 'check-circle', badgeVariant: 'secondary' },
+  dismissed: { label: 'Descartada', icon: 'x-circle', badgeVariant: 'outline' },
 };
 
 // ─── Category labels (for UI) ───────────────────────────────────────────────
