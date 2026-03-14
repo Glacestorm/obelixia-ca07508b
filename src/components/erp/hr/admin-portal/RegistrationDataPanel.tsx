@@ -32,6 +32,10 @@ import {
   type RegistrationStatus,
 } from '@/hooks/erp/hr/useHRRegistrationProcess';
 import { RegistrationStatusBadge } from '../shared/RegistrationStatusBadge';
+import { RegistrationDeadlineAlert } from '../shared/RegistrationDeadlineAlert';
+import { computeRegistrationDeadlines } from '../shared/registrationDeadlineEngine';
+import { buildTGSSPayload } from '../shared/tgssPayloadBuilder';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 // ─── Contract types (ES) ─────────────────────────────────────────────────────
