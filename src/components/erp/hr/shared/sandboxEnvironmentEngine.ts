@@ -461,6 +461,35 @@ export function completeExecution(
   };
 }
 
+// ======================== DOMAIN STATUS RESOLVER ========================
+
+/** Resolve the EnvironmentStatus for a given domain + environment combo */
+export function resolveDomainEnvironmentStatus(
+  env: ConnectorEnvironment,
+  context: {
+    adapterConfigured: boolean;
+    hasCredentials: boolean;
+    gatesPassed: boolean;
+    isEnabled: boolean;
+  }
+): EnvironmentStatus {
+  if (env === 'production') return 'prod_blocked';
+  if (!context.adapterConfigured) return 'not_configured';
+  if (!context.hasCredentials && env !== 'sandbox') return 'configured'; // sandbox doesn't require credentials
+  if (!context.gatesPassed) return 'gated';
+  if (!context.isEnabled) return 'sandbox_ready';
+  return 'sandbox_enabled';
+}
+
+export const ENVIRONMENT_STATUS_LABELS: Record<EnvironmentStatus, { label: string; color: string }> = {
+  not_configured: { label: 'No configurado', color: 'text-muted-foreground' },
+  configured: { label: 'Configurado', color: 'text-blue-600' },
+  gated: { label: 'Gates pendientes', color: 'text-amber-600' },
+  sandbox_ready: { label: 'Listo', color: 'text-emerald-600' },
+  sandbox_enabled: { label: 'Habilitado', color: 'text-emerald-700' },
+  prod_blocked: { label: 'Bloqueado', color: 'text-destructive' },
+};
+
 // ======================== DISCLAIMERS ========================
 
 export const SANDBOX_DISCLAIMERS = {
