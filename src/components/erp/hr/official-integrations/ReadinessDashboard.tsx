@@ -597,7 +597,82 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
         </Card>
       )}
 
-      {/* Disclaimer */}
+      {/* Multi-entity readiness (only shown when >1 legal entity) */}
+      {multiEntityReport && multiEntityReport.entities.length > 1 && (
+        <Card>
+          <CardContent className="py-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" /> Readiness Multi-Sociedad
+                <Badge variant="outline" className="text-[9px] h-4">
+                  {multiEntityReport.entities.length} entidades
+                </Badge>
+              </p>
+              <div className="flex items-center gap-2 text-[10px]">
+                <span className="text-muted-foreground">Promedio:</span>
+                <span className={cn('font-mono font-bold', getEntityReadinessColor(multiEntityReport.consolidated.avgPercent))}>
+                  {multiEntityReport.consolidated.avgPercent}%
+                </span>
+              </div>
+            </div>
+
+            {/* Per-entity summary */}
+            <div className="space-y-1">
+              {multiEntityReport.entities.map(ent => (
+                <div key={ent.entityId} className="flex items-center justify-between py-1.5 px-2 rounded border text-[11px]">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Building2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <span className="font-medium truncate">{ent.entityName}</span>
+                    {ent.fiscalId && (
+                      <span className="text-[9px] text-muted-foreground font-mono">{ent.fiscalId}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Progress
+                      value={ent.summary.overallPercent}
+                      className={cn('h-1.5 w-16',
+                        ent.summary.overallPercent >= 70 ? '[&>div]:bg-green-500' :
+                        ent.summary.overallPercent >= 40 ? '[&>div]:bg-amber-500' : '[&>div]:bg-destructive'
+                      )}
+                    />
+                    <span className={cn('font-mono text-[10px] font-medium', getEntityReadinessColor(ent.summary.overallPercent))}>
+                      {ent.summary.overallPercent}%
+                    </span>
+                    {ent.summary.totalBlockers > 0 && (
+                      <Badge variant="outline" className="text-[8px] h-3.5 text-destructive border-destructive/30">
+                        {ent.summary.totalBlockers} bloq.
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Per-domain consolidated */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              {Object.entries(multiEntityReport.byDomain)
+                .filter(([_, d]) => d.totalEntities > 0)
+                .slice(0, 4)
+                .map(([cId, d]) => (
+                  <div key={cId} className="text-[9px] px-1.5 py-0.5 rounded bg-muted flex items-center gap-1">
+                    <span className="font-medium">{d.label}:</span>
+                    <span className={cn('font-mono', getEntityReadinessColor(d.avgPercent))}>{d.avgPercent}%</span>
+                    <span className="text-muted-foreground">({d.entitiesReady}/{d.totalEntities})</span>
+                  </div>
+                ))}
+            </div>
+
+            <div className="flex items-start gap-1.5 pt-1 text-[9px] text-muted-foreground">
+              <Info className="h-2.5 w-2.5 mt-0.5 shrink-0 text-blue-400" />
+              <span>
+                Readiness consolidado por sociedad. Cada entidad legal se evalúa de forma independiente.
+                Este análisis es <strong>preparatorio</strong> — no implica aprobación global ni envío real.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground">
         <Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" />
         <div>
