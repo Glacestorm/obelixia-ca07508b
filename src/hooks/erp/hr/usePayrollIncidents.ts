@@ -1,12 +1,14 @@
 /**
- * usePayrollIncidents — V2-ES.7 Paso 1
+ * usePayrollIncidents — V2-ES.7 Paso 1 (enriquecido)
  * CRUD para incidencias y variables de nómina
- * Filtrado por período, empleado y estado
+ * Filtrado por período, empleado, año/mes y estado
+ * Soporte de trazabilidad a solicitudes, tareas y documentos
  */
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PayrollIncident, IncidentStatus } from '@/engines/erp/hr/payrollIncidentEngine';
+import { deriveOperationalFlags } from '@/engines/erp/hr/payrollIncidentEngine';
 
 export function usePayrollIncidents(companyId?: string) {
   const [incidents, setIncidents] = useState<PayrollIncident[]>([]);
@@ -58,13 +60,37 @@ export function usePayrollIncidents(companyId?: string) {
     }
   }, [companyId]);
 
+  const fetchByYearMonth = useCallback(async (year: number, month: number) => {
+    if (!companyId) return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_payroll_incidents' as any)
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('period_year', year)
+        .eq('period_month', month)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setIncidents((data ?? []) as unknown as PayrollIncident[]);
+    } catch (err) {
+      console.error('[usePayrollIncidents] fetchByYearMonth:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [companyId]);
+
   // ── Create ──
 
   const createIncident = useCallback(async (incident: Partial<PayrollIncident>): Promise<PayrollIncident | null> => {
     if (!companyId) return null;
     try {
       const { data: userData } = await supabase.auth.getUser();
+      // Auto-derive operational flags from type
+      const flags = incident.incident_type ? deriveOperationalFlags(incident.incident_type) : {};
       const row = {
+        ...flags,
         ...incident,
         company_id: companyId,
         status: 'pending',
@@ -193,6 +219,7 @@ export function usePayrollIncidents(companyId?: string) {
     isLoading,
     fetchByPeriod,
     fetchByEmployee,
+    fetchByYearMonth,
     createIncident,
     updateIncident,
     validateIncident,

@@ -198,7 +198,7 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
         </div>
         {selectedPeriodId && (
           <Card className="px-3 py-2">
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-xs flex-wrap">
               {readiness.readinessLevel === 'all_validated' || readiness.readinessLevel === 'all_applied' ? (
                 <CheckCircle className="h-4 w-4 text-emerald-600" />
               ) : readiness.readinessLevel === 'has_pending' ? (
@@ -211,6 +211,12 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
                 <span className="text-muted-foreground">
                   ({readiness.validated}✓ {readiness.pending}⏳ {readiness.applied}📎)
                 </span>
+              )}
+              {readiness.hasSSActions > 0 && (
+                <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700">SS:{readiness.hasSSActions}</Badge>
+              )}
+              {readiness.hasTaxAdjustments > 0 && (
+                <Badge variant="outline" className="text-[10px] border-blue-300 text-blue-700">IRPF:{readiness.hasTaxAdjustments}</Badge>
               )}
             </div>
           </Card>
@@ -449,6 +455,37 @@ export function HRPayrollIncidentsPanel({ companyId, periods, selectedPeriodId, 
                   {classifyFiscal(form.concept_code).fiscalNote}
                 </p>
               )}
+            </div>
+
+            {/* Operational flags */}
+            <div className="p-3 rounded-lg bg-muted/50 space-y-2">
+              <p className="text-xs font-medium">Flags operativos</p>
+              <div className="flex gap-6 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={(form as any).requires_ss_action ?? false}
+                    onCheckedChange={v => setForm(p => ({ ...p, requires_ss_action: v } as any))}
+                  />
+                  <Label className="text-xs">Requiere acción SS</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={(form as any).requires_tax_adjustment ?? false}
+                    onCheckedChange={v => setForm(p => ({ ...p, requires_tax_adjustment: v } as any))}
+                  />
+                  <Label className="text-xs">Requiere ajuste IRPF</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={(form as any).requires_external_filing ?? false}
+                    onCheckedChange={v => setForm(p => ({ ...p, requires_external_filing: v } as any))}
+                  />
+                  <Label className="text-xs">Requiere presentación externa</Label>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Marcado operativo interno — no implica transmisión oficial
+              </p>
             </div>
 
             {/* Description */}
