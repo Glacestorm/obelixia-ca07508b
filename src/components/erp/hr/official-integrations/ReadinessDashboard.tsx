@@ -3,7 +3,7 @@
  * Enhanced: operational visibility, credential status, payload/dry-run tracking,
  * 5-level score system, multi-entity readiness, and clear disclaimers.
  */
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
