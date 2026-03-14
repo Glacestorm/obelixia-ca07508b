@@ -163,19 +163,37 @@ export interface EligibilityCheck {
   required: boolean;
   severity: 'blocker' | 'warning' | 'info';
   message: string;
+  category: 'dry_run' | 'validation' | 'data' | 'certificate' | 'evidence' | 'status';
 }
+
+export type EligibilityLevel = 'eligible' | 'partially_eligible' | 'not_eligible';
 
 export interface EligibilityResult {
   eligible: boolean;
+  level: EligibilityLevel;
+  levelLabel: string;
   checks: EligibilityCheck[];
   blockers: string[];
   warnings: string[];
+  infos: string[];
   score: number; // 0-100
+  summary: string;
 }
+
+const ELIGIBILITY_LABELS: Record<EligibilityLevel, string> = {
+  eligible: 'Elegible para aprobación',
+  partially_eligible: 'Parcialmente elegible — revisar advertencias',
+  not_eligible: 'No elegible — resolver bloqueantes',
+};
 
 /**
  * Evaluate if a submission is eligible for pre-real approval request.
- * Checks minimum conditions before allowing an approval request.
+ * Returns a 3-tier result: eligible, partially_eligible, not_eligible.
+ *
+ * Extended checks (V2-ES.8 T5 P3):
+ * - Dry-run + validation + payload (blockers)
+ * - Readiness score, evidence, certificates (warnings)
+ * - Submission status validity, multiple dry-runs (info)
  */
 export function evaluateApprovalEligibility(params: {
   submissionStatus: PreparatorySubmissionStatus;
@@ -184,22 +202,48 @@ export function evaluateApprovalEligibility(params: {
   dryRunCount: number;
   hasCertificate: boolean;
   domain: SubmissionDomain;
+  /** Extended context — all optional for graceful degradation */
+  readinessPercent?: number;
+  hasLinkedEvidence?: boolean;
+  evidenceCount?: number;
+  certificateStatus?: 'valid' | 'expiring' | 'expired' | 'not_configured';
+  submissionCancelled?: boolean;
 }): EligibilityResult {
   const checks: EligibilityCheck[] = [];
 
-  // 1. Must have dry-run executed
+  // ─── BLOCKERS (required) ────────────────────────────────────────────
+
+  // 1. Submission not cancelled/invalid
+  const isValidStatus = !params.submissionCancelled &&
+    !['cancelled', 'failed', 'rejected'].includes(params.submissionStatus);
+  checks.push({
+    checkId: 'submission_valid',
+    label: 'Submission activa',
+    passed: isValidStatus,
+    required: true,
+    severity: 'blocker',
+    category: 'status',
+    message: isValidStatus
+      ? 'La submission está en un estado válido'
+      : 'La submission está cancelada, fallida o rechazada',
+  });
+
+  // 2. Dry-run ejecutado
+  const dryRunDone = params.submissionStatus === 'dry_run_executed' ||
+    params.submissionStatus === 'pending_approval';
   checks.push({
     checkId: 'dry_run_executed',
     label: 'Dry-run ejecutado',
-    passed: params.submissionStatus === 'dry_run_executed',
+    passed: dryRunDone,
     required: true,
     severity: 'blocker',
-    message: params.submissionStatus === 'dry_run_executed'
+    category: 'dry_run',
+    message: dryRunDone
       ? 'Al menos un dry-run completado exitosamente'
-      : 'Se requiere al menos un dry-run ejecutado antes de solicitar aprobación',
+      : 'Se requiere al menos un dry-run ejecutado',
   });
 
-  // 2. Must have validation passed
+  // 3. Validación superada
   const validationPassed = params.validationResult?.passed === true;
   checks.push({
     checkId: 'validation_passed',
@@ -207,24 +251,26 @@ export function evaluateApprovalEligibility(params: {
     passed: validationPassed,
     required: true,
     severity: 'blocker',
+    category: 'validation',
     message: validationPassed
       ? `Validación superada (${params.validationResult?.score || 0}%)`
       : 'Se requiere validación interna superada',
   });
 
-  // 3. Must have payload snapshot
+  // 4. Payload generado
   checks.push({
     checkId: 'payload_exists',
     label: 'Payload generado',
     passed: !!params.payloadSnapshot,
     required: true,
     severity: 'blocker',
+    category: 'data',
     message: params.payloadSnapshot
       ? 'Payload snapshot disponible para revisión'
-      : 'Se requiere payload generado antes de solicitar aprobación',
+      : 'Se requiere payload generado',
   });
 
-  // 4. Validation score >= 70
+  // 5. Score ≥ 70%
   const scoreOk = (params.validationResult?.score || 0) >= 70;
   checks.push({
     checkId: 'score_threshold',
@@ -232,12 +278,13 @@ export function evaluateApprovalEligibility(params: {
     passed: scoreOk,
     required: true,
     severity: 'blocker',
+    category: 'validation',
     message: scoreOk
       ? `Score: ${params.validationResult?.score}%`
       : `Score insuficiente: ${params.validationResult?.score || 0}% (mínimo 70%)`,
   });
 
-  // 5. No validation errors
+  // 6. Sin errores de validación
   const noErrors = (params.validationResult?.errorCount || 0) === 0;
   checks.push({
     checkId: 'no_errors',
@@ -245,47 +292,114 @@ export function evaluateApprovalEligibility(params: {
     passed: noErrors,
     required: true,
     severity: 'blocker',
+    category: 'validation',
     message: noErrors
       ? 'Sin errores de validación'
       : `${params.validationResult?.errorCount} error(es) pendiente(s)`,
   });
 
-  // 6. Certificate configured (warning, not blocker for dry-run phase)
+  // ─── WARNINGS (recommended, not blocking) ──────────────────────────
+
+  // 7. Certificado digital
+  const certOk = params.hasCertificate ||
+    (params.certificateStatus && params.certificateStatus !== 'not_configured' && params.certificateStatus !== 'expired');
+  const certExpiring = params.certificateStatus === 'expiring';
   checks.push({
     checkId: 'certificate_configured',
-    label: 'Certificado digital configurado',
-    passed: params.hasCertificate,
+    label: 'Certificado digital',
+    passed: !!certOk,
     required: false,
     severity: 'warning',
-    message: params.hasCertificate
-      ? 'Certificado digital configurado'
-      : 'Certificado digital no configurado — requerido para envío real futuro',
+    category: 'certificate',
+    message: certExpiring
+      ? 'Certificado digital próximo a expirar — renovar antes de envío real'
+      : certOk
+        ? 'Certificado digital configurado y vigente'
+        : 'Certificado digital no configurado — requerido para envío real futuro',
   });
 
-  // 7. Multiple dry-runs recommended
+  // 8. Readiness score (if available)
+  if (params.readinessPercent !== undefined) {
+    const readinessOk = params.readinessPercent >= 60;
+    checks.push({
+      checkId: 'readiness_adequate',
+      label: 'Readiness del conector (≥60%)',
+      passed: readinessOk,
+      required: false,
+      severity: 'warning',
+      category: 'data',
+      message: readinessOk
+        ? `Readiness: ${params.readinessPercent}%`
+        : `Readiness insuficiente: ${params.readinessPercent}% — revisar datos y configuración`,
+    });
+  }
+
+  // 9. Evidencia documental vinculada
+  if (params.hasLinkedEvidence !== undefined) {
+    checks.push({
+      checkId: 'evidence_linked',
+      label: 'Evidencia documental vinculada',
+      passed: params.hasLinkedEvidence,
+      required: false,
+      severity: 'warning',
+      category: 'evidence',
+      message: params.hasLinkedEvidence
+        ? `${params.evidenceCount || 1} evidencia(s) vinculada(s)`
+        : 'Sin evidencia documental vinculada — recomendado para trazabilidad',
+    });
+  }
+
+  // ─── INFO (nice-to-have) ───────────────────────────────────────────
+
+  // 10. Múltiples dry-runs
   checks.push({
     checkId: 'multiple_dry_runs',
-    label: 'Múltiples dry-runs verificados',
+    label: 'Múltiples dry-runs',
     passed: params.dryRunCount >= 2,
     required: false,
     severity: 'info',
+    category: 'dry_run',
     message: params.dryRunCount >= 2
       ? `${params.dryRunCount} dry-runs ejecutados`
-      : 'Se recomienda ejecutar al menos 2 dry-runs para mayor confianza',
+      : 'Se recomienda ≥2 dry-runs para mayor confianza',
   });
+
+  // ─── Compute results ──────────────────────────────────────────────
 
   const blockers = checks.filter(c => !c.passed && c.required).map(c => c.message);
   const warnings = checks.filter(c => !c.passed && !c.required && c.severity === 'warning').map(c => c.message);
+  const infos = checks.filter(c => !c.passed && c.severity === 'info').map(c => c.message);
   const passedRequired = checks.filter(c => c.required && c.passed).length;
   const totalRequired = checks.filter(c => c.required).length;
-  const score = totalRequired > 0 ? Math.round((passedRequired / totalRequired) * 100) : 0;
+  const passedAll = checks.filter(c => c.passed).length;
+  const score = checks.length > 0 ? Math.round((passedAll / checks.length) * 100) : 0;
+
+  // 3-tier level
+  let level: EligibilityLevel;
+  if (blockers.length > 0) {
+    level = 'not_eligible';
+  } else if (warnings.length > 0) {
+    level = 'partially_eligible';
+  } else {
+    level = 'eligible';
+  }
+
+  const summary = level === 'eligible'
+    ? `Todos los checks superados (${passedAll}/${checks.length})`
+    : level === 'partially_eligible'
+      ? `${blockers.length} bloqueante(s), ${warnings.length} advertencia(s)`
+      : `${blockers.length} bloqueante(s) impiden la aprobación`;
 
   return {
     eligible: blockers.length === 0,
+    level,
+    levelLabel: ELIGIBILITY_LABELS[level],
     checks,
     blockers,
     warnings,
+    infos,
     score,
+    summary,
   };
 }
 
