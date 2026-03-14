@@ -79,6 +79,14 @@ export function useOfficialReadiness(companyId: string): UseOfficialReadinessRet
           is_active: a.is_active,
           status: a.status,
         })),
+        certificateConfigs: ((certsRes.data || []) as any[]).map(c => ({
+          domain: c.domain,
+          certificate_status: c.certificate_status,
+          certificate_type: c.certificate_type,
+          configuration_completeness: c.configuration_completeness,
+          expiration_date: c.expiration_date,
+          readiness_impact: c.readiness_impact,
+        })),
       };
 
       const result = evaluateOfficialReadiness(ctx, { includeSecondary: true });
