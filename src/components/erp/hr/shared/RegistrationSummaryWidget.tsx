@@ -150,6 +150,14 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
           </div>
         )}
 
+        {/* V2-ES.5 Paso 4: Closure signal */}
+        {isClosed && !isComplete && (
+          <div className="flex items-center gap-1 text-[10px] text-primary">
+            <Lock className="h-3 w-3 shrink-0" />
+            <span>Cerrado internamente{(data as any).closed_at ? `: ${new Date((data as any).closed_at).toLocaleDateString('es')}` : ''}</span>
+          </div>
+        )}
+
         {isComplete && data.confirmed_at && (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600">
             <CheckCircle2 className="h-3 w-3 shrink-0" />
