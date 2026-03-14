@@ -17,6 +17,7 @@ import {
 import type { PayrollPeriod, PeriodStatus, PreCloseValidation } from '@/hooks/erp/hr/usePayrollEngine';
 import type { PeriodClosureSnapshot } from '@/engines/erp/hr/payrollRunEngine';
 import { ActiveRunIndicator } from './ActiveRunIndicator';
+import { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 
 interface Props {
   companyId: string;
