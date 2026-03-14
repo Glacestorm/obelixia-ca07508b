@@ -213,6 +213,67 @@ export function HRComplianceEvidencePanel({ companyId }: Props) {
         </Card>
       )}
 
+      {/* V2-ES.8 T9: Sandbox evidence widget */}
+      {showSandboxEvidence && (
+        <Card className="border-emerald-500/20 bg-emerald-500/5">
+          <CardContent className="py-3 space-y-2">
+            <p className="text-sm font-medium flex items-center gap-1.5">
+              <TestTube className="h-4 w-4 text-emerald-600" />
+              Ejecuciones Sandbox Persistidas
+              <Badge variant="outline" className="text-[9px] h-4 ml-auto">
+                {sandboxPersistence.totalCount} registros
+              </Badge>
+            </p>
+
+            {sandboxPersistence.isLoading ? (
+              <p className="text-[11px] text-muted-foreground italic">Cargando historial sandbox...</p>
+            ) : sandboxPersistence.history.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground italic">Sin ejecuciones sandbox persistidas</p>
+            ) : (
+              <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                {sandboxPersistence.history.slice(0, 10).map(rec => (
+                  <div key={rec.id} className="flex items-center gap-2 py-1 px-1.5 rounded bg-background/60 text-[11px]">
+                    <TestTube className="h-3 w-3 text-emerald-600 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="truncate block font-medium">{rec.domain} — {rec.adapterName}</span>
+                      <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+                        <span>{rec.executionMode === 'advanced_simulation' ? 'Sim. avanzada' : 'Staged'}</span>
+                        <span>·</span>
+                        <span>{rec.environment}</span>
+                        {rec.result && (
+                          <>
+                            <span>·</span>
+                            <span>Conformidad: {rec.result.payloadConformance}%</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <Badge
+                      variant={rec.status === 'completed' ? 'secondary' : 'destructive'}
+                      className="text-[9px] h-4 shrink-0"
+                    >
+                      {rec.status}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      {formatDistanceToNow(new Date(rec.executedAt), { locale: es, addSuffix: true })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Sandbox disclaimer */}
+            <div className="flex items-start gap-1.5 p-1.5 rounded bg-muted/40 text-[9px] text-muted-foreground">
+              <Lock className="h-2.5 w-2.5 mt-0.5 shrink-0 text-destructive/60" />
+              <span>
+                Ejecuciones <strong>sandbox preparatorias</strong> — no constituyen envíos oficiales.
+                Producción bloqueada. Sandbox ≠ dry-run ≠ presentación real.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-3">
         {DEMO_EVIDENCE.map(ev => (
           <Card key={ev.id} className="hover:bg-muted/30 transition-colors cursor-pointer">
