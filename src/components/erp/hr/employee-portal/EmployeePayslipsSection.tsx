@@ -181,18 +181,18 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
       toast.success('Descarga iniciada');
 
       // Best-effort audit log
-      supabase
-        .from('erp_hr_document_access_log' as any)
-        .insert({
-          company_id: employee.company_id,
-          document_id: doc.id,
-          document_table: 'erp_hr_employee_documents',
-          action: 'file_download',
-          user_agent: navigator.userAgent,
-          metadata: { source: 'employee_portal', payroll_record_id: payslipId },
-        })
-        .then(() => {})
-        .catch(() => {});
+      try {
+        await (supabase as any)
+          .from('erp_hr_document_access_log')
+          .insert({
+            company_id: employee.company_id,
+            document_id: doc.id,
+            document_table: 'erp_hr_employee_documents',
+            action: 'file_download',
+            user_agent: navigator.userAgent,
+            metadata: { source: 'employee_portal', payroll_record_id: payslipId },
+          });
+      } catch { /* non-blocking */ }
     } catch {
       toast.error('Error al descargar el PDF');
     } finally {
