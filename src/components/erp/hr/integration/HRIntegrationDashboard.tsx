@@ -164,6 +164,17 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
           syncedItems: hookMetrics.syncedToSS,
           errorCount: 0,
           healthScore: hookMetrics.syncHealthScore
+        },
+        {
+          id: 'fiscal-int',
+          name: 'Fiscalidad (IRPF · M111/190)',
+          module: 'accounting' as const,
+          status: 'pending' as const,
+          lastSync: null,
+          pendingItems: 0,
+          syncedItems: 0,
+          errorCount: 0,
+          healthScore: 0
         }
       ];
       setIntegrations(mockIntegrations);
