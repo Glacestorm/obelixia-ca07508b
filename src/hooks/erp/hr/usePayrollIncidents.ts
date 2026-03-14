@@ -165,6 +165,19 @@ export function usePayrollIncidents(companyId?: string) {
 
   const validateIncident = useCallback(async (id: string): Promise<boolean> => {
     try {
+      // Guard: check period writability
+      const incident = incidents.find(i => i.id === id);
+      if (incident?.period_id) {
+        const { data: periodData } = await supabase
+          .from('hr_payroll_periods')
+          .select('status')
+          .eq('id', incident.period_id)
+          .single();
+        if (periodData && !isPeriodWritable(periodData.status as string)) {
+          toast.error(`Período ${periodData.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden validar incidencias`);
+          return false;
+        }
+      }
       const { data: userData } = await supabase.auth.getUser();
       const updates = {
         status: 'validated' as IncidentStatus,
@@ -186,7 +199,7 @@ export function usePayrollIncidents(companyId?: string) {
       toast.error('Error al validar');
       return false;
     }
-  }, []);
+  }, [incidents]);
 
   // ── Cancel ──
 
