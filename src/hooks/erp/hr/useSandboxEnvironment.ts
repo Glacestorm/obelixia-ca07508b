@@ -33,6 +33,18 @@ import {
   type SandboxExecutionRequest,
 } from '@/components/erp/hr/shared/sandboxExecutionService';
 import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
+import {
+  auditEnvironmentSwitched,
+  auditSandboxEnabled,
+  auditDisclaimersAccepted,
+  auditProductionBlocked,
+  auditExecutionAttempted,
+  auditExecutionCompleted,
+  auditExecutionFailed,
+  auditGateNotMet,
+  auditEligibilityEvaluated,
+  logSandboxAuditEvent,
+} from '@/lib/security/sandboxAuditHelper';
 
 interface UseSandboxEnvironmentParams {
   companyId: string;
