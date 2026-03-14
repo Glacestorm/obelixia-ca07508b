@@ -132,11 +132,14 @@ export function useSandboxPersistence(companyId: string) {
 
       if (error) {
         console.error('[useSandboxPersistence] persist error:', error);
+        auditPersistenceFailed(record.companyId, record.environment, record.id, error.message);
         return false;
       }
+      auditExecutionPersisted(record.companyId, record.environment, record.id, record.domain);
       return true;
     } catch (err) {
       console.error('[useSandboxPersistence] persist error:', err);
+      auditPersistenceFailed(record.companyId, record.environment, record.id, err instanceof Error ? err.message : 'Unknown');
       return false;
     }
   }, []);
