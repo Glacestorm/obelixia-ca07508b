@@ -538,6 +538,16 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
         </Card>
       )}
 
+      {/* Proactive Alerts Widget — V2-ES.8 T6 */}
+      <ProactiveAlertsSummaryWidget
+        summary={proactiveAlerts.summary}
+        isEvaluating={proactiveAlerts.isEvaluating}
+        lastEvaluatedAt={proactiveAlerts.lastEvaluatedAt}
+        onAcknowledge={proactiveAlerts.acknowledge}
+        onDismiss={proactiveAlerts.dismiss}
+        onResolve={proactiveAlerts.resolve}
+      />
+
       {/* Regulatory Calendar Widget */}
       {calendar && calendar.deadlines.length > 0 && (
         <Card>
