@@ -145,6 +145,8 @@ export interface EnvironmentSummary {
   totalSandboxExecutions: number;
   lastSandboxExecution: string | null;
   pendingGates: { environment: ConnectorEnvironment; gates: string[] }[];
+  /** Domain-level status overview */
+  domainStatuses: { domain: SandboxDomain; environment: ConnectorEnvironment; status: EnvironmentStatus }[];
 }
 
 // ======================== CONSTANTS ========================
