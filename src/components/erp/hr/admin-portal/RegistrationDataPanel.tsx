@@ -126,6 +126,14 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     return buildTGSSPayload(registrationData);
   }, [registrationData]);
 
+  const preIntegration = useMemo(() => {
+    return evaluatePreIntegrationReadiness(registrationData, {
+      docReadinessPercent: readiness.docs?.percentage ?? undefined,
+      docMandatoryComplete: readiness.docs?.mandatoryComplete ?? undefined,
+      deadlineSummary: deadlineSummary,
+    });
+  }, [registrationData, readiness.docs, deadlineSummary]);
+
   // Lift deadline summary to parent for executive summary integration
   const prevDeadlineRef = useRef(deadlineSummary.worstUrgency);
   useEffect(() => {
