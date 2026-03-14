@@ -419,10 +419,42 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
             Pre-validación y preparación para envíos oficiales · Modo preparatorio
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); fetchApprovals(); }} disabled={isEvaluating}>
-          <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
-          Reevaluar
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting || !summary}>
+                <Download className={cn('h-4 w-4 mr-1.5', isExporting && 'animate-spin')} />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                if (!summary) return;
+                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness }));
+                exportReadiness('pdf', summary, domainStats, {
+                  certificates: certData,
+                  approvals: { pending: approvalPendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+                });
+              }}>
+                <FileText className="h-4 w-4 mr-2" /> Exportar PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                if (!summary) return;
+                const certData = certificates.map(c => ({ domain: c.domain, status: c.certificate_status, completeness: c.configuration_completeness }));
+                exportReadiness('excel', summary, domainStats, {
+                  certificates: certData,
+                  approvals: { pending: approvalPendingCount, approved: approvalApprovedCount, rejected: approvalRejectedCount },
+                });
+              }}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Exportar Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={() => { evaluate(adapters); fetchPreparatory(); fetchCertificates(); evaluateCalendar(); evaluateMultiEntity(adapters); fetchApprovals(); }} disabled={isEvaluating}>
+            <RefreshCw className={cn('h-4 w-4 mr-1.5', isEvaluating && 'animate-spin')} />
+            Reevaluar
+          </Button>
+        </div>
       </div>
 
       {/* Overall summary */}
