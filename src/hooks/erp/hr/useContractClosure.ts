@@ -19,9 +19,15 @@ import type { ContrataPreIntegrationContext } from '@/components/erp/hr/shared/c
 
 // ─── Input / Output ─────────────────────────────────────────────────────────
 
+/** Minimal doc readiness shape — avoids requiring full EnrichedCompleteness */
+export interface DocReadinessInput {
+  percentage: number;
+  mandatoryComplete: boolean;
+}
+
 export interface UseContractClosureInput {
   contractData: ContractProcessData | null;
-  docCompleteness?: EnrichedCompleteness | null;
+  docCompleteness?: DocReadinessInput | null;
   deadlineSummary?: ContractDeadlineSummary | null;
 }
 
