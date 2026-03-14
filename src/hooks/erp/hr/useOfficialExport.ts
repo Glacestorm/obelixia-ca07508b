@@ -43,12 +43,21 @@ export function useOfficialExport(companyId: string): UseOfficialExportReturn {
   const [lastExport, setLastExport] = useState<ExportResult | null>(null);
 
   const logExport = useCallback(async (result: ExportResult, category: ExportCategory, format: ExportFormat) => {
+    // Map category to specific audit event name
+    const eventMap: Record<string, string> = {
+      readiness_report: result.success ? 'readiness_report_exported' : 'readiness_report_export_failed',
+      dry_run_diff: result.success ? 'dry_run_diff_exported' : 'dry_run_diff_export_failed',
+      evidence_pack: result.success ? 'evidence_pack_generated' : 'evidence_pack_generation_failed',
+      dry_run_summary: result.success ? 'dry_run_summary_exported' : 'dry_run_summary_export_failed',
+      connector_status: result.success ? 'connector_status_exported' : 'connector_status_export_failed',
+      approval_history: result.success ? 'approval_history_exported' : 'approval_history_export_failed',
+    };
     try {
       await logAuditEvent({
-        action: 'official_export_generated',
+        action: eventMap[category] || 'official_export_generated',
         tableName: 'hr_official_exports',
         category: 'data_access',
-        severity: 'info',
+        severity: result.success ? 'info' : 'warning',
         metadata: {
           export_category: category,
           export_format: format,
@@ -56,6 +65,7 @@ export function useOfficialExport(companyId: string): UseOfficialExportReturn {
           success: result.success,
           company_id: companyId,
           error: result.error,
+          disclaimer: 'Documento interno preparatorio — no constituye presentación oficial ni validación de organismo',
         },
       });
     } catch (err) {

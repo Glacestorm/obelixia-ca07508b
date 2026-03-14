@@ -2,14 +2,17 @@
  * HRComplianceEvidencePanel — Evidencias documentales de cumplimiento
  * V2-ES.8 T2: Integra evidencias vinculadas a dry-runs
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Shield, Plus, FileCheck, FlaskConical, Info,
   History, Paperclip, CheckCircle2, Clock,
+  Download, FileText, FileSpreadsheet,
 } from 'lucide-react';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { useDryRunPersistence, type DryRunEvidence } from '@/hooks/erp/hr/useDryRunPersistence';
 import { format } from 'date-fns';
@@ -36,6 +39,15 @@ export function HRComplianceEvidencePanel({ companyId }: Props) {
   const { results, isLoading, fetchResults } = useDryRunPersistence(companyId);
   const [allEvidence, setAllEvidence] = useState<DryRunEvidence[]>([]);
   const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const { isExporting, exportEvidencePack } = useOfficialExport(companyId);
+
+  const handleEvidenceExport = useCallback((format: 'pdf' | 'excel') => {
+    exportEvidencePack(format, {
+      companyId,
+      dryRuns: results,
+      evidence: allEvidence,
+    });
+  }, [companyId, results, allEvidence, exportEvidencePack]);
 
   useEffect(() => {
     fetchResults({ limit: 20 });
@@ -90,6 +102,21 @@ export function HRComplianceEvidencePanel({ companyId }: Props) {
             <FlaskConical className="h-3 w-3" />
             {showDryRunEvidence ? 'Ocultar dry-run' : `Evidencias dry-run (${results.length})`}
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting}>
+                <Download className="h-4 w-4 mr-1.5" /> Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleEvidenceExport('pdf')}>
+                <FileText className="h-4 w-4 mr-2" /> Evidence Pack PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEvidenceExport('excel')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Evidence Pack Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Registrar evidencia</Button>
         </div>
       </div>

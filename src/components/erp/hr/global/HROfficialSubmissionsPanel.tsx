@@ -2,17 +2,19 @@
  * HROfficialSubmissionsPanel — Envíos a organismos oficiales
  * V2-ES.8 T3: Certificate status, regulatory deadlines, and dry-run history
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Send, Plus, FlaskConical, Shield, Info, Lock,
   History, CheckCircle2, XCircle, Clock, Paperclip,
-  Calculator, FileText, AlertTriangle, KeyRound,
-  CalendarClock,
+  Calculator, FileText, FileSpreadsheet, AlertTriangle, KeyRound,
+  CalendarClock, Download,
 } from 'lucide-react';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { useDryRunPersistence, type DryRunResult } from '@/hooks/erp/hr/useDryRunPersistence';
 import { getDomainMeta, getSubmissionDomains, type SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
@@ -47,6 +49,21 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
   const { results, isLoading, fetchResults } = useDryRunPersistence(companyId);
   const { certificates, fetchCertificates } = useHRDomainCertificates(companyId);
   const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
+  const { isExporting, exportEvidencePack } = useOfficialExport(companyId);
+
+  const handleQuickExport = useCallback((format: 'pdf' | 'excel') => {
+    exportEvidencePack(format, {
+      companyId,
+      dryRuns: results,
+      certificates: certificates.map(c => ({
+        domain: c.domain,
+        status: c.certificate_status,
+        completeness: c.configuration_completeness,
+        expirationDate: c.expiration_date,
+      })),
+      deadlines: calendar || undefined,
+    });
+  }, [companyId, results, certificates, calendar, exportEvidencePack]);
 
   useEffect(() => {
     fetchCertificates();
@@ -85,7 +102,25 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
           </h3>
           <p className="text-sm text-muted-foreground">SILTRA, Milena PA, Contrat@, AEAT, Certifica2</p>
         </div>
-        <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Nuevo envío</Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting}>
+                <Download className={cn('h-4 w-4 mr-1.5', isExporting && 'animate-spin')} />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleQuickExport('pdf')}>
+                <FileText className="h-4 w-4 mr-2" /> Evidence Pack PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleQuickExport('excel')}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Evidence Pack Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Nuevo envío</Button>
+        </div>
       </div>
 
       {/* V2-ES.8 T3: Preparatory banner + cert & deadline status */}

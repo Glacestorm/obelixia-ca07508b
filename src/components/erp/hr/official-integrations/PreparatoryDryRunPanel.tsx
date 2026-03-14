@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Play,
   FileText,
+  FileSpreadsheet,
   Shield,
   Calculator,
   Clock,
@@ -33,6 +34,7 @@ import {
   Minus,
   HeartPulse,
   RotateCcw,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -58,6 +60,8 @@ import {
   canExecuteDryRun,
   type DryRunHealthCheck,
 } from '@/components/erp/hr/shared/connectorHardeningEngine';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface Props {
   companyId: string;
@@ -691,6 +695,8 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
     generateEvidenceOnDemand,
   } = useDryRunPersistence(companyId);
 
+  const { isExporting, exportDiff } = useOfficialExport(companyId);
+
   useEffect(() => {
     const filter = domainFilter !== 'all' ? { domain: domainFilter as SubmissionDomain } : undefined;
     fetchPreparatory(filter);
@@ -811,6 +817,24 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               ))}
             </SelectContent>
           </Select>
+          {latestDiff && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isExporting}>
+                  <Download className={cn('h-4 w-4 mr-1.5', isExporting && 'animate-spin')} />
+                  Exportar diff
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => exportDiff('pdf', latestDiff)}>
+                  <FileText className="h-4 w-4 mr-2" /> PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportDiff('excel', latestDiff)}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" /> Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading || historyLoading}>
             <RefreshCw className={cn('h-4 w-4 mr-1.5', (isLoading || historyLoading) && 'animate-spin')} />
             Actualizar
