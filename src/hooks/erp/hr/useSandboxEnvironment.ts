@@ -331,10 +331,12 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       });
       setExecutions(prev => [completed, ...prev]);
 
-      // Build and persist audit events
-      const auditEvents = buildSandboxAuditEvents(record);
-      for (const evt of auditEvents) {
-        await logSandboxAudit(evt.action, evt.details);
+      // Centralized audit: execution attempted + completed/failed
+      await auditExecutionAttempted(companyId, activeEnvironment, params.adapterId, params.domain, record.id);
+      if (record.status === 'completed') {
+        await auditExecutionCompleted(companyId, activeEnvironment, params.adapterId, params.domain, record.id, record.result?.payloadConformance || 0);
+      } else {
+        await auditExecutionFailed(companyId, activeEnvironment, params.adapterId, params.domain, record.id, record.result?.structuralErrors.map(e => e.message).join('; ') || 'Unknown');
       }
 
       if (record.status === 'completed') {
