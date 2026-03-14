@@ -37,18 +37,30 @@ const EVIDENCE_TYPE_LABELS: Record<string, string> = {
 
 export function HRComplianceEvidencePanel({ companyId }: Props) {
   const [showDryRunEvidence, setShowDryRunEvidence] = useState(false);
+  const [showSandboxEvidence, setShowSandboxEvidence] = useState(false);
   const { results, isLoading, fetchResults } = useDryRunPersistence(companyId);
+  const sandboxPersistence = useSandboxPersistence(companyId);
   const [allEvidence, setAllEvidence] = useState<DryRunEvidence[]>([]);
   const [loadingEvidence, setLoadingEvidence] = useState(false);
   const { isExporting, exportEvidencePack } = useOfficialExport(companyId);
 
-  const handleEvidenceExport = useCallback((format: 'pdf' | 'excel') => {
-    exportEvidencePack(format, {
+  // Load sandbox history
+  useEffect(() => {
+    if (showSandboxEvidence) {
+      sandboxPersistence.fetchHistory({ limit: 20 });
+    }
+  }, [showSandboxEvidence]);
+
+  const handleEvidenceExport = useCallback((fmt: 'pdf' | 'excel') => {
+    exportEvidencePack(fmt, {
       companyId,
       dryRuns: results,
       evidence: allEvidence,
+      sandboxData: sandboxPersistence.history.length > 0
+        ? { sandboxExecutions: sandboxPersistence.history }
+        : undefined,
     });
-  }, [companyId, results, allEvidence, exportEvidencePack]);
+  }, [companyId, results, allEvidence, sandboxPersistence.history, exportEvidencePack]);
 
   useEffect(() => {
     fetchResults({ limit: 20 });
