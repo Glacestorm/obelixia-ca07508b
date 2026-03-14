@@ -912,32 +912,48 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-2 mt-3">
-          {/* Diff controls */}
-          {dryRunHistory.length >= 2 && (
-            <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border text-[11px]">
-              <div className="flex items-center gap-1.5">
+          {/* Filters and diff controls */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Status filter */}
+            <div className="flex items-center gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[130px] h-7 text-[11px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs">Todos</SelectItem>
+                  <SelectItem value="success" className="text-xs">Éxito</SelectItem>
+                  <SelectItem value="partial" className="text-xs">Parcial</SelectItem>
+                  <SelectItem value="failed" className="text-xs">Fallido</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-[10px] text-muted-foreground">{filteredHistory.length} resultado(s)</span>
+            </div>
+
+            {/* Diff controls */}
+            {dryRunHistory.length >= 2 && (
+              <div className="flex items-center gap-1.5 text-[11px]">
                 <ArrowUpDown className="h-3.5 w-3.5 text-primary" />
-                <span className="font-medium">Comparar dry-runs:</span>
                 <span className="text-muted-foreground">
                   {diffSelection.length === 0
-                    ? 'Selecciona 2 ejecuciones para comparar'
+                    ? 'Selecciona 2 para comparar'
                     : diffSelection.length === 1
-                    ? '1 seleccionado — elige otro'
+                    ? '1 seleccionado'
                     : '2 seleccionados'}
                 </span>
+                {diffSelection.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 text-[10px] px-1.5"
+                    onClick={() => { setDiffSelection([]); setActiveDiff(null); }}
+                  >
+                    <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Limpiar
+                  </Button>
+                )}
               </div>
-              {diffSelection.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 text-[10px] px-1.5"
-                  onClick={() => { setDiffSelection([]); setActiveDiff(null); }}
-                >
-                  <RotateCcw className="h-2.5 w-2.5 mr-0.5" /> Limpiar
-                </Button>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
           {dryRunHistory.map(result => (
             <PersistedDryRunCard
