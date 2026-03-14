@@ -2,15 +2,19 @@
  * useOfficialExport — V2-ES.8 Tramo 7
  * Hook that orchestrates exports for HR official integrations.
  * Manages audit trail, loading state, and format selection.
+ * Supports extended data: deadlines, alerts, multi-entity, certificates.
  */
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { logAuditEvent } from '@/lib/security/auditLogger';
-import { generateReadinessPDF } from '@/components/erp/hr/shared/readinessReportPDF';
-import { generateReadinessExcel } from '@/components/erp/hr/shared/readinessReportExcel';
+import { generateReadinessPDF, type ReadinessReportOptions } from '@/components/erp/hr/shared/readinessReportPDF';
+import { generateReadinessExcel, type ReadinessExcelOptions } from '@/components/erp/hr/shared/readinessReportExcel';
 import type { OfficialReadinessSummary } from '@/components/erp/hr/shared/officialReadinessEngine';
 import type { ExportFormat, ExportCategory, ExportResult } from '@/components/erp/hr/shared/officialExportEngine';
+
+/** Unified options for readiness export */
+export type ReadinessExportOptions = ReadinessReportOptions & ReadinessExcelOptions;
 
 interface UseOfficialExportReturn {
   isExporting: boolean;
@@ -19,12 +23,7 @@ interface UseOfficialExportReturn {
     format: ExportFormat,
     summary: OfficialReadinessSummary,
     domainStats: Record<string, { payloads: number; validated: number; dryRuns: number }>,
-    options?: {
-      companyId?: string;
-      generatedBy?: string;
-      certificates?: Array<{ domain: string; status: string; completeness: number }>;
-      approvals?: { pending: number; approved: number; rejected: number };
-    },
+    options?: ReadinessExportOptions,
   ) => Promise<ExportResult>;
 }
 
@@ -57,12 +56,7 @@ export function useOfficialExport(companyId: string): UseOfficialExportReturn {
     format: ExportFormat,
     summary: OfficialReadinessSummary,
     domainStats: Record<string, { payloads: number; validated: number; dryRuns: number }>,
-    options?: {
-      companyId?: string;
-      generatedBy?: string;
-      certificates?: Array<{ domain: string; status: string; completeness: number }>;
-      approvals?: { pending: number; approved: number; rejected: number };
-    },
+    options?: ReadinessExportOptions,
   ): Promise<ExportResult> => {
     setIsExporting(true);
     try {
