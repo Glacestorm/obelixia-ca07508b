@@ -263,16 +263,27 @@ export function useDryRunPersistence(companyId: string) {
     dryRunId: string,
     payloadSnapshot?: PayloadSnapshot | null,
     validationResult?: SubmissionValidationResult | null,
+    options?: {
+      readinessScore?: number;
+      readinessStatus?: string;
+      domain?: string;
+      submissionType?: string;
+    },
   ): Promise<DryRunEvidence[]> => {
     const created: DryRunEvidence[] = [];
+    const disclaimer = 'Evidencia interna preparatoria — NO constituye justificante oficial ni acuse de organismo';
 
     if (payloadSnapshot) {
       const ev = await linkEvidence({
         dryRunId,
         evidenceType: 'payload_snapshot',
         label: `Snapshot payload ${payloadSnapshot.domain}`,
-        description: `Captura inmutable del payload generado (${payloadSnapshot.version})`,
-        metadata: { domain: payloadSnapshot.domain, snapshotAt: payloadSnapshot.snapshotAt },
+        description: `Captura inmutable del payload generado (${payloadSnapshot.version}). ${disclaimer}`,
+        metadata: {
+          domain: payloadSnapshot.domain,
+          snapshotAt: payloadSnapshot.snapshotAt,
+          internal_disclaimer: disclaimer,
+        },
       });
       if (ev) created.push(ev);
     }
@@ -282,12 +293,32 @@ export function useDryRunPersistence(companyId: string) {
         dryRunId,
         evidenceType: 'validation_report',
         label: `Informe de validación (${validationResult.score}%)`,
-        description: `${validationResult.errorCount} errores, ${validationResult.warningCount} avisos`,
+        description: `${validationResult.errorCount} errores, ${validationResult.warningCount} avisos. ${disclaimer}`,
         metadata: {
           score: validationResult.score,
           passed: validationResult.passed,
           errorCount: validationResult.errorCount,
           warningCount: validationResult.warningCount,
+          internal_disclaimer: disclaimer,
+        },
+      });
+      if (ev) created.push(ev);
+    }
+
+    // Readiness report evidence (new for Prompt 3)
+    if (options?.readinessScore !== undefined) {
+      const ev = await linkEvidence({
+        dryRunId,
+        evidenceType: 'validation_report',
+        label: `Readiness report (${options.readinessScore}%)`,
+        description: `Estado: ${options.readinessStatus || 'N/A'} · Dominio: ${options.domain || 'N/A'}. ${disclaimer}`,
+        metadata: {
+          readinessScore: options.readinessScore,
+          readinessStatus: options.readinessStatus,
+          domain: options.domain,
+          submissionType: options.submissionType,
+          evidence_subtype: 'readiness_report',
+          internal_disclaimer: disclaimer,
         },
       });
       if (ev) created.push(ev);
@@ -298,12 +329,39 @@ export function useDryRunPersistence(companyId: string) {
       dryRunId,
       evidenceType: 'simulation_log',
       label: 'Log de simulación dry-run',
-      description: 'Registro de la ejecución simulada — sin efectos externos',
-      metadata: { timestamp: new Date().toISOString(), simulated: true },
+      description: `Registro de la ejecución simulada — sin efectos externos. ${disclaimer}`,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        simulated: true,
+        internal_disclaimer: disclaimer,
+      },
     });
     if (simEv) created.push(simEv);
 
     return created;
+  }, [linkEvidence]);
+
+  // ── Generate evidence on demand (Prompt 3: optional generation) ──
+  const generateEvidenceOnDemand = useCallback(async (
+    dryRunId: string,
+    evidenceType: DryRunEvidence['evidence_type'],
+    label: string,
+    description?: string,
+    extraMetadata?: Record<string, unknown>,
+  ): Promise<DryRunEvidence | null> => {
+    const disclaimer = 'Evidencia interna preparatoria — NO constituye justificante oficial';
+    return linkEvidence({
+      dryRunId,
+      evidenceType,
+      label,
+      description: `${description || label}. ${disclaimer}`,
+      metadata: {
+        ...extraMetadata,
+        generated_on_demand: true,
+        internal_disclaimer: disclaimer,
+        generated_at: new Date().toISOString(),
+      },
+    });
   }, [linkEvidence]);
 
   return {
@@ -315,6 +373,7 @@ export function useDryRunPersistence(companyId: string) {
     fetchEvidence,
     linkEvidence,
     autoGenerateEvidence,
+    generateEvidenceOnDemand,
   };
 }
 
