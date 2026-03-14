@@ -637,6 +637,35 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
     setExpandedId(prev => prev === id ? null : id);
   }, []);
 
+  // ── Diff selection logic ──
+  const handleSelectForDiff = useCallback((id: string) => {
+    setDiffSelection(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      const next = [...prev, id].slice(-2); // Keep max 2
+      if (next.length === 2) {
+        const [aId, bId] = next;
+        const a = dryRunHistory.find(r => r.id === aId);
+        const b = dryRunHistory.find(r => r.id === bId);
+        if (a && b) {
+          const [baseline, comparison] = a.execution_number < b.execution_number ? [a, b] : [b, a];
+          setActiveDiff(computeDryRunDiff(baseline, comparison));
+        }
+      } else {
+        setActiveDiff(null);
+      }
+      return next;
+    });
+  }, [dryRunHistory]);
+
+  // ── Health checks for all history items ──
+  const healthMap = useMemo(() => {
+    const map: Record<string, DryRunHealthCheck> = {};
+    for (const r of dryRunHistory) {
+      map[r.id] = evaluateDryRunHealth(r, dryRunHistory);
+    }
+    return map;
+  }, [dryRunHistory]);
+
   const domains = getSubmissionDomains();
 
   const dryRunCount = submissions.filter(s => s.status === 'dry_run_executed').length;
