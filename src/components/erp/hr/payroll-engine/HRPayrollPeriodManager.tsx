@@ -345,9 +345,14 @@ export function HRPayrollPeriodManager({
                       </div>
                     )}
                     {!closureSnapshot && p.total_gross > 0 && (
-                      <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                         <Info className="h-3 w-3" />
                         <span>Período cerrado sin snapshot detallado (legacy)</span>
+                        <SSExpedientPeriodBadge
+                          companyId={companyId}
+                          periodYear={p.fiscal_year}
+                          periodMonth={p.period_number}
+                        />
                       </div>
                     )}
                   </div>
