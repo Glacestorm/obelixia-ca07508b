@@ -1,8 +1,8 @@
 /**
  * useSandboxEnvironment — Hook para gestión de entornos sandbox de conectores regulatorios
- * V2-ES.8 T8 P3+P4: Gates de elegibilidad, ejecución sandbox diferenciada y trazabilidad
+ * V2-ES.8 T8+T9: Gates de elegibilidad, ejecución sandbox diferenciada, trazabilidad y persistencia
  */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   ConnectorEnvironment,
