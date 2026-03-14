@@ -82,6 +82,8 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
     updateContractStatus,
     computeReadiness,
     persistDeadlineAndPayload,
+    closeContractProcess,
+    reopenContractProcess,
   } = useHRContractProcess(companyId);
 
   const [editing, setEditing] = useState(false);
