@@ -122,6 +122,15 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
           />
         </TabsContent>
 
+        <TabsContent value="incidents" className="mt-4">
+          <HRPayrollIncidentsPanel
+            companyId={companyId}
+            periods={engine.periods}
+            selectedPeriodId={selectedPeriodId}
+            onSelectPeriod={setSelectedPeriodId}
+          />
+        </TabsContent>
+
         {showFull && (
           <TabsContent value="simulation" className="mt-4">
             <HRPayrollSimulator
