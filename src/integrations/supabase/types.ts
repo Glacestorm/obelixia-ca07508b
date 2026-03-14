@@ -81693,6 +81693,7 @@ export type Database = {
           valid_until: string
         }[]
       }
+      get_employee_id_for_auth_user: { Args: never; Returns: string }
       get_installed_modules: {
         Args: { _organization_id?: string }
         Returns: {
@@ -81854,6 +81855,7 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
+      is_employee: { Args: { check_user_id: string }; Returns: boolean }
       is_license_valid: { Args: { p_license_id: string }; Returns: boolean }
       is_mfa_required_for_role: {
         Args: { p_user_id: string }
