@@ -1,8 +1,8 @@
 /**
  * SandboxControlPanel — Panel de control de entornos sandbox para conectores
- * V2-ES.8 T8: Gestión de entornos, gates, ejecuciones y barreras de producción
+ * V2-ES.8 T8 P3+P4: Gates de elegibilidad, ejecución sandbox y trazabilidad reforzada
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,14 +13,21 @@ import { Progress } from '@/components/ui/progress';
 import {
   Shield, ShieldAlert, ShieldCheck, FlaskConical, TestTube, ServerCog,
   Ban, CheckCircle2, XCircle, Clock, Activity, AlertTriangle, Lock,
-  ChevronRight, RefreshCw,
+  ChevronRight, RefreshCw, Play, FileCheck, Zap,
 } from 'lucide-react';
 import { useSandboxEnvironment } from '@/hooks/erp/hr/useSandboxEnvironment';
 import {
   ConnectorEnvironment,
+  SandboxDomain,
   ENVIRONMENT_DEFINITIONS,
   SANDBOX_DISCLAIMERS,
+  SANDBOX_DOMAINS,
 } from '@/components/erp/hr/shared/sandboxEnvironmentEngine';
+import {
+  ELIGIBILITY_LABELS,
+  type SandboxEligibilityResult,
+} from '@/components/erp/hr/shared/sandboxEligibilityEngine';
+import type { SandboxExecutionRecord } from '@/components/erp/hr/shared/sandboxExecutionService';
 import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -65,6 +72,26 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
           {SANDBOX_DISCLAIMERS.production} — {SANDBOX_DISCLAIMERS.general}
         </AlertDescription>
       </Alert>
+
+      {/* Disclaimers acceptance */}
+      {!sandbox.disclaimersAccepted && (
+        <Alert className="border-amber-500/30 bg-amber-500/5">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-sm font-semibold text-amber-700">Disclaimers de entorno</AlertTitle>
+          <AlertDescription className="text-xs space-y-1">
+            <p>{SANDBOX_DISCLAIMERS[sandbox.activeEnvironment]}</p>
+            <p className="font-medium">{SANDBOX_DISCLAIMERS.general}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 h-7 text-xs border-amber-500/30"
+              onClick={sandbox.acceptDisclaimers}
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1.5" /> Acepto — entorno preparatorio
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Environment selector */}
       <Card>
@@ -130,14 +157,15 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
 
       {/* Sub tabs */}
       <Tabs value={subTab} onValueChange={setSubTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="text-xs">Resumen</TabsTrigger>
+          <TabsTrigger value="eligibility" className="text-xs">Elegibilidad</TabsTrigger>
           <TabsTrigger value="connectors" className="text-xs">Conectores</TabsTrigger>
           <TabsTrigger value="executions" className="text-xs">
             Ejecuciones
-            {sandbox.executions.length > 0 && (
+            {sandbox.executionRecords.length > 0 && (
               <Badge variant="secondary" className="ml-1.5 text-[9px] h-4 min-w-4 px-1">
-                {sandbox.executions.length}
+                {sandbox.executionRecords.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -145,6 +173,13 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
 
         <TabsContent value="overview">
           <EnvironmentOverview summary={sandbox.summary} />
+        </TabsContent>
+
+        <TabsContent value="eligibility">
+          <EligibilityPanel
+            adapters={adapters}
+            sandbox={sandbox}
+          />
         </TabsContent>
 
         <TabsContent value="connectors">
@@ -156,8 +191,8 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
         </TabsContent>
 
         <TabsContent value="executions">
-          <ExecutionHistory
-            executions={sandbox.executions}
+          <ExecutionRecordsList
+            records={sandbox.executionRecords}
             activeEnv={sandbox.activeEnvironment}
           />
         </TabsContent>
@@ -166,7 +201,292 @@ export function SandboxControlPanel({ companyId, adapters }: Props) {
   );
 }
 
-// ======================== SUB-COMPONENTS ========================
+// ======================== ELIGIBILITY PANEL ========================
+
+function EligibilityPanel({
+  adapters,
+  sandbox,
+}: {
+  adapters: IntegrationAdapter[];
+  sandbox: ReturnType<typeof useSandboxEnvironment>;
+}) {
+  const [results, setResults] = useState<SandboxEligibilityResult[]>([]);
+
+  const evaluateAll = useCallback(() => {
+    const newResults: SandboxEligibilityResult[] = [];
+    for (const adapter of adapters) {
+      for (const domain of SANDBOX_DOMAINS) {
+        const result = sandbox.evaluateEligibility(domain.id, adapter.id);
+        newResults.push(result);
+      }
+    }
+    setResults(newResults);
+  }, [adapters, sandbox.evaluateEligibility]);
+
+  useEffect(() => { evaluateAll(); }, [adapters.length, sandbox.activeEnvironment]);
+
+  const handleExecute = useCallback(async (result: SandboxEligibilityResult, adapter: IntegrationAdapter) => {
+    if (result.eligibility === 'not_eligible') return;
+    await sandbox.executeSandboxAdvanced({
+      adapterId: adapter.id,
+      domain: result.domain,
+      submissionType: `${result.domain}_sandbox_test`,
+      payload: { domain: result.domain, test: true, timestamp: new Date().toISOString() },
+    });
+    evaluateAll(); // Re-evaluate after execution
+  }, [sandbox.executeSandboxAdvanced, evaluateAll]);
+
+  if (adapters.length === 0) {
+    return (
+      <Card className="p-6 text-center">
+        <FileCheck className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground">No hay conectores para evaluar elegibilidad</p>
+      </Card>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-[500px]">
+      <div className="space-y-3">
+        {adapters.map(adapter => {
+          const adapterResults = results.filter(r =>
+            r.domain && adapters.find(a => a.id === adapter.id)
+          ).filter(r => {
+            // Match results to this adapter by checking the eligibility cache
+            const cached = sandbox.getEligibility(r.domain, adapter.id);
+            return cached?.evaluatedAt === r.evaluatedAt;
+          });
+
+          // Fallback: evaluate inline if no cached results
+          const domainResults = SANDBOX_DOMAINS.map(d => {
+            const cached = sandbox.getEligibility(d.id, adapter.id);
+            return cached || sandbox.evaluateEligibility(d.id, adapter.id);
+          });
+
+          return (
+            <Card key={adapter.id}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  {adapter.adapter_name}
+                  <Badge variant="outline" className="text-[9px] ml-auto">{adapter.adapter_type}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {domainResults.map(result => {
+                  const meta = ELIGIBILITY_LABELS[result.eligibility];
+                  const canExecute = result.eligibility === 'eligible_for_sandbox' ||
+                    result.eligibility === 'sandbox_enabled' ||
+                    result.eligibility === 'partially_eligible';
+
+                  return (
+                    <div key={result.domain} className="p-3 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium">{result.domain}</span>
+                          <Badge variant="outline" className={`text-[9px] ${meta.color}`}>
+                            {meta.icon} {meta.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">
+                            {result.passedCount}/{result.totalCount}
+                          </span>
+                          {canExecute && sandbox.disclaimersAccepted && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 text-[10px] px-2"
+                              onClick={() => handleExecute(result, adapter)}
+                              disabled={sandbox.isLoading}
+                            >
+                              {sandbox.isLoading ? (
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <><Play className="h-3 w-3 mr-1" /> Ejecutar sandbox</>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <Progress value={result.percentage} className="h-1.5 mb-2" />
+
+                      {/* Checklist */}
+                      <div className="space-y-0.5">
+                        {result.checks.map(check => (
+                          <div key={check.id} className="flex items-start gap-1.5 text-[10px]">
+                            {check.passed ? (
+                              <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0 mt-0.5" />
+                            ) : check.blocking ? (
+                              <XCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />
+                            ) : (
+                              <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                            )}
+                            <div>
+                              <span className={check.passed ? 'text-muted-foreground' : 'font-medium'}>
+                                {check.label}
+                              </span>
+                              {!check.passed && (
+                                <span className="text-muted-foreground ml-1">— {check.detail}</span>
+                              )}
+                              {check.blocking && !check.passed && (
+                                <Badge variant="destructive" className="ml-1.5 text-[8px] h-3 px-1">bloqueante</Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Summary */}
+                      <p className="text-[10px] text-muted-foreground mt-2 pt-1.5 border-t italic">
+                        {result.summary}
+                      </p>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </ScrollArea>
+  );
+}
+
+// ======================== EXECUTION RECORDS LIST ========================
+
+function ExecutionRecordsList({
+  records,
+  activeEnv,
+}: {
+  records: SandboxExecutionRecord[];
+  activeEnv: ConnectorEnvironment;
+}) {
+  const filtered = records.filter(r => r.environment === activeEnv);
+
+  if (filtered.length === 0) {
+    return (
+      <Card className="p-6 text-center">
+        <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground">
+          Sin ejecuciones sandbox en {ENVIRONMENT_DEFINITIONS[activeEnv].label}
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Las ejecuciones sandbox son diferentes de los dry-runs locales
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-[500px]">
+      <div className="space-y-2">
+        {filtered.map(record => (
+          <Card key={record.id} className="p-3">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Badge className={`text-[9px] ${ENV_BADGE_VARIANTS[record.environment]}`}>
+                  {record.executionMode === 'advanced_simulation' ? 'Simulación avanzada' : 'Staged'}
+                </Badge>
+                <span className="text-xs font-medium">{record.domain}</span>
+                <span className="text-[10px] text-muted-foreground">/ {record.submissionType}</span>
+              </div>
+              <Badge
+                variant={record.status === 'completed' ? 'secondary' : record.status === 'executing' ? 'outline' : 'destructive'}
+                className="text-[9px]"
+              >
+                {record.status === 'executing' && <RefreshCw className="h-2.5 w-2.5 mr-1 animate-spin" />}
+                {record.status}
+              </Badge>
+            </div>
+
+            {/* Conformance & Duration */}
+            {record.result && (
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-[10px] mb-0.5">
+                    <span className="text-muted-foreground">Conformidad payload</span>
+                    <span className="font-medium">{record.result.payloadConformance}%</span>
+                  </div>
+                  <Progress value={record.result.payloadConformance} className="h-1" />
+                </div>
+                {record.durationMs && (
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">{record.durationMs}ms</span>
+                )}
+              </div>
+            )}
+
+            {/* Execution Stages */}
+            {record.result?.executionStages && (
+              <div className="space-y-0.5 mb-2">
+                {record.result.executionStages.map((stage, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-[9px]">
+                    {stage.status === 'passed' ? (
+                      <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500 shrink-0" />
+                    ) : stage.status === 'failed' ? (
+                      <XCircle className="h-2.5 w-2.5 text-destructive shrink-0" />
+                    ) : (
+                      <Clock className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={stage.status === 'passed' ? 'text-muted-foreground' : 'font-medium'}>
+                      {stage.label}
+                    </span>
+                    <span className="text-muted-foreground/60 ml-auto">{stage.durationMs}ms</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Errors & Warnings */}
+            {record.result && (record.result.structuralErrors.length > 0 || record.result.fieldWarnings.length > 0) && (
+              <div className="space-y-0.5 mb-2 p-2 rounded bg-muted/30">
+                {record.result.structuralErrors.map((err, i) => (
+                  <div key={`e${i}`} className="flex items-center gap-1.5 text-[9px] text-destructive">
+                    <XCircle className="h-2.5 w-2.5 shrink-0" />
+                    <span>{err.field}: {err.message}</span>
+                  </div>
+                ))}
+                {record.result.fieldWarnings.map((warn, i) => (
+                  <div key={`w${i}`} className="flex items-center gap-1.5 text-[9px] text-amber-600">
+                    <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                    <span>{warn.field}: {warn.message}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Simulated Response */}
+            {record.result?.simulatedOrganismResponse && (
+              <div className="text-[9px] p-2 rounded border bg-card mb-2">
+                <span className="font-medium">Respuesta simulada: </span>
+                <span className="text-muted-foreground">
+                  [{record.result.simulatedOrganismResponse.code}] {record.result.simulatedOrganismResponse.message}
+                </span>
+              </div>
+            )}
+
+            {/* Metadata footer */}
+            <div className="flex items-center gap-3 text-[9px] text-muted-foreground pt-1.5 border-t">
+              <span>{new Date(record.executedAt).toLocaleString('es-ES')}</span>
+              <span>Hash: {record.payloadHash}</span>
+              {record.relatedDryRunId && <span>Dry-run: {record.relatedDryRunId.slice(0, 8)}</span>}
+            </div>
+
+            {/* Disclaimers */}
+            <div className="mt-1.5 text-[8px] text-muted-foreground/60 italic">
+              {record.disclaimers[0]}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </ScrollArea>
+  );
+}
+
+// ======================== OVERVIEW ========================
 
 function EnvironmentOverview({ summary }: { summary: ReturnType<typeof useSandboxEnvironment>['summary'] }) {
   const envStates = [
@@ -211,7 +531,6 @@ function EnvironmentOverview({ summary }: { summary: ReturnType<typeof useSandbo
         )}
       </Card>
 
-      {/* Production blocked indicator */}
       <Card className="p-3 border-destructive/20 bg-destructive/5">
         <div className="flex items-center gap-2">
           <Ban className="h-4 w-4 text-destructive" />
@@ -241,6 +560,8 @@ function EnvironmentOverview({ summary }: { summary: ReturnType<typeof useSandbo
     </div>
   );
 }
+
+// ======================== CONNECTOR LIST ========================
 
 function ConnectorEnvironmentList({
   configs,
@@ -293,7 +614,6 @@ function ConnectorEnvironmentList({
                 )}
               </div>
 
-              {/* Gates */}
               <div className="space-y-1">
                 {config.gateResults.map(gate => (
                   <div key={gate.gateId} className="flex items-center gap-1.5 text-[10px]">
@@ -309,7 +629,6 @@ function ConnectorEnvironmentList({
                 ))}
               </div>
 
-              {/* Execution stats */}
               {config.executionCount > 0 && (
                 <div className="mt-2 pt-2 border-t flex items-center gap-3 text-[10px] text-muted-foreground">
                   <span>{config.executionCount} ejecuciones</span>
@@ -326,76 +645,6 @@ function ConnectorEnvironmentList({
             </Card>
           );
         })}
-      </div>
-    </ScrollArea>
-  );
-}
-
-function ExecutionHistory({
-  executions,
-  activeEnv,
-}: {
-  executions: ReturnType<typeof useSandboxEnvironment>['executions'];
-  activeEnv: ConnectorEnvironment;
-}) {
-  const filtered = executions.filter(e => e.environment === activeEnv);
-
-  if (filtered.length === 0) {
-    return (
-      <Card className="p-6 text-center">
-        <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">
-          Sin ejecuciones en {ENVIRONMENT_DEFINITIONS[activeEnv].label}
-        </p>
-      </Card>
-    );
-  }
-
-  return (
-    <ScrollArea className="h-[400px]">
-      <div className="space-y-2">
-        {filtered.map(exec => (
-          <Card key={exec.id} className="p-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-2">
-                <Badge className={`text-[9px] ${ENV_BADGE_VARIANTS[exec.environment]}`}>
-                  {exec.executionType}
-                </Badge>
-                <span className="text-xs">{exec.request.domain} / {exec.request.submissionType}</span>
-              </div>
-              <Badge
-                variant={exec.status === 'completed' ? 'secondary' : exec.status === 'running' ? 'outline' : 'destructive'}
-                className="text-[9px]"
-              >
-                {exec.status === 'running' && <RefreshCw className="h-2.5 w-2.5 mr-1 animate-spin" />}
-                {exec.status}
-              </Badge>
-            </div>
-
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-              <span>{new Date(exec.startedAt).toLocaleString('es-ES')}</span>
-              {exec.durationMs && <span>{exec.durationMs}ms</span>}
-              {exec.response?.errors && exec.response.errors.length > 0 && (
-                <span className="text-destructive">{exec.response.errors.length} error(es)</span>
-              )}
-              {exec.response?.warnings && exec.response.warnings.length > 0 && (
-                <span className="text-amber-600">{exec.response.warnings.length} aviso(s)</span>
-              )}
-            </div>
-
-            {exec.auditTrail.length > 0 && (
-              <div className="mt-2 pt-1.5 border-t space-y-0.5">
-                {exec.auditTrail.map((entry, i) => (
-                  <div key={i} className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
-                    <span className="shrink-0">{new Date(entry.timestamp).toLocaleTimeString('es-ES')}</span>
-                    <span>—</span>
-                    <span>{entry.detail}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        ))}
       </div>
     </ScrollArea>
   );

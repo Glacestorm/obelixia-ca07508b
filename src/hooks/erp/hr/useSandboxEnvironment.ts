@@ -1,6 +1,6 @@
 /**
  * useSandboxEnvironment — Hook para gestión de entornos sandbox de conectores regulatorios
- * V2-ES.8 T8: Estado, gates, ejecuciones y auditoría de sandbox
+ * V2-ES.8 T8 P3+P4: Gates de elegibilidad, ejecución sandbox diferenciada y trazabilidad
  */
 import { useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import {
   ConnectorEnvironmentConfig,
   SandboxExecution,
   EnvironmentSummary,
+  SandboxDomain,
   ENVIRONMENT_DEFINITIONS,
   evaluateGates,
   allBlockingGatesPassed,
@@ -20,6 +21,17 @@ import {
   buildEnvironmentSummary,
   getEnvironmentDisclaimer,
 } from '@/components/erp/hr/shared/sandboxEnvironmentEngine';
+import {
+  evaluateSandboxEligibility,
+  type SandboxEligibilityResult,
+  type EligibilityContext,
+} from '@/components/erp/hr/shared/sandboxEligibilityEngine';
+import {
+  executeSandboxSimulation,
+  buildSandboxAuditEvents,
+  type SandboxExecutionRecord,
+  type SandboxExecutionRequest,
+} from '@/components/erp/hr/shared/sandboxExecutionService';
 import type { IntegrationAdapter } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
 
 interface UseSandboxEnvironmentParams {
@@ -31,6 +43,9 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
   const [activeEnvironment, setActiveEnvironmentState] = useState<ConnectorEnvironment>('sandbox');
   const [adapterEnvConfigs, setAdapterEnvConfigs] = useState<ConnectorEnvironmentConfig[]>([]);
   const [executions, setExecutions] = useState<SandboxExecution[]>([]);
+  const [executionRecords, setExecutionRecords] = useState<SandboxExecutionRecord[]>([]);
+  const [eligibilityResults, setEligibilityResults] = useState<Map<string, SandboxEligibilityResult>>(new Map());
+  const [disclaimersAccepted, setDisclaimersAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // ===================== GATE CONTEXT BUILDER =====================
@@ -98,6 +113,68 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     setAdapterEnvConfigs(configs);
   }, [adapters, buildGateContext, executions]);
 
+  // ===================== ELIGIBILITY EVALUATION =====================
+
+  const evaluateEligibility = useCallback((
+    domain: SandboxDomain,
+    adapterId: string,
+    overrides?: Partial<EligibilityContext>
+  ): SandboxEligibilityResult => {
+    const adapter = adapters.find(a => a.id === adapterId);
+    const config = (adapter?.config || {}) as Record<string, unknown>;
+    const adapterExecs = executionRecords.filter(r => r.adapterId === adapterId);
+    const sandboxSuccessCount = adapterExecs.filter(
+      r => r.environment === 'sandbox' && r.status === 'completed'
+    ).length;
+
+    const ctx: EligibilityContext = {
+      adapterConfigured: adapter?.status === 'configured' && !!adapter?.is_active,
+      adapterActive: !!adapter?.is_active,
+      domainSupported: true, // All 3 domains supported
+      readinessScore: (config?.readiness_score as number) || 50,
+      readinessLevel: (config?.readiness_level as string) || 'partial',
+      hasBlockers: !!(config?.has_blockers),
+      hasCertificate: !!(config?.certificate_alias),
+      certificateExpired: !!(config?.certificate_expired),
+      certificateCompatibleWithSandbox: true,
+      hasPreRealApproval: !!(config?.pre_real_approved),
+      approvalStatus: (config?.approval_status as string) || null,
+      sandboxExplicitlyEnabled: !!((config?.env_sandbox as Record<string, unknown>)?.enabled),
+      currentEnvironment: activeEnvironment,
+      sandboxSuccessCount,
+      lastSandboxExecution: adapterExecs
+        .filter(r => r.environment === 'sandbox')
+        .sort((a, b) => b.executedAt.localeCompare(a.executedAt))[0]?.executedAt || null,
+      disclaimersAccepted,
+      ...overrides,
+    };
+
+    const result = evaluateSandboxEligibility(domain, activeEnvironment, ctx);
+
+    // Cache result
+    const key = `${domain}:${adapterId}:${activeEnvironment}`;
+    setEligibilityResults(prev => {
+      const next = new Map(prev);
+      next.set(key, result);
+      return next;
+    });
+
+    return result;
+  }, [adapters, activeEnvironment, executionRecords, disclaimersAccepted]);
+
+  const getEligibility = useCallback((domain: SandboxDomain, adapterId: string): SandboxEligibilityResult | null => {
+    const key = `${domain}:${adapterId}:${activeEnvironment}`;
+    return eligibilityResults.get(key) || null;
+  }, [eligibilityResults, activeEnvironment]);
+
+  // ===================== ACCEPT DISCLAIMERS =====================
+
+  const acceptDisclaimers = useCallback(() => {
+    setDisclaimersAccepted(true);
+    logSandboxAudit('sandbox_disclaimers_accepted', { companyId, environment: activeEnvironment });
+    toast.success('Disclaimers de sandbox aceptados');
+  }, [companyId, activeEnvironment]);
+
   // ===================== SWITCH ENVIRONMENT =====================
 
   const switchEnvironment = useCallback((env: ConnectorEnvironment) => {
@@ -112,11 +189,11 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     }
 
     setActiveEnvironmentState(env);
+    setDisclaimersAccepted(false); // Reset disclaimers on env change
     toast.info(`Entorno activo: ${ENVIRONMENT_DEFINITIONS[env].label}`, {
       description: getEnvironmentDisclaimer(env),
     });
 
-    // Audit
     logSandboxAudit('environment_switched', {
       from: activeEnvironment,
       to: env,
@@ -143,7 +220,6 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       return false;
     }
 
-    // Evaluate gates
     const gateCtx = buildGateContext(adapter);
     const gateResults = evaluateGates(env, gateCtx);
 
@@ -155,7 +231,6 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       return false;
     }
 
-    // Persist
     setAdapterEnvConfigs(prev =>
       prev.map(c =>
         c.adapterId === adapterId && c.environment === env
@@ -175,16 +250,20 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     return true;
   }, [adapters, buildGateContext, companyId]);
 
-  // ===================== EXECUTE IN SANDBOX =====================
+  // ===================== EXECUTE SANDBOX (ADVANCED SIMULATION) =====================
 
-  const executeSandbox = useCallback(async (params: {
+  const executeSandboxAdvanced = useCallback(async (params: {
     adapterId: string;
+    domain: SandboxDomain;
     submissionType: string;
-    domain: string;
+    referencePeriod?: string;
     payload: Record<string, unknown>;
-  }): Promise<SandboxExecution | null> => {
-    if (isRealSubmissionBlocked() && activeEnvironment === 'production') {
-      toast.error('Ejecución en producción bloqueada');
+    relatedDryRunId?: string;
+    relatedApprovalId?: string;
+  }): Promise<SandboxExecutionRecord | null> => {
+    // Hard block on production
+    if (activeEnvironment === 'production') {
+      toast.error('Ejecución en producción BLOQUEADA');
       return null;
     }
 
@@ -194,64 +273,80 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       return null;
     }
 
+    // Check eligibility first
+    const eligibility = evaluateEligibility(params.domain, params.adapterId);
+    if (eligibility.eligibility === 'not_eligible') {
+      toast.error('No elegible para sandbox', {
+        description: eligibility.blockers.map(b => b.detail).join('. '),
+      });
+      return null;
+    }
+
     setIsLoading(true);
 
     try {
-      const executionType = activeEnvironment === 'sandbox'
-        ? 'sandbox_submit'
-        : activeEnvironment === 'test'
-          ? 'test_connect'
-          : 'preprod_validate';
-
-      const execution = createSandboxExecution({
-        adapterId: params.adapterId,
-        environment: activeEnvironment,
-        executionType,
-        submissionType: params.submissionType,
+      const request: SandboxExecutionRequest = {
         domain: params.domain,
-        payloadHash: btoa(JSON.stringify(params.payload)).slice(0, 32),
-        initiatedBy: 'current_user',
-      });
-
-      setExecutions(prev => [execution, ...prev]);
-
-      // Simulate execution (in sandbox, responses are simulated)
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
-
-      const simulatedResult = {
-        statusCode: 200,
-        accepted: Math.random() > 0.15, // 85% success rate in sandbox
-        errors: Math.random() > 0.85 ? ['Validación de campo NAF incorrecta'] : [],
-        warnings: Math.random() > 0.7 ? ['Formato de fecha no estándar detectado'] : [],
+        adapterId: params.adapterId,
+        adapterName: adapter.adapter_name,
+        companyId,
+        legalEntityId: null,
+        environment: activeEnvironment,
+        submissionType: params.submissionType,
+        referencePeriod: params.referencePeriod || null,
+        payload: params.payload,
+        executedBy: 'current_user',
+        relatedDryRunId: params.relatedDryRunId || null,
+        relatedApprovalId: params.relatedApprovalId || null,
       };
 
-      const completed = completeExecution(execution, simulatedResult);
-      setExecutions(prev => prev.map(e => e.id === completed.id ? completed : e));
+      const record = await executeSandboxSimulation(request);
 
-      logSandboxAudit('sandbox_execution_completed', {
-        executionId: completed.id,
+      // Persist record in state
+      setExecutionRecords(prev => [record, ...prev]);
+
+      // Also add to legacy executions for backward compat
+      const legacyExec = createSandboxExecution({
         adapterId: params.adapterId,
         environment: activeEnvironment,
-        status: completed.status,
+        executionType: 'sandbox_submit',
+        submissionType: params.submissionType,
         domain: params.domain,
-        companyId,
+        payloadHash: record.payloadHash,
+        initiatedBy: 'current_user',
       });
+      const completed = completeExecution(legacyExec, {
+        statusCode: record.result?.simulatedOrganismResponse?.code === '0000' ? 200 : 400,
+        accepted: record.status === 'completed',
+        errors: record.result?.structuralErrors.map(e => e.message) || [],
+        warnings: record.result?.fieldWarnings.map(w => w.message) || [],
+      });
+      setExecutions(prev => [completed, ...prev]);
 
-      if (completed.status === 'completed') {
-        toast.success(`Ejecución ${ENVIRONMENT_DEFINITIONS[activeEnvironment].label} completada`);
+      // Build and persist audit events
+      const auditEvents = buildSandboxAuditEvents(record);
+      for (const evt of auditEvents) {
+        await logSandboxAudit(evt.action, evt.details);
+      }
+
+      if (record.status === 'completed') {
+        toast.success(`Ejecución sandbox ${params.domain} completada`, {
+          description: `Conformidad: ${record.result?.payloadConformance}% — ${record.result?.executionStages.filter(s => s.status === 'passed').length}/${record.result?.executionStages.length} etapas OK`,
+        });
       } else {
-        toast.warning('Ejecución completada con errores', {
-          description: simulatedResult.errors.join('. '),
+        toast.warning(`Ejecución sandbox ${params.domain} con errores`, {
+          description: record.result?.structuralErrors.map(e => e.message).join('. ') || 'Error desconocido',
         });
       }
 
-      return completed;
+      return record;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       toast.error('Error en ejecución sandbox', { description: msg });
 
-      logSandboxAudit('sandbox_execution_failed', {
+      await logSandboxAudit('sandbox_execution_error', {
         adapterId: params.adapterId,
+        domain: params.domain,
         environment: activeEnvironment,
         error: msg,
         companyId,
@@ -261,7 +356,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     } finally {
       setIsLoading(false);
     }
-  }, [activeEnvironment, adapters, companyId]);
+  }, [activeEnvironment, adapters, companyId, evaluateEligibility]);
 
   // ===================== AUDIT =====================
 
@@ -274,12 +369,14 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
         company_id: companyId,
         action: eventType,
         entity_type: 'sandbox_environment',
-        entity_id: (metadata.adapterId as string) || companyId,
+        entity_id: (metadata.adapterId as string) || (metadata.entityId as string) || companyId,
         details: {
           ...metadata,
           _disclaimer: 'Operación en entorno sandbox/preparatorio — no constituye acción oficial',
           _phase: 'V2-ES.8-T8',
           _production_blocked: true,
+          _is_dry_run: false,
+          _is_official: false,
         },
       } as any);
     } catch {
@@ -294,8 +391,6 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     return { ...base, activeEnvironment };
   }, [adapterEnvConfigs, activeEnvironment]);
 
-  // ===================== ADAPTER CONFIGS FOR CURRENT ENV =====================
-
   const currentEnvConfigs = useMemo(() =>
     adapterEnvConfigs.filter(c => c.environment === activeEnvironment),
     [adapterEnvConfigs, activeEnvironment]
@@ -308,12 +403,18 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     currentEnvConfigs,
     adapterEnvConfigs,
     executions,
+    executionRecords,
+    eligibilityResults,
+    disclaimersAccepted,
     isLoading,
 
     // Actions
     switchEnvironment,
     enableAdapterInEnvironment,
-    executeSandbox,
+    executeSandboxAdvanced,
+    evaluateEligibility,
+    getEligibility,
+    acceptDisclaimers,
     loadEnvironmentConfigs,
 
     // Safety
