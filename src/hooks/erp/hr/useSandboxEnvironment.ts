@@ -220,6 +220,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
   ): Promise<boolean> => {
     if (env === 'production') {
       toast.error('No se puede habilitar un conector en producción');
+      auditProductionBlocked(companyId, adapterId, 'Intento de habilitar conector en producción');
       return false;
     }
 
@@ -237,6 +238,10 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       toast.error(`No se cumplen los requisitos para ${ENVIRONMENT_DEFINITIONS[env].label}`, {
         description: failedGates.map(g => g.reason).join('. '),
       });
+      // Audit each failed gate
+      for (const fg of failedGates) {
+        auditGateNotMet(companyId, env, fg.gateId, fg.reason, adapterId);
+      }
       return false;
     }
 
@@ -248,12 +253,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       )
     );
 
-    logSandboxAudit('adapter_enabled_in_environment', {
-      adapterId,
-      adapterName: adapter.adapter_name,
-      environment: env,
-      companyId,
-    });
+    auditSandboxEnabled(companyId, env, adapterId, adapter.adapter_name);
 
     toast.success(`${adapter.adapter_name} habilitado en ${ENVIRONMENT_DEFINITIONS[env].label}`);
     return true;
