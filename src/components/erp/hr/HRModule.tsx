@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { 
   Users, 
@@ -141,6 +142,7 @@ export function HRModule() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const { currentCompany } = useERPContext();
+  const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
   
   // Estados para dialogs
@@ -327,6 +329,7 @@ export function HRModule() {
       <HRNavigationMenu
         activeModule={activeModule}
         onModuleChange={setActiveModule}
+        isAdmin={isAdmin}
         stats={{
           pendingPayrolls: stats.pendingPayrolls,
           pendingVacations: stats.pendingVacations,
