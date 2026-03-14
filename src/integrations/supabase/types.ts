@@ -38214,6 +38214,105 @@ export type Database = {
           },
         ]
       }
+      erp_hr_registration_data: {
+        Row: {
+          ccc: string | null
+          collective_agreement: string | null
+          company_id: string
+          confirmed_at: string | null
+          confirmed_reference: string | null
+          contract_end_date: string | null
+          contract_type_code: string | null
+          contribution_group: string | null
+          created_at: string
+          data_validated_at: string | null
+          data_validated_by: string | null
+          dni_nie: string | null
+          docs_validated_at: string | null
+          docs_validated_by: string | null
+          employee_id: string
+          id: string
+          legal_entity: string | null
+          naf: string | null
+          occupation_code: string | null
+          ready_at: string | null
+          regime: string | null
+          registration_date: string | null
+          registration_status: string
+          request_id: string
+          submitted_at: string | null
+          trial_period_days: number | null
+          updated_at: string
+          validation_notes: string | null
+          work_center: string | null
+          working_coefficient: number | null
+        }
+        Insert: {
+          ccc?: string | null
+          collective_agreement?: string | null
+          company_id: string
+          confirmed_at?: string | null
+          confirmed_reference?: string | null
+          contract_end_date?: string | null
+          contract_type_code?: string | null
+          contribution_group?: string | null
+          created_at?: string
+          data_validated_at?: string | null
+          data_validated_by?: string | null
+          dni_nie?: string | null
+          docs_validated_at?: string | null
+          docs_validated_by?: string | null
+          employee_id: string
+          id?: string
+          legal_entity?: string | null
+          naf?: string | null
+          occupation_code?: string | null
+          ready_at?: string | null
+          regime?: string | null
+          registration_date?: string | null
+          registration_status?: string
+          request_id: string
+          submitted_at?: string | null
+          trial_period_days?: number | null
+          updated_at?: string
+          validation_notes?: string | null
+          work_center?: string | null
+          working_coefficient?: number | null
+        }
+        Update: {
+          ccc?: string | null
+          collective_agreement?: string | null
+          company_id?: string
+          confirmed_at?: string | null
+          confirmed_reference?: string | null
+          contract_end_date?: string | null
+          contract_type_code?: string | null
+          contribution_group?: string | null
+          created_at?: string
+          data_validated_at?: string | null
+          data_validated_by?: string | null
+          dni_nie?: string | null
+          docs_validated_at?: string | null
+          docs_validated_by?: string | null
+          employee_id?: string
+          id?: string
+          legal_entity?: string | null
+          naf?: string | null
+          occupation_code?: string | null
+          ready_at?: string | null
+          regime?: string | null
+          registration_date?: string | null
+          registration_status?: string
+          request_id?: string
+          submitted_at?: string | null
+          trial_period_days?: number | null
+          updated_at?: string
+          validation_notes?: string | null
+          work_center?: string | null
+          working_coefficient?: number | null
+        }
+        Relationships: []
+      }
       erp_hr_regulatory_alerts: {
         Row: {
           action_deadline: string | null

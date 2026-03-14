@@ -13,6 +13,7 @@ import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HRAdminRequestTimeline } from './HRAdminRequestTimeline';
 import { HRAdminRequestComments } from './HRAdminRequestComments';
 import { LinkedDocumentsSection } from '../shared/LinkedDocumentsSection';
+import { RegistrationDataPanel } from './RegistrationDataPanel';
 import { DocAutoGenerateButton } from '../shared/DocAutoGenerateButton';
 import { getRequestTypeLabel, type AdminRequest, type AdminRequestComment, type AdminRequestActivity, type AdminRequestStatus, type LinkedTask } from '@/hooks/admin/hr/useAdminPortal';
 import { ProcessDeadlinesSummary } from '../shared/ProcessDeadlinesSummary';
@@ -155,6 +156,16 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
               </CardContent>
             </Tabs>
           </Card>
+
+          {/* V2-ES.5 Paso 1: Registration/affiliation panel for employee_registration */}
+          {request.request_type === 'employee_registration' && (
+            <RegistrationDataPanel
+              requestId={request.id}
+              companyId={request.company_id}
+              employeeId={request.employee_id}
+              linkedDocs={linkedDocs}
+            />
+          )}
 
           {/* V2-ES.3 Paso 2: Linked documents */}
           <LinkedDocumentsSection

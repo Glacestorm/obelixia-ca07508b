@@ -22,6 +22,7 @@ import { DocAlertsSummaryBar } from '../shared/DocAlertsSummaryBar';
 import { DocStatusBadge } from '../shared/DocStatusBadge';
 import { DocumentAlertsSummary } from '../shared/DocumentAlertsSummary';
 import { ExpedientExecutiveSummary } from '../shared/ExpedientExecutiveSummary';
+import { RegistrationSummaryWidget } from '../shared/RegistrationSummaryWidget';
 import { DocGenerationBadge } from '../shared/DocGenerationBadge';
 import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
@@ -94,6 +95,11 @@ export function EmployeeDocumentExpedient({ companyId, employeeId }: Props) {
   return (
     <>
       <div className="space-y-4">
+        {/* V2-ES.5 Paso 1: Registration summary (only if employee has one) */}
+        {employeeId && (
+          <RegistrationSummaryWidget companyId={companyId} employeeId={employeeId} />
+        )}
+
         {/* V2-ES.4+: Executive summary */}
         {!isLoadingDocuments && filtered.length > 0 && (
           <ExpedientExecutiveSummary
