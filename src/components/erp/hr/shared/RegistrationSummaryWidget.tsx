@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { UserCheck, AlertTriangle, CheckCircle2, Clock, AlertOctagon } from 'lucide-react';
+import { UserCheck, AlertTriangle, CheckCircle2, Clock, AlertOctagon, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -71,6 +71,7 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
   const status = data.registration_status as RegistrationStatus;
   const isComplete = status === 'confirmed';
   const isPending = status === 'pending_data' || status === 'pending_documents';
+  const isClosed = (data as any).closure_status === 'closed';
 
   return (
     <Card className={cn('border-l-2', isComplete ? 'border-l-emerald-500' : isPending ? 'border-l-amber-500' : 'border-l-blue-500', className)}>
@@ -146,6 +147,14 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
           <div className="flex items-center gap-1 text-[10px] text-red-600">
             <AlertOctagon className="h-3 w-3 shrink-0" />
             <span>{preIntegration.consistency.errorCount} inconsistencia(s) pre-integración</span>
+          </div>
+        )}
+
+        {/* V2-ES.5 Paso 4: Closure signal */}
+        {isClosed && !isComplete && (
+          <div className="flex items-center gap-1 text-[10px] text-primary">
+            <Lock className="h-3 w-3 shrink-0" />
+            <span>Cerrado internamente{(data as any).closed_at ? `: ${new Date((data as any).closed_at).toLocaleDateString('es')}` : ''}</span>
           </div>
         )}
 

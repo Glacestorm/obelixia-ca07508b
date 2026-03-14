@@ -37,6 +37,8 @@ import { computeRegistrationDeadlines } from '../shared/registrationDeadlineEngi
 import { buildTGSSPayload } from '../shared/tgssPayloadBuilder';
 import { evaluatePreIntegrationReadiness } from '../shared/tgssPreIntegrationReadiness';
 import { TGSSPreIntegrationBadge } from '../shared/TGSSPreIntegrationBadge';
+import { RegistrationClosureSection } from '../shared/RegistrationClosureSection';
+import { useRegistrationClosure } from '@/hooks/erp/hr/useRegistrationClosure';
 import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
@@ -95,6 +97,8 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     updateRegistrationStatus,
     computeReadiness,
     persistDeadlineAndPayload,
+    closeRegistration,
+    reopenRegistration,
   } = useHRRegistrationProcess(companyId);
   const { holidaySet } = useHRHolidayCalendar();
 
@@ -133,6 +137,21 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
       deadlineSummary: deadlineSummary,
     });
   }, [registrationData, readiness.docs, deadlineSummary]);
+
+  // V2-ES.5 Paso 4: Closure readiness
+  const closure = useRegistrationClosure({
+    registrationData,
+    docCompleteness: readiness.docs,
+    deadlineSummary,
+  });
+
+  const handleClose = useCallback(async (notes?: string) => {
+    return closeRegistration(requestId, notes);
+  }, [closeRegistration, requestId]);
+
+  const handleReopen = useCallback(async (reason?: string) => {
+    return reopenRegistration(requestId, reason);
+  }, [reopenRegistration, requestId]);
 
   // Lift deadline summary to parent for executive summary integration
   const prevDeadlineRef = useRef(deadlineSummary.worstUrgency);
@@ -469,6 +488,25 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
                 })}
               </TooltipProvider>
             </div>
+          </>
+        )}
+
+        {/* V2-ES.5 Paso 4: Operational closure */}
+        {registrationData && !editMode && (
+          <>
+            <Separator />
+            <RegistrationClosureSection
+              canClose={closure.canClose}
+              isClosed={closure.isClosed}
+              isConfirmed={closure.isConfirmed}
+              blockers={closure.blockers}
+              warnings={closure.warnings}
+              existingSnapshot={closure.existingSnapshot}
+              closedAt={closure.closedAt}
+              closureNotes={closure.closureNotes}
+              onClose={handleClose}
+              onReopen={handleReopen}
+            />
           </>
         )}
 
