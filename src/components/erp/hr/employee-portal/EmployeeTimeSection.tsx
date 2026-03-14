@@ -239,8 +239,13 @@ export function EmployeeTimeSection({ employee, onNavigate }: Props) {
               <CardContent className="py-10 text-center">
                 <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground">
-                  {activeTab === 'today' ? 'No hay fichajes hoy' : 'Sin registros en este periodo'}
+                  {activeTab === 'today' ? 'No hay fichajes registrados hoy' : 'Sin registros en este periodo'}
                 </p>
+                {activeTab === 'today' && (
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    Los fichajes aparecerán aquí cuando se registren
+                  </p>
+                )}
               </CardContent>
             </Card>
           ) : (

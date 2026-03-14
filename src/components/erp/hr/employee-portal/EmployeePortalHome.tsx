@@ -146,7 +146,10 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : !dashboard?.recentPayslips?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No hay nóminas registradas</p>
+                <div className="text-center py-6">
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground">No hay nóminas registradas</p>
+                </div>
               ) : (
                 <div className="space-y-2">
                   {dashboard.recentPayslips.map(p => (
