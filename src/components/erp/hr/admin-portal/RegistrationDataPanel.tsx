@@ -80,9 +80,11 @@ interface Props {
   companyId: string;
   employeeId: string;
   linkedDocs: EmployeeDocument[];
+  /** V2-ES.5 Paso 2: Callback to lift deadline summary to parent */
+  onDeadlinesComputed?: (summary: import('../shared/registrationDeadlineEngine').RegistrationDeadlineSummary) => void;
 }
 
-export function RegistrationDataPanel({ requestId, companyId, employeeId, linkedDocs }: Props) {
+export function RegistrationDataPanel({ requestId, companyId, employeeId, linkedDocs, onDeadlinesComputed }: Props) {
   const {
     registrationData,
     loading,
