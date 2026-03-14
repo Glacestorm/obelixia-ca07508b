@@ -262,7 +262,7 @@ export function buildTGSSPayload(
   check('collective_agreement', 'Convenio colectivo', data.collective_agreement, false);
   check('contract_end_date', 'Fecha fin contrato', data.contract_end_date, false, (v) => v ? validateDate(v) : null);
   // V2-ES.5 Paso 3: IBAN
-  check('iban', 'IBAN domiciliación', (data as Record<string, unknown>).iban as string | null, false, (v) => v ? validateIBAN(v) : null);
+  check('iban', 'IBAN domiciliación', (data as unknown as Record<string, unknown>).iban as string | null ?? null, false, (v) => v ? validateIBAN(v) : null);
 
   // ── Field-level metrics ───────────────────────────────────────────────
   const missingFields = validations.filter(v => v.required && !v.present);
