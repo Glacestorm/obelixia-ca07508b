@@ -44,6 +44,7 @@ import {
   type ApprovalStatus,
   type ApprovalChecklistItem,
   type ApprovalRole,
+  type EligibilityLevel,
 } from '@/components/erp/hr/shared/preRealApprovalEngine';
 import { getDomainMeta, type SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
 
