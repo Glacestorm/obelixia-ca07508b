@@ -63,6 +63,9 @@ const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   approval_rejected: 'warning',
   approval_correction_requested: 'warning',
   approval_cancelled: 'warning',
+  // V2-ES.8 T5 P5
+  approval_ineligible_attempt: 'warning',
+  approval_real_blocked: 'critical',
 };
 
 const ACTION_LABELS: Record<DryRunAuditAction, string> = {
