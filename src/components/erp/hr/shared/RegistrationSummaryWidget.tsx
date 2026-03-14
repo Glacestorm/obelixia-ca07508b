@@ -147,6 +147,7 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
             <AlertOctagon className="h-3 w-3 shrink-0" />
             <span>{preIntegration.consistency.errorCount} inconsistencia(s) pre-integración</span>
           </div>
+        )}
 
         {isComplete && data.confirmed_at && (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600">
