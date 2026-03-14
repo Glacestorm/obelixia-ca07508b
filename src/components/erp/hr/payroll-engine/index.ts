@@ -16,3 +16,4 @@ export { SSMonthlyExpedientTab } from './SSMonthlyExpedientTab';
 export { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 export { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
 export { MonthlyClosingSummaryCard } from './MonthlyClosingSummaryCard';
+export { ClosingIntelligenceCard } from './ClosingIntelligenceCard';

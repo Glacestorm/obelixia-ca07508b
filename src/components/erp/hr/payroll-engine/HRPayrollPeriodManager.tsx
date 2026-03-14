@@ -20,6 +20,7 @@ import { ActiveRunIndicator } from './ActiveRunIndicator';
 import { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 import { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
 import { MonthlyClosingSummaryCard } from './MonthlyClosingSummaryCard';
+import { ClosingIntelligenceCard } from './ClosingIntelligenceCard';
 
 interface Props {
   companyId: string;
@@ -343,6 +344,22 @@ export function HRPayrollPeriodManager({
                         <FiscalExpedientPeriodBadge periodId={p.id} />
                       </div>
                     )}
+                    {/* Closing Intelligence Layer */}
+                    <div className="mt-2 pt-2 border-t border-border/30">
+                      <ClosingIntelligenceCard
+                        period={p}
+                        previousPeriod={
+                          [...periods]
+                            .filter(prev =>
+                              prev.id !== p.id &&
+                              (prev.status === 'closed' || prev.status === 'locked') &&
+                              (prev.fiscal_year < p.fiscal_year || (prev.fiscal_year === p.fiscal_year && prev.period_number < p.period_number))
+                            )
+                            .sort((a, b) => b.fiscal_year - a.fiscal_year || b.period_number - a.period_number)[0] || null
+                        }
+                        companyId={companyId}
+                      />
+                    </div>
                   </div>
                 )}
 

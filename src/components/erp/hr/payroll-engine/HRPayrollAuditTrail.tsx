@@ -65,6 +65,9 @@ const ACTION_CONFIG: Record<string, { icon: typeof Shield; color: string; label:
   expedients_auto_generated: { icon: RefreshCw, color: 'text-primary', label: 'Expedientes auto-generados' },
   ss_auto_consolidated: { icon: Shield, color: 'text-blue-500', label: 'SS auto-consolidado' },
   fiscal_auto_consolidated: { icon: Calculator, color: 'text-blue-500', label: 'Fiscal auto-consolidado' },
+  // Closing Intelligence events (V2-ES.7 Paso 7)
+  closing_intelligence_generated: { icon: Shield, color: 'text-primary', label: 'Inteligencia de cierre generada' },
+  period_reopen_guarded: { icon: Shield, color: 'text-amber-500', label: 'Reapertura con advertencia' },
 };
 
 export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {

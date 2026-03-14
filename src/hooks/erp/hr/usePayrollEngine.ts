@@ -290,6 +290,14 @@ export function usePayrollEngine(companyId?: string) {
   const updateRecordStatus = useCallback(async (recordId: string, newStatus: PayrollRecordStatus) => {
     try {
       const old = records.find(r => r.id === recordId);
+      // Guard: check period is writable
+      if (old) {
+        const period = periods.find(p => p.id === old.payroll_period_id);
+        if (period && !isPeriodWritable(period.status)) {
+          toast.error(`El período está ${period.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se permiten cambios en nóminas`);
+          return;
+        }
+      }
       const updates: any = { status: newStatus, updated_at: new Date().toISOString() };
       if (newStatus === 'approved' || newStatus === 'reviewing') {
         const { data: { user } } = await supabase.auth.getUser();
@@ -304,7 +312,7 @@ export function usePayrollEngine(companyId?: string) {
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);
     }
-  }, [records]);
+  }, [records, periods]);
 
   // ---- LINES ----
 
@@ -324,6 +332,15 @@ export function usePayrollEngine(companyId?: string) {
 
   const addLine = useCallback(async (payrollRecordId: string, line: Partial<PayrollLine>) => {
     try {
+      // Guard: check associated period is writable
+      const record = records.find(r => r.id === payrollRecordId);
+      if (record) {
+        const period = periods.find(p => p.id === record.payroll_period_id);
+        if (period && !isPeriodWritable(period.status)) {
+          toast.error(`Período ${period.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden añadir líneas`);
+          return null;
+        }
+      }
       const { data, error } = await supabase.from('hr_payroll_record_lines').insert({
         payroll_record_id: payrollRecordId,
         concept_code: line.concept_code || 'CUSTOM',
