@@ -56,7 +56,7 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
   const { periods, fetchPeriods } = usePayrollEngine(companyId);
 
   // Fetch periods for expedient tab
-  useState(() => { fetchPeriods(); });
+  useEffect(() => { fetchPeriods(); }, [fetchPeriods]);
   
   // Dialog states
   const [showNewCommDialog, setShowNewCommDialog] = useState(false);
