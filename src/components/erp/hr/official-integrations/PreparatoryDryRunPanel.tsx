@@ -1,18 +1,16 @@
 /**
- * PreparatoryDryRunPanel — V2-ES.8 Paso 3-4
- * Domain-aware dry-run panel integrated into OfficialIntegrationsHub.
- * Shows preparatory submissions with payload, validation, and dry-run execution.
+ * PreparatoryDryRunPanel — V2-ES.8 Tramo 2
+ * Domain-aware dry-run panel with persistence, evidence linking, and audit trail.
  */
-import { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   FlaskConical,
-  Plus,
   RefreshCw,
   CheckCircle2,
   XCircle,
@@ -25,12 +23,15 @@ import {
   ChevronDown,
   ChevronRight,
   Info,
+  History,
+  Paperclip,
   Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { usePreparatorySubmissions, type PreparatorySubmission } from '@/hooks/erp/hr/usePreparatorySubmissions';
+import { useDryRunPersistence, type DryRunResult, type DryRunEvidence } from '@/hooks/erp/hr/useDryRunPersistence';
 import {
   getStatusMeta,
   getDomainMeta,
@@ -62,6 +63,161 @@ const STATUS_COLORS: Record<string, string> = {
   purple: 'bg-purple-500/10 text-purple-600',
 };
 
+// ─── Evidence Card ──────────────────────────────────────────────────────────
+
+function EvidenceList({ evidence }: { evidence: DryRunEvidence[] }) {
+  if (evidence.length === 0) return null;
+
+  const typeIcons: Record<string, typeof FileText> = {
+    payload_snapshot: FileText,
+    validation_report: CheckCircle2,
+    simulation_log: FlaskConical,
+    linked_document: Paperclip,
+  };
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium flex items-center gap-1">
+        <Paperclip className="h-3 w-3" /> Evidencias ({evidence.length})
+      </p>
+      {evidence.map(ev => {
+        const Icon = typeIcons[ev.evidence_type] || FileText;
+        return (
+          <div key={ev.id} className="flex items-center gap-2 text-[11px] py-0.5 px-1.5 rounded bg-muted/30">
+            <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
+            <span className="flex-1 truncate">{ev.label}</span>
+            <span className="text-muted-foreground text-[10px]">
+              {format(new Date(ev.created_at), 'dd/MM HH:mm', { locale: es })}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Persisted History Card ─────────────────────────────────────────────────
+
+function PersistedDryRunCard({
+  result,
+  evidence,
+  onLoadEvidence,
+  isEvidenceLoaded,
+}: {
+  result: DryRunResult;
+  evidence: DryRunEvidence[];
+  onLoadEvidence: (id: string) => void;
+  isEvidenceLoaded: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const DomainIcon = DOMAIN_ICONS[result.submission_domain] || FileText;
+
+  const statusColor = result.status === 'success'
+    ? 'text-green-600 bg-green-500/10'
+    : result.status === 'partial'
+    ? 'text-amber-600 bg-amber-500/10'
+    : 'text-destructive bg-destructive/10';
+
+  return (
+    <Card className="hover:bg-muted/20 transition-colors">
+      <CardContent className="py-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-md bg-muted">
+              <DomainIcon className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium flex items-center gap-1.5">
+                {getDomainMeta(result.submission_domain as SubmissionDomain).label}
+                <span className="text-muted-foreground">·</span>
+                <span className="font-normal text-muted-foreground text-xs">{result.submission_type}</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Clock className="h-2.5 w-2.5" />
+                {format(new Date(result.created_at), "dd/MM/yyyy HH:mm", { locale: es })}
+                <span>· #{result.execution_number}</span>
+                {result.duration_ms && <span>· {result.duration_ms}ms</span>}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Badge className={cn('text-[10px]', statusColor)}>
+              {result.status === 'success' ? 'Éxito' : result.status === 'partial' ? 'Parcial' : 'Fallido'}
+            </Badge>
+            {result.readiness_score > 0 && (
+              <span className="text-[10px] font-mono text-muted-foreground">{result.readiness_score}%</span>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => {
+                setExpanded(!expanded);
+                if (!expanded && !isEvidenceLoaded) {
+                  onLoadEvidence(result.id);
+                }
+              }}
+            >
+              {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            </Button>
+          </div>
+        </div>
+
+        {expanded && (
+          <div className="pt-2 border-t space-y-2">
+            {/* Validation summary */}
+            {result.validation_result && (
+              <div className="flex items-center gap-3 text-[11px]">
+                {(result.validation_result as any).passed ? (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle2 className="h-3 w-3" /> Validado
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-destructive">
+                    <XCircle className="h-3 w-3" /> {(result.validation_result as any).errorCount} error(es)
+                  </span>
+                )}
+                <Progress
+                  value={(result.validation_result as any).score || 0}
+                  className="h-1.5 flex-1 max-w-[100px] [&>div]:bg-primary"
+                />
+              </div>
+            )}
+
+            {/* Output */}
+            {result.dry_run_output && (
+              <div>
+                <p className="text-[10px] font-medium mb-1">Resultado simulación</p>
+                <div className="bg-muted/50 rounded p-1.5 text-[10px] font-mono max-h-20 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap">
+                    {JSON.stringify(result.dry_run_output, null, 2).slice(0, 300)}
+                  </pre>
+                </div>
+              </div>
+            )}
+
+            {/* Evidence */}
+            <EvidenceList evidence={evidence} />
+
+            {/* Notes */}
+            {result.notes && (
+              <p className="text-[10px] text-muted-foreground italic">{result.notes}</p>
+            )}
+
+            {/* Disclaimer */}
+            <div className="flex items-start gap-1.5 p-1.5 rounded bg-muted/50 text-[10px] text-muted-foreground">
+              <Info className="h-3 w-3 mt-0.5 shrink-0 text-blue-500" />
+              <span>Resultado <strong>persistido</strong> de simulación dry-run. No constituye envío oficial.</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Submission Card (current active submissions) ───────────────────────────
+
 function SubmissionCard({
   submission,
   onDryRun,
@@ -83,7 +239,6 @@ function SubmissionCard({
   return (
     <Card className={cn('transition-colors', isExpanded && 'ring-1 ring-primary/30')}>
       <CardContent className="py-3 space-y-2">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-md bg-muted">
@@ -116,7 +271,6 @@ function SubmissionCard({
           </div>
         </div>
 
-        {/* Validation summary bar */}
         {validation && (
           <div className="flex items-center gap-3 text-[11px]">
             <div className="flex items-center gap-1">
@@ -146,7 +300,6 @@ function SubmissionCard({
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex items-center gap-2">
           {submission.status === 'ready_for_dry_run' && (
             <Button size="sm" variant="default" className="h-7 text-xs gap-1" onClick={() => onDryRun(submission.id)}>
@@ -160,7 +313,7 @@ function SubmissionCard({
           )}
           {submission.status === 'dry_run_executed' && (
             <Badge variant="outline" className="text-[10px] gap-1 border-green-500/30 text-green-600">
-              <CheckCircle2 className="h-3 w-3" /> Dry-run completado
+              <CheckCircle2 className="h-3 w-3" /> Dry-run completado y persistido
             </Badge>
           )}
           {(submission.status === 'draft' || submission.status === 'payload_generated') && (
@@ -168,10 +321,8 @@ function SubmissionCard({
           )}
         </div>
 
-        {/* Expanded detail */}
         {isExpanded && (
           <div className="mt-2 pt-2 border-t space-y-3">
-            {/* Validation checks */}
             {validation && validation.checks.length > 0 && (
               <div>
                 <p className="text-xs font-medium mb-1.5">Validación interna</p>
@@ -197,23 +348,6 @@ function SubmissionCard({
               </div>
             )}
 
-            {/* Dry-run history */}
-            {(submission.metadata as any)?.dry_run_history && (
-              <div>
-                <p className="text-xs font-medium mb-1.5">Historial dry-run</p>
-                {((submission.metadata as any).dry_run_history as any[]).map((dr, i) => (
-                  <div key={i} className="text-[11px] flex items-center gap-2 py-0.5">
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />
-                    <span>Simulación {dr.result}</span>
-                    <span className="text-muted-foreground">
-                      {formatDistanceToNow(new Date(dr.executed_at), { locale: es, addSuffix: true })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Payload preview */}
             {submission.payload_snapshot && (
               <div>
                 <p className="text-xs font-medium mb-1">Snapshot del payload</p>
@@ -221,16 +355,13 @@ function SubmissionCard({
                   <pre className="whitespace-pre-wrap">
                     {JSON.stringify(
                       (submission.payload_snapshot as any)?.data || submission.payload_snapshot,
-                      null,
-                      2,
+                      null, 2,
                     ).slice(0, 500)}
-                    {JSON.stringify((submission.payload_snapshot as any)?.data || submission.payload_snapshot).length > 500 ? '\n...' : ''}
                   </pre>
                 </div>
               </div>
             )}
 
-            {/* Disclaimer */}
             <div className="flex items-start gap-1.5 p-2 rounded bg-muted/50 text-[10px] text-muted-foreground">
               <Info className="h-3 w-3 mt-0.5 shrink-0 text-blue-500" />
               <span>
@@ -245,27 +376,51 @@ function SubmissionCard({
   );
 }
 
+// ─── Main Panel ─────────────────────────────────────────────────────────────
+
 export function PreparatoryDryRunPanel({ companyId }: Props) {
   const [domainFilter, setDomainFilter] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('active');
+  const [evidenceCache, setEvidenceCache] = useState<Record<string, DryRunEvidence[]>>({});
 
   const {
     submissions,
     isLoading,
     fetchPreparatory,
-    createPreparatory,
     executeDryRun,
     transitionStatus,
-    markReadyForDryRun,
   } = usePreparatorySubmissions(companyId);
 
+  const {
+    results: dryRunHistory,
+    isLoading: historyLoading,
+    fetchResults,
+  } = useDryRunPersistence(companyId);
+
   useEffect(() => {
-    fetchPreparatory(domainFilter !== 'all' ? { domain: domainFilter as SubmissionDomain } : undefined);
+    const filter = domainFilter !== 'all' ? { domain: domainFilter as SubmissionDomain } : undefined;
+    fetchPreparatory(filter);
+    fetchResults(filter);
   }, [domainFilter]);
 
   const handleRefresh = useCallback(() => {
-    fetchPreparatory(domainFilter !== 'all' ? { domain: domainFilter as SubmissionDomain } : undefined);
-  }, [fetchPreparatory, domainFilter]);
+    const filter = domainFilter !== 'all' ? { domain: domainFilter as SubmissionDomain } : undefined;
+    fetchPreparatory(filter);
+    fetchResults(filter);
+  }, [fetchPreparatory, fetchResults, domainFilter]);
+
+  const handleLoadEvidence = useCallback(async (dryRunId: string) => {
+    if (evidenceCache[dryRunId]) return;
+    try {
+      const { data } = await (await import('@/integrations/supabase/client')).supabase
+        .from('erp_hr_dry_run_evidence' as any)
+        .select('*')
+        .eq('dry_run_id', dryRunId)
+        .order('created_at', { ascending: true });
+      setEvidenceCache(prev => ({ ...prev, [dryRunId]: (data || []) as unknown as DryRunEvidence[] }));
+    } catch { /* graceful */ }
+  }, [evidenceCache]);
 
   const handleExpand = useCallback((id: string) => {
     setExpandedId(prev => prev === id ? null : id);
@@ -273,10 +428,9 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
 
   const domains = getSubmissionDomains();
 
-  // Stats
   const dryRunCount = submissions.filter(s => s.status === 'dry_run_executed').length;
   const readyCount = submissions.filter(s => s.status === 'ready_for_dry_run').length;
-  const draftCount = submissions.filter(s => s.status === 'draft' || s.status === 'payload_generated' || s.status === 'validated_internal').length;
+  const draftCount = submissions.filter(s => ['draft', 'payload_generated', 'validated_internal'].includes(s.status)).length;
 
   return (
     <div className="space-y-4">
@@ -287,7 +441,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
             <FlaskConical className="h-5 w-5 text-primary" /> Envíos Preparatorios (Dry-Run)
           </h3>
           <p className="text-sm text-muted-foreground">
-            Simulación de envíos oficiales · TGSS · Contrat@ · AEAT · Cero irreversibilidad
+            Simulación con persistencia · TGSS · Contrat@ · AEAT · Trazabilidad completa
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -304,15 +458,15 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={cn('h-4 w-4 mr-1.5', isLoading && 'animate-spin')} />
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading || historyLoading}>
+            <RefreshCw className={cn('h-4 w-4 mr-1.5', (isLoading || historyLoading) && 'animate-spin')} />
             Actualizar
           </Button>
         </div>
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <Card>
           <CardContent className="py-2.5 px-3 flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -336,7 +490,16 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             <div>
               <p className="text-lg font-bold">{dryRunCount}</p>
-              <p className="text-[10px] text-muted-foreground">Dry-runs completados</p>
+              <p className="text-[10px] text-muted-foreground">Ejecutados</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-2.5 px-3 flex items-center gap-2">
+            <History className="h-4 w-4 text-blue-500" />
+            <div>
+              <p className="text-lg font-bold">{dryRunHistory.length}</p>
+              <p className="text-[10px] text-muted-foreground">Persistidos</p>
             </div>
           </CardContent>
         </Card>
@@ -347,33 +510,66 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
         <Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" />
         <span>
           Los envíos preparatorios operan en modo <strong>dry-run</strong>. Se genera, valida y simula el payload
-          sin transmitir datos a organismos oficiales. El envío real está <strong>bloqueado</strong> por defecto.
+          sin transmitir datos a organismos oficiales. Resultados <strong>persistidos</strong> con evidencia documental y auditoría granular.
         </span>
       </div>
 
-      {/* Submissions list */}
-      <div className="space-y-2">
-        {submissions.map(sub => (
-          <SubmissionCard
-            key={sub.id}
-            submission={sub}
-            onDryRun={executeDryRun}
-            onTransition={transitionStatus}
-            onExpand={handleExpand}
-            isExpanded={expandedId === sub.id}
-          />
-        ))}
-        {submissions.length === 0 && !isLoading && (
-          <Card className="border-dashed">
-            <CardContent className="py-10 text-center">
-              <FlaskConical className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
-                No hay envíos preparatorios. Los envíos se crean desde los procesos de alta, contratación o cierre de período.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Tabs: Active vs History */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="active" className="text-xs gap-1">
+            <FlaskConical className="h-3 w-3" /> Envíos activos ({submissions.length})
+          </TabsTrigger>
+          <TabsTrigger value="history" className="text-xs gap-1">
+            <History className="h-3 w-3" /> Historial persistido ({dryRunHistory.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active" className="space-y-2 mt-3">
+          {submissions.map(sub => (
+            <SubmissionCard
+              key={sub.id}
+              submission={sub}
+              onDryRun={executeDryRun}
+              onTransition={transitionStatus}
+              onExpand={handleExpand}
+              isExpanded={expandedId === sub.id}
+            />
+          ))}
+          {submissions.length === 0 && !isLoading && (
+            <Card className="border-dashed">
+              <CardContent className="py-10 text-center">
+                <FlaskConical className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  No hay envíos preparatorios. Los envíos se crean desde los procesos de alta, contratación o cierre de período.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-2 mt-3">
+          {dryRunHistory.map(result => (
+            <PersistedDryRunCard
+              key={result.id}
+              result={result}
+              evidence={evidenceCache[result.id] || []}
+              onLoadEvidence={handleLoadEvidence}
+              isEvidenceLoaded={!!evidenceCache[result.id]}
+            />
+          ))}
+          {dryRunHistory.length === 0 && !historyLoading && (
+            <Card className="border-dashed">
+              <CardContent className="py-10 text-center">
+                <History className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  Sin historial de dry-runs persistidos. Los resultados se guardan automáticamente al ejecutar un dry-run.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
