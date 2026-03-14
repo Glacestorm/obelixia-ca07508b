@@ -447,14 +447,15 @@ export function usePreparatorySubmissions(companyId: string) {
         .single();
 
       if (dryRunRecord) {
+        const disclaimer = 'Evidencia interna preparatoria — NO constituye justificante oficial ni acuse de organismo';
         const evidenceRecords = [];
         if (sub.payload_snapshot) {
           evidenceRecords.push({
             dry_run_id: (dryRunRecord as any).id,
             evidence_type: 'payload_snapshot',
             label: `Snapshot payload ${sub.submission_domain}`,
-            description: 'Captura inmutable del payload generado',
-            metadata: { domain: sub.submission_domain },
+            description: `Captura inmutable del payload generado. ${disclaimer}`,
+            metadata: { domain: sub.submission_domain, internal_disclaimer: disclaimer },
           });
         }
         if (sub.validation_result) {
@@ -462,16 +463,31 @@ export function usePreparatorySubmissions(companyId: string) {
             dry_run_id: (dryRunRecord as any).id,
             evidence_type: 'validation_report',
             label: `Validación (${sub.validation_result.score}%)`,
-            description: `${sub.validation_result.errorCount} errores, ${sub.validation_result.warningCount} avisos`,
-            metadata: { score: sub.validation_result.score, passed: sub.validation_result.passed },
+            description: `${sub.validation_result.errorCount} errores, ${sub.validation_result.warningCount} avisos. ${disclaimer}`,
+            metadata: { score: sub.validation_result.score, passed: sub.validation_result.passed, internal_disclaimer: disclaimer },
           });
         }
+        // Readiness report
+        evidenceRecords.push({
+          dry_run_id: (dryRunRecord as any).id,
+          evidence_type: 'validation_report',
+          label: `Readiness report (${sub.validation_result?.score || 0}%)`,
+          description: `Estado: ${sub.readiness_status || 'N/A'} · Dominio: ${sub.submission_domain}. ${disclaimer}`,
+          metadata: {
+            evidence_subtype: 'readiness_report',
+            readinessScore: sub.validation_result?.score || 0,
+            readinessStatus: sub.readiness_status,
+            domain: sub.submission_domain,
+            internal_disclaimer: disclaimer,
+          },
+        });
+        // Simulation log
         evidenceRecords.push({
           dry_run_id: (dryRunRecord as any).id,
           evidence_type: 'simulation_log',
           label: 'Log de simulación',
-          description: 'Registro de ejecución simulada — sin efectos externos',
-          metadata: { timestamp: new Date().toISOString(), simulated: true },
+          description: `Registro de ejecución simulada — sin efectos externos. ${disclaimer}`,
+          metadata: { timestamp: new Date().toISOString(), simulated: true, internal_disclaimer: disclaimer },
         });
 
         if (evidenceRecords.length > 0) {
