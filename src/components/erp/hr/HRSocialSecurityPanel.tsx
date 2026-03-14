@@ -20,6 +20,8 @@ import {
   CheckCircle, Clock, AlertTriangle, Users, Calendar,
   Building2, Euro, Send, FileText, RefreshCw, Loader2, Printer, Download
 } from 'lucide-react';
+import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
+import { SSMonthlyExpedientTab } from './payroll-engine/SSMonthlyExpedientTab';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { SSNewCommunicationDialog } from './dialogs/SSNewCommunicationDialog';
