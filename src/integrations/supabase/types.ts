@@ -41607,6 +41607,89 @@ export type Database = {
           },
         ]
       }
+      erp_hr_submission_approvals: {
+        Row: {
+          approval_level: number | null
+          company_id: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_checklist: Json | null
+          decision_notes: string | null
+          dry_run_count: number | null
+          eligibility_snapshot: Json | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          readiness_score: number | null
+          request_notes: string | null
+          requested_at: string
+          requested_by: string
+          required_role: string | null
+          status: string
+          submission_domain: string
+          submission_id: string
+          submission_type: string
+          updated_at: string
+        }
+        Insert: {
+          approval_level?: number | null
+          company_id: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_checklist?: Json | null
+          decision_notes?: string | null
+          dry_run_count?: number | null
+          eligibility_snapshot?: Json | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          readiness_score?: number | null
+          request_notes?: string | null
+          requested_at?: string
+          requested_by: string
+          required_role?: string | null
+          status?: string
+          submission_domain: string
+          submission_id: string
+          submission_type: string
+          updated_at?: string
+        }
+        Update: {
+          approval_level?: number | null
+          company_id?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_checklist?: Json | null
+          decision_notes?: string | null
+          dry_run_count?: number | null
+          eligibility_snapshot?: Json | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          readiness_score?: number | null
+          request_notes?: string | null
+          requested_at?: string
+          requested_by?: string
+          required_role?: string | null
+          status?: string
+          submission_domain?: string
+          submission_id?: string
+          submission_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_submission_approvals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_succession_positions: {
         Row: {
           bench_strength: string | null
