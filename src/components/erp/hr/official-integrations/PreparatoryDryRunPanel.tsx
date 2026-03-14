@@ -769,6 +769,18 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
 
   const domains = getSubmissionDomains();
 
+  const filteredHistory = useMemo(() => {
+    if (statusFilter === 'all') return dryRunHistory;
+    return dryRunHistory.filter(r => r.status === statusFilter);
+  }, [dryRunHistory, statusFilter]);
+
+  // Auto-diff: latest 2 consecutive runs for executive summary
+  const latestDiff = useMemo(() => {
+    if (dryRunHistory.length < 2) return null;
+    const sorted = [...dryRunHistory].sort((a, b) => b.execution_number - a.execution_number);
+    return computeDryRunDiff(sorted[1], sorted[0]);
+  }, [dryRunHistory]);
+
   const dryRunCount = submissions.filter(s => s.status === 'dry_run_executed').length;
   const readyCount = submissions.filter(s => s.status === 'ready_for_dry_run').length;
   const draftCount = submissions.filter(s => ['draft', 'payload_generated', 'validated_internal'].includes(s.status)).length;
