@@ -489,6 +489,11 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
               </Card>
             </TabsContent>
 
+            {/* Tab Expediente Mensual SS — V2-ES.7 Paso 4 */}
+            <TabsContent value="expediente" className="space-y-4">
+              <SSMonthlyExpedientTab companyId={companyId} periods={periods} />
+            </TabsContent>
+
             {/* Tab Sistema RED */}
             <TabsContent value="red" className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
