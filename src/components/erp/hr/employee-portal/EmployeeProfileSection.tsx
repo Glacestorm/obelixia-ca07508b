@@ -144,6 +144,28 @@ export function EmployeeProfileSection({ employee, onNavigate, onRefresh }: Prop
     );
   }
 
+  if (!fullData) {
+    return (
+      <div className="space-y-5">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" /> Mi Perfil
+          </h2>
+          <p className="text-sm text-muted-foreground">Consulta y actualiza tus datos personales</p>
+        </div>
+        <Card className="border-dashed">
+          <CardContent className="py-10 text-center">
+            <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">No se pudieron cargar los datos del perfil</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={fetchFullProfile}>
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}

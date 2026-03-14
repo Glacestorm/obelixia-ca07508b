@@ -273,10 +273,15 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : filtered.length === 0 ? (
-          <Card>
+          <Card className="border-dashed">
             <CardContent className="py-10 text-center">
               <Euro className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">No hay nóminas en {selectedYear}</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {payslips.length > 0 
+                  ? 'Prueba a seleccionar otro año en el filtro superior'
+                  : 'Las nóminas aparecerán aquí cuando RRHH las procese'}
+              </p>
             </CardContent>
           </Card>
         ) : (
