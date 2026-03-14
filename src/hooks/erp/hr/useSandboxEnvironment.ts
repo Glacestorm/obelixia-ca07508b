@@ -366,31 +366,21 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
     }
   }, [activeEnvironment, adapters, companyId, evaluateEligibility]);
 
-  // ===================== AUDIT =====================
+  // ===================== AUDIT (delegated to sandboxAuditHelper) =====================
 
   const logSandboxAudit = useCallback(async (
     eventType: string,
     metadata: Record<string, unknown>
   ) => {
-    try {
-      await supabase.from('erp_hr_audit_log').insert({
-        company_id: companyId,
-        action: eventType,
-        entity_type: 'sandbox_environment',
-        entity_id: (metadata.adapterId as string) || (metadata.entityId as string) || companyId,
-        details: {
-          ...metadata,
-          _disclaimer: 'Operación en entorno sandbox/preparatorio — no constituye acción oficial',
-          _phase: 'V2-ES.8-T8',
-          _production_blocked: true,
-          _is_dry_run: false,
-          _is_official: false,
-        },
-      } as any);
-    } catch {
-      console.warn('[useSandboxEnvironment] Audit log failed silently');
-    }
-  }, [companyId]);
+    await logSandboxAuditEvent(eventType as any, {
+      companyId,
+      environment: (metadata.environment as ConnectorEnvironment) || activeEnvironment,
+      adapterId: metadata.adapterId as string | undefined,
+      adapterName: metadata.adapterName as string | undefined,
+      executionId: metadata.executionId as string | undefined,
+      metadata,
+    });
+  }, [companyId, activeEnvironment]);
 
   // ===================== SUMMARY =====================
 
