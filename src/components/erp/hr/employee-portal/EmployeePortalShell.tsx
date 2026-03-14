@@ -11,6 +11,8 @@ import { EmployeePortalHeader } from './EmployeePortalHeader';
 import { EmployeeDocumentsSection } from './EmployeeDocumentsSection';
 import { EmployeePayslipsSection } from './EmployeePayslipsSection';
 import { EmployeeRequestsSection } from './EmployeeRequestsSection';
+import { EmployeeTimeSection } from './EmployeeTimeSection';
+import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { Card, CardContent } from '@/components/ui/card';
 import { Construction } from 'lucide-react';
 
@@ -28,7 +30,7 @@ function PlaceholderSection({ title, description }: { title: string; description
 
 export function EmployeePortalShell() {
   const { signOut } = useAuth();
-  const { employee, dashboard, isDashboardLoading } = useEmployeePortal();
+  const { employee, dashboard, isDashboardLoading, refresh } = useEmployeePortal();
   const [activeSection, setActiveSection] = useState<PortalSection>('home');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -58,11 +60,11 @@ export function EmployeePortalShell() {
       case 'requests':
         return <EmployeeRequestsSection employee={employee} onNavigate={handleNavigate} />;
       case 'time':
-        return <PlaceholderSection title="Mi Tiempo" description="Fichaje, horarios y registro de jornada. Módulo en preparación." />;
+        return <EmployeeTimeSection employee={employee} onNavigate={handleNavigate} />;
       case 'leave':
         return <PlaceholderSection title="Vacaciones y Permisos" description="Solicita vacaciones y consulta tu saldo. Módulo en preparación." />;
       case 'profile':
-        return <PlaceholderSection title="Mi Perfil" description="Consulta y actualiza tus datos personales. Módulo en preparación." />;
+        return <EmployeeProfileSection employee={employee} onNavigate={handleNavigate} onRefresh={refresh} />;
       case 'help':
         return <PlaceholderSection title="Ayuda RRHH" description="Preguntas frecuentes y contacto con RRHH. Módulo en preparación." />;
       default:

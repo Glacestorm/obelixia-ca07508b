@@ -6,3 +6,5 @@ export { EmployeePortalHome } from './EmployeePortalHome';
 export { EmployeeDocumentsSection } from './EmployeeDocumentsSection';
 export { EmployeePayslipsSection } from './EmployeePayslipsSection';
 export { EmployeeRequestsSection } from './EmployeeRequestsSection';
+export { EmployeeTimeSection } from './EmployeeTimeSection';
+export { EmployeeProfileSection } from './EmployeeProfileSection';
