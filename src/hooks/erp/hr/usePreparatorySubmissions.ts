@@ -252,7 +252,7 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, [submissions]);
 
-  // ── Generate payload snapshot ──
+  // ── Generate payload snapshot + audit ──
   const generatePayloadSnapshot = useCallback(async (
     id: string,
     domain: SubmissionDomain,
@@ -283,6 +283,12 @@ export function usePreparatorySubmissions(companyId: string) {
         } : s
       ));
 
+      await logDryRunEvent('dry_run_payload_generated', {
+        submissionId: id,
+        domain,
+        extra: { payload_size: JSON.stringify(payloadData).length, source },
+      });
+
       toast.success('Payload generado y snapshot capturado');
       return true;
     } catch (err) {
@@ -292,7 +298,7 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, []);
 
-  // ── Record validation result ──
+  // ── Record validation result + audit ──
   const recordValidation = useCallback(async (
     id: string,
     validation: SubmissionValidationResult,
@@ -315,6 +321,8 @@ export function usePreparatorySubmissions(companyId: string) {
 
       if (error) throw error;
 
+      const sub = submissions.find(s => s.id === id);
+
       setSubmissions(prev => prev.map(s =>
         s.id === id ? {
           ...s,
@@ -323,6 +331,23 @@ export function usePreparatorySubmissions(companyId: string) {
           status: newStatus,
         } : s
       ));
+
+      // Audit: validated or validation_failed
+      await logDryRunEvent(
+        validation.passed ? 'dry_run_validated' : 'dry_run_validation_failed',
+        {
+          submissionId: id,
+          domain: sub?.submission_domain,
+          submissionType: sub?.submission_type,
+          score: validation.score,
+          status: newStatus,
+          extra: {
+            errorCount: validation.errorCount,
+            warningCount: validation.warningCount,
+            readiness,
+          },
+        },
+      );
 
       if (validation.passed) {
         toast.success(`Validación interna superada (${validation.score}%)`);
@@ -335,7 +360,7 @@ export function usePreparatorySubmissions(companyId: string) {
       toast.error('Error al registrar validación');
       return false;
     }
-  }, []);
+  }, [submissions]);
 
   // ── Execute dry-run (simulated) with persistence ──
   const executeDryRun = useCallback(async (id: string): Promise<boolean> => {
