@@ -6,6 +6,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  validatePreClose as validatePreCloseEngine,
+  buildClosureSnapshot,
+  canTransitionPeriod,
+  isPeriodWritable,
+  type PreCloseInput,
+  type PeriodClosureSnapshot,
+  type PayrollRunValidationSummary,
+} from '@/engines/erp/hr/payrollRunEngine';
 
 // ============ TYPES ============
 
