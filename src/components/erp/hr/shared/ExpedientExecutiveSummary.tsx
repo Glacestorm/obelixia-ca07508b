@@ -35,6 +35,8 @@ interface Props {
   docsWithVersionHistory?: number;
   /** V2-ES.4 Paso 6: calendar precision label ('Nacional', 'CT', 'Base', etc.). Optional — omit to hide. */
   calendarLabel?: string;
+  /** V2-ES.5 Paso 2: Registration deadline summary. Optional — omit to hide. */
+  registrationDeadlines?: RegistrationDeadlineSummary | null;
   className?: string;
 }
 
