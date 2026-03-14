@@ -87,16 +87,16 @@ export function usePreparatorySubmissions(companyId: string) {
     if (!companyId) return;
     setIsLoading(true);
     try {
-      let q = supabase
+      const q = supabase
         .from('hr_official_submissions')
         .select('*')
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(100) as any;
 
-      if (filters?.domain) q = q.eq('submission_domain' as any, filters.domain);
-      if (filters?.status) q = q.eq('status', filters.status);
-      if (filters?.mode) q = q.eq('submission_mode' as any, filters.mode);
+      if (filters?.domain) q.eq('submission_domain', filters.domain);
+      if (filters?.status) q.eq('status', filters.status);
+      if (filters?.mode) q.eq('submission_mode', filters.mode);
 
       const { data, error } = await q;
       if (error) throw error;
