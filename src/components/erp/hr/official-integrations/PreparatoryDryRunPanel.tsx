@@ -618,6 +618,7 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
               evidence={evidenceCache[result.id] || []}
               onLoadEvidence={handleLoadEvidence}
               isEvidenceLoaded={!!evidenceCache[result.id]}
+              onGenerateEvidence={handleGenerateEvidence}
             />
           ))}
           {dryRunHistory.length === 0 && !historyLoading && (
