@@ -695,6 +695,8 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
     generateEvidenceOnDemand,
   } = useDryRunPersistence(companyId);
 
+  const { isExporting, exportDiff } = useOfficialExport(companyId);
+
   useEffect(() => {
     const filter = domainFilter !== 'all' ? { domain: domainFilter as SubmissionDomain } : undefined;
     fetchPreparatory(filter);
