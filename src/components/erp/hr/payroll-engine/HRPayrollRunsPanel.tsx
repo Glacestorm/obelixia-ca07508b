@@ -70,6 +70,8 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
     [periods, selectedPeriodId]
   );
 
+  const isPeriodReadOnly = selectedPeriod && (selectedPeriod.status === 'closed' || selectedPeriod.status === 'locked');
+
   useEffect(() => {
     if (selectedPeriodId) fetchRuns(selectedPeriodId);
   }, [selectedPeriodId, fetchRuns]);
