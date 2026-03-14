@@ -72,7 +72,7 @@ function rowToRecord(row: SandboxExecutionRow): SandboxExecutionRecord {
     payloadSnapshot: row.payload_snapshot,
     payloadHash: row.payload_hash,
     status: row.status as SandboxExecutionRecord['status'],
-    result: row.result as SandboxExecutionRecord['result'],
+    result: row.result as unknown as SandboxExecutionRecord['result'],
     createdAt: row.created_at,
     executedAt: row.executed_at,
     completedAt: row.completed_at,
