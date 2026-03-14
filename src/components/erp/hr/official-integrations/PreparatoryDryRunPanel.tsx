@@ -465,6 +465,25 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
     } catch { /* graceful */ }
   }, [evidenceCache]);
 
+  const handleGenerateEvidence = useCallback(async (dryRunId: string) => {
+    const result = dryRunHistory.find(r => r.id === dryRunId);
+    if (!result) return;
+    const ev = await generateEvidenceOnDemand(
+      dryRunId,
+      'simulation_log',
+      `Evidencia generada bajo demanda — ${getDomainMeta(result.submission_domain as SubmissionDomain).label}`,
+      `Generación manual para dry-run #${result.execution_number}`,
+      { domain: result.submission_domain, execution_number: result.execution_number },
+    );
+    if (ev) {
+      // Refresh evidence cache
+      setEvidenceCache(prev => ({
+        ...prev,
+        [dryRunId]: [...(prev[dryRunId] || []), ev],
+      }));
+    }
+  }, [dryRunHistory, generateEvidenceOnDemand]);
+
   const handleExpand = useCallback((id: string) => {
     setExpandedId(prev => prev === id ? null : id);
   }, []);
