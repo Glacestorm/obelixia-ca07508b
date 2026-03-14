@@ -167,6 +167,7 @@ export interface PreCloseValidation {
   label: string;
   passed: boolean;
   detail?: string;
+  severity?: 'error' | 'warning' | 'info';
 }
 
 export interface PayrollEngineFilters {
