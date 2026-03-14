@@ -309,6 +309,7 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
   const { certificates, fetchCertificates, getCertificateSummary } = useHRDomainCertificates(companyId);
   const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
   const [expandedConnector, setExpandedConnector] = useState<string | null>(null);
+  const [entityFilter, setEntityFilter] = useState<string>('all');
   const {
     report: multiEntityReport,
     isLoading: multiEntityLoading,
