@@ -49,6 +49,21 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
   const { results, isLoading, fetchResults } = useDryRunPersistence(companyId);
   const { certificates, fetchCertificates } = useHRDomainCertificates(companyId);
   const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
+  const { isExporting, exportEvidencePack } = useOfficialExport(companyId);
+
+  const handleQuickExport = useCallback((format: 'pdf' | 'excel') => {
+    exportEvidencePack(format, {
+      companyId,
+      dryRuns: results,
+      certificates: certificates.map(c => ({
+        domain: c.domain,
+        status: c.certificate_status,
+        completeness: c.configuration_completeness,
+        expirationDate: c.expiration_date,
+      })),
+      deadlines: calendar || undefined,
+    });
+  }, [companyId, results, certificates, calendar, exportEvidencePack]);
 
   useEffect(() => {
     fetchCertificates();
