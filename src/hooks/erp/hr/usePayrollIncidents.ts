@@ -88,6 +88,18 @@ export function usePayrollIncidents(companyId?: string) {
   const createIncident = useCallback(async (incident: Partial<PayrollIncident>): Promise<PayrollIncident | null> => {
     if (!companyId) return null;
     try {
+      // Guard: check period writability if period_id is provided
+      if (incident.period_id) {
+        const { data: periodData } = await supabase
+          .from('hr_payroll_periods')
+          .select('status')
+          .eq('id', incident.period_id)
+          .single();
+        if (periodData && !isPeriodWritable(periodData.status as string)) {
+          toast.error(`Período ${periodData.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden crear incidencias`);
+          return null;
+        }
+      }
       const { data: userData } = await supabase.auth.getUser();
       // Auto-derive operational flags from type
       const flags = incident.incident_type ? deriveOperationalFlags(incident.incident_type) : {};
