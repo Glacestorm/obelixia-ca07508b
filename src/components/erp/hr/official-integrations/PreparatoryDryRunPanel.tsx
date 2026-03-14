@@ -798,9 +798,15 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-primary" /> Envíos Preparatorios (Dry-Run)
+            <Badge variant="outline" className="text-[9px] h-4 gap-0.5 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+              Dry-run · Sandbox
+            </Badge>
+            <Badge variant="outline" className="text-[9px] h-4 gap-0.5 bg-destructive/5 text-destructive/70 border-destructive/10">
+              <Lock className="h-2 w-2" /> Prod bloq.
+            </Badge>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Simulación con persistencia · TGSS · Contrat@ · AEAT · Trazabilidad completa
+            Simulación con persistencia · TGSS · Contrat@ · AEAT · Dry-run ≠ Sandbox ≠ Producción
           </p>
         </div>
         <div className="flex items-center gap-2">
