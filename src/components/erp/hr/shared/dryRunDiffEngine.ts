@@ -245,8 +245,8 @@ export function computeDryRunDiff(
 
   // Validation diff
   const validationDiff = diffValidation(
-    baseline.validation_result as Record<string, unknown> | null,
-    comparison.validation_result as Record<string, unknown> | null,
+    baseline.validation_result as unknown as Record<string, unknown> | null,
+    comparison.validation_result as unknown as Record<string, unknown> | null,
   );
 
   // Payload diff
