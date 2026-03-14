@@ -32,6 +32,10 @@ import {
   type RegistrationStatus,
 } from '@/hooks/erp/hr/useHRRegistrationProcess';
 import { RegistrationStatusBadge } from '../shared/RegistrationStatusBadge';
+import { RegistrationDeadlineAlert } from '../shared/RegistrationDeadlineAlert';
+import { computeRegistrationDeadlines } from '../shared/registrationDeadlineEngine';
+import { buildTGSSPayload } from '../shared/tgssPayloadBuilder';
+import { useHRHolidayCalendar } from '@/hooks/erp/hr/useHRHolidayCalendar';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 
 // ─── Contract types (ES) ─────────────────────────────────────────────────────
@@ -87,6 +91,7 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     updateRegistrationStatus,
     computeReadiness,
   } = useHRRegistrationProcess(companyId);
+  const { holidaySet } = useHRHolidayCalendar();
 
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState<Partial<RegistrationData>>({});
@@ -107,6 +112,14 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
   const readiness: RegistrationReadiness = useMemo(() => {
     return computeReadiness(linkedDocs.map(d => ({ document_type: d.document_type })));
   }, [computeReadiness, linkedDocs]);
+
+  const deadlineSummary = useMemo(() => {
+    return computeRegistrationDeadlines(registrationData, holidaySet);
+  }, [registrationData, holidaySet]);
+
+  const tgssValidation = useMemo(() => {
+    return buildTGSSPayload(registrationData);
+  }, [registrationData]);
 
   const set = useCallback((k: string, v: any) => {
     setFormData(prev => ({ ...prev, [k]: v || null }));
@@ -227,6 +240,19 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
             </div>
           )}
         </div>
+
+        {/* Deadline alerts — inline */}
+        <RegistrationDeadlineAlert summary={deadlineSummary} />
+
+        {/* TGSS format errors (when data present but invalid) */}
+        {!editMode && tgssValidation.formatErrors.length > 0 && (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 space-y-1">
+            <p className="text-[10px] font-medium text-amber-700">Errores de formato TGSS</p>
+            {tgssValidation.formatErrors.map((fe, i) => (
+              <p key={i} className="text-[10px] text-amber-600">• {fe.label}: {fe.error}</p>
+            ))}
+          </div>
+        )}
 
         <Separator />
 

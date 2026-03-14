@@ -13,6 +13,7 @@ import {
   FileText, ShieldAlert, XCircle, Clock, Send,
   CheckCircle2, AlertCircle, AlertTriangle, Scale,
   ChevronDown, ChevronUp, Zap, History, FilePlus2, CalendarDays,
+  UserCheck,
 } from 'lucide-react';
 import { normalizeDocStatus } from './DocStatusBadge';
 import { isReconcilableDocType } from './DocReconciliationBadge';
@@ -20,6 +21,7 @@ import { computeExpedientAlerts, type ExpedientAlertSummary } from './expedientA
 import { computePendingActions, type PendingAction } from '@/hooks/erp/hr/useHRDocActionQueue';
 import type { EmployeeDocument } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import type { EnrichedCompleteness } from '@/hooks/erp/hr/useHRProcessDocRequirements';
+import type { RegistrationDeadlineSummary } from './registrationDeadlineEngine';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +35,8 @@ interface Props {
   docsWithVersionHistory?: number;
   /** V2-ES.4 Paso 6: calendar precision label ('Nacional', 'CT', 'Base', etc.). Optional — omit to hide. */
   calendarLabel?: string;
+  /** V2-ES.5 Paso 2: Registration deadline summary. Optional — omit to hide. */
+  registrationDeadlines?: RegistrationDeadlineSummary | null;
   className?: string;
 }
 
@@ -75,7 +79,7 @@ function countByStatus(docs: EmployeeDocument[]): Record<string, number> {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function ExpedientExecutiveSummary({ docs, completeness, processType, docsWithVersionHistory, calendarLabel, className }: Props) {
+export function ExpedientExecutiveSummary({ docs, completeness, processType, docsWithVersionHistory, calendarLabel, registrationDeadlines, className }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const statusCounts = useMemo(() => countByStatus(docs), [docs]);
@@ -226,6 +230,21 @@ export function ExpedientExecutiveSummary({ docs, completeness, processType, doc
       tooltip: isBase
         ? 'Solo fines de semana — sin festivos configurados'
         : `Festivos ${calendarLabel} aplicados a plazos laborables`,
+    });
+  }
+
+  // 11. V2-ES.5 Paso 2: Registration deadlines
+  if (registrationDeadlines && registrationDeadlines.deadlines.length > 0) {
+    const rd = registrationDeadlines;
+    const urgencyToSeverity: Record<string, 'ok' | 'warn' | 'error'> = {
+      ok: 'ok', resolved: 'ok', upcoming: 'warn', urgent: 'warn', blocked: 'error', overdue: 'error',
+    };
+    metrics.push({
+      icon: UserCheck,
+      label: 'Alta',
+      value: rd.summaryLabel,
+      severity: urgencyToSeverity[rd.worstUrgency] || 'ok',
+      tooltip: rd.deadlines.map(d => d.message).join(' | '),
     });
   }
 

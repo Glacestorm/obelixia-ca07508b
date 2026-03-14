@@ -322,3 +322,19 @@ export type {
   RegistrationReadiness,
 } from './useHRRegistrationProcess';
 export { REGISTRATION_STATUS_CONFIG, REGISTRATION_STATUS_TRANSITIONS } from './useHRRegistrationProcess';
+
+// V2-ES.5 Paso 2: Deadlines, payload TGSS, alertas
+export { computeRegistrationDeadlines } from '@/components/erp/hr/shared/registrationDeadlineEngine';
+export type {
+  RegistrationDeadlineType,
+  RegistrationDeadlineUrgency,
+  RegistrationDeadline,
+  RegistrationDeadlineSummary,
+} from '@/components/erp/hr/shared/registrationDeadlineEngine';
+
+export { buildTGSSPayload } from '@/components/erp/hr/shared/tgssPayloadBuilder';
+export type {
+  FieldValidation,
+  TGSSPayloadResult,
+  TGSSPayload,
+} from '@/components/erp/hr/shared/tgssPayloadBuilder';
