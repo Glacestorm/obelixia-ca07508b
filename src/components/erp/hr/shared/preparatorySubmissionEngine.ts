@@ -100,6 +100,17 @@ const STATUS_META: Record<PreparatorySubmissionStatus, StatusMeta> = {
     description: 'Simulación completada — NO es un envío oficial',
     phase: 'preparatory', isOfficial: false, color: 'green',
   },
+  // V2-ES.8 T5: Approval gate states
+  pending_approval: {
+    label: 'Pendiente de aprobación',
+    description: 'Solicitud de aprobación pre-real enviada, esperando decisión',
+    phase: 'preparatory', isOfficial: false, color: 'amber',
+  },
+  approved_pre_real: {
+    label: 'Aprobado (pre-real)',
+    description: 'Aprobación interna concedida — NO implica envío real',
+    phase: 'preparatory', isOfficial: false, color: 'green',
+  },
   ready_for_real: {
     label: 'Listo para envío real',
     description: 'Marcado para envío oficial — requiere autorización explícita',
