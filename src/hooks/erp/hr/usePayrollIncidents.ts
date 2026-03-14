@@ -205,6 +205,19 @@ export function usePayrollIncidents(companyId?: string) {
 
   const cancelIncident = useCallback(async (id: string): Promise<boolean> => {
     try {
+      // Guard: check period writability
+      const incident = incidents.find(i => i.id === id);
+      if (incident?.period_id) {
+        const { data: periodData } = await supabase
+          .from('hr_payroll_periods')
+          .select('status')
+          .eq('id', incident.period_id)
+          .single();
+        if (periodData && !isPeriodWritable(periodData.status as string)) {
+          toast.error(`Período ${periodData.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se pueden cancelar incidencias`);
+          return false;
+        }
+      }
       const { error } = await supabase
         .from('erp_hr_payroll_incidents' as any)
         .update({ status: 'cancelled' } as any)
@@ -219,7 +232,7 @@ export function usePayrollIncidents(companyId?: string) {
       toast.error('Error al cancelar');
       return false;
     }
-  }, []);
+  }, [incidents]);
 
   // ── Batch validate ──
 
