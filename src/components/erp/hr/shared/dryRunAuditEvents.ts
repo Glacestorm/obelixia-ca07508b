@@ -32,7 +32,10 @@ export type DryRunAuditAction =
   | 'approval_granted'
   | 'approval_rejected'
   | 'approval_correction_requested'
-  | 'approval_cancelled';
+  | 'approval_cancelled'
+  // V2-ES.8 T5 P5: Security audit events
+  | 'approval_ineligible_attempt'
+  | 'approval_real_blocked';
 
 const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   dry_run_created: 'info',
@@ -60,6 +63,9 @@ const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   approval_rejected: 'warning',
   approval_correction_requested: 'warning',
   approval_cancelled: 'warning',
+  // V2-ES.8 T5 P5
+  approval_ineligible_attempt: 'warning',
+  approval_real_blocked: 'critical',
 };
 
 const ACTION_LABELS: Record<DryRunAuditAction, string> = {
@@ -88,6 +94,9 @@ const ACTION_LABELS: Record<DryRunAuditAction, string> = {
   approval_rejected: 'Aprobación pre-real rechazada',
   approval_correction_requested: 'Correcciones solicitadas por aprobador',
   approval_cancelled: 'Solicitud de aprobación cancelada',
+  // V2-ES.8 T5 P5
+  approval_ineligible_attempt: 'Intento de aprobación sobre envío no elegible',
+  approval_real_blocked: 'Intento de activar envío real bloqueado por invariante de seguridad',
 };
 
 // ─── Public API ─────────────────────────────────────────────────────────────
