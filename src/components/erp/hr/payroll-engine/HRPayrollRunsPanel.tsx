@@ -16,7 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import {
   Play, Clock, CheckCircle, XCircle, AlertTriangle, RefreshCw,
   ChevronRight, ArrowUpDown, Eye, Loader2, Info, Archive, FileText,
-  ThumbsUp, ShieldCheck
+  ThumbsUp, ShieldCheck, Lock
 } from 'lucide-react';
 import { usePayrollRuns } from '@/hooks/erp/hr/usePayrollRuns';
 import {
@@ -69,6 +69,8 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
     () => periods.find(p => p.id === selectedPeriodId) || null,
     [periods, selectedPeriodId]
   );
+
+  const isPeriodReadOnly = selectedPeriod && (selectedPeriod.status === 'closed' || selectedPeriod.status === 'locked');
 
   useEffect(() => {
     if (selectedPeriodId) fetchRuns(selectedPeriodId);
@@ -165,9 +167,10 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
 
         <Button
           onClick={() => setShowCreateDialog(true)}
-          disabled={!selectedPeriod || isExecuting}
+          disabled={!selectedPeriod || isExecuting || !!isPeriodReadOnly}
           size="sm"
           className="gap-1.5"
+          title={isPeriodReadOnly ? `Período ${selectedPeriod?.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se permiten nuevos runs` : undefined}
         >
           <Play className="h-3.5 w-3.5" />
           Nuevo Run
@@ -192,6 +195,29 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
             <p className="text-sm">Selecciona un período para ver las ejecuciones de nómina</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Read-only banner for closed/locked periods */}
+      {selectedPeriodId && isPeriodReadOnly && (
+        <div className={`flex items-center gap-2 p-3 rounded-lg border text-sm ${
+          selectedPeriod?.status === 'locked'
+            ? 'bg-destructive/5 border-destructive/20 text-destructive'
+            : 'bg-muted/50 border-border'
+        }`}>
+          {selectedPeriod?.status === 'locked' ? (
+            <>
+              <Lock className="h-4 w-4 shrink-0" />
+              <span className="font-medium">Período bloqueado</span>
+              <span className="text-muted-foreground">— Solo lectura. No se permiten nuevas ejecuciones.</span>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span className="font-medium">Período cerrado (interno)</span>
+              <span className="text-muted-foreground">— Solo lectura.</span>
+            </>
+          )}
+        </div>
       )}
 
       {/* Runs list */}

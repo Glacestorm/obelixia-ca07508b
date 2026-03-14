@@ -46,8 +46,8 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   calculating: { label: 'Calculando', variant: 'secondary' },
   calculated: { label: 'Calculado', variant: 'secondary' },
   reviewing: { label: 'En revisión', variant: 'secondary' },
-  closing: { label: 'Cerrando', variant: 'destructive' },
-  closed: { label: 'Cerrado', variant: 'destructive' },
+  closing: { label: 'Cerrando', variant: 'secondary' },
+  closed: { label: 'Cerrado (interno)', variant: 'default' },
   locked: { label: 'Bloqueado', variant: 'destructive' },
 };
 
