@@ -111,11 +111,12 @@ export function useSSMonthlyExpedient(companyId: string) {
       const user = await getCurrentUser();
       await supabase.from('erp_hr_audit_log').insert([{
         company_id: companyId,
-        entity_type: 'ss_expedient',
-        entity_id: entityId,
+        table_name: 'erp_hr_ss_contributions',
+        record_id: entityId,
         action,
-        performed_by: user?.id,
-        details: details as any,
+        category: 'ss_expedient',
+        user_id: user?.id,
+        metadata: details as any,
       }]);
     } catch (err) {
       console.warn('[useSSMonthlyExpedient] audit log failed (non-blocking):', err);
