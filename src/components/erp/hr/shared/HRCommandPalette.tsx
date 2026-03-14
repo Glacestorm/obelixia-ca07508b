@@ -34,7 +34,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { id: 'new-incident', label: 'Registrar incidencia', description: 'Incidencia de ausencia', icon: AlertTriangle, group: 'Laboral', module: 'leave-incidents' },
   { id: 'new-task', label: 'Crear tarea RRHH', description: 'Tarea asignable', icon: ClipboardList, group: 'Laboral', module: 'hr-tasks' },
   { id: 'send-milena', label: 'Enviar Milena PA', description: 'Alta/baja/variación a TGSS', icon: Send, group: 'Integraciones', module: 'official-submissions' },
-  { id: 'mobility', label: 'Asignación internacional', description: 'Nueva asignación de movilidad', icon: Globe, group: 'Global Mobility', module: 'mobility-assignments' },
+  { id: 'mobility', label: 'Movilidad internacional', description: 'Asignaciones y KPIs globales', icon: Globe, group: 'Global Mobility', module: 'mobility-international' },
   { id: 'admin-request', label: 'Solicitud administrativa', description: 'Certificados, cambios de datos', icon: Briefcase, group: 'Laboral', module: 'admin-requests' },
 ];
 
