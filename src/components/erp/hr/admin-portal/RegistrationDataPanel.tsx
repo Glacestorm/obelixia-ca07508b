@@ -138,6 +138,21 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
     });
   }, [registrationData, readiness.docs, deadlineSummary]);
 
+  // V2-ES.5 Paso 4: Closure readiness
+  const closure = useRegistrationClosure({
+    registrationData,
+    docCompleteness: readiness.docs,
+    deadlineSummary,
+  });
+
+  const handleClose = useCallback(async (notes?: string) => {
+    return closeRegistration(requestId, notes);
+  }, [closeRegistration, requestId]);
+
+  const handleReopen = useCallback(async (reason?: string) => {
+    return reopenRegistration(requestId, reason);
+  }, [reopenRegistration, requestId]);
+
   // Lift deadline summary to parent for executive summary integration
   const prevDeadlineRef = useRef(deadlineSummary.worstUrgency);
   useEffect(() => {
