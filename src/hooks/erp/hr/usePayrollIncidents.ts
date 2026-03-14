@@ -219,6 +219,7 @@ export function usePayrollIncidents(companyId?: string) {
     isLoading,
     fetchByPeriod,
     fetchByEmployee,
+    fetchByYearMonth,
     createIncident,
     updateIncident,
     validateIncident,
