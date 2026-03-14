@@ -158,6 +158,9 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         <TabsContent value="receipts">
           <ReceiptsPanel hub={hub} />
         </TabsContent>
+        <TabsContent value="export">
+          <ExportHubPanel companyId={companyId} adapters={hub.adapters} />
+        </TabsContent>
       </Tabs>
     </div>
   );
