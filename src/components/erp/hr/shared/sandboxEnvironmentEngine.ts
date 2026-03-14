@@ -510,5 +510,10 @@ export function buildEnvironmentSummary(
     totalSandboxExecutions: configs.reduce((sum, c) => sum + c.executionCount, 0),
     lastSandboxExecution: allExecutions.sort((a, b) => b.at.localeCompare(a.at))[0]?.at || null,
     pendingGates,
+    domainStatuses: SANDBOX_DOMAINS.map(d => ({
+      domain: d.id,
+      environment: 'sandbox' as ConnectorEnvironment,
+      status: 'not_configured' as EnvironmentStatus,
+    })),
   };
 }
