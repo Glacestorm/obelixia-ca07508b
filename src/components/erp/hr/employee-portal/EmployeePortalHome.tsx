@@ -52,10 +52,10 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <div className="rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border p-5 md:p-6">
+      <div className="rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border p-4 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold">
+            <h1 className="text-lg md:text-2xl font-bold">
               ¡Hola, {employee.first_name}!
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -146,7 +146,10 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : !dashboard?.recentPayslips?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No hay nóminas registradas</p>
+                <div className="text-center py-6">
+                  <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground">No hay nóminas registradas</p>
+                </div>
               ) : (
                 <div className="space-y-2">
                   {dashboard.recentPayslips.map(p => (
