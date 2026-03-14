@@ -329,6 +329,7 @@ export function HRModule() {
       <HRNavigationMenu
         activeModule={activeModule}
         onModuleChange={setActiveModule}
+        isAdmin={isAdmin}
         stats={{
           pendingPayrolls: stats.pendingPayrolls,
           pendingVacations: stats.pendingVacations,
