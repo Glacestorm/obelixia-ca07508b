@@ -32,6 +32,14 @@ export interface DryRunResult {
   executed_by: string | null;
   notes: string | null;
   metadata: Record<string, unknown> | null;
+  // V2-ES.8 T2 extended fields
+  related_period_id: string | null;
+  related_process_id: string | null;
+  related_run_id: string | null;
+  execution_mode: string;
+  simulated_result: string;
+  readiness_status: string;
+  submission_status: string;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +67,14 @@ export interface CreateDryRunInput {
   durationMs?: number;
   notes?: string;
   status?: 'success' | 'partial' | 'failed' | 'skipped';
+  // Extended traceability
+  relatedPeriodId?: string;
+  relatedProcessId?: string;
+  relatedRunId?: string;
+  executionMode?: string;
+  simulatedResult?: string;
+  readinessStatus?: string;
+  submissionStatus?: string;
 }
 
 export interface CreateEvidenceInput {
@@ -144,6 +160,14 @@ export function useDryRunPersistence(companyId: string) {
         executed_by: userData?.user?.id || null,
         notes: input.notes || null,
         metadata: { version: '1.0', phase: 'V2-ES.8-T2' },
+        // Extended traceability fields
+        related_period_id: input.relatedPeriodId || null,
+        related_process_id: input.relatedProcessId || null,
+        related_run_id: input.relatedRunId || null,
+        execution_mode: input.executionMode || 'dry_run',
+        simulated_result: input.simulatedResult || 'success',
+        readiness_status: input.readinessStatus || 'pending',
+        submission_status: input.submissionStatus || 'draft',
       };
 
       const { data, error } = await supabase
