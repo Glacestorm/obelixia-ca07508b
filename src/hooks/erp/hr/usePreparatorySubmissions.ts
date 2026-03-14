@@ -30,6 +30,12 @@ import {
   isRealSubmissionBlocked,
 } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
 import { logDryRunEvent } from '@/components/erp/hr/shared/dryRunAuditEvents';
+import {
+  hasPayloadForExecution,
+  isConcurrentExecution,
+  executionLockMetadata,
+  buildSupersedeMetadata,
+} from '@/components/erp/hr/shared/connectorHardeningEngine';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -362,19 +368,62 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, [submissions]);
 
-  // ── Execute dry-run (simulated) with persistence ──
+  // ── Execute dry-run (simulated) with persistence + hardening guards ──
   const executeDryRun = useCallback(async (id: string): Promise<boolean> => {
     const sub = submissions.find(s => s.id === id);
     if (!sub) return false;
 
-    if (sub.status !== 'ready_for_dry_run') {
+    // V2-ES.8 T4: Lifecycle state guard
+    if (sub.status !== 'ready_for_dry_run' && sub.status !== 'dry_run_executed') {
       toast.error('El envío debe estar en estado "Listo para dry-run"');
       return false;
     }
 
+    // V2-ES.8 T4: Payload guard — block execution without payload
+    const payloadCheck = hasPayloadForExecution(sub.payload_snapshot, sub.payload);
+    if (!payloadCheck.allowed) {
+      await logDryRunEvent('dry_run_payload_guard_blocked', {
+        submissionId: id,
+        domain: sub.submission_domain,
+        submissionType: sub.submission_type,
+        status: sub.status,
+        extra: { reason: payloadCheck.reason },
+      });
+      toast.error(payloadCheck.reason);
+      return false;
+    }
+
+    // V2-ES.8 T4: Concurrency guard — block double execution
+    const concurrencyCheck = isConcurrentExecution(sub.metadata);
+    if (concurrencyCheck.blocked) {
+      await logDryRunEvent('dry_run_concurrency_blocked', {
+        submissionId: id,
+        domain: sub.submission_domain,
+        submissionType: sub.submission_type,
+        status: sub.status,
+        extra: { reason: concurrencyCheck.reason },
+      });
+      toast.error(concurrencyCheck.reason);
+      return false;
+    }
+
     const startTime = Date.now();
+    const currentMeta = (sub.metadata || {}) as Record<string, unknown>;
+
+    // V2-ES.8 T4: Set execution lock
+    const lockMeta = { ...currentMeta, ...executionLockMetadata(true) };
 
     try {
+      // Mark as in-progress via metadata
+      await supabase
+        .from('hr_official_submissions')
+        .update({ metadata: lockMeta as any, updated_at: new Date().toISOString() } as any)
+        .eq('id', id);
+
+      const isRetry = sub.status === 'dry_run_executed';
+      const dryRunHistory = ((currentMeta.dry_run_history as any[]) || []);
+      const execNumber = dryRunHistory.length + 1;
+
       const dryRunResult = {
         executed_at: new Date().toISOString(),
         mode: 'dry_run',
@@ -382,17 +431,17 @@ export function usePreparatorySubmissions(companyId: string) {
         result: 'success',
         domain: sub.submission_domain,
         payload_size: JSON.stringify(sub.payload).length,
+        execution_number: execNumber,
+        is_retry: isRetry,
         note: 'Simulación completada — NO es un envío oficial',
       };
 
-      const currentMeta = (sub.metadata || {}) as Record<string, unknown>;
       const updatedMeta = {
         ...currentMeta,
-        dry_run_history: [
-          ...((currentMeta.dry_run_history as any[]) || []),
-          dryRunResult,
-        ],
+        ...executionLockMetadata(false),
+        dry_run_history: [...dryRunHistory, dryRunResult],
         last_dry_run: dryRunResult,
+        retry_count: isRetry ? ((currentMeta.retry_count as number) || 0) + 1 : 0,
       };
 
       const { error } = await supabase
@@ -417,7 +466,7 @@ export function usePreparatorySubmissions(companyId: string) {
           submission_id: id,
           submission_domain: sub.submission_domain,
           submission_type: sub.submission_type,
-          execution_number: ((currentMeta.dry_run_history as any[]) || []).length + 1,
+          execution_number: execNumber,
           status: 'success',
           payload_snapshot: sub.payload_snapshot,
           validation_result: sub.validation_result,
@@ -425,9 +474,13 @@ export function usePreparatorySubmissions(companyId: string) {
           readiness_score: sub.validation_result?.score || 0,
           duration_ms: durationMs,
           executed_by: userData?.user?.id || null,
-          notes: 'Simulación automática desde panel preparatorio',
-          metadata: { version: '1.0', phase: 'V2-ES.8-T2' },
-          // Extended traceability
+          notes: isRetry ? `Reintento #${(currentMeta.retry_count as number || 0) + 1}` : 'Simulación automática desde panel preparatorio',
+          metadata: {
+            version: '1.0',
+            phase: 'V2-ES.8-T4',
+            is_retry: isRetry,
+            configHash: (currentMeta.configHash as string) || null,
+          },
           related_period_id: (sub as any).reference_period_id || null,
           related_process_id: (sub as any).related_process_id || null,
           related_run_id: sub.related_run_id || null,
@@ -436,6 +489,38 @@ export function usePreparatorySubmissions(companyId: string) {
           readiness_status: sub.readiness_status || 'ready',
           submission_status: 'dry_run_executed',
         }]);
+
+      // V2-ES.8 T4: Mark previous runs as superseded (metadata only, never delete)
+      const { data: prevRuns } = await supabase
+        .from('erp_hr_dry_run_results' as any)
+        .select('id, execution_number, metadata')
+        .eq('submission_id', id)
+        .eq('submission_domain', sub.submission_domain)
+        .neq('execution_number', execNumber)
+        .eq('status', 'success')
+        .order('execution_number', { ascending: false })
+        .limit(5);
+
+      if (prevRuns && prevRuns.length > 0) {
+        for (const prev of prevRuns as any[]) {
+          if (!(prev.metadata as any)?.superseded) {
+            const supersedeMeta = {
+              ...(prev.metadata || {}),
+              ...buildSupersedeMetadata('newer_execution', id),
+            };
+            await supabase
+              .from('erp_hr_dry_run_results' as any)
+              .update({ metadata: supersedeMeta } as any)
+              .eq('id', prev.id);
+          }
+        }
+
+        await logDryRunEvent('dry_run_superseded', {
+          submissionId: id,
+          domain: sub.submission_domain,
+          extra: { superseded_count: prevRuns.length, new_execution_number: execNumber },
+        });
+      }
 
       // Auto-generate evidence records
       const { data: dryRunRecord } = await supabase
@@ -467,7 +552,6 @@ export function usePreparatorySubmissions(companyId: string) {
             metadata: { score: sub.validation_result.score, passed: sub.validation_result.passed, internal_disclaimer: disclaimer },
           });
         }
-        // Readiness report
         evidenceRecords.push({
           dry_run_id: (dryRunRecord as any).id,
           evidence_type: 'validation_report',
@@ -481,13 +565,12 @@ export function usePreparatorySubmissions(companyId: string) {
             internal_disclaimer: disclaimer,
           },
         });
-        // Simulation log
         evidenceRecords.push({
           dry_run_id: (dryRunRecord as any).id,
           evidence_type: 'simulation_log',
           label: 'Log de simulación',
           description: `Registro de ejecución simulada — sin efectos externos. ${disclaimer}`,
-          metadata: { timestamp: new Date().toISOString(), simulated: true, internal_disclaimer: disclaimer },
+          metadata: { timestamp: new Date().toISOString(), simulated: true, is_retry: isRetry, internal_disclaimer: disclaimer },
         });
 
         if (evidenceRecords.length > 0) {
@@ -495,15 +578,29 @@ export function usePreparatorySubmissions(companyId: string) {
         }
       }
 
-      // Granular audit
-      await logDryRunEvent('dry_run_executed', {
-        submissionId: id,
-        dryRunId: (dryRunRecord as any)?.id,
-        domain: sub.submission_domain,
-        submissionType: sub.submission_type,
-        score: sub.validation_result?.score,
-        status: 'success',
-      });
+      // Granular audit — different event for retry vs first execution
+      if (isRetry) {
+        await logDryRunEvent('dry_run_retried', {
+          submissionId: id,
+          dryRunId: (dryRunRecord as any)?.id,
+          domain: sub.submission_domain,
+          submissionType: sub.submission_type,
+          executionNumber: execNumber,
+          score: sub.validation_result?.score,
+          status: 'success',
+          extra: { retry_number: (currentMeta.retry_count as number || 0) + 1 },
+        });
+      } else {
+        await logDryRunEvent('dry_run_executed', {
+          submissionId: id,
+          dryRunId: (dryRunRecord as any)?.id,
+          domain: sub.submission_domain,
+          submissionType: sub.submission_type,
+          executionNumber: execNumber,
+          score: sub.validation_result?.score,
+          status: 'success',
+        });
+      }
 
       setSubmissions(prev => prev.map(s =>
         s.id === id ? {
@@ -513,9 +610,18 @@ export function usePreparatorySubmissions(companyId: string) {
         } : s
       ));
 
-      toast.success('Dry-run ejecutado y persistido (simulación)');
+      toast.success(isRetry
+        ? `Dry-run reintentado (#${execNumber}) y persistido`
+        : 'Dry-run ejecutado y persistido (simulación)');
       return true;
     } catch (err) {
+      // V2-ES.8 T4: Release execution lock on error
+      const unlockMeta = { ...currentMeta, ...executionLockMetadata(false) };
+      await supabase
+        .from('hr_official_submissions')
+        .update({ metadata: unlockMeta as any } as any)
+        .eq('id', id);
+
       console.error('[usePreparatorySubmissions] executeDryRun error:', err);
       toast.error('Error en dry-run');
       return false;

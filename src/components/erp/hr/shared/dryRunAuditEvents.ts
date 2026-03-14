@@ -21,7 +21,12 @@ export type DryRunAuditAction =
   | 'dry_run_payload_inspected'
   | 'dry_run_cancelled'
   | 'dry_run_reset'
-  | 'dry_run_real_blocked';
+  | 'dry_run_real_blocked'
+  // V2-ES.8 T4: Hardening events
+  | 'dry_run_retried'
+  | 'dry_run_superseded'
+  | 'dry_run_payload_guard_blocked'
+  | 'dry_run_concurrency_blocked';
 
 const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   dry_run_created: 'info',
@@ -38,6 +43,11 @@ const ACTION_SEVERITY: Record<DryRunAuditAction, AuditSeverity> = {
   dry_run_cancelled: 'warning',
   dry_run_reset: 'warning',
   dry_run_real_blocked: 'critical',
+  // V2-ES.8 T4
+  dry_run_retried: 'warning',
+  dry_run_superseded: 'info',
+  dry_run_payload_guard_blocked: 'warning',
+  dry_run_concurrency_blocked: 'warning',
 };
 
 const ACTION_LABELS: Record<DryRunAuditAction, string> = {
@@ -55,6 +65,11 @@ const ACTION_LABELS: Record<DryRunAuditAction, string> = {
   dry_run_cancelled: 'Envío preparatorio cancelado',
   dry_run_reset: 'Envío preparatorio reseteado a borrador',
   dry_run_real_blocked: 'Intento de envío real bloqueado',
+  // V2-ES.8 T4
+  dry_run_retried: 'Dry-run reintentado',
+  dry_run_superseded: 'Dry-run anterior superado por nueva ejecución',
+  dry_run_payload_guard_blocked: 'Ejecución bloqueada por payload ausente',
+  dry_run_concurrency_blocked: 'Ejecución bloqueada por concurrencia',
 };
 
 // ─── Public API ─────────────────────────────────────────────────────────────

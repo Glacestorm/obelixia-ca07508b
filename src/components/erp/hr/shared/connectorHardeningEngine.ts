@@ -260,6 +260,71 @@ export function canExecuteDryRun(
   return { allowed: true, reason: 'OK' };
 }
 
+// ─── V2-ES.8 T4: Additional hardening guards ───────────────────────────────
+
+/**
+ * Guard: prevent dry-run execution without a payload snapshot.
+ */
+export function hasPayloadForExecution(
+  payloadSnapshot: unknown | null,
+  payload: Record<string, unknown> | null,
+): { allowed: boolean; reason: string } {
+  if (!payloadSnapshot && (!payload || Object.keys(payload).length === 0)) {
+    return { allowed: false, reason: 'No se puede ejecutar dry-run sin payload generado' };
+  }
+  return { allowed: true, reason: 'OK' };
+}
+
+/**
+ * Guard: prevent concurrent dry-run execution on the same submission.
+ * Uses a metadata flag to track in-progress state.
+ */
+export function isConcurrentExecution(
+  metadata: Record<string, unknown> | null,
+): { blocked: boolean; reason: string } {
+  const inProgress = (metadata as any)?.execution_in_progress === true;
+  const startedAt = (metadata as any)?.execution_started_at;
+
+  if (inProgress && startedAt) {
+    const elapsed = Date.now() - new Date(startedAt).getTime();
+    // Auto-release after 5 minutes (stale lock)
+    if (elapsed < 5 * 60 * 1000) {
+      return { blocked: true, reason: 'Ya hay una ejecución de dry-run en progreso' };
+    }
+  }
+
+  return { blocked: false, reason: 'OK' };
+}
+
+/**
+ * Build metadata updates to mark execution start/end for concurrency control.
+ */
+export function executionLockMetadata(lock: boolean): Record<string, unknown> {
+  if (lock) {
+    return {
+      execution_in_progress: true,
+      execution_started_at: new Date().toISOString(),
+    };
+  }
+  return {
+    execution_in_progress: false,
+    execution_started_at: null,
+    execution_finished_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Mark previous dry-run results as superseded (metadata update, never delete).
+ */
+export function buildSupersedeMetadata(reason: SupersedeReason, supersedingRunId: string): Record<string, unknown> {
+  return {
+    superseded: true,
+    superseded_at: new Date().toISOString(),
+    superseded_by: supersedingRunId,
+    supersede_reason: reason,
+  };
+}
+
 /**
  * Guard: check if a dry-run result is safe to use for decision-making.
  */
