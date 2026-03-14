@@ -82,6 +82,12 @@ const ACTION_LABELS: Record<DryRunAuditAction, string> = {
   dry_run_superseded: 'Dry-run anterior superado por nueva ejecución',
   dry_run_payload_guard_blocked: 'Ejecución bloqueada por payload ausente',
   dry_run_concurrency_blocked: 'Ejecución bloqueada por concurrencia',
+  // V2-ES.8 T5
+  approval_requested: 'Solicitud de aprobación pre-real enviada',
+  approval_granted: 'Aprobación pre-real concedida',
+  approval_rejected: 'Aprobación pre-real rechazada',
+  approval_correction_requested: 'Correcciones solicitadas por aprobador',
+  approval_cancelled: 'Solicitud de aprobación cancelada',
 };
 
 // ─── Public API ─────────────────────────────────────────────────────────────
