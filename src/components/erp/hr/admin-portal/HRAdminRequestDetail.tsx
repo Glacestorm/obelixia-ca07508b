@@ -45,6 +45,7 @@ export function HRAdminRequestDetail({ request, comments, activity, linkedTasks 
   const meta = (request.metadata || {}) as Record<string, any>;
   const [linkedDocs, setLinkedDocs] = useState<EmployeeDocument[]>([]);
   const [docsRefreshKey, setDocsRefreshKey] = useState(0);
+  const [registrationDeadlines, setRegistrationDeadlines] = useState<RegistrationDeadlineSummary | null>(null);
   const { getCompleteness } = useHRProcessDocRequirements();
   const { calendarLabel } = useHRHolidayCalendar();
   const completeness = getCompleteness(request.request_type, linkedDocs);
