@@ -20,6 +20,7 @@ import { ActiveRunIndicator } from './ActiveRunIndicator';
 import { SSExpedientPeriodBadge } from './SSExpedientPeriodBadge';
 import { FiscalExpedientPeriodBadge } from './FiscalExpedientPeriodBadge';
 import { MonthlyClosingSummaryCard } from './MonthlyClosingSummaryCard';
+import { ClosingIntelligenceCard } from './ClosingIntelligenceCard';
 
 interface Props {
   companyId: string;
