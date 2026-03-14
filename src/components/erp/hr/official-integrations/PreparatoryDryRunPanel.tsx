@@ -572,6 +572,8 @@ export function PreparatoryDryRunPanel({ companyId }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('active');
   const [evidenceCache, setEvidenceCache] = useState<Record<string, DryRunEvidence[]>>({});
+  const [diffSelection, setDiffSelection] = useState<string[]>([]);
+  const [activeDiff, setActiveDiff] = useState<DryRunDiffReport | null>(null);
 
   const {
     submissions,
