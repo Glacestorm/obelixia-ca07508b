@@ -212,6 +212,10 @@ function ConnectorCard({
           <PipelineStep done={stats.dryRuns > 0} label={`Dry-run ${stats.dryRuns > 0 ? `(${stats.dryRuns})` : ''}`} />
           <span className="text-muted-foreground">→</span>
           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <ShieldCheck className="h-2 w-2" /> Aprobación
+          </span>
+          <span className="text-muted-foreground">→</span>
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
             <Lock className="h-2 w-2" /> Real
           </span>
         </div>
