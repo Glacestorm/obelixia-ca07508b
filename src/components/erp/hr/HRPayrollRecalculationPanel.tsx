@@ -435,6 +435,7 @@ export function HRPayrollRecalculationPanel({ companyId, employees = [] }: HRPay
                   <TableHead>Empleado</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead>Run</TableHead>
                   <TableHead>Validación IA</TableHead>
                   <TableHead>Validación Legal</TableHead>
                   <TableHead>Incidencias</TableHead>
