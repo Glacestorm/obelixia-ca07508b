@@ -52,6 +52,15 @@ const ACTION_CONFIG: Record<string, { icon: typeof Shield; color: string; label:
   ss_expedient_cancelled: { icon: Shield, color: 'text-muted-foreground', label: 'Expediente SS cancelado' },
   ss_expedient_reset: { icon: RefreshCw, color: 'text-amber-500', label: 'Expediente SS reiniciado' },
   ss_expedient_error: { icon: Shield, color: 'text-destructive', label: 'Expediente SS error' },
+  // Fiscal Expedient events (V2-ES.7 Paso 5)
+  fiscal_expedient_consolidated: { icon: Calculator, color: 'text-blue-500', label: 'Exp. Fiscal consolidado' },
+  fiscal_expedient_reconciled: { icon: Calculator, color: 'text-emerald-500', label: 'Exp. Fiscal conciliado' },
+  fiscal_expedient_reviewed: { icon: Eye, color: 'text-indigo-500', label: 'Exp. Fiscal revisado' },
+  fiscal_expedient_ready: { icon: CheckCircle, color: 'text-green-600', label: 'Exp. Fiscal listo (interno)' },
+  fiscal_expedient_finalized: { icon: Lock, color: 'text-green-700', label: 'Exp. Fiscal finalizado (interno)' },
+  fiscal_expedient_cancelled: { icon: Calculator, color: 'text-muted-foreground', label: 'Exp. Fiscal cancelado' },
+  fiscal_expedient_reset: { icon: RefreshCw, color: 'text-amber-500', label: 'Exp. Fiscal reiniciado' },
+  fiscal_expedient_error: { icon: Calculator, color: 'text-destructive', label: 'Exp. Fiscal error' },
 };
 
 export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {
