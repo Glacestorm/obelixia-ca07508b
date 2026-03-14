@@ -2,14 +2,17 @@
  * HRComplianceEvidencePanel — Evidencias documentales de cumplimiento
  * V2-ES.8 T2: Integra evidencias vinculadas a dry-runs
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Shield, Plus, FileCheck, FlaskConical, Info,
   History, Paperclip, CheckCircle2, Clock,
+  Download, FileText, FileSpreadsheet,
 } from 'lucide-react';
+import { useOfficialExport } from '@/hooks/erp/hr/useOfficialExport';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { useDryRunPersistence, type DryRunEvidence } from '@/hooks/erp/hr/useDryRunPersistence';
 import { format } from 'date-fns';
