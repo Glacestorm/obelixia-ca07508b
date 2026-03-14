@@ -3,7 +3,9 @@
  * Orchestration hook for SS Monthly Expedient:
  * - Generate expedient from closed period
  * - Reconcile payroll vs SS contributions
- * - Manage expedient lifecycle
+ * - Manage expedient lifecycle with full traceability
+ *
+ * NOTA: "finalized_internal" NO equivale a presentación oficial TGSS/SILTRA.
  */
 
 import { useState, useCallback } from 'react';
@@ -12,10 +14,15 @@ import { toast } from 'sonner';
 import {
   type SSExpedientStatus,
   type SSExpedientSnapshot,
+  type SSExpedientTraceEntry,
   type SSReconciliationResult,
   reconcilePayrollVsSS,
   buildExpedientSnapshot,
+  buildTraceEntry,
   canTransitionExpedient,
+  canSafelyCancel,
+  getAuditEventForTransition,
+  SS_EXPEDIENT_STATUS_CONFIG,
 } from '@/engines/erp/hr/ssMonthlyExpedientEngine';
 import type { PeriodClosureSnapshot } from '@/engines/erp/hr/payrollRunEngine';
 
@@ -25,10 +32,24 @@ export interface SSMonthlyExpedient {
   company_id: string;
   period_year: number;
   period_month: number;
-  period_id: string | null; // linked payroll period
+  period_id: string | null;
   expedient_status: SSExpedientStatus;
   snapshot: SSExpedientSnapshot | null;
   reconciliation: SSReconciliationResult | null;
+  trace: SSExpedientTraceEntry[];
+  // Traceability fields
+  consolidated_at: string | null;
+  consolidated_by: string | null;
+  reconciled_at: string | null;
+  reconciled_by: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  ready_internal_at: string | null;
+  ready_internal_by: string | null;
+  finalized_internal_at: string | null;
+  finalized_internal_by: string | null;
+  cancelled_at: string | null;
+  cancelled_by: string | null;
   // From ss_contributions row
   total_base_cc: number;
   total_base_at: number;
@@ -44,7 +65,7 @@ export interface SSMonthlyExpedient {
   total_worker: number;
   total_amount: number;
   total_workers: number;
-  status: string; // original row status
+  status: string;
   filing_reference: string | null;
   notes: string | null;
   created_at: string;
@@ -54,6 +75,52 @@ export interface SSMonthlyExpedient {
 export function useSSMonthlyExpedient(companyId: string) {
   const [expedients, setExpedients] = useState<SSMonthlyExpedient[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // ── Helper: get current user ──
+  const getCurrentUser = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  }, []);
+
+  // ── Helper: read fresh metadata from DB ──
+  const readFreshMetadata = useCallback(async (id: string) => {
+    const { data } = await supabase
+      .from('erp_hr_ss_contributions')
+      .select('metadata')
+      .eq('id', id)
+      .single();
+    return (data?.metadata || {}) as any;
+  }, []);
+
+  // ── Helper: persist metadata update ──
+  const persistMetadata = useCallback(async (id: string, meta: any) => {
+    const { error } = await supabase
+      .from('erp_hr_ss_contributions')
+      .update({ metadata: meta as any, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+  }, []);
+
+  // ── Helper: log to audit trail ──
+  const logAuditEvent = useCallback(async (
+    action: string,
+    entityId: string,
+    details: Record<string, any>,
+  ) => {
+    try {
+      const user = await getCurrentUser();
+      await supabase.from('erp_hr_audit_log').insert([{
+        company_id: companyId,
+        entity_type: 'ss_expedient',
+        entity_id: entityId,
+        action,
+        performed_by: user?.id,
+        details: details as any,
+      }]);
+    } catch (err) {
+      console.warn('[useSSMonthlyExpedient] audit log failed (non-blocking):', err);
+    }
+  }, [companyId, getCurrentUser]);
 
   // ── Fetch SS contributions with expedient metadata ──
   const fetchExpedients = useCallback(async (year?: number) => {
@@ -73,15 +140,35 @@ export function useSSMonthlyExpedient(companyId: string) {
 
       const mapped: SSMonthlyExpedient[] = (data || []).map((row: any) => {
         const meta = (row.metadata || {}) as any;
+        // Backward compat: map old status names to new
+        let expStatus = (meta.expedient_status as SSExpedientStatus) || 'draft';
+        if (expStatus === 'ready' as any) expStatus = 'ready_internal';
+        if (expStatus === 'submitted' as any) expStatus = 'finalized_internal';
+
         return {
           id: row.id,
           company_id: row.company_id,
           period_year: row.period_year,
           period_month: row.period_month,
           period_id: meta.period_id || null,
-          expedient_status: (meta.expedient_status as SSExpedientStatus) || 'draft',
+          expedient_status: expStatus,
           snapshot: meta.expedient_snapshot || null,
           reconciliation: meta.reconciliation || null,
+          trace: meta.trace || [],
+          // Traceability
+          consolidated_at: meta.consolidated_at || null,
+          consolidated_by: meta.consolidated_by || null,
+          reconciled_at: meta.reconciled_at || null,
+          reconciled_by: meta.reconciled_by || null,
+          reviewed_at: meta.reviewed_at || null,
+          reviewed_by: meta.reviewed_by || null,
+          ready_internal_at: meta.ready_internal_at || meta.ready_at || null,
+          ready_internal_by: meta.ready_internal_by || meta.ready_by || null,
+          finalized_internal_at: meta.finalized_internal_at || null,
+          finalized_internal_by: meta.finalized_internal_by || null,
+          cancelled_at: meta.cancelled_at || null,
+          cancelled_by: meta.cancelled_by || null,
+          // SS data
           total_base_cc: row.total_base_cc || 0,
           total_base_at: row.total_base_at || 0,
           cc_company: row.cc_company || 0,
@@ -128,13 +215,13 @@ export function useSSMonthlyExpedient(companyId: string) {
       const currentStatus = expedient?.expedient_status || 'draft';
 
       if (!canTransitionExpedient(currentStatus, 'consolidated')) {
-        toast.error(`No se puede consolidar desde estado "${currentStatus}"`);
+        toast.error(`No se puede consolidar desde estado "${SS_EXPEDIENT_STATUS_CONFIG[currentStatus].label}"`);
         return false;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
+      const userId = user?.id || '';
 
-      // Build SS data from existing row
       const ssData = expedient ? {
         total_base_cc: expedient.total_base_cc,
         total_base_at: expedient.total_base_at,
@@ -153,36 +240,45 @@ export function useSSMonthlyExpedient(companyId: string) {
       } : null;
 
       const snapshot = buildExpedientSnapshot({
-        periodId,
-        periodYear,
-        periodMonth,
-        closureSnapshot,
-        ssContribution: ssData,
-        userId: user?.id || '',
-        reconciliation: null,
+        periodId, periodYear, periodMonth,
+        closureSnapshot, ssContribution: ssData,
+        userId, reconciliation: null,
       });
 
-      const existingMeta = (expedient as any)?.metadata || {};
+      const traceEntry = buildTraceEntry('consolidate', currentStatus, 'consolidated', userId, {
+        period_id: periodId,
+        run_ref: closureSnapshot?.approved_run_id,
+      });
+
+      const existingMeta = await readFreshMetadata(ssContributionId);
+      const existingTrace = existingMeta.trace || [];
+
       const newMeta = {
         ...existingMeta,
         period_id: periodId,
         expedient_status: 'consolidated',
         expedient_snapshot: snapshot,
         consolidated_at: new Date().toISOString(),
-        consolidated_by: user?.id,
+        consolidated_by: userId,
+        trace: [...existingTrace, traceEntry],
       };
 
-      const { error } = await supabase
-        .from('erp_hr_ss_contributions')
-        .update({ metadata: newMeta as any, updated_at: new Date().toISOString() })
-        .eq('id', ssContributionId);
+      await persistMetadata(ssContributionId, newMeta);
 
-      if (error) throw error;
+      // Audit trail
+      await logAuditEvent('ss_expedient_consolidated', ssContributionId, {
+        period_id: periodId, run_ref: closureSnapshot?.approved_run_id,
+        from_status: currentStatus, to_status: 'consolidated',
+      });
 
-      // Update local state
       setExpedients(prev => prev.map(e =>
         e.id === ssContributionId
-          ? { ...e, period_id: periodId, expedient_status: 'consolidated' as SSExpedientStatus, snapshot }
+          ? {
+              ...e, period_id: periodId,
+              expedient_status: 'consolidated' as SSExpedientStatus,
+              snapshot, consolidated_at: newMeta.consolidated_at, consolidated_by: userId,
+              trace: newMeta.trace,
+            }
           : e
       ));
 
@@ -193,7 +289,7 @@ export function useSSMonthlyExpedient(companyId: string) {
       toast.error(`Error al consolidar: ${err.message}`);
       return false;
     }
-  }, [expedients]);
+  }, [expedients, getCurrentUser, readFreshMetadata, persistMetadata, logAuditEvent]);
 
   // ── Reconcile: compare payroll totals vs SS ──
   const reconcileExpedient = useCallback(async (
@@ -230,48 +326,51 @@ export function useSSMonthlyExpedient(companyId: string) {
       } : null;
 
       const result = reconcilePayrollVsSS({
-        payroll: payrollTotals,
-        ss: ssData,
-        periodStatus,
-        hasApprovedRun: !!closureSnapshot?.approved_run_id,
+        payroll: payrollTotals, ss: ssData,
+        periodStatus, hasApprovedRun: !!closureSnapshot?.approved_run_id,
       });
 
-      // Persist reconciliation
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
+      const userId = user?.id || '';
       const currentStatus = expedient.expedient_status;
       const newStatus: SSExpedientStatus =
         canTransitionExpedient(currentStatus, 'reconciled') ? 'reconciled' : currentStatus;
 
-      const existingRow = await supabase
-        .from('erp_hr_ss_contributions')
-        .select('metadata')
-        .eq('id', ssContributionId)
-        .single();
+      const traceEntry = buildTraceEntry('reconcile', currentStatus, newStatus, userId, {
+        notes: `Score: ${result.score}%, Status: ${result.status}`,
+      });
 
-      const existingMeta = (existingRow.data?.metadata || {}) as any;
+      const existingMeta = await readFreshMetadata(ssContributionId);
+      const existingTrace = existingMeta.trace || [];
+
       const newMeta = {
         ...existingMeta,
         expedient_status: newStatus,
         reconciliation: result,
         reconciled_at: new Date().toISOString(),
-        reconciled_by: user?.id,
+        reconciled_by: userId,
+        trace: [...existingTrace, traceEntry],
       };
 
-      // Update snapshot with reconciliation
       if (newMeta.expedient_snapshot) {
         newMeta.expedient_snapshot.reconciliation = result;
       }
 
-      const { error } = await supabase
-        .from('erp_hr_ss_contributions')
-        .update({ metadata: newMeta as any, updated_at: new Date().toISOString() })
-        .eq('id', ssContributionId);
+      await persistMetadata(ssContributionId, newMeta);
 
-      if (error) throw error;
+      await logAuditEvent('ss_expedient_reconciled', ssContributionId, {
+        score: result.score, status: result.status,
+        passed: result.passed, failed: result.failed, warnings: result.warnings,
+        from_status: currentStatus, to_status: newStatus,
+      });
 
       setExpedients(prev => prev.map(e =>
         e.id === ssContributionId
-          ? { ...e, expedient_status: newStatus, reconciliation: result }
+          ? {
+              ...e, expedient_status: newStatus, reconciliation: result,
+              reconciled_at: newMeta.reconciled_at, reconciled_by: userId,
+              trace: newMeta.trace,
+            }
           : e
       ));
 
@@ -289,9 +388,9 @@ export function useSSMonthlyExpedient(companyId: string) {
       toast.error(`Error en conciliación: ${err.message}`);
       return null;
     }
-  }, [expedients]);
+  }, [expedients, getCurrentUser, readFreshMetadata, persistMetadata, logAuditEvent]);
 
-  // ── Update expedient status ──
+  // ── Update expedient status (generic) ──
   const updateExpedientStatus = useCallback(async (
     ssContributionId: string,
     newStatus: SSExpedientStatus,
@@ -302,45 +401,87 @@ export function useSSMonthlyExpedient(companyId: string) {
       const currentStatus = expedient?.expedient_status || 'draft';
 
       if (!canTransitionExpedient(currentStatus, newStatus)) {
-        toast.error(`Transición no permitida: ${currentStatus} → ${newStatus}`);
+        toast.error(`Transición no permitida: ${SS_EXPEDIENT_STATUS_CONFIG[currentStatus].label} → ${SS_EXPEDIENT_STATUS_CONFIG[newStatus].label}`);
         return false;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      const existingRow = await supabase
-        .from('erp_hr_ss_contributions')
-        .select('metadata')
-        .eq('id', ssContributionId)
-        .single();
+      const user = await getCurrentUser();
+      const userId = user?.id || '';
 
-      const existingMeta = (existingRow.data?.metadata || {}) as any;
+      const traceEntry = buildTraceEntry(
+        getAuditEventForTransition(newStatus),
+        currentStatus, newStatus, userId,
+        { notes, period_id: expedient?.period_id || undefined },
+      );
+
+      const existingMeta = await readFreshMetadata(ssContributionId);
+      const existingTrace = existingMeta.trace || [];
+
       const newMeta = {
         ...existingMeta,
         expedient_status: newStatus,
         [`${newStatus}_at`]: new Date().toISOString(),
-        [`${newStatus}_by`]: user?.id,
+        [`${newStatus}_by`]: userId,
+        trace: [...existingTrace, traceEntry],
         ...(notes ? { status_notes: notes } : {}),
       };
 
-      const { error } = await supabase
-        .from('erp_hr_ss_contributions')
-        .update({ metadata: newMeta as any, updated_at: new Date().toISOString() })
-        .eq('id', ssContributionId);
+      await persistMetadata(ssContributionId, newMeta);
 
-      if (error) throw error;
+      await logAuditEvent(getAuditEventForTransition(newStatus), ssContributionId, {
+        from_status: currentStatus, to_status: newStatus,
+        ...(notes ? { notes } : {}),
+      });
 
       setExpedients(prev => prev.map(e =>
-        e.id === ssContributionId ? { ...e, expedient_status: newStatus } : e
+        e.id === ssContributionId
+          ? {
+              ...e, expedient_status: newStatus,
+              [`${newStatus}_at`]: newMeta[`${newStatus}_at`],
+              [`${newStatus}_by`]: userId,
+              trace: newMeta.trace,
+            } as SSMonthlyExpedient
+          : e
       ));
 
-      toast.success(`Expediente actualizado a "${newStatus}"`);
+      const statusLabel = SS_EXPEDIENT_STATUS_CONFIG[newStatus].label;
+      toast.success(`Expediente → ${statusLabel}`);
       return true;
     } catch (err: any) {
       console.error('[useSSMonthlyExpedient] updateStatus:', err);
       toast.error(`Error: ${err.message}`);
       return false;
     }
-  }, [expedients]);
+  }, [expedients, getCurrentUser, readFreshMetadata, persistMetadata, logAuditEvent]);
+
+  // ── Cancel expedient (safe) ──
+  const cancelExpedient = useCallback(async (
+    ssContributionId: string,
+    reason: string,
+  ): Promise<boolean> => {
+    const expedient = expedients.find(e => e.id === ssContributionId);
+    if (!expedient) { toast.error('Expediente no encontrado'); return false; }
+
+    if (!canSafelyCancel(expedient.expedient_status)) {
+      toast.error(`No se puede cancelar desde estado "${SS_EXPEDIENT_STATUS_CONFIG[expedient.expedient_status].label}"`);
+      return false;
+    }
+
+    if (!reason.trim()) {
+      toast.error('Motivo de cancelación obligatorio');
+      return false;
+    }
+
+    return updateExpedientStatus(ssContributionId, 'cancelled', reason);
+  }, [expedients, updateExpedientStatus]);
+
+  // ── Finalize internally (NOT official submission) ──
+  const finalizeExpedientInternal = useCallback(async (
+    ssContributionId: string,
+    notes?: string,
+  ): Promise<boolean> => {
+    return updateExpedientStatus(ssContributionId, 'finalized_internal', notes || 'Finalizado internamente');
+  }, [updateExpedientStatus]);
 
   // ── Create SS contribution for a period (if none exists) ──
   const createExpedientForPeriod = useCallback(async (
@@ -349,7 +490,6 @@ export function useSSMonthlyExpedient(companyId: string) {
     periodId: string,
   ): Promise<string | null> => {
     try {
-      // Check if already exists
       const existing = expedients.find(
         e => e.period_year === periodYear && e.period_month === periodMonth
       );
@@ -358,7 +498,13 @@ export function useSSMonthlyExpedient(companyId: string) {
         return existing.id;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getCurrentUser();
+      const userId = user?.id || '';
+
+      const initialTrace = buildTraceEntry('create', 'draft' as SSExpedientStatus, 'draft', userId, {
+        period_id: periodId,
+      });
+
       const { data, error } = await supabase
         .from('erp_hr_ss_contributions')
         .insert([{
@@ -369,13 +515,18 @@ export function useSSMonthlyExpedient(companyId: string) {
           metadata: {
             period_id: periodId,
             expedient_status: 'draft',
-            created_by: user?.id,
+            created_by: userId,
+            trace: [initialTrace],
           } as any,
         }])
         .select()
         .single();
 
       if (error) throw error;
+
+      await logAuditEvent('ss_expedient_created', data?.id || '', {
+        period_year: periodYear, period_month: periodMonth, period_id: periodId,
+      });
 
       await fetchExpedients(periodYear);
       toast.success('Registro SS creado para el período');
@@ -385,7 +536,7 @@ export function useSSMonthlyExpedient(companyId: string) {
       toast.error(`Error: ${err.message}`);
       return null;
     }
-  }, [companyId, expedients, fetchExpedients]);
+  }, [companyId, expedients, fetchExpedients, getCurrentUser, logAuditEvent]);
 
   return {
     expedients,
@@ -394,6 +545,8 @@ export function useSSMonthlyExpedient(companyId: string) {
     consolidateExpedient,
     reconcileExpedient,
     updateExpedientStatus,
+    cancelExpedient,
+    finalizeExpedientInternal,
     createExpedientForPeriod,
   };
 }

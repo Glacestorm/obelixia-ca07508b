@@ -4,13 +4,47 @@
  * - States, transitions, reconciliation checks
  * - Consolidation from closed period + approved run
  * - No side-effects, no fetch — deterministic functions only
+ *
+ * NOTA: "finalized_internal" NO equivale a presentación oficial ante TGSS/SILTRA.
+ * Este motor gestiona exclusivamente el expediente interno preparatorio.
  */
 
 import type { PeriodClosureSnapshot } from './payrollRunEngine';
 
 // ── Types ──
 
-export type SSExpedientStatus = 'draft' | 'consolidated' | 'reconciled' | 'reviewed' | 'ready' | 'submitted' | 'error';
+/**
+ * Estado del expediente interno SS.
+ * - draft: registro creado, sin vincular a cierre
+ * - consolidated: vinculado al período cerrado + snapshot generado
+ * - reconciled: conciliación nómina↔SS ejecutada
+ * - reviewed: revisión humana completada
+ * - ready_internal: listo internamente (NO presentado oficialmente)
+ * - finalized_internal: finalizado internamente (preparatorio cerrado, NO equivale a presentación oficial)
+ * - cancelled: cancelado de forma segura
+ * - error: fallo en consolidación/conciliación, permite retry
+ */
+export type SSExpedientStatus =
+  | 'draft'
+  | 'consolidated'
+  | 'reconciled'
+  | 'reviewed'
+  | 'ready_internal'
+  | 'finalized_internal'
+  | 'cancelled'
+  | 'error';
+
+/** Traceability record for each state transition */
+export interface SSExpedientTraceEntry {
+  action: string;
+  status_from: SSExpedientStatus;
+  status_to: SSExpedientStatus;
+  performed_by: string;
+  performed_at: string;
+  notes?: string;
+  period_id?: string;
+  run_ref?: string;
+}
 
 export interface SSExpedientSnapshot {
   version: '1.0';
@@ -69,29 +103,105 @@ export interface SSReconciliationResult {
 
 // ── State Machine ──
 
+/**
+ * Transiciones permitidas del expediente interno SS.
+ *
+ * IMPORTANTE:
+ * - finalized_internal es terminal salvo rollback a reviewed
+ * - cancelled es terminal (solo desde estados activos pre-finalizados)
+ * - error permite retry a draft o consolidated
+ */
 const SS_EXPEDIENT_TRANSITIONS: Record<SSExpedientStatus, SSExpedientStatus[]> = {
-  draft:        ['consolidated'],
-  consolidated: ['reconciled', 'error'],
-  reconciled:   ['reviewed', 'consolidated'], // allow re-consolidation
-  reviewed:     ['ready', 'reconciled'],       // allow re-reconciliation
-  ready:        ['submitted', 'reviewed'],     // allow rollback to reviewed
-  submitted:    [],                             // terminal (for future integration)
-  error:        ['draft', 'consolidated'],      // allow retry
+  draft:              ['consolidated', 'cancelled'],
+  consolidated:       ['reconciled', 'error', 'cancelled'],
+  reconciled:         ['reviewed', 'consolidated', 'cancelled'],      // allow re-consolidation
+  reviewed:           ['ready_internal', 'reconciled', 'cancelled'],   // allow re-reconciliation
+  ready_internal:     ['finalized_internal', 'reviewed', 'cancelled'], // allow rollback to reviewed
+  finalized_internal: ['reviewed'],                                    // allow rollback for corrections, NOT official
+  cancelled:          ['draft'],                                       // allow reactivation to draft only
+  error:              ['draft', 'consolidated'],                       // allow retry
 };
 
 export function canTransitionExpedient(from: SSExpedientStatus, to: SSExpedientStatus): boolean {
   return SS_EXPEDIENT_TRANSITIONS[from]?.includes(to) ?? false;
 }
 
-export const SS_EXPEDIENT_STATUS_CONFIG: Record<SSExpedientStatus, { label: string; color: string }> = {
-  draft:        { label: 'Borrador', color: 'bg-muted text-muted-foreground' },
-  consolidated: { label: 'Consolidado', color: 'bg-blue-500/10 text-blue-700' },
-  reconciled:   { label: 'Conciliado', color: 'bg-emerald-500/10 text-emerald-700' },
-  reviewed:     { label: 'Revisado', color: 'bg-indigo-500/10 text-indigo-700' },
-  ready:        { label: 'Listo', color: 'bg-green-500/10 text-green-700' },
-  submitted:    { label: 'Presentado', color: 'bg-green-600/10 text-green-800' },
-  error:        { label: 'Error', color: 'bg-destructive/10 text-destructive' },
+/** Get all valid next states from current */
+export function getValidTransitions(from: SSExpedientStatus): SSExpedientStatus[] {
+  return SS_EXPEDIENT_TRANSITIONS[from] || [];
+}
+
+export const SS_EXPEDIENT_STATUS_CONFIG: Record<SSExpedientStatus, {
+  label: string;
+  color: string;
+  description: string;
+  isTerminal: boolean;
+}> = {
+  draft: {
+    label: 'Borrador',
+    color: 'bg-muted text-muted-foreground',
+    description: 'Registro SS creado, pendiente de vincular a período cerrado',
+    isTerminal: false,
+  },
+  consolidated: {
+    label: 'Consolidado',
+    color: 'bg-blue-500/10 text-blue-700',
+    description: 'Vinculado al período cerrado con snapshot de cierre',
+    isTerminal: false,
+  },
+  reconciled: {
+    label: 'Conciliado',
+    color: 'bg-emerald-500/10 text-emerald-700',
+    description: 'Conciliación nómina ↔ SS ejecutada',
+    isTerminal: false,
+  },
+  reviewed: {
+    label: 'Revisado',
+    color: 'bg-indigo-500/10 text-indigo-700',
+    description: 'Revisión humana completada',
+    isTerminal: false,
+  },
+  ready_internal: {
+    label: 'Listo (interno)',
+    color: 'bg-green-500/10 text-green-700',
+    description: 'Preparado internamente — NO presentado oficialmente',
+    isTerminal: false,
+  },
+  finalized_internal: {
+    label: 'Finalizado (interno)',
+    color: 'bg-green-600/10 text-green-800',
+    description: 'Expediente interno cerrado — NO equivale a presentación oficial TGSS/SILTRA',
+    isTerminal: true,
+  },
+  cancelled: {
+    label: 'Cancelado',
+    color: 'bg-muted text-muted-foreground line-through',
+    description: 'Expediente cancelado de forma segura',
+    isTerminal: true,
+  },
+  error: {
+    label: 'Error',
+    color: 'bg-destructive/10 text-destructive',
+    description: 'Fallo en consolidación o conciliación — permite reintentar',
+    isTerminal: false,
+  },
 };
+
+// ── Audit trail event mapping ──
+
+export function getAuditEventForTransition(to: SSExpedientStatus): string {
+  const map: Record<SSExpedientStatus, string> = {
+    draft: 'ss_expedient_reset',
+    consolidated: 'ss_expedient_consolidated',
+    reconciled: 'ss_expedient_reconciled',
+    reviewed: 'ss_expedient_reviewed',
+    ready_internal: 'ss_expedient_ready',
+    finalized_internal: 'ss_expedient_finalized',
+    cancelled: 'ss_expedient_cancelled',
+    error: 'ss_expedient_error',
+  };
+  return map[to] || 'ss_expedient_status_changed';
+}
 
 // ── Reconciliation Engine (pure) ──
 
@@ -173,10 +283,8 @@ export function reconcilePayrollVsSS(input: SSReconciliationInput): SSReconcilia
         : `Nómina: ${payroll.employee_count}, SS: ${ss.total_workers}`,
     });
 
-    // 5. Employer cost vs SS total company (approximate — SS company cost should be a portion of employer_cost)
+    // 5. Employer cost vs SS total company
     const ssTotalCompany = ss.total_company;
-    const tolerance = payroll.employer_cost * 0.05; // 5% tolerance
-    const diffCompany = Math.abs(payroll.employer_cost - payroll.gross - ssTotalCompany);
     checks.push({
       id: 'employer_cost_coherence',
       label: 'Coherencia coste empresa vs cuota patronal SS',
@@ -189,7 +297,7 @@ export function reconcilePayrollVsSS(input: SSReconciliationInput): SSReconcilia
         : 'Sin datos',
     });
 
-    // 6. SS worker deductions coherence (cc_worker should be part of gross-net difference)
+    // 6. SS worker deductions coherence
     const totalDeductions = payroll.gross - payroll.net;
     const ssWorkerTotal = ss.total_worker;
     checks.push({
@@ -317,11 +425,12 @@ export function formatExpedientLabel(year: number, month: number): string {
 export function getExpedientReadiness(status: SSExpedientStatus): { level: 'none' | 'partial' | 'complete'; percent: number } {
   const progressMap: Record<SSExpedientStatus, number> = {
     draft: 0,
-    consolidated: 25,
-    reconciled: 50,
-    reviewed: 75,
-    ready: 100,
-    submitted: 100,
+    consolidated: 20,
+    reconciled: 40,
+    reviewed: 60,
+    ready_internal: 80,
+    finalized_internal: 100,
+    cancelled: 0,
     error: 0,
   };
   const percent = progressMap[status];
@@ -329,4 +438,30 @@ export function getExpedientReadiness(status: SSExpedientStatus): { level: 'none
     level: percent === 0 ? 'none' : percent === 100 ? 'complete' : 'partial',
     percent,
   };
+}
+
+/** Build a trace entry for audit purposes */
+export function buildTraceEntry(
+  action: string,
+  from: SSExpedientStatus,
+  to: SSExpedientStatus,
+  userId: string,
+  extra?: { notes?: string; period_id?: string; run_ref?: string }
+): SSExpedientTraceEntry {
+  return {
+    action,
+    status_from: from,
+    status_to: to,
+    performed_by: userId,
+    performed_at: new Date().toISOString(),
+    ...extra,
+  };
+}
+
+/**
+ * Validate if cancellation is safe for the given status.
+ * Cancellation is NOT allowed from finalized_internal or already cancelled.
+ */
+export function canSafelyCancel(status: SSExpedientStatus): boolean {
+  return canTransitionExpedient(status, 'cancelled');
 }
