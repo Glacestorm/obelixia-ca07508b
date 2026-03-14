@@ -149,6 +149,19 @@ export function usePayrollRuns(companyId?: string) {
         return false;
       }
 
+      // Guard: reject mutations on locked period runs
+      if (run) {
+        const { data: periodData } = await supabase
+          .from('hr_payroll_periods')
+          .select('status')
+          .eq('id', run.period_id)
+          .single();
+        if (periodData?.status === 'locked') {
+          toast.error('Período bloqueado — no se puede modificar el estado del run');
+          return false;
+        }
+      }
+
       const updates: Record<string, unknown> = {
         status: newStatus,
         updated_at: new Date().toISOString(),
