@@ -6,6 +6,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  validatePreClose as validatePreCloseEngine,
+  buildClosureSnapshot,
+  canTransitionPeriod,
+  isPeriodWritable,
+  type PreCloseInput,
+  type PeriodClosureSnapshot,
+  type PayrollRunValidationSummary,
+} from '@/engines/erp/hr/payrollRunEngine';
 
 // ============ TYPES ============
 
@@ -158,6 +167,7 @@ export interface PreCloseValidation {
   label: string;
   passed: boolean;
   detail?: string;
+  severity?: 'error' | 'warning' | 'info';
 }
 
 export interface PayrollEngineFilters {
@@ -231,6 +241,11 @@ export function usePayrollEngine(companyId?: string) {
   const updatePeriodStatus = useCallback(async (periodId: string, newStatus: PeriodStatus) => {
     try {
       const old = periods.find(p => p.id === periodId);
+      // Enforce state machine
+      if (old && !canTransitionPeriod(old.status, newStatus)) {
+        toast.error(`Transición no permitida: ${old.status} → ${newStatus}`);
+        return;
+      }
       const updates: any = { status: newStatus, updated_at: new Date().toISOString() };
       if (newStatus === 'closed') { updates.closed_at = new Date().toISOString(); }
       if (newStatus === 'locked') { updates.locked_at = new Date().toISOString(); }
@@ -476,35 +491,254 @@ export function usePayrollEngine(companyId?: string) {
     }
   }, [companyId]);
 
-  // ---- PRE-CLOSE VALIDATION ----
+  // ---- PRE-CLOSE VALIDATION (exhaustive, V2-ES.7 Paso 3) ----
 
   const validatePreClose = useCallback(async (periodId: string): Promise<PreCloseValidation[]> => {
-    const results: PreCloseValidation[] = [];
     try {
-      // 1. All payrolls approved/paid
-      const { data: recs } = await supabase.from('hr_payroll_records').select('id, status').eq('payroll_period_id', periodId);
-      const allApproved = (recs || []).every((r: any) => r.status === 'approved' || r.status === 'paid');
-      results.push({ id: 'all_approved', label: 'Todas las nóminas aprobadas o pagadas', passed: allApproved, detail: allApproved ? undefined : `${(recs || []).filter((r: any) => r.status !== 'approved' && r.status !== 'paid').length} pendientes` });
+      const period = periods.find(p => p.id === periodId);
+      if (!period) return [{ id: 'period_not_found', label: 'Período no encontrado', passed: false }];
 
-      // 2. At least one payroll exists
-      const hasRecords = (recs || []).length > 0;
-      results.push({ id: 'has_records', label: 'Existen nóminas en el período', passed: hasRecords, detail: `${(recs || []).length} nóminas` });
+      // Fetch runs for this period
+      const { data: runsData } = await supabase
+        .from('erp_hr_payroll_runs')
+        .select('id, run_number, status, run_type, total_gross, total_net, total_employer_cost, total_employees, employees_errored, warnings_count, snapshot_hash, completed_at')
+        .eq('period_id', periodId)
+        .eq('company_id', companyId!);
 
-      // 3. Totals consistency
-      const totalGross = (recs || []).reduce((s: number, r: any) => s + Number(r.gross_salary || 0), 0);
-      results.push({ id: 'totals_ok', label: 'Totales consistentes', passed: totalGross > 0, detail: `Bruto total: ${totalGross.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}` });
+      // Fetch records
+      const { data: recsData } = await supabase
+        .from('hr_payroll_records')
+        .select('id, status, gross_salary, net_salary, employer_cost')
+        .eq('payroll_period_id', periodId);
 
-      // 4. No draft payrolls
-      const noDraft = (recs || []).every((r: any) => r.status !== 'draft');
-      results.push({ id: 'no_draft', label: 'Sin nóminas en borrador', passed: noDraft });
+      // Fetch incidents
+      const { data: incData } = await supabase
+        .from('erp_hr_payroll_incidents' as any)
+        .select('id, status')
+        .eq('company_id', companyId!)
+        .eq('period_id', periodId);
 
-      // Save results to period
-      await supabase.from('hr_payroll_periods').update({ validation_results: results } as any).eq('id', periodId);
+      const input: PreCloseInput = {
+        period: { id: period.id, status: period.status, payment_date: period.payment_date },
+        runs: (runsData || []) as any,
+        records: (recsData || []) as any,
+        incidents: (incData || []) as any,
+      };
+
+      const result = validatePreCloseEngine(input);
+
+      // Save validation results to period
+      await supabase.from('hr_payroll_periods').update({
+        validation_results: result,
+      } as any).eq('id', periodId);
+
+      // Return as legacy PreCloseValidation[] for backward compat
+      return result.checks.map(c => ({
+        id: c.id,
+        label: c.label,
+        passed: c.passed,
+        detail: c.detail,
+        severity: c.severity,
+      }));
     } catch (e) {
       console.error('[usePayrollEngine] validatePreClose:', e);
+      return [{ id: 'error', label: 'Error en validación', passed: false, detail: String(e) }];
     }
-    return results;
-  }, []);
+  }, [companyId, periods]);
+
+  // ---- CLOSE PERIOD (V2-ES.7 Paso 3) ----
+
+  const closePeriod = useCallback(async (periodId: string): Promise<{ success: boolean; snapshot?: PeriodClosureSnapshot }> => {
+    try {
+      const period = periods.find(p => p.id === periodId);
+      if (!period) { toast.error('Período no encontrado'); return { success: false }; }
+
+      if (!canTransitionPeriod(period.status, 'closing')) {
+        toast.error(`No se puede cerrar desde estado "${period.status}"`);
+        return { success: false };
+      }
+
+      // Run full validation
+      const { data: runsData } = await supabase
+        .from('erp_hr_payroll_runs')
+        .select('id, run_number, status, run_type, total_gross, total_net, total_employer_cost, total_employees, employees_errored, warnings_count, snapshot_hash, completed_at')
+        .eq('period_id', periodId)
+        .eq('company_id', companyId!);
+
+      const { data: recsData } = await supabase
+        .from('hr_payroll_records')
+        .select('id, status, gross_salary, net_salary, employer_cost')
+        .eq('payroll_period_id', periodId);
+
+      const { data: incData } = await supabase
+        .from('erp_hr_payroll_incidents' as any)
+        .select('id, status')
+        .eq('company_id', companyId!)
+        .eq('period_id', periodId);
+
+      const input: PreCloseInput = {
+        period: { id: period.id, status: period.status, payment_date: period.payment_date },
+        runs: (runsData || []) as any,
+        records: (recsData || []) as any,
+        incidents: (incData || []) as any,
+      };
+
+      const validation = validatePreCloseEngine(input);
+
+      // Block on errors
+      if (validation.failed > 0) {
+        toast.error(`Cierre bloqueado: ${validation.failed} check(s) con error`);
+        return { success: false };
+      }
+
+      // Build closure snapshot
+      const { data: { user } } = await supabase.auth.getUser();
+      const snapshot = buildClosureSnapshot(input, validation, user?.id || '');
+
+      // Get approved run totals
+      const approvedRun = (runsData || [])
+        .filter((r: any) => r.status === 'approved')
+        .sort((a: any, b: any) => b.run_number - a.run_number)[0] as any;
+
+      // Transition: current → closing → closed
+      const now = new Date().toISOString();
+      const updates: any = {
+        status: 'closed',
+        closed_at: now,
+        closed_by: user?.id,
+        validation_results: validation,
+        metadata: { ...(period.metadata || {}), closure_snapshot: snapshot },
+        updated_at: now,
+      };
+
+      // Consolidate totals from approved run
+      if (approvedRun) {
+        updates.total_gross = approvedRun.total_gross;
+        updates.total_net = approvedRun.total_net;
+        updates.total_employer_cost = approvedRun.total_employer_cost;
+        updates.employee_count = approvedRun.total_employees;
+      }
+
+      const { error } = await supabase.from('hr_payroll_periods').update(updates).eq('id', periodId);
+      if (error) throw error;
+
+      await logAudit('period_closed', 'period', periodId,
+        { status: period.status },
+        { status: 'closed', closure_snapshot: snapshot }
+      );
+
+      setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
+      toast.success('Período cerrado correctamente');
+      return { success: true, snapshot };
+    } catch (e: any) {
+      console.error('[usePayrollEngine] closePeriod:', e);
+      toast.error(`Error al cerrar período: ${e.message}`);
+      return { success: false };
+    }
+  }, [companyId, periods, logAudit]);
+
+  // ---- LOCK PERIOD (V2-ES.7 Paso 3) ----
+
+  const lockPeriod = useCallback(async (periodId: string): Promise<boolean> => {
+    try {
+      const period = periods.find(p => p.id === periodId);
+      if (!period) { toast.error('Período no encontrado'); return false; }
+
+      if (period.status !== 'closed') {
+        toast.error('Solo se puede bloquear un período cerrado');
+        return false;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const now = new Date().toISOString();
+      const updates: any = {
+        status: 'locked',
+        locked_at: now,
+        metadata: {
+          ...(period.metadata || {}),
+          locked_by: user?.id,
+        },
+        updated_at: now,
+      };
+
+      const { error } = await supabase.from('hr_payroll_periods').update(updates).eq('id', periodId);
+      if (error) throw error;
+
+      await logAudit('period_locked', 'period', periodId,
+        { status: 'closed' },
+        { status: 'locked', locked_at: now, locked_by: user?.id }
+      );
+
+      setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
+      toast.success('Período bloqueado — no se permiten más cambios');
+      return true;
+    } catch (e: any) {
+      console.error('[usePayrollEngine] lockPeriod:', e);
+      toast.error(`Error al bloquear: ${e.message}`);
+      return false;
+    }
+  }, [periods, logAudit]);
+
+  // ---- REOPEN PERIOD (V2-ES.7 Paso 3, controlled) ----
+
+  const reopenPeriod = useCallback(async (periodId: string, reason: string): Promise<boolean> => {
+    try {
+      const period = periods.find(p => p.id === periodId);
+      if (!period) { toast.error('Período no encontrado'); return false; }
+
+      if (period.status !== 'closed') {
+        toast.error('Solo se puede reabrir un período cerrado (no bloqueado)');
+        return false;
+      }
+
+      if (!reason || reason.trim().length < 5) {
+        toast.error('Se requiere un motivo de reapertura (mínimo 5 caracteres)');
+        return false;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const now = new Date().toISOString();
+      const updates: any = {
+        status: 'reviewing',
+        updated_at: now,
+        metadata: {
+          ...(period.metadata || {}),
+          reopen_history: [
+            ...((period.metadata as any)?.reopen_history || []),
+            { reopened_at: now, reopened_by: user?.id, reason },
+          ],
+        },
+      };
+
+      const { error } = await supabase.from('hr_payroll_periods').update(updates).eq('id', periodId);
+      if (error) throw error;
+
+      await logAudit('period_reopened', 'period', periodId,
+        { status: 'closed' },
+        { status: 'reviewing', reason, reopened_by: user?.id }
+      );
+
+      setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
+      toast.success('Período reabierto para revisión');
+      return true;
+    } catch (e: any) {
+      console.error('[usePayrollEngine] reopenPeriod:', e);
+      toast.error(`Error al reabrir: ${e.message}`);
+      return false;
+    }
+  }, [periods, logAudit]);
+
+  // ---- WRITE GUARD (V2-ES.7 Paso 3) ----
+
+  const assertPeriodWritable = useCallback((periodId: string): boolean => {
+    const period = periods.find(p => p.id === periodId);
+    if (!period) return false;
+    if (!isPeriodWritable(period.status)) {
+      toast.error(`El período está ${period.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se permiten cambios`);
+      return false;
+    }
+    return true;
+  }, [periods]);
 
   // ---- REALTIME ----
 
@@ -528,6 +762,8 @@ export function usePayrollEngine(companyId?: string) {
     periods, records, lines, concepts, simulations, auditLog, isLoading,
     // Periods
     fetchPeriods, openPeriod, updatePeriodStatus,
+    // Period Close (V2-ES.7 Paso 3)
+    closePeriod, lockPeriod, reopenPeriod, assertPeriodWritable,
     // Records
     fetchRecords, updateRecordStatus,
     // Lines

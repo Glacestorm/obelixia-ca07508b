@@ -38,6 +38,10 @@ const ACTION_CONFIG: Record<string, { icon: typeof Shield; color: string; label:
   run_approved: { icon: CheckCircle, color: 'text-emerald-500', label: 'Run aprobado' },
   run_failed: { icon: XCircle, color: 'text-destructive', label: 'Run fallido' },
   run_superseded: { icon: RefreshCw, color: 'text-muted-foreground', label: 'Run sustituido' },
+  // Period close events (V2-ES.7 Paso 3)
+  period_closed: { icon: Lock, color: 'text-emerald-600', label: 'Período cerrado' },
+  period_locked: { icon: Lock, color: 'text-destructive', label: 'Período bloqueado' },
+  period_reopened: { icon: RefreshCw, color: 'text-amber-500', label: 'Período reabierto' },
 };
 
 export function HRPayrollAuditTrail({ companyId, auditLog, onFetch }: Props) {

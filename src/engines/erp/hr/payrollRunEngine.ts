@@ -408,3 +408,295 @@ export function getLatestCompletedRun(runs: PayrollRun[]): PayrollRun | null {
     .filter(r => r.status === 'calculated' || r.status === 'reviewed' || r.status === 'approved')
     .sort((a, b) => b.run_number - a.run_number)[0] || null;
 }
+
+// ══════════════════════════════════════════════════════════
+// V2-ES.7 Paso 3 — Period Close Engine
+// ══════════════════════════════════════════════════════════
+
+// Types used inline as strings to avoid circular imports with usePayrollEngine
+
+// ── Period State Machine ──
+
+const PERIOD_VALID_TRANSITIONS: Record<string, string[]> = {
+  draft:       ['open'],
+  open:        ['calculating'],
+  calculating: ['calculated', 'open'],
+  calculated:  ['reviewing', 'calculating'],
+  reviewing:   ['closing', 'calculating'],
+  closing:     ['closed'],
+  closed:      ['locked', 'reviewing'],  // reopen = closed→reviewing
+  locked:      [],                        // terminal
+};
+
+export function canTransitionPeriod(from: string, to: string): boolean {
+  return PERIOD_VALID_TRANSITIONS[from]?.includes(to) ?? false;
+}
+
+export function isPeriodWritable(status: string): boolean {
+  return !['closing', 'closed', 'locked'].includes(status);
+}
+
+export function isPeriodTerminal(status: string): boolean {
+  return status === 'locked';
+}
+
+// ── Pre-Close Validation (pure, no fetch) ──
+
+export interface PreCloseInput {
+  period: {
+    id: string;
+    status: string;
+    payment_date?: string | null;
+  };
+  runs: Array<{
+    id: string;
+    run_number: number;
+    status: PayrollRunStatus;
+    run_type: PayrollRunType;
+    total_gross: number;
+    total_net: number;
+    total_employer_cost: number;
+    total_employees: number;
+    employees_errored: number;
+    warnings_count: number;
+    snapshot_hash: string | null;
+    completed_at: string | null;
+  }>;
+  records: Array<{
+    id: string;
+    status: string;
+    gross_salary: number;
+    net_salary: number;
+    employer_cost: number;
+  }>;
+  incidents: Array<{
+    id: string;
+    status: string;
+  }>;
+}
+
+export function validatePreClose(input: PreCloseInput): PayrollRunValidationSummary {
+  const checks: PayrollRunCheck[] = [];
+  const { period, runs, records, incidents } = input;
+
+  // 1. Period must be in valid state for closing
+  checks.push({
+    id: 'period_closable',
+    label: 'Período en estado válido para cierre',
+    passed: ['reviewing', 'calculated'].includes(period.status),
+    severity: 'error',
+    detail: `Estado actual: ${period.status}`,
+  });
+
+  // 2. At least one approved run
+  const approvedRuns = runs.filter(r => r.status === 'approved');
+  checks.push({
+    id: 'approved_run_exists',
+    label: 'Existe al menos un run aprobado',
+    passed: approvedRuns.length > 0,
+    severity: 'error',
+    detail: approvedRuns.length > 0
+      ? `${approvedRuns.length} run(s) aprobado(s): #${approvedRuns.map(r => r.run_number).join(', #')}`
+      : 'No hay runs aprobados',
+  });
+
+  // 3. No active (draft/running) runs
+  const activeRuns = runs.filter(r => r.status === 'draft' || r.status === 'running');
+  checks.push({
+    id: 'no_active_runs',
+    label: 'Sin ejecuciones activas o en borrador',
+    passed: activeRuns.length === 0,
+    severity: 'error',
+    detail: activeRuns.length > 0
+      ? `${activeRuns.length} run(s) sin finalizar`
+      : 'OK',
+  });
+
+  // 4. All records approved or paid
+  const nonApprovedRecords = records.filter(r => r.status !== 'approved' && r.status !== 'paid');
+  checks.push({
+    id: 'all_records_approved',
+    label: 'Todas las nóminas aprobadas o pagadas',
+    passed: nonApprovedRecords.length === 0 && records.length > 0,
+    severity: 'error',
+    detail: records.length === 0
+      ? 'No existen nóminas en el período'
+      : nonApprovedRecords.length > 0
+        ? `${nonApprovedRecords.length} nómina(s) no aprobadas`
+        : `${records.length} nóminas OK`,
+  });
+
+  // 5. No pending incidents
+  const pendingIncidents = incidents.filter(i => i.status === 'pending');
+  checks.push({
+    id: 'no_pending_incidents',
+    label: 'Sin incidencias pendientes',
+    passed: pendingIncidents.length === 0,
+    severity: 'warning',
+    detail: pendingIncidents.length > 0
+      ? `${pendingIncidents.length} incidencia(s) sin resolver`
+      : 'OK',
+  });
+
+  // 6. Totals reconciliation (run vs sum of records)
+  const latestApproved = approvedRuns.sort((a, b) => b.run_number - a.run_number)[0];
+  if (latestApproved && records.length > 0) {
+    const recordsGross = records.reduce((s, r) => s + (r.gross_salary || 0), 0);
+    const diffGross = Math.abs(latestApproved.total_gross - recordsGross);
+    checks.push({
+      id: 'totals_reconciled',
+      label: 'Totales del run coinciden con sumatorio de nóminas',
+      passed: diffGross < 0.02,
+      severity: 'warning',
+      detail: diffGross >= 0.02
+        ? `Descuadre de ${diffGross.toFixed(2)}€ en bruto`
+        : 'Totales cuadrados',
+    });
+  }
+
+  // 7. Payment date set
+  checks.push({
+    id: 'payment_date_set',
+    label: 'Fecha de pago definida',
+    passed: !!period.payment_date,
+    severity: 'warning',
+    detail: period.payment_date || 'Sin fecha de pago',
+  });
+
+  // 8. No rejected records lingering
+  const rejectedRecords = records.filter(r => r.status === 'rejected');
+  checks.push({
+    id: 'no_rejected_records',
+    label: 'Sin nóminas rechazadas sin resolver',
+    passed: rejectedRecords.length === 0,
+    severity: 'warning',
+    detail: rejectedRecords.length > 0
+      ? `${rejectedRecords.length} nómina(s) rechazadas`
+      : 'OK',
+  });
+
+  // 9. Employee count match
+  if (latestApproved) {
+    checks.push({
+      id: 'employee_count_match',
+      label: 'Nº nóminas coincide con empleados del run',
+      passed: records.length === latestApproved.total_employees,
+      severity: 'warning',
+      detail: records.length !== latestApproved.total_employees
+        ? `Run: ${latestApproved.total_employees}, Nóminas: ${records.length}`
+        : `${records.length} empleados`,
+    });
+  }
+
+  // 10. Snapshot integrity
+  if (latestApproved) {
+    checks.push({
+      id: 'snapshot_integrity',
+      label: 'Integridad del snapshot del run aprobado',
+      passed: !!latestApproved.snapshot_hash,
+      severity: 'info',
+      detail: latestApproved.snapshot_hash || 'Sin hash',
+    });
+  }
+
+  // 11. No run errors
+  if (latestApproved) {
+    checks.push({
+      id: 'no_run_errors',
+      label: 'Run aprobado sin errores de cálculo',
+      passed: latestApproved.employees_errored === 0,
+      severity: 'warning',
+      detail: latestApproved.employees_errored > 0
+        ? `${latestApproved.employees_errored} empleado(s) con error`
+        : 'OK',
+    });
+  }
+
+  const passed = checks.filter(c => c.passed).length;
+  const failed = checks.filter(c => !c.passed && c.severity === 'error').length;
+  const warnings = checks.filter(c => !c.passed && c.severity === 'warning').length;
+
+  return { total_checks: checks.length, passed, failed, warnings, checks };
+}
+
+// ── Closure Snapshot ──
+
+export interface PeriodClosureSnapshot {
+  version: '1.0';
+  closed_at: string;
+  closed_by: string;
+  approved_run_id: string;
+  approved_run_number: number;
+  run_type: PayrollRunType;
+  validation_summary: PayrollRunValidationSummary;
+  totals: {
+    gross: number;
+    net: number;
+    deductions: number;
+    employer_cost: number;
+  };
+  employee_count: number;
+  run_history: Array<{
+    id: string;
+    run_number: number;
+    status: PayrollRunStatus;
+    run_type: PayrollRunType;
+    completed_at: string | null;
+  }>;
+  incidents_summary: {
+    total: number;
+    validated: number;
+    pending: number;
+    cancelled: number;
+  };
+  recalculations_count: number;
+  payment_date: string | null;
+}
+
+export function buildClosureSnapshot(
+  input: PreCloseInput,
+  validationSummary: PayrollRunValidationSummary,
+  userId: string,
+): PeriodClosureSnapshot {
+  const approvedRuns = input.runs
+    .filter(r => r.status === 'approved')
+    .sort((a, b) => b.run_number - a.run_number);
+  const latestApproved = approvedRuns[0];
+
+  const incidentsByStatus = input.incidents.reduce((acc, i) => {
+    acc[i.status] = (acc[i.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return {
+    version: '1.0',
+    closed_at: new Date().toISOString(),
+    closed_by: userId,
+    approved_run_id: latestApproved?.id || '',
+    approved_run_number: latestApproved?.run_number || 0,
+    run_type: (latestApproved as any)?.run_type || 'initial',
+    validation_summary: validationSummary,
+    totals: {
+      gross: latestApproved?.total_gross || 0,
+      net: latestApproved?.total_net || 0,
+      deductions: (latestApproved?.total_gross || 0) - (latestApproved?.total_net || 0),
+      employer_cost: latestApproved?.total_employer_cost || 0,
+    },
+    employee_count: latestApproved?.total_employees || input.records.length,
+    run_history: input.runs.map(r => ({
+      id: r.id,
+      run_number: r.run_number,
+      status: r.status,
+      run_type: r.run_type,
+      completed_at: r.completed_at,
+    })),
+    incidents_summary: {
+      total: input.incidents.length,
+      validated: incidentsByStatus['validated'] || 0,
+      pending: incidentsByStatus['pending'] || 0,
+      cancelled: incidentsByStatus['cancelled'] || 0,
+    },
+    recalculations_count: input.runs.filter(r => r.run_type === 'recalculation').length,
+    payment_date: input.period.payment_date || null,
+  };
+}
