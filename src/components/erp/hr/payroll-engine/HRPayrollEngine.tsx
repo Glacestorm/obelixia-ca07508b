@@ -5,12 +5,13 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, FileText, BookOpen, FlaskConical, Shield } from 'lucide-react';
+import { Calendar, FileText, BookOpen, FlaskConical, Shield, AlertCircle } from 'lucide-react';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 import { useESPayrollBridge } from '@/hooks/erp/hr/useESPayrollBridge';
 import { HRPayrollPeriodManager } from './HRPayrollPeriodManager';
 import { HRPayrollRecordsList } from './HRPayrollRecordsList';
 import { HRPayrollConceptsCatalog } from './HRPayrollConceptsCatalog';
+import { HRPayrollIncidentsPanel } from './HRPayrollIncidentsPanel';
 import { HRPayrollSimulator } from './HRPayrollSimulator';
 import { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
 
