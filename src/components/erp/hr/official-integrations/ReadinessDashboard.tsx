@@ -461,6 +461,71 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
         </Card>
       </div>
 
+      {/* Regulatory Calendar Widget */}
+      {calendar && calendar.deadlines.length > 0 && (
+        <Card>
+          <CardContent className="py-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" /> Plazos Regulatorios
+                {calendar.hasRisk && (
+                  <Badge variant="outline" className="text-[9px] h-4 text-destructive border-destructive/30">
+                    {calendar.summaryLabel}
+                  </Badge>
+                )}
+                {!calendar.hasRisk && (
+                  <Badge variant="outline" className="text-[9px] h-4 text-green-600 border-green-300">
+                    {calendar.summaryLabel}
+                  </Badge>
+                )}
+              </p>
+            </div>
+            <div className="space-y-1">
+              {calendar.deadlines.slice(0, 6).map(dl => {
+                const urgencyStyles: Record<string, string> = {
+                  overdue: 'text-destructive bg-destructive/5 border-destructive/20',
+                  urgent: 'text-amber-700 bg-amber-500/5 border-amber-500/20',
+                  upcoming: 'text-blue-600 bg-blue-500/5 border-blue-500/20',
+                  ok: 'text-green-600 bg-green-500/5 border-green-500/20',
+                  insufficient: 'text-muted-foreground bg-muted border-border',
+                  not_applicable: 'text-muted-foreground bg-muted border-border',
+                };
+                const urgencyLabels: Record<string, string> = {
+                  overdue: 'Vencido',
+                  urgent: 'Urgente',
+                  upcoming: 'Próximo',
+                  ok: 'En plazo',
+                  insufficient: 'Sin datos',
+                  not_applicable: 'N/A',
+                };
+                return (
+                  <div key={dl.id} className={cn('flex items-center justify-between py-1.5 px-2 rounded border text-[11px]', urgencyStyles[dl.urgency])}>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {dl.urgency === 'overdue' ? <XCircle className="h-3 w-3 shrink-0" /> :
+                       dl.urgency === 'urgent' ? <AlertTriangle className="h-3 w-3 shrink-0" /> :
+                       dl.urgency === 'ok' ? <CheckCircle2 className="h-3 w-3 shrink-0" /> :
+                       <Clock className="h-3 w-3 shrink-0" />}
+                      <span className="truncate font-medium">{dl.label}</span>
+                      <span className="text-[10px] text-muted-foreground truncate">{dl.description.substring(0, 60)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className="text-[8px] h-3.5">{urgencyLabels[dl.urgency]}</Badge>
+                      <span className="font-mono text-[10px]">
+                        {dl.daysRemaining >= 0 ? `${dl.daysRemaining}d` : `${Math.abs(dl.daysRemaining)}d atrás`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-start gap-1.5 pt-1 text-[9px] text-muted-foreground">
+              <Info className="h-2.5 w-2.5 mt-0.5 shrink-0 text-blue-400" />
+              <span>{calendar.disclaimer}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Disclaimer */}
       <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border text-xs text-muted-foreground">
         <Info className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" />

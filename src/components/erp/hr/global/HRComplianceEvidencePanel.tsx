@@ -120,11 +120,27 @@ export function HRComplianceEvidencePanel({ companyId }: Props) {
             <div className="space-y-1 max-h-[180px] overflow-y-auto">
               {allEvidence.map(ev => {
                 const isReadiness = (ev.metadata as any)?.evidence_subtype === 'readiness_report';
+                const hasDocLink = !!ev.document_id;
+                const hasDryRunRef = !!ev.dry_run_id;
                 return (
                   <div key={ev.id} className="flex items-center gap-2 py-1 px-1.5 rounded bg-background/60 text-[11px]">
                     <Paperclip className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="flex-1 truncate">{ev.label}</span>
-                    {isReadiness && <Badge variant="outline" className="text-[8px] h-3.5 text-blue-500">Readiness</Badge>}
+                    <div className="flex-1 min-w-0">
+                      <span className="truncate block">{ev.label}</span>
+                      <div className="flex items-center gap-1.5">
+                        {isReadiness && <span className="text-[8px] text-blue-500">Readiness</span>}
+                        {hasDocLink && (
+                          <span className="text-[8px] text-primary flex items-center gap-0.5">
+                            <Paperclip className="h-2 w-2" /> Expediente
+                          </span>
+                        )}
+                        {hasDryRunRef && (
+                          <span className="text-[8px] text-muted-foreground flex items-center gap-0.5">
+                            <FlaskConical className="h-2 w-2" /> Dry-run
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <Badge variant="outline" className="text-[9px] h-4 shrink-0">
                       {EVIDENCE_TYPE_LABELS[ev.evidence_type] || ev.evidence_type}
                     </Badge>
