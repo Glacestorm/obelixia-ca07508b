@@ -488,6 +488,40 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
         </Card>
       </div>
 
+      {/* Approval Status Widget — V2-ES.8 T5 */}
+      {(approvalPendingCount > 0 || approvalApprovedCount > 0 || approvalRejectedCount > 0) && (
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" /> Aprobaciones Pre-Real
+              </p>
+              <div className="flex items-center gap-3 text-[10px]">
+                {approvalPendingCount > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <Clock className="h-3 w-3" /> {approvalPendingCount} pendiente(s)
+                  </span>
+                )}
+                {approvalApprovedCount > 0 && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CheckCircle2 className="h-3 w-3" /> {approvalApprovedCount} aprobado(s)
+                  </span>
+                )}
+                {approvalRejectedCount > 0 && (
+                  <span className="flex items-center gap-1 text-destructive">
+                    <XCircle className="h-3 w-3" /> {approvalRejectedCount} rechazado(s)
+                  </span>
+                )}
+              </div>
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-1 flex items-center gap-1">
+              <Lock className="h-2.5 w-2.5" />
+              Gate interno de autorización · Aprobado ≠ enviado · El envío real permanece bloqueado
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Regulatory Calendar Widget */}
       {calendar && calendar.deadlines.length > 0 && (
         <Card>
