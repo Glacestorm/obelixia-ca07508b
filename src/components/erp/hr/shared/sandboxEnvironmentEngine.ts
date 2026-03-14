@@ -10,6 +10,43 @@
 
 export type ConnectorEnvironment = 'sandbox' | 'test' | 'preprod' | 'production';
 
+export type EnvironmentStatus =
+  | 'not_configured'   // Sin configuración mínima
+  | 'configured'       // Credenciales/config presentes
+  | 'gated'            // Configurado pero gates no cumplidos
+  | 'sandbox_ready'    // Gates cumplidos, listo para habilitar
+  | 'sandbox_enabled'  // Activo y ejecutable
+  | 'prod_blocked';    // Invariante permanente para producción
+
+export type SandboxDomain = 'TGSS' | 'CONTRATA' | 'AEAT';
+
+export const SANDBOX_DOMAINS: { id: SandboxDomain; label: string; system: string }[] = [
+  { id: 'TGSS', label: 'TGSS / SILTRA', system: 'siltra' },
+  { id: 'CONTRATA', label: 'Contrat@ / SEPE', system: 'contrata' },
+  { id: 'AEAT', label: 'AEAT (Modelo 111/190)', system: 'aeat' },
+];
+
+/** Per-domain, per-environment configuration record */
+export interface DomainEnvironmentRecord {
+  domain: SandboxDomain;
+  environment: ConnectorEnvironment;
+  status: EnvironmentStatus;
+  companyId: string;
+  legalEntityId: string | null;
+  sandboxEnabled: boolean;
+  prodEnabled: false; // INVARIANT: always false
+  certificateBinding: string | null; // alias from erp_hr_domain_certificates
+  configBinding: Record<string, unknown> | null;
+  credentialAlias: string | null;
+  metadata: {
+    lastStatusChange: string;
+    changedBy: string | null;
+    gateSnapshot: GateEvaluationResult[];
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface EnvironmentDefinition {
   id: ConnectorEnvironment;
   label: string;
