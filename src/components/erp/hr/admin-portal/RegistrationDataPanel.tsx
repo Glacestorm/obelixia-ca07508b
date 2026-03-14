@@ -132,10 +132,12 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
       const { id, request_id, company_id, employee_id, created_at, updated_at, ...updates } = formData as any;
       await upsertRegistrationData(requestId, employeeId, updates);
       setEditMode(false);
+      // Persist computed deadline + payload state
+      setTimeout(() => persistDeadlineAndPayload(requestId, holidaySet), 500);
     } finally {
       setSaving(false);
     }
-  }, [formData, requestId, employeeId, upsertRegistrationData]);
+  }, [formData, requestId, employeeId, upsertRegistrationData, persistDeadlineAndPayload, holidaySet]);
 
   const handleInitialize = useCallback(async () => {
     await upsertRegistrationData(requestId, employeeId, {
