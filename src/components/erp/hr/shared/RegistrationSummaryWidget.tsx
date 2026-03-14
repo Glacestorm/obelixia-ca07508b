@@ -71,6 +71,7 @@ export function RegistrationSummaryWidget({ companyId, employeeId, className }: 
   const status = data.registration_status as RegistrationStatus;
   const isComplete = status === 'confirmed';
   const isPending = status === 'pending_data' || status === 'pending_documents';
+  const isClosed = (data as any).closure_status === 'closed';
 
   return (
     <Card className={cn('border-l-2', isComplete ? 'border-l-emerald-500' : isPending ? 'border-l-amber-500' : 'border-l-blue-500', className)}>
