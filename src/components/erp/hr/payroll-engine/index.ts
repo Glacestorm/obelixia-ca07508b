@@ -6,5 +6,6 @@ export { HRPayrollPeriodManager } from './HRPayrollPeriodManager';
 export { HRPayrollRecordsList } from './HRPayrollRecordsList';
 export { HRPayrollConceptsCatalog } from './HRPayrollConceptsCatalog';
 export { HRPayrollIncidentsPanel } from './HRPayrollIncidentsPanel';
+export { HRPayrollRunsPanel } from './HRPayrollRunsPanel';
 export { HRPayrollSimulator } from './HRPayrollSimulator';
 export { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
