@@ -378,10 +378,14 @@ export function HRSocialSecurityPanel({ companyId }: HRSocialSecurityPanelProps)
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-5 mb-4">
               <TabsTrigger value="cotizaciones" className="text-xs gap-1">
                 <Calculator className="h-3 w-3" />
                 Cotizaciones
+              </TabsTrigger>
+              <TabsTrigger value="expediente" className="text-xs gap-1">
+                <FileCheck className="h-3 w-3" />
+                Expediente
               </TabsTrigger>
               <TabsTrigger value="red" className="text-xs gap-1">
                 <Send className="h-3 w-3" />
