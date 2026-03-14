@@ -491,6 +491,25 @@ export function RegistrationDataPanel({ requestId, companyId, employeeId, linked
           </>
         )}
 
+        {/* V2-ES.5 Paso 4: Operational closure */}
+        {registrationData && !editMode && (
+          <>
+            <Separator />
+            <RegistrationClosureSection
+              canClose={closure.canClose}
+              isClosed={closure.isClosed}
+              isConfirmed={closure.isConfirmed}
+              blockers={closure.blockers}
+              warnings={closure.warnings}
+              existingSnapshot={closure.existingSnapshot}
+              closedAt={closure.closedAt}
+              closureNotes={closure.closureNotes}
+              onClose={handleClose}
+              onReopen={handleReopen}
+            />
+          </>
+        )}
+
         {/* Timestamps */}
         {registrationData && (registrationData.data_validated_at || registrationData.submitted_at || registrationData.confirmed_at) && (
           <>
