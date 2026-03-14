@@ -302,11 +302,15 @@ export function HRPayrollPeriodManager({
                     </div>
                     <MonthlyClosingSummaryCard
                       period={p}
-                      previousPeriod={periods.find(prev =>
-                        prev.id !== p.id &&
-                        (prev.status === 'closed' || prev.status === 'locked') &&
-                        (prev.fiscal_year < p.fiscal_year || (prev.fiscal_year === p.fiscal_year && prev.period_number < p.period_number))
-                      ) || null}
+                      previousPeriod={
+                        [...periods]
+                          .filter(prev =>
+                            prev.id !== p.id &&
+                            (prev.status === 'closed' || prev.status === 'locked') &&
+                            (prev.fiscal_year < p.fiscal_year || (prev.fiscal_year === p.fiscal_year && prev.period_number < p.period_number))
+                          )
+                          .sort((a, b) => b.fiscal_year - a.fiscal_year || b.period_number - a.period_number)[0] || null
+                      }
                       companyId={companyId}
                     />
                     {closureSnapshot && (

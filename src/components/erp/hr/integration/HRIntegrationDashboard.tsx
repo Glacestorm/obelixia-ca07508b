@@ -466,6 +466,26 @@ export function HRIntegrationDashboard({ companyId }: HRIntegrationDashboardProp
             </Card>
           </div>
 
+          {/* Resumen ejecutivo último cierre */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Euro className="h-5 w-5 text-primary" />
+                Último cierre mensual
+              </CardTitle>
+              <CardDescription className="text-xs">
+                KPIs del último período cerrado/bloqueado disponible
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p>Los KPIs ejecutivos del último cierre se muestran en el panel <strong>Períodos de Nómina</strong></p>
+                <p className="text-xs mt-1">Períodos → Resumen ejecutivo mensual (períodos cerrados/bloqueados)</p>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Barra de Salud General */}
           {metrics && (
             <Card>
