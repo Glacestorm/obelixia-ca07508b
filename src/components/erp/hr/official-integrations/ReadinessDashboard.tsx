@@ -336,6 +336,8 @@ export function ReadinessDashboard({ companyId, adapters }: Props) {
     fetchApprovals,
   } = usePreRealApproval(companyId);
 
+  const { isExporting, exportReadiness } = useOfficialExport(companyId);
+
   // ─── Proactive Alerts (V2-ES.8 T6) ───
   const proactiveAlerts = useProactiveAlertSignals({
     readinessSummary: summary,
