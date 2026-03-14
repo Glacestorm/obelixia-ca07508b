@@ -523,6 +523,160 @@ export function useHRRegistrationProcess(companyId: string) {
     }
   }, [registrationData, user]);
 
+  /** Close registration operationally (internal closure, not official TGSS confirmation) */
+  const closeRegistration = useCallback(async (
+    requestId: string,
+    notes?: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!user?.id) return { success: false, error: 'No autenticado' };
+    if (!registrationData || registrationData.request_id !== requestId) {
+      return { success: false, error: 'Datos de alta no cargados' };
+    }
+
+    // Evaluate closure readiness
+    const closureResult = evaluateClosureReadiness(registrationData);
+
+    if (closureResult.alreadyClosed) {
+      return { success: false, error: 'El proceso ya está cerrado internamente' };
+    }
+    if (closureResult.alreadyConfirmed) {
+      return { success: false, error: 'El proceso ya está confirmado oficialmente' };
+    }
+    if (!closureResult.canClose) {
+      // Persist blockers for traceability
+      try {
+        await supabase
+          .from('erp_hr_registration_data')
+          .update({
+            closure_blockers: closureResult.blockers as any,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq('request_id', requestId);
+      } catch { /* best effort */ }
+
+      return {
+        success: false,
+        error: closureResult.blockers.map(b => b.message).join('; '),
+      };
+    }
+
+    // Build immutable snapshot
+    const snapshot = buildClosureSnapshot(closureResult.preIntegration);
+    const now = new Date().toISOString();
+
+    try {
+      const { error: dbError } = await supabase
+        .from('erp_hr_registration_data')
+        .update({
+          closure_status: 'closed',
+          closed_at: now,
+          closed_by: user.id,
+          closure_notes: notes || null,
+          closure_snapshot: snapshot as any,
+          closure_blockers: null, // Clear any previous blockers
+          updated_at: now,
+        } as any)
+        .eq('request_id', requestId);
+
+      if (dbError) throw dbError;
+
+      setRegistrationData(prev => prev ? {
+        ...prev,
+        closure_status: 'closed',
+        closed_at: now,
+        closed_by: user.id,
+        closure_notes: notes || null,
+        closure_snapshot: snapshot as any,
+        closure_blockers: null,
+      } : null);
+
+      toast.success('Alta cerrada internamente');
+
+      // Audit: operational closure
+      logRegistrationAudit(
+        'REGISTRATION_INTERNALLY_CLOSED',
+        registrationData.company_id,
+        user.id,
+        requestId,
+        { closure_status: null },
+        {
+          closure_status: 'closed',
+          pre_integration_status: closureResult.preIntegration.status,
+          readiness_percent: closureResult.preIntegration.payload.readinessPercent,
+          consistency_warnings: closureResult.warnings.length,
+          has_notes: !!notes,
+        },
+        'important',
+        ['closure_status', 'closed_at', 'closed_by', 'closure_snapshot'],
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error('[useHRRegistrationProcess] closeRegistration error:', err);
+      toast.error('Error al cerrar el alta');
+      return { success: false, error: 'Error de base de datos' };
+    }
+  }, [registrationData, user, companyId]);
+
+  /** Reopen a previously closed registration (admin action) */
+  const reopenRegistration = useCallback(async (
+    requestId: string,
+    reason?: string,
+  ): Promise<boolean> => {
+    if (!user?.id) return false;
+    if (!registrationData || registrationData.request_id !== requestId) return false;
+
+    const wasClosed = (registrationData as any).closure_status === 'closed';
+    if (!wasClosed) return false;
+
+    try {
+      const now = new Date().toISOString();
+      const { error: dbError } = await supabase
+        .from('erp_hr_registration_data')
+        .update({
+          closure_status: null,
+          closed_at: null,
+          closed_by: null,
+          closure_notes: null,
+          closure_snapshot: null,
+          closure_blockers: null,
+          updated_at: now,
+        } as any)
+        .eq('request_id', requestId);
+
+      if (dbError) throw dbError;
+
+      setRegistrationData(prev => prev ? {
+        ...prev,
+        closure_status: null,
+        closed_at: null,
+        closed_by: null,
+        closure_notes: null,
+        closure_snapshot: null,
+        closure_blockers: null,
+      } : null);
+
+      toast.success('Alta reabierta');
+
+      logRegistrationAudit(
+        'REGISTRATION_CLOSURE_REOPENED',
+        registrationData.company_id,
+        user.id,
+        requestId,
+        { closure_status: 'closed' },
+        { closure_status: null, reopen_reason: reason || 'Sin motivo' },
+        'warning',
+        ['closure_status'],
+      );
+
+      return true;
+    } catch (err) {
+      console.error('[useHRRegistrationProcess] reopenRegistration error:', err);
+      toast.error('Error al reabrir el alta');
+      return false;
+    }
+  }, [registrationData, user, companyId]);
+
   return {
     registrationData,
     loading,
@@ -533,6 +687,8 @@ export function useHRRegistrationProcess(companyId: string) {
     computeDataReadiness: () => computeDataReadiness(registrationData),
     fetchByEmployee,
     persistDeadlineAndPayload,
+    closeRegistration,
+    reopenRegistration,
     REGISTRATION_STATUS_CONFIG,
   };
 }
