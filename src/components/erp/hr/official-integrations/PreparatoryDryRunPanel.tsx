@@ -192,7 +192,7 @@ function PersistedDryRunCard({
     : 'text-destructive bg-destructive/10';
 
   return (
-    <Card className="hover:bg-muted/20 transition-colors">
+    <Card className={cn('hover:bg-muted/20 transition-colors', isSelectedForDiff && 'ring-2 ring-primary/40')}>
       <CardContent className="py-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -214,11 +214,34 @@ function PersistedDryRunCard({
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            {/* Health badge */}
+            {health && (
+              <Badge variant="outline" className={cn('text-[9px] h-4 gap-0.5',
+                health.recommendation === 'use' ? 'text-green-600 border-green-300' :
+                health.recommendation === 'refresh' ? 'text-amber-600 border-amber-300' :
+                'text-muted-foreground border-border'
+              )}>
+                <HeartPulse className="h-2.5 w-2.5" />
+                {health.recommendation === 'use' ? 'Vigente' : health.recommendation === 'refresh' ? 'Actualizar' : 'Obsoleto'}
+              </Badge>
+            )}
             <Badge className={cn('text-[10px]', statusColor)}>
               {result.status === 'success' ? 'Éxito' : result.status === 'partial' ? 'Parcial' : 'Fallido'}
             </Badge>
             {result.readiness_score > 0 && (
               <span className="text-[10px] font-mono text-muted-foreground">{result.readiness_score}%</span>
+            )}
+            {/* Diff selection button */}
+            {onSelectForDiff && (
+              <Button
+                variant={isSelectedForDiff ? 'default' : 'ghost'}
+                size="icon"
+                className="h-6 w-6"
+                title="Seleccionar para comparar"
+                onClick={() => onSelectForDiff(result.id)}
+              >
+                <ArrowUpDown className="h-3 w-3" />
+              </Button>
             )}
             <Button
               variant="ghost"
@@ -238,6 +261,22 @@ function PersistedDryRunCard({
 
         {expanded && (
           <div className="pt-2 border-t space-y-2">
+            {/* Health warnings */}
+            {health && health.warnings.length > 0 && (
+              <div className="space-y-0.5">
+                {health.warnings.map((w, i) => (
+                  <div key={i} className="flex items-center gap-1 text-[10px] text-amber-600">
+                    <AlertTriangle className="h-2.5 w-2.5 shrink-0" /> {w}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Diff report inline */}
+            {diffReport && (
+              <DiffReportCard report={diffReport} />
+            )}
+
             {/* Validation summary */}
             {result.validation_result && (
               <div className="flex items-center gap-3 text-[11px]">
