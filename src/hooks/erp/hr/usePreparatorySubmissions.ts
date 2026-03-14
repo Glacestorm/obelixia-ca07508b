@@ -29,6 +29,7 @@ import {
   createEmptyValidationResult,
   isRealSubmissionBlocked,
 } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
+import { logDryRunEvent } from '@/components/erp/hr/shared/dryRunAuditEvents';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -297,16 +298,17 @@ export function usePreparatorySubmissions(companyId: string) {
     }
   }, []);
 
-  // ── Execute dry-run (simulated) ──
+  // ── Execute dry-run (simulated) with persistence ──
   const executeDryRun = useCallback(async (id: string): Promise<boolean> => {
     const sub = submissions.find(s => s.id === id);
     if (!sub) return false;
 
-    // Must be ready_for_dry_run
     if (sub.status !== 'ready_for_dry_run') {
       toast.error('El envío debe estar en estado "Listo para dry-run"');
       return false;
     }
+
+    const startTime = Date.now();
 
     try {
       const dryRunResult = {
@@ -340,6 +342,81 @@ export function usePreparatorySubmissions(companyId: string) {
 
       if (error) throw error;
 
+      // Persist dry-run result to dedicated table
+      const durationMs = Date.now() - startTime;
+      const { data: userData } = await supabase.auth.getUser();
+
+      await supabase
+        .from('erp_hr_dry_run_results' as any)
+        .insert([{
+          company_id: sub.company_id,
+          submission_id: id,
+          submission_domain: sub.submission_domain,
+          submission_type: sub.submission_type,
+          execution_number: ((currentMeta.dry_run_history as any[]) || []).length + 1,
+          status: 'success',
+          payload_snapshot: sub.payload_snapshot,
+          validation_result: sub.validation_result,
+          dry_run_output: dryRunResult,
+          readiness_score: sub.validation_result?.score || 0,
+          duration_ms: durationMs,
+          executed_by: userData?.user?.id || null,
+          notes: 'Simulación automática desde panel preparatorio',
+          metadata: { version: '1.0', phase: 'V2-ES.8-T2' },
+        }]);
+
+      // Auto-generate evidence records
+      const { data: dryRunRecord } = await supabase
+        .from('erp_hr_dry_run_results' as any)
+        .select('id')
+        .eq('submission_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (dryRunRecord) {
+        const evidenceRecords = [];
+        if (sub.payload_snapshot) {
+          evidenceRecords.push({
+            dry_run_id: (dryRunRecord as any).id,
+            evidence_type: 'payload_snapshot',
+            label: `Snapshot payload ${sub.submission_domain}`,
+            description: 'Captura inmutable del payload generado',
+            metadata: { domain: sub.submission_domain },
+          });
+        }
+        if (sub.validation_result) {
+          evidenceRecords.push({
+            dry_run_id: (dryRunRecord as any).id,
+            evidence_type: 'validation_report',
+            label: `Validación (${sub.validation_result.score}%)`,
+            description: `${sub.validation_result.errorCount} errores, ${sub.validation_result.warningCount} avisos`,
+            metadata: { score: sub.validation_result.score, passed: sub.validation_result.passed },
+          });
+        }
+        evidenceRecords.push({
+          dry_run_id: (dryRunRecord as any).id,
+          evidence_type: 'simulation_log',
+          label: 'Log de simulación',
+          description: 'Registro de ejecución simulada — sin efectos externos',
+          metadata: { timestamp: new Date().toISOString(), simulated: true },
+        });
+
+        if (evidenceRecords.length > 0) {
+          await supabase.from('erp_hr_dry_run_evidence' as any).insert(evidenceRecords);
+        }
+      }
+
+      // Granular audit
+      await logDryRunEvent('dry_run_executed', {
+        submissionId: id,
+        dryRunId: (dryRunRecord as any)?.id,
+        domain: sub.submission_domain,
+        submissionType: sub.submission_type,
+        score: sub.validation_result?.score,
+        status: 'success',
+      });
+
       setSubmissions(prev => prev.map(s =>
         s.id === id ? {
           ...s,
@@ -348,7 +425,7 @@ export function usePreparatorySubmissions(companyId: string) {
         } : s
       ));
 
-      toast.success('Dry-run ejecutado con éxito (simulación)');
+      toast.success('Dry-run ejecutado y persistido (simulación)');
       return true;
     } catch (err) {
       console.error('[usePreparatorySubmissions] executeDryRun error:', err);

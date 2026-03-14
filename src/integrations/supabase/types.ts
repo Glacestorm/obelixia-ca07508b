@@ -31736,6 +31736,118 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_dry_run_evidence: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_id: string | null
+          dry_run_id: string
+          evidence_type: string
+          file_path: string | null
+          id: string
+          label: string
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_id?: string | null
+          dry_run_id: string
+          evidence_type?: string
+          file_path?: string | null
+          id?: string
+          label: string
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_id?: string | null
+          dry_run_id?: string
+          evidence_type?: string
+          file_path?: string | null
+          id?: string
+          label?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_dry_run_evidence_dry_run_id_fkey"
+            columns: ["dry_run_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_dry_run_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_dry_run_results: {
+        Row: {
+          company_id: string
+          created_at: string
+          dry_run_output: Json | null
+          duration_ms: number | null
+          executed_by: string | null
+          execution_number: number
+          id: string
+          metadata: Json | null
+          notes: string | null
+          payload_snapshot: Json | null
+          readiness_score: number | null
+          status: string
+          submission_domain: string
+          submission_id: string | null
+          submission_type: string
+          updated_at: string
+          validation_result: Json | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          dry_run_output?: Json | null
+          duration_ms?: number | null
+          executed_by?: string | null
+          execution_number?: number
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payload_snapshot?: Json | null
+          readiness_score?: number | null
+          status?: string
+          submission_domain?: string
+          submission_id?: string | null
+          submission_type: string
+          updated_at?: string
+          validation_result?: Json | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          dry_run_output?: Json | null
+          duration_ms?: number | null
+          executed_by?: string | null
+          execution_number?: number
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          payload_snapshot?: Json | null
+          readiness_score?: number | null
+          status?: string
+          submission_domain?: string
+          submission_id?: string | null
+          submission_type?: string
+          updated_at?: string
+          validation_result?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_dry_run_results_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "hr_official_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_employee_benefits: {
         Row: {
           approved_at: string | null
