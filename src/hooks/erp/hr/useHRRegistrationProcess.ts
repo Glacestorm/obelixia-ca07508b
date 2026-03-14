@@ -70,6 +70,18 @@ export interface RegistrationData {
   confirmed_at: string | null;
   confirmed_reference: string | null;
   validation_notes: string | null;
+  // V2-ES.5 Paso 2: Deadline & payload tracking
+  internal_deadline_at: string | null;
+  deadline_urgency: string | null;
+  is_overdue: boolean;
+  payload_status: string | null;
+  payload_ready: boolean;
+  payload_missing_fields: string[] | null;
+  payload_format_errors: string[] | null;
+  payload_snapshot: Record<string, unknown> | null;
+  last_payload_computed_at: string | null;
+  deadline_computed_at: string | null;
+  // Timestamps
   created_at: string;
   updated_at: string;
 }
