@@ -167,9 +167,10 @@ export function HRPayrollRunsPanel({ companyId, periods, selectedPeriodId, onSel
 
         <Button
           onClick={() => setShowCreateDialog(true)}
-          disabled={!selectedPeriod || isExecuting}
+          disabled={!selectedPeriod || isExecuting || !!isPeriodReadOnly}
           size="sm"
           className="gap-1.5"
+          title={isPeriodReadOnly ? `Período ${selectedPeriod?.status === 'locked' ? 'bloqueado' : 'cerrado'} — no se permiten nuevos runs` : undefined}
         >
           <Play className="h-3.5 w-3.5" />
           Nuevo Run
