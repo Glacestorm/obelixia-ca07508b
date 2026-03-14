@@ -139,7 +139,7 @@ export function useSandboxEnvironment({ companyId, adapters }: UseSandboxEnviron
       certificateCompatibleWithSandbox: true,
       hasPreRealApproval: !!(config?.pre_real_approved),
       approvalStatus: (config?.approval_status as string) || null,
-      sandboxExplicitlyEnabled: !!(config?.env_sandbox?.enabled),
+      sandboxExplicitlyEnabled: !!((config?.env_sandbox as Record<string, unknown>)?.enabled),
       currentEnvironment: activeEnvironment,
       sandboxSuccessCount,
       lastSandboxExecution: adapterExecs
