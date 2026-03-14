@@ -39,6 +39,15 @@ export function HRComplianceEvidencePanel({ companyId }: Props) {
   const { results, isLoading, fetchResults } = useDryRunPersistence(companyId);
   const [allEvidence, setAllEvidence] = useState<DryRunEvidence[]>([]);
   const [loadingEvidence, setLoadingEvidence] = useState(false);
+  const { isExporting, exportEvidencePack } = useOfficialExport(companyId);
+
+  const handleEvidenceExport = useCallback((format: 'pdf' | 'excel') => {
+    exportEvidencePack(format, {
+      companyId,
+      dryRuns: results,
+      evidence: allEvidence,
+    });
+  }, [companyId, results, allEvidence, exportEvidencePack]);
 
   useEffect(() => {
     fetchResults({ limit: 20 });
