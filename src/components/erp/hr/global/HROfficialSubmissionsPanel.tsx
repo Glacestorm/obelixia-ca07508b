@@ -1,6 +1,6 @@
 /**
  * HROfficialSubmissionsPanel — Envíos a organismos oficiales
- * V2-ES.8 T2: Widget de historial dry-run persistido con filtros y evidencias
+ * V2-ES.8 T3: Certificate status, regulatory deadlines, and dry-run history
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,11 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Send, Plus, FlaskConical, Shield, Info, Lock,
   History, CheckCircle2, XCircle, Clock, Paperclip,
-  Calculator, FileText, AlertTriangle,
+  Calculator, FileText, AlertTriangle, KeyRound,
+  CalendarClock,
 } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { useDryRunPersistence, type DryRunResult } from '@/hooks/erp/hr/useDryRunPersistence';
 import { getDomainMeta, getSubmissionDomains, type SubmissionDomain } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
+import { useHRDomainCertificates, DOMAIN_LABELS as CERT_DOMAIN_LABELS, STATUS_LABELS as CERT_STATUS_LABELS, isCertificateExpiringSoon } from '@/hooks/erp/hr/useHRDomainCertificates';
+import { useRegulatoryCalendar } from '@/hooks/erp/hr/useRegulatoryCalendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -42,6 +45,13 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
   const [domainFilter, setDomainFilter] = useState('all');
   const [showHistory, setShowHistory] = useState(false);
   const { results, isLoading, fetchResults } = useDryRunPersistence(companyId);
+  const { certificates, fetchCertificates } = useHRDomainCertificates(companyId);
+  const { calendar, evaluate: evaluateCalendar } = useRegulatoryCalendar(companyId);
+
+  useEffect(() => {
+    fetchCertificates();
+    evaluateCalendar();
+  }, []);
 
   useEffect(() => {
     const filter = domainFilter !== 'all' ? { domain: domainFilter as SubmissionDomain, limit: 10 } : { limit: 10 };
@@ -57,6 +67,15 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
     return s;
   }, [results]);
 
+  // Cert summary
+  const certSummary = useMemo(() => {
+    const configured = certificates.filter(c =>
+      c.certificate_status === 'cert_loaded_placeholder' || c.certificate_status === 'cert_ready_preparatory'
+    ).length;
+    const expiring = certificates.filter(c => isCertificateExpiringSoon(c)).length;
+    return { configured, total: 3, expiring };
+  }, [certificates]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -69,7 +88,7 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
         <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Nuevo envío</Button>
       </div>
 
-      {/* V2-ES.8 T2: Preparatory banner + dry-run history toggle */}
+      {/* V2-ES.8 T3: Preparatory banner + cert & deadline status */}
       <Card className="border-blue-500/20 bg-blue-500/5">
         <CardContent className="py-3">
           <div className="flex items-start gap-3">
@@ -98,13 +117,24 @@ export function HROfficialSubmissionsPanel({ companyId }: Props) {
                 Los conectores TGSS, Contrat@ y AEAT operan en modo preparatorio. Se generan y validan payloads
                 sin envío oficial. Accede al <strong>Hub de Integraciones</strong> para ver readiness y ejecutar dry-runs.
               </p>
-              <div className="flex items-center gap-3 mt-2 text-[10px]">
+              <div className="flex items-center gap-3 mt-2 text-[10px] flex-wrap">
                 <span className="flex items-center gap-1 text-muted-foreground">
                   <Lock className="h-2.5 w-2.5" /> Envío real bloqueado
                 </span>
                 <span className="flex items-center gap-1 text-muted-foreground">
-                  <Shield className="h-2.5 w-2.5" /> Certificado no configurado
+                  <KeyRound className="h-2.5 w-2.5" /> Certificados: {certSummary.configured}/{certSummary.total}
+                  {certSummary.expiring > 0 && <span className="text-amber-600"> ({certSummary.expiring} expirando)</span>}
                 </span>
+                {calendar && calendar.hasRisk && (
+                  <span className="flex items-center gap-1 text-amber-600">
+                    <CalendarClock className="h-2.5 w-2.5" /> {calendar.summaryLabel}
+                  </span>
+                )}
+                {calendar && !calendar.hasRisk && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <CalendarClock className="h-2.5 w-2.5" /> Plazos en regla
+                  </span>
+                )}
                 <span className="flex items-center gap-1 text-muted-foreground">
                   <Info className="h-2.5 w-2.5" /> Cero irreversibilidad
                 </span>

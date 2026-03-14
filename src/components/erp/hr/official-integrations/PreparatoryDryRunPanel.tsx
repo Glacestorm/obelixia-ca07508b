@@ -101,14 +101,22 @@ function EvidenceList({ evidence, onGenerateOnDemand }: {
       {evidence.map(ev => {
         const Icon = typeIcons[ev.evidence_type] || FileText;
         const isReadiness = (ev.metadata as any)?.evidence_subtype === 'readiness_report';
+        const hasDocLink = !!ev.document_id;
         return (
           <div key={ev.id} className="flex items-center gap-2 text-[11px] py-1 px-1.5 rounded bg-muted/30">
             <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
             <div className="flex-1 min-w-0">
               <span className="truncate block">{ev.label}</span>
-              {isReadiness && (
-                <span className="text-[9px] text-blue-500">Readiness report</span>
-              )}
+              <div className="flex items-center gap-1.5">
+                {isReadiness && (
+                  <span className="text-[9px] text-blue-500">Readiness report</span>
+                )}
+                {hasDocLink && (
+                  <span className="text-[9px] text-primary flex items-center gap-0.5">
+                    <Paperclip className="h-2 w-2" /> Doc. vinculado
+                  </span>
+                )}
+              </div>
             </div>
             <Badge variant="outline" className="text-[9px] h-4 shrink-0">
               {typeLabels[ev.evidence_type] || ev.evidence_type}
@@ -122,7 +130,10 @@ function EvidenceList({ evidence, onGenerateOnDemand }: {
       {evidence.length > 0 && (
         <div className="flex items-start gap-1 p-1 rounded text-[9px] text-muted-foreground bg-muted/20">
           <Info className="h-2.5 w-2.5 mt-0.5 shrink-0 text-blue-400" />
-          <span>Evidencias internas preparatorias — no equivalen a justificante oficial ni acuse de organismo</span>
+          <span>
+            Evidencias internas preparatorias — no equivalen a justificante oficial ni acuse de organismo.
+            {evidence.some(e => e.document_id) && ' Documentos vinculados disponibles en el expediente del empleado.'}
+          </span>
         </div>
       )}
     </div>
