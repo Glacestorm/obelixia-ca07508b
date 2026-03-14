@@ -134,7 +134,31 @@ export function ContractDataPanel({ requestId, companyId, employeeId, linkedDocs
     deadlineSummary,
   });
 
-  // Start editing
+  // V2-ES.6 Paso 3: Closure readiness
+  const closure = useContractClosure({
+    contractData,
+    docCompleteness: readiness.docs ? {
+      percentage: readiness.docs.percentage,
+      mandatoryComplete: readiness.docs.mandatoryComplete,
+    } : null,
+    deadlineSummary,
+  });
+
+  // Closure action handlers
+  const handleClose = useCallback(async (notes?: string) => {
+    if (!contractData) return { success: false, error: 'No data' };
+    return closeContractProcess(requestId, {
+      docReadinessPercent: readiness.docs?.percentage ?? 0,
+      docMandatoryComplete: readiness.docs?.mandatoryComplete ?? false,
+      deadlineSummary,
+    }, notes);
+  }, [contractData, requestId, closeContractProcess, readiness.docs, deadlineSummary]);
+
+  const handleReopen = useCallback(async (reason?: string) => {
+    return reopenContractProcess(requestId, reason);
+  }, [requestId, reopenContractProcess]);
+
+
   const startEdit = useCallback(() => {
     setDraft({
       contract_type_code: contractData?.contract_type_code ?? '',
