@@ -92,6 +92,8 @@ import { HREmployeeExpedient } from './employee-expedient';
 import { HRCommandPalette } from './shared/HRCommandPalette';
 import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
 import { HRDemoJourneyPanel } from './shared/HRDemoJourneyPanel';
+import { HRPilotOnboardingPanel } from './shared/HRPilotOnboardingPanel';
+import { HRPayrollReconciliationPanel } from './shared/HRPayrollReconciliationPanel';
 import { HREnvironmentProvider, useHREnvironment } from '@/contexts/HREnvironmentContext';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
