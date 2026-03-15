@@ -94,6 +94,7 @@ export function useSupervisorDomainData(companyId?: string) {
   const hrAgents = agents.filter(a => a.module_domain === 'hr');
   const legalAgents = agents.filter(a => a.module_domain === 'legal');
   const crossAgents = agents.filter(a => a.module_domain === 'cross');
+  const complianceAgents = agents.filter(a => a.module_domain === 'compliance');
   const supervisors = agents.filter(a => a.agent_type === 'supervisor');
 
   const hrInvocations = invocations.filter(i => {
