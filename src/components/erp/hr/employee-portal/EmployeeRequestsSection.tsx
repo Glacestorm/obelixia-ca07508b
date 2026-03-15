@@ -423,7 +423,7 @@ function NewRequestDialog({ open, onClose, employee, onCreated }: {
 
   return (
     <Dialog open={open} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nueva solicitud</DialogTitle>
         </DialogHeader>

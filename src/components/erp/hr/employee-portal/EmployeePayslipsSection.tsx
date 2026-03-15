@@ -381,7 +381,7 @@ export function EmployeePayslipsSection({ employee, onNavigate }: Props) {
 
       {/* Detail sheet */}
       <Sheet open={!!selectedPayslip} onOpenChange={open => !open && setSelectedPayslip(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-4 sm:p-6">
           {selectedPayslip && (
             <PayslipDetail
               payslip={selectedPayslip}

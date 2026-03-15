@@ -1,22 +1,22 @@
 /**
  * EmployeePortalHome — Dashboard ejecutivo "Mi espacio"
  * V2-ES.9.2: Widgets con datos reales del empleado autenticado
+ * RRHH-MOBILE.1 Phase 2: Mobile-first layout adaptations
  */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   FileText, FolderOpen, Send, Clock, Palmtree, User,
   CalendarDays, Building2, Briefcase, AlertTriangle,
-  CheckCircle2, ArrowRight, TrendingUp, Euro,
+  CheckCircle2, ArrowRight, Euro,
   Activity, Bell, Loader2,
 } from 'lucide-react';
 import { EmployeeProfile, DashboardSummary } from '@/hooks/erp/hr/useEmployeePortal';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type PortalSection } from './EmployeePortalNav';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Props {
   employee: EmployeeProfile;
@@ -47,10 +47,11 @@ const REQUEST_STATUS_STYLE: Record<string, { label: string; color: string }> = {
 };
 
 export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, onNavigate }: Props) {
+  const isMobile = useIsMobile();
   const statusInfo = STATUS_LABELS[employee.status || ''] || { label: employee.status || 'Desconocido', variant: 'outline' as const };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Welcome banner */}
       <div className="rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border p-4 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -104,7 +105,19 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
         />
       </div>
 
-      {/* Two-column layout: left info + right actions */}
+      {/* Mobile: Quick actions as card grid (replaces sidebar) */}
+      {isMobile && (
+        <div className="grid grid-cols-3 gap-2">
+          <MobileQuickAction icon={FileText} label="Nóminas" onClick={() => onNavigate('payslips')} />
+          <MobileQuickAction icon={FolderOpen} label="Documentos" onClick={() => onNavigate('documents')} />
+          <MobileQuickAction icon={Send} label="Solicitud" onClick={() => onNavigate('requests')} />
+          <MobileQuickAction icon={Palmtree} label="Vacaciones" onClick={() => onNavigate('leave')} />
+          <MobileQuickAction icon={Clock} label="Fichaje" onClick={() => onNavigate('time')} />
+          <MobileQuickAction icon={User} label="Perfil" onClick={() => onNavigate('profile')} />
+        </div>
+      )}
+
+      {/* Two-column layout: left info + right actions (desktop) / single column (mobile) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Employee info + recent payslips */}
         <div className="lg:col-span-2 space-y-4">
@@ -169,7 +182,7 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold">{p.net_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
-                        <p className="text-xs text-muted-foreground">Bruto: {p.gross_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
+                        <p className="text-xs text-muted-foreground hidden sm:block">Bruto: {p.gross_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
                       </div>
                     </div>
                   ))}
@@ -204,7 +217,7 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {dashboard.activeRequests.slice(0, 5).map(r => {
+                  {dashboard.activeRequests.slice(0, isMobile ? 3 : 5).map(r => {
                     const st = REQUEST_STATUS_STYLE[r.status] || { label: r.status, color: 'text-muted-foreground' };
                     return (
                       <div key={r.id} className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors">
@@ -224,27 +237,9 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
               </CardContent>
             </Card>
           )}
-        </div>
 
-        {/* Right sidebar: quick actions + recent activity */}
-        <div className="space-y-4">
-          {/* Quick actions */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Acciones rápidas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5">
-              <QuickAction icon={FileText} label="Ver nóminas" onClick={() => onNavigate('payslips')} />
-              <QuickAction icon={FolderOpen} label="Mis documentos" onClick={() => onNavigate('documents')} />
-              <QuickAction icon={Send} label="Nueva solicitud" onClick={() => onNavigate('requests')} />
-              <QuickAction icon={Palmtree} label="Vacaciones" onClick={() => onNavigate('leave')} />
-              <QuickAction icon={Clock} label="Fichaje" onClick={() => onNavigate('time')} />
-              <QuickAction icon={User} label="Mi perfil" onClick={() => onNavigate('profile')} />
-            </CardContent>
-          </Card>
-
-          {/* Last activity */}
-          {dashboard && dashboard.lastActivity.length > 0 && (
+          {/* Mobile: Last activity (moved from sidebar) */}
+          {isMobile && dashboard && dashboard.lastActivity.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
@@ -269,6 +264,52 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
             </Card>
           )}
         </div>
+
+        {/* Right sidebar: quick actions + recent activity — DESKTOP ONLY */}
+        {!isMobile && (
+          <div className="space-y-4">
+            {/* Quick actions */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Acciones rápidas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1.5">
+                <QuickAction icon={FileText} label="Ver nóminas" onClick={() => onNavigate('payslips')} />
+                <QuickAction icon={FolderOpen} label="Mis documentos" onClick={() => onNavigate('documents')} />
+                <QuickAction icon={Send} label="Nueva solicitud" onClick={() => onNavigate('requests')} />
+                <QuickAction icon={Palmtree} label="Vacaciones" onClick={() => onNavigate('leave')} />
+                <QuickAction icon={Clock} label="Fichaje" onClick={() => onNavigate('time')} />
+                <QuickAction icon={User} label="Mi perfil" onClick={() => onNavigate('profile')} />
+              </CardContent>
+            </Card>
+
+            {/* Last activity */}
+            {dashboard && dashboard.lastActivity.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-primary" /> Últimos movimientos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {dashboard.lastActivity.map((a, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <div className="h-2 w-2 rounded-full bg-primary/60 mt-1.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-medium">{a.label}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {formatDistanceToNow(new Date(a.date), { locale: es, addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -325,5 +366,21 @@ function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; 
       {label}
       <ArrowRight className="h-3 w-3 ml-auto text-muted-foreground/50" />
     </Button>
+  );
+}
+
+function MobileQuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
+  return (
+    <Card
+      className="cursor-pointer hover:border-primary/30 active:bg-primary/5 transition-colors"
+      onClick={onClick}
+    >
+      <CardContent className="p-3 flex flex-col items-center gap-1.5">
+        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <span className="text-xs font-medium text-center">{label}</span>
+      </CardContent>
+    </Card>
   );
 }

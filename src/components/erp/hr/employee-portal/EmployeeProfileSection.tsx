@@ -295,6 +295,21 @@ export function EmployeeProfileSection({ employee, onNavigate, onRefresh }: Prop
           </div>
         </CardContent>
       </Card>
+
+      {/* Quick links: Docs + Help */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Accesos rápidos</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button variant="outline" className="gap-2 h-11 flex-1 min-w-[140px]" onClick={() => onNavigate('documents')}>
+            <FolderOpen className="h-4 w-4" /> Mis documentos
+          </Button>
+          <Button variant="outline" className="gap-2 h-11 flex-1 min-w-[140px]" onClick={() => onNavigate('help')}>
+            <HelpCircle className="h-4 w-4" /> Ayuda RRHH
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
