@@ -57,6 +57,7 @@ const CATEGORIES: UtilityCategory[] = [
     color: 'from-primary/15 to-primary/5 border-primary/20',
     items: [
       { id: 'util-premium-dash', label: 'Dashboard Premium', description: 'Vista ejecutiva con KPIs de los 8 módulos', icon: <Activity className="h-4 w-4" /> },
+      { id: 'util-ai-control-center', label: 'Control IA RRHH', description: 'Centro de control IA: agentes, escalados, logs y consultas', icon: <Sparkles className="h-4 w-4" /> },
       { id: 'util-multiagent-supervisor', label: 'Supervisor Multiagente', description: 'Supervisión IA RRHH↔Jurídico con routing y trazabilidad', icon: <Brain className="h-4 w-4" /> },
       { id: 'util-orchestration', label: 'Orquestación', description: 'Reglas reactivas inter-módulo', icon: <ArrowRightLeft className="h-4 w-4" /> },
       { id: 'util-alerts', label: 'Alertas', description: 'Centro de alertas y notificaciones críticas', icon: <Bell className="h-4 w-4" /> },

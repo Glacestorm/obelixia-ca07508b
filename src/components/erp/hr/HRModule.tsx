@@ -501,6 +501,7 @@ function HRModuleInner() {
         {activeModule === 'util-integrations' && <EnterpriseIntegrationsPanel companyId={companyId} />}
         {activeModule === 'util-board-pack' && <HRBoardPackPanel companyId={companyId} />}
         {activeModule === 'util-multiagent-supervisor' && <MultiAgentSupervisorPanel companyId={companyId} />}
+        {activeModule === 'util-ai-control-center' && <HRAIControlCenter companyId={companyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
