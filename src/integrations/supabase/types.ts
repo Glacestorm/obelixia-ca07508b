@@ -82406,6 +82406,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      release_regulatory_refresh_lock: { Args: never; Returns: undefined }
       reset_ai_provider_daily_costs: { Args: never; Returns: undefined }
       run_daily_compliance_check: { Args: never; Returns: undefined }
       search_employee_documents: {
@@ -82484,6 +82485,7 @@ export type Database = {
         }
         Returns: string
       }
+      try_acquire_regulatory_refresh_lock: { Args: never; Returns: boolean }
       update_leaderboard_counters: {
         Args: { p_counter: string; p_increment?: number; p_user_id: string }
         Returns: undefined
