@@ -225,3 +225,28 @@
 - Lógica de payroll/cierre (V2-ES.1 intacta)
 - Workflows/aprobaciones (V2-ES.2 intacta)
 - HRApprovalInbox (sin modificaciones)
+
+---
+
+# [RRHH-MOBILE.1] App Móvil RRHH — Evolución a Manager y RRHH Ligero
+
+## Estado: MVP Empleado completado (Fases 1-5) ✅
+
+### Arquitectura de roles
+- `usePortalRole(employee)` → `{ role: 'employee' | 'manager' | 'hr_light' }`
+- `EmployeePortalBottomNav` filtra tabs por rol via `TAB_REGISTRY`
+- Extensión: descomentar entradas en `TAB_REGISTRY` + crear sección + activar role check
+
+### Fase 6 — Manager Mobile (futuro)
+- Tab "Equipo": aprobaciones, ausencias del equipo, incidencias de fichaje
+- Requiere: `reports_to` en employees, RLS para acceso manager, `is_manager_of()` function
+- Componente: `ManagerTeamSection.tsx`
+
+### Fase 7 — RRHH Ligero Mobile (futuro)
+- Tab "Gestión": tareas urgentes, cola de solicitudes, búsqueda de expediente
+- Requiere: rol `hr_light` en `user_roles`, RLS amplio, `has_role()` function
+- Componente: `HRLightManagementSection.tsx`
+
+### Seguridad
+- Roles solo para UX (tabs visibles). Acceso real protegido por RLS server-side.
+- Nunca almacenar roles en localStorage.

@@ -2,10 +2,12 @@
  * EmployeePortalMobileShell — Mobile-first layout for employee portal
  * RRHH-MOBILE.1 Phase 1: Header + content + bottom tabs
  * RRHH-MOBILE.1 Phase 3: PWA install prompt + offline indicator
+ * RRHH-MOBILE.1 Phase 5: Role-aware shell with extensible navigation
  */
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useEmployeePortal } from '@/hooks/erp/hr/useEmployeePortal';
+import { usePortalRole } from '@/hooks/erp/hr/usePortalRole';
 import { EmployeePortalMobileHeader } from './EmployeePortalMobileHeader';
 import { EmployeePortalBottomNav } from './EmployeePortalBottomNav';
 import { EmployeePortalHome } from './EmployeePortalHome';
@@ -23,6 +25,7 @@ import { type PortalSection } from './EmployeePortalNav';
 export function EmployeePortalMobileShell() {
   const { signOut } = useAuth();
   const { employee, dashboard, isDashboardLoading, refresh } = useEmployeePortal();
+  const { role } = usePortalRole(employee);
   const [activeSection, setActiveSection] = useState<PortalSection>('home');
 
   const employeeName = employee ? `${employee.first_name} ${employee.last_name}` : undefined;
@@ -88,6 +91,7 @@ export function EmployeePortalMobileShell() {
         activeSection={activeSection}
         onNavigate={handleNavigate}
         badges={badges}
+        role={role}
       />
       <PWAInstallPrompt />
     </div>
