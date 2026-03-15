@@ -234,7 +234,7 @@ export function EmployeeRequestsSection({ employee, onNavigate }: Props) {
 
       {/* Detail sheet */}
       <Sheet open={!!selectedRequest} onOpenChange={open => !open && setSelectedRequest(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-4 sm:p-6">
           {selectedRequest && (
             <RequestDetail
               request={selectedRequest}
