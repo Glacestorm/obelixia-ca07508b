@@ -1,24 +1,24 @@
 /**
  * HRAIControlCenter - Mini-centro de control IA embebido en RRHH
- * Vista de dominio enfocada sin duplicar el supervisor global
+ * Reutiliza RegistryAgentCard + RegistryAgentConfigSheet del Supervisor global
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Bot, Brain, Shield, Scale, Activity, RefreshCw,
   CheckCircle, AlertTriangle, ArrowUpRight, Clock,
-  Send, Eye, Network, UserCheck, Settings, ExternalLink,
-  Sparkles
+  Send, Eye, ExternalLink, Sparkles, UserCheck
 } from 'lucide-react';
 import { useSupervisorDomainData, type RegistryAgent, type InvocationRecord } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { useMultiAgentSupervisor } from '@/hooks/erp/hr/useMultiAgentSupervisor';
+import { RegistryAgentCard } from '@/components/admin/agents/RegistryAgentCard';
+import { RegistryAgentConfigSheet } from '@/components/admin/agents/RegistryAgentConfigSheet';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -38,14 +38,34 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [query, setQuery] = useState('');
   const [chatHistory, setChatHistory] = useState<Array<{ role: 'user' | 'supervisor'; content: string; metadata?: any }>>([]);
+  const [configAgent, setConfigAgent] = useState<RegistryAgent | null>(null);
+  const [configOpen, setConfigOpen] = useState(false);
 
-  const { hrAgents, hrInvocations, legalAgents, escalatedInvocations, humanReviewInvocations, stats, loading, refresh } = useSupervisorDomainData(companyId);
+  const { agents, hrAgents, hrInvocations, escalatedInvocations, humanReviewInvocations, invocations, stats, loading, refresh } = useSupervisorDomainData(companyId);
   const { isLoading, routeQuery, registry } = useMultiAgentSupervisor(companyId);
 
-  const hrEscalated = escalatedInvocations.filter(i => i.supervisor_code === 'hr-supervisor' || i.escalated_to === 'legal-supervisor');
-  const hrHumanReview = humanReviewInvocations.filter(i => {
-    return i.supervisor_code === 'hr-supervisor';
-  });
+  const hrEscalated = useMemo(() => escalatedInvocations.filter(i =>
+    i.supervisor_code === 'hr-supervisor' || i.escalated_to === 'legal-supervisor'
+  ), [escalatedInvocations]);
+
+  const hrHumanReview = useMemo(() => humanReviewInvocations.filter(i =>
+    i.supervisor_code === 'hr-supervisor'
+  ), [humanReviewInvocations]);
+
+  // Compute per-agent invocation stats
+  const agentInvocationStats = useMemo(() => {
+    const map = new Map<string, { count: number; last?: string }>();
+    for (const inv of hrInvocations) {
+      const existing = map.get(inv.agent_code);
+      if (!existing) {
+        map.set(inv.agent_code, { count: 1, last: inv.created_at });
+      } else {
+        existing.count++;
+        if (inv.created_at > (existing.last || '')) existing.last = inv.created_at;
+      }
+    }
+    return map;
+  }, [hrInvocations]);
 
   const handleSendQuery = useCallback(async () => {
     if (!query.trim() || isLoading) return;
@@ -86,6 +106,20 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
     }
   }, [query, isLoading, routeQuery, registry, refresh]);
 
+  const handleConfigure = useCallback((agent: RegistryAgent) => {
+    setConfigAgent(agent);
+    setConfigOpen(true);
+  }, []);
+
+  const handleViewLogs = useCallback((agent: RegistryAgent) => {
+    setActiveTab('log');
+  }, []);
+
+  const handleInteract = useCallback((agent: RegistryAgent) => {
+    setActiveTab('chat');
+    setQuery(`[${agent.name}] `);
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -99,7 +133,7 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
               <div>
                 <CardTitle className="text-lg">Control IA · RRHH</CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {hrAgents.length} agentes HR · {hrEscalated.length} escalados a Legal · {hrHumanReview.length} rev. humana
+                  {hrAgents.length} agentes HR · {hrEscalated.length} escalados · {hrHumanReview.length} rev. humana
                 </p>
               </div>
             </div>
@@ -165,35 +199,60 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="text-xs gap-1"><Eye className="h-3.5 w-3.5" /> Agentes</TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs gap-1"><Bot className="h-3.5 w-3.5" /> Agentes</TabsTrigger>
           <TabsTrigger value="chat" className="text-xs gap-1"><Send className="h-3.5 w-3.5" /> Consultar</TabsTrigger>
           <TabsTrigger value="escalations" className="text-xs gap-1">
-            <Scale className="h-3.5 w-3.5" /> Legal
+            <Scale className="h-3.5 w-3.5" /> Escalados
             {hrEscalated.length > 0 && (
               <Badge variant="destructive" className="ml-1 h-4 px-1 text-[9px]">{hrEscalated.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="log" className="text-xs gap-1"><Activity className="h-3.5 w-3.5" /> Logs</TabsTrigger>
+          <TabsTrigger value="log" className="text-xs gap-1"><Activity className="h-3.5 w-3.5" /> Actividad</TabsTrigger>
         </TabsList>
 
-        {/* Agents Overview */}
+        {/* Agents Overview - NOW USES RegistryAgentCard */}
         <TabsContent value="overview" className="mt-3 space-y-3">
           {hrAgents.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center text-muted-foreground">
                 <Bot className="h-8 w-8 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">Sin agentes HR registrados</p>
+                <p className="text-xs mt-1">Los agentes aparecerán aquí al registrarse en el catálogo</p>
               </CardContent>
             </Card>
           ) : (
-            <>
-              {hrAgents.filter(a => a.agent_type === 'supervisor').map(agent => (
-                <AgentRow key={agent.code} agent={agent} isSupervisor />
-              ))}
-              {hrAgents.filter(a => a.agent_type !== 'supervisor').map(agent => (
-                <AgentRow key={agent.code} agent={agent} />
-              ))}
-            </>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Supervisors first */}
+              {hrAgents.filter(a => a.agent_type === 'supervisor').map(agent => {
+                const s = agentInvocationStats.get(agent.code);
+                return (
+                  <RegistryAgentCard
+                    key={agent.id}
+                    agent={agent}
+                    invocationCount={s?.count || 0}
+                    lastInvocation={s?.last}
+                    onInteract={handleInteract}
+                    onConfigure={handleConfigure}
+                    onViewLogs={handleViewLogs}
+                  />
+                );
+              })}
+              {/* Then specialized agents */}
+              {hrAgents.filter(a => a.agent_type !== 'supervisor').map(agent => {
+                const s = agentInvocationStats.get(agent.code);
+                return (
+                  <RegistryAgentCard
+                    key={agent.id}
+                    agent={agent}
+                    invocationCount={s?.count || 0}
+                    lastInvocation={s?.last}
+                    onInteract={handleInteract}
+                    onConfigure={handleConfigure}
+                    onViewLogs={handleViewLogs}
+                  />
+                );
+              })}
+            </div>
           )}
 
           {/* Link to global supervisor */}
@@ -201,7 +260,7 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
             <CardContent className="p-3 text-center">
               <p className="text-xs text-muted-foreground">
                 <ExternalLink className="h-3 w-3 inline mr-1" />
-                Para supervisión global ERP/CRM → accede al <strong>Centro de Control de Agentes IA</strong> en Admin
+                Para supervisión global ERP/CRM → <strong>Centro de Control de Agentes IA</strong> en Admin
               </p>
             </CardContent>
           </Card>
@@ -288,6 +347,7 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                     <div className="text-center py-8 text-muted-foreground">
                       <Shield className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">Sin escalados a Jurídico</p>
+                      <p className="text-xs mt-1">Los casos de alto riesgo legal aparecerán aquí</p>
                     </div>
                   ) : hrEscalated.map(inv => (
                     <div key={inv.id} className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
@@ -298,6 +358,9 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                         <Badge variant="outline" className={cn("text-[10px] py-0", OUTCOME_CONFIG[inv.outcome_status]?.color)}>
                           {OUTCOME_CONFIG[inv.outcome_status]?.label}
                         </Badge>
+                        {(inv.metadata as any)?.source === 'seed' && (
+                          <Badge variant="outline" className="text-[10px] py-0 bg-blue-500/10 text-blue-600 border-blue-500/30">Seed</Badge>
+                        )}
                         <span className="text-[10px] text-muted-foreground ml-auto">
                           {formatDistanceToNow(new Date(inv.created_at), { locale: es, addSuffix: true })}
                         </span>
@@ -323,13 +386,15 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                   {hrInvocations.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">Sin invocaciones HR</p>
+                      <p className="text-sm">Sin actividad HR</p>
+                      <p className="text-xs mt-1">Las invocaciones a agentes RRHH aparecerán aquí</p>
                     </div>
                   ) : hrInvocations.slice(0, 30).map(inv => (
                     <div key={inv.id} className="flex items-start gap-3 p-2.5 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
                       <div className="shrink-0 mt-0.5">
                         {inv.escalated_to ? <ArrowUpRight className="h-4 w-4 text-amber-600" /> :
                          inv.outcome_status === 'success' ? <CheckCircle className="h-4 w-4 text-emerald-600" /> :
+                         inv.outcome_status === 'human_review' ? <UserCheck className="h-4 w-4 text-violet-600" /> :
                          <AlertTriangle className="h-4 w-4 text-destructive" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -338,11 +403,17 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                           <Badge variant="outline" className={cn("text-[10px] py-0", OUTCOME_CONFIG[inv.outcome_status]?.color)}>
                             {OUTCOME_CONFIG[inv.outcome_status]?.label}
                           </Badge>
+                          {(inv.metadata as any)?.source === 'seed' && (
+                            <Badge variant="outline" className="text-[10px] py-0 bg-blue-500/10 text-blue-600 border-blue-500/30">Seed</Badge>
+                          )}
                           <span className="text-[10px] text-muted-foreground ml-auto">
                             {inv.execution_time_ms}ms · {formatDistanceToNow(new Date(inv.created_at), { locale: es, addSuffix: true })}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{inv.input_summary}</p>
+                        {inv.routing_reason && (
+                          <p className="text-[10px] text-muted-foreground/70 mt-0.5 line-clamp-1">{inv.routing_reason}</p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -352,45 +423,15 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
 
-function AgentRow({ agent, isSupervisor = false }: { agent: RegistryAgent; isSupervisor?: boolean }) {
-  const statusColors: Record<string, string> = {
-    active: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30',
-    beta: 'bg-amber-500/15 text-amber-700 border-amber-500/30',
-    disabled: 'bg-muted text-muted-foreground',
-  };
-  return (
-    <Card className={cn("hover:bg-muted/30 transition-colors", isSupervisor && "border-primary/30 bg-primary/5")}>
-      <CardContent className="p-3">
-        <div className="flex items-start gap-3">
-          <div className={cn("p-2 rounded-lg shrink-0", isSupervisor ? "bg-gradient-to-br from-primary to-violet-600" : "bg-muted")}>
-            {isSupervisor ? <Brain className="h-4 w-4 text-white" /> : <Bot className="h-4 w-4 text-primary" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium">{agent.name}</span>
-              <Badge variant="outline" className={cn("text-[10px] py-0", statusColors[agent.status])}>
-                {agent.status}
-              </Badge>
-              {agent.requires_human_review && (
-                <Badge variant="outline" className="text-[10px] py-0 bg-amber-500/10 text-amber-700">
-                  <Shield className="h-2.5 w-2.5 mr-0.5" /> Rev. humana
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{agent.description}</p>
-            <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
-              <span>Confianza: {Math.round(agent.confidence_threshold * 100)}%</span>
-              <span>Handler: <code className="bg-muted px-1 rounded">{agent.backend_handler}</code></span>
-              {agent.supervisor_code && <span>Sup: <code className="bg-muted px-1 rounded">{agent.supervisor_code}</code></span>}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Config Sheet - reused from global supervisor */}
+      <RegistryAgentConfigSheet
+        open={configOpen}
+        onOpenChange={setConfigOpen}
+        agent={configAgent}
+        onSaved={refresh}
+      />
+    </div>
   );
 }
 
