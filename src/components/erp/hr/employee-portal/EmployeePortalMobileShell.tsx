@@ -1,8 +1,6 @@
 /**
- * EmployeePortalMobileShell — Mobile-first layout for employee portal
- * RRHH-MOBILE.1 Phase 1: Header + content + bottom tabs
- * RRHH-MOBILE.1 Phase 3: PWA install prompt + offline indicator
- * RRHH-MOBILE.1 Phase 5: Role-aware shell with extensible navigation
+ * EmployeePortalMobileShell — Modern mobile-first layout
+ * RRHH-PORTAL.2: Redesigned shell with smoother transitions
  */
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,7 +16,6 @@ import { EmployeeTimeSection } from './EmployeeTimeSection';
 import { EmployeeLeaveSection } from './EmployeeLeaveSection';
 import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { EmployeeHelpSection } from './EmployeeHelpSection';
-import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { OfflineIndicator } from './OfflineIndicator';
 import { type PortalSection } from './EmployeePortalNav';
 
@@ -32,7 +29,6 @@ export function EmployeePortalMobileShell() {
 
   const handleNavigate = useCallback((section: PortalSection) => {
     setActiveSection(section);
-    // Scroll to top on section change
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
@@ -83,7 +79,7 @@ export function EmployeePortalMobileShell() {
       />
       <OfflineIndicator />
       <main className="flex-1 overflow-auto pb-20">
-        <div className="px-3 py-3">
+        <div className="px-4 py-4">
           {renderContent()}
         </div>
       </main>
@@ -93,7 +89,6 @@ export function EmployeePortalMobileShell() {
         badges={badges}
         role={role}
       />
-      <PWAInstallPrompt />
     </div>
   );
 }

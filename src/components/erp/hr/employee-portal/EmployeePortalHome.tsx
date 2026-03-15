@@ -1,7 +1,6 @@
 /**
- * EmployeePortalHome — Dashboard ejecutivo "Mi espacio"
- * V2-ES.9.2: Widgets con datos reales del empleado autenticado
- * RRHH-MOBILE.1 Phase 2: Mobile-first layout adaptations
+ * EmployeePortalHome — Modern action-oriented dashboard
+ * RRHH-PORTAL.2 Block B: Hero + fichaje + quick actions + status cards
  */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,14 +8,15 @@ import { Button } from '@/components/ui/button';
 import {
   FileText, FolderOpen, Send, Clock, Palmtree, User,
   CalendarDays, Building2, Briefcase, AlertTriangle,
-  CheckCircle2, ArrowRight, Euro,
-  Activity, Bell, Loader2,
+  ArrowRight, Euro, Loader2, Smartphone, ChevronRight,
 } from 'lucide-react';
 import { EmployeeProfile, DashboardSummary } from '@/hooks/erp/hr/useEmployeePortal';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type PortalSection } from './EmployeePortalNav';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { TimeClockWidget } from './TimeClockWidget';
+import { PWAInstallGuide } from './PWAInstallGuide';
 
 interface Props {
   employee: EmployeeProfile;
@@ -40,301 +40,243 @@ const REQUEST_TYPE_LABELS: Record<string, string> = {
 };
 
 const REQUEST_STATUS_STYLE: Record<string, { label: string; color: string }> = {
-  submitted: { label: 'Enviada', color: 'text-blue-600' },
-  in_progress: { label: 'En curso', color: 'text-amber-600' },
-  pending_info: { label: 'Info pendiente', color: 'text-orange-600' },
-  approved: { label: 'Aprobada', color: 'text-emerald-600' },
+  submitted: { label: 'Enviada', color: 'text-info' },
+  in_progress: { label: 'En curso', color: 'text-warning' },
+  pending_info: { label: 'Info pendiente', color: 'text-warning' },
+  approved: { label: 'Aprobada', color: 'text-success' },
 };
 
 export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, onNavigate }: Props) {
   const isMobile = useIsMobile();
   const statusInfo = STATUS_LABELS[employee.status || ''] || { label: employee.status || 'Desconocido', variant: 'outline' as const };
 
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 7) return 'Buenas noches';
+    if (h < 13) return 'Buenos días';
+    if (h < 20) return 'Buenas tardes';
+    return 'Buenas noches';
+  })();
+
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Welcome banner */}
-      <div className="rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-accent/5 border p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="space-y-5">
+      {/* ═══ HERO: Saludo + Estado del día ═══ */}
+      <div className="rounded-2xl bg-gradient-to-br from-primary/12 via-primary/6 to-secondary/8 border border-primary/10 p-5">
+        <div className="flex items-start justify-between gap-3 mb-1">
           <div>
-            <h1 className="text-lg md:text-2xl font-bold">
-              ¡Hola, {employee.first_name}!
+            <p className="text-sm text-muted-foreground">{greeting},</p>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+              {employee.first_name}
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Bienvenido a tu espacio personal de RRHH
-            </p>
           </div>
-          <Badge variant={statusInfo.variant} className="self-start text-xs">
+          <Badge variant={statusInfo.variant} className="text-[10px] mt-1 shrink-0">
             {statusInfo.label}
           </Badge>
         </div>
+        <p className="text-xs text-muted-foreground">
+          {format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+          {employee.job_title && <> · {employee.job_title}</>}
+        </p>
       </div>
 
-      {/* KPI Cards row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KPICard
+      {/* ═══ FICHAJE WIDGET (protagonista) ═══ */}
+      <TimeClockWidget
+        employeeId={employee.id}
+        compact={isMobile}
+      />
+
+      {/* ═══ QUICK ACTIONS GRID ═══ */}
+      <div className="grid grid-cols-4 gap-2">
+        <QuickActionPill icon={FileText} label="Nóminas" onClick={() => onNavigate('payslips')} />
+        <QuickActionPill icon={FolderOpen} label="Docs" onClick={() => onNavigate('documents')} />
+        <QuickActionPill icon={Palmtree} label="Vacaciones" onClick={() => onNavigate('leave')} />
+        <QuickActionPill icon={Send} label="Solicitud" onClick={() => onNavigate('requests')} />
+      </div>
+
+      {/* ═══ STATUS CARDS ROW ═══ */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatusCard
           icon={Send}
-          label="Solicitudes activas"
-          value={dashboard?.pendingRequests ?? '—'}
-          color="text-blue-500"
+          label="Solicitudes"
+          value={dashboard?.pendingRequests ?? 0}
+          suffix="activas"
+          loading={isDashboardLoading}
           onClick={() => onNavigate('requests')}
-          loading={isDashboardLoading}
+          accent={!!dashboard && dashboard.pendingRequests > 0}
         />
-        <KPICard
+        <StatusCard
           icon={AlertTriangle}
-          label="Docs con alertas"
-          value={dashboard?.documentsWithAlerts ?? '—'}
-          color="text-amber-500"
+          label="Alertas docs"
+          value={dashboard?.documentsWithAlerts ?? 0}
+          suffix="pendientes"
+          loading={isDashboardLoading}
           onClick={() => onNavigate('documents')}
-          loading={isDashboardLoading}
-          highlight={!!dashboard && dashboard.documentsWithAlerts > 0}
-        />
-        <KPICard
-          icon={FolderOpen}
-          label="Total documentos"
-          value={dashboard?.totalDocuments ?? '—'}
-          color="text-emerald-500"
-          onClick={() => onNavigate('documents')}
-          loading={isDashboardLoading}
-        />
-        <KPICard
-          icon={Activity}
-          label="Incidencias"
-          value={dashboard?.activeIncidents ?? '—'}
-          color="text-rose-500"
-          loading={isDashboardLoading}
+          warning={!!dashboard && dashboard.documentsWithAlerts > 0}
         />
       </div>
 
-      {/* Mobile: Quick actions as card grid (replaces sidebar) */}
-      {isMobile && (
-        <div className="grid grid-cols-3 gap-2">
-          <MobileQuickAction icon={FileText} label="Nóminas" onClick={() => onNavigate('payslips')} />
-          <MobileQuickAction icon={FolderOpen} label="Documentos" onClick={() => onNavigate('documents')} />
-          <MobileQuickAction icon={Send} label="Solicitud" onClick={() => onNavigate('requests')} />
-          <MobileQuickAction icon={Palmtree} label="Vacaciones" onClick={() => onNavigate('leave')} />
-          <MobileQuickAction icon={Clock} label="Fichaje" onClick={() => onNavigate('time')} />
-          <MobileQuickAction icon={User} label="Perfil" onClick={() => onNavigate('profile')} />
-        </div>
+      {/* ═══ ÚLTIMAS NÓMINAS ═══ */}
+      <Card className="border-0 shadow-sm bg-card/80 backdrop-blur-sm">
+        <CardHeader className="pb-2 px-4 pt-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Euro className="h-4 w-4 text-primary" /> Últimas nóminas
+            </CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs gap-1 h-7 text-primary" onClick={() => onNavigate('payslips')}>
+              Ver todas <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          {isDashboardLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : !dashboard?.recentPayslips?.length ? (
+            <div className="text-center py-8">
+              <div className="h-12 w-12 mx-auto rounded-2xl bg-muted/60 flex items-center justify-center mb-3">
+                <FileText className="h-6 w-6 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm text-muted-foreground">No hay nóminas registradas</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {dashboard.recentPayslips.slice(0, isMobile ? 3 : 5).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => onNavigate('payslips')}>
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <FileText className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {format(new Date(p.created_at), 'MMM yyyy', { locale: es })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {p.status === 'approved' ? 'Aprobada' : p.status === 'draft' ? 'Borrador' : p.status}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold tabular-nums">{p.net_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ═══ SOLICITUDES EN CURSO ═══ */}
+      {dashboard && dashboard.activeRequests.length > 0 && (
+        <Card className="border-0 shadow-sm bg-card/80 backdrop-blur-sm">
+          <CardHeader className="pb-2 px-4 pt-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Send className="h-4 w-4 text-primary" /> Solicitudes en curso
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs gap-1 h-7 text-primary" onClick={() => onNavigate('requests')}>
+                Ver todas <ChevronRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="space-y-2">
+              {dashboard.activeRequests.slice(0, isMobile ? 3 : 5).map(r => {
+                const st = REQUEST_STATUS_STYLE[r.status] || { label: r.status, color: 'text-muted-foreground' };
+                return (
+                  <div key={r.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {REQUEST_TYPE_LABELS[r.request_type] || r.request_type}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(r.created_at), { locale: es, addSuffix: true })}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={`text-[10px] ${st.color} border-current/20`}>{st.label}</Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Two-column layout: left info + right actions (desktop) / single column (mobile) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left: Employee info + recent payslips */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Employee summary */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <User className="h-4 w-4 text-primary" /> Mi situación
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <InfoRow icon={Briefcase} label="Puesto" value={employee.job_title || 'No definido'} />
-                <InfoRow icon={Building2} label="Categoría" value={employee.category || 'No definida'} />
-                <InfoRow icon={CalendarDays} label="Antigüedad desde" value={employee.hire_date ? format(new Date(employee.hire_date), 'dd MMM yyyy', { locale: es }) : 'No registrada'} />
-                <InfoRow icon={FileText} label="Tipo contrato" value={employee.contract_type || 'No definido'} />
-                {employee.employee_number && (
-                  <InfoRow icon={User} label="Nº empleado" value={employee.employee_number} />
-                )}
-              </div>
-            </CardContent>
-          </Card>
+      {/* ═══ MI SITUACIÓN (collapsable info) ═══ */}
+      {!isMobile && (
+        <Card className="border-0 shadow-sm bg-card/80 backdrop-blur-sm">
+          <CardHeader className="pb-2 px-4 pt-4">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" /> Mi situación
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <InfoRow icon={Briefcase} label="Puesto" value={employee.job_title || 'No definido'} />
+              <InfoRow icon={Building2} label="Categoría" value={employee.category || 'No definida'} />
+              <InfoRow icon={CalendarDays} label="Antigüedad" value={employee.hire_date ? format(new Date(employee.hire_date), 'dd MMM yyyy', { locale: es }) : 'No registrada'} />
+              <InfoRow icon={FileText} label="Contrato" value={employee.contract_type || 'No definido'} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Recent payslips */}
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Euro className="h-4 w-4 text-primary" /> Últimas nóminas
-                </CardTitle>
-                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => onNavigate('payslips')}>
-                  Ver todas <ArrowRight className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isDashboardLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : !dashboard?.recentPayslips?.length ? (
-                <div className="text-center py-6">
-                  <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground">No hay nóminas registradas</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {dashboard.recentPayslips.map(p => (
-                    <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <FileText className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">
-                            {format(new Date(p.created_at), 'MMM yyyy', { locale: es })}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {p.status === 'approved' ? 'Aprobada' : p.status === 'draft' ? 'Borrador' : p.status}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">{p.net_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
-                        <p className="text-xs text-muted-foreground hidden sm:block">Bruto: {p.gross_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* ═══ PWA INSTALL BANNER ═══ */}
+      <PWAInstallGuide variant="banner" />
 
-          {/* No dashboard data after loading */}
-          {!isDashboardLoading && !dashboard && (
-            <Card className="border-dashed">
-              <CardContent className="py-6 text-center">
-                <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">No se pudieron cargar los datos del dashboard</p>
-                <p className="text-xs text-muted-foreground/60 mt-1">Navega a las secciones directamente desde las acciones rápidas</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Active requests */}
-          {dashboard && dashboard.activeRequests.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Send className="h-4 w-4 text-primary" /> Solicitudes en curso
-                  </CardTitle>
-                  <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => onNavigate('requests')}>
-                    Ver todas <ArrowRight className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {dashboard.activeRequests.slice(0, isMobile ? 3 : 5).map(r => {
-                    const st = REQUEST_STATUS_STYLE[r.status] || { label: r.status, color: 'text-muted-foreground' };
-                    return (
-                      <div key={r.id} className="flex items-center justify-between p-2.5 rounded-lg border hover:bg-muted/50 transition-colors">
-                        <div>
-                          <p className="text-sm font-medium">
-                            {REQUEST_TYPE_LABELS[r.request_type] || r.request_type}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(r.created_at), { locale: es, addSuffix: true })}
-                          </p>
-                        </div>
-                        <span className={`text-xs font-medium ${st.color}`}>{st.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Mobile: Last activity (moved from sidebar) */}
-          {isMobile && dashboard && dashboard.lastActivity.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-primary" /> Últimos movimientos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {dashboard.lastActivity.map((a, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className="h-2 w-2 rounded-full bg-primary/60 mt-1.5 shrink-0" />
-                      <div>
-                        <p className="text-xs font-medium">{a.label}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(a.date), { locale: es, addSuffix: true })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Right sidebar: quick actions + recent activity — DESKTOP ONLY */}
-        {!isMobile && (
-          <div className="space-y-4">
-            {/* Quick actions */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Acciones rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1.5">
-                <QuickAction icon={FileText} label="Ver nóminas" onClick={() => onNavigate('payslips')} />
-                <QuickAction icon={FolderOpen} label="Mis documentos" onClick={() => onNavigate('documents')} />
-                <QuickAction icon={Send} label="Nueva solicitud" onClick={() => onNavigate('requests')} />
-                <QuickAction icon={Palmtree} label="Vacaciones" onClick={() => onNavigate('leave')} />
-                <QuickAction icon={Clock} label="Fichaje" onClick={() => onNavigate('time')} />
-                <QuickAction icon={User} label="Mi perfil" onClick={() => onNavigate('profile')} />
-              </CardContent>
-            </Card>
-
-            {/* Last activity */}
-            {dashboard && dashboard.lastActivity.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Bell className="h-4 w-4 text-primary" /> Últimos movimientos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {dashboard.lastActivity.map((a, i) => (
-                      <div key={i} className="flex items-start gap-2.5">
-                        <div className="h-2 w-2 rounded-full bg-primary/60 mt-1.5 shrink-0" />
-                        <div>
-                          <p className="text-xs font-medium">{a.label}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(a.date), { locale: es, addSuffix: true })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-      </div>
+      {/* ═══ NO DATA FALLBACK ═══ */}
+      {!isDashboardLoading && !dashboard && (
+        <Card className="border-dashed border-0 shadow-sm">
+          <CardContent className="py-8 text-center">
+            <div className="h-12 w-12 mx-auto rounded-2xl bg-muted/60 flex items-center justify-center mb-3">
+              <Clock className="h-6 w-6 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm text-muted-foreground">No se pudieron cargar los datos</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Usa las acciones rápidas para navegar</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function KPICard({ icon: Icon, label, value, color, onClick, loading, highlight }: {
-  icon: React.ElementType; label: string; value: number | string;
-  color: string; onClick?: () => void; loading?: boolean; highlight?: boolean;
+function QuickActionPill({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-card border border-border/50 hover:border-primary/30 active:scale-95 transition-all cursor-pointer"
+    >
+      <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
+      <span className="text-[11px] font-medium text-foreground/80">{label}</span>
+    </button>
+  );
+}
+
+function StatusCard({ icon: Icon, label, value, suffix, loading, onClick, accent, warning }: {
+  icon: React.ElementType; label: string; value: number; suffix: string;
+  loading?: boolean; onClick?: () => void; accent?: boolean; warning?: boolean;
 }) {
   return (
     <Card
-      className={`cursor-pointer hover:border-primary/30 transition-colors ${highlight ? 'border-amber-500/30 bg-amber-500/5' : ''}`}
+      className={`cursor-pointer border-0 shadow-sm hover:shadow-md transition-all active:scale-[0.98] ${warning ? 'bg-warning/5 ring-1 ring-warning/20' : accent ? 'bg-primary/5 ring-1 ring-primary/20' : 'bg-card/80'}`}
       onClick={onClick}
     >
-      <CardContent className="p-3 md:p-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Icon className={`h-4 w-4 ${color}`} />
-          <span className="text-xs text-muted-foreground truncate">{label}</span>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${warning ? 'bg-warning/10' : 'bg-primary/10'}`}>
+            <Icon className={`h-4 w-4 ${warning ? 'text-warning' : 'text-primary'}`} />
+          </div>
+          <span className="text-xs text-muted-foreground font-medium">{label}</span>
         </div>
         {loading ? (
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         ) : (
-          <p className="text-2xl font-bold">{value}</p>
+          <div className="flex items-baseline gap-1.5">
+            <p className="text-2xl font-bold">{value}</p>
+            <span className="text-xs text-muted-foreground">{suffix}</span>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -343,7 +285,7 @@ function KPICard({ icon: Icon, label, value, color, onClick, loading, highlight 
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 p-2 rounded-lg">
       <div className="h-8 w-8 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
@@ -352,35 +294,5 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
         <p className="text-sm font-medium truncate">{value}</p>
       </div>
     </div>
-  );
-}
-
-function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
-  return (
-    <Button
-      variant="ghost"
-      className="w-full justify-start gap-2.5 h-9 text-sm font-normal hover:bg-primary/5"
-      onClick={onClick}
-    >
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      {label}
-      <ArrowRight className="h-3 w-3 ml-auto text-muted-foreground/50" />
-    </Button>
-  );
-}
-
-function MobileQuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
-  return (
-    <Card
-      className="cursor-pointer hover:border-primary/30 active:bg-primary/5 transition-colors"
-      onClick={onClick}
-    >
-      <CardContent className="p-3 flex flex-col items-center gap-1.5">
-        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Icon className="h-5 w-5 text-primary" />
-        </div>
-        <span className="text-xs font-medium text-center">{label}</span>
-      </CardContent>
-    </Card>
   );
 }
