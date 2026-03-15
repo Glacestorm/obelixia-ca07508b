@@ -48754,6 +48754,7 @@ export type Database = {
           source_id: string
           started_at: string
           status: string
+          trigger_type: string
         }
         Insert: {
           completed_at?: string | null
@@ -48768,6 +48769,7 @@ export type Database = {
           source_id: string
           started_at?: string
           status?: string
+          trigger_type?: string
         }
         Update: {
           completed_at?: string | null
@@ -48782,6 +48784,7 @@ export type Database = {
           source_id?: string
           started_at?: string
           status?: string
+          trigger_type?: string
         }
         Relationships: [
           {
