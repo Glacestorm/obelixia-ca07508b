@@ -90,6 +90,9 @@ import { ESLocalizationPlugin } from './localization/es';
 import { HRAdminPortal } from './admin-portal';
 import { HREmployeeExpedient } from './employee-expedient';
 import { HRCommandPalette } from './shared/HRCommandPalette';
+import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
+import { HRDemoJourneyPanel } from './shared/HRDemoJourneyPanel';
+import { HREnvironmentProvider, useHREnvironment } from '@/contexts/HREnvironmentContext';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Loader2 as Spin, AlertCircle as AlertC, Play } from 'lucide-react';
@@ -138,7 +141,7 @@ function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   );
 }
 
-export function HRModule() {
+function HRModuleInner() {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const { currentCompany } = useERPContext();
@@ -265,6 +268,9 @@ export function HRModule() {
 
   return (
     <div className="space-y-4">
+      {/* Environment Banner */}
+      <HREnvironmentBanner />
+
       {/* Command Palette (Cmd+K) */}
       <HRCommandPalette
         onNavigate={(moduleId) => setActiveModule(moduleId)}
@@ -479,6 +485,7 @@ export function HRModule() {
         {activeModule === 'util-health' && <HRPremiumHealthCheckPanel companyId={companyId} />}
         {activeModule === 'util-export' && <HRPremiumExportPanel companyId={companyId} />}
         {activeModule === 'util-seed' && <HRDemoSeedPanel companyId={companyId} />}
+        {activeModule === 'util-demo-journey' && <HRDemoJourneyPanel companyId={companyId} onNavigate={(moduleId) => setActiveModule(moduleId)} />}
         {activeModule === 'util-help' && <HRPremiumHelpCenter />}
         {activeModule === 'util-compliance' && <HRComplianceAutomationPanel companyId={companyId} />}
         {activeModule === 'util-analytics-bi' && <HRAnalyticsBIPremiumPanel companyId={companyId} />}
@@ -515,6 +522,14 @@ export function HRModule() {
         companyId={companyId}
       />
     </div>
+  );
+}
+
+export function HRModule() {
+  return (
+    <HREnvironmentProvider>
+      <HRModuleInner />
+    </HREnvironmentProvider>
   );
 }
 

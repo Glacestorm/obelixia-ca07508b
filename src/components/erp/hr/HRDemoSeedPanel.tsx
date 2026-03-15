@@ -43,6 +43,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useHREnvironment } from '@/contexts/HREnvironmentContext';
 
 interface PhaseConfig {
   action: string;
@@ -92,6 +93,7 @@ interface MasterDemoResult {
 }
 
 export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
+  const { canSeed, canPurge, mode, config } = useHREnvironment();
   const [phaseStatuses, setPhaseStatuses] = useState<PhaseStatus[]>(
     PHASES.map(p => ({ action: p.action, status: 'pending' }))
   );
@@ -106,6 +108,8 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
   const [isPurgingMaster, setIsPurgingMaster] = useState(false);
   const [masterStatus, setMasterStatus] = useState<number>(0);
   const [masterResult, setMasterResult] = useState<MasterDemoResult | null>(null);
+
+
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
@@ -248,6 +252,22 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
   const completedPhases = phaseStatuses.filter(p => p.status === 'success').length;
   const totalRecords = phaseStatuses.reduce((s, p) => s + (p.records || 0), 0);
   const progressPct = (completedPhases / PHASES.length) * 100;
+
+  // Environment guard — block seeds in non-demo modes
+  if (!canSeed) {
+    return (
+      <Card className="border-destructive/30">
+        <CardContent className="py-8 text-center">
+          <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-destructive/60" />
+          <h3 className="font-semibold text-lg mb-1">Seeds bloqueados en modo {config.label}</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            La generación y purga de datos demo solo está disponible en modo DEMO. 
+            Cambia el entorno desde el banner superior para habilitar esta función.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-dashed border-2 border-primary/20">

@@ -11,7 +11,7 @@ import {
   Activity, ArrowRightLeft, Bell, Clock, Settings, FileText,
   Brain, HeartPulse, Download, Database, HelpCircle,
   Wrench, ChevronLeft, Sparkles, Shield, BarChart3, ExternalLink,
-  Briefcase, Zap, Gauge
+  Briefcase, Zap, Gauge, Map
 } from 'lucide-react';
 
 export type UtilitySection =
@@ -27,7 +27,8 @@ export type UtilitySection =
   | 'util-regulatory'
   | 'util-api-webhooks'
   | 'util-integrations'
-  | 'util-board-pack';
+  | 'util-board-pack'
+  | 'util-demo-journey';
 
 interface UtilityItem {
   id: UtilitySection;
@@ -84,6 +85,7 @@ const CATEGORIES: UtilityCategory[] = [
       { id: 'util-settings', label: 'Configuración', description: 'Ajustes de módulos Premium', icon: <Settings className="h-4 w-4" /> },
       { id: 'util-export', label: 'Exportar', description: 'Exportación masiva de datos y reportes', icon: <Download className="h-4 w-4" /> },
       { id: 'util-seed', label: 'Seed Data', description: 'Regenerar datos demo Premium', icon: <Database className="h-4 w-4" /> },
+      { id: 'util-demo-journey', label: 'Circuito Demo', description: 'Navegador del caso demo maestro (15 pasos)', icon: <Map className="h-4 w-4" /> },
       { id: 'util-help', label: 'Centro de Ayuda', description: 'Documentación y soporte', icon: <HelpCircle className="h-4 w-4" /> },
     ],
   },
