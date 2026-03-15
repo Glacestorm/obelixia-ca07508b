@@ -13,3 +13,5 @@ export { EmployeeTimeSection } from './EmployeeTimeSection';
 export { EmployeeProfileSection } from './EmployeeProfileSection';
 export { EmployeeHelpSection } from './EmployeeHelpSection';
 export { EmployeeLeaveSection } from './EmployeeLeaveSection';
+export { TimeClockWidget } from './TimeClockWidget';
+export { PWAInstallGuide } from './PWAInstallGuide';
