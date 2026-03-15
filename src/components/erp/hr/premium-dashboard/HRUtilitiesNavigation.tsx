@@ -27,7 +27,8 @@ export type UtilitySection =
   | 'util-regulatory'
   | 'util-api-webhooks'
   | 'util-integrations'
-  | 'util-board-pack';
+  | 'util-board-pack'
+  | 'util-demo-journey';
 
 interface UtilityItem {
   id: UtilitySection;
