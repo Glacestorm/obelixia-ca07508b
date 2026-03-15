@@ -74,6 +74,7 @@ export function EmployeePortalMobileShell() {
     <div className="min-h-screen bg-background flex flex-col">
       <EmployeePortalMobileHeader
         employeeName={employeeName}
+        dashboard={dashboard}
         onSignOut={signOut}
         onNavigate={handleNavigate}
       />
