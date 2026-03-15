@@ -1,13 +1,13 @@
 /**
  * TimeClockWidget — Prominent clock-in/out widget for the Employee Portal
- * RRHH-PORTAL.2 Block C: Fichaje protagonista
+ * RRHH-PORTAL.2 Block C: Fichaje protagonista + GPS geolocation
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   LogIn, LogOut, Coffee, Play, Pause, Clock, Timer,
-  CheckCircle2, AlertTriangle, Loader2,
+  CheckCircle2, AlertTriangle, Loader2, MapPin, MapPinOff,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -25,10 +25,13 @@ interface TodayEntry {
   break_minutes: number | null;
   status: string;
   anomaly_type: string | null;
+  clock_in_location: { lat: number; lng: number; accuracy?: number } | null;
+  clock_out_location: { lat: number; lng: number; accuracy?: number } | null;
 }
 
 interface Props {
   employeeId: string;
+  companyId?: string;
   /** Compact mode for embedding in Home */
   compact?: boolean;
   className?: string;
@@ -38,11 +41,43 @@ const fmtTime = (iso: string) => {
   try { return format(new Date(iso), 'HH:mm'); } catch { return '—'; }
 };
 
-export function TimeClockWidget({ employeeId, compact = false, className }: Props) {
+/** Request current GPS position as a promise */
+function getGeoLocation(): Promise<{ lat: number; lng: number; accuracy: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({
+        lat: Math.round(pos.coords.latitude * 1000000) / 1000000,
+        lng: Math.round(pos.coords.longitude * 1000000) / 1000000,
+        accuracy: Math.round(pos.coords.accuracy),
+      }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+}
+
+export function TimeClockWidget({ employeeId, companyId, compact = false, className }: Props) {
   const [todayEntries, setTodayEntries] = useState<TodayEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [clocking, setClocking] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [geoStatus, setGeoStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
+
+  // Check geo permission on mount
+  useEffect(() => {
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        setGeoStatus(result.state === 'granted' ? 'granted' : result.state === 'denied' ? 'denied' : 'idle');
+        result.onchange = () => {
+          setGeoStatus(result.state === 'granted' ? 'granted' : result.state === 'denied' ? 'denied' : 'idle');
+        };
+      }).catch(() => {});
+    }
+  }, []);
 
   // Live clock
   useEffect(() => {
@@ -55,7 +90,7 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
       const today = format(new Date(), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('erp_hr_time_clock')
-        .select('id, clock_in, clock_out, worked_hours, break_minutes, status, anomaly_type')
+        .select('id, clock_in, clock_out, worked_hours, break_minutes, status, anomaly_type, clock_in_location, clock_out_location')
         .eq('employee_id', employeeId)
         .eq('clock_date', today)
         .order('clock_in', { ascending: true });
@@ -85,7 +120,6 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
     for (const e of todayEntries) {
       if (e.worked_hours) total += e.worked_hours;
       else if (!e.clock_out) {
-        // Calculate live duration
         const start = new Date(e.clock_in).getTime();
         const elapsed = (now.getTime() - start) / 3600000;
         total += Math.max(0, elapsed);
@@ -106,20 +140,30 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
   // Clock actions
   const handleClockIn = useCallback(async () => {
     setClocking(true);
+    setGeoStatus('requesting');
     try {
+      const [location] = await Promise.all([getGeoLocation()]);
+      setGeoStatus(location ? 'granted' : 'denied');
+
       const nowISO = new Date().toISOString();
       const today = format(new Date(), 'yyyy-MM-dd');
       const { error } = await supabase
         .from('erp_hr_time_clock')
         .insert({
           employee_id: employeeId,
+          company_id: companyId || null,
           clock_date: today,
           clock_in: nowISO,
           clock_in_method: 'web_portal',
+          clock_in_location: location,
           status: 'active',
         } as any);
       if (error) throw error;
-      toast.success('Entrada registrada correctamente');
+      toast.success(
+        location
+          ? `Entrada registrada ✓ (GPS: ${location.lat}, ${location.lng})`
+          : 'Entrada registrada (sin ubicación GPS)'
+      );
       await fetchToday();
     } catch (err) {
       console.error('[TimeClockWidget] clock in error:', err);
@@ -127,12 +171,16 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
     } finally {
       setClocking(false);
     }
-  }, [employeeId, fetchToday]);
+  }, [employeeId, companyId, fetchToday]);
 
   const handleClockOut = useCallback(async () => {
     if (!lastEntry) return;
     setClocking(true);
+    setGeoStatus('requesting');
     try {
+      const [location] = await Promise.all([getGeoLocation()]);
+      setGeoStatus(location ? 'granted' : 'denied');
+
       const nowISO = new Date().toISOString();
       const clockIn = new Date(lastEntry.clock_in).getTime();
       const elapsed = (new Date().getTime() - clockIn) / 3600000;
@@ -144,12 +192,17 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
         .update({
           clock_out: nowISO,
           clock_out_method: 'web_portal',
+          clock_out_location: location,
           worked_hours: Math.round(worked * 100) / 100,
           status: 'completed',
         } as any)
         .eq('id', lastEntry.id);
       if (error) throw error;
-      toast.success('Salida registrada correctamente');
+      toast.success(
+        location
+          ? `Salida registrada ✓ (GPS: ${location.lat}, ${location.lng})`
+          : 'Salida registrada (sin ubicación GPS)'
+      );
       await fetchToday();
     } catch (err) {
       console.error('[TimeClockWidget] clock out error:', err);
@@ -196,6 +249,42 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
 
   const state = stateConfig[jornadaState];
 
+  // GPS status indicator
+  const GeoIndicator = () => {
+    if (geoStatus === 'granted') return (
+      <span className="flex items-center gap-1 text-xs text-success">
+        <MapPin className="h-3 w-3" /> GPS activo
+      </span>
+    );
+    if (geoStatus === 'denied') return (
+      <span className="flex items-center gap-1 text-xs text-destructive">
+        <MapPinOff className="h-3 w-3" /> GPS no disponible
+      </span>
+    );
+    if (geoStatus === 'requesting') return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" /> Obteniendo ubicación...
+      </span>
+    );
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <MapPin className="h-3 w-3" /> Se pedirá ubicación al fichar
+      </span>
+    );
+  };
+
+  // Location badge for entries
+  const LocationBadge = ({ location }: { location: { lat: number; lng: number; accuracy?: number } | null }) => {
+    if (!location) return null;
+    return (
+      <Badge variant="outline" className="text-[10px] gap-1 font-normal">
+        <MapPin className="h-2.5 w-2.5" />
+        {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+        {location.accuracy && <span className="text-muted-foreground">±{location.accuracy}m</span>}
+      </Badge>
+    );
+  };
+
   if (compact) {
     return (
       <div className={cn('rounded-2xl border bg-card overflow-hidden', className)}>
@@ -223,6 +312,9 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
                   <LogOut className="h-3 w-3 text-destructive" />
                   {fmtTime(lastEntry.clock_out)}
                 </span>
+              )}
+              {todayEntries[0].clock_in_location && (
+                <LocationBadge location={todayEntries[0].clock_in_location} />
               )}
             </div>
           )}
@@ -255,6 +347,11 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
               Jornada completada
             </div>
           )}
+
+          {/* GPS indicator */}
+          <div className="flex justify-center">
+            <GeoIndicator />
+          </div>
         </div>
 
         {/* Anomaly alert */}
@@ -291,25 +388,41 @@ export function TimeClockWidget({ employeeId, compact = false, className }: Prop
 
         {/* Clock times detail */}
         {todayEntries.length > 0 && (
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <LogIn className="h-4 w-4 text-success" />
-              Entrada: <strong className="text-foreground">{fmtTime(todayEntries[0].clock_in)}</strong>
-            </span>
-            {lastEntry?.clock_out && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <LogOut className="h-4 w-4 text-destructive" />
-                Salida: <strong className="text-foreground">{fmtTime(lastEntry.clock_out)}</strong>
+                <LogIn className="h-4 w-4 text-success" />
+                Entrada: <strong className="text-foreground">{fmtTime(todayEntries[0].clock_in)}</strong>
               </span>
-            )}
-            {lastEntry?.break_minutes != null && lastEntry.break_minutes > 0 && (
-              <span className="flex items-center gap-1.5">
-                <Coffee className="h-4 w-4 text-warning" />
-                Pausa: <strong className="text-foreground">{lastEntry.break_minutes}min</strong>
-              </span>
-            )}
+              {lastEntry?.clock_out && (
+                <span className="flex items-center gap-1.5">
+                  <LogOut className="h-4 w-4 text-destructive" />
+                  Salida: <strong className="text-foreground">{fmtTime(lastEntry.clock_out)}</strong>
+                </span>
+              )}
+              {lastEntry?.break_minutes != null && lastEntry.break_minutes > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <Coffee className="h-4 w-4 text-warning" />
+                  Pausa: <strong className="text-foreground">{lastEntry.break_minutes}min</strong>
+                </span>
+              )}
+            </div>
+            {/* Location info */}
+            <div className="flex flex-wrap items-center gap-2">
+              {todayEntries[0].clock_in_location && (
+                <LocationBadge location={todayEntries[0].clock_in_location} />
+              )}
+              {lastEntry?.clock_out_location && (
+                <LocationBadge location={lastEntry.clock_out_location} />
+              )}
+            </div>
           </div>
         )}
+
+        {/* GPS status */}
+        <div className="mt-3">
+          <GeoIndicator />
+        </div>
       </div>
 
       {/* Action buttons */}
