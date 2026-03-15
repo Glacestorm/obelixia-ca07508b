@@ -751,9 +751,314 @@ export function SupervisorAgentsDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ERP Tab */}
+        <TabsContent value="erp" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-blue-500" />
+              <h3 className="text-lg font-semibold">Agentes ERP</h3>
+              <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground">Demo</Badge>
+            </div>
+            <Badge variant="outline" className="gap-1">
+              <Activity className="h-3 w-3 text-emerald-500" />
+              {ERP_AGENTS.filter(a => a.status === 'active' || a.status === 'processing').length}/{ERP_AGENTS.length} activos
+            </Badge>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {ERP_AGENTS.map(agent => (
+              <AgentCard key={agent.id} agent={agent} onInteract={handleInteractWithAgent} onConfigure={handleConfigureAgent} />
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* CRM Tab */}
+        <TabsContent value="crm" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-emerald-500" />
+              <h3 className="text-lg font-semibold">Agentes CRM</h3>
+              <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground">Demo</Badge>
+            </div>
+            <Badge variant="outline" className="gap-1">
+              <Activity className="h-3 w-3 text-emerald-500" />
+              {CRM_AGENTS.filter(a => a.status === 'active' || a.status === 'processing').length}/{CRM_AGENTS.length} activos
+            </Badge>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {CRM_AGENTS.map(agent => (
+              <AgentCard key={agent.id} agent={agent} onInteract={handleInteractWithAgent} onConfigure={handleConfigureAgent} />
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* RRHH Tab - Live data */}
+        <TabsContent value="rrhh" className="space-y-4">
+          {domainData.hrAgents.length > 0 ? (
+            <>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold">Agentes RRHH</h3>
+                <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {domainData.hrAgents.map(agent => {
+                  const agentInvocations = domainData.hrInvocations.filter(i => i.agent_code === agent.code);
+                  const lastInv = agentInvocations[0];
+                  return (
+                    <RegistryAgentCard
+                      key={agent.code}
+                      agent={agent}
+                      invocationCount={agentInvocations.length}
+                      lastInvocation={lastInv?.created_at}
+                      onConfigure={(a) => { setRegistryConfigAgent(a); setShowRegistryConfig(true); }}
+                    />
+                  );
+                })}
+              </div>
+              {/* Also show domain view for full context */}
+              <SupervisorDomainView
+                agents={domainData.hrAgents}
+                invocations={domainData.hrInvocations}
+                domain="hr"
+                title="RRHH"
+                icon={<UserCheck className="h-5 w-5" />}
+                accentColor="text-blue-600"
+              />
+            </>
+          ) : (
+            <SupervisorDomainView
+              agents={domainData.hrAgents}
+              invocations={domainData.hrInvocations}
+              domain="hr"
+              title="RRHH"
+              icon={<UserCheck className="h-5 w-5" />}
+              accentColor="text-blue-600"
+            />
+          )}
+        </TabsContent>
+
+        {/* Legal Tab - Live data */}
+        <TabsContent value="legal" className="space-y-4">
+          {domainData.legalAgents.length > 0 ? (
+            <>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold">Agentes Jurídicos</h3>
+                <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {domainData.legalAgents.map(agent => {
+                  const agentInvocations = domainData.legalInvocations.filter(i => i.agent_code === agent.code);
+                  const lastInv = agentInvocations[0];
+                  return (
+                    <RegistryAgentCard
+                      key={agent.code}
+                      agent={agent}
+                      invocationCount={agentInvocations.length}
+                      lastInvocation={lastInv?.created_at}
+                      onConfigure={(a) => { setRegistryConfigAgent(a); setShowRegistryConfig(true); }}
+                    />
+                  );
+                })}
+              </div>
+              <SupervisorDomainView
+                agents={domainData.legalAgents}
+                invocations={domainData.legalInvocations}
+                domain="legal"
+                title="Jurídico"
+                icon={<Scale className="h-5 w-5" />}
+                accentColor="text-amber-600"
+              />
+            </>
+          ) : (
+            <SupervisorDomainView
+              agents={domainData.legalAgents}
+              invocations={domainData.legalInvocations}
+              domain="legal"
+              title="Jurídico"
+              icon={<Scale className="h-5 w-5" />}
+              accentColor="text-amber-600"
+            />
+          )}
+        </TabsContent>
+
+        {/* Cross-Module Tab */}
+        <TabsContent value="cross" className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Network className="h-5 w-5 text-violet-600" />
+            <h3 className="text-lg font-semibold">Cross-Module RRHH ↔ Jurídico</h3>
+            <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+          </div>
+          {domainData.escalatedInvocations.length > 0 ? (
+            <SupervisorConflictsView
+              escalated={domainData.escalatedInvocations}
+              humanReview={domainData.humanReviewInvocations}
+            />
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Network className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-medium">Sin escalados cross-module</p>
+                <p className="text-xs mt-1">Los escalados HR → Legal aparecerán aquí cuando se produzcan</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Conflicts Tab */}
+        <TabsContent value="conflicts" className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <h3 className="text-lg font-semibold">Conflictos y Revisión Humana</h3>
+            <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+          </div>
+          <SupervisorConflictsView
+            escalated={domainData.conflictInvocations}
+            humanReview={domainData.humanReviewInvocations}
+          />
+        </TabsContent>
+
+        {/* Supervisor General Tab */}
+        <TabsContent value="supervisor" className="space-y-4">
+          <div className="grid lg:grid-cols-3 gap-4 h-[600px]">
+            {/* Chat area */}
+            <div className="lg:col-span-2">
+              <SupervisorChat
+                messages={chatMessages}
+                onSendMessage={handleSendMessage}
+                isLoading={isProcessing}
+                selectedAgent={selectedAgent}
+              />
+            </div>
+            {/* Agent selector sidebar */}
+            <div className="space-y-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Seleccionar Agente</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[250px]">
+                    <div className="space-y-1">
+                      <Button
+                        variant={!selectedAgent ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="w-full justify-start text-xs h-8"
+                        onClick={() => setSelectedAgent(null)}
+                      >
+                        <Brain className="h-3 w-3 mr-2 text-primary" />
+                        Supervisor General
+                      </Button>
+                      {allAgents.map(agent => (
+                        <Button
+                          key={agent.id}
+                          variant={selectedAgent?.id === agent.id ? 'secondary' : 'ghost'}
+                          size="sm"
+                          className="w-full justify-start text-xs h-8"
+                          onClick={() => handleInteractWithAgent(agent)}
+                        >
+                          <Bot className={cn("h-3 w-3 mr-2", agent.domain === 'erp' ? 'text-blue-500' : 'text-emerald-500')} />
+                          {agent.name}
+                          <div className={cn("w-1.5 h-1.5 rounded-full ml-auto",
+                            agent.status === 'active' ? 'bg-emerald-500' : 'bg-muted-foreground/40')} />
+                        </Button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+              {/* Context panel for selected agent */}
+              {selectedAgent && (
+                <Card>
+                  <CardContent className="p-3 space-y-2 text-xs">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Módulo</span><span className="font-medium">{selectedAgent.module}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Dominio</span><Badge variant="outline" className="text-[9px]">{selectedAgent.domain.toUpperCase()}</Badge></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Health</span><span className="font-medium">{selectedAgent.healthScore}%</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Tareas</span><span>{selectedAgent.tasksCompleted}</span></div>
+                    <Progress value={selectedAgent.healthScore} className="h-1.5 mt-1" />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Insights Tab */}
+        <TabsContent value="insights" className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            <h3 className="text-lg font-semibold">Insights y Recomendaciones</h3>
+            <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground">Demo</Badge>
+          </div>
+          <div className="space-y-3">
+            {SUPERVISOR_INSIGHTS.map(insight => (
+              <Card key={insight.id} className={cn(
+                "transition-colors",
+                insight.priority === 'critical' ? 'border-destructive/30 bg-destructive/5' :
+                insight.priority === 'high' ? 'border-amber-500/30 bg-amber-500/5' :
+                'bg-muted/30'
+              )}>
+                <CardContent className="p-4 flex items-start gap-4">
+                  {insight.type === 'alert' ? (
+                    <AlertTriangle className={cn("h-5 w-5 shrink-0 mt-0.5",
+                      insight.priority === 'critical' ? 'text-destructive' : 'text-amber-500')} />
+                  ) : insight.type === 'optimization' ? (
+                    <TrendingUp className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                  ) : (
+                    <Lightbulb className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-sm">{insight.title}</p>
+                      <Badge variant="outline" className={cn("text-[9px]",
+                        insight.priority === 'critical' ? 'bg-destructive/10 text-destructive' :
+                        insight.priority === 'high' ? 'bg-amber-500/10 text-amber-700' :
+                        'bg-muted'
+                      )}>{insight.priority}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{insight.description}</p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      {insight.affectedAgents.map(agentId => (
+                        <Badge key={agentId} variant="outline" className="text-[10px]">{agentId}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  {insight.suggestedAction && (
+                    <Button size="sm" variant="outline" className="shrink-0">
+                      {insight.suggestedAction}
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* All registered agents catalog */}
+          {domainData.agents.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Catálogo completo de agentes
+                  <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {domainData.agents.map(agent => (
+                    <RegistryAgentCard
+                      key={agent.code}
+                      agent={agent}
+                      invocationCount={domainData.invocations.filter(i => i.agent_code === agent.code).length}
+                      onConfigure={(a) => { setRegistryConfigAgent(a); setShowRegistryConfig(true); }}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
 
-      {/* Agent Configuration Sheet */}
+      {/* Mock Agent Configuration Sheet */}
       <AgentConfigSheet
         open={showConfigSheet}
         onOpenChange={setShowConfigSheet}
@@ -766,6 +1071,14 @@ export function SupervisorAgentsDashboard() {
           domain: configAgent.domain
         } : null}
         agentType={configAgent?.domain || 'erp'}
+      />
+
+      {/* Registry Agent Configuration Sheet */}
+      <RegistryAgentConfigSheet
+        open={showRegistryConfig}
+        onOpenChange={setShowRegistryConfig}
+        agent={registryConfigAgent}
+        onSaved={() => domainData.refresh()}
       />
     </div>
   );
