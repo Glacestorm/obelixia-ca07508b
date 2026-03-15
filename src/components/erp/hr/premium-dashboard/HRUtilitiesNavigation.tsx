@@ -30,7 +30,8 @@ export type UtilitySection =
   | 'util-board-pack'
   | 'util-demo-journey'
   | 'util-pilot-checklist'
-  | 'util-payroll-reconciliation';
+  | 'util-payroll-reconciliation'
+  | 'util-multiagent-supervisor';
 
 interface UtilityItem {
   id: UtilitySection;
