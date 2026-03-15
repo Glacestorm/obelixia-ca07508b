@@ -171,7 +171,7 @@ const PILOT_CHECKS: CheckItem[] = [
     description: 'Al menos 1 nómina procesada para generar informes',
     icon: BarChart3, severity: 'optional',
     check: async (cid) => {
-      const { count } = await supabase.from('erp_hr_payroll_records').select('id', { count: 'exact', head: true }).eq('company_id', cid);
+      const { count } = await (supabase as any).from('erp_hr_payroll_records').select('id', { count: 'exact', head: true }).eq('company_id', cid);
       return { pass: (count || 0) >= 1, detail: `${count || 0} registros de nómina` };
     },
   },
