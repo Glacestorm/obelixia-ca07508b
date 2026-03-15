@@ -59,8 +59,9 @@ import {
   Radio,
   GitBranch,
   Plus,
-  Scale,
-  UserCheck
+   Scale,
+   UserCheck,
+   Newspaper
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
