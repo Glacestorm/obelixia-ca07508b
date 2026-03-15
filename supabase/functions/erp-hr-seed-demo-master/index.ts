@@ -178,6 +178,8 @@ async function cleanupMasterDemo(supabase: any, companyId: string) {
     'erp_hr_registration_data',
     'erp_hr_contract_process_data',
     'erp_hr_employee_compensation',
+    'hr_admin_requests',
+    'erp_hr_mobility_assignments',
   ];
 
   for (const table of tablesToClean) {
