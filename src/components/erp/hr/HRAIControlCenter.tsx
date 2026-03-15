@@ -348,14 +348,29 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
         <TabsContent value="normativa" className="mt-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Newspaper className="h-4 w-4 text-indigo-600" />
-                Novedades Normativas con Impacto RRHH
-                <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Newspaper className="h-4 w-4 text-indigo-600" />
+                  Novedades Normativas con Impacto RRHH
+                  <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+                </CardTitle>
+                <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => regulatory.triggerRefreshAll()} disabled={regulatory.refreshing}>
+                  <RefreshCw className={cn("h-3 w-3 mr-1", regulatory.refreshing && "animate-spin")} />
+                  {regulatory.refreshing ? 'Refrescando...' : 'Refrescar'}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[400px]">
+              {/* Recent changes summary */}
+              {regulatory.stats.newDocuments > 0 && (
+                <div className="mb-3 p-2 rounded-md border bg-emerald-500/5 border-emerald-500/20">
+                  <p className="text-[11px] text-emerald-700 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    {regulatory.stats.newDocuments} nuevos documentos · {regulatory.stats.liveDocuments} ingesta live · {regulatory.stats.pendingReview} pendientes de revisión
+                  </p>
+                </div>
+              )}
+              <ScrollArea className="h-[380px]">
                 <div className="space-y-3">
                   {hrRegulatoryDocs.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
@@ -377,8 +392,13 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                           'bg-blue-500/15 text-blue-700')}>
                           {doc.impact_level === 'critical' ? 'Crítico' : doc.impact_level === 'high' ? 'Alto' : 'Medio'}
                         </Badge>
-                        {doc.data_source === 'seed' && (
+                        {doc.change_type === 'updated' && (
+                          <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30">Actualizado</Badge>
+                        )}
+                        {doc.data_source === 'seed' ? (
                           <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30">Seed</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Live</Badge>
                         )}
                         {doc.requires_human_review && (
                           <Badge variant="outline" className="text-[10px] bg-violet-500/10 text-violet-600">Rev. humana</Badge>
