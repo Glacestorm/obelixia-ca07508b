@@ -421,17 +421,18 @@ export function LegalAgentSupervisorPanel({ companyId }: LegalAgentSupervisorPan
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="agents">Agentes</TabsTrigger>
           <TabsTrigger value="actions" className="relative">
             Acciones
             {totalPending > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground flex items-center justify-center">
                 {totalPending}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="protocols">Protocolos</TabsTrigger>
+          <TabsTrigger value="cross-module">Cross-Module</TabsTrigger>
         </TabsList>
 
         {/* Agents Tab */}
@@ -668,8 +669,108 @@ export function LegalAgentSupervisorPanel({ companyId }: LegalAgentSupervisorPan
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Cross-Module Tab - Invocaciones desde RRHH */}
+        <TabsContent value="cross-module" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Escalados desde RRHH
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Consultas escaladas por el HR-Supervisor al Legal-Supervisor (trazabilidad en tiempo real desde <code>erp_ai_agent_invocations</code>)
+              </p>
+            </CardHeader>
+            <CardContent>
+              <CrossModuleInvocations companyId={companyId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function CrossModuleInvocations({ companyId }: { companyId: string }) {
+  const [invocations, setInvocations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchInvocations = async () => {
+      setLoading(true);
+      try {
+        const { data } = await supabase
+          .from('erp_ai_agent_invocations')
+          .select('*')
+          .eq('company_id', companyId)
+          .eq('supervisor_code', 'legal-supervisor')
+          .order('created_at', { ascending: false })
+          .limit(20);
+        setInvocations((data as any[]) || []);
+      } catch (err) {
+        console.error('CrossModule fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInvocations();
+  }, [companyId]);
+
+  if (loading) {
+    return <div className="text-sm text-muted-foreground py-4 text-center">Cargando...</div>;
+  }
+
+  if (invocations.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <Shield className="h-8 w-8 mx-auto mb-2 opacity-30" />
+        <p className="text-sm">Sin escalados cross-module</p>
+        <p className="text-xs mt-1">Las consultas con riesgo legal se mostrarán aquí</p>
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-[300px]">
+      <div className="space-y-2">
+        {invocations.map((inv: any) => (
+          <div key={inv.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card">
+            <div className="shrink-0 mt-0.5">
+              {inv.outcome_status === 'human_review' ? (
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              ) : (
+                <ShieldCheck className="h-4 w-4 text-primary" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="text-[10px]">{inv.agent_code}</Badge>
+                <Badge variant="outline" className={
+                  inv.outcome_status === 'human_review' ? 'text-[10px] bg-amber-500/15 text-amber-700' :
+                  inv.outcome_status === 'success' ? 'text-[10px] bg-emerald-500/15 text-emerald-700' :
+                  'text-[10px]'
+                }>
+                  {inv.outcome_status}
+                </Badge>
+                {inv.metadata?.source_agent && (
+                  <Badge variant="outline" className="text-[10px] bg-primary/10">
+                    Desde: {inv.metadata.source_agent}
+                  </Badge>
+                )}
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  {inv.execution_time_ms}ms · {formatDistanceToNow(new Date(inv.created_at), { locale: es, addSuffix: true })}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{inv.input_summary}</p>
+              {inv.routing_reason && (
+                <p className="text-[10px] text-muted-foreground/70 mt-0.5 italic">{inv.routing_reason}</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </ScrollArea>
   );
 }
 

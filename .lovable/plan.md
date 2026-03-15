@@ -1,141 +1,252 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-# [RRHH-LEGAL-AI.2] Plan — Fase 1A Arquitectura Multiagente
+## Estado de Implementación — Global HR Platform
 
-## Resumen
+| Fase Global | Estado | Detalles |
+|------|--------|----------|
+| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
+| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
+| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
+| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
+| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
+| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
+| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
+| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
+| **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
+| **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
+| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+| **F17 - QA Final y Cierre MVP** | ✅ **Completada** | Smoke test 26 items + dashboard ✅ · 0 errores consola · 0 errores RLS/403/5xx · Seed validado (108 emp, 58 contratos, 84 vacaciones, 7 nóminas) · Baseline congelado · Acta en `.lovable/mvp-rrhh-baseline.md` |
 
-Implementar el núcleo mínimo serio: tabla de registro de agentes, 2 supervisores reales (HR + Legal), 3 agentes formalizados (HR-Ops, HR-Compliance, Legal-Labor), protocolo cross-module y trazabilidad. ~80% reutilización de código existente.
+## V2 — Evolución Post-MVP
 
----
+| Subfase V2 | Estado | Detalles |
+|------|--------|----------|
+| **V2-ES.1 - Motor nómina ES operativo** | ✅ **Completada** | 5 pasos · calculation_trace JSONB · cálculo masivo idempotente · inyección incidencias · comparativa período-a-período · review/approval workflow · cierre con validación de revisión · UNIQUE(payroll_period_id, employee_id) · 3 subcomponentes UI nuevos · 0 rutas/menús nuevos |
+| **V2-ES.2 - Workflows y aprobaciones reales** | ✅ **Completada** | 5 pasos · Mapping 14 request_types → workflow process_types · Start workflow idempotente + sync inverso decide_step → admin_request status · Trazabilidad estructurada (source_type, source_id, related_entity_type, related_entity_id, workflow_instance_id) · Sync automático decision → task status (approved→in_progress, rejected→cancelled, returned→on_hold) · Timeline unificado (activity + comments + linked tasks) · 0 migraciones · 0 rutas/menús nuevos |
+| **V2-ES.3 - Expediente documental operativo** | ✅ **Completada** | 5 pasos · Hook useHRDocumentExpedient (CRUD + versiones + access log + consentimientos + retención) · 6 tablas · 10 componentes nuevos (DocumentExpedientModule, EmployeeDocumentExpedient, PayrollDocumentExpedient, ConsentsPanel, RetentionPoliciesPanel, DocumentAuditPanel, DocumentDetailPanel, LinkedDocumentsSection, DocumentOriginBadge, DocumentCompletenessIndicator) · Config documentExpectedTypes.ts · Vinculación documental a solicitudes/tareas · Visibilidad cruzada de origen + filtros · Checklist completitud informativa · Indicador sidebar sin fetch duplicado · 0 rutas/menús nuevos |
+| V2-ES.4 - Integraciones oficiales España | 🔜 Pendiente | |
 
-## 1. Tabla `erp_ai_agents_registry` + `erp_ai_agent_invocations`
+## Estado de Implementación — Fases Base
 
-**Migración SQL** con dos tablas:
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-### `erp_ai_agents_registry`
-- `id`, `code` (unique), `name`, `module_domain` (hr/legal/cross), `specialization`, `agent_type` (specialist/supervisor), `execution_type` (edge_function/panel/hybrid), `backend_handler` (nombre edge function), `ui_entrypoint`, `status` (active/beta/disabled), `supervisor_code` (FK lógico al supervisor), `confidence_threshold` (default 0.7), `requires_human_review` (bool), `description`, `metadata` (jsonb), `created_at`, `updated_at`
+## Premium Phases — Enterprise Differentiators
 
-### `erp_ai_agent_invocations`
-- `id`, `agent_code`, `supervisor_code`, `company_id`, `user_id`, `input_summary` (text, truncado), `routing_reason`, `confidence_score`, `escalated_to` (code del agente al que se escaló), `escalation_reason`, `outcome_status` (success/failed/escalated/human_review), `execution_time_ms`, `response_summary`, `metadata` (jsonb), `created_at`
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-RLS: authenticated + `user_has_erp_premium_access(company_id)` en invocations. Registry es lectura pública para authenticated.
-
-**Seed** (via insert tool): 5 registros iniciales — `hr-ops`, `hr-compliance`, `hr-supervisor`, `legal-labor`, `legal-supervisor`.
-
----
-
-## 2. Edge Function: `hr-multiagent-supervisor`
-
-**Nueva edge function** (~250 líneas). Este es el HR-Supervisor real.
-
-**Flujo:**
-1. Recibe `{ action: 'route_query' | 'get_status', company_id, query, context, session_id }`
-2. **Routing IA**: Usa Lovable AI Gateway (gemini-2.5-flash) con un prompt classifier que analiza la query y determina:
-   - `domain`: `ops` | `compliance` | `legal_escalation`
-   - `confidence`: 0-1
-   - `reasoning`: texto corto
-3. **Despacho**:
-   - `ops` → invoca `erp-hr-ai-agent` (ya existente, 1285 líneas)
-   - `compliance` → invoca `erp-hr-compliance-monitor` (ya existente, 299 líneas)
-   - `legal_escalation` → invoca `legal-multiagent-supervisor` (nuevo, ver punto 3)
-4. **Logging**: Inserta en `erp_ai_agent_invocations` con routing_reason, confidence, escalation info
-5. **Respuesta**: Devuelve respuesta del agente elegido + metadata de routing
-
-**Prompt classifier** (system prompt ~15 líneas):
-```
-Clasifica esta consulta RRHH en una de estas categorías:
-- ops: nóminas, contratos, vacaciones, fichajes, expediente, SS, administración laboral
-- compliance: vencimientos, alertas legales, documentación obligatoria, sanciones, auditoría
-- legal_escalation: despidos, riesgos legales, permisos protegidos, movilidad internacional, validación jurídica
-Responde JSON: { "domain": "...", "confidence": 0.X, "reasoning": "..." }
-```
-
-**Fallback**: Si confidence < 0.5, usa `ops` por defecto. Si `legal_escalation`, siempre registra escalado.
-
----
-
-## 3. Edge Function: `legal-multiagent-supervisor`
-
-**Nueva edge function** (~200 líneas). Legal-Supervisor backend.
-
-**Flujo:**
-1. Recibe `{ action: 'route_query' | 'validate_hr_action' | 'get_status', company_id, query, context, source_agent }`
-2. Para `route_query`: Invoca `legal-ai-advisor` con `legal_area: 'labor'` (sub-agente labor ya existente internamente)
-3. Para `validate_hr_action`: Invoca `legal-validation-gateway-enhanced` con `action: 'validate_operation'` para validación pre-acción
-4. **Logging**: Inserta en `erp_ai_agent_invocations` con `agent_code: 'legal-labor'`, `supervisor_code: 'legal-supervisor'`
-5. **Respuesta**: Incluye `validation_result`, `risk_level`, `recommendations`, `requires_human_review`
-
-**No duplica lógica**: Actúa como wrapper/router sobre las 2 edge functions legales ya existentes.
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
 ---
 
-## 4. Protocolo Cross-Module HR→Legal
+## V2-ES.1 — Acta de cierre
 
-Implementado directamente en `hr-multiagent-supervisor`:
-- Cuando el classifier devuelve `domain: 'legal_escalation'`, el HR-Supervisor:
-  1. Invoca `legal-multiagent-supervisor` con `action: 'validate_hr_action'`
-  2. Recibe respuesta con `risk_level` y `recommendations`
-  3. Compone respuesta final combinando contexto HR + validación legal
-  4. Registra en `erp_ai_agent_invocations` con `escalated_to: 'legal-supervisor'`
+### Paso 1: calculation_trace JSONB
+- Campo `calculation_trace` (JSONB) en `hr_payroll_record_lines`
+- Estructura `{ rule, inputs, formula, timestamp }` por cada línea
+- Campo `incident_ref` + `incident_id` en líneas
 
-No se necesita bus ni sistema de mensajes. Es invocación directa función→función usando `fetch()` interno.
+### Paso 2: Cálculo masivo + incidencias
+- `calculateBatch(periodId)` — cálculo masivo idempotente por `(payroll_period_id, employee_id)`
+- `injectIncidentsToPayroll(periodId)` — inyección de IT/horas extra desde portal admin
+- Integración automática de `hr_es_flexible_remuneration_plans` (seguro médico, ticket restaurante, guardería)
+
+### Paso 3: Comparativa + revisión
+- `computeDiffVsPrevious(recordId, periodId)` — diff línea-a-línea vs período anterior
+- `computeBatchDiff(periodId)` — comparativa masiva
+- `reviewRecord(recordId, action, notes)` — flujo de aprobación (approved/flagged/reviewed)
+- Campos: `review_status`, `review_notes`, `reviewed_by`, `reviewed_at`, `diff_vs_previous`
+
+### Paso 4: Integración UI completa
+- `PayrollReviewBadge` — badge visual de review_status
+- `PayrollDiffPanel` — panel de comparativa con deltas bruto/neto + detalle por concepto
+- `PayrollTraceLine` — línea expandible con calculation_trace + incident_ref
+- Columna "Revisión" en tabla de nóminas + botones aprobar/flaggear con diálogo
+- Botones "Cálculo masivo ES" y "Comparativa" en PeriodManager con feedback UX
+
+### Paso 5: Cierre con validación de revisión
+- `validateESPreClose` ampliado con check "Todas las nóminas aprobadas" (error → bloquea cierre)
+- Warning "Comparativa computada" (no bloqueante)
+- PeriodManager distingue error (rojo) vs warning (ámbar) en diálogo de validación
+
+### Protección BD
+- `UNIQUE(payroll_period_id, employee_id)` en `hr_payroll_records`
+
+## FASE 2 — Completada ✅
+
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
+
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
+
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
+
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
+
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
+
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+
+## V2-ES.2 — Acta de cierre
+
+### Paso 1: Mapping request_type → workflow process_type
+- 14 tipos de solicitud mapeados a process_types del workflow engine
+- Constante `REQUEST_TYPE_TO_PROCESS` en useAdminPortal
+- Guard `WORKFLOW_TRIGGER_STATUSES` (solo submitted/pending_approval inician workflow)
+
+### Paso 2: Workflow engine integration
+- `startWorkflowForRequest` — idempotente, verifica instancia activa antes de crear
+- `createRequest` inicia workflow automáticamente si status es operativo
+- `updateStatus` sincroniza inversamente al workflow engine via `decide_step`
+- `HRApprovalInbox` soporta `entity_type='admin_request'` sin cambios
+- Sync inverso: approved→approved/reviewing, rejected→rejected, returned→returned
+
+### Paso 3: Trazabilidad estructurada
+- `generateTasks` inserta tareas con campos estructurados:
+  - `source_type='admin_request'`, `source_id=request.id`
+  - `related_entity_type='admin_request'`, `related_entity_id=request.id`
+  - `workflow_instance_id` propagado si existe
+- `TaskDetail` muestra sección "Origen de la tarea" con labels legibles
+- Triángulo cerrado: request↔workflow↔tasks
+
+### Paso 4: Sync automático decision → task status
+- `syncTasksFromDecision` en useAdminPortal
+- Mapeo: approved→in_progress, rejected→cancelled, returned→on_hold
+- Solo afecta tareas con related_entity_type='admin_request' en estados pending/in_progress
+- Best-effort con console.warn si falla
+
+### Paso 5: Timeline unificado
+- `fetchDetail` extendido: trae linkedTasks (hr_tasks vinculadas)
+- `HRAdminRequestTimeline` reescrita: fusiona activity + comments + tasks cronológicamente
+- Deduplicación: activity.action='commented' excluida (se usa fuente real de comments)
+- Tab "Timeline unificado" + tab "Comentarios" (con formulario)
+
+### Archivos modificados
+- `src/hooks/admin/hr/useAdminPortal.ts` — generateTasks, fetchDetail, syncTasksFromDecision, LinkedTask type
+- `src/components/erp/hr/tasks/TaskDetail.tsx` — sección Origen + labels
+- `src/components/erp/hr/admin-portal/HRAdminRequestTimeline.tsx` — timeline unificado
+- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — linkedTasks prop
+- `src/components/erp/hr/admin-portal/HRAdminPortal.tsx` — linkedTasks passthrough
+
+### Sin cambios en
+- Edge Functions (erp-hr-workflow-engine intacta)
+- Tablas/migraciones (0 migraciones)
+- Rutas/menús (0 nuevos)
+- Lógica de payroll/cierre de período (V2-ES.1 intacta)
+- HRApprovalInbox (sin modificaciones directas)
+
+## V2-ES.3 — Acta de cierre
+
+### Paso 1: Infraestructura del expediente documental
+- 6 tablas: `erp_hr_employee_documents`, `erp_hr_document_versions`, `erp_hr_document_access_log`, `erp_hr_document_comments`, `erp_hr_consents`, `erp_hr_retention_policies`
+- Hook `useHRDocumentExpedient` (CRUD docs, versiones, access log, comentarios, consentimientos, retención, stats)
+- Campos `related_entity_type` / `related_entity_id` + índice compuesto
+- 7 componentes UI: DocumentExpedientModule, EmployeeDocumentExpedient, PayrollDocumentExpedient, ConsentsPanel, RetentionPoliciesPanel, DocumentAuditPanel, DocumentDetailPanel
+
+### Paso 2: Vinculación documental a solicitudes/tareas
+- Componente `LinkedDocumentsSection` (shared, reutilizable)
+- Integrado en `HRAdminRequestDetail` y `TaskDetail`
+- Upload condicional por `employeeId`, deduplicación por id
+
+### Paso 3: Visibilidad cruzada de origen + filtros
+- Componente `DocumentOriginBadge` (admin_request→Solicitud, hr_task→Tarea, null→Directo)
+- Filtro por origen en `EmployeeDocumentExpedient` (4 opciones)
+- Columna "Origen" en `HREmployeeDocumentsPanel`
+- Utilidad `filterByOrigin` + `ORIGIN_FILTER_OPTIONS`
+
+### Paso 4: Checklist de completitud informativa
+- Config `documentExpectedTypes.ts` con mapa request_type → ExpectedDocType[]
+- `normalizeDocType()` (lowercase + trim + strip diacríticos)
+- `computeDocCompleteness()` calcula present/missing/percentage
+- Barra de progreso + checklist ✅/⚠️ en LinkedDocumentsSection (vía prop `managementType`)
+- Graceful degradation: sin managementType → sin checklist
+
+### Paso 5: Indicador compacto en sidebar
+- Componente `DocumentCompletenessIndicator` (recibe docs por prop, sin fetch propio)
+- Callback `onDocsLoaded` en LinkedDocumentsSection para compartir datos
+- Indicador en sidebar de HRAdminRequestDetail (Completo/X-Y)
+
+### Archivos creados
+- `src/hooks/erp/hr/useHRDocumentExpedient.ts`
+- `src/components/erp/hr/document-expedient/DocumentExpedientModule.tsx`
+- `src/components/erp/hr/document-expedient/EmployeeDocumentExpedient.tsx`
+- `src/components/erp/hr/document-expedient/PayrollDocumentExpedient.tsx`
+- `src/components/erp/hr/document-expedient/ConsentsPanel.tsx`
+- `src/components/erp/hr/document-expedient/RetentionPoliciesPanel.tsx`
+- `src/components/erp/hr/document-expedient/DocumentAuditPanel.tsx`
+- `src/components/erp/hr/document-expedient/DocumentDetailPanel.tsx`
+- `src/components/erp/hr/shared/LinkedDocumentsSection.tsx`
+- `src/components/erp/hr/shared/DocumentOriginBadge.tsx`
+- `src/components/erp/hr/shared/DocumentCompletenessIndicator.tsx`
+- `src/components/erp/hr/shared/documentExpectedTypes.ts`
+
+### Archivos modificados
+- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — LinkedDocs + managementType + onDocsLoaded + indicator sidebar
+- `src/components/erp/hr/tasks/TaskDetail.tsx` — LinkedDocs
+- `src/components/erp/hr/HREmployeeDocumentsPanel.tsx` — columna Origen + query ampliada
+
+### Sin cambios en
+- Edge Functions (0 nuevas, 0 modificadas)
+- Rutas/menús (0 nuevos)
+- Lógica de payroll/cierre (V2-ES.1 intacta)
+- Workflows/aprobaciones (V2-ES.2 intacta)
+- HRApprovalInbox (sin modificaciones)
 
 ---
 
-## 5. UI: Panel de Supervisión Multiagente
+# [RRHH-MOBILE.1] App Móvil RRHH — Evolución a Manager y RRHH Ligero
 
-**Nuevo componente** `MultiAgentSupervisorPanel.tsx` (~300 líneas) en `src/components/erp/hr/`.
+## Estado: MVP Empleado completado (Fases 1-5) ✅
 
-Contenido:
-- **Catálogo de agentes**: Lee `erp_ai_agents_registry`, muestra cards con status, tipo, supervisor
-- **Chat supervisor**: Input de consulta → invoca `hr-multiagent-supervisor` → muestra respuesta + metadata de routing (qué agente respondió, confidence, si hubo escalado legal)
-- **Log reciente**: Últimas 20 invocaciones de `erp_ai_agent_invocations` con filtro por agente
-- **Indicador de escalados**: Badge visible cuando un caso fue escalado a Legal
+### Arquitectura de roles
+- `usePortalRole(employee)` → `{ role: 'employee' | 'manager' | 'hr_light' }`
+- `EmployeePortalBottomNav` filtra tabs por rol via `TAB_REGISTRY`
+- Extensión: descomentar entradas en `TAB_REGISTRY` + crear sección + activar role check
 
-**Integración**: Añadir como tab en el módulo RRHH (Utilidades o sección IA existente).
+### Fase 6 — Manager Mobile (futuro)
+- Tab "Equipo": aprobaciones, ausencias del equipo, incidencias de fichaje
+- Requiere: `reports_to` en employees, RLS para acceso manager, `is_manager_of()` function
+- Componente: `ManagerTeamSection.tsx`
 
----
+### Fase 7 — RRHH Ligero Mobile (futuro)
+- Tab "Gestión": tareas urgentes, cola de solicitudes, búsqueda de expediente
+- Requiere: rol `hr_light` en `user_roles`, RLS amplio, `has_role()` function
+- Componente: `HRLightManagementSection.tsx`
 
-## 6. Hook: `useMultiAgentSupervisor.ts`
-
-Hook que encapsula:
-- `routeQuery(query, context)` → invoca `hr-multiagent-supervisor`
-- `getAgentRegistry()` → lee `erp_ai_agents_registry`
-- `getRecentInvocations(limit)` → lee `erp_ai_agent_invocations`
-- Estados de loading, error, respuesta
-
----
-
-## 7. Actualizar `LegalAgentSupervisorPanel`
-
-Conectar el panel existente con el nuevo backend:
-- Añadir lectura de `erp_ai_agent_invocations` filtrada por `module_domain = 'legal'`
-- Mostrar escalados recibidos desde RRHH
-- Mantener toda la UI existente intacta
-
----
-
-## Archivos a crear/modificar
-
-| Acción | Archivo |
-|--------|---------|
-| **Crear** | Migración SQL: `erp_ai_agents_registry` + `erp_ai_agent_invocations` |
-| **Seed** | 5 registros en registry (insert tool) |
-| **Crear** | `supabase/functions/hr-multiagent-supervisor/index.ts` |
-| **Crear** | `supabase/functions/legal-multiagent-supervisor/index.ts` |
-| **Crear** | `src/hooks/erp/hr/useMultiAgentSupervisor.ts` |
-| **Crear** | `src/components/erp/hr/MultiAgentSupervisorPanel.tsx` |
-| **Editar** | `supabase/config.toml` — NO (auto-managed) |
-| **Editar** | `LegalAgentSupervisorPanel.tsx` — conectar con invocations |
-| **Editar** | Barrel exports para exponer nuevos componentes |
-
-**No se modifica**: Ninguna edge function existente. Ningún panel existente se elimina. Sin regresiones.
-
----
-
-## Riesgos y mitigaciones
-
-- **Latencia doble en escalados** (HR→Legal = 2 llamadas IA): Mitigado con gemini-2.5-flash (rápido) y logging de execution_time_ms
-- **Classifier impreciso**: Fallback a `ops` + confidence threshold. Se puede afinar el prompt iterativamente
-- **Costes IA**: El classifier es un prompt corto (~100 tokens). Coste marginal vs valor de routing correcto
-
+### Seguridad
+- Roles solo para UX (tabs visibles). Acceso real protegido por RLS server-side.
+- Nunca almacenar roles en localStorage.

@@ -30,7 +30,8 @@ export type UtilitySection =
   | 'util-board-pack'
   | 'util-demo-journey'
   | 'util-pilot-checklist'
-  | 'util-payroll-reconciliation';
+  | 'util-payroll-reconciliation'
+  | 'util-multiagent-supervisor';
 
 interface UtilityItem {
   id: UtilitySection;
@@ -55,6 +56,7 @@ const CATEGORIES: UtilityCategory[] = [
     color: 'from-primary/15 to-primary/5 border-primary/20',
     items: [
       { id: 'util-premium-dash', label: 'Dashboard Premium', description: 'Vista ejecutiva con KPIs de los 8 módulos', icon: <Activity className="h-4 w-4" /> },
+      { id: 'util-multiagent-supervisor', label: 'Supervisor Multiagente', description: 'Supervisión IA RRHH↔Jurídico con routing y trazabilidad', icon: <Brain className="h-4 w-4" /> },
       { id: 'util-orchestration', label: 'Orquestación', description: 'Reglas reactivas inter-módulo', icon: <ArrowRightLeft className="h-4 w-4" /> },
       { id: 'util-alerts', label: 'Alertas', description: 'Centro de alertas y notificaciones críticas', icon: <Bell className="h-4 w-4" /> },
       { id: 'util-feed', label: 'Actividad', description: 'Timeline de actividad en tiempo real', icon: <Clock className="h-4 w-4" /> },

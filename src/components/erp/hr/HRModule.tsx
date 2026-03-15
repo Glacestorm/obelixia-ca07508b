@@ -102,6 +102,7 @@ import { Button } from '@/components/ui/button';
 import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { HRUtilitiesNavigation, type UtilitySection } from './premium-dashboard/HRUtilitiesNavigation';
+import { MultiAgentSupervisorPanel } from './MultiAgentSupervisorPanel';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -498,6 +499,7 @@ function HRModuleInner() {
         {activeModule === 'util-api-webhooks' && <PremiumAPIWebhooksPanel companyId={companyId} />}
         {activeModule === 'util-integrations' && <EnterpriseIntegrationsPanel companyId={companyId} />}
         {activeModule === 'util-board-pack' && <HRBoardPackPanel companyId={companyId} />}
+        {activeModule === 'util-multiagent-supervisor' && <MultiAgentSupervisorPanel companyId={companyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
