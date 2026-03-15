@@ -213,7 +213,7 @@ export function HRPilotOnboardingPanel({ companyId }: HRPilotOnboardingPanelProp
       } catch (err) {
         newResults.push({ id: check.id, pass: false, detail: 'Error en validación', status: 'error' });
       }
-      setResults([...newResults, ...PILOT_CHECKS.slice(newResults.length).map(c => ({ id: c.id, pass: false, detail: '', status: 'pending' }))]);
+      setResults([...newResults, ...PILOT_CHECKS.slice(newResults.length).map(c => ({ id: c.id, pass: false, detail: '', status: 'pending' as const }))]);
     }
 
     setResults(newResults);
