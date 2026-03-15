@@ -525,4 +525,12 @@ function HRModuleInner() {
   );
 }
 
+export function HRModule() {
+  return (
+    <HREnvironmentProvider>
+      <HRModuleInner />
+    </HREnvironmentProvider>
+  );
+}
+
 export default HRModule;
