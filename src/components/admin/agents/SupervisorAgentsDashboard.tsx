@@ -987,6 +987,11 @@ export function SupervisorAgentsDashboard() {
           </div>
         </TabsContent>
 
+        {/* Normativa Tab */}
+        <TabsContent value="normativa" className="space-y-4">
+          <RegulatoryIntelligencePanel />
+        </TabsContent>
+
         {/* Insights Tab */}
         <TabsContent value="insights" className="space-y-4">
           <div className="flex items-center gap-2 mb-2">

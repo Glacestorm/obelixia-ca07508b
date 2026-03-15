@@ -27,3 +27,4 @@ export { AgentConfigSheet } from './AgentConfigSheet';
 export { RegistryAgentCard } from './RegistryAgentCard';
 export { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
 export { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
+export { RegulatoryIntelligencePanel } from './RegulatoryIntelligencePanel';

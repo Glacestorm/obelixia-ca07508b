@@ -344,6 +344,68 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
           </Card>
         </TabsContent>
 
+        {/* Normativa HR Feed */}
+        <TabsContent value="normativa" className="mt-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Newspaper className="h-4 w-4 text-indigo-600" />
+                Novedades Normativas con Impacto RRHH
+                <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-3">
+                  {hrRegulatoryDocs.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Newspaper className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Sin novedades normativas para RRHH</p>
+                      <p className="text-xs mt-1">Los documentos con impacto HR aparecerán aquí</p>
+                    </div>
+                  ) : hrRegulatoryDocs.map(doc => (
+                    <div key={doc.id} className={cn("p-3 rounded-lg border",
+                      doc.impact_level === 'critical' ? 'border-l-4 border-l-destructive bg-destructive/5' :
+                      doc.impact_level === 'high' ? 'border-l-4 border-l-amber-500 bg-amber-500/5' : 'bg-card')}>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <Badge variant="outline" className="text-[10px]">
+                          {doc.jurisdiction_code === 'EU' ? '🇪🇺' : '🇪🇸'} {doc.jurisdiction_code}
+                        </Badge>
+                        <Badge variant="outline" className={cn("text-[10px]",
+                          doc.impact_level === 'critical' ? 'bg-destructive/15 text-destructive' :
+                          doc.impact_level === 'high' ? 'bg-amber-500/15 text-amber-700' :
+                          'bg-blue-500/15 text-blue-700')}>
+                          {doc.impact_level === 'critical' ? 'Crítico' : doc.impact_level === 'high' ? 'Alto' : 'Medio'}
+                        </Badge>
+                        {doc.data_source === 'seed' && (
+                          <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30">Seed</Badge>
+                        )}
+                        {doc.requires_human_review && (
+                          <Badge variant="outline" className="text-[10px] bg-violet-500/10 text-violet-600">Rev. humana</Badge>
+                        )}
+                      </div>
+                      <h4 className="text-sm font-medium mt-1">{doc.document_title}</h4>
+                      {doc.impact_summary && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{doc.impact_summary}</p>
+                      )}
+                      {doc.source_url && (
+                        <Button variant="ghost" size="sm" className="h-6 text-[10px] mt-1 p-0" onClick={() => window.open(doc.source_url!, '_blank')}>
+                          <ExternalLink className="h-3 w-3 mr-1" /> Ver fuente
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <div className="mt-3 text-center">
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { /* navigate to supervisor normativa */ }}>
+                  <ExternalLink className="h-3 w-3 mr-1" /> Ver todas en Supervisor → Normativa
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Legal Escalations */}
         <TabsContent value="escalations" className="mt-3">
           <Card>
