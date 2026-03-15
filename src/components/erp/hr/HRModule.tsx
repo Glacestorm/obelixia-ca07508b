@@ -499,6 +499,7 @@ function HRModuleInner() {
         {activeModule === 'util-api-webhooks' && <PremiumAPIWebhooksPanel companyId={companyId} />}
         {activeModule === 'util-integrations' && <EnterpriseIntegrationsPanel companyId={companyId} />}
         {activeModule === 'util-board-pack' && <HRBoardPackPanel companyId={companyId} />}
+        {activeModule === 'util-multiagent-supervisor' && <MultiAgentSupervisorPanel companyId={companyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}
