@@ -11,7 +11,7 @@ import {
   Activity, ArrowRightLeft, Bell, Clock, Settings, FileText,
   Brain, HeartPulse, Download, Database, HelpCircle,
   Wrench, ChevronLeft, Sparkles, Shield, BarChart3, ExternalLink,
-  Briefcase, Zap, Gauge, Map
+  Briefcase, Zap, Gauge, Map, ClipboardCheck, Scale
 } from 'lucide-react';
 
 export type UtilitySection =
