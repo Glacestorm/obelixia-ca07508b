@@ -44,6 +44,12 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
 
   const { agents, hrAgents, hrInvocations, escalatedInvocations, humanReviewInvocations, invocations, stats, loading, refresh } = useSupervisorDomainData(companyId);
   const { isLoading, routeQuery, registry } = useMultiAgentSupervisor(companyId);
+  const regulatory = useRegulatoryIntelligence();
+
+  const hrRegulatoryDocs = useMemo(() =>
+    regulatory.documents.filter(d => d.impact_domains?.includes('hr')).slice(0, 5),
+    [regulatory.documents]
+  );
 
   const hrEscalated = useMemo(() => escalatedInvocations.filter(i =>
     i.supervisor_code === 'hr-supervisor' || i.escalated_to === 'legal-supervisor'
