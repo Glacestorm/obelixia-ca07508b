@@ -1,218 +1,227 @@
 
+# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-# [RRHH-MOBILE.1] Plan por fases — App Móvil RRHH (Portal del Empleado)
+## Estado de Implementación — Global HR Platform
 
----
+| Fase Global | Estado | Detalles |
+|------|--------|----------|
+| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
+| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
+| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
+| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
+| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
+| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
+| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
+| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
+| **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
+| **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
+| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
+| **F17 - QA Final y Cierre MVP** | ✅ **Completada** | Smoke test 26 items + dashboard ✅ · 0 errores consola · 0 errores RLS/403/5xx · Seed validado (108 emp, 58 contratos, 84 vacaciones, 7 nóminas) · Baseline congelado · Acta en `.lovable/mvp-rrhh-baseline.md` |
 
-## Estado actual
+## V2 — Evolución Post-MVP
 
-- **PWA ya configurada**: `vite-plugin-pwa` activo con manifest, service worker, caching y meta tags mobile.
-- **Portal del Empleado completo** (V2-ES.9): 8 secciones funcionales en `/mi-portal` con guard, RLS, hooks y datos reales.
-- **Navegación actual**: sidebar desktop + Sheet lateral en mobile (botón flotante FAB). No tiene bottom tabs nativos.
-- **Componentes existentes**: EmployeePortalHome, Payslips (678 líneas), Documents, Requests, Time (364 líneas), Leave (867 líneas), Profile, Help — todos con datos desde Supabase.
-- **Responsive parcial**: Los componentes usan `sm:`, `md:`, `lg:` breakpoints pero no están diseñados mobile-first. La navegación mobile es un Sheet lateral, no tabs inferiores.
+| Subfase V2 | Estado | Detalles |
+|------|--------|----------|
+| **V2-ES.1 - Motor nómina ES operativo** | ✅ **Completada** | 5 pasos · calculation_trace JSONB · cálculo masivo idempotente · inyección incidencias · comparativa período-a-período · review/approval workflow · cierre con validación de revisión · UNIQUE(payroll_period_id, employee_id) · 3 subcomponentes UI nuevos · 0 rutas/menús nuevos |
+| **V2-ES.2 - Workflows y aprobaciones reales** | ✅ **Completada** | 5 pasos · Mapping 14 request_types → workflow process_types · Start workflow idempotente + sync inverso decide_step → admin_request status · Trazabilidad estructurada (source_type, source_id, related_entity_type, related_entity_id, workflow_instance_id) · Sync automático decision → task status (approved→in_progress, rejected→cancelled, returned→on_hold) · Timeline unificado (activity + comments + linked tasks) · 0 migraciones · 0 rutas/menús nuevos |
+| **V2-ES.3 - Expediente documental operativo** | ✅ **Completada** | 5 pasos · Hook useHRDocumentExpedient (CRUD + versiones + access log + consentimientos + retención) · 6 tablas · 10 componentes nuevos (DocumentExpedientModule, EmployeeDocumentExpedient, PayrollDocumentExpedient, ConsentsPanel, RetentionPoliciesPanel, DocumentAuditPanel, DocumentDetailPanel, LinkedDocumentsSection, DocumentOriginBadge, DocumentCompletenessIndicator) · Config documentExpectedTypes.ts · Vinculación documental a solicitudes/tareas · Visibilidad cruzada de origen + filtros · Checklist completitud informativa · Indicador sidebar sin fetch duplicado · 0 rutas/menús nuevos |
+| V2-ES.4 - Integraciones oficiales España | 🔜 Pendiente | |
 
-**Diagnóstico clave**: La base funcional es sólida. El trabajo principal es **UX mobile-first** (bottom navigation, layouts compactos, acciones táctiles), no backend ni lógica nueva.
+## Estado de Implementación — Fases Base
 
----
+| Fase | Estado | Detalles |
+|------|--------|----------|
+| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
+| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
+| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
+| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
+| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
+| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
 
-## FASE 1 — Shell móvil y navegación (Fundación)
+## Premium Phases — Enterprise Differentiators
 
-**Objetivo**: Reemplazar la navegación lateral/Sheet por bottom tabs nativos cuando `isMobile`, crear el layout mobile-first del portal.
+| Fase Premium | Estado | Detalles |
+|------|--------|----------|
+| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
+| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
+| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
+| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
+| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
+| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
+| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
+| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
 
-### Tareas:
-1. **Crear `EmployeePortalMobileShell.tsx`** — Layout mobile con:
-   - Header compacto sticky (nombre + avatar + logout)
-   - Content area full-height con scroll
-   - Bottom tab bar fijo con 5 tabs: Inicio, Nóminas, Solicitudes, Tiempo, Perfil
-   - Documentos accesible desde Inicio (card) y Perfil (enlace)
-   - Leave integrado dentro de tab Tiempo (sub-tab o sección)
-   - Help accesible desde Perfil (enlace)
-
-2. **Modificar `EmployeePortalShell.tsx`** — Detección `useIsMobile()`:
-   - Si mobile → renderizar `EmployeePortalMobileShell`
-   - Si desktop → mantener shell actual sin cambios
-
-3. **Crear `EmployeePortalBottomNav.tsx`** — Bottom tab bar:
-   - 5 tabs con iconos grandes (48px touch target mínimo)
-   - Tab activo con indicador visual
-   - Badges de conteo en Solicitudes (pendientes) y Tiempo (anomalías)
-
-4. **Crear `EmployeePortalMobileHeader.tsx`** — Header mobile compacto:
-   - Logo/icono + "Mi Portal" + avatar con dropdown (perfil, ayuda, salir)
-   - Sin título largo, sin texto secundario
-
-### Decisión de navegación:
-
-```text
-┌─────────────────────────────┐
-│  [Logo] Mi Portal    [👤▾]  │  ← Header sticky
-├─────────────────────────────┤
-│                             │
-│      Content Area           │  ← Scroll
-│      (sección activa)       │
-│                             │
-├─────────────────────────────┤
-│ 🏠  📄  📩  ⏰  👤         │  ← Bottom tabs
-│ Inicio Nóminas Sol. Tiempo Perfil │
-└─────────────────────────────┘
-```
-
-**Vacaciones/Leave**: Integrado como sub-sección dentro de "Tiempo" (coherencia: tiempo = fichaje + ausencias). Justificación: reduce tabs a 5 (máximo recomendado) sin perder funcionalidad.
-
-**Documentos**: Accesible desde card en Inicio y desde sección en Perfil. No justifica tab propio por frecuencia de uso baja.
-
-**Ayuda**: Accesible desde menú del avatar en header.
+### Edge Functions consolidadas (plan):
+- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
+- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
+- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
 
 ---
 
-## FASE 2 — Adaptación mobile de cada sección
+## V2-ES.1 — Acta de cierre
 
-**Objetivo**: Optimizar cada sección existente para pantallas pequeñas sin duplicar componentes.
+### Paso 1: calculation_trace JSONB
+- Campo `calculation_trace` (JSONB) en `hr_payroll_record_lines`
+- Estructura `{ rule, inputs, formula, timestamp }` por cada línea
+- Campo `incident_ref` + `incident_id` en líneas
 
-### Tareas por sección:
+### Paso 2: Cálculo masivo + incidencias
+- `calculateBatch(periodId)` — cálculo masivo idempotente por `(payroll_period_id, employee_id)`
+- `injectIncidentsToPayroll(periodId)` — inyección de IT/horas extra desde portal admin
+- Integración automática de `hr_es_flexible_remuneration_plans` (seguro médico, ticket restaurante, guardería)
 
-1. **Inicio (EmployeePortalHome)** — Ajustes mobile:
-   - KPI cards en 2x2 grid (ya funciona) — verificar touch targets
-   - Quick actions como cards grandes en vez de botones ghost
-   - Ocultar sidebar derecha de "últimos movimientos" — mover abajo como sección lineal
-   - Añadir card "Mis documentos" con badge de alertas
-   - Añadir card "Vacaciones" con saldo rápido
+### Paso 3: Comparativa + revisión
+- `computeDiffVsPrevious(recordId, periodId)` — diff línea-a-línea vs período anterior
+- `computeBatchDiff(periodId)` — comparativa masiva
+- `reviewRecord(recordId, action, notes)` — flujo de aprobación (approved/flagged/reviewed)
+- Campos: `review_status`, `review_notes`, `reviewed_by`, `reviewed_at`, `diff_vs_previous`
 
-2. **Nóminas (EmployeePayslipsSection)** — Ajustes:
-   - Lista de nóminas sin tabla — ya usa cards, verificar ancho
-   - Sheet de detalle full-screen en mobile (ya usa Sheet)
-   - Botón descarga PDF prominente
-   - Comparativa anterior simplificada (solo delta %)
+### Paso 4: Integración UI completa
+- `PayrollReviewBadge` — badge visual de review_status
+- `PayrollDiffPanel` — panel de comparativa con deltas bruto/neto + detalle por concepto
+- `PayrollTraceLine` — línea expandible con calculation_trace + incident_ref
+- Columna "Revisión" en tabla de nóminas + botones aprobar/flaggear con diálogo
+- Botones "Cálculo masivo ES" y "Comparativa" en PeriodManager con feedback UX
 
-3. **Solicitudes (EmployeeRequestsSection)** — Ajustes:
-   - Lista con cards en vez de tabla si hay tabla
-   - Formulario de nueva solicitud como fullscreen Sheet
-   - Filtros colapsados por defecto en mobile
-   - Estados con colores claros y badges grandes
+### Paso 5: Cierre con validación de revisión
+- `validateESPreClose` ampliado con check "Todas las nóminas aprobadas" (error → bloquea cierre)
+- Warning "Comparativa computada" (no bloqueante)
+- PeriodManager distingue error (rojo) vs warning (ámbar) en diálogo de validación
 
-4. **Tiempo (EmployeeTimeSection + Leave)** — Ajustes:
-   - Sub-tabs: "Fichaje" | "Vacaciones"
-   - Botón "Fichar" como CTA primario grande (si existe acción de fichaje)
-   - Calendario de leave simplificado a lista en mobile
-   - Resumen de jornada hoy prominente
+### Protección BD
+- `UNIQUE(payroll_period_id, employee_id)` en `hr_payroll_records`
 
-5. **Perfil (EmployeeProfileSection)** — Ajustes:
-   - Formulario simple en stack vertical
-   - Enlace a "Mis documentos"
-   - Enlace a "Ayuda RRHH"
-   - Campos protegidos claramente marcados
+## FASE 2 — Completada ✅
 
-6. **Documentos (EmployeeDocumentsSection)** — Ajustes:
-   - Lista card-based
-   - Acciones de descarga/upload con touch targets grandes
-   - Accesible desde Inicio y Perfil, no tab propio
+### Tablas creadas:
+- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
+- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
+- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
+- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
+- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
+- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
 
-### Patrón de implementación:
-- **No duplicar componentes** — usar `useIsMobile()` y variantes condicionales dentro de cada sección existente
-- Usar `cn()` para clases condicionales mobile vs desktop
-- Sheets/Dialogs → fullscreen en mobile (`className="sm:max-w-lg"` → mobile usa `side="bottom"` o fullscreen)
+### Edge Function: `erp-hr-workflow-engine`
+- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
+- Audit trail automático en cada decisión
 
----
+### Hook: `useHRWorkflowEngine`
+- Gestión completa + realtime via supabase channel
 
-## FASE 3 — PWA polish y experiencia instalable
+### UI (3 paneles):
+- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
+- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
+- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
 
-**Objetivo**: Asegurar que la PWA funciona como app real desde home screen.
+### Seed Data (9 workflows):
+- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
 
-### Tareas:
-1. **Actualizar manifest PWA** para Portal del Empleado:
-   - Añadir shortcut a `/mi-portal` en manifest
-   - `start_url: '/mi-portal'` como opción (o mantener `/` con deep link)
-   - Nombre: "RRHH - Portal Empleado"
+### Navegación:
+- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
 
-2. **Añadir `/~oauth` a `navigateFallbackDenylist`** (ya requerido por docs, verificar que existe)
+## V2-ES.2 — Acta de cierre
 
-3. **Splash screen / loading states** optimizados para mobile:
-   - Skeleton screens en vez de spinners
-   - Pull-to-refresh en secciones principales (si viable con bajo esfuerzo)
+### Paso 1: Mapping request_type → workflow process_type
+- 14 tipos de solicitud mapeados a process_types del workflow engine
+- Constante `REQUEST_TYPE_TO_PROCESS` en useAdminPortal
+- Guard `WORKFLOW_TRIGGER_STATUSES` (solo submitted/pending_approval inician workflow)
 
-4. **Offline resilience**:
-   - Verificar que el service worker cachea correctamente las rutas del portal
-   - Mensaje offline amigable si no hay conexión
-   - Datos cacheados del último fetch visibles offline (ya soportado por NetworkFirst en Supabase API)
+### Paso 2: Workflow engine integration
+- `startWorkflowForRequest` — idempotente, verifica instancia activa antes de crear
+- `createRequest` inicia workflow automáticamente si status es operativo
+- `updateStatus` sincroniza inversamente al workflow engine via `decide_step`
+- `HRApprovalInbox` soporta `entity_type='admin_request'` sin cambios
+- Sync inverso: approved→approved/reviewing, rejected→rejected, returned→returned
 
-5. **Install prompt**:
-   - Banner discreto en `/mi-portal` para instalar la app
-   - Solo mostrar si `beforeinstallprompt` disponible
+### Paso 3: Trazabilidad estructurada
+- `generateTasks` inserta tareas con campos estructurados:
+  - `source_type='admin_request'`, `source_id=request.id`
+  - `related_entity_type='admin_request'`, `related_entity_id=request.id`
+  - `workflow_instance_id` propagado si existe
+- `TaskDetail` muestra sección "Origen de la tarea" con labels legibles
+- Triángulo cerrado: request↔workflow↔tasks
 
----
+### Paso 4: Sync automático decision → task status
+- `syncTasksFromDecision` en useAdminPortal
+- Mapeo: approved→in_progress, rejected→cancelled, returned→on_hold
+- Solo afecta tareas con related_entity_type='admin_request' en estados pending/in_progress
+- Best-effort con console.warn si falla
 
-## FASE 4 — Notificaciones y centro de actividad
+### Paso 5: Timeline unificado
+- `fetchDetail` extendido: trae linkedTasks (hr_tasks vinculadas)
+- `HRAdminRequestTimeline` reescrita: fusiona activity + comments + tasks cronológicamente
+- Deduplicación: activity.action='commented' excluida (se usa fuente real de comments)
+- Tab "Timeline unificado" + tab "Comentarios" (con formulario)
 
-**Objetivo**: Añadir centro de actividad mínimo si es viable con bajo riesgo.
+### Archivos modificados
+- `src/hooks/admin/hr/useAdminPortal.ts` — generateTasks, fetchDetail, syncTasksFromDecision, LinkedTask type
+- `src/components/erp/hr/tasks/TaskDetail.tsx` — sección Origen + labels
+- `src/components/erp/hr/admin-portal/HRAdminRequestTimeline.tsx` — timeline unificado
+- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — linkedTasks prop
+- `src/components/erp/hr/admin-portal/HRAdminPortal.tsx` — linkedTasks passthrough
 
-### Tareas:
-1. **Badge de notificaciones** en header mobile:
-   - Count de: solicitudes pendientes + docs con alertas + nómina nueva
-   - Datos ya disponibles en `DashboardSummary`
+### Sin cambios en
+- Edge Functions (erp-hr-workflow-engine intacta)
+- Tablas/migraciones (0 migraciones)
+- Rutas/menús (0 nuevos)
+- Lógica de payroll/cierre de período (V2-ES.1 intacta)
+- HRApprovalInbox (sin modificaciones directas)
 
-2. **Panel de actividad reciente** (reutilizar `lastActivity` del dashboard):
-   - Accesible desde icono campana en header
-   - Sheet desde arriba con lista de últimos movimientos
-   - Sin backend nuevo — usa datos existentes del hook
+## V2-ES.3 — Acta de cierre
 
-3. **Push notifications**: Documentar como futuro (requiere backend de push y permisos del navegador). No implementar en MVP.
+### Paso 1: Infraestructura del expediente documental
+- 6 tablas: `erp_hr_employee_documents`, `erp_hr_document_versions`, `erp_hr_document_access_log`, `erp_hr_document_comments`, `erp_hr_consents`, `erp_hr_retention_policies`
+- Hook `useHRDocumentExpedient` (CRUD docs, versiones, access log, comentarios, consentimientos, retención, stats)
+- Campos `related_entity_type` / `related_entity_id` + índice compuesto
+- 7 componentes UI: DocumentExpedientModule, EmployeeDocumentExpedient, PayrollDocumentExpedient, ConsentsPanel, RetentionPoliciesPanel, DocumentAuditPanel, DocumentDetailPanel
 
----
+### Paso 2: Vinculación documental a solicitudes/tareas
+- Componente `LinkedDocumentsSection` (shared, reutilizable)
+- Integrado en `HRAdminRequestDetail` y `TaskDetail`
+- Upload condicional por `employeeId`, deduplicación por id
 
-## FASE 5 — Preparación para Manager y RRHH ligero (solo arquitectura)
+### Paso 3: Visibilidad cruzada de origen + filtros
+- Componente `DocumentOriginBadge` (admin_request→Solicitud, hr_task→Tarea, null→Directo)
+- Filtro por origen en `EmployeeDocumentExpedient` (4 opciones)
+- Columna "Origen" en `HREmployeeDocumentsPanel`
+- Utilidad `filterByOrigin` + `ORIGIN_FILTER_OPTIONS`
 
-**Objetivo**: Dejar la base preparada sin implementar.
+### Paso 4: Checklist de completitud informativa
+- Config `documentExpectedTypes.ts` con mapa request_type → ExpectedDocType[]
+- `normalizeDocType()` (lowercase + trim + strip diacríticos)
+- `computeDocCompleteness()` calcula present/missing/percentage
+- Barra de progreso + checklist ✅/⚠️ en LinkedDocumentsSection (vía prop `managementType`)
+- Graceful degradation: sin managementType → sin checklist
 
-### Tareas:
-1. **Abstraer el role check** en el shell mobile:
-   - `usePortalRole()` → `'employee' | 'manager' | 'hr_light'`
-   - Bottom nav condicional por rol (tabs adicionales para manager)
+### Paso 5: Indicador compacto en sidebar
+- Componente `DocumentCompletenessIndicator` (recibe docs por prop, sin fetch propio)
+- Callback `onDocsLoaded` en LinkedDocumentsSection para compartir datos
+- Indicador en sidebar de HRAdminRequestDetail (Completo/X-Y)
 
-2. **Documentar evolución**:
-   - Manager: tab "Equipo" con aprobaciones, ausencias del equipo
-   - RRHH ligero: tab "Gestión" con alertas, tareas urgentes, solicitudes pendientes del equipo
+### Archivos creados
+- `src/hooks/erp/hr/useHRDocumentExpedient.ts`
+- `src/components/erp/hr/document-expedient/DocumentExpedientModule.tsx`
+- `src/components/erp/hr/document-expedient/EmployeeDocumentExpedient.tsx`
+- `src/components/erp/hr/document-expedient/PayrollDocumentExpedient.tsx`
+- `src/components/erp/hr/document-expedient/ConsentsPanel.tsx`
+- `src/components/erp/hr/document-expedient/RetentionPoliciesPanel.tsx`
+- `src/components/erp/hr/document-expedient/DocumentAuditPanel.tsx`
+- `src/components/erp/hr/document-expedient/DocumentDetailPanel.tsx`
+- `src/components/erp/hr/shared/LinkedDocumentsSection.tsx`
+- `src/components/erp/hr/shared/DocumentOriginBadge.tsx`
+- `src/components/erp/hr/shared/DocumentCompletenessIndicator.tsx`
+- `src/components/erp/hr/shared/documentExpectedTypes.ts`
 
-3. **No implementar** — solo dejar la arquitectura de routing/nav extensible
+### Archivos modificados
+- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — LinkedDocs + managementType + onDocsLoaded + indicator sidebar
+- `src/components/erp/hr/tasks/TaskDetail.tsx` — LinkedDocs
+- `src/components/erp/hr/HREmployeeDocumentsPanel.tsx` — columna Origen + query ampliada
 
----
-
-## Resumen de entregables por fase
-
-| Fase | Entregable | Esfuerzo | Prioridad |
-|------|-----------|----------|-----------|
-| 1 | Shell mobile + bottom tabs + header | Medio | Bloqueante |
-| 2 | Adaptación mobile de 6 secciones | Medio-Alto | Bloqueante |
-| 3 | PWA polish + install + offline | Bajo | Alta |
-| 4 | Centro de actividad + badges | Bajo | Media |
-| 5 | Arquitectura manager/HR (solo docs) | Mínimo | Baja |
-
-### Archivos nuevos estimados:
-- `src/components/erp/hr/employee-portal/EmployeePortalMobileShell.tsx`
-- `src/components/erp/hr/employee-portal/EmployeePortalBottomNav.tsx`
-- `src/components/erp/hr/employee-portal/EmployeePortalMobileHeader.tsx`
-
-### Archivos modificados:
-- `EmployeePortalShell.tsx` (branch mobile/desktop)
-- `EmployeePortalHome.tsx` (layout mobile)
-- `EmployeeTimeSection.tsx` (integrar leave como sub-tab)
-- `EmployeePayslipsSection.tsx` (mobile polish)
-- `EmployeeRequestsSection.tsx` (mobile polish)
-- `EmployeeProfileSection.tsx` (add links docs/help)
-- `vite.config.ts` (manifest shortcut update)
-
-### Lo que NO entra en el MVP:
-- Motor de nómina / cálculo
-- Backoffice RRHH
-- Configuración avanzada
-- Reporting denso / Board Pack
-- Fiscalidad / SILTRA / AEAT
-- Workflows complejos
-- Enterprise / Talent
-- Utilidades admin
-
-### Arquitectura: PWA first
-- **Por qué**: PWA ya configurada, zero friction de distribución, funciona en iOS/Android, no requiere app stores, service worker activo, offline support parcial ya existe.
-- **Limitaciones aceptadas**: Sin push notifications nativo (Web Push viable pero limitado en iOS), sin acceso a hardware avanzado.
-- **Evolución futura**: Si se necesita app store o hardware nativo, Capacitor se añade sobre la misma base React sin reescribir.
-
+### Sin cambios en
+- Edge Functions (0 nuevas, 0 modificadas)
+- Rutas/menús (0 nuevos)
+- Lógica de payroll/cierre (V2-ES.1 intacta)
+- Workflows/aprobaciones (V2-ES.2 intacta)
+- HRApprovalInbox (sin modificaciones)
