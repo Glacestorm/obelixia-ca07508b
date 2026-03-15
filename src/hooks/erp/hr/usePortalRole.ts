@@ -39,12 +39,12 @@ export function usePortalRole(_employee: EmployeeProfile | null): PortalRoleResu
   return useMemo(() => {
     // Phase 5 MVP: always employee
     // Future: query direct reports count or user_roles table
-    const role: PortalRole = 'employee';
+    const role = 'employee' as PortalRole;
 
     return {
       role,
-      isManager: role === 'manager',
-      isHRLight: role === 'hr_light',
+      isManager: role === ('manager' as PortalRole),
+      isHRLight: role === ('hr_light' as PortalRole),
       isLoading: false,
     };
   }, [_employee?.id]);
