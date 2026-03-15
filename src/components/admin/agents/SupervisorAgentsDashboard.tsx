@@ -405,17 +405,21 @@ export function SupervisorAgentsDashboard() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['metrics']));
 
   const allAgents = [...ERP_AGENTS, ...CRM_AGENTS];
+
+  // Blend real registry data with mock for accurate counts
+  const realAgentCount = domainData.stats.totalAgents;
+  const realActiveCount = domainData.stats.activeAgents;
   
   const metrics: SupervisorMetrics = useMemo(() => ({
-    totalAgents: allAgents.length,
-    activeAgents: allAgents.filter(a => a.status === 'active' || a.status === 'processing').length,
+    totalAgents: allAgents.length + realAgentCount,
+    activeAgents: allAgents.filter(a => a.status === 'active' || a.status === 'processing').length + realActiveCount,
     systemHealth: Math.round(allAgents.reduce((sum, a) => sum + a.healthScore, 0) / allAgents.length),
-    avgResponseTime: 245,
-    tasksToday: allAgents.reduce((sum, a) => sum + a.tasksCompleted, 0),
-    successRate: 96.5,
-    conflictsResolved: 12,
-    autonomousDecisions: 89
-  }), [allAgents]);
+    avgResponseTime: domainData.stats.avgExecutionTime || 245,
+    tasksToday: domainData.stats.totalInvocations || allAgents.reduce((sum, a) => sum + a.tasksCompleted, 0),
+    successRate: domainData.stats.totalInvocations > 0 ? domainData.stats.successRate : 96.5,
+    conflictsResolved: domainData.stats.escalatedCount,
+    autonomousDecisions: domainData.stats.totalInvocations - domainData.stats.humanReviewCount
+  }), [allAgents, realAgentCount, realActiveCount, domainData.stats]);
 
   const handleSendMessage = useCallback(async (message: string, targetAgentId?: string) => {
     const userMessage: AgentMessage = {
@@ -487,7 +491,7 @@ export function SupervisorAgentsDashboard() {
             Centro de Control de Agentes IA
           </h2>
           <p className="text-sm text-muted-foreground">
-            Supervisor General + {ERP_AGENTS.length} agentes ERP + {CRM_AGENTS.length} agentes CRM
+            Supervisor Global · {ERP_AGENTS.length} ERP + {CRM_AGENTS.length} CRM + {realAgentCount} registrados
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -495,13 +499,9 @@ export function SupervisorAgentsDashboard() {
             <Activity className="h-3 w-3 text-green-500" />
             {metrics.activeAgents}/{metrics.totalAgents} activos
           </Badge>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => { domainData.refresh(); toast.success('Datos sincronizados'); }} disabled={domainData.loading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", domainData.loading && "animate-spin")} />
             Sincronizar
-          </Button>
-          <Button size="sm">
-            <Zap className="h-4 w-4 mr-2" />
-            Orquestar Todo
           </Button>
         </div>
       </div>
@@ -585,6 +585,47 @@ export function SupervisorAgentsDashboard() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
+          {/* Real Registry Summary */}
+          {realAgentCount > 0 && (
+            <Card className="border-violet-500/20 bg-gradient-to-r from-violet-500/5 via-background to-primary/5">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-violet-500" />
+                  <CardTitle className="text-sm">Agentes Multiagente (Live)</CardTitle>
+                  <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Datos reales</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-primary">{realAgentCount}</p>
+                    <p className="text-[10px] text-muted-foreground">Registrados</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-emerald-600">{domainData.stats.successRate}%</p>
+                    <p className="text-[10px] text-muted-foreground">Tasa éxito</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold text-amber-600">{domainData.stats.escalatedCount}</p>
+                    <p className="text-[10px] text-muted-foreground">Escalados</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-muted/50">
+                    <p className="text-lg font-bold">{domainData.stats.totalInvocations}</p>
+                    <p className="text-[10px] text-muted-foreground">Invocaciones</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {domainData.agents.map(a => (
+                    <Badge key={a.code} variant="outline" className={cn("text-[10px]",
+                      a.status === 'active' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30' : 'bg-muted')}>
+                      {a.name}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid lg:grid-cols-2 gap-4">
             {/* ERP Agents Preview */}
             <Card>
@@ -593,6 +634,7 @@ export function SupervisorAgentsDashboard() {
                   <CardTitle className="text-base flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-blue-500" />
                     Agentes ERP
+                    <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground">Demo</Badge>
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => setActiveTab('erp')}>
                     Ver todos <ArrowUpRight className="h-3 w-3 ml-1" />
@@ -631,6 +673,7 @@ export function SupervisorAgentsDashboard() {
                   <CardTitle className="text-base flex items-center gap-2">
                     <Users className="h-4 w-4 text-emerald-500" />
                     Agentes CRM
+                    <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground">Demo</Badge>
                   </CardTitle>
                   <Button variant="ghost" size="sm" onClick={() => setActiveTab('crm')}>
                     Ver todos <ArrowUpRight className="h-3 w-3 ml-1" />
@@ -703,202 +746,6 @@ export function SupervisorAgentsDashboard() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* ERP Tab */}
-        <TabsContent value="erp" className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {ERP_AGENTS.map(agent => (
-              <AgentCard 
-                key={agent.id} 
-                agent={agent} 
-                onInteract={handleInteractWithAgent}
-                onConfigure={handleConfigureAgent}
-              />
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* CRM Tab */}
-        <TabsContent value="crm" className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {CRM_AGENTS.map(agent => (
-              <AgentCard 
-                key={agent.id} 
-                agent={agent} 
-                onInteract={handleInteractWithAgent}
-                onConfigure={handleConfigureAgent}
-              />
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Supervisor Tab */}
-        <TabsContent value="supervisor" className="space-y-4">
-          <div className="grid lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2">
-              <SupervisorChat 
-                messages={chatMessages}
-                onSendMessage={handleSendMessage}
-                isLoading={isProcessing}
-                selectedAgent={selectedAgent}
-              />
-            </div>
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Seleccionar Agente</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[300px]">
-                    <div className="space-y-1">
-                      <Button 
-                        variant={!selectedAgent ? 'secondary' : 'ghost'}
-                        className="w-full justify-start h-auto py-2"
-                        onClick={() => {
-                          setSelectedAgent(null);
-                          setChatMessages([]);
-                        }}
-                      >
-                        <Brain className="h-4 w-4 mr-2 text-primary" />
-                        <div className="text-left">
-                          <p className="text-sm font-medium">Supervisor General</p>
-                          <p className="text-xs text-muted-foreground">Coordina todos</p>
-                        </div>
-                      </Button>
-                      <div className="py-1">
-                        <p className="text-xs font-medium text-muted-foreground px-2">ERP</p>
-                      </div>
-                      {ERP_AGENTS.map(agent => (
-                        <Button 
-                          key={agent.id}
-                          variant={selectedAgent?.id === agent.id ? 'secondary' : 'ghost'}
-                          className="w-full justify-start h-auto py-2"
-                          onClick={() => handleInteractWithAgent(agent)}
-                        >
-                          <Bot className="h-4 w-4 mr-2 text-blue-500" />
-                          <div className="text-left flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{agent.name}</p>
-                            <p className="text-xs text-muted-foreground">{agent.module}</p>
-                          </div>
-                          <div className={cn("w-2 h-2 rounded-full shrink-0",
-                            agent.status === 'active' ? 'bg-green-500' : 'bg-muted-foreground/50'
-                          )} />
-                        </Button>
-                      ))}
-                      <div className="py-1">
-                        <p className="text-xs font-medium text-muted-foreground px-2">CRM</p>
-                      </div>
-                      {CRM_AGENTS.map(agent => (
-                        <Button 
-                          key={agent.id}
-                          variant={selectedAgent?.id === agent.id ? 'secondary' : 'ghost'}
-                          className="w-full justify-start h-auto py-2"
-                          onClick={() => handleInteractWithAgent(agent)}
-                        >
-                          <Bot className="h-4 w-4 mr-2 text-emerald-500" />
-                          <div className="text-left flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{agent.name}</p>
-                            <p className="text-xs text-muted-foreground">{agent.module}</p>
-                          </div>
-                          <div className={cn("w-2 h-2 rounded-full shrink-0",
-                            agent.status === 'active' ? 'bg-green-500' : 'bg-muted-foreground/50'
-                          )} />
-                        </Button>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* RRHH Domain View */}
-        <TabsContent value="rrhh" className="space-y-4">
-          <SupervisorDomainView
-            agents={domainData.hrAgents}
-            invocations={domainData.hrInvocations}
-            domain="hr"
-            title="RRHH"
-            icon={<UserCheck className="h-5 w-5" />}
-            accentColor="text-primary"
-          />
-        </TabsContent>
-
-        {/* Legal Domain View */}
-        <TabsContent value="legal" className="space-y-4">
-          <SupervisorDomainView
-            agents={domainData.legalAgents}
-            invocations={domainData.legalInvocations}
-            domain="legal"
-            title="Jurídico"
-            icon={<Scale className="h-5 w-5" />}
-            accentColor="text-amber-600"
-          />
-        </TabsContent>
-
-        {/* Cross-Module View */}
-        <TabsContent value="cross" className="space-y-4">
-          <SupervisorDomainView
-            agents={domainData.crossAgents}
-            invocations={domainData.escalatedInvocations}
-            domain="cross"
-            title="Cross-Module"
-            icon={<Network className="h-5 w-5" />}
-            accentColor="text-violet-600"
-          />
-        </TabsContent>
-
-        {/* Conflicts & Human Review */}
-        <TabsContent value="conflicts" className="space-y-4">
-          <SupervisorConflictsView
-            escalated={domainData.escalatedInvocations}
-            humanReview={domainData.humanReviewInvocations}
-          />
-        </TabsContent>
-
-        {/* Insights Tab */}
-        <TabsContent value="insights" className="space-y-4">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {SUPERVISOR_INSIGHTS.map(insight => (
-              <Card key={insight.id} className={cn(
-                insight.priority === 'critical' ? 'border-destructive' :
-                insight.priority === 'high' ? 'border-amber-500' : ''
-              )}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant={
-                      insight.priority === 'critical' ? 'destructive' :
-                      insight.priority === 'high' ? 'default' : 'secondary'
-                    }>
-                      {insight.priority}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(insight.timestamp, { locale: es, addSuffix: true })}
-                    </span>
-                  </div>
-                  <CardTitle className="text-base">{insight.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">{insight.description}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {insight.affectedAgents.map(agentId => (
-                      <Badge key={agentId} variant="outline" className="text-xs">
-                        {agentId}
-                      </Badge>
-                    ))}
-                  </div>
-                  {insight.suggestedAction && (
-                    <Button size="sm" className="w-full">
-                      <Zap className="h-3 w-3 mr-2" />
-                      {insight.suggestedAction}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </TabsContent>
       </Tabs>
 
