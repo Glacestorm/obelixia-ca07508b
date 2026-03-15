@@ -77,6 +77,7 @@ export function EmployeePortalMobileShell() {
         onSignOut={signOut}
         onNavigate={handleNavigate}
       />
+      <OfflineIndicator />
       <main className="flex-1 overflow-auto pb-20">
         <div className="px-3 py-3">
           {renderContent()}
@@ -87,6 +88,7 @@ export function EmployeePortalMobileShell() {
         onNavigate={handleNavigate}
         badges={badges}
       />
+      <PWAInstallPrompt />
     </div>
   );
 }
