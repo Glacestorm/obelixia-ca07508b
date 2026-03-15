@@ -13,6 +13,7 @@ import {
   User, Building2, Briefcase, Calendar, Phone, Mail,
   MapPin, CreditCard, Shield, Lock, Edit2, Save,
   Loader2, AlertTriangle, CheckCircle2, Info, Clock,
+  FolderOpen, HelpCircle,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
@@ -293,6 +294,21 @@ export function EmployeeProfileSection({ employee, onNavigate, onRefresh }: Prop
               <ReadOnlyField icon={Clock} label="Horario" value={fullData.work_schedule} />
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick links: Docs + Help */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Accesos rápidos</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button variant="outline" className="gap-2 h-11 flex-1 min-w-[140px]" onClick={() => onNavigate('documents')}>
+            <FolderOpen className="h-4 w-4" /> Mis documentos
+          </Button>
+          <Button variant="outline" className="gap-2 h-11 flex-1 min-w-[140px]" onClick={() => onNavigate('help')}>
+            <HelpCircle className="h-4 w-4" /> Ayuda RRHH
+          </Button>
         </CardContent>
       </Card>
     </div>

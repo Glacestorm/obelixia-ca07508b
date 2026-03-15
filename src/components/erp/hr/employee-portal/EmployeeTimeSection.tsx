@@ -318,10 +318,10 @@ export function EmployeeTimeSection({ employee, onNavigate }: Props) {
       {/* Actions */}
       <Separator />
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => onNavigate('leave')}>
-          <Palmtree className="h-4 w-4" /> Solicitar vacaciones
+        <Button variant="outline" className="gap-2 flex-1 min-w-[140px] h-11" onClick={() => onNavigate('leave')}>
+          <Palmtree className="h-4 w-4" /> Vacaciones y permisos
         </Button>
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => onNavigate('requests')}>
+        <Button variant="outline" className="gap-2 flex-1 min-w-[140px] h-11" onClick={() => onNavigate('requests')}>
           <Send className="h-4 w-4" /> Reportar incidencia
         </Button>
       </div>
