@@ -114,7 +114,7 @@ const PILOT_CHECKS: CheckItem[] = [
     description: 'Tipos de ausencia (vacaciones, permiso, IT, etc.)',
     icon: Calendar, severity: 'recommended',
     check: async (cid) => {
-      const { count } = await supabase.from('erp_hr_leave_types').select('id', { count: 'exact', head: true }).eq('company_id', cid).eq('is_active', true);
+      const { count } = await (supabase as any).from('erp_hr_leave_types').select('id', { count: 'exact', head: true }).eq('company_id', cid).eq('is_active', true);
       return { pass: (count || 0) >= 3, detail: `${count || 0} tipos de ausencia` };
     },
   },
