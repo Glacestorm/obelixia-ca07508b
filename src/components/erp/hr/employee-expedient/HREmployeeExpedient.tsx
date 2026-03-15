@@ -10,7 +10,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   User, FileText, DollarSign, Clock, FolderOpen, Globe, Briefcase,
-  GraduationCap, BarChart3, ClipboardList, ArrowLeft, Mail, Phone, Building2, Flag
+  GraduationCap, BarChart3, ClipboardList, ArrowLeft, Mail, Phone, Building2, Flag,
+  ExternalLink
 } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HREntityBreadcrumb, type BreadcrumbItem } from '../shared/HREntityBreadcrumb';
