@@ -478,7 +478,7 @@ export function HRModule() {
         {activeModule === 'util-ai-hybrid' && <AIUnifiedDashboard />}
         {activeModule === 'util-health' && <HRPremiumHealthCheckPanel companyId={companyId} />}
         {activeModule === 'util-export' && <HRPremiumExportPanel companyId={companyId} />}
-        {activeModule === 'util-seed' && <PremiumReseedPanel companyId={companyId} />}
+        {activeModule === 'util-seed' && <HRDemoSeedPanel companyId={companyId} />}
         {activeModule === 'util-help' && <HRPremiumHelpCenter />}
         {activeModule === 'util-compliance' && <HRComplianceAutomationPanel companyId={companyId} />}
         {activeModule === 'util-analytics-bi' && <HRAnalyticsBIPremiumPanel companyId={companyId} />}
