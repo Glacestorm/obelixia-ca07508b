@@ -91,6 +91,7 @@ export function EmployeePortalMobileShell() {
         activeSection={activeSection}
         onNavigate={handleNavigate}
         badges={badges}
+        role={role}
       />
       <PWAInstallPrompt />
     </div>
