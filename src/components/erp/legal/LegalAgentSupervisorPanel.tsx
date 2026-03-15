@@ -421,17 +421,18 @@ export function LegalAgentSupervisorPanel({ companyId }: LegalAgentSupervisorPan
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="agents">Agentes</TabsTrigger>
           <TabsTrigger value="actions" className="relative">
             Acciones
             {totalPending > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground flex items-center justify-center">
                 {totalPending}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger value="protocols">Protocolos</TabsTrigger>
+          <TabsTrigger value="cross-module">Cross-Module</TabsTrigger>
         </TabsList>
 
         {/* Agents Tab */}
