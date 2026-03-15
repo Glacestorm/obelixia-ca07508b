@@ -10,7 +10,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   User, FileText, DollarSign, Clock, FolderOpen, Globe, Briefcase,
-  GraduationCap, BarChart3, ClipboardList, ArrowLeft, Mail, Phone, Building2, Flag
+  GraduationCap, BarChart3, ClipboardList, ArrowLeft, Mail, Phone, Building2, Flag,
+  ExternalLink
 } from 'lucide-react';
 import { HRStatusBadge } from '../shared/HRStatusBadge';
 import { HREntityBreadcrumb, type BreadcrumbItem } from '../shared/HREntityBreadcrumb';
@@ -205,6 +206,16 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate,
                 )}
               </div>
             </div>
+            {/* Portal del Empleado — quick access */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5 text-xs"
+              onClick={() => window.open('/mi-portal', '_blank')}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Portal Empleado
+            </Button>
           </div>
         </CardContent>
       </Card>

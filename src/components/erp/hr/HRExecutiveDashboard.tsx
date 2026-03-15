@@ -17,7 +17,7 @@ import {
   UserPlus, UserMinus, Briefcase, HeartHandshake, RefreshCw,
   Target, Zap, ShieldCheck, Activity, Euro, PieChart as PieChartIcon,
   BarChart3, Sparkles, AlertCircle, ArrowRight, Maximize2,
-  Brain, Lightbulb, Shield, LineChart
+  Brain, Lightbulb, Shield, LineChart, Flag, ExternalLink, Wrench
 } from 'lucide-react';
 import { 
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -407,6 +407,33 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
         </div>
+      </div>
+
+      {/* Quick Access Links */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { label: '🇪🇸 España', module: 'es-localization', icon: Flag },
+          { label: 'Portal Empleado', module: '_portal', icon: ExternalLink },
+          { label: 'Reporting', module: 'util-reporting', icon: BarChart3 },
+          { label: 'Utilidades', module: 'util-premium-dashboard', icon: Wrench },
+        ].map(link => (
+          <Button
+            key={link.module}
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1.5"
+            onClick={() => {
+              if (link.module === '_portal') {
+                window.open('/mi-portal', '_blank');
+              } else {
+                onNavigate?.(link.module);
+              }
+            }}
+          >
+            <link.icon className="h-3.5 w-3.5" />
+            {link.label}
+          </Button>
+        ))}
       </div>
 
       {/* Executive Metrics Grid */}
