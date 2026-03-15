@@ -92,6 +92,8 @@ import { HREmployeeExpedient } from './employee-expedient';
 import { HRCommandPalette } from './shared/HRCommandPalette';
 import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
 import { HRDemoJourneyPanel } from './shared/HRDemoJourneyPanel';
+import { HRPilotOnboardingPanel } from './shared/HRPilotOnboardingPanel';
+import { HRPayrollReconciliationPanel } from './shared/HRPayrollReconciliationPanel';
 import { HREnvironmentProvider, useHREnvironment } from '@/contexts/HREnvironmentContext';
 import { useHRPremiumReseed, type SeedPhase } from '@/hooks/admin/hr/useHRPremiumReseed';
 import { Progress } from '@/components/ui/progress';
@@ -486,6 +488,8 @@ function HRModuleInner() {
         {activeModule === 'util-export' && <HRPremiumExportPanel companyId={companyId} />}
         {activeModule === 'util-seed' && <HRDemoSeedPanel companyId={companyId} />}
         {activeModule === 'util-demo-journey' && <HRDemoJourneyPanel companyId={companyId} onNavigate={(moduleId) => setActiveModule(moduleId)} />}
+        {activeModule === 'util-pilot-checklist' && <HRPilotOnboardingPanel companyId={companyId} />}
+        {activeModule === 'util-payroll-reconciliation' && <HRPayrollReconciliationPanel companyId={companyId} />}
         {activeModule === 'util-help' && <HRPremiumHelpCenter />}
         {activeModule === 'util-compliance' && <HRComplianceAutomationPanel companyId={companyId} />}
         {activeModule === 'util-analytics-bi' && <HRAnalyticsBIPremiumPanel companyId={companyId} />}
