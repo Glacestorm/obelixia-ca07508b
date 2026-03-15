@@ -1,227 +1,352 @@
 
-# Plan: RRHH Enterprise Suite — Evolución en 8 Fases + Premium + Global
 
-## Estado de Implementación — Global HR Platform
-
-| Fase Global | Estado | Detalles |
-|------|--------|----------|
-| G1 - Country Registry + Policy Engine | ✅ Completada | 3 tablas + Edge Function + Hook + UI Panel + Seed España |
-| G1b - Modelo de Datos Global (23 tablas) | ✅ Completada | 23 tablas nuevas + ALTER existentes |
-| G1c - Navegación y Páginas (N1-N5) | ✅ Completada | Mega-menu 7 áreas + Expediente 9 tabs + 8 paneles nuevos + HRStatusBadge + HREntityBreadcrumb + HRCommandPalette |
-| **C1-C4 - Global HR Core** | ✅ **Completada** | Migration (contract_template_id, country_code en contratos) + Expediente refactorizado a 10 tabs independientes + tab dinámico por país + HREmployeesPanel con filtros globales (país, entidad legal) + HREmployeeFormDialog con sección de localización dinámica + Ciclo de vida universal (7 estados) + Eliminadas columnas ES del core |
-| C5-C7 - Mejoras funcionales | ✅ Completada | ExpedientTrayectoriaTab (timeline hr_job_assignments) + ExpedientCompensacionTab (salario global sin cálculos fiscales locales) + Tabs de tiempo, formación, desempeño, documentos, movilidad, auditoría |
-| **AP - Portal Administrativo HR** | ✅ **Completada** | 2 tablas nuevas (comments + activity) + Hook useAdminPortal + HRAdminPortal (7 componentes) + 14 tipos de solicitud + Formularios dinámicos + Timeline actividad + Comentarios internos + Dashboard KPIs + Generación automática de tareas + HRStatusBadge ampliado (13 estados request) + Realtime |
-| **G2 - Localización España (Plugin ES)** | ✅ **Completada** | 4 tablas nuevas (hr_es_employee_labor_data, hr_es_irpf_tables, hr_es_ss_bases, hr_es_contract_types) + Seed IRPF 2026/SS bases/contratos RD + Hook useESLocalization + ESLocalizationPlugin (6 tabs) + ESEmployeeLaborDataForm + ESSocialSecurityPanel (simulador cotización + bases) + ESIRPFPanel (calculadora retención + tramos) + ESContractTypesPanel (catálogo RD) + ESPermisosPanel (ET) + ESSettlementCalculator (finiquito) + Integración ExpedientLocalizacionTab + HRModule nav |
-| **G3 - Payroll Engine genérico** | ✅ **Completada** | 3 tablas nuevas (concept_templates, simulations, audit_log) + ALTER periodos/líneas + Hook usePayrollEngine + HRPayrollEngine (5 tabs) + PeriodManager + RecordsList + ConceptsCatalog + Simulator + AuditTrail + Pre-close validation + Realtime |
-| **G4 - Official Integrations Hub** | ✅ **Completada** | 3 tablas extendidas (ALTER submissions + receipts) + Seed 7 adaptadores ES (TGSS/RED, SILTRA, Contrat@, Certific@2, Delt@, AEAT, SEPE) + Hook useOfficialIntegrationsHub (CRUD completo + realtime + stats) + OfficialIntegrationsHub (4 tabs: Dashboard, Envíos, Conectores, Acuses) + SubmissionForm + SubmissionDetail (timeline + acuses) + AdaptersPanel (por país) + ReceiptsPanel + Integración HRModule |
-| **G5 - Global Mobility** | ✅ **Completada** | 4 tablas + Hook useGlobalMobility + GlobalMobilityModule (5 tabs) + 8 componentes + Modelo 5 jurisdicciones + Compliance panel |
-| G6 - Plugins adicionales (FR, PT) | 🔜 Pendiente | Localizaciones futuras |
-| **F17 - QA Final y Cierre MVP** | ✅ **Completada** | Smoke test 26 items + dashboard ✅ · 0 errores consola · 0 errores RLS/403/5xx · Seed validado (108 emp, 58 contratos, 84 vacaciones, 7 nóminas) · Baseline congelado · Acta en `.lovable/mvp-rrhh-baseline.md` |
-
-## V2 — Evolución Post-MVP
-
-| Subfase V2 | Estado | Detalles |
-|------|--------|----------|
-| **V2-ES.1 - Motor nómina ES operativo** | ✅ **Completada** | 5 pasos · calculation_trace JSONB · cálculo masivo idempotente · inyección incidencias · comparativa período-a-período · review/approval workflow · cierre con validación de revisión · UNIQUE(payroll_period_id, employee_id) · 3 subcomponentes UI nuevos · 0 rutas/menús nuevos |
-| **V2-ES.2 - Workflows y aprobaciones reales** | ✅ **Completada** | 5 pasos · Mapping 14 request_types → workflow process_types · Start workflow idempotente + sync inverso decide_step → admin_request status · Trazabilidad estructurada (source_type, source_id, related_entity_type, related_entity_id, workflow_instance_id) · Sync automático decision → task status (approved→in_progress, rejected→cancelled, returned→on_hold) · Timeline unificado (activity + comments + linked tasks) · 0 migraciones · 0 rutas/menús nuevos |
-| **V2-ES.3 - Expediente documental operativo** | ✅ **Completada** | 5 pasos · Hook useHRDocumentExpedient (CRUD + versiones + access log + consentimientos + retención) · 6 tablas · 10 componentes nuevos (DocumentExpedientModule, EmployeeDocumentExpedient, PayrollDocumentExpedient, ConsentsPanel, RetentionPoliciesPanel, DocumentAuditPanel, DocumentDetailPanel, LinkedDocumentsSection, DocumentOriginBadge, DocumentCompletenessIndicator) · Config documentExpectedTypes.ts · Vinculación documental a solicitudes/tareas · Visibilidad cruzada de origen + filtros · Checklist completitud informativa · Indicador sidebar sin fetch duplicado · 0 rutas/menús nuevos |
-| V2-ES.4 - Integraciones oficiales España | 🔜 Pendiente | |
-
-## Estado de Implementación — Fases Base
-
-| Fase | Estado | Detalles |
-|------|--------|----------|
-| 1 - Arquitectura Enterprise | ✅ Completada | 13 tablas + Edge Function + Hook + 7 UI Panels + Seed Data |
-| 2 - Workflow Engine | ✅ Completada | 6 tablas + Edge Function + Hook + 3 UI Panels + 9 Workflows Demo |
-| 3 - Compensation Suite | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 4 - Talent Intelligence | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data |
-| 5 - Compliance Enterprise | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Risk/Gap Analysis |
-| 6 - Wellbeing Enterprise | ✅ Completada | 7 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 7 - ESG Social + Self-Service | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Analysis |
-| 8 - Copilot + Digital Twin | ✅ Completada | 5 tablas + Edge Function + Hook + UI Panel + Seed Data + AI Chat/Analysis/Simulation |
-
-## Premium Phases — Enterprise Differentiators
-
-| Fase Premium | Estado | Detalles |
-|------|--------|----------|
-| P1 - Enterprise Security, Data Masking & SoD | ✅ Completada | 6 tablas + Edge Function + Hook + UI Panel (6 tabs) + AI Security Analysis + Realtime |
-| P2 - AI Governance Layer | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (6 tabs) + AI Governance Analysis + Bias Audit + Realtime |
-| P3 - Workforce Planning & Scenario Studio | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Simulation/Analysis + Realtime + Seed Data |
-| P4 - Fairness / Justice Engine | ✅ Completada | 5 tablas + Edge Function consolidada + Hook + UI Panel (5 tabs) + AI Equity Analysis + Pay Equity AI + Realtime + Seed Data |
-| P5 - Organizational Digital Twin completo | ✅ Completada | 5 tablas + Edge Function extendida + Hook + UI Panel (5 tabs) + AI Analysis/Sync/Experiments + Realtime + Seed Data |
-| P6 - Documentary Legal Engine premium | ✅ Completada | 5 tablas + Edge Function (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Contract Gen/Compliance/Clause Review + Realtime + Seed Data |
-| P7 - CNAE-Specific HR Intelligence | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI Sector Analysis/Benchmarks + Realtime + Seed Data |
-| P8 - Role-Based Experience Ecosystem | ✅ Completada | 5 tablas + Edge Function extendida (erp-hr-premium-intelligence) + Hook + UI Panel (5 tabs) + AI UX Analysis + Realtime + Seed Data |
-
-### Edge Functions consolidadas (plan):
-- `erp-hr-security-governance` → Security + AI Governance + Fairness (P1 ✅)
-- `erp-hr-strategic-planning` → Workforce Planning + Digital Twin + Scenario Studio
-- `erp-hr-premium-intelligence` → Legal Engine + CNAE Intelligence + Role Experience
+# RRHH-AUDIT.2 — Plan de Ejecución Real, Priorizado y Demo-Ready
 
 ---
 
-## V2-ES.1 — Acta de cierre
+## A. PLAN DE ACCIÓN EJECUTIVO — TOP 20 ACCIONES PRIORIZADAS
 
-### Paso 1: calculation_trace JSONB
-- Campo `calculation_trace` (JSONB) en `hr_payroll_record_lines`
-- Estructura `{ rule, inputs, formula, timestamp }` por cada línea
-- Campo `incident_ref` + `incident_id` en líneas
+| # | Acción | Objetivo | Impacto | Esfuerzo | Reutiliza existente | Afecta |
+|---|--------|----------|---------|----------|---------------------|--------|
+| 1 | **Hacer visible Utilidades para admin** | Desbloquear 17 tools ocultos | Muy alto | Mínimo (1 línea) | 100% | Demo, producto |
+| 2 | **Hacer visible Talent para admin** | Desbloquear Onboarding/Offboarding/Formación | Alto | Mínimo (1 línea) | 100% | Demo |
+| 3 | **Hacer visible Enterprise para admin** | Desbloquear Command Center, Workflows, Auditoría | Alto | Mínimo (1 línea) | 100% | Demo, producto |
+| 4 | **Crear Seed Demo Maestro** | 12 perfiles con casuísticas complejas | Muy alto | Alto (edge function) | Parcial (seed existente) | Demo |
+| 5 | **Botón "Portal Empleado" en expediente** | Acceso directo backoffice→portal | Medio | Bajo | 100% | UX, demo |
+| 6 | **Añadir concepto stock_options al catálogo** | Cerrar gap demo | Medio | Mínimo | 100% (payrollConceptCatalog) | Demo |
+| 7 | **Quick links en Dashboard ejecutivo** | Acceso rápido a ES Localización, Portal, Utilidades | Medio | Bajo | 100% | UX |
+| 8 | **Badge Cmd+K visible en header** | Descubrir Command Palette | Bajo | Mínimo | 100% | UX |
+| 9 | **Onboarding/Offboarding en Workforce como advanced** | Ciclo vida visible sin cambiar menús ocultos | Medio | Bajo | 100% | Demo |
+| 10 | **Link "Mi Portal" en nav principal de RRHH** | Acceso permanente al portal | Medio | Bajo | 100% | Demo, UX |
+| 11 | **Seed: incidencias IT/accidente/nacimiento** | Poblar leave_incidents | Alto | Medio | Parcial | Demo |
+| 12 | **Seed: enrollment retrib. flexible** | Poblar benefits_enrollments | Medio | Medio | Parcial | Demo |
+| 13 | **Seed: payroll con horas extras** | Incidencia payroll tipo horas_extra | Medio | Medio | Parcial | Demo |
+| 14 | **Seed: desplazamiento internacional** | Poblar mobility_assignments | Medio | Medio | Parcial | Demo |
+| 15 | **Seed: despido disciplinario + objetivo** | 2 empleados terminated con tipo | Medio | Medio | Parcial | Demo |
+| 16 | **Demo mode banner** | Indicador visual de datos demo | Bajo | Bajo | No | UX |
+| 17 | **Flujo reducción jornada** | Tipo solicitud + impacto contrato | Medio | Alto | Parcial (admin_requests) | Demo, funcional |
+| 18 | **Nómina de atrasos/recálculo** | Flujo correction run | Medio | Alto | 100% (payroll engine) | Demo |
+| 19 | **Timeline laboral en expediente** | Vista cronológica unificada | Alto | Alto | Parcial | UX, demo |
+| 20 | **Validaciones post-seed** | Verificar coherencia automática | Medio | Medio | Parcial (health check) | QA |
 
-### Paso 2: Cálculo masivo + incidencias
-- `calculateBatch(periodId)` — cálculo masivo idempotente por `(payroll_period_id, employee_id)`
-- `injectIncidentsToPayroll(periodId)` — inyección de IT/horas extra desde portal admin
-- Integración automática de `hr_es_flexible_remuneration_plans` (seguro médico, ticket restaurante, guardería)
+### 5 acciones imprescindibles para 70%→95%:
+1. Seed Demo Maestro (12 perfiles)
+2. Visibilizar Utilidades/Talent/Enterprise
+3. Concepto stock_options en catálogo
+4. Seed incidencias IT/accidente + retrib. flexible
+5. Seed despidos + desplazamiento
 
-### Paso 3: Comparativa + revisión
-- `computeDiffVsPrevious(recordId, periodId)` — diff línea-a-línea vs período anterior
-- `computeBatchDiff(periodId)` — comparativa masiva
-- `reviewRecord(recordId, action, notes)` — flujo de aprobación (approved/flagged/reviewed)
-- Campos: `review_status`, `review_notes`, `reviewed_by`, `reviewed_at`, `diff_vs_previous`
+### 5 acciones que aumentan valor percibido sin construir:
+1. Visibilizar Utilidades (17 herramientas ya hechas)
+2. Visibilizar Talent (10 pantallas ya hechas)
+3. Visibilizar Enterprise (15 pantallas ya hechas)
+4. Badge Cmd+K (Command Palette ya existe)
+5. Quick links en Dashboard ejecutivo
 
-### Paso 4: Integración UI completa
-- `PayrollReviewBadge` — badge visual de review_status
-- `PayrollDiffPanel` — panel de comparativa con deltas bruto/neto + detalle por concepto
-- `PayrollTraceLine` — línea expandible con calculation_trace + incident_ref
-- Columna "Revisión" en tabla de nóminas + botones aprobar/flaggear con diálogo
-- Botones "Cálculo masivo ES" y "Comparativa" en PeriodManager con feedback UX
+### 5 acciones que mejoran robustez:
+1. Validaciones post-seed automáticas
+2. Flujo reducción jornada formal
+3. Nómina de atrasos como run correction
+4. Demo mode banner
+5. Timeline laboral unificada
 
-### Paso 5: Cierre con validación de revisión
-- `validateESPreClose` ampliado con check "Todas las nóminas aprobadas" (error → bloquea cierre)
-- Warning "Comparativa computada" (no bloqueante)
-- PeriodManager distingue error (rojo) vs warning (ámbar) en diálogo de validación
+---
 
-### Protección BD
-- `UNIQUE(payroll_period_id, employee_id)` en `hr_payroll_records`
+## B. QUICK WINS REALES
 
-## FASE 2 — Completada ✅
+### B.1 Menú / Navegación
 
-### Tablas creadas:
-- `erp_hr_workflow_definitions` — Definiciones de flujos con condiciones de activación
-- `erp_hr_workflow_steps` — Pasos con tipo, rol aprobador, SLA, escalado, delegación
-- `erp_hr_workflow_instances` — Instancias en ejecución con realtime
-- `erp_hr_workflow_decisions` — Decisiones con comentarios y tiempo de respuesta
-- `erp_hr_workflow_delegations` — Delegaciones temporales con scope
-- `erp_hr_workflow_sla_tracking` — Tracking de SLAs con breach detection
+| Quick Win | Archivo | Cambio | Riesgo | Impacto |
+|-----------|---------|--------|--------|---------|
+| Visibilizar Utilidades | `HRNavigationMenu.tsx:75` | Añadir `'utilities'` a `mvpCategories` condicionado a `isAdmin` | Nulo | 17 herramientas desbloqueadas |
+| Visibilizar Talent | `HRNavigationMenu.tsx:75` | Añadir `'talent'` a `mvpCategories` condicionado a `isAdmin` | Nulo | 10 pantallas desbloqueadas |
+| Visibilizar Enterprise | `HRNavigationMenu.tsx:75` | Añadir `'enterprise'` a `mvpCategories` condicionado a `isAdmin` | Nulo | 15 pantallas desbloqueadas |
+| Onboarding/Offboarding en Workforce | `HRNavigationMenu.tsx:96-110` | Añadir `'onboarding'`, `'offboarding'` a `advancedItems` + items en subGroup Workforce | Bajo | Ciclo vida visible |
 
-### Edge Function: `erp-hr-workflow-engine`
-- 9 acciones: list_definitions, upsert_definition, start_workflow, decide_step, delegate, get_inbox, get_sla_status, get_workflow_stats, seed_workflows
-- Audit trail automático en cada decisión
+**Implementación concreta para visibilidad:**
+En `HRNavigationMenu.tsx` línea 75, cambiar la lógica de `mvpCategories` para que cuando `isAdmin`, incluya también `'utilities'`, `'talent'`, `'enterprise'`. Esto se resuelve cambiando el filtrado en línea 450-459 para que admin vea todos los menús.
 
-### Hook: `useHRWorkflowEngine`
-- Gestión completa + realtime via supabase channel
+### B.2 Visibilidad / Accesos rápidos
 
-### UI (3 paneles):
-- `HRWorkflowDesigner` — Visualización de 9 workflows con pasos, roles, SLA y condiciones
-- `HRApprovalInbox` — Bandeja de aprobaciones con filtros, stats, decisiones y comentarios
-- `HRSLADashboard` — KPIs de cumplimiento, items vencidos/próximos, cuellos de botella
+| Quick Win | Archivo | Cambio |
+|-----------|---------|--------|
+| Badge Cmd+K | `HRModule.tsx` header area | Añadir `<Badge>⌘K</Badge>` junto al título, clickable para abrir command palette |
+| Link "Portal Empleado" | `HRNavigationMenu.tsx` | Añadir botón directo junto a Dashboard que abre `/mi-portal` en nueva pestaña |
+| Quick links Dashboard | `HRExecutiveDashboard.tsx` | Añadir row de acceso rápido: España, Portal, Utilidades, Reporting |
 
-### Seed Data (9 workflows):
-- Vacaciones (2 pasos), Contratación (3), Revisión Salarial (3), Offboarding (3), Onboarding (2), Promoción (3), Expediente Disciplinario (3), Validación Finiquito (3), Bonus (3)
+### B.3 Portal del Empleado desde backoffice
 
-### Navegación:
-- 3 nuevos items en categoría Enterprise: Workflows, Aprobaciones, SLA Dashboard
+| Quick Win | Archivo | Cambio |
+|-----------|---------|--------|
+| Botón en expediente | `HREmployeeExpedient.tsx` | Añadir `<Button>` "Abrir Portal" que abre `/mi-portal` en nueva pestaña |
+| Botón en tabla empleados | `HREmployeesPanel.tsx` | Añadir opción "Ver como empleado" en DropdownMenu (línea ~400) |
 
-## V2-ES.2 — Acta de cierre
+### B.4 Concepto stock_options
 
-### Paso 1: Mapping request_type → workflow process_type
-- 14 tipos de solicitud mapeados a process_types del workflow engine
-- Constante `REQUEST_TYPE_TO_PROCESS` en useAdminPortal
-- Guard `WORKFLOW_TRIGGER_STATUSES` (solo submitted/pending_approval inician workflow)
+| Quick Win | Archivo | Cambio |
+|-----------|---------|--------|
+| Nuevo concepto | `src/engines/erp/hr/payrollConceptCatalog.ts` | Añadir entrada `{ code: 'STOCK_OPTIONS', ...}` con clasificación fiscal correcta |
 
-### Paso 2: Workflow engine integration
-- `startWorkflowForRequest` — idempotente, verifica instancia activa antes de crear
-- `createRequest` inicia workflow automáticamente si status es operativo
-- `updateStatus` sincroniza inversamente al workflow engine via `decide_step`
-- `HRApprovalInbox` soporta `entity_type='admin_request'` sin cambios
-- Sync inverso: approved→approved/reviewing, rejected→rejected, returned→returned
+---
 
-### Paso 3: Trazabilidad estructurada
-- `generateTasks` inserta tareas con campos estructurados:
-  - `source_type='admin_request'`, `source_id=request.id`
-  - `related_entity_type='admin_request'`, `related_entity_id=request.id`
-  - `workflow_instance_id` propagado si existe
-- `TaskDetail` muestra sección "Origen de la tarea" con labels legibles
-- Triángulo cerrado: request↔workflow↔tasks
+## C. REDISEÑO DE MENÚ — PROPUESTA CONCRETA
 
-### Paso 4: Sync automático decision → task status
-- `syncTasksFromDecision` en useAdminPortal
-- Mapeo: approved→in_progress, rejected→cancelled, returned→on_hold
-- Solo afecta tareas con related_entity_type='admin_request' en estados pending/in_progress
-- Best-effort con console.warn si falla
+### Menú actual (mvpMode=true, admin)
 
-### Paso 5: Timeline unificado
-- `fetchDetail` extendido: trae linkedTasks (hr_tasks vinculadas)
-- `HRAdminRequestTimeline` reescrita: fusiona activity + comments + tasks cronológicamente
-- Deduplicación: activity.action='commented' excluida (se usa fuente real de comments)
-- Tab "Timeline unificado" + tab "Comentarios" (con formulario)
+```text
+Dashboard | People(10) | Payroll(9) | Workforce(8) | Global(5)
+[OCULTOS: Talent(10) | Enterprise(15) | Utilidades(17)]
+```
 
-### Archivos modificados
-- `src/hooks/admin/hr/useAdminPortal.ts` — generateTasks, fetchDetail, syncTasksFromDecision, LinkedTask type
-- `src/components/erp/hr/tasks/TaskDetail.tsx` — sección Origen + labels
-- `src/components/erp/hr/admin-portal/HRAdminRequestTimeline.tsx` — timeline unificado
-- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — linkedTasks prop
-- `src/components/erp/hr/admin-portal/HRAdminPortal.tsx` — linkedTasks passthrough
+### Menú recomendado (admin)
 
-### Sin cambios en
-- Edge Functions (erp-hr-workflow-engine intacta)
-- Tablas/migraciones (0 migraciones)
-- Rutas/menús (0 nuevos)
-- Lógica de payroll/cierre de período (V2-ES.1 intacta)
-- HRApprovalInbox (sin modificaciones directas)
+```text
+Dashboard | People(10) | Payroll(9) | Workforce(10*) | Global(5) | Talent(10) | Enterprise(15) | Utilidades(17) | [Portal ↗]
+```
 
-## V2-ES.3 — Acta de cierre
+*Workforce +2: Onboarding y Offboarding movidos desde Talent como `advancedItems`
 
-### Paso 1: Infraestructura del expediente documental
-- 6 tablas: `erp_hr_employee_documents`, `erp_hr_document_versions`, `erp_hr_document_access_log`, `erp_hr_document_comments`, `erp_hr_consents`, `erp_hr_retention_policies`
-- Hook `useHRDocumentExpedient` (CRUD docs, versiones, access log, comentarios, consentimientos, retención, stats)
-- Campos `related_entity_type` / `related_entity_id` + índice compuesto
-- 7 componentes UI: DocumentExpedientModule, EmployeeDocumentExpedient, PayrollDocumentExpedient, ConsentsPanel, RetentionPoliciesPanel, DocumentAuditPanel, DocumentDetailPanel
+**Cambios específicos:**
 
-### Paso 2: Vinculación documental a solicitudes/tareas
-- Componente `LinkedDocumentsSection` (shared, reutilizable)
-- Integrado en `HRAdminRequestDetail` y `TaskDetail`
-- Upload condicional por `employeeId`, deduplicación por id
+1. **mvpCategories para admin**: incluir `talent`, `enterprise`, `utilities` cuando `isAdmin=true`
+2. **Workforce**: añadir `onboarding` y `offboarding` como items advanced en subGroup "Ciclo de Vida" (duplicados de Talent, con misma referencia)
+3. **Botón "Portal"**: junto a Dashboard, icono de puerta/usuario, abre `/mi-portal` en nueva pestaña
+4. **Dashboard**: añadir 4 cards de acceso rápido → España, Utilidades, Reporting, Portal
 
-### Paso 3: Visibilidad cruzada de origen + filtros
-- Componente `DocumentOriginBadge` (admin_request→Solicitud, hr_task→Tarea, null→Directo)
-- Filtro por origen en `EmployeeDocumentExpedient` (4 opciones)
-- Columna "Origen" en `HREmployeeDocumentsPanel`
-- Utilidad `filterByOrigin` + `ORIGIN_FILTER_OPTIONS`
+**Justificación:** El 60% del producto está oculto. El admin (que hace demos y gestiona) necesita ver todo. Los usuarios normales siguen viendo solo MVP. Sin riesgo de regresión.
 
-### Paso 4: Checklist de completitud informativa
-- Config `documentExpectedTypes.ts` con mapa request_type → ExpectedDocType[]
-- `normalizeDocType()` (lowercase + trim + strip diacríticos)
-- `computeDocCompleteness()` calcula present/missing/percentage
-- Barra de progreso + checklist ✅/⚠️ en LinkedDocumentsSection (vía prop `managementType`)
-- Graceful degradation: sin managementType → sin checklist
+---
 
-### Paso 5: Indicador compacto en sidebar
-- Componente `DocumentCompletenessIndicator` (recibe docs por prop, sin fetch propio)
-- Callback `onDocsLoaded` en LinkedDocumentsSection para compartir datos
-- Indicador en sidebar de HRAdminRequestDetail (Completo/X-Y)
+## D. UTILIDADES — PLAN DE EXPLOTACIÓN
 
-### Archivos creados
-- `src/hooks/erp/hr/useHRDocumentExpedient.ts`
-- `src/components/erp/hr/document-expedient/DocumentExpedientModule.tsx`
-- `src/components/erp/hr/document-expedient/EmployeeDocumentExpedient.tsx`
-- `src/components/erp/hr/document-expedient/PayrollDocumentExpedient.tsx`
-- `src/components/erp/hr/document-expedient/ConsentsPanel.tsx`
-- `src/components/erp/hr/document-expedient/RetentionPoliciesPanel.tsx`
-- `src/components/erp/hr/document-expedient/DocumentAuditPanel.tsx`
-- `src/components/erp/hr/document-expedient/DocumentDetailPanel.tsx`
-- `src/components/erp/hr/shared/LinkedDocumentsSection.tsx`
-- `src/components/erp/hr/shared/DocumentOriginBadge.tsx`
-- `src/components/erp/hr/shared/DocumentCompletenessIndicator.tsx`
-- `src/components/erp/hr/shared/documentExpectedTypes.ts`
+### Categorización por uso
 
-### Archivos modificados
-- `src/components/erp/hr/admin-portal/HRAdminRequestDetail.tsx` — LinkedDocs + managementType + onDocsLoaded + indicator sidebar
-- `src/components/erp/hr/tasks/TaskDetail.tsx` — LinkedDocs
-- `src/components/erp/hr/HREmployeeDocumentsPanel.tsx` — columna Origen + query ampliada
+| Categoría | Utilidades | Visibilidad | Usuario |
+|-----------|-----------|-------------|---------|
+| **Operación RRHH** | Dashboard Premium, Orquestación, Alertas, Actividad | Admin siempre | RRHH Manager |
+| **Demo / preventa** | Seed Data, Health Check, Audit Generator | Admin siempre | Comercial, consultor |
+| **Reporting / dirección** | Reporting Engine, Board Pack, People Analytics, Analytics BI | Admin siempre | Director RRHH, CFO |
+| **Compliance** | Compliance Regulatorio, Cumplimiento Auto | Admin siempre | Legal, compliance |
+| **Integraciones** | API & Webhooks, Integraciones Enterprise | Admin solo | IT, integrador |
+| **Administración** | Config, Export, Centro de Ayuda | Admin siempre | Admin |
+| **QA / testing** | Health Check, Seed Data | Admin solo | QA, desarrollo |
 
-### Sin cambios en
-- Edge Functions (0 nuevas, 0 modificadas)
-- Rutas/menús (0 nuevos)
-- Lógica de payroll/cierre (V2-ES.1 intacta)
-- Workflows/aprobaciones (V2-ES.2 intacta)
-- HRApprovalInbox (sin modificaciones)
+### Utilidades a hacer visibles ya:
+Todas — el menú Utilidades completo debe ser visible para admin. Las 17 utilidades ya están implementadas y funcionales.
+
+### Utilidades que faltan (futuro):
+1. **Simulador de nómina interactivo** — Prioridad alta, impacto demo extremo
+2. **Checklist cierre mensual** — Prioridad alta, valor operativo
+3. **Generador caso demo maestro** — Prioridad alta, valor preventa
+
+---
+
+## E. SEED DEMO MAESTRO — BLUEPRINT
+
+### Diseño general
+- **Edge function**: `erp-hr-seed-demo-master` (nueva)
+- **Acción**: `seed_master_demo`
+- **Entrada**: `{ company_id, reset_previous?: boolean }`
+- **12 perfiles demo**, cada uno con nombre, situación y datos completos
+
+### Perfiles Demo
+
+| # | Nombre | Rol | Situación | Tablas | Cubre |
+|---|--------|-----|-----------|--------|-------|
+| 1 | **Carlos Ruiz Martín** | Desarrollador Senior | Estándar, activo, nómina normal | employees, contracts, payroll_records, time_clock, leave_balances | Baseline, fichaje, vacaciones |
+| 2 | **Ana Belén Torres** | Analista Junior | Alta reciente (hace 5 días) | employees, contracts, registration_data, contract_process_data | Alta, TGSS, Contrat@ |
+| 3 | **Miguel Ángel Sanz** | Director Comercial | Horas extras + bonus | employees, payroll_records, payroll_incidents (horas_extra) | Nómina variables |
+| 4 | **Laura Fernández Gil** | Product Manager | Retrib. flexible (seguro médico + tickets) | employees, benefits_plans, benefits_enrollments, payroll_records | Beneficios, compensación |
+| 5 | **David Moreno Ortiz** | CTO | Stock options + salario alto | employees, payroll_records, payroll_incidents (stock_options) | Retrib. especial, fiscalidad |
+| 6 | **Elena Vidal Ruiz** | Diseñadora UX | IT por accidente de trabajo (activa) | employees, leave_incidents (work_accident), leave_requests, payroll_records | IT, incidencias, impacto nómina |
+| 7 | **Javier López Navarro** | Ingeniero DevOps | Permiso nacimiento (paternidad activa) | employees, leave_requests (paternity), leave_balances | Permisos especiales |
+| 8 | **Sofía Martínez Díaz** | Country Manager LATAM | Desplazamiento temporal a México | employees, mobility_assignments, contracts | Movilidad internacional |
+| 9 | **Pablo García Herrera** | Técnico de Soporte | Atrasos por IT no reflejada | employees, payroll_records, payroll_runs (correction) | Atrasos, recálculo |
+| 10 | **Carmen Alonso Vega** | Contable Senior | Reducción jornada guarda legal | employees, contracts (jornada parcial), admin_requests | Reducción, modificación contractual |
+| 11 | **Roberto Díaz Campos** | Comercial | Despido disciplinario | employees (terminated), contracts, payroll_records | Finiquito disciplinario |
+| 12 | **Isabel Muñoz Pérez** | Marketing Manager | Despido objetivo | employees (terminated), contracts, payroll_records | Finiquito objetivo, indemnización |
+
+### Datos transversales por perfil
+Cada perfil incluirá:
+- `erp_hr_employees` (datos completos)
+- `erp_hr_contracts` (al menos 1 contrato)
+- `erp_hr_payroll_records` (3 meses: ene-mar 2026)
+- `erp_hr_leave_balances` (saldos vacaciones)
+- `erp_hr_employee_documents` (mínimo 3 documentos)
+- `erp_hr_time_clock` (registros de fichaje)
+
+### Orden de siembra
+1. Employees → 2. Contracts → 3. Leave balances → 4. Payroll records → 5. Payroll incidents → 6. Leave incidents/requests → 7. Benefits → 8. Mobility → 9. Time clock → 10. Documents → 11. Registration/contract data → 12. Admin requests
+
+### Validaciones post-seed
+- Count de empleados = 12
+- Count de contratos >= 12
+- Count de payroll_records >= 36
+- Verificar que terminated employees tienen contratos inactivos
+- Verificar leave_balances para todos los activos
+- Verificar al menos 1 documento por empleado
+
+### Modo reseed seguro
+- Marcar empleados demo con `metadata.is_demo_master = true`
+- Antes de reseed, borrar solo los marcados
+- No tocar empleados existentes de seed anterior
+
+---
+
+## F. PLAN PARA DEMO 100%
+
+### Top 5 gaps críticos (bloquean demo)
+
+| Gap | Solución | Esfuerzo |
+|-----|----------|----------|
+| Sin perfiles con casuísticas complejas | Seed Demo Maestro | Alto |
+| Menús Talent/Enterprise/Utilidades ocultos | Visibilizar para admin | Mínimo |
+| Sin concepto stock_options | Añadir al catálogo | Mínimo |
+| Sin flujo explícito reducción jornada | Tipo solicitud admin_request | Medio |
+| Nómina de atrasos sin run correction demo | Seed con run tipo correction | Medio |
+
+### Top 5 gaps fáciles de cerrar
+
+| Gap | Solución | Esfuerzo |
+|-----|----------|----------|
+| Menús ocultos | 3 líneas en mvpCategories | 5 min |
+| Concepto stock_options | 1 entrada en catálogo | 10 min |
+| Acceso portal desde backoffice | 1 botón en expediente | 15 min |
+| Badge Cmd+K | 1 componente small | 10 min |
+| Quick links en Dashboard | 4 cards con onClick | 20 min |
+
+### Plan por fases
+
+**Fase 1 (1 sesión):** Visibilizar menús + concepto stock_options + botón portal + quick links = pasa a ~80%
+**Fase 2 (2-3 sesiones):** Seed Demo Maestro completo = pasa a ~95%
+**Fase 3 (1-2 sesiones):** Flujo reducción jornada + nómina atrasos + validaciones = pasa a ~98%
+
+---
+
+## G. ACCESO BACKOFFICE ↔ PORTAL
+
+### Quick win (implementar ya)
+**Botón "Abrir Portal Empleado" en expediente + tabla empleados**
+- Abre `/mi-portal` en nueva pestaña
+- Solo funciona si el admin tiene un employee vinculado a su auth user
+- Pro: 0 riesgo, 5 minutos
+- Contra: requiere vinculación admin↔employee
+
+### Solución media
+**Preview read-only desde expediente**
+- Renderizar `EmployeePortalHome` dentro del expediente con datos del empleado seleccionado
+- Usar query directa (no RLS, sino admin query) para cargar datos
+- Pro: ve el portal sin cambiar de contexto
+- Contra: no es el portal real, es simulación
+
+### Solución premium (futuro)
+**Impersonation temporal segura**
+- Edge function genera token temporal read-only para employee_id
+- Audit log obligatorio
+- Expiración 15 min
+- Pro: experiencia real completa
+- Contra: complejidad, riesgo seguridad
+
+**Recomendación:** Implementar quick win ahora. La solución media si hay tiempo. Premium para futuro.
+
+---
+
+## H. GUIÓN DEMO COMERCIAL
+
+### Versión corta (10-15 min)
+
+| Min | Bloque | Pantalla | Narrativa |
+|-----|--------|----------|-----------|
+| 0-2 | Apertura | Dashboard ejecutivo | "Visión 360 de toda la plantilla en tiempo real" |
+| 2-4 | Empleados | People → Empleados → Expediente | "Expediente digital completo con documentos, contratos, historial" |
+| 4-6 | Nómina | Payroll → Motor de Nómina | "Cálculo masivo con 44 conceptos españoles, trazabilidad total" |
+| 6-8 | España | Global → 🇪🇸 España | "IRPF, SS, contratos, permisos — todo según normativa española" |
+| 8-10 | Portal | Portal del Empleado | "El empleado ve sus nóminas, documentos, vacaciones, fichajes" |
+| 10-12 | Reporting | Utilidades → Reporting Engine | "Informes ejecutivos automatizados, board packs, compliance" |
+| 12-15 | Cierre | Dashboard + Utilidades | "Suite completa: 74 pantallas, compliance, IA, multi-tenant" |
+
+### Versión media (20-30 min)
+Añadir: Alta de empleado (Ana Belén) → Comunicación TGSS (dry-run) → Incidencia IT (Elena) → Liquidación (Roberto) → People Analytics
+
+### Versión premium (45-60 min)
+Añadir: Todo el caso demo maestro punto por punto, mostrando cada casuística con su perfil demo correspondiente. Incluir Enterprise (Command Center, Workflows, Auditoría), Talent (Onboarding, Formación), y demostración de sandbox con dry-run TGSS/SEPE.
+
+---
+
+## I. ROADMAP EN 3 HORIZONTES
+
+### Horizonte 1 — Inmediato (1-2 sesiones)
+
+**Objetivo:** Desbloquear visibilidad y accesos
+**Entregables:**
+1. Visibilizar Utilidades + Talent + Enterprise para admin
+2. Concepto stock_options en catálogo
+3. Botón Portal en expediente
+4. Quick links en Dashboard
+5. Badge Cmd+K
+
+**Impacto:** 70% → 80% demo. 42 pantallas desbloqueadas.
+
+### Horizonte 2 — Corto plazo (3-6 sesiones)
+
+**Objetivo:** Seed Demo Maestro + gaps funcionales
+**Entregables:**
+1. Edge function `erp-hr-seed-demo-master` con 12 perfiles
+2. Onboarding/Offboarding visible en Workforce
+3. Flujo reducción jornada (tipo solicitud)
+4. Run correction demo para atrasos
+5. Preview Portal desde expediente
+
+**Impacto:** 80% → 95% demo.
+
+### Horizonte 3 — Premium (5-10 sesiones)
+
+**Objetivo:** Demo espectacular + features premium
+**Entregables:**
+1. Simulador nómina interactivo
+2. Timeline laboral en expediente
+3. Dashboard cierre mensual interactivo
+4. Wizard alta empleado guiado
+5. Impersonation segura para portal
+
+**Impacto:** 95% → 100% demo + valor comercial diferencial.
+
+---
+
+## J. RESULTADO FINAL
+
+### Resumen ejecutivo
+El módulo RRHH tiene un **88% de funcionalidad real** pero solo muestra un **40% al usuario admin** por restricciones de `mvpMode`. La acción de mayor impacto/esfuerzo es desbloquear los 3 mega-menús ocultos (1 línea de código = 42 pantallas visibles). El segundo mayor impacto es el Seed Demo Maestro (12 perfiles = demo 95%).
+
+### Top 10 acciones inmediatas
+1. Visibilizar Utilidades/Talent/Enterprise para admin
+2. Añadir stock_options al payrollConceptCatalog
+3. Botón "Portal Empleado" en expediente
+4. Quick links en Dashboard ejecutivo
+5. Badge Cmd+K visible
+6. Onboarding/Offboarding como advanced en Workforce
+7. Crear edge function seed-demo-master (diseño)
+8. Link "Mi Portal" junto a Dashboard en nav
+9. Demo mode banner
+10. Validación post-seed en Health Check
+
+### Recomendación final — qué hacer mañana, en orden exacto
+
+**Sesión 1 (ahora mismo):**
+1. `HRNavigationMenu.tsx`: modificar filtrado para que admin vea todos los menús
+2. `payrollConceptCatalog.ts`: añadir STOCK_OPTIONS
+3. `HREmployeeExpedient.tsx`: añadir botón "Abrir Portal"
+4. `HRExecutiveDashboard.tsx`: añadir quick links (España, Portal, Utilidades)
+5. `HRModule.tsx`: badge Cmd+K en header
+
+**Sesión 2:**
+6. Crear edge function `erp-hr-seed-demo-master` con los 12 perfiles
+7. Ejecutar seed y validar
+
+**Sesión 3:**
+8. Flujo reducción jornada como tipo admin_request
+9. Nómina atrasos como run correction en seed
+10. Preview Portal desde expediente
+
+**¿Por qué este orden?** Porque las 5 primeras acciones cuestan <30 min y desbloquean el 60% oculto del producto. El seed maestro es el siguiente paso lógico porque convierte las pantallas visibles en pantallas con datos reales. Los ajustes funcionales son el cierre fino.
+
