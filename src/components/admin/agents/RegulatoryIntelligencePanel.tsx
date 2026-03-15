@@ -283,6 +283,9 @@ export function RegulatoryIntelligencePanel() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-600 border-violet-500/30">
+            ⏰ Cron diario 06:30 UTC
+          </Badge>
           {stats.sourcesWithErrors > 0 && (
             <Badge variant="destructive" className="text-[10px]">
               {stats.sourcesWithErrors} errores
@@ -293,7 +296,6 @@ export function RegulatoryIntelligencePanel() {
               <RefreshCw className="h-2.5 w-2.5 mr-1 animate-spin" /> Refrescando
             </Badge>
           )}
-          <Badge variant="outline" className="bg-violet-500/10 text-violet-700 border-violet-500/30 text-[10px]">Live</Badge>
           <Button variant="outline" size="sm" onClick={triggerRefreshAll} disabled={refreshing}>
             <Zap className={cn("h-3.5 w-3.5 mr-1.5", refreshing && "animate-pulse")} />
             {refreshing ? 'Refrescando...' : 'Refrescar todo'}
