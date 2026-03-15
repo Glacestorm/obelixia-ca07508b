@@ -465,6 +465,8 @@ export function SupervisorAgentsDashboard() {
 
   const [configAgent, setConfigAgent] = useState<AgentModule | null>(null);
   const [showConfigSheet, setShowConfigSheet] = useState(false);
+  const [registryConfigAgent, setRegistryConfigAgent] = useState<import('@/hooks/admin/agents/useSupervisorDomainData').RegistryAgent | null>(null);
+  const [showRegistryConfig, setShowRegistryConfig] = useState(false);
 
   const handleConfigureAgent = (agent: AgentModule) => {
     setConfigAgent(agent);
