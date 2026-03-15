@@ -309,7 +309,7 @@ export function HRPilotOnboardingPanel({ companyId }: HRPilotOnboardingPanelProp
                 <CardHeader className="py-3 px-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      {checks[0] && <checks[0].icon className="h-4 w-4 text-primary" />}
+                      {checks[0] && (() => { const Icon = checks[0].icon; return <Icon className="h-4 w-4 text-primary" />; })()}
                       {catName}
                     </CardTitle>
                     <Badge variant={catPassed === checks.length ? 'default' : 'secondary'} className="text-[10px]">
