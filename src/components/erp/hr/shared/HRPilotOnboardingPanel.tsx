@@ -104,7 +104,7 @@ const PILOT_CHECKS: CheckItem[] = [
     description: 'Períodos mensuales creados para el ejercicio actual',
     icon: Calendar, severity: 'recommended',
     check: async (cid) => {
-      const { count } = await supabase.from('erp_hr_payroll_periods').select('id', { count: 'exact', head: true }).eq('company_id', cid);
+      const { count } = await (supabase as any).from('erp_hr_payroll_periods').select('id', { count: 'exact', head: true }).eq('company_id', cid);
       return { pass: (count || 0) >= 1, detail: `${count || 0} períodos` };
     },
   },
