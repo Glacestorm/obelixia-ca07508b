@@ -97,10 +97,7 @@ export function ActivitySheet({ dashboard, onNavigate }: Props) {
         description: `${latest.period_label} — ${latest.net_salary ? latest.net_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }) : ''}`,
         type: 'success',
         action: 'payslips',
-      });
-        type: 'success',
-        action: 'payslips',
-      });
+    }
     }
 
     // Last activity entries
