@@ -485,6 +485,7 @@ export function HRModule() {
         {activeModule === 'util-health' && <HRPremiumHealthCheckPanel companyId={companyId} />}
         {activeModule === 'util-export' && <HRPremiumExportPanel companyId={companyId} />}
         {activeModule === 'util-seed' && <HRDemoSeedPanel companyId={companyId} />}
+        {activeModule === 'util-demo-journey' && <HRDemoJourneyPanel companyId={companyId} onNavigate={(moduleId) => setActiveModule(moduleId)} />}
         {activeModule === 'util-help' && <HRPremiumHelpCenter />}
         {activeModule === 'util-compliance' && <HRComplianceAutomationPanel companyId={companyId} />}
         {activeModule === 'util-analytics-bi' && <HRAnalyticsBIPremiumPanel companyId={companyId} />}
