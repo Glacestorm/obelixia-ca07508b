@@ -669,6 +669,24 @@ export function LegalAgentSupervisorPanel({ companyId }: LegalAgentSupervisorPan
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Cross-Module Tab - Invocaciones desde RRHH */}
+        <TabsContent value="cross-module" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Escalados desde RRHH
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Consultas escaladas por el HR-Supervisor al Legal-Supervisor (trazabilidad en tiempo real desde <code>erp_ai_agent_invocations</code>)
+              </p>
+            </CardHeader>
+            <CardContent>
+              <CrossModuleInvocations companyId={companyId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
