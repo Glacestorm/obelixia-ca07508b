@@ -82,6 +82,7 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
       {/* ═══ FICHAJE WIDGET (protagonista) ═══ */}
       <TimeClockWidget
         employeeId={employee.id}
+        companyId={employee.company_id}
         compact={isMobile}
       />
 

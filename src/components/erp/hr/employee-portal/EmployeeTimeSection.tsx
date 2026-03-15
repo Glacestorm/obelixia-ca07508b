@@ -161,7 +161,7 @@ export function EmployeeTimeSection({ employee, onNavigate }: Props) {
       </div>
 
       {/* ═══ FICHAJE WIDGET (full mode) ═══ */}
-      <TimeClockWidget employeeId={employee.id} compact={false} />
+      <TimeClockWidget employeeId={employee.id} companyId={employee.company_id} compact={false} />
 
       {/* ═══ RESUMEN SEMANAL ═══ */}
       {!loading && (
