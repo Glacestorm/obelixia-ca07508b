@@ -12,7 +12,7 @@ const SOURCE_FEEDS: Record<string, { fetchUrl: string; parser: string }> = {
 };
 
 const MAX_DOCS_PER_SOURCE = 20;
-const REFRESH_TIMEOUT_MS = 120_000; // 2 min per source
+const REFRESH_TIMEOUT_MS = 120_000;
 
 interface RefreshRequest {
   action: 'refresh_all' | 'refresh_source' | 'check_changes' | 'get_refresh_logs';
@@ -37,9 +37,9 @@ serve(async (req) => {
 
     switch (action) {
       case 'refresh_all': {
-        // === CONCURRENCY LOCK ===
-        const lockAcquired = await acquireLock(supabase, 'regulatory_refresh_all');
-        if (!lockAcquired) {
+        // === ADVISORY LOCK (Postgres real lock, key 73001) ===
+        const { data: lockResult } = await supabase.rpc('try_acquire_regulatory_refresh_lock');
+        if (!lockResult) {
           return jsonResponse({
             success: false,
             error: 'Refresh already in progress',
@@ -48,7 +48,6 @@ serve(async (req) => {
         }
 
         try {
-          // Only fetch auto-ingestable, enabled sources
           const { data: sources } = await supabase
             .from('erp_regulatory_sources')
             .select('*')
@@ -57,22 +56,24 @@ serve(async (req) => {
             .order('last_checked_at', { ascending: true, nullsFirst: true });
 
           if (!sources || sources.length === 0) {
-            await releaseLock(supabase, 'regulatory_refresh_all');
+            await supabase.rpc('release_regulatory_refresh_lock');
             return jsonResponse({ success: true, message: 'No auto-enabled sources', refreshed: 0, trigger });
           }
+
+          // Load feedback stats for confidence adjustment
+          const feedbackStats = await loadFeedbackStats(supabase);
 
           const results = [];
           for (const source of sources) {
             try {
               const result = await withTimeout(
-                refreshSource(supabase, source, LOVABLE_API_KEY, trigger),
+                refreshSource(supabase, source, LOVABLE_API_KEY, trigger, feedbackStats),
                 REFRESH_TIMEOUT_MS
               );
               results.push(result);
             } catch (timeoutErr) {
               console.error(`[regulatory-refresh] Timeout for ${source.code}`);
               results.push({ source: source.code, status: 'timeout', error: 'Timeout exceeded' });
-              // Mark source error but continue with others
               await supabase.from('erp_regulatory_sources').update({
                 refresh_status: 'error',
                 last_error_at: new Date().toISOString(),
@@ -89,7 +90,7 @@ serve(async (req) => {
             timestamp: new Date().toISOString(),
           });
         } finally {
-          await releaseLock(supabase, 'regulatory_refresh_all');
+          await supabase.rpc('release_regulatory_refresh_lock');
         }
       }
 
@@ -108,8 +109,8 @@ serve(async (req) => {
           return jsonResponse({ success: false, error: 'Source not found' }, 404);
         }
 
-        // Single source refresh always allowed (manual override)
-        const result = await refreshSource(supabase, source, LOVABLE_API_KEY, trigger);
+        const feedbackStats = await loadFeedbackStats(supabase);
+        const result = await refreshSource(supabase, source, LOVABLE_API_KEY, trigger, feedbackStats);
         return jsonResponse({ success: true, result, trigger });
       }
 
@@ -140,22 +141,42 @@ serve(async (req) => {
   }
 });
 
-// === CONCURRENCY LOCK via advisory-style flag in refresh_log ===
-async function acquireLock(supabase: any, lockKey: string): Promise<boolean> {
-  // Check if there's a running refresh in the last 10 minutes
-  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const { data: running } = await supabase
-    .from('erp_regulatory_refresh_log')
-    .select('id')
-    .eq('status', 'running')
-    .gte('started_at', tenMinAgo)
-    .limit(1);
+// === FEEDBACK-BASED CONFIDENCE ADJUSTMENT ===
+async function loadFeedbackStats(supabase: any): Promise<Map<string, { total: number; accepted: number; rejected: number }>> {
+  const stats = new Map<string, { total: number; accepted: number; rejected: number }>();
+  try {
+    const { data } = await supabase
+      .from('erp_regulatory_feedback')
+      .select('field_reviewed, accepted')
+      .order('created_at', { ascending: false })
+      .limit(200);
 
-  return !running || running.length === 0;
+    if (data) {
+      for (const fb of data) {
+        const key = fb.field_reviewed || 'general';
+        const existing = stats.get(key) || { total: 0, accepted: 0, rejected: 0 };
+        existing.total++;
+        if (fb.accepted === true) existing.accepted++;
+        if (fb.accepted === false) existing.rejected++;
+        stats.set(key, existing);
+      }
+    }
+  } catch (e) {
+    console.error('[regulatory-refresh] Error loading feedback stats:', e);
+  }
+  return stats;
 }
 
-async function releaseLock(_supabase: any, _lockKey: string): Promise<void> {
-  // Lock is implicitly released when all refresh logs move to completed/failed
+function adjustConfidenceFromFeedback(
+  feedbackStats: Map<string, { total: number; accepted: number; rejected: number }>,
+  field: string,
+  baseConfidence: number
+): number {
+  const stats = feedbackStats.get(field);
+  if (!stats || stats.total < 3) return baseConfidence; // Need minimum samples
+  const acceptRate = stats.accepted / stats.total;
+  // Adjust: if acceptance rate is high, boost confidence; if low, reduce
+  return Math.min(1, Math.max(0.1, baseConfidence * (0.5 + acceptRate * 0.5)));
 }
 
 // === TIMEOUT WRAPPER ===
@@ -168,11 +189,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
-async function refreshSource(supabase: any, source: any, aiApiKey: string | undefined, trigger: string) {
+async function refreshSource(
+  supabase: any, source: any, aiApiKey: string | undefined, trigger: string,
+  feedbackStats: Map<string, { total: number; accepted: number; rejected: number }>
+) {
   const logId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
 
-  // Create refresh log with trigger info
   await supabase.from('erp_regulatory_refresh_log').insert({
     id: logId,
     source_id: source.id,
@@ -197,23 +220,17 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
     } else {
       await completeRefresh(supabase, source.id, logId, {
         status: 'completed',
-        documents_found: 0,
-        documents_new: 0,
-        documents_updated: 0,
-        documents_unchanged: 0,
+        documents_found: 0, documents_new: 0, documents_updated: 0, documents_unchanged: 0,
       });
       return { source: source.code, status: 'no_feed', documents_found: 0, trigger };
     }
 
-    // Volume limit per source
     if (documents.length > MAX_DOCS_PER_SOURCE) {
       console.log(`[regulatory-refresh] ${source.code}: capped from ${documents.length} to ${MAX_DOCS_PER_SOURCE}`);
       documents = documents.slice(0, MAX_DOCS_PER_SOURCE);
     }
 
-    let newCount = 0;
-    let updatedCount = 0;
-    let unchangedCount = 0;
+    let newCount = 0, updatedCount = 0, unchangedCount = 0;
 
     for (const doc of documents) {
       const contentHash = await hashContent(doc.title + (doc.content || '') + (doc.url || ''));
@@ -245,6 +262,12 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
           classification = await classifyWithAI(aiApiKey, doc, source);
         }
 
+        // Apply feedback-based confidence adjustment
+        const impactConfidence = adjustConfidenceFromFeedback(feedbackStats, 'impact_level', 0.8);
+        const summaryConfidence = adjustConfidenceFromFeedback(feedbackStats, 'summary', 0.85);
+        // If historical feedback shows low acceptance, force human review
+        const forceHumanReview = impactConfidence < 0.5 || summaryConfidence < 0.5;
+
         await supabase.from('erp_regulatory_documents').insert({
           source_id: source.id,
           document_title: doc.title,
@@ -263,7 +286,7 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
           tags: classification.tags || [],
           source_url: doc.url || source.url,
           origin_verified: true,
-          requires_human_review: classification.requires_human_review ?? true,
+          requires_human_review: forceHumanReview || (classification.requires_human_review ?? true),
           data_source: 'live',
           content_hash: contentHash,
           change_type: 'new',
@@ -291,6 +314,7 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
         documents_found: documents.length,
         documents_new: newCount,
         documents_updated: updatedCount,
+        feedback_adjusted: feedbackStats.size > 0,
       },
     });
 
@@ -303,13 +327,8 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
     });
 
     return {
-      source: source.code,
-      status: 'completed',
-      trigger,
-      documents_found: documents.length,
-      new: newCount,
-      updated: updatedCount,
-      unchanged: unchangedCount,
+      source: source.code, status: 'completed', trigger,
+      documents_found: documents.length, new: newCount, updated: updatedCount, unchanged: unchangedCount,
     };
 
   } catch (error) {
@@ -334,13 +353,11 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
 
 async function completeRefresh(supabase: any, sourceId: string, logId: string, data: any) {
   const now = new Date().toISOString();
-
   await supabase.from('erp_regulatory_sources').update({
     refresh_status: 'idle',
     last_success_at: now,
     documents_found: data.documents_found,
   }).eq('id', sourceId);
-
   await supabase.from('erp_regulatory_refresh_log').update({
     ...data,
     completed_at: now,
@@ -351,23 +368,15 @@ async function fetchFromFeed(config: { fetchUrl: string; parser: string }, sourc
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30_000);
-
     const response = await fetch(config.fetchUrl, {
       headers: { 'User-Agent': 'ObelixIA-RegulatoryIntelligence/1.0' },
       signal: controller.signal,
     });
-
     clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} from ${config.fetchUrl}`);
-    }
-
+    if (!response.ok) throw new Error(`HTTP ${response.status} from ${config.fetchUrl}`);
     const text = await response.text();
-
     if (config.parser === 'boe_rss') return parseBoeRss(text);
     if (config.parser === 'eurlex_rss') return parseEurLexRss(text);
-
     return [];
   } catch (error) {
     console.error(`[regulatory-refresh] Feed fetch error for ${source.code}:`, error);
@@ -379,18 +388,15 @@ function parseBoeRss(xml: string): any[] {
   const items: any[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
   let match;
-
   while ((match = itemRegex.exec(xml)) !== null && items.length < MAX_DOCS_PER_SOURCE) {
     const itemContent = match[1];
     const title = extractTag(itemContent, 'title');
     const link = extractTag(itemContent, 'link');
     const description = extractTag(itemContent, 'description');
     const pubDate = extractTag(itemContent, 'pubDate');
-
     if (title) {
       items.push({
-        title: cleanHtml(title),
-        url: link || null,
+        title: cleanHtml(title), url: link || null,
         content: cleanHtml(description || ''),
         summary: cleanHtml(description || '').substring(0, 500),
         publication_date: pubDate ? new Date(pubDate).toISOString().split('T')[0] : null,
@@ -405,18 +411,15 @@ function parseEurLexRss(xml: string): any[] {
   const items: any[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
   let match;
-
   while ((match = itemRegex.exec(xml)) !== null && items.length < MAX_DOCS_PER_SOURCE) {
     const itemContent = match[1];
     const title = extractTag(itemContent, 'title');
     const link = extractTag(itemContent, 'link');
     const description = extractTag(itemContent, 'description');
     const pubDate = extractTag(itemContent, 'pubDate');
-
     if (title) {
       items.push({
-        title: cleanHtml(title),
-        url: link || null,
+        title: cleanHtml(title), url: link || null,
         content: cleanHtml(description || ''),
         summary: cleanHtml(description || '').substring(0, 500),
         publication_date: pubDate ? new Date(pubDate).toISOString().split('T')[0] : null,
@@ -428,24 +431,16 @@ function parseEurLexRss(xml: string): any[] {
 
 async function fetchFromGenericUrl(source: any): Promise<any[]> {
   try {
-    await fetch(source.url, {
-      method: 'HEAD',
-      headers: { 'User-Agent': 'ObelixIA-RegulatoryIntelligence/1.0' },
-    });
+    await fetch(source.url, { method: 'HEAD', headers: { 'User-Agent': 'ObelixIA-RegulatoryIntelligence/1.0' } });
     return [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 async function classifyWithAI(apiKey: string, doc: any, source: any): Promise<any> {
   try {
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash-lite',
         messages: [
@@ -474,13 +469,10 @@ async function classifyWithAI(apiKey: string, doc: any, source: any): Promise<an
         max_tokens: 800,
       }),
     });
-
     if (!response.ok) return {};
-
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
     if (!content) return {};
-
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     return jsonMatch ? JSON.parse(jsonMatch[0]) : {};
   } catch (e) {
