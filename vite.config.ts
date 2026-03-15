@@ -62,6 +62,13 @@ export default defineConfig(({ mode }) => ({
         ],
         shortcuts: [
           {
+            name: 'Mi Portal RRHH',
+            short_name: 'Mi Portal',
+            url: '/mi-portal',
+            description: 'Portal del empleado - nóminas, solicitudes, fichaje',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
             name: 'Dashboard',
             short_name: 'Dashboard',
             url: '/dashboard',
