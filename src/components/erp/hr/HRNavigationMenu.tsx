@@ -114,8 +114,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
     'regulatory-watch',     // Vigilancia Normativa — compliance, admin
   ]);
 
-  // Tier 3: hidden — talent/enterprise/utilities menus, only visible when mvpMode=false
-  // (controlled by mvpCategories filter — these menus don't appear in MVP mode)
+  // Tier 3: admin-unlocked categories — all items within these categories are visible to admin
+  const adminUnlockedCategories = new Set(['talent', 'enterprise', 'utilities']);
 
   // Effective visible items based on role
   const effectiveItems = new Set([
