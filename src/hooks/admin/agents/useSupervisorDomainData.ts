@@ -107,6 +107,11 @@ export function useSupervisorDomainData(companyId?: string) {
     return agent?.module_domain === 'legal' || i.supervisor_code === 'legal-supervisor';
   });
 
+  const complianceInvocations = invocations.filter(i => {
+    const agent = agents.find(a => a.code === i.agent_code);
+    return agent?.module_domain === 'compliance';
+  });
+
   const escalatedInvocations = invocations.filter(i => i.escalated_to);
   const humanReviewInvocations = invocations.filter(i => i.outcome_status === 'human_review');
   const conflictInvocations = invocations.filter(i => 
