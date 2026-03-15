@@ -103,6 +103,7 @@ import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerato
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { HRUtilitiesNavigation, type UtilitySection } from './premium-dashboard/HRUtilitiesNavigation';
 import { MultiAgentSupervisorPanel } from './MultiAgentSupervisorPanel';
+import { HRAIControlCenter } from './HRAIControlCenter';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();
@@ -500,6 +501,7 @@ function HRModuleInner() {
         {activeModule === 'util-integrations' && <EnterpriseIntegrationsPanel companyId={companyId} />}
         {activeModule === 'util-board-pack' && <HRBoardPackPanel companyId={companyId} />}
         {activeModule === 'util-multiagent-supervisor' && <MultiAgentSupervisorPanel companyId={companyId} />}
+        {activeModule === 'util-ai-control-center' && <HRAIControlCenter companyId={companyId} />}
       </div>
 
       {/* Dialogs globales accesibles desde cualquier lugar */}

@@ -2,6 +2,7 @@
  * SupervisorAgentsDashboard - Dashboard Ultra-Avanzado del Supervisor General
  * Tendencias 2025-2027: Multi-agent orchestration, Real-time metrics, Agent interaction
  * Incluye agentes especializados ERP + CRM con supervisor coordinador
+ * + Vistas de dominio RRHH / Jurídico / Cross-Module con datos reales
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -18,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AgentConfigSheet } from './AgentConfigSheet';
+import { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
+import { useSupervisorDomainData } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { 
   Bot, 
   Brain, 
@@ -52,7 +55,9 @@ import {
   Database,
   Radio,
   GitBranch,
-  Plus
+  Plus,
+  Scale,
+  UserCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -390,8 +395,11 @@ function SupervisorChat({
 
 // === MAIN COMPONENT ===
 export function SupervisorAgentsDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'erp' | 'crm' | 'supervisor' | 'insights'>('overview');
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedAgent, setSelectedAgent] = useState<AgentModule | null>(null);
+
+  // Real data from erp_ai_agents_registry + erp_ai_agent_invocations
+  const domainData = useSupervisorDomainData();
   const [chatMessages, setChatMessages] = useState<AgentMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['metrics']));
@@ -523,27 +531,55 @@ export function SupervisorAgentsDashboard() {
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview" className="gap-2">
-            <Eye className="h-4 w-4" />
-            General
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="overview" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Eye className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">General</span>
           </TabsTrigger>
-          <TabsTrigger value="erp" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            ERP ({ERP_AGENTS.length})
+          <TabsTrigger value="erp" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Building2 className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">ERP</span>
           </TabsTrigger>
-          <TabsTrigger value="crm" className="gap-2">
-            <Users className="h-4 w-4" />
-            CRM ({CRM_AGENTS.length})
+          <TabsTrigger value="crm" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Users className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">CRM</span>
           </TabsTrigger>
-          <TabsTrigger value="supervisor" className="gap-2">
-            <Brain className="h-4 w-4" />
-            Supervisor
+          <TabsTrigger value="rrhh" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <UserCheck className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">RRHH</span>
+            {domainData.hrAgents.length > 0 && (
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.hrAgents.length}</Badge>
+            )}
           </TabsTrigger>
-          <TabsTrigger value="insights" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Insights
+          <TabsTrigger value="legal" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Scale className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Jurídico</span>
+            {domainData.legalAgents.length > 0 && (
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.legalAgents.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="cross" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Network className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Cross</span>
+            {domainData.escalatedInvocations.length > 0 && (
+              <Badge variant="destructive" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.escalatedInvocations.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="conflicts" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Conflictos</span>
+            {domainData.humanReviewInvocations.length > 0 && (
+              <Badge variant="destructive" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.humanReviewInvocations.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="supervisor" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Brain className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Supervisor</span>
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Insights</span>
           </TabsTrigger>
         </TabsList>
 
@@ -776,6 +812,50 @@ export function SupervisorAgentsDashboard() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* RRHH Domain View */}
+        <TabsContent value="rrhh" className="space-y-4">
+          <SupervisorDomainView
+            agents={domainData.hrAgents}
+            invocations={domainData.hrInvocations}
+            domain="hr"
+            title="RRHH"
+            icon={<UserCheck className="h-5 w-5" />}
+            accentColor="text-primary"
+          />
+        </TabsContent>
+
+        {/* Legal Domain View */}
+        <TabsContent value="legal" className="space-y-4">
+          <SupervisorDomainView
+            agents={domainData.legalAgents}
+            invocations={domainData.legalInvocations}
+            domain="legal"
+            title="Jurídico"
+            icon={<Scale className="h-5 w-5" />}
+            accentColor="text-amber-600"
+          />
+        </TabsContent>
+
+        {/* Cross-Module View */}
+        <TabsContent value="cross" className="space-y-4">
+          <SupervisorDomainView
+            agents={domainData.crossAgents}
+            invocations={domainData.escalatedInvocations}
+            domain="cross"
+            title="Cross-Module"
+            icon={<Network className="h-5 w-5" />}
+            accentColor="text-violet-600"
+          />
+        </TabsContent>
+
+        {/* Conflicts & Human Review */}
+        <TabsContent value="conflicts" className="space-y-4">
+          <SupervisorConflictsView
+            escalated={domainData.escalatedInvocations}
+            humanReview={domainData.humanReviewInvocations}
+          />
         </TabsContent>
 
         {/* Insights Tab */}
