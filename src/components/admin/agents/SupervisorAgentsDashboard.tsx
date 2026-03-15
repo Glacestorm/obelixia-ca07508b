@@ -583,6 +583,10 @@ export function SupervisorAgentsDashboard() {
             <Brain className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Supervisor</span>
           </TabsTrigger>
+          <TabsTrigger value="normativa" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Newspaper className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Normativa</span>
+          </TabsTrigger>
           <TabsTrigger value="insights" className="gap-1 text-xs flex-1 min-w-[70px]">
             <Sparkles className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Insights</span>
