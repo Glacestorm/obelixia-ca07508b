@@ -13,8 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Bot, Brain, Shield, Scale, Activity, RefreshCw,
   CheckCircle, AlertTriangle, ArrowUpRight, Clock,
-  Send, Eye, ExternalLink, Sparkles, UserCheck
+  Send, Eye, ExternalLink, Sparkles, UserCheck, Newspaper
 } from 'lucide-react';
+import { useRegulatoryIntelligence } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useSupervisorDomainData, type RegistryAgent, type InvocationRecord } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { useMultiAgentSupervisor } from '@/hooks/erp/hr/useMultiAgentSupervisor';
 import { RegistryAgentCard } from '@/components/admin/agents/RegistryAgentCard';
@@ -43,6 +44,12 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
 
   const { agents, hrAgents, hrInvocations, escalatedInvocations, humanReviewInvocations, invocations, stats, loading, refresh } = useSupervisorDomainData(companyId);
   const { isLoading, routeQuery, registry } = useMultiAgentSupervisor(companyId);
+  const regulatory = useRegulatoryIntelligence();
+
+  const hrRegulatoryDocs = useMemo(() =>
+    regulatory.documents.filter(d => d.impact_domains?.includes('hr')).slice(0, 5),
+    [regulatory.documents]
+  );
 
   const hrEscalated = useMemo(() => escalatedInvocations.filter(i =>
     i.supervisor_code === 'hr-supervisor' || i.escalated_to === 'legal-supervisor'
@@ -198,9 +205,15 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="text-xs gap-1"><Bot className="h-3.5 w-3.5" /> Agentes</TabsTrigger>
           <TabsTrigger value="chat" className="text-xs gap-1"><Send className="h-3.5 w-3.5" /> Consultar</TabsTrigger>
+          <TabsTrigger value="normativa" className="text-xs gap-1">
+            <Newspaper className="h-3.5 w-3.5" /> Normativa
+            {hrRegulatoryDocs.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{hrRegulatoryDocs.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="escalations" className="text-xs gap-1">
             <Scale className="h-3.5 w-3.5" /> Escalados
             {hrEscalated.length > 0 && (
@@ -325,6 +338,68 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                 />
                 <Button onClick={handleSendQuery} disabled={isLoading || !query.trim()} size="icon" className="h-[50px] w-12">
                   <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Normativa HR Feed */}
+        <TabsContent value="normativa" className="mt-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Newspaper className="h-4 w-4 text-indigo-600" />
+                Novedades Normativas con Impacto RRHH
+                <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Live</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-3">
+                  {hrRegulatoryDocs.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Newspaper className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Sin novedades normativas para RRHH</p>
+                      <p className="text-xs mt-1">Los documentos con impacto HR aparecerán aquí</p>
+                    </div>
+                  ) : hrRegulatoryDocs.map(doc => (
+                    <div key={doc.id} className={cn("p-3 rounded-lg border",
+                      doc.impact_level === 'critical' ? 'border-l-4 border-l-destructive bg-destructive/5' :
+                      doc.impact_level === 'high' ? 'border-l-4 border-l-amber-500 bg-amber-500/5' : 'bg-card')}>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <Badge variant="outline" className="text-[10px]">
+                          {doc.jurisdiction_code === 'EU' ? '🇪🇺' : '🇪🇸'} {doc.jurisdiction_code}
+                        </Badge>
+                        <Badge variant="outline" className={cn("text-[10px]",
+                          doc.impact_level === 'critical' ? 'bg-destructive/15 text-destructive' :
+                          doc.impact_level === 'high' ? 'bg-amber-500/15 text-amber-700' :
+                          'bg-blue-500/15 text-blue-700')}>
+                          {doc.impact_level === 'critical' ? 'Crítico' : doc.impact_level === 'high' ? 'Alto' : 'Medio'}
+                        </Badge>
+                        {doc.data_source === 'seed' && (
+                          <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30">Seed</Badge>
+                        )}
+                        {doc.requires_human_review && (
+                          <Badge variant="outline" className="text-[10px] bg-violet-500/10 text-violet-600">Rev. humana</Badge>
+                        )}
+                      </div>
+                      <h4 className="text-sm font-medium mt-1">{doc.document_title}</h4>
+                      {doc.impact_summary && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{doc.impact_summary}</p>
+                      )}
+                      {doc.source_url && (
+                        <Button variant="ghost" size="sm" className="h-6 text-[10px] mt-1 p-0" onClick={() => window.open(doc.source_url!, '_blank')}>
+                          <ExternalLink className="h-3 w-3 mr-1" /> Ver fuente
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <div className="mt-3 text-center">
+                <Button variant="outline" size="sm" className="text-xs" onClick={() => { /* navigate to supervisor normativa */ }}>
+                  <ExternalLink className="h-3 w-3 mr-1" /> Ver todas en Supervisor → Normativa
                 </Button>
               </div>
             </CardContent>

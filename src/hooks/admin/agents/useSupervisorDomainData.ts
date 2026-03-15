@@ -94,6 +94,7 @@ export function useSupervisorDomainData(companyId?: string) {
   const hrAgents = agents.filter(a => a.module_domain === 'hr');
   const legalAgents = agents.filter(a => a.module_domain === 'legal');
   const crossAgents = agents.filter(a => a.module_domain === 'cross');
+  const complianceAgents = agents.filter(a => a.module_domain === 'compliance');
   const supervisors = agents.filter(a => a.agent_type === 'supervisor');
 
   const hrInvocations = invocations.filter(i => {
@@ -104,6 +105,11 @@ export function useSupervisorDomainData(companyId?: string) {
   const legalInvocations = invocations.filter(i => {
     const agent = agents.find(a => a.code === i.agent_code);
     return agent?.module_domain === 'legal' || i.supervisor_code === 'legal-supervisor';
+  });
+
+  const complianceInvocations = invocations.filter(i => {
+    const agent = agents.find(a => a.code === i.agent_code);
+    return agent?.module_domain === 'compliance';
   });
 
   const escalatedInvocations = invocations.filter(i => i.escalated_to);
@@ -139,9 +145,11 @@ export function useSupervisorDomainData(companyId?: string) {
     hrAgents,
     legalAgents,
     crossAgents,
+    complianceAgents,
     supervisors,
     hrInvocations,
     legalInvocations,
+    complianceInvocations,
     escalatedInvocations,
     humanReviewInvocations,
     conflictInvocations,

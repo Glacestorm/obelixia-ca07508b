@@ -22,6 +22,7 @@ import { AgentConfigSheet } from './AgentConfigSheet';
 import { RegistryAgentCard } from './RegistryAgentCard';
 import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
 import { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
+import { RegulatoryIntelligencePanel } from './RegulatoryIntelligencePanel';
 import { useSupervisorDomainData } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { 
   Bot, 
@@ -58,8 +59,9 @@ import {
   Radio,
   GitBranch,
   Plus,
-  Scale,
-  UserCheck
+   Scale,
+   UserCheck,
+   Newspaper
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -581,6 +583,10 @@ export function SupervisorAgentsDashboard() {
             <Brain className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Supervisor</span>
           </TabsTrigger>
+          <TabsTrigger value="normativa" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Newspaper className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Normativa</span>
+          </TabsTrigger>
           <TabsTrigger value="insights" className="gap-1 text-xs flex-1 min-w-[70px]">
             <Sparkles className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Insights</span>
@@ -979,6 +985,11 @@ export function SupervisorAgentsDashboard() {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        {/* Normativa Tab */}
+        <TabsContent value="normativa" className="space-y-4">
+          <RegulatoryIntelligencePanel />
         </TabsContent>
 
         {/* Insights Tab */}
