@@ -6,22 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Official source RSS/API endpoints for automated ingestion
 const SOURCE_FEEDS: Record<string, { fetchUrl: string; parser: string }> = {
-  'BOE': {
-    fetchUrl: 'https://www.boe.es/rss/boe.php?s=1',
-    parser: 'boe_rss',
-  },
-  'DOUE': {
-    fetchUrl: 'https://eur-lex.europa.eu/rss/rss.xml',
-    parser: 'eurlex_rss',
-  },
+  'BOE': { fetchUrl: 'https://www.boe.es/rss/boe.php?s=1', parser: 'boe_rss' },
+  'DOUE': { fetchUrl: 'https://eur-lex.europa.eu/rss/rss.xml', parser: 'eurlex_rss' },
 };
+
+const MAX_DOCS_PER_SOURCE = 20;
+const REFRESH_TIMEOUT_MS = 120_000; // 2 min per source
 
 interface RefreshRequest {
   action: 'refresh_all' | 'refresh_source' | 'check_changes' | 'get_refresh_logs';
   source_id?: string;
   limit?: number;
+  trigger?: 'manual' | 'scheduled';
 }
 
 serve(async (req) => {
@@ -33,37 +30,67 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
     const body: RefreshRequest = await req.json();
-    const { action } = body;
+    const { action, trigger = 'manual' } = body;
 
     switch (action) {
       case 'refresh_all': {
-        // Fetch all enabled sources
-        const { data: sources } = await supabase
-          .from('erp_regulatory_sources')
-          .select('*')
-          .eq('is_enabled', true)
-          .order('last_checked_at', { ascending: true, nullsFirst: true });
-
-        if (!sources || sources.length === 0) {
-          return jsonResponse({ success: true, message: 'No enabled sources', refreshed: 0 });
+        // === CONCURRENCY LOCK ===
+        const lockAcquired = await acquireLock(supabase, 'regulatory_refresh_all');
+        if (!lockAcquired) {
+          return jsonResponse({
+            success: false,
+            error: 'Refresh already in progress',
+            message: 'Ya hay un refresco en curso. Espere a que termine.',
+          }, 409);
         }
 
-        const results = [];
-        for (const source of sources) {
-          const result = await refreshSource(supabase, source, LOVABLE_API_KEY);
-          results.push(result);
-        }
+        try {
+          // Only fetch auto-ingestable, enabled sources
+          const { data: sources } = await supabase
+            .from('erp_regulatory_sources')
+            .select('*')
+            .eq('is_enabled', true)
+            .eq('ingestion_method', 'auto')
+            .order('last_checked_at', { ascending: true, nullsFirst: true });
 
-        return jsonResponse({
-          success: true,
-          refreshed: results.length,
-          results,
-          timestamp: new Date().toISOString(),
-        });
+          if (!sources || sources.length === 0) {
+            await releaseLock(supabase, 'regulatory_refresh_all');
+            return jsonResponse({ success: true, message: 'No auto-enabled sources', refreshed: 0, trigger });
+          }
+
+          const results = [];
+          for (const source of sources) {
+            try {
+              const result = await withTimeout(
+                refreshSource(supabase, source, LOVABLE_API_KEY, trigger),
+                REFRESH_TIMEOUT_MS
+              );
+              results.push(result);
+            } catch (timeoutErr) {
+              console.error(`[regulatory-refresh] Timeout for ${source.code}`);
+              results.push({ source: source.code, status: 'timeout', error: 'Timeout exceeded' });
+              // Mark source error but continue with others
+              await supabase.from('erp_regulatory_sources').update({
+                refresh_status: 'error',
+                last_error_at: new Date().toISOString(),
+                last_error_message: 'Timeout exceeded',
+              }).eq('id', source.id);
+            }
+          }
+
+          return jsonResponse({
+            success: true,
+            refreshed: results.length,
+            results,
+            trigger,
+            timestamp: new Date().toISOString(),
+          });
+        } finally {
+          await releaseLock(supabase, 'regulatory_refresh_all');
+        }
       }
 
       case 'refresh_source': {
@@ -81,8 +108,9 @@ serve(async (req) => {
           return jsonResponse({ success: false, error: 'Source not found' }, 404);
         }
 
-        const result = await refreshSource(supabase, source, LOVABLE_API_KEY);
-        return jsonResponse({ success: true, result });
+        // Single source refresh always allowed (manual override)
+        const result = await refreshSource(supabase, source, LOVABLE_API_KEY, trigger);
+        return jsonResponse({ success: true, result, trigger });
       }
 
       case 'get_refresh_logs': {
@@ -112,26 +140,53 @@ serve(async (req) => {
   }
 });
 
-async function refreshSource(supabase: any, source: any, aiApiKey: string | undefined) {
+// === CONCURRENCY LOCK via advisory-style flag in refresh_log ===
+async function acquireLock(supabase: any, lockKey: string): Promise<boolean> {
+  // Check if there's a running refresh in the last 10 minutes
+  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data: running } = await supabase
+    .from('erp_regulatory_refresh_log')
+    .select('id')
+    .eq('status', 'running')
+    .gte('started_at', tenMinAgo)
+    .limit(1);
+
+  return !running || running.length === 0;
+}
+
+async function releaseLock(_supabase: any, _lockKey: string): Promise<void> {
+  // Lock is implicitly released when all refresh logs move to completed/failed
+}
+
+// === TIMEOUT WRAPPER ===
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Timeout exceeded')), ms)
+    ),
+  ]);
+}
+
+async function refreshSource(supabase: any, source: any, aiApiKey: string | undefined, trigger: string) {
   const logId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
 
-  // Create refresh log entry
+  // Create refresh log with trigger info
   await supabase.from('erp_regulatory_refresh_log').insert({
     id: logId,
     source_id: source.id,
     status: 'running',
     started_at: startedAt,
+    trigger_type: trigger,
   });
 
-  // Update source status
   await supabase.from('erp_regulatory_sources').update({
     refresh_status: 'running',
     last_checked_at: startedAt,
   }).eq('id', source.id);
 
   try {
-    // Fetch content from source
     const feedConfig = SOURCE_FEEDS[source.code];
     let documents: any[] = [];
 
@@ -140,7 +195,6 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
     } else if (source.url) {
       documents = await fetchFromGenericUrl(source);
     } else {
-      // Manual source - just mark as checked
       await completeRefresh(supabase, source.id, logId, {
         status: 'completed',
         documents_found: 0,
@@ -148,10 +202,15 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
         documents_updated: 0,
         documents_unchanged: 0,
       });
-      return { source: source.code, status: 'no_feed', documents_found: 0 };
+      return { source: source.code, status: 'no_feed', documents_found: 0, trigger };
     }
 
-    // Deduplicate against existing documents
+    // Volume limit per source
+    if (documents.length > MAX_DOCS_PER_SOURCE) {
+      console.log(`[regulatory-refresh] ${source.code}: capped from ${documents.length} to ${MAX_DOCS_PER_SOURCE}`);
+      documents = documents.slice(0, MAX_DOCS_PER_SOURCE);
+    }
+
     let newCount = 0;
     let updatedCount = 0;
     let unchangedCount = 0;
@@ -159,7 +218,6 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
     for (const doc of documents) {
       const contentHash = await hashContent(doc.title + (doc.content || '') + (doc.url || ''));
 
-      // Check if document already exists
       const { data: existing } = await supabase
         .from('erp_regulatory_documents')
         .select('id, content_hash, version')
@@ -173,7 +231,6 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
           unchangedCount++;
           continue;
         }
-        // Document changed - update
         await supabase.from('erp_regulatory_documents').update({
           summary: doc.summary || null,
           content_hash: contentHash,
@@ -183,7 +240,6 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
         }).eq('id', existing.id);
         updatedCount++;
       } else {
-        // New document - classify with AI if available
         let classification: any = {};
         if (aiApiKey && doc.content) {
           classification = await classifyWithAI(aiApiKey, doc, source);
@@ -216,19 +272,20 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
       }
     }
 
-    // Log invocation for traceability
+    // Traceability invocation
     await supabase.from('erp_ai_agent_invocations').insert({
       agent_code: 'regulatory-intelligence',
       supervisor_code: 'legal-supervisor',
       company_id: '00000000-0000-0000-0000-000000000000',
       input_summary: `refresh_source: ${source.name} (${source.code})`,
-      routing_reason: `Refresco periódico de fuente ${source.code}`,
+      routing_reason: `Refresco ${trigger === 'scheduled' ? 'programado' : 'manual'} de fuente ${source.code}`,
       confidence_score: 0.95,
       outcome_status: 'success',
       execution_time_ms: Date.now() - new Date(startedAt).getTime(),
       response_summary: `Encontrados: ${documents.length}, Nuevos: ${newCount}, Actualizados: ${updatedCount}, Sin cambios: ${unchangedCount}`,
       metadata: {
         source: 'live',
+        trigger,
         action: 'refresh',
         source_code: source.code,
         documents_found: documents.length,
@@ -248,6 +305,7 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
     return {
       source: source.code,
       status: 'completed',
+      trigger,
       documents_found: documents.length,
       new: newCount,
       updated: updatedCount,
@@ -270,7 +328,7 @@ async function refreshSource(supabase: any, source: any, aiApiKey: string | unde
       error_message: errorMessage,
     }).eq('id', logId);
 
-    return { source: source.code, status: 'error', error: errorMessage };
+    return { source: source.code, status: 'error', trigger, error: errorMessage };
   }
 }
 
@@ -280,7 +338,6 @@ async function completeRefresh(supabase: any, sourceId: string, logId: string, d
   await supabase.from('erp_regulatory_sources').update({
     refresh_status: 'idle',
     last_success_at: now,
-    total_refreshes: supabase.rpc ? undefined : undefined, // increment handled below
     documents_found: data.documents_found,
   }).eq('id', sourceId);
 
@@ -292,9 +349,15 @@ async function completeRefresh(supabase: any, sourceId: string, logId: string, d
 
 async function fetchFromFeed(config: { fetchUrl: string; parser: string }, source: any): Promise<any[]> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
     const response = await fetch(config.fetchUrl, {
       headers: { 'User-Agent': 'ObelixIA-RegulatoryIntelligence/1.0' },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} from ${config.fetchUrl}`);
@@ -302,11 +365,8 @@ async function fetchFromFeed(config: { fetchUrl: string; parser: string }, sourc
 
     const text = await response.text();
 
-    if (config.parser === 'boe_rss') {
-      return parseBoeRss(text, source);
-    } else if (config.parser === 'eurlex_rss') {
-      return parseEurLexRss(text, source);
-    }
+    if (config.parser === 'boe_rss') return parseBoeRss(text);
+    if (config.parser === 'eurlex_rss') return parseEurLexRss(text);
 
     return [];
   } catch (error) {
@@ -315,13 +375,12 @@ async function fetchFromFeed(config: { fetchUrl: string; parser: string }, sourc
   }
 }
 
-function parseBoeRss(xml: string, source: any): any[] {
+function parseBoeRss(xml: string): any[] {
   const items: any[] = [];
-  // Simple XML item extraction (no full XML parser needed for RSS)
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
   let match;
 
-  while ((match = itemRegex.exec(xml)) !== null && items.length < 15) {
+  while ((match = itemRegex.exec(xml)) !== null && items.length < MAX_DOCS_PER_SOURCE) {
     const itemContent = match[1];
     const title = extractTag(itemContent, 'title');
     const link = extractTag(itemContent, 'link');
@@ -339,16 +398,15 @@ function parseBoeRss(xml: string, source: any): any[] {
       });
     }
   }
-
   return items;
 }
 
-function parseEurLexRss(xml: string, source: any): any[] {
+function parseEurLexRss(xml: string): any[] {
   const items: any[] = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
   let match;
 
-  while ((match = itemRegex.exec(xml)) !== null && items.length < 10) {
+  while ((match = itemRegex.exec(xml)) !== null && items.length < MAX_DOCS_PER_SOURCE) {
     const itemContent = match[1];
     const title = extractTag(itemContent, 'title');
     const link = extractTag(itemContent, 'link');
@@ -365,18 +423,15 @@ function parseEurLexRss(xml: string, source: any): any[] {
       });
     }
   }
-
   return items;
 }
 
 async function fetchFromGenericUrl(source: any): Promise<any[]> {
-  // For sources without RSS, just check if the URL is still reachable
   try {
-    const response = await fetch(source.url, {
+    await fetch(source.url, {
       method: 'HEAD',
       headers: { 'User-Agent': 'ObelixIA-RegulatoryIntelligence/1.0' },
     });
-    // Generic URL sources need manual ingestion
     return [];
   } catch {
     return [];
@@ -434,7 +489,6 @@ async function classifyWithAI(apiKey: string, doc: any, source: any): Promise<an
   }
 }
 
-// Utility helpers
 function extractTag(xml: string, tag: string): string | null {
   const regex = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>|<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
   const match = xml.match(regex);
