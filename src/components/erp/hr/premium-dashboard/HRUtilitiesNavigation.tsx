@@ -31,7 +31,8 @@ export type UtilitySection =
   | 'util-demo-journey'
   | 'util-pilot-checklist'
   | 'util-payroll-reconciliation'
-  | 'util-multiagent-supervisor';
+  | 'util-multiagent-supervisor'
+  | 'util-ai-control-center';
 
 interface UtilityItem {
   id: UtilitySection;
