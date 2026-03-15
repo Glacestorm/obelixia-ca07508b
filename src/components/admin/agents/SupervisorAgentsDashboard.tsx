@@ -2,6 +2,7 @@
  * SupervisorAgentsDashboard - Dashboard Ultra-Avanzado del Supervisor General
  * Tendencias 2025-2027: Multi-agent orchestration, Real-time metrics, Agent interaction
  * Incluye agentes especializados ERP + CRM con supervisor coordinador
+ * + Vistas de dominio RRHH / Jurídico / Cross-Module con datos reales
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -18,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AgentConfigSheet } from './AgentConfigSheet';
+import { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
+import { useSupervisorDomainData } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { 
   Bot, 
   Brain, 
@@ -52,7 +55,9 @@ import {
   Database,
   Radio,
   GitBranch,
-  Plus
+  Plus,
+  Scale,
+  UserCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
