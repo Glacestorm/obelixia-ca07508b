@@ -72,7 +72,12 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
   const [openCategory, setOpenCategory] = useState<string | null>(null);
 
   // ── 3-tier visibility: visible_mvp | visible_advanced | hidden ──
-  const mvpCategories = new Set(['core-hr', 'payroll', 'laboral', 'global']);
+  // Admin users see ALL mega-menus (talent, enterprise, utilities unlocked)
+  const mvpCategories = new Set(
+    isAdmin
+      ? ['core-hr', 'payroll', 'laboral', 'global', 'talent', 'enterprise', 'utilities']
+      : ['core-hr', 'payroll', 'laboral', 'global']
+  );
 
   // Tier 1: visible_mvp — shown to all users
   const mvpItems = new Set([

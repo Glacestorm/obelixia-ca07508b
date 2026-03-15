@@ -409,6 +409,33 @@ export function HRExecutiveDashboard({ companyId, onNavigate }: HRExecutiveDashb
         </div>
       </div>
 
+      {/* Quick Access Links */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { label: '🇪🇸 España', module: 'es-localization', icon: Flag },
+          { label: 'Portal Empleado', module: '_portal', icon: ExternalLink },
+          { label: 'Reporting', module: 'util-reporting', icon: BarChart3 },
+          { label: 'Utilidades', module: 'util-premium-dashboard', icon: Wrench },
+        ].map(link => (
+          <Button
+            key={link.module}
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1.5"
+            onClick={() => {
+              if (link.module === '_portal') {
+                window.open('/mi-portal', '_blank');
+              } else {
+                onNavigate?.(link.module);
+              }
+            }}
+          >
+            <link.icon className="h-3.5 w-3.5" />
+            {link.label}
+          </Button>
+        ))}
+      </div>
+
       {/* Executive Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {executiveMetrics.map(renderMetricCard)}

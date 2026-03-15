@@ -206,6 +206,16 @@ export function HREmployeeExpedient({ companyId, employeeId, onBack, onNavigate,
                 )}
               </div>
             </div>
+            {/* Portal del Empleado — quick access */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5 text-xs"
+              onClick={() => window.open('/mi-portal', '_blank')}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Portal Empleado
+            </Button>
           </div>
         </CardContent>
       </Card>

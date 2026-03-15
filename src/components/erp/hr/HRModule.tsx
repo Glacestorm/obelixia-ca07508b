@@ -274,7 +274,7 @@ export function HRModule() {
         }}
       />
 
-      {/* Header con estadísticas rápidas — MVP: 4 cards */}
+      {/* Header con estadísticas rápidas — MVP: 4 cards + Cmd+K hint */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
           <CardContent className="p-3">
