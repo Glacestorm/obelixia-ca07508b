@@ -1087,6 +1087,14 @@ serve(async (req) => {
     const regCount = await seedMasterRegistration(supabase, companyId, empIdMap, batchId);
     phases.push({ phase: 'registration', count: regCount });
 
+    // Step 11: Admin Requests
+    const arCount = await seedMasterAdminRequests(supabase, companyId, empIdMap, batchId);
+    phases.push({ phase: 'admin_requests', count: arCount });
+
+    // Step 12: Mobility Assignment (Sofía)
+    const mobCount = await seedMasterMobility(supabase, companyId, empIdMap, batchId);
+    phases.push({ phase: 'mobility', count: mobCount });
+
     // Step 11: Validations
     let validation = null;
     if (shouldValidate) {
