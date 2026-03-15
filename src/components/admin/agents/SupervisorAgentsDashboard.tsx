@@ -22,6 +22,7 @@ import { AgentConfigSheet } from './AgentConfigSheet';
 import { RegistryAgentCard } from './RegistryAgentCard';
 import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
 import { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
+import { RegulatoryIntelligencePanel } from './RegulatoryIntelligencePanel';
 import { useSupervisorDomainData } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { 
   Bot, 
