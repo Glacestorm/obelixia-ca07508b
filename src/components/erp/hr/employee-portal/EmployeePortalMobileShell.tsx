@@ -1,6 +1,7 @@
 /**
  * EmployeePortalMobileShell — Mobile-first layout for employee portal
  * RRHH-MOBILE.1 Phase 1: Header + content + bottom tabs
+ * RRHH-MOBILE.1 Phase 3: PWA install prompt + offline indicator
  */
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,6 +16,8 @@ import { EmployeeTimeSection } from './EmployeeTimeSection';
 import { EmployeeLeaveSection } from './EmployeeLeaveSection';
 import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { EmployeeHelpSection } from './EmployeeHelpSection';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
+import { OfflineIndicator } from './OfflineIndicator';
 import { type PortalSection } from './EmployeePortalNav';
 
 export function EmployeePortalMobileShell() {
@@ -74,6 +77,7 @@ export function EmployeePortalMobileShell() {
         onSignOut={signOut}
         onNavigate={handleNavigate}
       />
+      <OfflineIndicator />
       <main className="flex-1 overflow-auto pb-20">
         <div className="px-3 py-3">
           {renderContent()}
@@ -84,6 +88,7 @@ export function EmployeePortalMobileShell() {
         onNavigate={handleNavigate}
         badges={badges}
       />
+      <PWAInstallPrompt />
     </div>
   );
 }
