@@ -405,17 +405,21 @@ export function SupervisorAgentsDashboard() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['metrics']));
 
   const allAgents = [...ERP_AGENTS, ...CRM_AGENTS];
+
+  // Blend real registry data with mock for accurate counts
+  const realAgentCount = domainData.stats.totalAgents;
+  const realActiveCount = domainData.stats.activeAgents;
   
   const metrics: SupervisorMetrics = useMemo(() => ({
-    totalAgents: allAgents.length,
-    activeAgents: allAgents.filter(a => a.status === 'active' || a.status === 'processing').length,
+    totalAgents: allAgents.length + realAgentCount,
+    activeAgents: allAgents.filter(a => a.status === 'active' || a.status === 'processing').length + realActiveCount,
     systemHealth: Math.round(allAgents.reduce((sum, a) => sum + a.healthScore, 0) / allAgents.length),
-    avgResponseTime: 245,
-    tasksToday: allAgents.reduce((sum, a) => sum + a.tasksCompleted, 0),
-    successRate: 96.5,
-    conflictsResolved: 12,
-    autonomousDecisions: 89
-  }), [allAgents]);
+    avgResponseTime: domainData.stats.avgExecutionTime || 245,
+    tasksToday: domainData.stats.totalInvocations || allAgents.reduce((sum, a) => sum + a.tasksCompleted, 0),
+    successRate: domainData.stats.totalInvocations > 0 ? domainData.stats.successRate : 96.5,
+    conflictsResolved: domainData.stats.escalatedCount,
+    autonomousDecisions: domainData.stats.totalInvocations - domainData.stats.humanReviewCount
+  }), [allAgents, realAgentCount, realActiveCount, domainData.stats]);
 
   const handleSendMessage = useCallback(async (message: string, targetAgentId?: string) => {
     const userMessage: AgentMessage = {
@@ -487,7 +491,7 @@ export function SupervisorAgentsDashboard() {
             Centro de Control de Agentes IA
           </h2>
           <p className="text-sm text-muted-foreground">
-            Supervisor General + {ERP_AGENTS.length} agentes ERP + {CRM_AGENTS.length} agentes CRM
+            Supervisor Global · {ERP_AGENTS.length} ERP + {CRM_AGENTS.length} CRM + {realAgentCount} registrados
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -495,13 +499,9 @@ export function SupervisorAgentsDashboard() {
             <Activity className="h-3 w-3 text-green-500" />
             {metrics.activeAgents}/{metrics.totalAgents} activos
           </Badge>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => { domainData.refresh(); toast.success('Datos sincronizados'); }} disabled={domainData.loading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", domainData.loading && "animate-spin")} />
             Sincronizar
-          </Button>
-          <Button size="sm">
-            <Zap className="h-4 w-4 mr-2" />
-            Orquestar Todo
           </Button>
         </div>
       </div>
