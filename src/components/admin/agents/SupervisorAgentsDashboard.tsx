@@ -745,12 +745,60 @@ export function SupervisorAgentsDashboard() {
               />
             </div>
             <div className="space-y-4">
+              {/* Agent Context Panel */}
+              {selectedAgent && (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Eye className="h-4 w-4" /> Contexto del Agente
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-xs">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Dominio</span><Badge variant="outline" className="text-[10px]">{selectedAgent.domain.toUpperCase()}</Badge></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Módulo</span><span className="font-medium">{selectedAgent.module}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Estado</span><span className={cn("font-medium", selectedAgent.status === 'active' ? 'text-emerald-600' : 'text-amber-600')}>{selectedAgent.status}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Health</span><span className="font-medium">{selectedAgent.healthScore}%</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Tareas</span><span className="font-medium">{selectedAgent.tasksCompleted}</span></div>
+                    <div className="pt-1 border-t">
+                      <p className="text-[10px] text-muted-foreground mb-1">Capacidades</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedAgent.capabilities.slice(0, 4).map(cap => (
+                          <Badge key={cap} variant="secondary" className="text-[9px] py-0">{cap}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Real Registry Agents */}
+              {domainData.agents.length > 0 && (
+                <Card className="border-violet-500/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs flex items-center gap-2">
+                      <Database className="h-3.5 w-3.5 text-violet-500" />
+                      Agentes Registrados
+                      <Badge variant="outline" className="text-[9px] ml-auto bg-violet-500/10 text-violet-700">Live</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    {domainData.agents.map(agent => (
+                      <div key={agent.code} className="flex items-center gap-2 p-1.5 rounded text-xs hover:bg-muted/50">
+                        <div className={cn("w-1.5 h-1.5 rounded-full", agent.status === 'active' ? 'bg-emerald-500' : 'bg-muted-foreground/50')} />
+                        <span className="font-medium flex-1 truncate">{agent.name}</span>
+                        <Badge variant="outline" className="text-[9px] py-0">{agent.module_domain}</Badge>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">Seleccionar Agente</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-[300px]">
+                  <ScrollArea className="h-[250px]">
                     <div className="space-y-1">
                       <Button 
                         variant={!selectedAgent ? 'secondary' : 'ghost'}
