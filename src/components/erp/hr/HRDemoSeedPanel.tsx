@@ -103,6 +103,12 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
   const [isChecking, setIsChecking] = useState(false);
   const [activeTab, setActiveTab] = useState('master');
 
+  // Master Demo state
+  const [isSeedingMaster, setIsSeedingMaster] = useState(false);
+  const [isPurgingMaster, setIsPurgingMaster] = useState(false);
+  const [masterStatus, setMasterStatus] = useState<number>(0);
+  const [masterResult, setMasterResult] = useState<MasterDemoResult | null>(null);
+
   // Environment guard — block seeds in non-demo modes
   if (!canSeed) {
     return (
@@ -118,12 +124,6 @@ export function HRDemoSeedPanel({ companyId }: { companyId: string }) {
       </Card>
     );
   }
-
-  // Master Demo state
-  const [isSeedingMaster, setIsSeedingMaster] = useState(false);
-  const [isPurgingMaster, setIsPurgingMaster] = useState(false);
-  const [masterStatus, setMasterStatus] = useState<number>(0);
-  const [masterResult, setMasterResult] = useState<MasterDemoResult | null>(null);
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true);
