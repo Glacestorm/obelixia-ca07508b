@@ -103,6 +103,7 @@ import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerato
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { HRUtilitiesNavigation, type UtilitySection } from './premium-dashboard/HRUtilitiesNavigation';
 import { MultiAgentSupervisorPanel } from './MultiAgentSupervisorPanel';
+import { HRAIControlCenter } from './HRAIControlCenter';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();

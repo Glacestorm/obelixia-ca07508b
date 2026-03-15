@@ -814,6 +814,50 @@ export function SupervisorAgentsDashboard() {
           </div>
         </TabsContent>
 
+        {/* RRHH Domain View */}
+        <TabsContent value="rrhh" className="space-y-4">
+          <SupervisorDomainView
+            agents={domainData.hrAgents}
+            invocations={domainData.hrInvocations}
+            domain="hr"
+            title="RRHH"
+            icon={<UserCheck className="h-5 w-5" />}
+            accentColor="text-primary"
+          />
+        </TabsContent>
+
+        {/* Legal Domain View */}
+        <TabsContent value="legal" className="space-y-4">
+          <SupervisorDomainView
+            agents={domainData.legalAgents}
+            invocations={domainData.legalInvocations}
+            domain="legal"
+            title="Jurídico"
+            icon={<Scale className="h-5 w-5" />}
+            accentColor="text-amber-600"
+          />
+        </TabsContent>
+
+        {/* Cross-Module View */}
+        <TabsContent value="cross" className="space-y-4">
+          <SupervisorDomainView
+            agents={domainData.crossAgents}
+            invocations={domainData.escalatedInvocations}
+            domain="cross"
+            title="Cross-Module"
+            icon={<Network className="h-5 w-5" />}
+            accentColor="text-violet-600"
+          />
+        </TabsContent>
+
+        {/* Conflicts & Human Review */}
+        <TabsContent value="conflicts" className="space-y-4">
+          <SupervisorConflictsView
+            escalated={domainData.escalatedInvocations}
+            humanReview={domainData.humanReviewInvocations}
+          />
+        </TabsContent>
+
         {/* Insights Tab */}
         <TabsContent value="insights" className="space-y-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
