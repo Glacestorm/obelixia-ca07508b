@@ -17,7 +17,7 @@ import {
   UserPlus, UserMinus, Briefcase, HeartHandshake, RefreshCw,
   Target, Zap, ShieldCheck, Activity, Euro, PieChart as PieChartIcon,
   BarChart3, Sparkles, AlertCircle, ArrowRight, Maximize2,
-  Brain, Lightbulb, Shield, LineChart
+  Brain, Lightbulb, Shield, LineChart, Flag, ExternalLink, Wrench
 } from 'lucide-react';
 import { 
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
