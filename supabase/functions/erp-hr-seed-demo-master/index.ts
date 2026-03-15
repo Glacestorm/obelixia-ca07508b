@@ -840,6 +840,89 @@ async function seedMasterRegistration(supabase: any, companyId: string, empIdMap
 }
 
 // =========================================================
+// PHASE 11: Admin Requests (for demo completeness)
+// =========================================================
+async function seedMasterAdminRequests(supabase: any, companyId: string, empIdMap: Record<string, string>, batchId: string) {
+  const meta = { ...DEMO_MASTER_META, demo_batch_id: batchId };
+  const requests: any[] = [
+    {
+      company_id: companyId,
+      employee_id: empIdMap['DM-004'],
+      request_type: 'certificate',
+      subject: 'Certificado de empresa para hipoteca',
+      description: 'Necesito certificado de empresa con salario bruto anual para solicitud de hipoteca.',
+      status: 'submitted',
+      priority: 'normal',
+      metadata: meta,
+    },
+    {
+      company_id: companyId,
+      employee_id: empIdMap['DM-010'],
+      request_type: 'schedule_change',
+      subject: 'Modificación horario por guarda legal',
+      description: 'Solicitud formal de reducción de jornada al 75% por guarda legal (Art. 37.6 ET).',
+      status: 'approved',
+      priority: 'high',
+      metadata: meta,
+    },
+    {
+      company_id: companyId,
+      employee_id: empIdMap['DM-001'],
+      request_type: 'data_update',
+      subject: 'Actualización cuenta bancaria',
+      description: 'Cambio de cuenta bancaria para domiciliación de nómina.',
+      status: 'in_progress',
+      priority: 'normal',
+      metadata: meta,
+    },
+    {
+      company_id: companyId,
+      employee_id: empIdMap['DM-008'],
+      request_type: 'certificate',
+      subject: 'Certificado desplazamiento temporal México',
+      description: 'Certificado para trámites de visado de trabajo temporal en México.',
+      status: 'completed',
+      priority: 'high',
+      metadata: meta,
+    },
+  ];
+
+  const { error } = await supabase.from('hr_admin_requests').insert(requests);
+  if (error) console.warn('[admin_requests]', error.message);
+  return requests.length;
+}
+
+// =========================================================
+// PHASE 12: Mobility Assignment (Sofía — international)
+// =========================================================
+async function seedMasterMobility(supabase: any, companyId: string, empIdMap: Record<string, string>, batchId: string) {
+  const meta = { ...DEMO_MASTER_META, demo_batch_id: batchId };
+
+  const assignment = {
+    company_id: companyId,
+    employee_id: empIdMap['DM-008'],
+    assignment_type: 'short_term',
+    origin_country: 'ES',
+    destination_country: 'MX',
+    origin_city: 'Madrid',
+    destination_city: 'Ciudad de México',
+    start_date: '2026-04-01',
+    end_date: '2026-09-30',
+    status: 'approved',
+    cost_estimate: 45000,
+    currency: 'EUR',
+    notes: 'Desplazamiento temporal 6 meses — apertura oficina LATAM. A1 tramitado.',
+    has_tax_equalization: true,
+    has_social_security_cert: true,
+    metadata: meta,
+  };
+
+  const { error } = await supabase.from('erp_hr_mobility_assignments').insert(assignment);
+  if (error) console.warn('[mobility]', error.message);
+  return 1;
+}
+
+// =========================================================
 // VALIDATIONS
 // =========================================================
 async function runValidations(supabase: any, companyId: string) {
