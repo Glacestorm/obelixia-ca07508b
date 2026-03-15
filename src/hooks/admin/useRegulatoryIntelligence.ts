@@ -144,13 +144,17 @@ export function useRegulatoryIntelligence() {
     setRefreshing(true);
     try {
       const { data, error } = await supabase.functions.invoke('regulatory-refresh', {
-        body: { action: 'refresh_all' },
+        body: { action: 'refresh_all', trigger: 'manual' },
       });
       if (error) throw error;
       if (data?.success) {
         toast.success(`Refresco completado: ${data.refreshed} fuentes procesadas`);
         await refresh();
         return data;
+      }
+      if (data?.error === 'Refresh already in progress') {
+        toast.warning('Ya hay un refresco en curso. Espere a que termine.');
+        return null;
       }
       throw new Error('Refresh failed');
     } catch (err) {
