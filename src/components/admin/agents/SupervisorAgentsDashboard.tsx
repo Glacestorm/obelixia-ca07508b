@@ -395,8 +395,11 @@ function SupervisorChat({
 
 // === MAIN COMPONENT ===
 export function SupervisorAgentsDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'erp' | 'crm' | 'supervisor' | 'insights'>('overview');
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [selectedAgent, setSelectedAgent] = useState<AgentModule | null>(null);
+
+  // Real data from erp_ai_agents_registry + erp_ai_agent_invocations
+  const domainData = useSupervisorDomainData();
   const [chatMessages, setChatMessages] = useState<AgentMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['metrics']));
