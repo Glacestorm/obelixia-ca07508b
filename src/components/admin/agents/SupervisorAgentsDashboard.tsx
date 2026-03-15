@@ -19,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AgentConfigSheet } from './AgentConfigSheet';
+import { RegistryAgentCard } from './RegistryAgentCard';
+import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
 import { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
 import { useSupervisorDomainData } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { 
