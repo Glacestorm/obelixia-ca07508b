@@ -531,27 +531,55 @@ export function SupervisorAgentsDashboard() {
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview" className="gap-2">
-            <Eye className="h-4 w-4" />
-            General
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="overview" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Eye className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">General</span>
           </TabsTrigger>
-          <TabsTrigger value="erp" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            ERP ({ERP_AGENTS.length})
+          <TabsTrigger value="erp" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Building2 className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">ERP</span>
           </TabsTrigger>
-          <TabsTrigger value="crm" className="gap-2">
-            <Users className="h-4 w-4" />
-            CRM ({CRM_AGENTS.length})
+          <TabsTrigger value="crm" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Users className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">CRM</span>
           </TabsTrigger>
-          <TabsTrigger value="supervisor" className="gap-2">
-            <Brain className="h-4 w-4" />
-            Supervisor
+          <TabsTrigger value="rrhh" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <UserCheck className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">RRHH</span>
+            {domainData.hrAgents.length > 0 && (
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.hrAgents.length}</Badge>
+            )}
           </TabsTrigger>
-          <TabsTrigger value="insights" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Insights
+          <TabsTrigger value="legal" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Scale className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Jurídico</span>
+            {domainData.legalAgents.length > 0 && (
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.legalAgents.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="cross" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Network className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Cross</span>
+            {domainData.escalatedInvocations.length > 0 && (
+              <Badge variant="destructive" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.escalatedInvocations.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="conflicts" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Conflictos</span>
+            {domainData.humanReviewInvocations.length > 0 && (
+              <Badge variant="destructive" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.humanReviewInvocations.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="supervisor" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Brain className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Supervisor</span>
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Insights</span>
           </TabsTrigger>
         </TabsList>
 
