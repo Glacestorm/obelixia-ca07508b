@@ -20374,6 +20374,120 @@ export type Database = {
           },
         ]
       }
+      erp_ai_agent_invocations: {
+        Row: {
+          agent_code: string
+          company_id: string | null
+          confidence_score: number | null
+          created_at: string
+          escalated_to: string | null
+          escalation_reason: string | null
+          execution_time_ms: number | null
+          id: string
+          input_summary: string | null
+          metadata: Json | null
+          outcome_status: string
+          response_summary: string | null
+          routing_reason: string | null
+          supervisor_code: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_code: string
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          escalated_to?: string | null
+          escalation_reason?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_summary?: string | null
+          metadata?: Json | null
+          outcome_status?: string
+          response_summary?: string | null
+          routing_reason?: string | null
+          supervisor_code?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_code?: string
+          company_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          escalated_to?: string | null
+          escalation_reason?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_summary?: string | null
+          metadata?: Json | null
+          outcome_status?: string
+          response_summary?: string | null
+          routing_reason?: string | null
+          supervisor_code?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      erp_ai_agents_registry: {
+        Row: {
+          agent_type: string
+          backend_handler: string | null
+          code: string
+          confidence_threshold: number
+          created_at: string
+          description: string | null
+          execution_type: string
+          id: string
+          metadata: Json | null
+          module_domain: string
+          name: string
+          requires_human_review: boolean
+          specialization: string | null
+          status: string
+          supervisor_code: string | null
+          ui_entrypoint: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_type?: string
+          backend_handler?: string | null
+          code: string
+          confidence_threshold?: number
+          created_at?: string
+          description?: string | null
+          execution_type?: string
+          id?: string
+          metadata?: Json | null
+          module_domain?: string
+          name: string
+          requires_human_review?: boolean
+          specialization?: string | null
+          status?: string
+          supervisor_code?: string | null
+          ui_entrypoint?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_type?: string
+          backend_handler?: string | null
+          code?: string
+          confidence_threshold?: number
+          created_at?: string
+          description?: string | null
+          execution_type?: string
+          id?: string
+          metadata?: Json | null
+          module_domain?: string
+          name?: string
+          requires_human_review?: boolean
+          specialization?: string | null
+          status?: string
+          supervisor_code?: string | null
+          ui_entrypoint?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_audit_events: {
         Row: {
           action: string
