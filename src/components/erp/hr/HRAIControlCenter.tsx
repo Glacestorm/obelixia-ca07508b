@@ -13,8 +13,9 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Bot, Brain, Shield, Scale, Activity, RefreshCw,
   CheckCircle, AlertTriangle, ArrowUpRight, Clock,
-  Send, Eye, ExternalLink, Sparkles, UserCheck
+  Send, Eye, ExternalLink, Sparkles, UserCheck, Newspaper
 } from 'lucide-react';
+import { useRegulatoryIntelligence } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useSupervisorDomainData, type RegistryAgent, type InvocationRecord } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { useMultiAgentSupervisor } from '@/hooks/erp/hr/useMultiAgentSupervisor';
 import { RegistryAgentCard } from '@/components/admin/agents/RegistryAgentCard';
