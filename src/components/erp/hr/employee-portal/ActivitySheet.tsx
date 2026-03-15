@@ -94,7 +94,10 @@ export function ActivitySheet({ dashboard, onNavigate }: Props) {
         id: 'recent-payslip',
         icon: <FileText className="h-4 w-4" />,
         title: 'Nueva nómina disponible',
-        description: `${latest.period} — ${latest.netAmount ? latest.netAmount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }) : ''}`,
+        description: `${latest.period_label} — ${latest.net_salary ? latest.net_salary.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }) : ''}`,
+        type: 'success',
+        action: 'payslips',
+      });
         type: 'success',
         action: 'payslips',
       });
