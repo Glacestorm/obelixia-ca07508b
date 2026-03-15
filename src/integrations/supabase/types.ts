@@ -48579,6 +48579,158 @@ export type Database = {
           },
         ]
       }
+      erp_regulatory_documents: {
+        Row: {
+          created_at: string | null
+          data_source: string | null
+          document_title: string
+          document_type: string
+          effective_date: string | null
+          expiry_date: string | null
+          id: string
+          impact_domains: string[] | null
+          impact_level: string | null
+          impact_summary: string | null
+          issuing_body: string | null
+          jurisdiction_code: string | null
+          legal_area: string | null
+          metadata: Json | null
+          origin_verified: boolean | null
+          publication_date: string | null
+          reference_code: string | null
+          requires_human_review: boolean | null
+          source_id: string | null
+          source_url: string | null
+          status: string | null
+          summary: string | null
+          tags: string[] | null
+          territorial_scope: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_source?: string | null
+          document_title: string
+          document_type?: string
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          impact_domains?: string[] | null
+          impact_level?: string | null
+          impact_summary?: string | null
+          issuing_body?: string | null
+          jurisdiction_code?: string | null
+          legal_area?: string | null
+          metadata?: Json | null
+          origin_verified?: boolean | null
+          publication_date?: string | null
+          reference_code?: string | null
+          requires_human_review?: boolean | null
+          source_id?: string | null
+          source_url?: string | null
+          status?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          territorial_scope?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_source?: string | null
+          document_title?: string
+          document_type?: string
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          impact_domains?: string[] | null
+          impact_level?: string | null
+          impact_summary?: string | null
+          issuing_body?: string | null
+          jurisdiction_code?: string | null
+          legal_area?: string | null
+          metadata?: Json | null
+          origin_verified?: boolean | null
+          publication_date?: string | null
+          reference_code?: string | null
+          requires_human_review?: boolean | null
+          source_id?: string | null
+          source_url?: string | null
+          status?: string | null
+          summary?: string | null
+          tags?: string[] | null
+          territorial_scope?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_regulatory_documents_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "erp_regulatory_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_regulatory_sources: {
+        Row: {
+          code: string
+          country: string | null
+          created_at: string | null
+          domain_tags: string[] | null
+          entries_count: number | null
+          id: string
+          is_enabled: boolean | null
+          issuing_body: string | null
+          jurisdiction_code: string
+          last_checked_at: string | null
+          metadata: Json | null
+          name: string
+          refresh_frequency: string | null
+          source_type: string
+          territorial_scope: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          code: string
+          country?: string | null
+          created_at?: string | null
+          domain_tags?: string[] | null
+          entries_count?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          issuing_body?: string | null
+          jurisdiction_code?: string
+          last_checked_at?: string | null
+          metadata?: Json | null
+          name: string
+          refresh_frequency?: string | null
+          source_type?: string
+          territorial_scope?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          code?: string
+          country?: string | null
+          created_at?: string | null
+          domain_tags?: string[] | null
+          entries_count?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          issuing_body?: string | null
+          jurisdiction_code?: string
+          last_checked_at?: string | null
+          metadata?: Json | null
+          name?: string
+          refresh_frequency?: string | null
+          source_type?: string
+          territorial_scope?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
       erp_remittance_effects: {
         Row: {
           effect_id: string | null
