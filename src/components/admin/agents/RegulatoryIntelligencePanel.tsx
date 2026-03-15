@@ -3,7 +3,7 @@
  * With live refresh, change detection, feedback, and governance
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Newspaper, Globe, FileText, AlertTriangle, CheckCircle, Clock,
   ExternalLink, RefreshCw, Shield, Activity, Eye, Scale, Users,
-  Building2, Zap, History, XCircle, ArrowUpDown
+  Building2, Zap, History, XCircle, MessageSquare, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import { useRegulatoryIntelligence, type RegulatoryDocument, type RegulatorySource, type RefreshLog } from '@/hooks/admin/useRegulatoryIntelligence';
+import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
+import { RegulatoryFeedbackSheet } from './RegulatoryFeedbackSheet';
 import { RegistryAgentCard } from './RegistryAgentCard';
 import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
 import { useSupervisorDomainData, type RegistryAgent } from '@/hooks/admin/agents/useSupervisorDomainData';
@@ -52,7 +54,7 @@ const REFRESH_STATUS_CONFIG: Record<string, { label: string; color: string }> = 
   error: { label: 'Error', color: 'text-destructive' },
 };
 
-function DocumentCard({ doc }: { doc: RegulatoryDocument }) {
+function DocumentCard({ doc, onFeedback }: { doc: RegulatoryDocument; onFeedback: (doc: RegulatoryDocument) => void }) {
   const impact = IMPACT_CONFIG[doc.impact_level] || IMPACT_CONFIG.medium;
   const changeType = CHANGE_TYPE_CONFIG[doc.change_type] || CHANGE_TYPE_CONFIG.new;
 
@@ -80,6 +82,11 @@ function DocumentCard({ doc }: { doc: RegulatoryDocument }) {
               {doc.version > 1 && (
                 <Badge variant="secondary" className="text-[9px]">v{doc.version}</Badge>
               )}
+              {doc.requires_human_review && (
+                <Badge variant="outline" className="text-[10px] bg-violet-500/10 text-violet-600 border-violet-500/30">
+                  <Eye className="h-2.5 w-2.5 mr-0.5" /> Rev. humana
+                </Badge>
+              )}
               {doc.origin_verified && <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />}
             </div>
             <h4 className="text-sm font-semibold leading-tight">{doc.document_title}</h4>
@@ -87,12 +94,19 @@ function DocumentCard({ doc }: { doc: RegulatoryDocument }) {
               <p className="text-[10px] text-muted-foreground mt-0.5">{doc.reference_code}</p>
             )}
           </div>
-          {doc.source_url && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-              onClick={() => window.open(doc.source_url!, '_blank')}>
-              <ExternalLink className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-1 shrink-0">
+            <Button variant="ghost" size="icon" className="h-7 w-7"
+              onClick={() => onFeedback(doc)}
+              title="Revisar / Feedback">
+              <MessageSquare className="h-3.5 w-3.5" />
             </Button>
-          )}
+            {doc.source_url && (
+              <Button variant="ghost" size="icon" className="h-7 w-7"
+                onClick={() => window.open(doc.source_url!, '_blank')}>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {doc.summary && <p className="text-xs text-muted-foreground line-clamp-2">{doc.summary}</p>}
@@ -249,11 +263,14 @@ export function RegulatoryIntelligencePanel() {
     sources, documents, refreshLogs, loading, refreshing, stats,
     refresh, triggerRefreshAll, triggerRefreshSource,
   } = useRegulatoryIntelligence();
+  const { feedbacks, stats: feedbackStats, fetchFeedback } = useRegulatoryFeedback();
   const domainData = useSupervisorDomainData();
   const [activeTab, setActiveTab] = useState('documents');
   const [configAgent, setConfigAgent] = useState<RegistryAgent | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
   const [dataSourceFilter, setDataSourceFilter] = useState<string | null>(null);
+  const [feedbackDoc, setFeedbackDoc] = useState<RegulatoryDocument | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const regulatoryAgent = domainData.agents.find(a => a.code === 'regulatory-intelligence');
   const agentInvocations = domainData.invocations.filter(i => i.agent_code === 'regulatory-intelligence');
@@ -263,9 +280,24 @@ export function RegulatoryIntelligencePanel() {
     return documents.filter(d => d.data_source === dataSourceFilter);
   }, [documents, dataSourceFilter]);
 
+  const pendingReviewDocs = useMemo(() =>
+    documents.filter(d => d.requires_human_review),
+    [documents]
+  );
+
   const handleRefreshSource = useCallback((sourceId: string) => {
     triggerRefreshSource(sourceId);
   }, [triggerRefreshSource]);
+
+  const handleOpenFeedback = useCallback((doc: RegulatoryDocument) => {
+    setFeedbackDoc(doc);
+    setFeedbackOpen(true);
+  }, []);
+
+  // Load feedback stats on mount
+  useEffect(() => {
+    fetchFeedback();
+  }, [fetchFeedback]);
 
   return (
     <div className="space-y-4">
@@ -286,6 +318,12 @@ export function RegulatoryIntelligencePanel() {
           <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-600 border-violet-500/30">
             ⏰ Cron diario 06:30 UTC
           </Badge>
+          {feedbackStats.total > 0 && (
+            <Badge variant="outline" className="text-[9px] bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+              <ThumbsUp className="h-2.5 w-2.5 mr-0.5" />
+              {Math.round(feedbackStats.acceptanceRate * 100)}% acierto
+            </Badge>
+          )}
           {stats.sourcesWithErrors > 0 && (
             <Badge variant="destructive" className="text-[10px]">
               {stats.sourcesWithErrors} errores
@@ -307,7 +345,7 @@ export function RegulatoryIntelligencePanel() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
         {[
           { label: 'Fuentes', value: stats.enabledSources, icon: Globe, color: 'text-blue-500' },
           { label: 'HR', value: stats.byDomain.hr, icon: Users, color: 'text-blue-600' },
@@ -315,6 +353,7 @@ export function RegulatoryIntelligencePanel() {
           { label: 'Compliance', value: stats.byDomain.compliance, icon: Shield, color: 'text-violet-600' },
           { label: 'Rev. humana', value: stats.pendingReview, icon: Eye, color: 'text-rose-500' },
           { label: 'Nuevos', value: stats.newDocuments, icon: Zap, color: 'text-emerald-500' },
+          { label: 'Feedback', value: feedbackStats.total, icon: MessageSquare, color: 'text-indigo-500' },
         ].map(k => (
           <Card key={k.label} className="p-3">
             <div className="flex items-center gap-2">
@@ -339,18 +378,21 @@ export function RegulatoryIntelligencePanel() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="documents" className="text-xs gap-1">
             <FileText className="h-3.5 w-3.5" /> Documentos ({documents.length})
+          </TabsTrigger>
+          <TabsTrigger value="review" className="text-xs gap-1">
+            <Eye className="h-3.5 w-3.5" /> Revisión
+            {pendingReviewDocs.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-4 px-1 text-[9px]">{pendingReviewDocs.length}</Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="sources" className="text-xs gap-1">
             <Globe className="h-3.5 w-3.5" /> Fuentes ({sources.length})
           </TabsTrigger>
           <TabsTrigger value="refresh" className="text-xs gap-1">
             <History className="h-3.5 w-3.5" /> Refrescos
-            {refreshLogs.length > 0 && (
-              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{refreshLogs.length}</Badge>
-            )}
           </TabsTrigger>
           <TabsTrigger value="activity" className="text-xs gap-1">
             <Activity className="h-3.5 w-3.5" /> Actividad
@@ -359,7 +401,6 @@ export function RegulatoryIntelligencePanel() {
 
         {/* Documents */}
         <TabsContent value="documents" className="mt-3 space-y-3">
-          {/* Filters */}
           <div className="flex items-center gap-2">
             <Button variant={dataSourceFilter === null ? "default" : "outline"} size="sm" className="text-[10px] h-7"
               onClick={() => setDataSourceFilter(null)}>Todos</Button>
@@ -379,7 +420,66 @@ export function RegulatoryIntelligencePanel() {
                   </CardContent>
                 </Card>
               ) : filteredDocs.map(doc => (
-                <DocumentCard key={doc.id} doc={doc} />
+                <DocumentCard key={doc.id} doc={doc} onFeedback={handleOpenFeedback} />
+              ))}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* Human Review Queue */}
+        <TabsContent value="review" className="mt-3 space-y-3">
+          {feedbackStats.total > 0 && (
+            <div className="grid grid-cols-4 gap-2">
+              <Card className="p-2.5">
+                <div className="flex items-center gap-2">
+                  <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+                  <div>
+                    <p className="text-base font-bold">{feedbackStats.accepted}</p>
+                    <p className="text-[9px] text-muted-foreground">Validados</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-2.5">
+                <div className="flex items-center gap-2">
+                  <ThumbsDown className="h-3.5 w-3.5 text-destructive" />
+                  <div>
+                    <p className="text-base font-bold">{feedbackStats.rejected}</p>
+                    <p className="text-[9px] text-muted-foreground">Corregidos</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-2.5">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-3.5 w-3.5 text-indigo-500" />
+                  <div>
+                    <p className="text-base font-bold">{feedbackStats.total}</p>
+                    <p className="text-[9px] text-muted-foreground">Total</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-2.5">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                  <div>
+                    <p className="text-base font-bold">{Math.round(feedbackStats.acceptanceRate * 100)}%</p>
+                    <p className="text-[9px] text-muted-foreground">Acierto IA</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+          <ScrollArea className="h-[450px]">
+            <div className="space-y-3">
+              {pendingReviewDocs.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <CheckCircle className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Sin documentos pendientes de revisión</p>
+                    <p className="text-xs mt-1">Todos los documentos han sido validados</p>
+                  </CardContent>
+                </Card>
+              ) : pendingReviewDocs.map(doc => (
+                <DocumentCard key={doc.id} doc={doc} onFeedback={handleOpenFeedback} />
               ))}
             </div>
           </ScrollArea>
@@ -405,7 +505,6 @@ export function RegulatoryIntelligencePanel() {
                   <CardContent className="py-12 text-center text-muted-foreground">
                     <History className="h-10 w-10 mx-auto mb-3 opacity-30" />
                     <p className="text-sm">Sin historial de refresco</p>
-                    <p className="text-xs mt-1">Los refrescos aparecerán aquí tras ejecutarse</p>
                   </CardContent>
                 </Card>
               ) : refreshLogs.map(log => {
@@ -442,6 +541,11 @@ export function RegulatoryIntelligencePanel() {
                       ) : (inv.metadata as any)?.source === 'live' ? (
                         <Badge variant="outline" className="text-[10px] py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/30">Live</Badge>
                       ) : null}
+                      {(inv.metadata as any)?.feedback_adjusted && (
+                        <Badge variant="outline" className="text-[9px] py-0 bg-indigo-500/10 text-indigo-600 border-indigo-500/30">
+                          Feedback-ajustado
+                        </Badge>
+                      )}
                       {(inv.metadata as any)?.action === 'refresh' && (
                         <Badge variant="outline" className="text-[10px] py-0 bg-indigo-500/10 text-indigo-600">Refresco</Badge>
                       )}
@@ -458,6 +562,13 @@ export function RegulatoryIntelligencePanel() {
           </ScrollArea>
         </TabsContent>
       </Tabs>
+
+      {/* Feedback Sheet */}
+      <RegulatoryFeedbackSheet
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        document={feedbackDoc}
+      />
 
       <RegistryAgentConfigSheet
         open={configOpen}
