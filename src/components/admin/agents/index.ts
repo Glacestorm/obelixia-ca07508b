@@ -24,3 +24,6 @@ export { ERPAgentLeaderboard } from './ERPAgentLeaderboard';
 export { ERPAgentWorkflows } from './ERPAgentWorkflows';
 // Configuración de Agentes
 export { AgentConfigSheet } from './AgentConfigSheet';
+export { RegistryAgentCard } from './RegistryAgentCard';
+export { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
+export { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
