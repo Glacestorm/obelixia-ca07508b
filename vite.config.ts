@@ -142,6 +142,7 @@ export default defineConfig(({ mode }) => ({
         ],
         skipWaiting: true,
         clientsClaim: true,
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
       },
       devOptions: {
         enabled: false,
