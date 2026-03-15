@@ -268,6 +268,9 @@ export function HRModule() {
 
   return (
     <div className="space-y-4">
+      {/* Environment Banner */}
+      <HREnvironmentBanner />
+
       {/* Command Palette (Cmd+K) */}
       <HRCommandPalette
         onNavigate={(moduleId) => setActiveModule(moduleId)}
