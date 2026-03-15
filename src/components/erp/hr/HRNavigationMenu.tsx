@@ -455,12 +455,16 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
   const filteredMenus = mvpMode
     ? megaMenus
         .filter(m => mvpCategories.has(m.id))
-        .map(m => ({
-          ...m,
-          subGroups: m.subGroups
-            .map(sg => ({ ...sg, items: sg.items.filter(i => effectiveItems.has(i.id)) }))
-            .filter(sg => sg.items.length > 0),
-        }))
+        .map(m => {
+          // For admin-unlocked categories, show ALL items without filtering
+          if (isAdmin && adminUnlockedCategories.has(m.id)) return m;
+          return {
+            ...m,
+            subGroups: m.subGroups
+              .map(sg => ({ ...sg, items: sg.items.filter(i => effectiveItems.has(i.id)) }))
+              .filter(sg => sg.items.length > 0),
+          };
+        })
     : megaMenus;
 
   // Collect all IDs per category for active detection
