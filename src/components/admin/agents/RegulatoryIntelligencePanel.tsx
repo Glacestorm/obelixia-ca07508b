@@ -216,6 +216,12 @@ function RefreshLogEntry({ log, sourceName }: { log: RefreshLog; sourceName?: st
             log.status === 'failed' ? 'bg-destructive/15 text-destructive' : 'bg-blue-500/15 text-blue-700')}>
             {log.status === 'completed' ? 'Completado' : log.status === 'failed' ? 'Error' : 'En curso'}
           </Badge>
+          <Badge variant="outline" className={cn("text-[9px] py-0",
+            log.trigger_type === 'scheduled' ? 'bg-violet-500/10 text-violet-600 border-violet-500/30' :
+            log.trigger_type === 'seed' ? 'bg-blue-500/10 text-blue-600 border-blue-500/30' :
+            'bg-muted text-muted-foreground')}>
+            {log.trigger_type === 'scheduled' ? '⏰ Programado' : log.trigger_type === 'seed' ? '🌱 Seed' : '👤 Manual'}
+          </Badge>
           {log.documents_new > 0 && (
             <Badge variant="outline" className="text-[9px] py-0 bg-emerald-500/10 text-emerald-600">
               +{log.documents_new} nuevos

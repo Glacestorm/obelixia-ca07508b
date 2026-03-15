@@ -75,6 +75,7 @@ export interface RefreshLog {
   documents_updated: number;
   documents_unchanged: number;
   error_message: string | null;
+  trigger_type: string;
   created_at: string;
 }
 
