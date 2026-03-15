@@ -48581,6 +48581,8 @@ export type Database = {
       }
       erp_regulatory_documents: {
         Row: {
+          change_type: string
+          content_hash: string | null
           created_at: string | null
           data_source: string | null
           document_title: string
@@ -48596,6 +48598,7 @@ export type Database = {
           legal_area: string | null
           metadata: Json | null
           origin_verified: boolean | null
+          previous_version_id: string | null
           publication_date: string | null
           reference_code: string | null
           requires_human_review: boolean | null
@@ -48606,8 +48609,11 @@ export type Database = {
           tags: string[] | null
           territorial_scope: string | null
           updated_at: string | null
+          version: number
         }
         Insert: {
+          change_type?: string
+          content_hash?: string | null
           created_at?: string | null
           data_source?: string | null
           document_title: string
@@ -48623,6 +48629,7 @@ export type Database = {
           legal_area?: string | null
           metadata?: Json | null
           origin_verified?: boolean | null
+          previous_version_id?: string | null
           publication_date?: string | null
           reference_code?: string | null
           requires_human_review?: boolean | null
@@ -48633,8 +48640,11 @@ export type Database = {
           tags?: string[] | null
           territorial_scope?: string | null
           updated_at?: string | null
+          version?: number
         }
         Update: {
+          change_type?: string
+          content_hash?: string | null
           created_at?: string | null
           data_source?: string | null
           document_title?: string
@@ -48650,6 +48660,7 @@ export type Database = {
           legal_area?: string | null
           metadata?: Json | null
           origin_verified?: boolean | null
+          previous_version_id?: string | null
           publication_date?: string | null
           reference_code?: string | null
           requires_human_review?: boolean | null
@@ -48660,10 +48671,121 @@ export type Database = {
           tags?: string[] | null
           territorial_scope?: string | null
           updated_at?: string | null
+          version?: number
         }
         Relationships: [
           {
+            foreignKeyName: "erp_regulatory_documents_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_regulatory_documents"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "erp_regulatory_documents_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "erp_regulatory_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_regulatory_feedback: {
+        Row: {
+          accepted: boolean | null
+          comment: string | null
+          corrected_value: string | null
+          created_at: string
+          document_id: string
+          feedback_type: string
+          field_reviewed: string | null
+          id: string
+          original_value: string | null
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean | null
+          comment?: string | null
+          corrected_value?: string | null
+          created_at?: string
+          document_id: string
+          feedback_type?: string
+          field_reviewed?: string | null
+          id?: string
+          original_value?: string | null
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean | null
+          comment?: string | null
+          corrected_value?: string | null
+          created_at?: string
+          document_id?: string
+          feedback_type?: string
+          field_reviewed?: string | null
+          id?: string
+          original_value?: string | null
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_regulatory_feedback_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "erp_regulatory_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_regulatory_refresh_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          documents_found: number | null
+          documents_new: number | null
+          documents_unchanged: number | null
+          documents_updated: number | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          source_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          documents_found?: number | null
+          documents_new?: number | null
+          documents_unchanged?: number | null
+          documents_updated?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          source_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          documents_found?: number | null
+          documents_new?: number | null
+          documents_unchanged?: number | null
+          documents_updated?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          source_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_regulatory_refresh_log_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "erp_regulatory_sources"
@@ -48676,18 +48798,25 @@ export type Database = {
           code: string
           country: string | null
           created_at: string | null
+          documents_found: number
           domain_tags: string[] | null
           entries_count: number | null
           id: string
+          ingestion_method: string
           is_enabled: boolean | null
           issuing_body: string | null
           jurisdiction_code: string
           last_checked_at: string | null
+          last_error_at: string | null
+          last_error_message: string | null
+          last_success_at: string | null
           metadata: Json | null
           name: string
           refresh_frequency: string | null
+          refresh_status: string
           source_type: string
           territorial_scope: string
+          total_refreshes: number
           updated_at: string | null
           url: string | null
         }
@@ -48695,18 +48824,25 @@ export type Database = {
           code: string
           country?: string | null
           created_at?: string | null
+          documents_found?: number
           domain_tags?: string[] | null
           entries_count?: number | null
           id?: string
+          ingestion_method?: string
           is_enabled?: boolean | null
           issuing_body?: string | null
           jurisdiction_code?: string
           last_checked_at?: string | null
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
           metadata?: Json | null
           name: string
           refresh_frequency?: string | null
+          refresh_status?: string
           source_type?: string
           territorial_scope?: string
+          total_refreshes?: number
           updated_at?: string | null
           url?: string | null
         }
@@ -48714,18 +48850,25 @@ export type Database = {
           code?: string
           country?: string | null
           created_at?: string | null
+          documents_found?: number
           domain_tags?: string[] | null
           entries_count?: number | null
           id?: string
+          ingestion_method?: string
           is_enabled?: boolean | null
           issuing_body?: string | null
           jurisdiction_code?: string
           last_checked_at?: string | null
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
           metadata?: Json | null
           name?: string
           refresh_frequency?: string | null
+          refresh_status?: string
           source_type?: string
           territorial_scope?: string
+          total_refreshes?: number
           updated_at?: string | null
           url?: string | null
         }
