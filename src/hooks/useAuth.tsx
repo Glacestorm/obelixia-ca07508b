@@ -18,6 +18,8 @@ interface AuthContextType {
   isOfficeDirector: boolean;
   isCommercialManager: boolean;
   isAuditor: boolean;
+  isHRManager: boolean;
+  isLegalManager: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +31,8 @@ const ROLE_PRIORITIES: Record<string, number> = {
   'responsable_comercial': 80,
   'director_oficina': 70,
   'admin': 60,
+  'hr_manager': 55,
+  'legal_manager': 55,
   'auditor': 50,
   'gestor': 40,
   'user': 10,
@@ -197,6 +201,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isOfficeDirector = userRole === 'director_oficina' || userRole === 'superadmin' || userRole === 'responsable_comercial';
   const isCommercialManager = userRole === 'responsable_comercial' || userRole === 'superadmin';
   const isAuditor = userRole === 'auditor';
+  const isHRManager = userRole === 'hr_manager' || userRole === 'superadmin' || userRole === 'admin';
+  const isLegalManager = userRole === 'legal_manager' || userRole === 'superadmin' || userRole === 'admin';
 
   return (
     <AuthContext.Provider value={{
@@ -213,6 +219,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isOfficeDirector,
       isCommercialManager,
       isAuditor,
+      isHRManager,
+      isLegalManager,
     }}>
       {children}
     </AuthContext.Provider>
