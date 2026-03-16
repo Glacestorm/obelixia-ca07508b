@@ -349,6 +349,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           color: 'text-primary',
           items: [
             { id: 'enterprise-dashboard', label: 'Command Center', icon: TrendingUp, description: 'Panel ejecutivo centralizado' },
+            { id: 'advisory-portfolio', label: 'Cartera Asesoría', icon: Briefcase, description: 'Gestión multiempresa y cartera de clientes' },
             { id: 'sla-dashboard', label: 'SLA Dashboard', icon: Timer, description: 'Acuerdos de nivel de servicio' },
             { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox, description: 'Bandeja de aprobaciones' },
           ]

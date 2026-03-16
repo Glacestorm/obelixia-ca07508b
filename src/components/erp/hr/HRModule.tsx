@@ -50,6 +50,7 @@ import { HRTrends2026Panel } from './HRTrends2026Panel';
 import { HRNavigationMenu } from './HRNavigationMenu';
 import { HRIntegrationDashboard } from './integration';
 import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard, HRComplianceEnterprisePanel } from './enterprise';
+import { AdvisoryDashboardPanel } from './advisory';
 import { HRCompensationSuitePanel } from './compensation';
 import { HRWellbeingEnterprisePanel } from './wellbeing/HRWellbeingEnterprisePanel';
 import { HRESGSelfServicePanel } from './esg-selfservice/HRESGSelfServicePanel';
@@ -373,6 +374,14 @@ function HRModuleInner() {
         {activeModule === 'succession' && <HRSuccessionPlanningPanel companyId={companyId} />}
         {activeModule === 'analytics-intelligence' && <HRAnalyticsIntelligencePanel companyId={companyId} />}
         {activeModule === 'enterprise-dashboard' && <HREnterpriseDashboard companyId={companyId} />}
+        {activeModule === 'advisory-portfolio' && (
+          <AdvisoryDashboardPanel
+            onSelectCompany={(id) => {
+              // Switch company context via ERPCompanySelector
+              console.log('[Advisory] Switch to company:', id);
+            }}
+          />
+        )}
         {activeModule === 'legal-entities' && <HRLegalEntitiesPanel companyId={companyId} />}
         {activeModule === 'work-centers' && <HRWorkCentersPanel companyId={companyId} />}
         {activeModule === 'org-structure' && <HROrgStructurePanel companyId={companyId} />}
