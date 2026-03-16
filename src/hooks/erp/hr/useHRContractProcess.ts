@@ -672,6 +672,16 @@ export function useHRContractProcess(companyId: string) {
         'warning',
         ['closure_status'],
       );
+      // Ledger: contract reopened (if it was closed)
+      writeLedger({
+        eventType: 'contract_updated',
+        eventLabel: 'Contrato reabierto',
+        entityType: 'contract_process',
+        entityId: contractData?.id || requestId,
+        beforeSnapshot: { closure_status: 'closed' },
+        afterSnapshot: { closure_status: null, reason },
+        isReopening: true,
+      });
       return true;
     } catch (err) {
       console.error('[useHRContractProcess] reopenContractProcess error:', err);
