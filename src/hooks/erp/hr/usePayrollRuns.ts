@@ -31,6 +31,7 @@ export function usePayrollRuns(companyId?: string) {
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeRun, setActiveRun] = useState<PayrollRun | null>(null);
+  const { writeLedger, writeVersion } = useHRLedgerWriter(companyId || '', 'payroll_runs');
 
   // ── Fetch runs for a period ──
   const fetchRuns = useCallback(async (periodId: string) => {
