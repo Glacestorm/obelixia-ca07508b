@@ -240,30 +240,16 @@ export function useMonthlyClosing(companyId: string) {
         return false;
       }
 
-      // 2. Record closing initiation in ledger
-      const initiationEventId = await writeLedger({
-        eventType: 'period_closed',
-        entityType: 'monthly_closing',
-        entityId: period.id,
-        beforeSnapshot: { status: period.status, phase: data.phase },
-        afterSnapshot: { status: 'closing' },
-        metadata: {
-          action: 'closing_initiated',
-          checklist_score: data.checklist?.overallScore,
-          blockers: data.checklist?.blockers,
-          warnings: data.checklist?.warnings,
-        },
-      });
-
-      // 3. Execute actual close via payroll engine
+      // 2. Execute actual close via payroll engine
+      //    NOTE: closePeriodFn already writes `period_closed` to ledger — no duplicate here (V2-RRHH-FASE-3B)
       const result = await closePeriodFn(period.id);
       if (!result.success) {
         setIsLoading(false);
         return false;
       }
 
-      // 4. Write evidence for closure package
-      if (initiationEventId && result.snapshot) {
+      // 3. Write evidence for closure package (separate event, not duplicating period_closed)
+      if (result.snapshot) {
         await writeLedgerWithEvidence(
           {
             eventType: 'expedient_action',
