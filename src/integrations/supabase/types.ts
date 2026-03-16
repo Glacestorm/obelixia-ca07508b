@@ -81618,6 +81618,14 @@ export type Database = {
       }
       calculate_student_level: { Args: { xp_points: number }; Returns: number }
       calculate_user_level: { Args: { xp: number }; Returns: number }
+      can_close_review_domain: {
+        Args: { p_domain: string; p_user_id: string }
+        Returns: boolean
+      }
+      can_configure_agent_domain: {
+        Args: { p_domain: string; p_user_id: string }
+        Returns: boolean
+      }
       can_send_survey: {
         Args: {
           p_company_id: string
