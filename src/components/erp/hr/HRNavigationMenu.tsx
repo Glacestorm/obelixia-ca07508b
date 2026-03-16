@@ -393,7 +393,8 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'ai-governance', label: 'AI Governance', icon: Brain, description: 'Gobernanza de IA' },
             { id: 'security-governance', label: 'Security & SoD', icon: ShieldAlert, description: 'Seguridad avanzada' },
-            { id: 'digital-twin', label: 'Digital Twin', icon: Layers, description: 'Gemelo digital org.' },
+            { id: 'labor-digital-twin', label: 'Gemelo Digital Laboral', icon: Layers, description: 'Simulación what-if sobre datos reales', badge: 'NUEVO' as any, badgeVariant: 'secondary' as const },
+            { id: 'digital-twin', label: 'Digital Twin (Legacy)', icon: Layers, description: 'Gemelo digital org.' },
             { id: 'copilot-twin', label: 'Copilot + Twin', icon: Bot, description: 'Asistente IA autónomo' },
             { id: 'workforce-planning', label: 'Workforce Planning', icon: Target, description: 'Planificación estratégica' },
           ]

@@ -412,6 +412,7 @@ function HRModuleInner() {
         {activeModule === 'workforce-planning' && <HRWorkforcePlanningPanel companyId={companyId} />}
         {activeModule === 'fairness-engine' && <HRFairnessEnginePanel companyId={companyId} />}
         {activeModule === 'digital-twin' && <HRDigitalTwinPanel companyId={companyId} />}
+        {activeModule === 'labor-digital-twin' && <HRLaborDigitalTwinPanel />}
         {activeModule === 'legal-engine' && <HRLegalEnginePanel companyId={companyId} />}
         {activeModule === 'cnae-intelligence' && <HRCNAEIntelligencePanel companyId={companyId} />}
         {activeModule === 'role-experience' && <HRRoleExperiencePanel companyId={companyId} />}
