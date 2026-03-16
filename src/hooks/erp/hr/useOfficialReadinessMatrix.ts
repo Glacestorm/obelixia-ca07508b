@@ -52,7 +52,7 @@ export function useOfficialReadinessMatrix(companyId: string) {
   const [matrix, setMatrix] = useState<ReadinessMatrix | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastEvaluatedAt, setLastEvaluatedAt] = useState<string | null>(null);
-  const { writeLedger } = useHRLedgerWriter(companyId, 'official-readiness');
+  const { writeLedgerWithEvidence, writeVersion } = useHRLedgerWriter(companyId, 'official-readiness');
 
   const evaluate = useCallback(async (): Promise<ReadinessMatrix | null> => {
     if (!companyId) return null;
@@ -175,19 +175,65 @@ export function useOfficialReadinessMatrix(companyId: string) {
       setMatrix(result);
       setLastEvaluatedAt(result.evaluatedAt);
 
-      // 6. Ledger: readiness evaluation (non-noisy — only on explicit evaluation)
-      writeLedger({
-        eventType: 'system_event',
-        entityType: 'official_readiness',
+      // 6. Build per-circuit snapshot for evidence
+      const circuitSnapshot = result.circuits.map(c => ({
+        circuitId: c.circuit.id,
+        organism: c.circuit.organism,
+        status: c.operationalStatus,
+        systemLimit: c.circuit.systemLimit,
+        certificateStatus: c.certificateStatus,
+        blockReasons: c.blockReasons,
+        realSubmissionBlocked: c.realSubmissionBlocked,
+      }));
+
+      const evidenceSnapshot = {
+        overallStatus: result.overallStatus,
+        totalCircuits: result.totalCircuits,
+        configured: result.configured,
+        preparatory: result.preparatory,
+        sandboxReady: result.sandboxReady,
+        productionReady: result.productionReady,
+        submitted: result.submitted,
+        blocked: result.blocked,
+        circuits: circuitSnapshot,
+      };
+
+      // 7. Ledger + evidence (non-noisy — only on explicit evaluation)
+      writeLedgerWithEvidence(
+        {
+          eventType: 'system_event',
+          entityType: 'official_readiness',
+          entityId: companyId,
+          afterSnapshot: evidenceSnapshot,
+          metadata: { action: 'readiness_matrix_evaluated' },
+        },
+        [
+          {
+            evidenceType: 'snapshot' as const,
+            evidenceLabel: `Evaluación readiness España: ${result.overallStatus}`,
+            refEntityType: 'readiness_matrix',
+            refEntityId: companyId,
+            evidenceSnapshot: evidenceSnapshot,
+            metadata: {
+              configured: result.configured,
+              totalCircuits: result.totalCircuits,
+              blocked: result.blocked,
+            },
+          },
+        ],
+      );
+
+      // 8. Version registry: track readiness evaluation version
+      writeVersion({
+        entityType: 'readiness_matrix',
         entityId: companyId,
-        afterSnapshot: {
-          overallStatus: result.overallStatus,
+        state: result.overallStatus,
+        contentSnapshot: evidenceSnapshot,
+        metadata: {
+          action: 'readiness_matrix_evaluated',
           configured: result.configured,
-          preparatory: result.preparatory,
-          sandboxReady: result.sandboxReady,
           blocked: result.blocked,
         },
-        metadata: { action: 'readiness_matrix_evaluated' },
       });
 
       return result;
@@ -197,7 +243,7 @@ export function useOfficialReadinessMatrix(companyId: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [companyId, writeLedger]);
+  }, [companyId, writeLedgerWithEvidence, writeVersion]);
 
   return {
     matrix,

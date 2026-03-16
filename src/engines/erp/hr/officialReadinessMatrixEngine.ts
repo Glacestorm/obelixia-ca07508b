@@ -193,7 +193,7 @@ export const CIRCUIT_DEFINITIONS: CircuitDefinition[] = [
     id: 'certifica2', connectorId: 'certifica2', domain: 'CERTIFICA2',
     label: 'Certificados de empresa', organism: 'SEPE / Certific@2',
     description: 'Emisión de certificados para prestaciones por desempleo.',
-    periodicity: 'event', systemLimit: 'partial_preparatory',
+    periodicity: 'event', systemLimit: 'modeled_only',
   },
   {
     id: 'delta_accidentes', connectorId: 'delta', domain: 'DELTA',
@@ -217,7 +217,7 @@ export const CIRCUIT_DEFINITIONS: CircuitDefinition[] = [
     id: 'rlc_rnt', connectorId: 'tgss_siltra', domain: 'TGSS',
     label: 'RLC / RNT', organism: 'TGSS / SILTRA',
     description: 'Recibo de Liquidación de Cotizaciones y Relación Nominal de Trabajadores.',
-    periodicity: 'monthly', systemLimit: 'partial_preparatory',
+    periodicity: 'monthly', systemLimit: 'modeled_only',
   },
 ];
 
@@ -444,6 +444,6 @@ export function getSystemLimitsDeclaration(): SystemLimitDeclaration[] {
     { area: 'Certificados digitales', status: 'preparatory_only', description: 'Se modelan metadatos de certificados. No se almacena material criptográfico real.' },
     { area: 'Expedientes SS/Fiscal internos', status: 'available', description: 'Generación, reconciliación y cierre de expedientes internos completo.' },
     { area: 'Modelos fiscales (111, 190)', status: 'preparatory_only', description: 'Se generan datos preparatorios. No se presenta ante AEAT.' },
-    { area: 'Certific@2 / Delt@', status: 'modeled_only', description: 'Modelo de datos definido. Generador/validador parcial o pendiente.' },
+    { area: 'Certific@2 / Delt@ / RLC-RNT', status: 'modeled_only', description: 'Modelo de datos definido. Sin generador ni validador activo. Solo estructura.' },
   ];
 }
