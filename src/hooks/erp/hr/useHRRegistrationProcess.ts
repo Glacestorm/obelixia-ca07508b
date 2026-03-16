@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRProcessDocRequirements';
-import { computeRegistrationDeadlines, type RegistrationDeadlineSummary } from '@/components/erp/hr/shared/registrationDeadlineEngine';
+import { computeRegistrationDeadlines, type RegistrationDeadlineSummary } from '@/engines/erp/hr/registrationDeadlineEngine';
 import { buildTGSSPayload, type TGSSPayloadResult } from '@/components/erp/hr/shared/tgssPayloadBuilder';
 import { evaluatePreIntegrationReadiness } from '@/components/erp/hr/shared/tgssPreIntegrationReadiness';
 import {
