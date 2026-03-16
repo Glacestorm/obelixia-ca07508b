@@ -1,0 +1,445 @@
+/**
+ * ObelixIA-Supervisor — Phase 2
+ * Cross-domain supersupervisor that orchestrates HR-Supervisor and Legal-Supervisor.
+ * Handles conflict resolution, composed responses, and human escalation.
+ */
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const CROSS_DOMAIN_CLASSIFIER = `Eres un clasificador de consultas transversales RRHH+Jurídico. Tu objetivo es determinar si una consulta requiere coordinación cross-domain.
+
+CLASIFICACIÓN:
+- hr_only: La consulta es puramente de RRHH, sin implicación legal significativa.
+- legal_only: La consulta es puramente jurídica, sin implicación de RRHH.
+- cross_domain: La consulta requiere coordinación entre RRHH y Jurídico. Ejemplos: despidos, ERE/ERTE, permisos protegidos, movilidad internacional, compliance laboral, contratos con impacto legal, cambios normativos con impacto HR.
+- trivial: Consulta trivial que no necesita el supersupervisor.
+
+REGLAS:
+- Si hay riesgo legal + impacto operativo RRHH → cross_domain.
+- Despidos, ERE, sanciones disciplinarias, permisos protegidos → SIEMPRE cross_domain.
+- Nómina simple, vacaciones estándar → hr_only.
+- Revisión de contrato mercantil → legal_only.
+- Responde SOLO con JSON válido.
+
+FORMATO:
+{"classification": "hr_only|legal_only|cross_domain|trivial", "confidence": 0.0-1.0, "reasoning": "...", "risk_level": "low|medium|high|critical", "requires_human_review": false}`;
+
+const CONFLICT_RESOLVER_PROMPT = `Eres un árbitro experto en resolución de conflictos entre departamentos de RRHH y Jurídico.
+Recibes las respuestas de ambos supervisores y debes:
+1. Identificar si hay conflicto real (recomendaciones contradictorias, niveles de riesgo divergentes).
+2. Si hay conflicto, explicar la divergencia y recomendar la posición más conservadora/segura.
+3. Decidir si se necesita revisión humana.
+4. Componer una respuesta unificada.
+
+REGLAS DE RESOLUCIÓN:
+- Si un supervisor dice "bloquear" y otro "continuar" → prevalece "bloquear" + revisión humana obligatoria.
+- Si los niveles de riesgo divergen en ≥2 niveles → conflicto real + revisión humana.
+- Si ambos coinciden → no hay conflicto, componer respuesta directamente.
+- Siempre priorizar la seguridad jurídica sobre la eficiencia operativa.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "has_conflict": true/false,
+  "conflict_type": "none|risk_divergence|recommendation_conflict|severity_mismatch",
+  "conflict_description": "...",
+  "resolution": "...",
+  "final_risk_level": "low|medium|high|critical",
+  "final_recommendation": "...",
+  "requires_human_review": true/false,
+  "human_review_reason": "...",
+  "action_allowed": true/false,
+  "composed_response": "..."
+}`;
+
+interface SuperSupervisorRequest {
+  action: 'coordinate' | 'get_status' | 'get_cross_cases';
+  company_id: string;
+  query?: string;
+  context?: Record<string, unknown>;
+  session_id?: string;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const startTime = Date.now();
+
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Auth
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
+    const input: SuperSupervisorRequest = await req.json();
+    const { action, company_id, query, context, session_id } = input;
+
+    if (!company_id) {
+      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const fnUrl = `${supabaseUrl}/functions/v1`;
+
+    // === GET STATUS ===
+    if (action === 'get_status') {
+      const { data: crossInvocations } = await supabase
+        .from('erp_ai_agent_invocations')
+        .select('*')
+        .eq('supervisor_code', 'obelixia-supervisor')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      const invocations = crossInvocations || [];
+      const conflicts = invocations.filter((i: any) => i.metadata?.has_conflict);
+      const humanReview = invocations.filter((i: any) => i.outcome_status === 'human_review');
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          status: 'active',
+          total_cases: invocations.length,
+          conflicts: conflicts.length,
+          human_review_pending: humanReview.length,
+          recent_cases: invocations.slice(0, 10),
+          timestamp: new Date().toISOString(),
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // === GET CROSS CASES ===
+    if (action === 'get_cross_cases') {
+      const { data: cases } = await supabase
+        .from('erp_ai_agent_invocations')
+        .select('*')
+        .eq('supervisor_code', 'obelixia-supervisor')
+        .order('created_at', { ascending: false })
+        .limit(30);
+
+      return new Response(JSON.stringify({ success: true, data: cases || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // === COORDINATE (main cross-domain flow) ===
+    if (action === 'coordinate') {
+      if (!query) {
+        return new Response(JSON.stringify({ success: false, error: 'query required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!LOVABLE_API_KEY) {
+        throw new Error('LOVABLE_API_KEY is not configured');
+      }
+
+      console.log(`[obelixia-supervisor] Coordinating: ${query.substring(0, 80)}...`);
+
+      // Step 1: Classify if cross-domain is needed
+      const classResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-lite',
+          messages: [
+            { role: 'system', content: CROSS_DOMAIN_CLASSIFIER },
+            { role: 'user', content: query }
+          ],
+          temperature: 0.1,
+          max_tokens: 300,
+        }),
+      });
+
+      if (!classResp.ok) {
+        if (classResp.status === 429) {
+          return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded.' }), {
+            status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        if (classResp.status === 402) {
+          return new Response(JSON.stringify({ success: false, error: 'Créditos IA insuficientes.' }), {
+            status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        throw new Error(`Classifier error: ${classResp.status}`);
+      }
+
+      const classData = await classResp.json();
+      const classContent = classData.choices?.[0]?.message?.content || '';
+      
+      let classification = { classification: 'cross_domain', confidence: 0.5, reasoning: 'default', risk_level: 'medium', requires_human_review: false };
+      try {
+        const m = classContent.match(/\{[\s\S]*\}/);
+        if (m) classification = JSON.parse(m[0]);
+      } catch {
+        console.warn('[obelixia-supervisor] Classification parse error');
+      }
+
+      console.log(`[obelixia-supervisor] Classification: ${classification.classification} (${classification.confidence}) risk=${classification.risk_level}`);
+
+      // If trivial or single-domain, delegate directly
+      if (classification.classification === 'trivial' || classification.classification === 'hr_only') {
+        // Delegate to HR-Supervisor
+        try {
+          const resp = await fetch(`${fnUrl}/hr-multiagent-supervisor`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'route_query', company_id, query, context, session_id }),
+          });
+          const hrResult = await resp.json();
+
+          // Log delegation
+          await supabase.from('erp_ai_agent_invocations').insert({
+            agent_code: 'obelixia-supervisor',
+            supervisor_code: 'obelixia-supervisor',
+            company_id,
+            user_id: userId,
+            input_summary: query.substring(0, 500),
+            routing_reason: `Delegated to HR: ${classification.reasoning}`,
+            confidence_score: classification.confidence,
+            outcome_status: 'delegated_hr',
+            execution_time_ms: Date.now() - startTime,
+            response_summary: 'Delegated to hr-supervisor',
+            metadata: { classification, session_id, delegated_to: 'hr-supervisor', phase: '2' },
+          }).catch(() => {});
+
+          return new Response(JSON.stringify({
+            success: true,
+            data: {
+              ...hrResult?.data,
+              supersupervisor: { delegated: true, delegated_to: 'hr-supervisor', classification },
+            }
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (err) {
+          console.error('[obelixia-supervisor] HR delegation error:', err);
+        }
+      }
+
+      if (classification.classification === 'legal_only') {
+        try {
+          const resp = await fetch(`${fnUrl}/legal-multiagent-supervisor`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'route_query', company_id, query, context }),
+          });
+          const legalResult = await resp.json();
+
+          await supabase.from('erp_ai_agent_invocations').insert({
+            agent_code: 'obelixia-supervisor',
+            supervisor_code: 'obelixia-supervisor',
+            company_id,
+            user_id: userId,
+            input_summary: query.substring(0, 500),
+            routing_reason: `Delegated to Legal: ${classification.reasoning}`,
+            confidence_score: classification.confidence,
+            outcome_status: 'delegated_legal',
+            execution_time_ms: Date.now() - startTime,
+            response_summary: 'Delegated to legal-supervisor',
+            metadata: { classification, session_id, delegated_to: 'legal-supervisor', phase: '2' },
+          }).catch(() => {});
+
+          return new Response(JSON.stringify({
+            success: true,
+            data: {
+              ...legalResult?.data,
+              supersupervisor: { delegated: true, delegated_to: 'legal-supervisor', classification },
+            }
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        } catch (err) {
+          console.error('[obelixia-supervisor] Legal delegation error:', err);
+        }
+      }
+
+      // === CROSS-DOMAIN COORDINATION ===
+      console.log('[obelixia-supervisor] Initiating cross-domain coordination');
+
+      // Step 2: Consult both supervisors in parallel
+      const [hrResp, legalResp] = await Promise.allSettled([
+        fetch(`${fnUrl}/hr-multiagent-supervisor`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'route_query',
+            company_id,
+            query,
+            context: { ...context, source: 'obelixia-supervisor', cross_domain: true },
+            session_id,
+          }),
+        }).then(r => r.json()),
+        fetch(`${fnUrl}/legal-multiagent-supervisor`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'validate_hr_action',
+            company_id,
+            query,
+            context: { ...context, source: 'obelixia-supervisor', cross_domain: true },
+            source_agent: 'obelixia-supervisor',
+          }),
+        }).then(r => r.json()),
+      ]);
+
+      const hrResult = hrResp.status === 'fulfilled' ? hrResp.value : null;
+      const legalResult = legalResp.status === 'fulfilled' ? legalResp.value : null;
+
+      // Step 3: Resolve conflicts with AI
+      const conflictInput = JSON.stringify({
+        hr_response: hrResult?.data || hrResult || null,
+        legal_response: legalResult?.data || legalResult || null,
+        original_query: query,
+        classification,
+        context,
+      });
+
+      const resolverResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: CONFLICT_RESOLVER_PROMPT },
+            { role: 'user', content: conflictInput }
+          ],
+          temperature: 0.2,
+          max_tokens: 1500,
+        }),
+      });
+
+      let resolution = {
+        has_conflict: false,
+        conflict_type: 'none',
+        conflict_description: '',
+        resolution: '',
+        final_risk_level: classification.risk_level || 'medium',
+        final_recommendation: '',
+        requires_human_review: classification.requires_human_review || false,
+        human_review_reason: '',
+        action_allowed: true,
+        composed_response: '',
+      };
+
+      if (resolverResp.ok) {
+        const resolverData = await resolverResp.json();
+        const resolverContent = resolverData.choices?.[0]?.message?.content || '';
+        try {
+          const m = resolverContent.match(/\{[\s\S]*\}/);
+          if (m) resolution = { ...resolution, ...JSON.parse(m[0]) };
+        } catch {
+          console.warn('[obelixia-supervisor] Resolution parse error');
+        }
+      }
+
+      // Force human review for critical or conflict situations
+      if (resolution.final_risk_level === 'critical' || resolution.has_conflict) {
+        resolution.requires_human_review = true;
+      }
+
+      const executionTime = Date.now() - startTime;
+      const outcomeStatus = resolution.requires_human_review 
+        ? 'human_review' 
+        : resolution.has_conflict ? 'conflict_resolved' : 'success';
+
+      // Step 4: Log cross-domain invocation
+      try {
+        await supabase.from('erp_ai_agent_invocations').insert({
+          agent_code: 'obelixia-supervisor',
+          supervisor_code: 'obelixia-supervisor',
+          company_id,
+          user_id: userId,
+          input_summary: query.substring(0, 500),
+          routing_reason: `Cross-domain: ${classification.reasoning}`,
+          confidence_score: classification.confidence,
+          escalated_to: resolution.requires_human_review ? 'human_review' : null,
+          escalation_reason: resolution.human_review_reason || null,
+          outcome_status: outcomeStatus,
+          execution_time_ms: executionTime,
+          response_summary: JSON.stringify({
+            conflict: resolution.has_conflict,
+            risk: resolution.final_risk_level,
+            recommendation: resolution.final_recommendation?.substring(0, 200),
+          }).substring(0, 1000),
+          metadata: {
+            session_id,
+            classification,
+            has_conflict: resolution.has_conflict,
+            conflict_type: resolution.conflict_type,
+            final_risk_level: resolution.final_risk_level,
+            requires_human_review: resolution.requires_human_review,
+            hr_available: !!hrResult?.success,
+            legal_available: !!legalResult?.success,
+            action_allowed: resolution.action_allowed,
+            phase: '2',
+          },
+        });
+      } catch (logErr) {
+        console.error('[obelixia-supervisor] Log error:', logErr);
+      }
+
+      // Step 5: Return composed result
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          supersupervisor: {
+            classification,
+            resolution: {
+              has_conflict: resolution.has_conflict,
+              conflict_type: resolution.conflict_type,
+              conflict_description: resolution.conflict_description,
+              final_risk_level: resolution.final_risk_level,
+              final_recommendation: resolution.final_recommendation,
+              requires_human_review: resolution.requires_human_review,
+              human_review_reason: resolution.human_review_reason,
+              action_allowed: resolution.action_allowed,
+              composed_response: resolution.composed_response,
+            },
+          },
+          hr_response: hrResult?.data || null,
+          legal_response: legalResult?.data || null,
+          execution_time_ms: executionTime,
+          outcome_status: outcomeStatus,
+          timestamp: new Date().toISOString(),
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({ success: false, error: `Unknown action: ${action}` }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('[obelixia-supervisor] Error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+});
