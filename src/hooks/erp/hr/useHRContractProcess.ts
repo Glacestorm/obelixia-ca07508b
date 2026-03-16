@@ -16,6 +16,7 @@ import { buildContrataPayload, type ContrataPayloadResult } from '@/components/e
 import { type HolidayCalendar, EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
 import { buildContractClosureSnapshot } from '@/components/erp/hr/shared/contractClosureEngine';
 import { evaluateContrataPreIntegrationReadiness, type ContrataPreIntegrationContext } from '@/components/erp/hr/shared/contrataPreIntegrationReadiness';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
