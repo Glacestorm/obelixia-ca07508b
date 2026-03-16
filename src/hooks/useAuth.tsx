@@ -199,6 +199,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isOfficeDirector = userRole === 'director_oficina' || userRole === 'superadmin' || userRole === 'responsable_comercial';
   const isCommercialManager = userRole === 'responsable_comercial' || userRole === 'superadmin';
   const isAuditor = userRole === 'auditor';
+  const isHRManager = userRole === 'hr_manager' || userRole === 'superadmin' || userRole === 'admin';
+  const isLegalManager = userRole === 'legal_manager' || userRole === 'superadmin' || userRole === 'admin';
 
   return (
     <AuthContext.Provider value={{
