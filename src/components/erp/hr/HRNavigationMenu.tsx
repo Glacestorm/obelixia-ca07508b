@@ -350,6 +350,7 @@ export function HRNavigationMenu({ activeModule, onModuleChange, stats, mvpMode 
           items: [
             { id: 'enterprise-dashboard', label: 'Command Center', icon: TrendingUp, description: 'Panel ejecutivo centralizado' },
             { id: 'control-tower', label: 'Control Tower', icon: Gauge, description: 'Torre de control laboral multiempresa' },
+            { id: 'labor-copilot', label: 'Copiloto Laboral', icon: Bot, description: 'Asistente IA contextual operativo', badge: 'IA', badgeVariant: 'secondary' as const },
             { id: 'advisory-portfolio', label: 'Cartera Asesoría', icon: Briefcase, description: 'Gestión multiempresa y cartera de clientes' },
             { id: 'sla-dashboard', label: 'SLA Dashboard', icon: Timer, description: 'Acuerdos de nivel de servicio' },
             { id: 'approval-inbox', label: 'Aprobaciones', icon: Inbox, description: 'Bandeja de aprobaciones' },

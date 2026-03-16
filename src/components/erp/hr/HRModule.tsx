@@ -52,6 +52,7 @@ import { HRIntegrationDashboard } from './integration';
 import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard, HRComplianceEnterprisePanel } from './enterprise';
 import { AdvisoryDashboardPanel } from './advisory';
 import { ControlTowerPanel } from './control-tower';
+import { HRLaborCopilotPanel } from './copilot';
 import { HRCompensationSuitePanel } from './compensation';
 import { HRWellbeingEnterprisePanel } from './wellbeing/HRWellbeingEnterprisePanel';
 import { HRESGSelfServicePanel } from './esg-selfservice/HRESGSelfServicePanel';
@@ -404,6 +405,7 @@ function HRModuleInner() {
         {activeModule === 'wellbeing-enterprise' && <HRWellbeingEnterprisePanel companyId={companyId} />}
         {activeModule === 'esg-selfservice' && <HRESGSelfServicePanel companyId={companyId} />}
         {activeModule === 'copilot-twin' && <HRCopilotTwinPanel companyId={companyId} />}
+        {activeModule === 'labor-copilot' && <HRLaborCopilotPanel />}
         {activeModule === 'security-governance' && <HRSecurityGovernancePanel companyId={companyId} />}
         {activeModule === 'ai-governance' && <HRAIGovernancePanel companyId={companyId} />}
         {activeModule === 'workforce-planning' && <HRWorkforcePlanningPanel companyId={companyId} />}
