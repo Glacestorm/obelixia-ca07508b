@@ -399,6 +399,10 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                   <RegulatoryQualityDashboard stats={hrFeedbackStats} compact />
                 </div>
               )}
+              {/* Phase 2D: Cross-domain learning compact */}
+              <div className="mb-3">
+                <ObelixIALearningDashboard compact domainFilter="hr" />
+              </div>
               <ScrollArea className="h-[340px]">
                 <div className="space-y-3">
                   {hrRegulatoryDocs.length === 0 ? (
