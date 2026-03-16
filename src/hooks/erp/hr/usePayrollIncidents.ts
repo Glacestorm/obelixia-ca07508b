@@ -16,6 +16,7 @@ import { useHRLedgerWriter } from './useHRLedgerWriter';
 export function usePayrollIncidents(companyId?: string) {
   const [incidents, setIncidents] = useState<PayrollIncident[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { writeLedger } = useHRLedgerWriter(companyId || '', 'payroll_incidents');
 
   // ── Fetch ──
 
