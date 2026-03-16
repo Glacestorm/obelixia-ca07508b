@@ -155,6 +155,7 @@ export interface ExpedientStats {
 export function useHRDocumentExpedient(companyId: string) {
   const qc = useQueryClient();
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const { writeLedgerWithEvidence, writeLedger, writeVersion } = useHRLedgerWriter(companyId, 'document_expedient');
 
   // ── Documents ──────────────────────────────────────────────────────────────
 
