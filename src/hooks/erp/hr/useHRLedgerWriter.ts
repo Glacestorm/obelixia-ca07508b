@@ -116,7 +116,11 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
    * Write ledger event + evidence rows atomically (best-effort on evidence).
    */
   const writeLedgerWithEvidence = useCallback(async (
-    input: Omit<LedgerEventInput, 'companyId' | 'sourceModule'>,
+    input: Omit<LedgerEventInput, 'companyId' | 'sourceModule' | 'eventLabel'> & {
+      companyId?: string;
+      sourceModule?: string;
+      eventLabel?: string;
+    },
     evidenceInputs: Omit<EvidenceInput, 'companyId' | 'ledgerEventId'>[],
   ): Promise<string | null> => {
     const eventId = await writeLedger(input);
