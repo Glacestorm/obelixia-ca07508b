@@ -219,6 +219,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isOfficeDirector,
       isCommercialManager,
       isAuditor,
+      isHRManager,
+      isLegalManager,
     }}>
       {children}
     </AuthContext.Provider>
