@@ -201,29 +201,30 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
 
   const companyIds = inputs.map(i => i.companyId);
 
-  // Batch count queries using head:true + count:'exact'
-  // Plus one detail query for latest period per company (limited)
-  const [empCounts, taskData, periodData] = await Promise.all([
-    // Employee counts per company — use select with count
-    supabase.from('hr_employees' as any)
-      .select('company_id', { count: 'exact' })
-      .in('company_id', companyIds)
-      .eq('status', 'active'),
-    // Tasks: we need both count and sla_breached, so fetch minimal fields but with limit
+  // Employee counts via RPC (no row download, no 1000-row limit)
+  // Tasks and periods via batch queries with limits
+  const [empCountRes, taskData, periodData] = await Promise.all([
+    (supabase as any).rpc('count_active_employees_by_company', {
+      p_company_ids: companyIds,
+    }),
     supabase.from('erp_hr_tasks' as any)
       .select('company_id, sla_breached')
       .in('company_id', companyIds)
       .in('status', ['pending', 'in_progress'])
       .limit(2000),
-    // Periods: fetch only latest per company (limited set)
     supabase.from('hr_payroll_periods' as any)
       .select('company_id, status, period_end')
       .in('company_id', companyIds)
       .order('period_end', { ascending: false })
-      .limit(inputs.length * 3), // At most 3 recent periods per company
+      .limit(inputs.length * 3),
   ]);
 
-  const employees = (empCounts.data || []) as any[];
+  // Build employee count map from RPC result
+  const empCountMap = new Map<string, number>();
+  for (const row of (empCountRes.data || []) as any[]) {
+    empCountMap.set(row.company_id, Number(row.active_count));
+  }
+
   const tasks = (taskData.data || []) as any[];
   const periods = (periodData.data || []) as any[];
 
