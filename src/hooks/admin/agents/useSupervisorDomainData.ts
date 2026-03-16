@@ -126,7 +126,7 @@ export function useSupervisorDomainData(companyId?: string) {
     (i.metadata as any)?.has_conflict === true
   );
 
-  // Regulatory cross-domain cases (Phase 2B)
+  // Regulatory cross-domain invocations
   const regulatoryCrossDomainCases = obelixiaInvocations.filter(i =>
     (i.metadata as any)?.trigger_type === 'regulatory_cross_domain'
   );
@@ -136,6 +136,21 @@ export function useSupervisorDomainData(companyId?: string) {
   const regulatoryConflicts = regulatoryCrossDomainCases.filter(i =>
     (i.metadata as any)?.has_conflict === true
   );
+
+  // Manual (non-regulatory) ObelixIA cases
+  const manualCrossDomainCases = obelixiaInvocations.filter(i =>
+    (i.metadata as any)?.trigger_type !== 'regulatory_cross_domain'
+  );
+
+  // Regulatory cases filtered by domain impact (Phase 2C)
+  const regulatoryHRCases = regulatoryCrossDomainCases.filter(i => {
+    const domains = (i.metadata as any)?.impact_domains || [];
+    return domains.includes('hr');
+  });
+  const regulatoryLegalCases = regulatoryCrossDomainCases.filter(i => {
+    const domains = (i.metadata as any)?.impact_domains || [];
+    return domains.includes('legal') || domains.includes('compliance');
+  });
 
   // Stats
   const stats = {
