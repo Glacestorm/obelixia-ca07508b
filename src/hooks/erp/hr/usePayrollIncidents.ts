@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import type { PayrollIncident, IncidentStatus } from '@/engines/erp/hr/payrollIncidentEngine';
 import { deriveOperationalFlags } from '@/engines/erp/hr/payrollIncidentEngine';
 import { isPeriodWritable } from '@/engines/erp/hr/payrollRunEngine';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 export function usePayrollIncidents(companyId?: string) {
   const [incidents, setIncidents] = useState<PayrollIncident[]>([]);
