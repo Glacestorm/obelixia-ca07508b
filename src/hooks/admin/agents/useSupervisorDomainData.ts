@@ -161,6 +161,8 @@ export function useSupervisorDomainData(companyId?: string) {
     escalatedInvocations,
     humanReviewInvocations,
     conflictInvocations,
+    obelixiaInvocations,
+    obelixiaConflicts,
     stats,
   };
 }
