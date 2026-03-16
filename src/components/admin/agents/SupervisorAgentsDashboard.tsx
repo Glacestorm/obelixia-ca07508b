@@ -850,7 +850,7 @@ export function SupervisorAgentsDashboard() {
           )}
         </TabsContent>
 
-        {/* Legal Tab - Live data */}
+        {/* Legal Tab - Live data + Regulatory cases */}
         <TabsContent value="legal" className="space-y-4">
           {domainData.legalAgents.length > 0 ? (
             <>
@@ -891,6 +891,69 @@ export function SupervisorAgentsDashboard() {
               icon={<Scale className="h-5 w-5" />}
               accentColor="text-amber-600"
             />
+          )}
+
+          {/* Regulatory cross-domain cases with legal impact (Phase 2C) */}
+          {domainData.regulatoryLegalCases.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Newspaper className="h-4 w-4 text-amber-600" />
+                  Casos Normativos Cross-Domain con Impacto Jurídico
+                  <Badge variant="outline" className="text-[9px] bg-blue-500/10 text-blue-700 border-blue-500/30">
+                    <Cpu className="h-2.5 w-2.5 mr-0.5" /> ObelixIA
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[220px]">
+                  <div className="space-y-2">
+                    {domainData.regulatoryLegalCases.slice(0, 10).map((inv) => {
+                      const meta = inv.metadata as any;
+                      const riskLevel = meta?.final_risk_level || 'medium';
+                      const hasConflict = meta?.has_conflict;
+                      return (
+                        <div key={inv.id} className={cn(
+                          "p-3 rounded-lg border text-sm",
+                          hasConflict ? "border-amber-500/30 bg-amber-500/5" :
+                          inv.outcome_status === 'human_review' ? "border-violet-500/30 bg-violet-500/5" :
+                          "bg-muted/30"
+                        )}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[9px] bg-blue-500/10 text-blue-700 border-blue-500/30">
+                                <Newspaper className="h-2.5 w-2.5 mr-0.5" /> Normativo
+                              </Badge>
+                              {hasConflict && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
+                              <span className="font-medium text-xs truncate max-w-[250px]">{meta?.document_title || inv.input_summary}</span>
+                            </div>
+                            <Badge variant="outline" className={cn("text-[9px]",
+                              riskLevel === 'critical' ? 'bg-destructive/10 text-destructive' :
+                              riskLevel === 'high' ? 'bg-amber-500/10 text-amber-700' : 'bg-muted'
+                            )}>{riskLevel}</Badge>
+                          </div>
+                          {meta?.legal_impact && (
+                            <p className="text-[11px] mt-1"><strong>Impacto jurídico:</strong> {meta.legal_impact}</p>
+                          )}
+                          {meta?.priority_actions?.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              <span className="font-medium">Acciones:</span> {meta.priority_actions.filter((a: string) => a.toLowerCase().includes('jurídico') || a.toLowerCase().includes('legal') || a.toLowerCase().includes('compliance')).slice(0, 2).join(' · ') || meta.priority_actions[0]}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                            {meta?.adaptation_deadline && <span className="text-amber-600">⏱ {meta.adaptation_deadline}</span>}
+                            <span>{new Date(inv.created_at).toLocaleDateString('es')}</span>
+                            {meta?.source_url && (
+                              <a href={meta.source_url} target="_blank" rel="noopener" className="text-primary hover:underline">📄 Fuente</a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
