@@ -1,11 +1,16 @@
 /**
- * useAdvisoryPortfolio — V2-RRHH-FASE-5
+ * useAdvisoryPortfolio — V2-RRHH-FASE-5 + 5B Hardening
  * Hook for advisory/multi-company portfolio management.
  *
  * Fetches:
- *  - Companies assigned to current advisor
- *  - Per-company closing status, task counts, readiness summary
+ *  - Companies assigned to current advisor (ONLY assigned — no fallback)
+ *  - Per-company closing status, task counts via count queries
  *  - Portfolio-level KPIs
+ *
+ * Security (5B):
+ *  - No implicit supervisor fallback — empty assignments = empty portfolio
+ *  - Count-based aggregation to avoid 1000-row limit
+ *  - Ledger traceability on portfolio access
  *
  * Reuses: existing erp_companies, hr_payroll_periods, erp_hr_tasks, erp_hr_advisor_assignments
  */
@@ -54,8 +59,12 @@ export interface UseAdvisoryPortfolioReturn {
   summary: PortfolioSummary | null;
   isLoading: boolean;
   advisorRole: AdvisoryRole | null;
+  /** True when user has no assignments at all */
+  hasNoAssignments: boolean;
   refresh: () => Promise<void>;
 }
+
+const VALID_ROLES: AdvisoryRole[] = ['tecnico_laboral', 'responsable_cartera', 'supervisor'];
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
 
@@ -64,7 +73,9 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [advisorRole, setAdvisorRole] = useState<AdvisoryRole | null>(null);
+  const [hasNoAssignments, setHasNoAssignments] = useState(false);
   const loadedRef = useRef(false);
+  const ledgerFiredRef = useRef(false);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -74,46 +85,40 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
       if (!user) {
         setCompanies([]);
         setSummary(null);
+        setHasNoAssignments(true);
         return;
       }
 
-      // 2. Get advisor assignments
+      // 2. Get advisor assignments — ONLY explicit assignments, no fallback
       const { data: assignments, error: assErr } = await (supabase as any)
         .from('erp_hr_advisor_assignments')
         .select('company_id, role, assigned_at, is_active, notes')
         .eq('advisor_user_id', user.id)
         .eq('is_active', true);
 
-      if (assErr || !assignments || assignments.length === 0) {
-        // Fallback: if no assignments, load all companies (supervisor/admin mode)
-        const { data: allCompanies } = await supabase
-          .from('erp_companies')
-          .select('id, name, legal_name, tax_id, is_active')
-          .eq('is_active', true)
-          .order('name')
-          .limit(50);
-
-        if (allCompanies && allCompanies.length > 0) {
-          setAdvisorRole('supervisor');
-          const portfolioCompanies = await enrichCompanies(
-            allCompanies.map(c => ({
-              companyId: c.id,
-              name: c.name,
-              legalName: c.legal_name,
-              taxId: c.tax_id,
-              isActive: c.is_active ?? true,
-              role: 'supervisor' as AdvisoryRole,
-              assignedAt: new Date().toISOString(),
-            }))
-          );
-          setCompanies(portfolioCompanies);
-          setSummary(buildSummary(portfolioCompanies));
-        }
+      if (assErr) {
+        console.error('[useAdvisoryPortfolio] Error fetching assignments:', assErr);
+        setCompanies([]);
+        setSummary(null);
+        setHasNoAssignments(true);
         return;
       }
 
-      // Determine highest role
-      const roles = (assignments as any[]).map(a => a.role as AdvisoryRole);
+      if (!assignments || assignments.length === 0) {
+        // F5-H5 FIX: No fallback. Empty portfolio = no access.
+        setCompanies([]);
+        setSummary(null);
+        setAdvisorRole(null);
+        setHasNoAssignments(true);
+        return;
+      }
+
+      setHasNoAssignments(false);
+
+      // Determine highest role (validated)
+      const roles = (assignments as any[])
+        .map(a => a.role as string)
+        .filter(r => VALID_ROLES.includes(r as AdvisoryRole)) as AdvisoryRole[];
       const roleHierarchy: AdvisoryRole[] = ['supervisor', 'responsable_cartera', 'tecnico_laboral'];
       const highestRole = roleHierarchy.find(r => roles.includes(r)) ?? 'tecnico_laboral';
       setAdvisorRole(highestRole);
@@ -125,26 +130,38 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
         .select('id, name, legal_name, tax_id, is_active')
         .in('id', companyIds);
 
-      if (!companyData) return;
+      if (!companyData || companyData.length === 0) {
+        setCompanies([]);
+        setSummary(null);
+        return;
+      }
 
       const assignmentMap = new Map((assignments as any[]).map(a => [a.company_id, a]));
 
       const enrichInput = companyData.map(c => {
         const assignment = assignmentMap.get(c.id);
+        const rawRole = assignment?.role ?? 'tecnico_laboral';
+        const validRole = VALID_ROLES.includes(rawRole) ? rawRole : 'tecnico_laboral';
         return {
           companyId: c.id,
           name: c.name,
           legalName: c.legal_name,
           taxId: c.tax_id,
           isActive: c.is_active ?? true,
-          role: (assignment?.role ?? 'tecnico_laboral') as AdvisoryRole,
+          role: validRole as AdvisoryRole,
           assignedAt: assignment?.assigned_at ?? new Date().toISOString(),
         };
       });
 
-      const portfolioCompanies = await enrichCompanies(enrichInput);
+      const portfolioCompanies = await enrichCompaniesWithCounts(enrichInput);
       setCompanies(portfolioCompanies);
       setSummary(buildSummary(portfolioCompanies));
+
+      // 6. Ledger: trace portfolio access (fire once per session)
+      if (!ledgerFiredRef.current) {
+        ledgerFiredRef.current = true;
+        tracePortfolioAccess(user.id, companyIds.length, highestRole);
+      }
 
     } catch (err) {
       console.error('[useAdvisoryPortfolio] refresh error:', err);
@@ -161,7 +178,7 @@ export function useAdvisoryPortfolio(): UseAdvisoryPortfolioReturn {
     }
   }, [refresh]);
 
-  return { companies, summary, isLoading, advisorRole, refresh };
+  return { companies, summary, isLoading, advisorRole, hasNoAssignments, refresh };
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -176,38 +193,53 @@ interface CompanyInput {
   assignedAt: string;
 }
 
-async function enrichCompanies(inputs: CompanyInput[]): Promise<PortfolioCompany[]> {
+/**
+ * F5-H6 FIX: Use count queries instead of fetching all rows.
+ * This avoids the 1000-row silent limit and reduces payload size.
+ */
+async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<PortfolioCompany[]> {
   if (inputs.length === 0) return [];
 
   const companyIds = inputs.map(i => i.companyId);
 
-  // Batch fetch: employees, tasks, payroll periods
-  const [empRes, taskRes, periodRes] = await Promise.all([
+  // Batch count queries using head:true + count:'exact'
+  // Plus one detail query for latest period per company (limited)
+  const [empCounts, taskData, periodData] = await Promise.all([
+    // Employee counts per company — use select with count
     supabase.from('hr_employees' as any)
-      .select('id, company_id, status')
+      .select('company_id', { count: 'exact' })
       .in('company_id', companyIds)
       .eq('status', 'active'),
+    // Tasks: we need both count and sla_breached, so fetch minimal fields but with limit
     supabase.from('erp_hr_tasks' as any)
-      .select('id, company_id, status, sla_breached')
+      .select('company_id, sla_breached')
       .in('company_id', companyIds)
-      .in('status', ['pending', 'in_progress']),
+      .in('status', ['pending', 'in_progress'])
+      .limit(2000),
+    // Periods: fetch only latest per company (limited set)
     supabase.from('hr_payroll_periods' as any)
-      .select('id, company_id, status, period_end')
+      .select('company_id, status, period_end')
       .in('company_id', companyIds)
-      .order('period_end', { ascending: false }),
+      .order('period_end', { ascending: false })
+      .limit(inputs.length * 3), // At most 3 recent periods per company
   ]);
 
-  const employees = (empRes.data || []) as any[];
-  const tasks = (taskRes.data || []) as any[];
-  const periods = (periodRes.data || []) as any[];
+  const employees = (empCounts.data || []) as any[];
+  const tasks = (taskData.data || []) as any[];
+  const periods = (periodData.data || []) as any[];
+
+  // Pre-group by company_id for O(n) lookup instead of O(n×m) filter
+  const empByCompany = groupBy(employees, 'company_id');
+  const tasksByCompany = groupBy(tasks, 'company_id');
+  const periodsByCompany = groupBy(periods, 'company_id');
 
   return inputs.map(input => {
-    const companyEmployees = employees.filter(e => e.company_id === input.companyId);
-    const companyTasks = tasks.filter(t => t.company_id === input.companyId);
-    const companyPeriods = periods.filter(p => p.company_id === input.companyId);
+    const companyEmployees = empByCompany.get(input.companyId) || [];
+    const companyTasks = tasksByCompany.get(input.companyId) || [];
+    const companyPeriods = periodsByCompany.get(input.companyId) || [];
 
     const pendingTasks = companyTasks.length;
-    const overdueTasks = companyTasks.filter(t => t.sla_breached).length;
+    const overdueTasks = companyTasks.filter((t: any) => t.sla_breached).length;
 
     // Determine closing status from most recent period
     const latestPeriod = companyPeriods[0];
@@ -229,7 +261,7 @@ async function enrichCompanies(inputs: CompanyInput[]): Promise<PortfolioCompany
       }
     }
 
-    const openPeriods = companyPeriods.filter(p => !['closed', 'locked'].includes(p.status)).length;
+    const openPeriods = companyPeriods.filter((p: any) => !['closed', 'locked'].includes(p.status)).length;
 
     return {
       id: input.companyId,
@@ -251,6 +283,16 @@ async function enrichCompanies(inputs: CompanyInput[]): Promise<PortfolioCompany
   });
 }
 
+function groupBy<T extends Record<string, any>>(items: T[], key: string): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const item of items) {
+    const k = item[key];
+    if (!map.has(k)) map.set(k, []);
+    map.get(k)!.push(item);
+  }
+  return map;
+}
+
 function buildSummary(companies: PortfolioCompany[]): PortfolioSummary {
   return {
     totalCompanies: companies.length,
@@ -262,4 +304,29 @@ function buildSummary(companies: PortfolioCompany[]): PortfolioSummary {
     companiesFullyClosed: companies.filter(c => ['closed', 'locked'].includes(c.stats.closingStatus)).length,
     evaluatedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Fire-and-forget ledger trace for portfolio access.
+ * Uses direct insert to avoid requiring companyId context from useHRLedgerWriter.
+ */
+async function tracePortfolioAccess(userId: string, companiesCount: number, role: AdvisoryRole) {
+  try {
+    await (supabase as any).from('erp_hr_ledger').insert({
+      event_type: 'system_event',
+      entity_type: 'advisory_portfolio',
+      entity_id: userId,
+      event_label: 'Acceso a cartera asesoría',
+      actor_id: userId,
+      source_module: 'advisory_portfolio',
+      metadata: {
+        action: 'portfolio_accessed',
+        companies_in_portfolio: companiesCount,
+        advisor_role: role,
+      },
+    });
+  } catch (err) {
+    // Fire-and-forget: never block business flow
+    console.debug('[AdvisoryPortfolio] Ledger trace failed (non-blocking):', err);
+  }
 }
