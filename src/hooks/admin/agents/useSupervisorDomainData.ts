@@ -118,6 +118,14 @@ export function useSupervisorDomainData(companyId?: string) {
     i.outcome_status === 'failed' || i.outcome_status === 'escalated'
   );
 
+  // ObelixIA cross-domain invocations
+  const obelixiaInvocations = invocations.filter(i => 
+    i.supervisor_code === 'obelixia-supervisor' || i.agent_code === 'obelixia-supervisor'
+  );
+  const obelixiaConflicts = obelixiaInvocations.filter(i => 
+    (i.metadata as any)?.has_conflict === true
+  );
+
   // Stats
   const stats = {
     totalAgents: agents.length,
@@ -153,6 +161,8 @@ export function useSupervisorDomainData(companyId?: string) {
     escalatedInvocations,
     humanReviewInvocations,
     conflictInvocations,
+    obelixiaInvocations,
+    obelixiaConflicts,
     stats,
   };
 }

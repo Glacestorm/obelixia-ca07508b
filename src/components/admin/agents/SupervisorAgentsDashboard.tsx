@@ -587,6 +587,13 @@ export function SupervisorAgentsDashboard() {
             <Newspaper className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Normativa</span>
           </TabsTrigger>
+          <TabsTrigger value="obelixia" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Cpu className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">ObelixIA</span>
+            {domainData.obelixiaInvocations.length > 0 && (
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.obelixiaInvocations.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="insights" className="gap-1 text-xs flex-1 min-w-[70px]">
             <Sparkles className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Insights</span>
@@ -990,6 +997,105 @@ export function SupervisorAgentsDashboard() {
         {/* Normativa Tab */}
         <TabsContent value="normativa" className="space-y-4">
           <RegulatoryIntelligencePanel />
+        </TabsContent>
+
+        {/* ObelixIA Supersupervisor Tab */}
+        <TabsContent value="obelixia" className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Cpu className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">ObelixIA-Supervisor</h3>
+            <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">Fase 2 · Live</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Supersupervisor transversal que coordina HR-Supervisor y Legal-Supervisor. Resuelve conflictos cross-domain y escala a revisión humana.
+          </p>
+
+          {/* ObelixIA KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Cpu className="h-4 w-4 text-primary" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.length}</p><p className="text-[10px] text-muted-foreground">Casos totales</p></div></div></CardContent></Card>
+            <Card><CardContent className="p-3"><div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-500" /><div><p className="text-lg font-bold">{domainData.obelixiaConflicts.length}</p><p className="text-[10px] text-muted-foreground">Conflictos</p></div></div></CardContent></Card>
+            <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Shield className="h-4 w-4 text-violet-500" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.filter(i => i.outcome_status === 'human_review').length}</p><p className="text-[10px] text-muted-foreground">Revisión humana</p></div></div></CardContent></Card>
+            <Card><CardContent className="p-3"><div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.filter(i => i.outcome_status === 'success' || i.outcome_status === 'conflict_resolved').length}</p><p className="text-[10px] text-muted-foreground">Resueltos</p></div></div></CardContent></Card>
+            <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Timer className="h-4 w-4 text-amber-500" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.length > 0 ? Math.round(domainData.obelixiaInvocations.reduce((s, i) => s + i.execution_time_ms, 0) / domainData.obelixiaInvocations.length) : 0}ms</p><p className="text-[10px] text-muted-foreground">Tiempo medio</p></div></div></CardContent></Card>
+          </div>
+
+          {/* ObelixIA agent card from registry */}
+          {domainData.crossAgents.filter(a => a.code === 'obelixia-supervisor').length > 0 && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {domainData.crossAgents.filter(a => a.code === 'obelixia-supervisor').map(agent => (
+                <RegistryAgentCard
+                  key={agent.code}
+                  agent={agent}
+                  invocationCount={domainData.obelixiaInvocations.length}
+                  lastInvocation={domainData.obelixiaInvocations[0]?.created_at}
+                  onConfigure={(a) => { setRegistryConfigAgent(a); setShowRegistryConfig(true); }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Recent cross-domain cases */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <History className="h-4 w-4" />
+                Casos cross-domain recientes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {domainData.obelixiaInvocations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Network className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Sin casos cross-domain aún</p>
+                  <p className="text-xs mt-1">Los casos coordinados por ObelixIA aparecerán aquí</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px]">
+                  <div className="space-y-2">
+                    {domainData.obelixiaInvocations.slice(0, 20).map((inv) => {
+                      const meta = inv.metadata as any;
+                      const hasConflict = meta?.has_conflict;
+                      const riskLevel = meta?.final_risk_level || 'medium';
+                      return (
+                        <div key={inv.id} className={cn(
+                          "p-3 rounded-lg border text-sm",
+                          hasConflict ? "border-amber-500/30 bg-amber-500/5" :
+                          inv.outcome_status === 'human_review' ? "border-violet-500/30 bg-violet-500/5" :
+                          "bg-muted/30"
+                        )}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              {hasConflict && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
+                              {inv.outcome_status === 'human_review' && <Shield className="h-3.5 w-3.5 text-violet-500" />}
+                              <span className="font-medium text-xs truncate max-w-[300px]">{inv.input_summary}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="outline" className={cn("text-[9px]",
+                                riskLevel === 'critical' ? 'bg-destructive/10 text-destructive' :
+                                riskLevel === 'high' ? 'bg-amber-500/10 text-amber-700' :
+                                'bg-muted'
+                              )}>{riskLevel}</Badge>
+                              <Badge variant="outline" className={cn("text-[9px]",
+                                inv.outcome_status === 'success' || inv.outcome_status === 'conflict_resolved' ? 'bg-emerald-500/10 text-emerald-700' :
+                                inv.outcome_status === 'human_review' ? 'bg-violet-500/10 text-violet-700' :
+                                'bg-muted'
+                              )}>{inv.outcome_status}</Badge>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">{inv.routing_reason}</p>
+                          <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                            <span>{inv.execution_time_ms}ms</span>
+                            <span>Conf: {Math.round(inv.confidence_score * 100)}%</span>
+                            <span>{new Date(inv.created_at).toLocaleString('es')}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Insights Tab */}

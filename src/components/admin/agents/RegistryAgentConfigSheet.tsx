@@ -1,6 +1,6 @@
 /**
  * RegistryAgentConfigSheet - Governed configuration for registry agents
- * Persists to erp_ai_agents_registry via Supabase
+ * Phase 2: Enforces can_configure_agent_domain + audit logging
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -21,11 +21,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Bot, Save, RotateCcw, Shield, Brain, Target, Activity, AlertTriangle
+  Bot, Save, RotateCcw, Shield, Brain, Target, Activity, AlertTriangle, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import type { RegistryAgent } from '@/hooks/admin/agents/useSupervisorDomainData';
 
 interface RegistryAgentConfigSheetProps {
@@ -43,6 +44,34 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
   const [requiresHumanReview, setRequiresHumanReview] = useState(false);
   const [supervisorCode, setSupervisorCode] = useState('');
   const [saving, setSaving] = useState(false);
+  const [canConfigure, setCanConfigure] = useState<boolean | null>(null);
+  const { user, isSuperAdmin, isAdmin } = useAuth();
+
+  // Check domain permissions
+  useEffect(() => {
+    if (!agent || !user) {
+      setCanConfigure(null);
+      return;
+    }
+    // Superadmin/admin always can
+    if (isSuperAdmin || isAdmin) {
+      setCanConfigure(true);
+      return;
+    }
+    // Check via DB function
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc('can_configure_agent_domain', {
+          p_user_id: user.id,
+          p_domain: agent.module_domain,
+        });
+        if (error) throw error;
+        setCanConfigure(!!data);
+      } catch {
+        setCanConfigure(false);
+      }
+    })();
+  }, [agent, user, isSuperAdmin, isAdmin]);
 
   useEffect(() => {
     if (agent) {
@@ -56,23 +85,75 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
   }, [agent]);
 
   const handleSave = useCallback(async () => {
-    if (!agent) return;
+    if (!agent || !user) return;
+    if (!canConfigure) {
+      toast.error('No tienes permisos para configurar este agente');
+      return;
+    }
+
     setSaving(true);
     try {
+      // Build changes for audit
+      const changes: Record<string, { old: any; new: any }> = {};
+      if (name !== agent.name) changes.name = { old: agent.name, new: name };
+      if (description !== agent.description) changes.description = { old: agent.description, new: description };
+      if (status !== agent.status) changes.status = { old: agent.status, new: status };
+      const newThreshold = confidenceThreshold / 100;
+      if (Math.abs(newThreshold - agent.confidence_threshold) > 0.001) {
+        changes.confidence_threshold = { old: agent.confidence_threshold, new: newThreshold };
+      }
+      if (requiresHumanReview !== agent.requires_human_review) {
+        changes.requires_human_review = { old: agent.requires_human_review, new: requiresHumanReview };
+      }
+      const newSupervisor = supervisorCode || null;
+      if (newSupervisor !== agent.supervisor_code) {
+        changes.supervisor_code = { old: agent.supervisor_code, new: newSupervisor };
+      }
+
+      // Save to registry
       const { error } = await supabase
         .from('erp_ai_agents_registry')
         .update({
           name,
           description,
           status,
-          confidence_threshold: confidenceThreshold / 100,
+          confidence_threshold: newThreshold,
           requires_human_review: requiresHumanReview,
-          supervisor_code: supervisorCode || null,
+          supervisor_code: newSupervisor,
           updated_at: new Date().toISOString(),
         } as any)
         .eq('id', agent.id);
 
       if (error) throw error;
+
+      // Audit log via invocation
+      if (Object.keys(changes).length > 0) {
+        try {
+          await supabase.from('erp_ai_agent_invocations').insert({
+            agent_code: agent.code,
+            supervisor_code: 'governance',
+            company_id: '00000000-0000-0000-0000-000000000000',
+            user_id: user.id,
+            input_summary: `Config change: ${Object.keys(changes).join(', ')}`,
+            routing_reason: 'agent_config_change',
+            confidence_score: 1,
+            outcome_status: 'config_change',
+            execution_time_ms: 0,
+            response_summary: JSON.stringify(changes).substring(0, 1000),
+            metadata: {
+              action: 'config_change',
+              agent_id: agent.id,
+              agent_code: agent.code,
+              domain: agent.module_domain,
+              changes,
+              phase: '2',
+            },
+          });
+        } catch (auditErr) {
+          console.error('[RegistryAgentConfigSheet] audit log error:', auditErr);
+        }
+      }
+
       toast.success('Configuración guardada');
       onSaved?.();
       onOpenChange(false);
@@ -82,7 +163,7 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
     } finally {
       setSaving(false);
     }
-  }, [agent, name, description, status, confidenceThreshold, requiresHumanReview, supervisorCode, onSaved, onOpenChange]);
+  }, [agent, user, canConfigure, name, description, status, confidenceThreshold, requiresHumanReview, supervisorCode, onSaved, onOpenChange]);
 
   const handleReset = () => {
     if (agent) {
@@ -96,6 +177,8 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
   };
 
   if (!agent) return null;
+
+  const isLocked = canConfigure === false;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -112,6 +195,12 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
               </SheetDescription>
             </div>
           </div>
+          {isLocked && (
+            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20">
+              <Lock className="h-4 w-4 text-destructive" />
+              <span className="text-xs text-destructive">No tienes permisos para editar agentes del dominio {agent.module_domain.toUpperCase()}</span>
+            </div>
+          )}
         </SheetHeader>
 
         <ScrollArea className="h-[calc(100vh-180px)] mt-4 pr-4">
@@ -123,11 +212,11 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
               </h4>
               <div className="space-y-2">
                 <Label className="text-xs">Nombre visible</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} className="h-8 text-sm" />
+                <Input value={name} onChange={e => setName(e.target.value)} className="h-8 text-sm" disabled={isLocked} />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs">Descripción</Label>
-                <Textarea value={description} onChange={e => setDescription(e.target.value)} className="text-sm min-h-[60px]" />
+                <Textarea value={description} onChange={e => setDescription(e.target.value)} className="text-sm min-h-[60px]" disabled={isLocked} />
               </div>
             </div>
 
@@ -137,10 +226,11 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
             <div className="space-y-3">
               <h4 className="text-sm font-semibold flex items-center gap-2">
                 <Activity className="h-4 w-4" /> Estado
+                {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
               </h4>
               <div className="space-y-2">
                 <Label className="text-xs">Estado del agente</Label>
-                <Select value={status} onValueChange={setStatus}>
+                <Select value={status} onValueChange={setStatus} disabled={isLocked}>
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
@@ -159,6 +249,7 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
             <div className="space-y-3">
               <h4 className="text-sm font-semibold flex items-center gap-2">
                 <Target className="h-4 w-4" /> Umbrales
+                {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
               </h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -171,6 +262,7 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
                   min={10}
                   max={100}
                   step={5}
+                  disabled={isLocked}
                 />
                 <p className="text-[10px] text-muted-foreground">
                   Por debajo de este umbral se escalará o pedirá revisión humana
@@ -184,13 +276,14 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
             <div className="space-y-3">
               <h4 className="text-sm font-semibold flex items-center gap-2">
                 <Shield className="h-4 w-4" /> Revisión y Escalado
+                {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
               </h4>
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-xs">Requiere revisión humana</Label>
                   <p className="text-[10px] text-muted-foreground">Todas las respuestas pasarán por revisión</p>
                 </div>
-                <Switch checked={requiresHumanReview} onCheckedChange={setRequiresHumanReview} />
+                <Switch checked={requiresHumanReview} onCheckedChange={setRequiresHumanReview} disabled={isLocked} />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs">Supervisor asignado</Label>
@@ -199,6 +292,7 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
                   onChange={e => setSupervisorCode(e.target.value)}
                   placeholder="ej: hr-supervisor"
                   className="h-8 text-sm"
+                  disabled={isLocked}
                 />
               </div>
             </div>
@@ -241,11 +335,12 @@ export function RegistryAgentConfigSheet({ open, onOpenChange, agent, onSaved }:
 
         {/* Actions */}
         <div className="flex gap-2 pt-4 border-t mt-4">
-          <Button variant="outline" size="sm" onClick={handleReset} className="gap-1">
+          <Button variant="outline" size="sm" onClick={handleReset} className="gap-1" disabled={isLocked}>
             <RotateCcw className="h-3 w-3" /> Resetear
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1 gap-1">
-            <Save className="h-3 w-3" /> {saving ? 'Guardando...' : 'Guardar configuración'}
+          <Button size="sm" onClick={handleSave} disabled={saving || isLocked} className="flex-1 gap-1">
+            {isLocked ? <Lock className="h-3 w-3" /> : <Save className="h-3 w-3" />}
+            {isLocked ? 'Sin permisos' : saving ? 'Guardando...' : 'Guardar configuración'}
           </Button>
         </div>
       </SheetContent>
