@@ -611,6 +611,14 @@ export function useHRContractProcess(companyId: string) {
         'important',
         ['closure_status'],
       );
+      // Ledger: contract terminated/closed
+      writeLedger({
+        eventType: 'contract_terminated',
+        entityType: 'contract_process',
+        entityId: contractData.id,
+        afterSnapshot: { closure_status: 'closed', notes },
+        complianceImpact: { internally_closed: true },
+      });
       return { success: true };
     } catch (err) {
       console.error('[useHRContractProcess] closeContractProcess error:', err);
