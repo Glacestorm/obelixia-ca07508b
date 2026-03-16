@@ -308,6 +308,9 @@ function MessageBubble({ message }: { message: CopilotMessage }) {
         ) : (
           <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
             <ReactMarkdown>{message.content}</ReactMarkdown>
+            {message.isStreaming && (
+              <span className="inline-block w-2 h-4 bg-primary/60 animate-pulse ml-0.5" />
+            )}
           </div>
         )}
         <p className={cn(
@@ -315,6 +318,7 @@ function MessageBubble({ message }: { message: CopilotMessage }) {
           isUser ? 'text-primary-foreground/60' : 'text-muted-foreground',
         )}>
           {message.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+          {message.isStreaming && ' · transmitiendo…'}
         </p>
       </div>
     </div>
