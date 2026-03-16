@@ -1,10 +1,15 @@
 /**
- * controlTowerEngine.ts — V2-RRHH-FASE-6
+ * controlTowerEngine.ts — V2-RRHH-FASE-6 + 6B Enrichment
  * Pure engine for Control Tower: alert taxonomy, health scoring,
  * signal aggregation, deduplication, and company prioritization.
  *
+ * Signals consumed:
+ *  - Advisory portfolio stats (closing, tasks, employees)
+ *  - Readiness matrix per company (blocked circuits, status gaps)
+ *  - Documental/compliance alerts (erp_hr_alerts)
+ *  - Traceability (evidence + version registry counts)
+ *
  * Zero side-effects, zero fetch — deterministic functions only.
- * Consumes data shapes from existing hooks (advisory, closing, readiness, tasks).
  */
 
 import type { PortfolioCompany } from '@/hooks/erp/hr/useAdvisoryPortfolio';
@@ -33,6 +38,43 @@ export interface ControlTowerAlert {
   explanation: string;
   suggestedAction: string;
   hasEvidence: boolean;
+}
+
+// ─── Enriched Signal Inputs (per company) ───────────────────────────────────
+
+export interface CompanyReadinessSignals {
+  blockedCircuits: number;
+  dataIncompleteCircuits: number;
+  notConfiguredCircuits: number;
+  errorCircuits: number;
+  totalCircuits: number;
+  /** e.g. "TGSS Afiliación: bloqueado" */
+  blockDetails: string[];
+}
+
+export interface CompanyDocumentalSignals {
+  unresolvedCritical: number;
+  unresolvedHigh: number;
+  unresolvedMedium: number;
+  /** Top alert titles for drill-down */
+  topAlertTitles: string[];
+}
+
+export interface CompanyTraceabilitySignals {
+  /** Evidence count for this company */
+  evidenceCount: number;
+  /** Version count for this company */
+  versionCount: number;
+  /** Whether there's at least one closing evidence */
+  hasClosingEvidence: boolean;
+  /** Whether there's at least one readiness evidence */
+  hasReadinessEvidence: boolean;
+}
+
+export interface EnrichedCompanySignals {
+  readiness?: CompanyReadinessSignals;
+  documental?: CompanyDocumentalSignals;
+  traceability?: CompanyTraceabilitySignals;
 }
 
 // ─── Health Score ────────────────────────────────────────────────────────────
@@ -68,7 +110,10 @@ export interface ControlTowerSummary {
  * Score starts at 100 and deducts points for each risk signal.
  * Explainable: every deduction is tracked as a reason.
  */
-export function computeCompanyHealth(company: PortfolioCompany): CompanyHealthScore {
+export function computeCompanyHealth(
+  company: PortfolioCompany,
+  enriched?: EnrichedCompanySignals,
+): CompanyHealthScore {
   let score = 100;
   const reasons: string[] = [];
   const blockers: string[] = [];
@@ -193,11 +238,224 @@ export function computeCompanyHealth(company: PortfolioCompany): CompanyHealthSc
     });
   }
 
+  // ── 4. READINESS signals (6B enrichment) ──
+  if (enriched?.readiness) {
+    const r = enriched.readiness;
+
+    if (r.blockedCircuits > 0) {
+      const deduction = Math.min(r.blockedCircuits * 8, 20);
+      score -= deduction;
+      reasons.push(`${r.blockedCircuits} circuito(s) oficial(es) bloqueado(s)`);
+      blockers.push(`Readiness: ${r.blockedCircuits} circuito(s) bloqueado(s)`);
+      actions.push('Revisar certificados y configuración de circuitos bloqueados');
+      alerts.push({
+        id: makeAlertId('readiness', 'blocked'),
+        category: 'readiness',
+        severity: r.blockedCircuits >= 3 ? 'critical' : 'high',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Readiness España',
+        origin: 'readiness_matrix',
+        title: `${r.blockedCircuits} circuito(s) bloqueado(s)`,
+        explanation: r.blockDetails.length > 0
+          ? `Circuitos afectados: ${r.blockDetails.slice(0, 3).join('; ')}`
+          : `Hay ${r.blockedCircuits} circuito(s) que no pueden avanzar por bloqueos.`,
+        suggestedAction: 'Acceder a Readiness España y resolver los bloqueos indicados.',
+        hasEvidence: false,
+      });
+    }
+
+    if (r.errorCircuits > 0) {
+      score -= Math.min(r.errorCircuits * 10, 15);
+      reasons.push(`${r.errorCircuits} circuito(s) con error`);
+      alerts.push({
+        id: makeAlertId('readiness', 'error'),
+        category: 'readiness',
+        severity: 'high',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Readiness España',
+        origin: 'readiness_matrix',
+        title: `${r.errorCircuits} circuito(s) con error`,
+        explanation: 'Existen circuitos en estado de error que requieren atención.',
+        suggestedAction: 'Revisar envíos rechazados o con errores en la matriz de readiness.',
+        hasEvidence: false,
+      });
+    }
+
+    if (r.dataIncompleteCircuits > 0 && r.blockedCircuits === 0) {
+      score -= Math.min(r.dataIncompleteCircuits * 3, 10);
+      reasons.push(`${r.dataIncompleteCircuits} circuito(s) con datos incompletos`);
+      alerts.push({
+        id: makeAlertId('readiness', 'incomplete'),
+        category: 'readiness',
+        severity: 'medium',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Readiness España',
+        origin: 'readiness_matrix',
+        title: `${r.dataIncompleteCircuits} circuito(s) con datos incompletos`,
+        explanation: 'Algunos circuitos necesitan datos adicionales del ERP para poder generar payloads.',
+        suggestedAction: 'Completar datos de empleados, contratos o cotización según corresponda.',
+        hasEvidence: false,
+      });
+    }
+
+    if (r.notConfiguredCircuits > 0 && r.totalCircuits > 0) {
+      const unconfiguredRatio = r.notConfiguredCircuits / r.totalCircuits;
+      if (unconfiguredRatio > 0.5) {
+        score -= 5;
+        reasons.push(`${r.notConfiguredCircuits}/${r.totalCircuits} circuitos sin configurar`);
+        alerts.push({
+          id: makeAlertId('readiness', 'not_configured'),
+          category: 'readiness',
+          severity: 'info',
+          companyId: company.id,
+          companyName: company.name,
+          process: 'Readiness España',
+          origin: 'readiness_matrix',
+          title: `${r.notConfiguredCircuits} circuito(s) sin configurar`,
+          explanation: 'La mayoría de circuitos oficiales no están configurados.',
+          suggestedAction: 'Evaluar qué circuitos son necesarios y configurarlos.',
+          hasEvidence: false,
+        });
+      }
+    }
+  }
+
+  // ── 5. DOCUMENTAL signals (6B enrichment) ──
+  if (enriched?.documental) {
+    const d = enriched.documental;
+
+    if (d.unresolvedCritical > 0) {
+      score -= Math.min(d.unresolvedCritical * 10, 20);
+      reasons.push(`${d.unresolvedCritical} alerta(s) documental(es) crítica(s)`);
+      blockers.push(`${d.unresolvedCritical} alerta(s) documental(es) crítica(s) sin resolver`);
+      actions.push('Resolver alertas documentales críticas');
+      alerts.push({
+        id: makeAlertId('documental', 'critical'),
+        category: 'documental',
+        severity: 'critical',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Documental / Compliance',
+        origin: 'erp_hr_alerts',
+        title: `${d.unresolvedCritical} alerta(s) crítica(s)`,
+        explanation: d.topAlertTitles.length > 0
+          ? `Incluye: ${d.topAlertTitles.slice(0, 2).join('; ')}`
+          : `Hay ${d.unresolvedCritical} alerta(s) de severidad crítica sin resolver.`,
+        suggestedAction: 'Acceder al panel de alertas HR y resolver las alertas críticas.',
+        hasEvidence: false,
+      });
+    }
+
+    if (d.unresolvedHigh > 0) {
+      score -= Math.min(d.unresolvedHigh * 5, 15);
+      reasons.push(`${d.unresolvedHigh} alerta(s) documental(es) de severidad alta`);
+      actions.push('Revisar alertas documentales de severidad alta');
+      alerts.push({
+        id: makeAlertId('documental', 'high'),
+        category: 'documental',
+        severity: 'high',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Documental / Compliance',
+        origin: 'erp_hr_alerts',
+        title: `${d.unresolvedHigh} alerta(s) de severidad alta`,
+        explanation: `Hay ${d.unresolvedHigh} alerta(s) documentales/HR de severidad alta pendientes.`,
+        suggestedAction: 'Revisar vencimientos de contratos, documentos o situaciones HR pendientes.',
+        hasEvidence: false,
+      });
+    }
+
+    if (d.unresolvedMedium > 3) {
+      score -= 5;
+      reasons.push(`${d.unresolvedMedium} alertas documentales medias acumuladas`);
+      alerts.push({
+        id: makeAlertId('documental', 'medium_accumulation'),
+        category: 'documental',
+        severity: 'medium',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Documental / Compliance',
+        origin: 'erp_hr_alerts',
+        title: `${d.unresolvedMedium} alertas medias acumuladas`,
+        explanation: 'La acumulación de alertas de severidad media indica deuda operativa.',
+        suggestedAction: 'Dedicar tiempo a resolver alertas acumuladas para evitar escalada.',
+        hasEvidence: false,
+      });
+    }
+  }
+
+  // ── 6. TRACEABILITY signals (6B enrichment) ──
+  if (enriched?.traceability) {
+    const t = enriched.traceability;
+
+    // Companies with closing activity but no closing evidence
+    if (stats.closingStatus !== 'no_periods' && !t.hasClosingEvidence) {
+      score -= 8;
+      reasons.push('Sin evidencia de cierre registrada');
+      alerts.push({
+        id: makeAlertId('traceability', 'no_closing_evidence'),
+        category: 'traceability',
+        severity: 'medium',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Trazabilidad',
+        origin: 'evidence_engine',
+        title: 'Sin evidencia de cierre',
+        explanation: 'La empresa tiene períodos de nómina pero no se ha registrado evidencia de cierre (closure_package).',
+        suggestedAction: 'Completar un cierre mensual con snapshot para generar evidencia auditable.',
+        hasEvidence: false,
+      });
+    }
+
+    // Companies with employees but zero evidence of any kind
+    if (stats.activeEmployees > 0 && t.evidenceCount === 0 && t.versionCount === 0) {
+      score -= 10;
+      reasons.push('Sin trazabilidad (0 evidencias y 0 versiones)');
+      blockers.push('Trazabilidad completamente ausente');
+      actions.push('Operar procesos con trazabilidad activa (cierre, readiness)');
+      alerts.push({
+        id: makeAlertId('traceability', 'zero'),
+        category: 'traceability',
+        severity: 'high',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Trazabilidad',
+        origin: 'evidence_engine',
+        title: 'Trazabilidad ausente',
+        explanation: 'No existe ninguna evidencia ni versión registrada. La empresa carece de rastro auditable.',
+        suggestedAction: 'Iniciar procesos operativos que generen trazabilidad (cierre mensual, readiness).',
+        hasEvidence: false,
+      });
+    }
+
+    // Companies with readiness activity but no readiness evidence
+    if (enriched?.readiness && enriched.readiness.totalCircuits > 0 && !t.hasReadinessEvidence) {
+      score -= 5;
+      reasons.push('Readiness evaluada pero sin evidencia registrada');
+      alerts.push({
+        id: makeAlertId('traceability', 'no_readiness_evidence'),
+        category: 'traceability',
+        severity: 'info',
+        companyId: company.id,
+        companyName: company.name,
+        process: 'Trazabilidad',
+        origin: 'evidence_engine',
+        title: 'Readiness sin evidencia',
+        explanation: 'Se han evaluado circuitos oficiales pero no se ha registrado snapshot de readiness.',
+        suggestedAction: 'Ejecutar evaluación de readiness desde la matriz oficial para generar evidencia.',
+        hasEvidence: false,
+      });
+    }
+  }
+
   // ── Clamp score ──
   score = Math.max(0, Math.min(100, score));
 
   // ── Derive severity ──
-  const severity = scoreToseverity(score);
+  const severity = scoreToSeverity(score);
 
   return {
     companyId: company.id,
@@ -212,7 +470,7 @@ export function computeCompanyHealth(company: PortfolioCompany): CompanyHealthSc
   };
 }
 
-function scoreToseverity(score: number): AlertSeverity {
+function scoreToSeverity(score: number): AlertSeverity {
   if (score <= 40) return 'critical';
   if (score <= 60) return 'high';
   if (score <= 80) return 'medium';
@@ -222,14 +480,19 @@ function scoreToseverity(score: number): AlertSeverity {
 // ─── Aggregation ────────────────────────────────────────────────────────────
 
 /**
- * Build the full Control Tower state from a list of portfolio companies.
- * Returns scored + sorted companies and global summary.
+ * Build the full Control Tower state from a list of portfolio companies
+ * and optional enriched signals per company.
  */
-export function buildControlTowerState(companies: PortfolioCompany[]): {
+export function buildControlTowerState(
+  companies: PortfolioCompany[],
+  enrichedSignals?: Map<string, EnrichedCompanySignals>,
+): {
   scoredCompanies: CompanyHealthScore[];
   summary: ControlTowerSummary;
 } {
-  const scored = companies.map(computeCompanyHealth);
+  const scored = companies.map(c =>
+    computeCompanyHealth(c, enrichedSignals?.get(c.id)),
+  );
 
   // Sort by score ascending (worst first)
   scored.sort((a, b) => a.score - b.score);
