@@ -385,7 +385,13 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                   </p>
                 </div>
               )}
-              <ScrollArea className="h-[380px]">
+              {/* Compact quality metrics for HR */}
+              {regulatoryFeedback.stats.total > 0 && (
+                <div className="mb-3">
+                  <RegulatoryQualityDashboard stats={hrFeedbackStats} compact />
+                </div>
+              )}
+              <ScrollArea className="h-[340px]">
                 <div className="space-y-3">
                   {hrRegulatoryDocs.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
