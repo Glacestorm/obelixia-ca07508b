@@ -193,6 +193,10 @@ export function useSupervisorDomainData(companyId?: string) {
     regulatoryCrossDomainCases,
     regulatoryHumanReview,
     regulatoryConflicts,
+    // Phase 2C: Domain-filtered + manual separation
+    manualCrossDomainCases,
+    regulatoryHRCases,
+    regulatoryLegalCases,
     stats,
   };
 }
