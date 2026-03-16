@@ -209,6 +209,15 @@ export function usePayrollIncidents(companyId?: string) {
       if (error) throw error;
       setIncidents(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
       toast.success('Incidencia validada');
+      // Ledger: incident resolved (validated)
+      writeLedger({
+        eventType: 'payroll_incident_resolved',
+        entityType: 'payroll_incident',
+        entityId: id,
+        beforeSnapshot: { status: 'pending' },
+        afterSnapshot: { status: 'validated' },
+        changedFields: ['status'],
+      });
       return true;
     } catch (err) {
       console.error('[usePayrollIncidents] validate:', err);
