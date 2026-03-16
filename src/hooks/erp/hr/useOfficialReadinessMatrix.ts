@@ -52,7 +52,7 @@ export function useOfficialReadinessMatrix(companyId: string) {
   const [matrix, setMatrix] = useState<ReadinessMatrix | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastEvaluatedAt, setLastEvaluatedAt] = useState<string | null>(null);
-  const { writeLedger } = useHRLedgerWriter(companyId, 'official-readiness');
+  const { writeLedgerWithEvidence, writeVersion } = useHRLedgerWriter(companyId, 'official-readiness');
 
   const evaluate = useCallback(async (): Promise<ReadinessMatrix | null> => {
     if (!companyId) return null;
