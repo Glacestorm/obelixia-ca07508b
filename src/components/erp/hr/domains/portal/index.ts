@@ -2,7 +2,7 @@
  * Domain D7: Employee Portal
  * Self-service portal, mobile shell
  * 
- * Re-exports from existing locations — no files moved.
+ * V2-RRHH-FASE-1 Sprint 2: No changes needed
  */
 
 export {

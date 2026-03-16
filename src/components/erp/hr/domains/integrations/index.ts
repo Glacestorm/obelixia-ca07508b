@@ -1,8 +1,8 @@
 /**
  * Domain D9: Official Integrations
- * TGSS, SEPE, AEAT, Contrat@, dry-runs, sandbox
+ * TGSS, SEPE, AEAT, Contrat@, dry-runs, sandbox, enterprise integrations
  * 
- * Re-exports from existing locations — no files moved.
+ * V2-RRHH-FASE-1 Sprint 2: Added enterprise integrations
  */
 
 export { OfficialIntegrationsHub } from '../../official-integrations';
