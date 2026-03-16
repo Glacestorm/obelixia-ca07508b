@@ -37,12 +37,10 @@ serve(async (req) => {
 
     switch (action) {
       case 'refresh_all': {
-        // === ADVISORY LOCK (Postgres real lock, key 73001) ===
         const { data: lockResult } = await supabase.rpc('try_acquire_regulatory_refresh_lock');
         if (!lockResult) {
           return jsonResponse({
-            success: false,
-            error: 'Refresh already in progress',
+            success: false, error: 'Refresh already in progress',
             message: 'Ya hay un refresco en curso. Espere a que termine.',
           }, 409);
         }
@@ -62,12 +60,14 @@ serve(async (req) => {
 
           // Load feedback stats for confidence adjustment
           const feedbackStats = await loadFeedbackStats(supabase);
+          // Phase 2E: Load cross-domain feedback for escalation learning
+          const escalationLearning = await loadEscalationLearning(supabase);
 
           const results = [];
           for (const source of sources) {
             try {
               const result = await withTimeout(
-                refreshSource(supabase, source, LOVABLE_API_KEY, trigger, feedbackStats),
+                refreshSource(supabase, source, LOVABLE_API_KEY, trigger, feedbackStats, escalationLearning),
                 REFRESH_TIMEOUT_MS
               );
               results.push(result);
@@ -83,10 +83,7 @@ serve(async (req) => {
           }
 
           return jsonResponse({
-            success: true,
-            refreshed: results.length,
-            results,
-            trigger,
+            success: true, refreshed: results.length, results, trigger,
             timestamp: new Date().toISOString(),
           });
         } finally {
@@ -98,19 +95,17 @@ serve(async (req) => {
         if (!body.source_id) {
           return jsonResponse({ success: false, error: 'source_id required' }, 400);
         }
-
         const { data: source } = await supabase
           .from('erp_regulatory_sources')
           .select('*')
           .eq('id', body.source_id)
           .single();
 
-        if (!source) {
-          return jsonResponse({ success: false, error: 'Source not found' }, 404);
-        }
+        if (!source) return jsonResponse({ success: false, error: 'Source not found' }, 404);
 
         const feedbackStats = await loadFeedbackStats(supabase);
-        const result = await refreshSource(supabase, source, LOVABLE_API_KEY, trigger, feedbackStats);
+        const escalationLearning = await loadEscalationLearning(supabase);
+        const result = await refreshSource(supabase, source, LOVABLE_API_KEY, trigger, feedbackStats, escalationLearning);
         return jsonResponse({ success: true, result, trigger });
       }
 
@@ -121,10 +116,7 @@ serve(async (req) => {
           .order('created_at', { ascending: false })
           .limit(body.limit || 20);
 
-        if (body.source_id) {
-          query = query.eq('source_id', body.source_id);
-        }
-
+        if (body.source_id) query = query.eq('source_id', body.source_id);
         const { data: logs } = await query;
         return jsonResponse({ success: true, logs: logs || [] });
       }
@@ -135,8 +127,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[regulatory-refresh] Error:', error);
     return jsonResponse({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      success: false, error: error instanceof Error ? error.message : 'Unknown error',
     }, 500);
   }
 });
@@ -152,7 +143,6 @@ async function loadFeedbackStats(supabase: any): Promise<Map<string, { total: nu
       .limit(300);
 
     if (data) {
-      // Weight feedback by reviewer role: admin/superadmin = 2x, others = 1x
       const ROLE_WEIGHT: Record<string, number> = {
         superadmin: 2, admin: 2, responsable_comercial: 1.5,
         director_comercial: 1.5, auditor: 1.5, user: 1,
@@ -174,46 +164,111 @@ async function loadFeedbackStats(supabase: any): Promise<Map<string, { total: nu
   return stats;
 }
 
+// === Phase 2E: ESCALATION LEARNING from cross-domain feedback ===
+interface EscalationLearning {
+  enabled: boolean;
+  falsePositiveRate: number;
+  falseNegativeCount: number;
+  sourceAccuracy: Map<string, number>;
+  legalAreaAccuracy: Map<string, number>;
+  minSamples: number;
+}
+
+async function loadEscalationLearning(supabase: any): Promise<EscalationLearning> {
+  const learning: EscalationLearning = {
+    enabled: false, falsePositiveRate: 0, falseNegativeCount: 0,
+    sourceAccuracy: new Map(), legalAreaAccuracy: new Map(), minSamples: 5,
+  };
+
+  try {
+    // Check if escalation learning is enabled
+    const { data: config } = await supabase
+      .from('erp_learning_config')
+      .select('config_value, is_active')
+      .eq('config_key', 'escalation_learning')
+      .single();
+
+    if (!config?.is_active || !config?.config_value?.enabled) return learning;
+    learning.enabled = true;
+    learning.minSamples = config.config_value.min_samples || 5;
+
+    // Load cross-domain feedback for escalation accuracy
+    const { data: feedback } = await supabase
+      .from('erp_cross_domain_feedback')
+      .select('escalation_correct, should_have_escalated, source_code, legal_area, origin')
+      .not('escalation_correct', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (!feedback || feedback.length < learning.minSamples) return learning;
+
+    const total = feedback.length;
+    const falsePositives = feedback.filter((f: any) => f.escalation_correct === false).length;
+    learning.falsePositiveRate = falsePositives / total;
+    learning.falseNegativeCount = feedback.filter((f: any) => f.should_have_escalated === true).length;
+
+    // Source-specific accuracy
+    const bySource = new Map<string, { correct: number; total: number }>();
+    const byArea = new Map<string, { correct: number; total: number }>();
+
+    for (const fb of feedback) {
+      if (fb.source_code) {
+        const s = bySource.get(fb.source_code) || { correct: 0, total: 0 };
+        s.total++;
+        if (fb.escalation_correct) s.correct++;
+        bySource.set(fb.source_code, s);
+      }
+      if (fb.legal_area) {
+        const a = byArea.get(fb.legal_area) || { correct: 0, total: 0 };
+        a.total++;
+        if (fb.escalation_correct) a.correct++;
+        byArea.set(fb.legal_area, a);
+      }
+    }
+
+    for (const [source, stats] of bySource) {
+      if (stats.total >= 3) learning.sourceAccuracy.set(source, stats.correct / stats.total);
+    }
+    for (const [area, stats] of byArea) {
+      if (stats.total >= 3) learning.legalAreaAccuracy.set(area, stats.correct / stats.total);
+    }
+  } catch (e) {
+    console.warn('[regulatory-refresh] Escalation learning load error:', e);
+  }
+  return learning;
+}
+
 function adjustConfidenceFromFeedback(
   feedbackStats: Map<string, { total: number; accepted: number; rejected: number }>,
-  field: string,
-  baseConfidence: number
+  field: string, baseConfidence: number
 ): number {
   const stats = feedbackStats.get(field);
-  if (!stats || stats.total < 3) return baseConfidence; // Need minimum samples
+  if (!stats || stats.total < 3) return baseConfidence;
   const acceptRate = stats.accepted / stats.total;
-  // Adjust: if acceptance rate is high, boost confidence; if low, reduce
   return Math.min(1, Math.max(0.1, baseConfidence * (0.5 + acceptRate * 0.5)));
 }
 
-// === TIMEOUT WRAPPER ===
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout exceeded')), ms)
-    ),
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Timeout exceeded')), ms)),
   ]);
 }
 
 async function refreshSource(
   supabase: any, source: any, aiApiKey: string | undefined, trigger: string,
-  feedbackStats: Map<string, { total: number; accepted: number; rejected: number }>
+  feedbackStats: Map<string, { total: number; accepted: number; rejected: number }>,
+  escalationLearning: EscalationLearning
 ) {
   const logId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
 
   await supabase.from('erp_regulatory_refresh_log').insert({
-    id: logId,
-    source_id: source.id,
-    status: 'running',
-    started_at: startedAt,
-    trigger_type: trigger,
+    id: logId, source_id: source.id, status: 'running', started_at: startedAt, trigger_type: trigger,
   });
 
   await supabase.from('erp_regulatory_sources').update({
-    refresh_status: 'running',
-    last_checked_at: startedAt,
+    refresh_status: 'running', last_checked_at: startedAt,
   }).eq('id', source.id);
 
   try {
@@ -226,14 +281,12 @@ async function refreshSource(
       documents = await fetchFromGenericUrl(source);
     } else {
       await completeRefresh(supabase, source.id, logId, {
-        status: 'completed',
-        documents_found: 0, documents_new: 0, documents_updated: 0, documents_unchanged: 0,
+        status: 'completed', documents_found: 0, documents_new: 0, documents_updated: 0, documents_unchanged: 0,
       });
       return { source: source.code, status: 'no_feed', documents_found: 0, trigger };
     }
 
     if (documents.length > MAX_DOCS_PER_SOURCE) {
-      console.log(`[regulatory-refresh] ${source.code}: capped from ${documents.length} to ${MAX_DOCS_PER_SOURCE}`);
       documents = documents.slice(0, MAX_DOCS_PER_SOURCE);
     }
 
@@ -251,16 +304,10 @@ async function refreshSource(
         .maybeSingle();
 
       if (existing) {
-        if (existing.content_hash === contentHash) {
-          unchangedCount++;
-          continue;
-        }
+        if (existing.content_hash === contentHash) { unchangedCount++; continue; }
         await supabase.from('erp_regulatory_documents').update({
-          summary: doc.summary || null,
-          content_hash: contentHash,
-          version: (existing.version || 1) + 1,
-          change_type: 'updated',
-          updated_at: new Date().toISOString(),
+          summary: doc.summary || null, content_hash: contentHash,
+          version: (existing.version || 1) + 1, change_type: 'updated', updated_at: new Date().toISOString(),
         }).eq('id', existing.id);
         updatedCount++;
       } else {
@@ -269,10 +316,8 @@ async function refreshSource(
           classification = await classifyWithAI(aiApiKey, doc, source);
         }
 
-        // Apply feedback-based confidence adjustment
         const impactConfidence = adjustConfidenceFromFeedback(feedbackStats, 'impact_level', 0.8);
         const summaryConfidence = adjustConfidenceFromFeedback(feedbackStats, 'summary', 0.85);
-        // If historical feedback shows low acceptance, force human review
         const forceHumanReview = impactConfidence < 0.5 || summaryConfidence < 0.5;
 
         await supabase.from('erp_regulatory_documents').insert({
@@ -314,18 +359,14 @@ async function refreshSource(
       execution_time_ms: Date.now() - new Date(startedAt).getTime(),
       response_summary: `Encontrados: ${documents.length}, Nuevos: ${newCount}, Actualizados: ${updatedCount}, Sin cambios: ${unchangedCount}`,
       metadata: {
-        source: 'live',
-        trigger,
-        action: 'refresh',
-        source_code: source.code,
-        documents_found: documents.length,
-        documents_new: newCount,
-        documents_updated: updatedCount,
+        source: 'live', trigger, action: 'refresh', source_code: source.code,
+        documents_found: documents.length, documents_new: newCount, documents_updated: updatedCount,
         feedback_adjusted: feedbackStats.size > 0,
+        escalation_learning_active: escalationLearning.enabled,
       },
     });
 
-    // === CROSS-DOMAIN ESCALATION TO OBELIXIA (Phase 2B) ===
+    // === CROSS-DOMAIN ESCALATION TO OBELIXIA (Phase 2E: learning-aware) ===
     if (newCount > 0) {
       try {
         const { data: newDocs } = await supabase
@@ -339,10 +380,12 @@ async function refreshSource(
 
         if (newDocs) {
           for (const doc of newDocs) {
-            const shouldEscalate = evaluateCrossDomainTrigger(doc);
+            const shouldEscalate = evaluateCrossDomainTrigger(doc, escalationLearning, source.code);
             if (shouldEscalate) {
               console.log(`[regulatory-refresh] Escalating to ObelixIA: ${doc.document_title?.substring(0, 50)}`);
               try {
+                const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+                const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
                 await fetch(`${supabaseUrl}/functions/v1/obelixia-supervisor`, {
                   method: 'POST',
                   headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
@@ -350,17 +393,11 @@ async function refreshSource(
                     action: 'regulatory_cross_domain',
                     company_id: '00000000-0000-0000-0000-000000000000',
                     document: {
-                      id: doc.id,
-                      document_title: doc.document_title,
-                      summary: doc.summary,
-                      impact_summary: doc.impact_summary,
-                      impact_domains: doc.impact_domains,
-                      impact_level: doc.impact_level,
-                      requires_human_review: doc.requires_human_review,
-                      source_url: doc.source_url,
-                      source_code: source.code,
-                      publication_date: doc.publication_date,
-                      legal_area: doc.legal_area,
+                      id: doc.id, document_title: doc.document_title, summary: doc.summary,
+                      impact_summary: doc.impact_summary, impact_domains: doc.impact_domains,
+                      impact_level: doc.impact_level, requires_human_review: doc.requires_human_review,
+                      source_url: doc.source_url, source_code: source.code,
+                      publication_date: doc.publication_date, legal_area: doc.legal_area,
                     },
                     trigger_reason: shouldEscalate.reason,
                   }),
@@ -377,11 +414,8 @@ async function refreshSource(
     }
 
     await completeRefresh(supabase, source.id, logId, {
-      status: 'completed',
-      documents_found: documents.length,
-      documents_new: newCount,
-      documents_updated: updatedCount,
-      documents_unchanged: unchangedCount,
+      status: 'completed', documents_found: documents.length,
+      documents_new: newCount, documents_updated: updatedCount, documents_unchanged: unchangedCount,
     });
 
     return {
@@ -394,15 +428,11 @@ async function refreshSource(
     console.error(`[regulatory-refresh] Source ${source.code} error:`, error);
 
     await supabase.from('erp_regulatory_sources').update({
-      refresh_status: 'error',
-      last_error_at: new Date().toISOString(),
-      last_error_message: errorMessage,
+      refresh_status: 'error', last_error_at: new Date().toISOString(), last_error_message: errorMessage,
     }).eq('id', source.id);
 
     await supabase.from('erp_regulatory_refresh_log').update({
-      status: 'failed',
-      completed_at: new Date().toISOString(),
-      error_message: errorMessage,
+      status: 'failed', completed_at: new Date().toISOString(), error_message: errorMessage,
     }).eq('id', logId);
 
     return { source: source.code, status: 'error', trigger, error: errorMessage };
@@ -412,14 +442,9 @@ async function refreshSource(
 async function completeRefresh(supabase: any, sourceId: string, logId: string, data: any) {
   const now = new Date().toISOString();
   await supabase.from('erp_regulatory_sources').update({
-    refresh_status: 'idle',
-    last_success_at: now,
-    documents_found: data.documents_found,
+    refresh_status: 'idle', last_success_at: now, documents_found: data.documents_found,
   }).eq('id', sourceId);
-  await supabase.from('erp_regulatory_refresh_log').update({
-    ...data,
-    completed_at: now,
-  }).eq('id', logId);
+  await supabase.from('erp_regulatory_refresh_log').update({ ...data, completed_at: now }).eq('id', logId);
 }
 
 async function fetchFromFeed(config: { fetchUrl: string; parser: string }, source: any): Promise<any[]> {
@@ -539,8 +564,7 @@ async function classifyWithAI(apiKey: string, doc: any, source: any): Promise<an
   }
 }
 
-// === CROSS-DOMAIN TRIGGER EVALUATION (Phase 2C: tightened rules) ===
-// Only keywords that strongly signal cross-domain HR+Legal overlap
+// === CROSS-DOMAIN TRIGGER EVALUATION (Phase 2E: learning-aware) ===
 const CROSS_DOMAIN_KEYWORDS_STRONG = [
   'despido', 'ERE', 'ERTE', 'maternidad', 'paternidad',
   'movilidad internacional', 'RGPD', 'LOPDGDD', 'acoso',
@@ -551,7 +575,7 @@ const CROSS_DOMAIN_KEYWORDS_WEAK = [
   'teletrabajo', 'salario', 'compliance', 'prevención', 'igualdad',
 ];
 
-function evaluateCrossDomainTrigger(doc: any): { reason: string } | null {
+function evaluateCrossDomainTrigger(doc: any, learning: EscalationLearning, sourceCode: string): { reason: string } | null {
   const domains = doc.impact_domains || [];
   const impactLevel = doc.impact_level || 'low';
   const title = (doc.document_title || '').toLowerCase();
@@ -563,12 +587,43 @@ function evaluateCrossDomainTrigger(doc: any): { reason: string } | null {
   const hasCompliance = domains.includes('compliance');
   const relevantDomains = domains.filter((d: string) => ['hr', 'legal', 'compliance', 'fiscal'].includes(d));
 
+  // Phase 2E: Learning-based adjustments
+  if (learning.enabled) {
+    // If this source has historically low accuracy, require stronger signals
+    const sourceAcc = learning.sourceAccuracy.get(sourceCode);
+    if (sourceAcc !== undefined && sourceAcc < 0.4) {
+      // Only escalate for critical+multi-domain from unreliable sources
+      if (impactLevel === 'critical' && hasHR && hasLegal) {
+        return { reason: `Critical + hr+legal (source ${sourceCode} low-accuracy, tightened)` };
+      }
+      const strongMatches = CROSS_DOMAIN_KEYWORDS_STRONG.filter(kw => text.includes(kw));
+      if (strongMatches.length >= 2 && relevantDomains.length >= 2) {
+        return { reason: `Strong keywords ${strongMatches.slice(0, 2).join('+')} (source tightened)` };
+      }
+      return null; // Skip escalation for low-accuracy source without strong signals
+    }
+
+    // If false positive rate is high (>40%), tighten all rules
+    if (learning.falsePositiveRate > 0.4) {
+      // Require both strong keyword AND multi-domain
+      const strongMatches = CROSS_DOMAIN_KEYWORDS_STRONG.filter(kw => text.includes(kw));
+      if (strongMatches.length >= 1 && hasHR && (hasLegal || hasCompliance)) {
+        return { reason: `High FP rate - tightened: ${strongMatches[0]} + ${relevantDomains.join('+')}` };
+      }
+      if (impactLevel === 'critical' && relevantDomains.length >= 2) {
+        return { reason: `High FP rate - critical + multi-domain only` };
+      }
+      return null;
+    }
+  }
+
+  // Standard rules (same as Phase 2C)
   // Rule 1: Must have BOTH hr AND (legal OR compliance) for multi-domain trigger
   if (relevantDomains.length >= 2 && hasHR && (hasLegal || hasCompliance)) {
     return { reason: `Multi-domain impact: ${relevantDomains.join('+')}` };
   }
 
-  // Rule 2: Critical impact ONLY if it touches hr+legal (tightened from Phase 2B)
+  // Rule 2: Critical impact ONLY if it touches hr+legal
   if (impactLevel === 'critical' && hasHR && (hasLegal || hasCompliance)) {
     return { reason: `Critical impact on ${relevantDomains.join('+')}` };
   }
@@ -595,7 +650,7 @@ function evaluateCrossDomainTrigger(doc: any): { reason: string } | null {
     return { reason: `Human review required + hr+legal` };
   }
 
-  return null; // Do not escalate
+  return null;
 }
 
 function extractTag(xml: string, tag: string): string | null {
@@ -622,7 +677,6 @@ async function hashContent(content: string): Promise<string> {
 
 function jsonResponse(data: any, status = 200) {
   return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 }
