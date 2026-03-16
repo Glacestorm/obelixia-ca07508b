@@ -405,6 +405,17 @@ export function useHRContractProcess(companyId: string) {
         newStatus === 'confirmed' ? 'important' : 'info',
         ['contract_process_status'],
       );
+      // Ledger: contract status change
+      writeLedger({
+        eventType: 'contract_updated',
+        eventLabel: `Estado contrato: ${oldStatus} → ${newStatus}`,
+        entityType: 'contract_process',
+        entityId: contractData?.id || requestId,
+        beforeSnapshot: { status: oldStatus },
+        afterSnapshot: { status: newStatus },
+        changedFields: ['contract_process_status'],
+        complianceImpact: newStatus === 'confirmed' ? { confirmed: true } : undefined,
+      });
       return true;
     } catch (err) {
       console.error('[useHRContractProcess] updateStatus error:', err);
