@@ -383,6 +383,12 @@ function HRModuleInner() {
             }}
           />
         )}
+        {activeModule === 'control-tower' && (
+          <ControlTowerPanel
+            onNavigateToCompany={(id) => console.log('[ControlTower] Navigate to company:', id)}
+            onNavigateToModule={(moduleId) => setActiveModule(moduleId)}
+          />
+        )}
         {activeModule === 'legal-entities' && <HRLegalEntitiesPanel companyId={companyId} />}
         {activeModule === 'work-centers' && <HRWorkCentersPanel companyId={companyId} />}
         {activeModule === 'org-structure' && <HROrgStructurePanel companyId={companyId} />}
