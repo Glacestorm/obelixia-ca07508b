@@ -58,12 +58,58 @@ FORMATO DE RESPUESTA (JSON estricto):
 }`;
 
 interface SuperSupervisorRequest {
-  action: 'coordinate' | 'get_status' | 'get_cross_cases';
+  action: 'coordinate' | 'get_status' | 'get_cross_cases' | 'regulatory_cross_domain';
   company_id: string;
   query?: string;
   context?: Record<string, unknown>;
   session_id?: string;
+  // For regulatory_cross_domain
+  document?: {
+    id: string;
+    document_title: string;
+    summary: string | null;
+    impact_summary: string | null;
+    impact_domains: string[];
+    impact_level: string;
+    requires_human_review: boolean;
+    source_url: string | null;
+    source_code?: string;
+    publication_date?: string;
+    legal_area?: string;
+  };
+  trigger_reason?: string;
 }
+
+const REGULATORY_CROSS_DOMAIN_PROMPT = `Eres un coordinador experto que evalúa el impacto cross-domain de cambios regulatorios.
+Recibes un documento normativo que afecta a múltiples dominios (RRHH + Jurídico) y las respuestas de ambos supervisores.
+
+Tu trabajo:
+1. Evaluar el impacto operativo para RRHH (procesos, nómina, contratos, plantilla).
+2. Evaluar el impacto jurídico/compliance (obligaciones, riesgos, plazos).
+3. Detectar conflictos entre las recomendaciones de ambos supervisores.
+4. Componer una recomendación unificada con acciones concretas.
+5. Decidir si requiere revisión humana.
+
+REGLAS:
+- Cambios en despidos, jornada, permisos protegidos, cotización → SIEMPRE revisión humana.
+- Si un supervisor recomienda acción urgente y otro no → conflicto + revisión humana.
+- Priorizar seguridad jurídica sobre eficiencia operativa.
+- Indicar plazo estimado de adaptación si es posible.
+
+FORMATO (JSON estricto):
+{
+  "has_conflict": true/false,
+  "conflict_type": "none|risk_divergence|recommendation_conflict|priority_mismatch",
+  "hr_impact": "resumen del impacto RRHH",
+  "legal_impact": "resumen del impacto jurídico",
+  "final_risk_level": "low|medium|high|critical",
+  "final_recommendation": "recomendación unificada con acciones",
+  "requires_human_review": true/false,
+  "human_review_reason": "motivo si aplica",
+  "adaptation_deadline": "plazo estimado o null",
+  "priority_actions": ["acción 1", "acción 2"],
+  "composed_response": "respuesta completa para el usuario"
+}`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
