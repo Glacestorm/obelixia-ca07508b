@@ -83,5 +83,59 @@ type ProcessStatus = 'idle' | 'running' | 'success' | 'failed';
 ## Sprint Status
 - [x] Sprint 1: Domain barrels, deprecations, architecture doc
 - [x] Sprint 2: Enrich domain barrels, analytics consolidation, dialog mapping, deprecate HRDashboardPanel
-- [ ] Sprint 3: Separate shared/ engines, refactor hooks, move root components physically
+- [x] Sprint 3: Separate shared/ engines, fix cross-layer imports, domain barrel adoption, root component assignment
 - [ ] Sprint 4: Complete migration, tests, lazy loading
+
+## Sprint 3 — Migration Table
+
+| Source (shared/) | Destination (engines/) | Type | Compat Re-export | 
+|---|---|---|---|
+| calendarHelpers.ts | src/engines/erp/hr/calendarHelpers.ts | util | ✅ |
+| documentCatalogES.ts | src/engines/erp/hr/documentCatalogES.ts | engine | ✅ |
+| documentExpectedTypes.ts | src/engines/erp/hr/documentExpectedTypes.ts | engine | ✅ |
+| documentStatusEngine.ts | src/engines/erp/hr/documentStatusEngine.ts | engine | ✅ |
+| contractDeadlineEngine.ts | src/engines/erp/hr/contractDeadlineEngine.ts | engine | ✅ |
+| registrationDeadlineEngine.ts | src/engines/erp/hr/registrationDeadlineEngine.ts | engine | ✅ |
+| proactiveAlertEngine.ts | src/engines/erp/hr/proactiveAlertEngine.ts | engine | ✅ |
+
+## Sprint 3 — Cross-Layer Import Fixes
+
+| Hook | Old Import (shared/) | New Import (engines/) |
+|---|---|---|
+| useHRDocumentCatalog | documentCatalogES | ✅ engines/ |
+| useHRDocActionQueue | documentStatusEngine | ✅ engines/ |
+| useHRDocumentDueRules | calendarHelpers | ✅ engines/ |
+| useHRContractProcess | contractDeadlineEngine | ✅ engines/ |
+| hooks/erp/hr/index.ts | registrationDeadlineEngine | ✅ engines/ |
+
+## Sprint 3 — Domain Barrel Consumers
+
+| Consumer | Barrels Used |
+|---|---|
+| HRModule.tsx | D3 Payroll, D7 Portal, D8 Workflows |
+
+## Sprint 3 — Root Component Assignment
+
+| Component | Domain | Rationale |
+|---|---|---|
+| TotalRewardsDashboardPanel | D3 Payroll | Compensation + benefits + recognition |
+| HRAlertsPanel | D8 Workflows | Alert workflows, notifications, escalation |
+| HRHelpIndex | D7 Portal | Active help panel used by HRModule |
+| HRSettlementsPanel | D3 Payroll | Finiquitos/liquidaciones |
+
+## Sprint 3 — Deprecations
+
+| Component | Reason |
+|---|---|
+| HRHelpPanel | 0 consumers, superseded by HRHelpIndex |
+
+## Sprint 3 — NOT Touched
+
+- usePayrollEngine, payrollRunEngine, closingIntelligenceEngine
+- useOfficialIntegrationsHub, useOfficialReadiness, useTGSSReadiness, useContrataReadiness
+- All tgss*, contrata*, sandbox*, dryRun*, official*, aeat* engines in shared/
+- expedientAlertEngine (depends on UI component DocReconciliationBadge)
+- contractClosureEngine (depends on contrataPayloadBuilder)
+- registrationClosureEngine (depends on tgssPayloadBuilder)
+- HRModule.tsx navigation logic, HRNavigationMenu.tsx
+- No business rules changed, no UX modified

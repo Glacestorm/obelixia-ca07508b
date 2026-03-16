@@ -234,7 +234,7 @@ export type {
   EnrichedDocAction,
 } from './useHRDocActionQueue';
 
-// V2-ES.4 Paso 2.2: Motor de alertas y severidad (re-export from component layer)
+// V2-ES.4 Paso 2.2: Motor de alertas y severidad (Sprint 3: still in shared/ — depends on UI component)
 export { computeExpedientAlerts } from '@/components/erp/hr/shared/expedientAlertEngine';
 export type {
   AlertSeverity,
@@ -323,14 +323,14 @@ export type {
 } from './useHRRegistrationProcess';
 export { REGISTRATION_STATUS_CONFIG, REGISTRATION_STATUS_TRANSITIONS } from './useHRRegistrationProcess';
 
-// V2-ES.5 Paso 2: Deadlines, payload TGSS, alertas
-export { computeRegistrationDeadlines } from '@/components/erp/hr/shared/registrationDeadlineEngine';
+// V2-ES.5 Paso 2: Deadlines (Sprint 3: migrated to engines layer)
+export { computeRegistrationDeadlines } from '@/engines/erp/hr/registrationDeadlineEngine';
 export type {
   RegistrationDeadlineType,
   RegistrationDeadlineUrgency,
   RegistrationDeadline,
   RegistrationDeadlineSummary,
-} from '@/components/erp/hr/shared/registrationDeadlineEngine';
+} from '@/engines/erp/hr/registrationDeadlineEngine';
 
 export { buildTGSSPayload } from '@/components/erp/hr/shared/tgssPayloadBuilder';
 export type {

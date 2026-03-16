@@ -1,8 +1,8 @@
 /**
  * Domain D7: Employee Portal
- * Self-service portal, mobile shell
+ * Self-service portal, mobile shell, help index
  * 
- * V2-RRHH-FASE-1 Sprint 2: No changes needed
+ * V2-RRHH-FASE-1 Sprint 3: Added HRHelpIndex
  */
 
 export {
@@ -24,3 +24,6 @@ export {
   TimeClockWidget,
   PWAInstallGuide,
 } from '../../employee-portal';
+
+// ── Help (Sprint 3: HRHelpIndex is the active help panel, HRHelpPanel is deprecated) ──
+export { HRHelpIndex } from '../../HRHelpIndex';

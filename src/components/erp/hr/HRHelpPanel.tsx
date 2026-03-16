@@ -1,4 +1,6 @@
 /**
+ * @deprecated Sprint 3 — Use HRHelpIndex instead (active in HRModule).
+ * HRHelpPanel has 0 consumers and is superseded by HRHelpIndex.
  * HRHelpPanel - Panel de ayuda contextual RRHH
  */
 
