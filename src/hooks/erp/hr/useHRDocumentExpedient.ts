@@ -248,9 +248,40 @@ export function useHRDocumentExpedient(companyId: string) {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, variables: any) => {
       qc.invalidateQueries({ queryKey: ['hr-documents', companyId] });
       toast.success('Documento subido correctamente');
+      // Ledger: document uploaded
+      writeLedgerWithEvidence(
+        {
+          eventType: 'document_uploaded',
+          entityType: 'employee_document',
+          entityId: _data?.id || 'unknown',
+          afterSnapshot: {
+            document_type: variables.document_type,
+            document_name: variables.document_name,
+            employee_id: variables.employee_id,
+            category: variables.category,
+          },
+        },
+        variables.file_url ? [{
+          evidenceType: 'document' as const,
+          evidenceLabel: variables.document_name || 'Documento subido',
+          refEntityType: 'employee_document',
+          refEntityId: _data?.id || 'unknown',
+          storagePath: variables.file_url,
+          contentHash: variables.file_hash,
+        }] : []
+      );
+      // Version registry: v1
+      if (_data?.id) {
+        writeVersion({
+          entityType: 'document',
+          entityId: _data.id,
+          state: 'draft',
+          contentSnapshot: { document_type: variables.document_type, version: 1 },
+        });
+      }
     },
     onError: (e: any) => toast.error('Error: ' + e.message),
   });
