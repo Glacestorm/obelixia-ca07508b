@@ -500,6 +500,52 @@ serve(async (req) => {
 
       console.log(`[obelixia-supervisor] Regulatory cross-domain: ${doc.document_title?.substring(0, 60)}`);
 
+      // Phase 2D: Load learning context from validated cases + feedback
+      let learningContext = '';
+      try {
+        const { data: validatedCases } = await supabase
+          .from('erp_validated_cases')
+          .select('case_type, validated_severity, validated_has_conflict, validated_priority_actions, validated_deadline, impact_domains, escalation_was_correct, quality_score, input_summary, legal_area')
+          .order('quality_score', { ascending: false })
+          .limit(5);
+
+        const { data: feedbackPatterns } = await supabase
+          .from('erp_cross_domain_feedback')
+          .select('case_type, escalation_correct, severity_correct, actions_useful, deadline_reasonable, corrected_severity, corrected_deadline, corrected_actions')
+          .not('escalation_correct', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (validatedCases?.length) {
+          const examples = validatedCases.map((vc: any) => 
+            `- Tipo: ${vc.case_type}, Dominios: ${(vc.impact_domains||[]).join('+')}, Severidad validada: ${vc.validated_severity}, Conflicto: ${vc.validated_has_conflict ? 'sí' : 'no'}, Acciones: ${JSON.stringify(vc.validated_priority_actions || [])}, Plazo: ${vc.validated_deadline || 'N/A'}`
+          ).join('\n');
+          learningContext += `\n\nCASOS VALIDADOS DE REFERENCIA:\n${examples}`;
+        }
+
+        if (feedbackPatterns?.length) {
+          const corrections: string[] = [];
+          const falseEscalations = feedbackPatterns.filter((f: any) => f.escalation_correct === false).length;
+          const badSeverity = feedbackPatterns.filter((f: any) => f.severity_correct === false).length;
+          const badActions = feedbackPatterns.filter((f: any) => f.actions_useful === false).length;
+          const badDeadlines = feedbackPatterns.filter((f: any) => f.deadline_reasonable === false).length;
+
+          if (falseEscalations > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: hay un alto ratio de escalados incorrectos. Sé más selectivo al escalar.');
+          if (badSeverity > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: la severidad frecuentemente se corrige. Calibra mejor los niveles de riesgo.');
+          if (badActions > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: las acciones no se consideran útiles frecuentemente. Sé más específico y accionable.');
+          if (badDeadlines > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: los plazos frecuentemente se consideran no razonables. Ancla mejor los plazos a la norma.');
+
+          const correctedSeverities = feedbackPatterns.filter((f: any) => f.corrected_severity).map((f: any) => f.corrected_severity);
+          if (correctedSeverities.length > 0) corrections.push(`Severidades corregidas frecuentes: ${[...new Set(correctedSeverities)].join(', ')}`);
+
+          if (corrections.length > 0) {
+            learningContext += `\n\nAPRENDIZAJE DE FEEDBACK HUMANO:\n${corrections.join('\n')}`;
+          }
+        }
+      } catch (learnErr) {
+        console.warn('[obelixia-supervisor] Learning context load error:', learnErr);
+      }
+
       const regulatoryQuery = `Cambio normativo: "${doc.document_title}". Resumen: ${doc.summary || doc.impact_summary || 'Sin resumen'}. Impacto: ${doc.impact_level}. Dominios: ${doc.impact_domains?.join(', ')}. Área legal: ${doc.legal_area || 'no especificada'}.`;
 
       // Consult both supervisors in parallel
