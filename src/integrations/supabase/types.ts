@@ -25887,6 +25887,53 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_hr_advisor_assignments: {
+        Row: {
+          advisor_user_id: string
+          assigned_at: string
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          notes: string | null
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_user_id: string
+          assigned_at?: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          notes?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_user_id?: string
+          assigned_at?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          notes?: string | null
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_advisor_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_agent_access_control: {
         Row: {
           can_view_all_employees: boolean | null
