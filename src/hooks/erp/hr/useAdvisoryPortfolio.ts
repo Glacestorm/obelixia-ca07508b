@@ -271,7 +271,7 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
       advisoryRole: input.role,
       assignedAt: input.assignedAt,
       stats: {
-        activeEmployees: companyEmployees.length,
+        activeEmployees,
         pendingTasks,
         overdueTasks,
         openClosingPeriods: openPeriods,
