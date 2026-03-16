@@ -587,6 +587,13 @@ export function SupervisorAgentsDashboard() {
             <Newspaper className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Normativa</span>
           </TabsTrigger>
+          <TabsTrigger value="obelixia" className="gap-1 text-xs flex-1 min-w-[70px]">
+            <Cpu className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">ObelixIA</span>
+            {domainData.obelixiaInvocations.length > 0 && (
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{domainData.obelixiaInvocations.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="insights" className="gap-1 text-xs flex-1 min-w-[70px]">
             <Sparkles className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Insights</span>
