@@ -29,6 +29,8 @@ const ROLE_PRIORITIES: Record<string, number> = {
   'responsable_comercial': 80,
   'director_oficina': 70,
   'admin': 60,
+  'hr_manager': 55,
+  'legal_manager': 55,
   'auditor': 50,
   'gestor': 40,
   'user': 10,
