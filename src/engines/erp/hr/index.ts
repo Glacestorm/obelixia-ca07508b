@@ -79,5 +79,15 @@ export type {
   CheckSeverity, ClosingPackage, ClosingOutput, ClosingTimelineEvent,
 } from './monthlyClosingOrchestrationEngine';
 
+// ── Official Readiness Matrix (V2-RRHH-FASE-4) ──
+export {
+  deriveOperationalStatus, buildReadinessMatrix, getSystemLimitsDeclaration,
+  OPERATIONAL_STATUS_META, CIRCUIT_DEFINITIONS,
+} from './officialReadinessMatrixEngine';
+export type {
+  OfficialOperationalStatus, CircuitId, CircuitDefinition, CircuitSystemLimit,
+  CircuitReadinessItem, ReadinessMatrix, SystemLimitDeclaration,
+} from './officialReadinessMatrixEngine';
+
 // ── Payroll Engines (pre-existing, export selectively to avoid name clashes) ──
 // Import directly from individual files: './payrollRunEngine', './payrollConceptCatalog', etc.
