@@ -18,74 +18,54 @@ import {
   AlertTriangle,
   Shield
 } from 'lucide-react';
-// Sprint 3: Partial domain barrel adoption (low-risk imports)
+// Sprint 4: Expanded domain barrel adoption (10 barrels active)
+// D1 People
+import { HREmployeesPanel, HRDepartmentsPanel, HREmployeeExpedient } from './domains/people';
+// D2 Contracts
+import { HRContractsPanel, HRSeveranceCalculatorDialog, HRIndemnizationCalculatorDialog } from './domains/contracts';
+// D3 Payroll
 import { HRPayrollPanel, HRPayrollRecalculationPanel, HRSocialBenefitsPanel, HRSettlementsPanel, HRPayrollEntryDialog } from './domains/payroll';
-import { HRVacationsPanel, HRTimeClockPanel, HRAlertsPanel, HRVacationRequestDialog, HRIncidentFormDialog } from './domains/workflows';
+// D4 Social-Fiscal
+import { HRSocialSecurityPanel, HRCNAEIntelligencePanel } from './domains/social-fiscal';
+// D5 Compliance
+import { HRSafetyPanel, HRRegulatoryWatchPanel, HRLegalComplianceDashboard, HRLegalEnginePanel, ComplianceReportingPanel, HRUnionsPanel } from './domains/compliance';
+// D6 Documents
+import { DocumentExpedientModule, HREmployeeDocumentsPanel } from './domains/documents';
+// D7 Portal
 import { HRHelpIndex } from './domains/portal';
+// D8 Workflows
+import { HRVacationsPanel, HRTimeClockPanel, HRAlertsPanel, HRVacationRequestDialog, HRIncidentFormDialog } from './domains/workflows';
+// D10 Talent
+import { HRRecruitmentPanel, HROnboardingPanel, HROffboardingPanel, HRPerformancePanel, HRTrainingPanel, HRSkillsMatrixPanel, HRInternalMarketplacePanel, HRSuccessionPlanningPanel, HRTalentIntelligencePanel, HRRoleExperiencePanel } from './domains/talent';
+// D11 Analytics
+import { HRExecutiveDashboard, HRAdvancedAnalyticsPanel, PeopleAnalyticsModule, HRAnalyticsIntelligencePanel, HRAnalyticsBIPremiumPanel, HRReportingEnginePanel, HRBoardPackPanel } from './domains/analytics';
+// D12 AI Tower
+import { HRAIControlCenter, HRAIAgentPanel, MultiAgentSupervisorPanel, HRKnowledgeUploader, HRDemoSeedPanel, HRCopilotTwinPanel, HRDigitalTwinPanel, HRAIGovernancePanel } from './domains/ai-tower';
 
-// Direct imports (not yet migrated to domain barrels)
+// Direct imports (cross-cutting, enterprise, premium — not yet in domain barrels)
 import { useERPContext } from '@/hooks/erp';
 import { supabase } from '@/integrations/supabase/client';
-import { HRExecutiveDashboard } from './HRExecutiveDashboard';
-import { HRContractsPanel } from './HRContractsPanel';
-import { HRDepartmentsPanel } from './HRDepartmentsPanel';
-import { HRAIAgentPanel } from './HRAIAgentPanel';
 import { HRNewsPanel } from './HRNewsPanel';
-import { HRKnowledgeUploader } from './HRKnowledgeUploader';
 import { HRTrends2026Panel } from './HRTrends2026Panel';
-import { HRSafetyPanel } from './HRSafetyPanel';
-import { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
-import { HRUnionsPanel } from './HRUnionsPanel';
-import { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
-import { HREmployeesPanel } from './HREmployeesPanel';
-import { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
-import { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
-import { HRRecruitmentPanel } from './HRRecruitmentPanel';
-import { HROnboardingPanel } from './HROnboardingPanel';
-import { HROffboardingPanel } from './HROffboardingPanel';
-import { HRPerformancePanel } from './HRPerformancePanel';
-import { HRTrainingPanel } from './HRTrainingPanel';
-import { HRAdvancedAnalyticsPanel } from './HRAdvancedAnalyticsPanel';
 import { HRNavigationMenu } from './HRNavigationMenu';
-import { HRRegulatoryWatchPanel } from './HRRegulatoryWatchPanel';
-import { HRLegalComplianceDashboard } from './compliance';
 import { HRIntegrationDashboard } from './integration';
-import { HRDemoSeedPanel } from './HRDemoSeedPanel';
-import { HRSkillsMatrixPanel } from './talent/HRSkillsMatrixPanel';
-import { HRInternalMarketplacePanel } from './talent/HRInternalMarketplacePanel';
-import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
-import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
-// HRTimeClockPanel already imported from domains/workflows
 import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard, HRComplianceEnterprisePanel } from './enterprise';
 import { HRCompensationSuitePanel } from './compensation';
-import { HRTalentIntelligencePanel } from './talent/HRTalentIntelligencePanel';
 import { HRWellbeingEnterprisePanel } from './wellbeing/HRWellbeingEnterprisePanel';
 import { HRESGSelfServicePanel } from './esg-selfservice/HRESGSelfServicePanel';
-import { HRCopilotTwinPanel } from './copilot-twin/HRCopilotTwinPanel';
 import { HRSecurityGovernancePanel } from './security-governance/HRSecurityGovernancePanel';
-import { HRAIGovernancePanel } from './ai-governance/HRAIGovernancePanel';
 import { HRWorkforcePlanningPanel } from './workforce-planning/HRWorkforcePlanningPanel';
 import { HRFairnessEnginePanel } from './fairness-engine/HRFairnessEnginePanel';
-import { HRDigitalTwinPanel } from './digital-twin/HRDigitalTwinPanel';
-import { HRLegalEnginePanel } from './legal-engine/HRLegalEnginePanel';
-import { HRCNAEIntelligencePanel } from './cnae-intelligence/HRCNAEIntelligencePanel';
-import { HRRoleExperiencePanel } from './role-experience/HRRoleExperiencePanel';
-import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel, HRAnalyticsBIPremiumPanel } from './premium-dashboard';
-import { HRReportingEnginePanel } from './reporting-engine';
-import { ComplianceReportingPanel } from './regulatory-reporting';
+import { HRPremiumExecutiveDashboard, HRPremiumAlertsPanel, HRPremiumActivityFeed, HRPremiumSettingsPanel, HRPremiumHealthCheckPanel, HRPremiumExportPanel, HRPremiumHelpCenter, HROrchestrationPanel, HRComplianceAutomationPanel } from './premium-dashboard';
 import { PremiumAPIWebhooksPanel } from './premium-api';
 import { EnterpriseIntegrationsPanel } from './enterprise-integrations';
-import { HRBoardPackPanel } from './board-pack';
 import { HRCountryRegistryPanel, HRLeaveIncidentsPanel, HRPayrollPeriodsPanel, HRComplianceEvidencePanel } from './global';
 import { HRTasksModule } from './tasks';
 import { OfficialIntegrationsHub } from './official-integrations';
 import { GlobalMobilityModule } from './mobility';
-import { DocumentExpedientModule } from './document-expedient';
 import { HRPayrollEngine } from './payroll-engine';
-import { PeopleAnalyticsModule } from './people-analytics';
 import { ESLocalizationPlugin } from './localization/es';
 import { HRAdminPortal } from './admin-portal';
-import { HREmployeeExpedient } from './employee-expedient';
 import { HRCommandPalette } from './shared/HRCommandPalette';
 import { HREnvironmentBanner } from './shared/HREnvironmentBanner';
 import { HRDemoJourneyPanel } from './shared/HRDemoJourneyPanel';
@@ -99,8 +79,6 @@ import { Button } from '@/components/ui/button';
 import { UnifiedAuditGenerator } from '@/components/reports/UnifiedAuditGenerator';
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { HRUtilitiesNavigation, type UtilitySection } from './premium-dashboard/HRUtilitiesNavigation';
-import { MultiAgentSupervisorPanel } from './MultiAgentSupervisorPanel';
-import { HRAIControlCenter } from './HRAIControlCenter';
 
 function PremiumReseedPanel({ companyId }: { companyId?: string }) {
   const { phases, isRunning, progress, runReseed, reset } = useHRPremiumReseed();

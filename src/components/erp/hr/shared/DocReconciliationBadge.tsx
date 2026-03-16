@@ -9,27 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link2, Link2Off } from 'lucide-react';
-import { normalizeDocType } from './documentExpectedTypes';
-
-/** Tipos documentales que aplican para conciliación */
-const RECONCILABLE_TYPES = new Set([
-  'nomina_mensual',
-  'nomina',
-  'justificante_pago_nomina',
-  'rlc',
-  'rnt',
-  'cra',
-  'modelo_111',
-  'modelo_190',
-  'finiquito',
-  'indemnizacion',
-  'bases_cotizacion',
-  'fdi',
-]);
-
-export function isReconcilableDocType(docType: string): boolean {
-  return RECONCILABLE_TYPES.has(normalizeDocType(docType));
-}
+/**
+ * @migration Sprint 4 — isReconcilableDocType and getApplicableChannels moved to
+ * src/engines/erp/hr/docReconciliationRules.ts. Re-exported here for compatibility.
+ */
+import { isReconcilableDocType, getApplicableChannels as _getApplicableChannels } from '@/engines/erp/hr/docReconciliationRules';
+export { isReconcilableDocType } from '@/engines/erp/hr/docReconciliationRules';
 
 interface ReconciliationFlags {
   reconciled_with_payroll: boolean;
@@ -56,23 +41,7 @@ const CHANNEL_KEYS: Record<ReconciliationChannel, keyof ReconciliationFlags> = {
  * Returns which reconciliation channels apply to a given doc type.
  */
 export function getApplicableChannels(docType: string): ReconciliationChannel[] {
-  const norm = normalizeDocType(docType);
-  const channels: ReconciliationChannel[] = [];
-
-  // Payroll
-  if (['nomina_mensual', 'nomina', 'justificante_pago_nomina', 'finiquito', 'indemnizacion'].includes(norm)) {
-    channels.push('payroll');
-  }
-  // Social Security
-  if (['rlc', 'rnt', 'cra', 'bases_cotizacion', 'fdi'].includes(norm)) {
-    channels.push('social_security');
-  }
-  // Tax
-  if (['modelo_111', 'modelo_190', 'nomina_mensual', 'nomina', 'finiquito'].includes(norm)) {
-    channels.push('tax');
-  }
-
-  return channels;
+  return _getApplicableChannels(docType);
 }
 
 interface DocReconciliationBadgeProps {

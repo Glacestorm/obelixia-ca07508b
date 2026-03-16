@@ -47,5 +47,9 @@ export type {
   ReadinessSignal, DeadlineSignal, CertificateSignal, DryRunSignal, ApprovalSignal,
 } from './proactiveAlertEngine';
 
+// ── Document Reconciliation Rules (Sprint 4: extracted from UI) ──
+export { isReconcilableDocType, getApplicableChannels, RECONCILIATION_CHANNEL_LABELS } from './docReconciliationRules';
+export type { ReconciliationChannel } from './docReconciliationRules';
+
 // ── Payroll Engines (pre-existing, export selectively to avoid name clashes) ──
 // Import directly from individual files: './payrollRunEngine', './payrollConceptCatalog', etc.

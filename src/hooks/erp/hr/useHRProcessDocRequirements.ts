@@ -10,7 +10,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { normalizeDocType, EXPECTED_DOCS_BY_REQUEST_TYPE } from '@/components/erp/hr/shared/documentExpectedTypes';
+import { normalizeDocType, EXPECTED_DOCS_BY_REQUEST_TYPE } from '@/engines/erp/hr/documentExpectedTypes';
 import type { AdminRequestType } from '@/hooks/admin/hr/useAdminPortal';
 
 // ─── Types ───────────────────────────────────────────────────────────────────

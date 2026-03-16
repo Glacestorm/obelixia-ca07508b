@@ -8,7 +8,7 @@
 import { useMemo } from 'react';
 import type { RegistrationData } from '@/hooks/erp/hr/useHRRegistrationProcess';
 import type { EnrichedCompleteness } from '@/hooks/erp/hr/useHRProcessDocRequirements';
-import type { RegistrationDeadlineSummary } from '@/components/erp/hr/shared/registrationDeadlineEngine';
+import type { RegistrationDeadlineSummary } from '@/engines/erp/hr/registrationDeadlineEngine';
 import {
   evaluatePreIntegrationReadiness,
   type PreIntegrationSummary,
