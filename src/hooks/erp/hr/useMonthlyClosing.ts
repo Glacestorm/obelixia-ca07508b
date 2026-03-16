@@ -217,16 +217,7 @@ export function useMonthlyClosing(companyId: string) {
         versionId: null,
       });
 
-      // Ledger: closing context loaded (preparation phase)
-      if (phase === 'not_started' || phase === 'preparation') {
-        writeLedger({
-          eventType: 'system_event',
-          entityType: 'monthly_closing',
-          entityId: period.id,
-          afterSnapshot: { phase, checklist_score: checklist.overallScore, blockers: checklist.blockers },
-          metadata: { action: 'closing_context_loaded' },
-        });
-      }
+      // NOTE: No ledger write on view load — avoids noise (V2-RRHH-FASE-3B)
 
     } catch (err) {
       console.error('[useMonthlyClosing] loadClosingContext error:', err);
@@ -249,30 +240,16 @@ export function useMonthlyClosing(companyId: string) {
         return false;
       }
 
-      // 2. Record closing initiation in ledger
-      const initiationEventId = await writeLedger({
-        eventType: 'period_closed',
-        entityType: 'monthly_closing',
-        entityId: period.id,
-        beforeSnapshot: { status: period.status, phase: data.phase },
-        afterSnapshot: { status: 'closing' },
-        metadata: {
-          action: 'closing_initiated',
-          checklist_score: data.checklist?.overallScore,
-          blockers: data.checklist?.blockers,
-          warnings: data.checklist?.warnings,
-        },
-      });
-
-      // 3. Execute actual close via payroll engine
+      // 2. Execute actual close via payroll engine
+      //    NOTE: closePeriodFn already writes `period_closed` to ledger — no duplicate here (V2-RRHH-FASE-3B)
       const result = await closePeriodFn(period.id);
       if (!result.success) {
         setIsLoading(false);
         return false;
       }
 
-      // 4. Write evidence for closure package
-      if (initiationEventId && result.snapshot) {
+      // 3. Write evidence for closure package (separate event, not duplicating period_closed)
+      if (result.snapshot) {
         await writeLedgerWithEvidence(
           {
             eventType: 'expedient_action',
@@ -331,49 +308,121 @@ export function useMonthlyClosing(companyId: string) {
 
   // ── Record reopen in ledger ──
 
+  /**
+   * Handle post-reopen cleanup: invalidate previous evidence & supersede version.
+   * NOTE: The ledger event `period_reopened` is already written by `reopenPeriod()` in usePayrollEngine.
+   *       We do NOT duplicate it here (V2-RRHH-FASE-3B).
+   */
   const recordReopenInLedger = useCallback(async (periodId: string, reason: string) => {
-    await writeLedger({
-      eventType: 'period_reopened',
-      entityType: 'monthly_closing',
-      entityId: periodId,
-      beforeSnapshot: { phase: data.phase },
-      afterSnapshot: { phase: 'reopened', reason },
-      isReopening: true,
-      metadata: { reason },
-    });
+    // 1. Supersede the version registry entry if it exists
+    if (data.versionId) {
+      try {
+        const { data: currentVersion } = await (supabase as any)
+          .from('erp_hr_version_registry')
+          .select('state')
+          .eq('id', data.versionId)
+          .single();
+
+        if (currentVersion?.state === 'closed') {
+          const { data: { user } } = await supabase.auth.getUser();
+          await (supabase as any)
+            .from('erp_hr_version_registry')
+            .update({
+              state: 'reopened',
+              previous_state: 'closed',
+              state_changed_by: user?.id ?? null,
+              state_change_reason: reason,
+            })
+            .eq('id', data.versionId);
+        }
+      } catch (err) {
+        console.error('[useMonthlyClosing] version transition on reopen error:', err);
+      }
+    }
+
+    // 2. Invalidate closure evidence linked to this period
+    try {
+      const { data: evidenceRows } = await (supabase as any)
+        .from('erp_hr_evidence')
+        .select('id')
+        .eq('ref_entity_type', 'payroll_period')
+        .eq('ref_entity_id', periodId)
+        .eq('evidence_type', 'closure_package')
+        .eq('is_valid', true);
+
+      if (evidenceRows && evidenceRows.length > 0) {
+        for (const row of evidenceRows) {
+          await (supabase as any)
+            .from('erp_hr_evidence')
+            .update({
+              is_valid: false,
+              invalidated_at: new Date().toISOString(),
+              invalidation_reason: `Reapertura: ${reason}`,
+            })
+            .eq('id', row.id);
+        }
+      }
+    } catch (err) {
+      console.error('[useMonthlyClosing] evidence invalidation on reopen error:', err);
+    }
+
+    // 3. Write a single evidence record for the reopen action itself
+    await writeLedgerWithEvidence(
+      {
+        eventType: 'expedient_action',
+        entityType: 'closing_package',
+        entityId: periodId,
+        beforeSnapshot: { phase: data.phase, versionId: data.versionId },
+        afterSnapshot: { phase: 'reopened', reason },
+        isReopening: true,
+        metadata: { action: 'closure_invalidated_by_reopen', reason },
+      },
+      [{
+        evidenceType: 'snapshot',
+        evidenceLabel: `Reapertura de cierre — ${reason}`,
+        refEntityType: 'payroll_period',
+        refEntityId: periodId,
+        evidenceSnapshot: {
+          reopened_from_phase: data.phase,
+          previous_version_id: data.versionId,
+          reason,
+          reopened_at: new Date().toISOString(),
+        },
+      }],
+    );
 
     const reopenEvent = buildPhaseTimelineEvent('reopened', 'Período reabierto', reason);
     setData(prev => ({
       ...prev,
       phase: 'reopened',
+      versionId: null,
       timeline: [...prev.timeline, reopenEvent],
     }));
-  }, [data.phase, writeLedger]);
+  }, [data.phase, data.versionId, writeLedgerWithEvidence]);
 
   // ── Record lock in ledger ──
 
+  /**
+   * Post-lock: transition version to 'validated' (final) and update timeline.
+   * NOTE: The ledger event `period_locked` is now written by `lockPeriod()` in usePayrollEngine (V2-RRHH-FASE-3B).
+   */
   const recordLockInLedger = useCallback(async (periodId: string) => {
-    await writeLedgerWithEvidence(
-      {
-        eventType: 'system_event',
-        entityType: 'monthly_closing',
-        entityId: periodId,
-        beforeSnapshot: { phase: data.phase },
-        afterSnapshot: { phase: 'completed' },
-        metadata: { action: 'period_locked' },
-      },
-      data.closureSnapshot ? [{
-        evidenceType: 'closure_package',
-        evidenceLabel: 'Paquete de cierre final (bloqueado)',
-        refEntityType: 'payroll_period',
-        refEntityId: periodId,
-        evidenceSnapshot: data.closureSnapshot as unknown as Record<string, unknown>,
-      }] : [],
-    );
-
-    // Transition version to validated→closed if exists
+    // Transition version to 'validated' (final, immutable) if exists
     if (data.versionId) {
-      // Version already created as 'closed', no transition needed
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await (supabase as any)
+          .from('erp_hr_version_registry')
+          .update({
+            state: 'validated',
+            previous_state: 'closed',
+            state_changed_by: user?.id ?? null,
+            state_change_reason: 'Período bloqueado definitivamente',
+          })
+          .eq('id', data.versionId);
+      } catch (err) {
+        console.error('[useMonthlyClosing] version transition on lock error:', err);
+      }
     }
 
     const lockEvent = buildPhaseTimelineEvent('completed', 'Período bloqueado', 'Cierre definitivo — sin más cambios permitidos');
@@ -382,7 +431,7 @@ export function useMonthlyClosing(companyId: string) {
       phase: 'completed',
       timeline: [...prev.timeline, lockEvent],
     }));
-  }, [data.phase, data.closureSnapshot, data.versionId, writeLedgerWithEvidence]);
+  }, [data.phase, data.versionId]);
 
   // ── Reset ──
 

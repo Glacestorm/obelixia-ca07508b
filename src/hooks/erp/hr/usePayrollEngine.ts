@@ -744,6 +744,16 @@ export function usePayrollEngine(companyId?: string) {
         { status: 'locked', locked_at: now, locked_by: user?.id }
       );
 
+      // Ledger: period locked (V2-RRHH-FASE-3B — single source of truth)
+      writeLedger({
+        eventType: 'system_event',
+        entityType: 'payroll_period',
+        entityId: periodId,
+        beforeSnapshot: { status: 'closed' },
+        afterSnapshot: { status: 'locked', locked_at: now },
+        metadata: { action: 'period_locked' },
+      });
+
       setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
       toast.success('Período bloqueado — no se permiten más cambios');
       return true;
@@ -752,7 +762,7 @@ export function usePayrollEngine(companyId?: string) {
       toast.error(`Error al bloquear: ${e.message}`);
       return false;
     }
-  }, [periods, logAudit]);
+  }, [periods, logAudit, writeLedger]);
 
   // ---- REOPEN PERIOD (V2-ES.7 Paso 3, controlled) ----
 
