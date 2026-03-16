@@ -488,6 +488,45 @@ async function classifyWithAI(apiKey: string, doc: any, source: any): Promise<an
   }
 }
 
+// === CROSS-DOMAIN TRIGGER EVALUATION ===
+const CROSS_DOMAIN_KEYWORDS = [
+  'despido', 'contratación', 'jornada', 'permiso', 'maternidad', 'paternidad',
+  'cotización', 'seguridad social', 'protección de datos', 'RGPD', 'LOPDGDD',
+  'teletrabajo', 'movilidad', 'ERE', 'ERTE', 'convenio colectivo', 'salario',
+  'indemnización', 'compliance', 'prevención', 'igualdad', 'acoso',
+];
+
+function evaluateCrossDomainTrigger(doc: any): { reason: string } | null {
+  const domains = doc.impact_domains || [];
+  const impactLevel = doc.impact_level || 'low';
+  const title = (doc.document_title || '').toLowerCase();
+  const summary = (doc.summary || '').toLowerCase();
+
+  // Rule 1: Multiple relevant domains
+  const relevantDomains = domains.filter((d: string) => ['hr', 'legal', 'compliance', 'fiscal'].includes(d));
+  if (relevantDomains.length >= 2 && relevantDomains.some((d: string) => d === 'hr' || d === 'legal')) {
+    return { reason: `Multi-domain impact: ${relevantDomains.join('+')}` };
+  }
+
+  // Rule 2: Critical or high impact with HR or legal
+  if ((impactLevel === 'critical' || impactLevel === 'high') && relevantDomains.length >= 1) {
+    return { reason: `${impactLevel} impact on ${relevantDomains.join('+')}` };
+  }
+
+  // Rule 3: Cross-domain keywords in title/summary
+  const matchedKeywords = CROSS_DOMAIN_KEYWORDS.filter(kw => title.includes(kw) || summary.includes(kw));
+  if (matchedKeywords.length >= 2) {
+    return { reason: `Cross-domain keywords: ${matchedKeywords.slice(0, 3).join(', ')}` };
+  }
+
+  // Rule 4: Requires human review + multiple domains
+  if (doc.requires_human_review && relevantDomains.length >= 2) {
+    return { reason: `Human review required + multi-domain` };
+  }
+
+  return null; // Do not escalate
+}
+
 function extractTag(xml: string, tag: string): string | null {
   const regex = new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>|<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
   const match = xml.match(regex);

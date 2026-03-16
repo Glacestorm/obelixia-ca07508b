@@ -174,6 +174,10 @@ export function useSupervisorDomainData(companyId?: string) {
     conflictInvocations,
     obelixiaInvocations,
     obelixiaConflicts,
+    // Phase 2B: Regulatory cross-domain
+    regulatoryCrossDomainCases,
+    regulatoryHumanReview,
+    regulatoryConflicts,
     stats,
   };
 }
