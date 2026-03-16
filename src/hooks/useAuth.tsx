@@ -18,6 +18,8 @@ interface AuthContextType {
   isOfficeDirector: boolean;
   isCommercialManager: boolean;
   isAuditor: boolean;
+  isHRManager: boolean;
+  isLegalManager: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
