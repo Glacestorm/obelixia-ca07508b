@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useHRDocGenerationRules, type DocGenerationRule } from './useHRDocGenerationRules';
 import { toast } from 'sonner';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
