@@ -68,5 +68,16 @@ export {
 } from './evidenceEngine';
 export type { EvidenceInput, EvidenceRow, EvidenceChainItem } from './evidenceEngine';
 
+// ── Monthly Closing Orchestration (V2-RRHH-FASE-3) ──
+export {
+  canTransitionPhase, derivePhaseFromPeriodStatus,
+  buildClosingChecklist, buildClosingOutputs, buildPhaseTimelineEvent,
+  CLOSING_PHASE_CONFIG,
+} from './monthlyClosingOrchestrationEngine';
+export type {
+  MonthlyClosingPhase, MonthlyClosingState, ClosingChecklist, ClosingCheckItem,
+  CheckSeverity, ClosingPackage, ClosingOutput, ClosingTimelineEvent,
+} from './monthlyClosingOrchestrationEngine';
+
 // ── Payroll Engines (pre-existing, export selectively to avoid name clashes) ──
 // Import directly from individual files: './payrollRunEngine', './payrollConceptCatalog', etc.
