@@ -41,23 +41,7 @@ const CHANNEL_KEYS: Record<ReconciliationChannel, keyof ReconciliationFlags> = {
  * Returns which reconciliation channels apply to a given doc type.
  */
 export function getApplicableChannels(docType: string): ReconciliationChannel[] {
-  const norm = normalizeDocType(docType);
-  const channels: ReconciliationChannel[] = [];
-
-  // Payroll
-  if (['nomina_mensual', 'nomina', 'justificante_pago_nomina', 'finiquito', 'indemnizacion'].includes(norm)) {
-    channels.push('payroll');
-  }
-  // Social Security
-  if (['rlc', 'rnt', 'cra', 'bases_cotizacion', 'fdi'].includes(norm)) {
-    channels.push('social_security');
-  }
-  // Tax
-  if (['modelo_111', 'modelo_190', 'nomina_mensual', 'nomina', 'finiquito'].includes(norm)) {
-    channels.push('tax');
-  }
-
-  return channels;
+  return _getApplicableChannels(docType);
 }
 
 interface DocReconciliationBadgeProps {

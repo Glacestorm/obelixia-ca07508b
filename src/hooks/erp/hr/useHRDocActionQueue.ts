@@ -14,7 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { computeDocStatus } from '@/engines/erp/hr/documentStatusEngine';
-import { isReconcilableDocType } from '@/components/erp/hr/shared/DocReconciliationBadge';
+import { isReconcilableDocType } from '@/engines/erp/hr/docReconciliationRules';
 import type { EmployeeDocument } from './useHRDocumentExpedient';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
