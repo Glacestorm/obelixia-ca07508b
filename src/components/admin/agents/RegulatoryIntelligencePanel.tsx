@@ -490,6 +490,11 @@ export function RegulatoryIntelligencePanel() {
           </ScrollArea>
         </TabsContent>
 
+        {/* Quality Dashboard */}
+        <TabsContent value="quality" className="mt-3">
+          <RegulatoryQualityDashboard stats={feedbackStats} />
+        </TabsContent>
+
         {/* Sources */}
         <TabsContent value="sources" className="mt-3">
           <ScrollArea className="h-[500px]">

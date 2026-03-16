@@ -141,23 +141,30 @@ serve(async (req) => {
   }
 });
 
-// === FEEDBACK-BASED CONFIDENCE ADJUSTMENT ===
+// === FEEDBACK-BASED CONFIDENCE ADJUSTMENT (weighted by reviewer role) ===
 async function loadFeedbackStats(supabase: any): Promise<Map<string, { total: number; accepted: number; rejected: number }>> {
   const stats = new Map<string, { total: number; accepted: number; rejected: number }>();
   try {
     const { data } = await supabase
       .from('erp_regulatory_feedback')
-      .select('field_reviewed, accepted')
+      .select('field_reviewed, accepted, reviewer_role, reviewer_domain')
       .order('created_at', { ascending: false })
-      .limit(200);
+      .limit(300);
 
     if (data) {
+      // Weight feedback by reviewer role: admin/superadmin = 2x, others = 1x
+      const ROLE_WEIGHT: Record<string, number> = {
+        superadmin: 2, admin: 2, responsable_comercial: 1.5,
+        director_comercial: 1.5, auditor: 1.5, user: 1,
+      };
+
       for (const fb of data) {
         const key = fb.field_reviewed || 'general';
+        const weight = ROLE_WEIGHT[fb.reviewer_role || 'user'] || 1;
         const existing = stats.get(key) || { total: 0, accepted: 0, rejected: 0 };
-        existing.total++;
-        if (fb.accepted === true) existing.accepted++;
-        if (fb.accepted === false) existing.rejected++;
+        existing.total += weight;
+        if (fb.accepted === true) existing.accepted += weight;
+        if (fb.accepted === false) existing.rejected += weight;
         stats.set(key, existing);
       }
     }
