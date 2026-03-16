@@ -21,7 +21,7 @@ import {
   buildClosureSnapshot,
   type ClosureReadinessResult,
 } from '@/components/erp/hr/shared/registrationClosureEngine';
-import { addBusinessDays, type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
+import { addBusinessDays, type HolidayCalendar, EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

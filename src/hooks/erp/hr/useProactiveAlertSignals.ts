@@ -22,7 +22,7 @@ import type {
   CertificateSignal,
   DryRunSignal,
   ApprovalSignal,
-} from '@/components/erp/hr/shared/proactiveAlertEngine';
+} from '@/engines/erp/hr/proactiveAlertEngine';
 import type { OfficialReadinessSummary } from '@/components/erp/hr/shared/officialReadinessEngine';
 import type { RegulatoryCalendarSummary } from '@/components/erp/hr/shared/regulatoryCalendarEngine';
 import type { DomainCertificate } from '@/hooks/erp/hr/useHRDomainCertificates';

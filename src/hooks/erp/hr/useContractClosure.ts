@@ -8,7 +8,7 @@
  */
 import { useMemo } from 'react';
 import type { ContractProcessData } from '@/hooks/erp/hr/useHRContractProcess';
-import type { ContractDeadlineSummary } from '@/components/erp/hr/shared/contractDeadlineEngine';
+import type { ContractDeadlineSummary } from '@/engines/erp/hr/contractDeadlineEngine';
 import {
   evaluateContractClosureReadiness,
   type ContractClosureReadinessResult,

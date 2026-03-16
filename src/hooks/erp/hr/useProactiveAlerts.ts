@@ -37,7 +37,7 @@ import {
   type CertificateSignal,
   type DryRunSignal,
   type ApprovalSignal,
-} from '@/components/erp/hr/shared/proactiveAlertEngine';
+} from '@/engines/erp/hr/proactiveAlertEngine';
 
 export interface ProactiveAlertsState {
   summary: ProactiveAlertSummary | null;

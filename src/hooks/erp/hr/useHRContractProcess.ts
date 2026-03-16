@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRProcessDocRequirements';
 import { computeContractDeadlines, type ContractDeadlineSummary } from '@/engines/erp/hr/contractDeadlineEngine';
 import { buildContrataPayload, type ContrataPayloadResult } from '@/components/erp/hr/shared/contrataPayloadBuilder';
-import { type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
+import { type HolidayCalendar, EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
 import { buildContractClosureSnapshot } from '@/components/erp/hr/shared/contractClosureEngine';
 import { evaluateContrataPreIntegrationReadiness, type ContrataPreIntegrationContext } from '@/components/erp/hr/shared/contrataPreIntegrationReadiness';
 

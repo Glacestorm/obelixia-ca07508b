@@ -10,7 +10,7 @@ import {
   type RegulatoryCalendarContext,
   type RegulatoryCalendarSummary,
 } from '@/components/erp/hr/shared/regulatoryCalendarEngine';
-import { type HolidayCalendar, EMPTY_CALENDAR } from '@/components/erp/hr/shared/calendarHelpers';
+import { type HolidayCalendar, EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
 
 export interface UseRegulatoryCalendarReturn {
   calendar: RegulatoryCalendarSummary | null;
