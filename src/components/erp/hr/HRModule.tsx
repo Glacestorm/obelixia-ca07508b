@@ -374,6 +374,14 @@ function HRModuleInner() {
         {activeModule === 'succession' && <HRSuccessionPlanningPanel companyId={companyId} />}
         {activeModule === 'analytics-intelligence' && <HRAnalyticsIntelligencePanel companyId={companyId} />}
         {activeModule === 'enterprise-dashboard' && <HREnterpriseDashboard companyId={companyId} />}
+        {activeModule === 'advisory-portfolio' && (
+          <AdvisoryDashboardPanel
+            onSelectCompany={(id) => {
+              // Switch company context via ERPCompanySelector
+              console.log('[Advisory] Switch to company:', id);
+            }}
+          />
+        )}
         {activeModule === 'legal-entities' && <HRLegalEntitiesPanel companyId={companyId} />}
         {activeModule === 'work-centers' && <HRWorkCentersPanel companyId={companyId} />}
         {activeModule === 'org-structure' && <HROrgStructurePanel companyId={companyId} />}
