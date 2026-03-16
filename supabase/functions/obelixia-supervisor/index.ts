@@ -580,7 +580,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: [
-            { role: 'system', content: REGULATORY_CROSS_DOMAIN_PROMPT },
+            { role: 'system', content: REGULATORY_CROSS_DOMAIN_PROMPT + learningContext },
             { role: 'user', content: JSON.stringify({
               document: doc,
               hr_response: hrResult2?.data || null,
