@@ -84,7 +84,8 @@ type ProcessStatus = 'idle' | 'running' | 'success' | 'failed';
 - [x] Sprint 1: Domain barrels, deprecations, architecture doc
 - [x] Sprint 2: Enrich domain barrels, analytics consolidation, dialog mapping, deprecate HRDashboardPanel
 - [x] Sprint 3: Separate shared/ engines, fix cross-layer imports, domain barrel adoption, root component assignment
-- [ ] Sprint 4: Complete migration, tests, lazy loading
+- [x] Sprint 4: Hook→UI fix, engine import redirect, expanded barrel adoption (10 barrels)
+- [ ] Sprint 5: Complete migration, tests, lazy loading
 
 ## Sprint 3 — Migration Table
 
@@ -138,4 +139,65 @@ type ProcessStatus = 'idle' | 'running' | 'success' | 'failed';
 - contractClosureEngine (depends on contrataPayloadBuilder)
 - registrationClosureEngine (depends on tgssPayloadBuilder)
 - HRModule.tsx navigation logic, HRNavigationMenu.tsx
+- No business rules changed, no UX modified
+
+## Sprint 4 — Hook→UI Fix
+
+| Source | Extracted To | Mechanism |
+|---|---|---|
+| DocReconciliationBadge.tsx → isReconcilableDocType, getApplicableChannels | src/engines/erp/hr/docReconciliationRules.ts | Re-export compat in .tsx |
+| useHRDocActionQueue import from .tsx | @/engines/erp/hr/docReconciliationRules | Direct engine import |
+
+## Sprint 4 — Additional Hook Import Redirects
+
+| Hook | Import Changed | New Source |
+|---|---|---|
+| useHRContractProcess | calendarHelpers | ✅ engines/ |
+| useHRHolidayCalendar | calendarHelpers | ✅ engines/ |
+| useHRRegistrationProcess | registrationDeadlineEngine, calendarHelpers | ✅ engines/ |
+| useHRDocGenerationRules | documentExpectedTypes | ✅ engines/ |
+| useHRProcessDocRequirements | documentExpectedTypes | ✅ engines/ |
+| useProactiveAlerts | proactiveAlertEngine | ✅ engines/ |
+| useProactiveAlertSignals | proactiveAlertEngine | ✅ engines/ |
+| useRegistrationClosure | registrationDeadlineEngine | ✅ engines/ |
+| useTGSSReadiness | registrationDeadlineEngine | ✅ engines/ |
+| useContrataReadiness | contractDeadlineEngine | ✅ engines/ |
+| useContractClosure | contractDeadlineEngine | ✅ engines/ |
+| useRegulatoryCalendar | calendarHelpers | ✅ engines/ |
+
+## Sprint 4 — Domain Barrel Adoption in HRModule
+
+| Barrel | Components Imported | Status |
+|---|---|---|
+| D1 People | HREmployeesPanel, HRDepartmentsPanel, HREmployeeExpedient | ✅ New |
+| D2 Contracts | HRContractsPanel, HRSeveranceCalculatorDialog, HRIndemnizationCalculatorDialog | ✅ New |
+| D3 Payroll | HRPayrollPanel, HRPayrollRecalculationPanel, HRSocialBenefitsPanel, HRSettlementsPanel, HRPayrollEntryDialog | Sprint 3 |
+| D4 Social-Fiscal | HRSocialSecurityPanel, HRCNAEIntelligencePanel | ✅ New |
+| D5 Compliance | HRSafetyPanel, HRRegulatoryWatchPanel, HRLegalComplianceDashboard, HRLegalEnginePanel, ComplianceReportingPanel, HRUnionsPanel | ✅ New |
+| D6 Documents | DocumentExpedientModule, HREmployeeDocumentsPanel | ✅ New |
+| D7 Portal | HRHelpIndex | Sprint 3 |
+| D8 Workflows | HRVacationsPanel, HRTimeClockPanel, HRAlertsPanel, HRVacationRequestDialog, HRIncidentFormDialog | Sprint 3 |
+| D10 Talent | 10 components | ✅ New |
+| D11 Analytics | 7 components | ✅ New |
+| D12 AI Tower | 8 components | ✅ New |
+
+## Sprint 4 — Metrics
+
+| Metric | Pre-Sprint 4 | Post-Sprint 4 |
+|---|---|---|
+| Hook→UI violations | 1 | 0 |
+| Hooks importing from shared/ (lines) | 56 | 45 |
+| Domain barrels used by HRModule | 3 | 11 |
+| Direct imports in HRModule | 66 | 27 |
+| Engines in src/engines/erp/hr/ | 7 | 8 |
+
+## Sprint 4 — NOT Touched
+
+- payrollRunEngine, closingIntelligenceEngine, usePayrollEngine
+- All official integrations: tgss*, contrata*, sandbox*, dryRun*, official*, aeat*, preRealApproval*, preparatorySubmission*, connectorHardening*
+- contractClosureEngine, registrationClosureEngine (depend on prohibited payload builders)
+- expedientAlertEngine (cross-domain dependency, needs careful extraction)
+- regulatoryCalendarEngine (not yet migrated to engines/)
+- HRModule.tsx navigation logic, HRNavigationMenu.tsx
+- enterprise/, premium-dashboard/, compensation/, wellbeing/ modules (not in domain barrels yet)
 - No business rules changed, no UX modified
