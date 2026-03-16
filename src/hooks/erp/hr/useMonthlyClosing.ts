@@ -402,28 +402,27 @@ export function useMonthlyClosing(companyId: string) {
 
   // ── Record lock in ledger ──
 
+  /**
+   * Post-lock: transition version to 'validated' (final) and update timeline.
+   * NOTE: The ledger event `period_locked` is now written by `lockPeriod()` in usePayrollEngine (V2-RRHH-FASE-3B).
+   */
   const recordLockInLedger = useCallback(async (periodId: string) => {
-    await writeLedgerWithEvidence(
-      {
-        eventType: 'system_event',
-        entityType: 'monthly_closing',
-        entityId: periodId,
-        beforeSnapshot: { phase: data.phase },
-        afterSnapshot: { phase: 'completed' },
-        metadata: { action: 'period_locked' },
-      },
-      data.closureSnapshot ? [{
-        evidenceType: 'closure_package',
-        evidenceLabel: 'Paquete de cierre final (bloqueado)',
-        refEntityType: 'payroll_period',
-        refEntityId: periodId,
-        evidenceSnapshot: data.closureSnapshot as unknown as Record<string, unknown>,
-      }] : [],
-    );
-
-    // Transition version to validated→closed if exists
+    // Transition version to 'validated' (final, immutable) if exists
     if (data.versionId) {
-      // Version already created as 'closed', no transition needed
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await (supabase as any)
+          .from('erp_hr_version_registry')
+          .update({
+            state: 'validated',
+            previous_state: 'closed',
+            state_changed_by: user?.id ?? null,
+            state_change_reason: 'Período bloqueado definitivamente',
+          })
+          .eq('id', data.versionId);
+      } catch (err) {
+        console.error('[useMonthlyClosing] version transition on lock error:', err);
+      }
     }
 
     const lockEvent = buildPhaseTimelineEvent('completed', 'Período bloqueado', 'Cierre definitivo — sin más cambios permitidos');
@@ -432,7 +431,7 @@ export function useMonthlyClosing(companyId: string) {
       phase: 'completed',
       timeline: [...prev.timeline, lockEvent],
     }));
-  }, [data.phase, data.closureSnapshot, data.versionId, writeLedgerWithEvidence]);
+  }, [data.phase, data.versionId]);
 
   // ── Reset ──
 
