@@ -22266,6 +22266,96 @@ export type Database = {
           },
         ]
       }
+      erp_cross_domain_feedback: {
+        Row: {
+          actions_rating: number | null
+          actions_useful: boolean | null
+          case_type: string
+          comment: string | null
+          conflict_resolution_comment: string | null
+          conflict_resolution_correct: boolean | null
+          corrected_actions: Json | null
+          corrected_deadline: string | null
+          corrected_recommendation: string | null
+          corrected_severity: string | null
+          created_at: string
+          deadline_reasonable: boolean | null
+          domain_assignment_correct: boolean | null
+          escalation_comment: string | null
+          escalation_correct: boolean | null
+          hr_impact_correct: boolean | null
+          human_review_decision_correct: boolean | null
+          id: string
+          invocation_id: string
+          legal_impact_correct: boolean | null
+          overall_rating: number | null
+          recommendation_rating: number | null
+          recommendation_useful: boolean | null
+          reviewer_domain: string | null
+          reviewer_role: string | null
+          severity_correct: boolean | null
+          user_id: string
+        }
+        Insert: {
+          actions_rating?: number | null
+          actions_useful?: boolean | null
+          case_type?: string
+          comment?: string | null
+          conflict_resolution_comment?: string | null
+          conflict_resolution_correct?: boolean | null
+          corrected_actions?: Json | null
+          corrected_deadline?: string | null
+          corrected_recommendation?: string | null
+          corrected_severity?: string | null
+          created_at?: string
+          deadline_reasonable?: boolean | null
+          domain_assignment_correct?: boolean | null
+          escalation_comment?: string | null
+          escalation_correct?: boolean | null
+          hr_impact_correct?: boolean | null
+          human_review_decision_correct?: boolean | null
+          id?: string
+          invocation_id: string
+          legal_impact_correct?: boolean | null
+          overall_rating?: number | null
+          recommendation_rating?: number | null
+          recommendation_useful?: boolean | null
+          reviewer_domain?: string | null
+          reviewer_role?: string | null
+          severity_correct?: boolean | null
+          user_id: string
+        }
+        Update: {
+          actions_rating?: number | null
+          actions_useful?: boolean | null
+          case_type?: string
+          comment?: string | null
+          conflict_resolution_comment?: string | null
+          conflict_resolution_correct?: boolean | null
+          corrected_actions?: Json | null
+          corrected_deadline?: string | null
+          corrected_recommendation?: string | null
+          corrected_severity?: string | null
+          created_at?: string
+          deadline_reasonable?: boolean | null
+          domain_assignment_correct?: boolean | null
+          escalation_comment?: string | null
+          escalation_correct?: boolean | null
+          hr_impact_correct?: boolean | null
+          human_review_decision_correct?: boolean | null
+          id?: string
+          invocation_id?: string
+          legal_impact_correct?: boolean | null
+          overall_rating?: number | null
+          recommendation_rating?: number | null
+          recommendation_useful?: boolean | null
+          reviewer_domain?: string | null
+          reviewer_role?: string | null
+          severity_correct?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       erp_customers: {
         Row: {
           address: string | null
@@ -51919,6 +52009,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_validated_cases: {
+        Row: {
+          case_type: string
+          created_at: string
+          document_id: string | null
+          document_type: string | null
+          escalation_was_correct: boolean
+          feedback_count: number | null
+          id: string
+          impact_domains: string[] | null
+          input_summary: string | null
+          invocation_id: string | null
+          legal_area: string | null
+          origin: string
+          quality_score: number | null
+          source_code: string | null
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          validated_conflict_type: string | null
+          validated_deadline: string | null
+          validated_has_conflict: boolean
+          validated_human_review_needed: boolean
+          validated_priority_actions: Json | null
+          validated_recommendation: string | null
+          validated_severity: string
+          validator_role: string | null
+        }
+        Insert: {
+          case_type: string
+          created_at?: string
+          document_id?: string | null
+          document_type?: string | null
+          escalation_was_correct?: boolean
+          feedback_count?: number | null
+          id?: string
+          impact_domains?: string[] | null
+          input_summary?: string | null
+          invocation_id?: string | null
+          legal_area?: string | null
+          origin?: string
+          quality_score?: number | null
+          source_code?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validated_conflict_type?: string | null
+          validated_deadline?: string | null
+          validated_has_conflict?: boolean
+          validated_human_review_needed?: boolean
+          validated_priority_actions?: Json | null
+          validated_recommendation?: string | null
+          validated_severity: string
+          validator_role?: string | null
+        }
+        Update: {
+          case_type?: string
+          created_at?: string
+          document_id?: string | null
+          document_type?: string | null
+          escalation_was_correct?: boolean
+          feedback_count?: number | null
+          id?: string
+          impact_domains?: string[] | null
+          input_summary?: string | null
+          invocation_id?: string | null
+          legal_area?: string | null
+          origin?: string
+          quality_score?: number | null
+          source_code?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validated_conflict_type?: string | null
+          validated_deadline?: string | null
+          validated_has_conflict?: boolean
+          validated_human_review_needed?: boolean
+          validated_priority_actions?: Json | null
+          validated_recommendation?: string | null
+          validated_severity?: string
+          validator_role?: string | null
+        }
+        Relationships: []
       }
       erp_validation_rules: {
         Row: {
