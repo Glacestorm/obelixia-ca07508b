@@ -122,6 +122,29 @@ export function usePayrollRuns(companyId?: string) {
       setRuns(prev => [newRun, ...prev]);
       setActiveRun(newRun);
       toast.success(`Run #${runNumber} creado (${runType})`);
+      // Ledger: payroll run created
+      writeLedger({
+        eventType: 'payroll_calculated',
+        eventLabel: `Run #${runNumber} creado (${runType})`,
+        entityType: 'payroll_run',
+        entityId: newRun.id,
+        aggregateType: 'payroll_period',
+        aggregateId: snapshotInput.period.id,
+        afterSnapshot: {
+          run_number: runNumber,
+          run_type: runType,
+          total_employees: snapshot.employees.total_in_scope,
+          snapshot_hash: snapshotHash,
+        },
+      });
+      // Version registry for the run
+      writeVersion({
+        entityType: 'payroll_run',
+        entityId: newRun.id,
+        state: 'draft',
+        contentSnapshot: { run_number: runNumber, run_type: runType, period_id: snapshotInput.period.id },
+        contentHash: snapshotHash,
+      });
       return newRun;
     } catch (e: any) {
       console.error('[usePayrollRuns] createRun:', e);
