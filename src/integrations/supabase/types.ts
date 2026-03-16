@@ -22268,6 +22268,7 @@ export type Database = {
       }
       erp_cross_domain_feedback: {
         Row: {
+          actionability_rating: number | null
           actions_rating: number | null
           actions_useful: boolean | null
           case_type: string
@@ -22280,23 +22281,31 @@ export type Database = {
           corrected_severity: string | null
           created_at: string
           deadline_reasonable: boolean | null
+          document_type: string | null
           domain_assignment_correct: boolean | null
           escalation_comment: string | null
           escalation_correct: boolean | null
           hr_impact_correct: boolean | null
           human_review_decision_correct: boolean | null
           id: string
+          impact_domains: string[] | null
           invocation_id: string
+          learning_applied: boolean | null
+          legal_area: string | null
           legal_impact_correct: boolean | null
+          origin: string | null
           overall_rating: number | null
           recommendation_rating: number | null
           recommendation_useful: boolean | null
           reviewer_domain: string | null
           reviewer_role: string | null
           severity_correct: boolean | null
+          should_have_escalated: boolean | null
+          source_code: string | null
           user_id: string
         }
         Insert: {
+          actionability_rating?: number | null
           actions_rating?: number | null
           actions_useful?: boolean | null
           case_type?: string
@@ -22309,23 +22318,31 @@ export type Database = {
           corrected_severity?: string | null
           created_at?: string
           deadline_reasonable?: boolean | null
+          document_type?: string | null
           domain_assignment_correct?: boolean | null
           escalation_comment?: string | null
           escalation_correct?: boolean | null
           hr_impact_correct?: boolean | null
           human_review_decision_correct?: boolean | null
           id?: string
+          impact_domains?: string[] | null
           invocation_id: string
+          learning_applied?: boolean | null
+          legal_area?: string | null
           legal_impact_correct?: boolean | null
+          origin?: string | null
           overall_rating?: number | null
           recommendation_rating?: number | null
           recommendation_useful?: boolean | null
           reviewer_domain?: string | null
           reviewer_role?: string | null
           severity_correct?: boolean | null
+          should_have_escalated?: boolean | null
+          source_code?: string | null
           user_id: string
         }
         Update: {
+          actionability_rating?: number | null
           actions_rating?: number | null
           actions_useful?: boolean | null
           case_type?: string
@@ -22338,20 +22355,27 @@ export type Database = {
           corrected_severity?: string | null
           created_at?: string
           deadline_reasonable?: boolean | null
+          document_type?: string | null
           domain_assignment_correct?: boolean | null
           escalation_comment?: string | null
           escalation_correct?: boolean | null
           hr_impact_correct?: boolean | null
           human_review_decision_correct?: boolean | null
           id?: string
+          impact_domains?: string[] | null
           invocation_id?: string
+          learning_applied?: boolean | null
+          legal_area?: string | null
           legal_impact_correct?: boolean | null
+          origin?: string | null
           overall_rating?: number | null
           recommendation_rating?: number | null
           recommendation_useful?: boolean | null
           reviewer_domain?: string | null
           reviewer_role?: string | null
           severity_correct?: boolean | null
+          should_have_escalated?: boolean | null
+          source_code?: string | null
           user_id?: string
         }
         Relationships: []
@@ -45573,6 +45597,39 @@ export type Database = {
           },
         ]
       }
+      erp_learning_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       erp_legal_expenses: {
         Row: {
           amount: number
@@ -52013,6 +52070,7 @@ export type Database = {
       erp_validated_cases: {
         Row: {
           case_type: string
+          conflict_resolution_quality: number | null
           created_at: string
           document_id: string | null
           document_type: string | null
@@ -52022,9 +52080,12 @@ export type Database = {
           impact_domains: string[] | null
           input_summary: string | null
           invocation_id: string | null
+          is_reference_case: boolean | null
           legal_area: string | null
           origin: string
+          origin_trigger: string | null
           quality_score: number | null
+          resolution_accepted: boolean | null
           source_code: string | null
           updated_at: string
           validated_at: string | null
@@ -52040,6 +52101,7 @@ export type Database = {
         }
         Insert: {
           case_type: string
+          conflict_resolution_quality?: number | null
           created_at?: string
           document_id?: string | null
           document_type?: string | null
@@ -52049,9 +52111,12 @@ export type Database = {
           impact_domains?: string[] | null
           input_summary?: string | null
           invocation_id?: string | null
+          is_reference_case?: boolean | null
           legal_area?: string | null
           origin?: string
+          origin_trigger?: string | null
           quality_score?: number | null
+          resolution_accepted?: boolean | null
           source_code?: string | null
           updated_at?: string
           validated_at?: string | null
@@ -52067,6 +52132,7 @@ export type Database = {
         }
         Update: {
           case_type?: string
+          conflict_resolution_quality?: number | null
           created_at?: string
           document_id?: string | null
           document_type?: string | null
@@ -52076,9 +52142,12 @@ export type Database = {
           impact_domains?: string[] | null
           input_summary?: string | null
           invocation_id?: string | null
+          is_reference_case?: boolean | null
           legal_area?: string | null
           origin?: string
+          origin_trigger?: string | null
           quality_score?: number | null
+          resolution_accepted?: boolean | null
           source_code?: string | null
           updated_at?: string
           validated_at?: string | null

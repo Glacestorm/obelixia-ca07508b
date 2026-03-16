@@ -1,7 +1,7 @@
 /**
- * ObelixIA-Supervisor — Phase 2
+ * ObelixIA-Supervisor — Phase 2E (Enriched Learning)
  * Cross-domain supersupervisor that orchestrates HR-Supervisor and Legal-Supervisor.
- * Handles conflict resolution, composed responses, and human escalation.
+ * Handles conflict resolution, composed responses, human escalation, and learning from feedback.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -63,7 +63,6 @@ interface SuperSupervisorRequest {
   query?: string;
   context?: Record<string, unknown>;
   session_id?: string;
-  // For regulatory_cross_domain
   document?: {
     id: string;
     document_title: string;
@@ -122,6 +121,203 @@ FORMATO (JSON estricto):
   "priority_actions": ["[RRHH/Urgente] Acción específica 1", "[Jurídico/Planificable] Acción específica 2"],
   "composed_response": "respuesta completa para el usuario"
 }`;
+
+// === LEARNING CONTEXT BUILDER (Phase 2E) ===
+interface LearningConfig {
+  escalation_learning: { enabled: boolean; min_samples: number; confidence_boost: number; confidence_penalty: number };
+  severity_learning: { enabled: boolean; min_samples: number; correction_weight: number };
+  deadline_learning: { enabled: boolean; use_historical_deadlines: boolean };
+  actions_learning: { enabled: boolean; prefer_validated_templates: boolean };
+  few_shot_learning: { enabled: boolean; max_examples: number; min_quality_score: number };
+  seed_exclusion: { enabled: boolean; exclude_seed_from_learning: boolean };
+}
+
+async function loadLearningConfig(supabase: any): Promise<LearningConfig> {
+  const defaults: LearningConfig = {
+    escalation_learning: { enabled: true, min_samples: 5, confidence_boost: 0.1, confidence_penalty: 0.15 },
+    severity_learning: { enabled: true, min_samples: 3, correction_weight: 0.3 },
+    deadline_learning: { enabled: true, use_historical_deadlines: true },
+    actions_learning: { enabled: true, prefer_validated_templates: true },
+    few_shot_learning: { enabled: true, max_examples: 5, min_quality_score: 0.7 },
+    seed_exclusion: { enabled: true, exclude_seed_from_learning: true },
+  };
+  try {
+    const { data } = await supabase.from('erp_learning_config').select('config_key, config_value, is_active');
+    if (data) {
+      for (const row of data) {
+        if (row.is_active && row.config_key in defaults) {
+          (defaults as any)[row.config_key] = { ...(defaults as any)[row.config_key], ...row.config_value };
+        }
+      }
+    }
+  } catch (e) { console.warn('[obelixia] Config load error:', e); }
+  return defaults;
+}
+
+async function buildEnrichedLearningContext(supabase: any, config: LearningConfig, docContext?: { legal_area?: string; impact_domains?: string[]; source_code?: string }): Promise<{ prompt: string; stats: Record<string, any> }> {
+  let prompt = '';
+  const stats: Record<string, any> = {};
+
+  try {
+    // 1. Few-shot from validated cases (if enabled)
+    if (config.few_shot_learning.enabled) {
+      let query = supabase
+        .from('erp_validated_cases')
+        .select('case_type, validated_severity, validated_has_conflict, validated_priority_actions, validated_deadline, impact_domains, escalation_was_correct, quality_score, input_summary, legal_area, is_reference_case')
+        .gte('quality_score', config.few_shot_learning.min_quality_score)
+        .order('quality_score', { ascending: false })
+        .limit(config.few_shot_learning.max_examples);
+
+      // Prefer reference cases
+      const { data: refCases } = await supabase
+        .from('erp_validated_cases')
+        .select('case_type, validated_severity, validated_has_conflict, validated_priority_actions, validated_deadline, impact_domains, escalation_was_correct, quality_score, input_summary, legal_area')
+        .eq('is_reference_case', true)
+        .gte('quality_score', config.few_shot_learning.min_quality_score)
+        .order('quality_score', { ascending: false })
+        .limit(config.few_shot_learning.max_examples);
+
+      const { data: allCases } = await query;
+      const cases = (refCases?.length ? refCases : allCases) || [];
+      
+      if (cases.length > 0) {
+        const examples = cases.map((vc: any) =>
+          `- Tipo: ${vc.case_type}, Dominios: ${(vc.impact_domains || []).join('+')}, Severidad validada: ${vc.validated_severity}, Conflicto: ${vc.validated_has_conflict ? 'sí' : 'no'}, Acciones: ${JSON.stringify(vc.validated_priority_actions || [])}, Plazo: ${vc.validated_deadline || 'N/A'}`
+        ).join('\n');
+        prompt += `\n\nCASOS VALIDADOS DE REFERENCIA (usa estos como guía de calidad):\n${examples}`;
+        stats.few_shot_cases = cases.length;
+      }
+    }
+
+    // 2. Feedback patterns (if enabled for any learning type)
+    const feedbackQuery = supabase
+      .from('erp_cross_domain_feedback')
+      .select('case_type, escalation_correct, severity_correct, actions_useful, deadline_reasonable, corrected_severity, corrected_deadline, corrected_actions, actionability_rating, should_have_escalated, reviewer_role, origin, document_type, source_code, legal_area, impact_domains')
+      .not('escalation_correct', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    const { data: feedbackPatterns } = await feedbackQuery;
+
+    if (feedbackPatterns?.length) {
+      const corrections: string[] = [];
+      const total = feedbackPatterns.length;
+
+      // Weight by reviewer role
+      const ROLE_WEIGHT: Record<string, number> = { superadmin: 2, admin: 2, hr_manager: 1.5, legal_manager: 1.5, auditor: 1.5, user: 1 };
+
+      // Escalation accuracy
+      if (config.escalation_learning.enabled) {
+        const escalationFb = feedbackPatterns.filter((f: any) => f.escalation_correct !== null);
+        if (escalationFb.length >= config.escalation_learning.min_samples) {
+          const weighted = escalationFb.reduce((acc: number, f: any) => {
+            const w = ROLE_WEIGHT[f.reviewer_role || 'user'] || 1;
+            return acc + (f.escalation_correct ? w : -w);
+          }, 0);
+          const totalWeight = escalationFb.reduce((acc: number, f: any) => acc + (ROLE_WEIGHT[f.reviewer_role || 'user'] || 1), 0);
+          const ratio = (weighted + totalWeight) / (2 * totalWeight); // normalize to 0-1
+          stats.escalation_accuracy = Math.round(ratio * 100);
+
+          if (ratio < 0.5) corrections.push('ATENCIÓN: Alto ratio de escalados incorrectos. Sé más selectivo: solo escalar cuando el impacto sea genuinamente cross-domain y no trivial.');
+          if (ratio > 0.85) corrections.push('El escalado tiene buena precisión. Mantén los criterios actuales.');
+
+          // Check if there are cases that SHOULD have escalated but didn't
+          const missedEscalations = feedbackPatterns.filter((f: any) => f.should_have_escalated === true);
+          if (missedEscalations.length > 2) corrections.push(`ATENCIÓN: ${missedEscalations.length} casos deberían haberse escalado pero no se hicieron. Revisa criterios para no perder casos importantes.`);
+        }
+      }
+
+      // Severity accuracy
+      if (config.severity_learning.enabled) {
+        const severityFb = feedbackPatterns.filter((f: any) => f.severity_correct !== null);
+        if (severityFb.length >= config.severity_learning.min_samples) {
+          const badSeverity = severityFb.filter((f: any) => !f.severity_correct);
+          stats.severity_accuracy = Math.round(((severityFb.length - badSeverity.length) / severityFb.length) * 100);
+
+          if (badSeverity.length > severityFb.length * 0.3) {
+            const correctedSeverities = badSeverity.filter((f: any) => f.corrected_severity).map((f: any) => f.corrected_severity);
+            const freqs = correctedSeverities.reduce((acc: Record<string, number>, s: string) => { acc[s] = (acc[s] || 0) + 1; return acc; }, {} as Record<string, number>);
+            const topCorrection = Object.entries(freqs).sort(([, a], [, b]) => (b as number) - (a as number))[0];
+            corrections.push(`Severidad corregida frecuentemente. Tendencia de corrección: ${topCorrection ? `hacia "${topCorrection[0]}" (${topCorrection[1]} veces)` : 'variada'}. Calibra mejor.`);
+          }
+        }
+      }
+
+      // Actions quality
+      if (config.actions_learning.enabled) {
+        const actionsFb = feedbackPatterns.filter((f: any) => f.actions_useful !== null);
+        if (actionsFb.length >= 3) {
+          const badActions = actionsFb.filter((f: any) => !f.actions_useful);
+          stats.actions_accuracy = Math.round(((actionsFb.length - badActions.length) / actionsFb.length) * 100);
+
+          if (badActions.length > actionsFb.length * 0.3) {
+            corrections.push('Las acciones prioritarias no se consideran útiles frecuentemente. Haz cada acción más ESPECÍFICA: indica qué documento/proceso revisar, quién debe hacerlo, y urgencia concreta.');
+            // Look for good corrected actions as templates
+            const goodCorrections = feedbackPatterns.filter((f: any) => f.corrected_actions && f.actions_useful === false);
+            if (goodCorrections.length > 0) {
+              const template = JSON.stringify(goodCorrections[0].corrected_actions);
+              corrections.push(`Ejemplo de acciones bien corregidas: ${template.substring(0, 200)}`);
+            }
+          }
+
+          // Actionability rating
+          const actionabilityRatings = feedbackPatterns.filter((f: any) => f.actionability_rating).map((f: any) => f.actionability_rating);
+          if (actionabilityRatings.length >= 3) {
+            const avgActionability = actionabilityRatings.reduce((s: number, r: number) => s + r, 0) / actionabilityRatings.length;
+            stats.avg_actionability = Math.round(avgActionability * 10) / 10;
+            if (avgActionability < 3) corrections.push(`La accionabilidad media es ${avgActionability.toFixed(1)}/5. Mejora la especificidad de cada recomendación.`);
+          }
+        }
+      }
+
+      // Deadline quality
+      if (config.deadline_learning.enabled) {
+        const deadlineFb = feedbackPatterns.filter((f: any) => f.deadline_reasonable !== null);
+        if (deadlineFb.length >= 3) {
+          const badDeadlines = deadlineFb.filter((f: any) => !f.deadline_reasonable);
+          stats.deadline_accuracy = Math.round(((deadlineFb.length - badDeadlines.length) / deadlineFb.length) * 100);
+
+          if (badDeadlines.length > deadlineFb.length * 0.3) {
+            const corrected = badDeadlines.filter((f: any) => f.corrected_deadline).map((f: any) => f.corrected_deadline);
+            corrections.push(`Plazos no razonables frecuentemente. ${corrected.length > 0 ? `Correcciones: ${corrected.slice(0, 2).join(', ')}` : 'Ancla mejor los plazos a la norma real.'}`);
+          }
+        }
+      }
+
+      // Source-specific patterns
+      if (docContext?.source_code) {
+        const sourceFb = feedbackPatterns.filter((f: any) => f.source_code === docContext.source_code);
+        if (sourceFb.length >= 3) {
+          const sourceAccuracy = sourceFb.filter((f: any) => f.escalation_correct).length / sourceFb.length;
+          if (sourceAccuracy < 0.5) {
+            corrections.push(`Fuente ${docContext.source_code}: baja precisión histórica (${Math.round(sourceAccuracy * 100)}%). Sé más conservador con esta fuente.`);
+          }
+          stats.source_accuracy = Math.round(sourceAccuracy * 100);
+        }
+      }
+
+      // Legal area specific patterns
+      if (docContext?.legal_area) {
+        const areaFb = feedbackPatterns.filter((f: any) => f.legal_area === docContext.legal_area);
+        if (areaFb.length >= 3) {
+          const areaAccuracy = areaFb.filter((f: any) => f.severity_correct).length / areaFb.length;
+          if (areaAccuracy < 0.6) {
+            corrections.push(`Área "${docContext.legal_area}": severidad frecuentemente corregida. Ajusta calibración.`);
+          }
+        }
+      }
+
+      if (corrections.length > 0) {
+        prompt += `\n\nAPRENDIZAJE DE FEEDBACK HUMANO (aplica estas correcciones):\n${corrections.join('\n')}`;
+        stats.corrections_applied = corrections.length;
+      }
+    }
+  } catch (learnErr) {
+    console.warn('[obelixia] Learning context build error:', learnErr);
+  }
+
+  return { prompt, stats };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -259,7 +455,6 @@ serve(async (req) => {
 
       // If trivial or single-domain, delegate directly
       if (classification.classification === 'trivial' || classification.classification === 'hr_only') {
-        // Delegate to HR-Supervisor
         try {
           const resp = await fetch(`${fnUrl}/hr-multiagent-supervisor`, {
             method: 'POST',
@@ -268,7 +463,6 @@ serve(async (req) => {
           });
           const hrResult = await resp.json();
 
-          // Log delegation
           await supabase.from('erp_ai_agent_invocations').insert({
             agent_code: 'obelixia-supervisor',
             supervisor_code: 'obelixia-supervisor',
@@ -280,7 +474,7 @@ serve(async (req) => {
             outcome_status: 'delegated_hr',
             execution_time_ms: Date.now() - startTime,
             response_summary: 'Delegated to hr-supervisor',
-            metadata: { classification, session_id, delegated_to: 'hr-supervisor', phase: '2' },
+            metadata: { classification, session_id, delegated_to: 'hr-supervisor', phase: '2E' },
           }).catch(() => {});
 
           return new Response(JSON.stringify({
@@ -315,7 +509,7 @@ serve(async (req) => {
             outcome_status: 'delegated_legal',
             execution_time_ms: Date.now() - startTime,
             response_summary: 'Delegated to legal-supervisor',
-            metadata: { classification, session_id, delegated_to: 'legal-supervisor', phase: '2' },
+            metadata: { classification, session_id, delegated_to: 'legal-supervisor', phase: '2E' },
           }).catch(() => {});
 
           return new Response(JSON.stringify({
@@ -333,15 +527,17 @@ serve(async (req) => {
       // === CROSS-DOMAIN COORDINATION ===
       console.log('[obelixia-supervisor] Initiating cross-domain coordination');
 
+      // Load learning config + context
+      const config = await loadLearningConfig(supabase);
+      const { prompt: learningPrompt, stats: learningStats } = await buildEnrichedLearningContext(supabase, config);
+
       // Step 2: Consult both supervisors in parallel
       const [hrResp, legalResp] = await Promise.allSettled([
         fetch(`${fnUrl}/hr-multiagent-supervisor`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'route_query',
-            company_id,
-            query,
+            action: 'route_query', company_id, query,
             context: { ...context, source: 'obelixia-supervisor', cross_domain: true },
             session_id,
           }),
@@ -350,9 +546,7 @@ serve(async (req) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'validate_hr_action',
-            company_id,
-            query,
+            action: 'validate_hr_action', company_id, query,
             context: { ...context, source: 'obelixia-supervisor', cross_domain: true },
             source_agent: 'obelixia-supervisor',
           }),
@@ -362,7 +556,7 @@ serve(async (req) => {
       const hrResult = hrResp.status === 'fulfilled' ? hrResp.value : null;
       const legalResult = legalResp.status === 'fulfilled' ? legalResp.value : null;
 
-      // Step 3: Resolve conflicts with AI
+      // Step 3: Resolve conflicts with AI + learning context
       const conflictInput = JSON.stringify({
         hr_response: hrResult?.data || hrResult || null,
         legal_response: legalResult?.data || legalResult || null,
@@ -373,14 +567,11 @@ serve(async (req) => {
 
       const resolverResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: [
-            { role: 'system', content: CONFLICT_RESOLVER_PROMPT },
+            { role: 'system', content: CONFLICT_RESOLVER_PROMPT + learningPrompt },
             { role: 'user', content: conflictInput }
           ],
           temperature: 0.2,
@@ -388,17 +579,11 @@ serve(async (req) => {
         }),
       });
 
-      let resolution = {
-        has_conflict: false,
-        conflict_type: 'none',
-        conflict_description: '',
-        resolution: '',
-        final_risk_level: classification.risk_level || 'medium',
-        final_recommendation: '',
-        requires_human_review: classification.requires_human_review || false,
-        human_review_reason: '',
-        action_allowed: true,
-        composed_response: '',
+      let resolution: any = {
+        has_conflict: false, conflict_type: 'none', conflict_description: '',
+        resolution: '', final_risk_level: classification.risk_level || 'medium',
+        final_recommendation: '', requires_human_review: classification.requires_human_review || false,
+        human_review_reason: '', action_allowed: true, composed_response: '',
       };
 
       if (resolverResp.ok) {
@@ -412,17 +597,15 @@ serve(async (req) => {
         }
       }
 
-      // Force human review for critical or conflict situations
       if (resolution.final_risk_level === 'critical' || resolution.has_conflict) {
         resolution.requires_human_review = true;
       }
 
       const executionTime = Date.now() - startTime;
-      const outcomeStatus = resolution.requires_human_review 
-        ? 'human_review' 
+      const outcomeStatus = resolution.requires_human_review
+        ? 'human_review'
         : resolution.has_conflict ? 'conflict_resolved' : 'success';
 
-      // Step 4: Log cross-domain invocation
       try {
         await supabase.from('erp_ai_agent_invocations').insert({
           agent_code: 'obelixia-supervisor',
@@ -437,28 +620,24 @@ serve(async (req) => {
           outcome_status: outcomeStatus,
           execution_time_ms: executionTime,
           response_summary: JSON.stringify({
-            conflict: resolution.has_conflict,
-            risk: resolution.final_risk_level,
+            conflict: resolution.has_conflict, risk: resolution.final_risk_level,
             recommendation: resolution.final_recommendation?.substring(0, 200),
           }).substring(0, 1000),
           metadata: {
-            session_id,
-            classification,
-            has_conflict: resolution.has_conflict,
-            conflict_type: resolution.conflict_type,
+            session_id, classification,
+            has_conflict: resolution.has_conflict, conflict_type: resolution.conflict_type,
             final_risk_level: resolution.final_risk_level,
             requires_human_review: resolution.requires_human_review,
-            hr_available: !!hrResult?.success,
-            legal_available: !!legalResult?.success,
+            hr_available: !!hrResult?.success, legal_available: !!legalResult?.success,
             action_allowed: resolution.action_allowed,
-            phase: '2',
+            phase: '2E',
+            learning_stats: learningStats,
           },
         });
       } catch (logErr) {
         console.error('[obelixia-supervisor] Log error:', logErr);
       }
 
-      // Step 5: Return composed result
       return new Response(JSON.stringify({
         success: true,
         data: {
@@ -500,51 +679,13 @@ serve(async (req) => {
 
       console.log(`[obelixia-supervisor] Regulatory cross-domain: ${doc.document_title?.substring(0, 60)}`);
 
-      // Phase 2D: Load learning context from validated cases + feedback
-      let learningContext = '';
-      try {
-        const { data: validatedCases } = await supabase
-          .from('erp_validated_cases')
-          .select('case_type, validated_severity, validated_has_conflict, validated_priority_actions, validated_deadline, impact_domains, escalation_was_correct, quality_score, input_summary, legal_area')
-          .order('quality_score', { ascending: false })
-          .limit(5);
-
-        const { data: feedbackPatterns } = await supabase
-          .from('erp_cross_domain_feedback')
-          .select('case_type, escalation_correct, severity_correct, actions_useful, deadline_reasonable, corrected_severity, corrected_deadline, corrected_actions')
-          .not('escalation_correct', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(20);
-
-        if (validatedCases?.length) {
-          const examples = validatedCases.map((vc: any) => 
-            `- Tipo: ${vc.case_type}, Dominios: ${(vc.impact_domains||[]).join('+')}, Severidad validada: ${vc.validated_severity}, Conflicto: ${vc.validated_has_conflict ? 'sí' : 'no'}, Acciones: ${JSON.stringify(vc.validated_priority_actions || [])}, Plazo: ${vc.validated_deadline || 'N/A'}`
-          ).join('\n');
-          learningContext += `\n\nCASOS VALIDADOS DE REFERENCIA:\n${examples}`;
-        }
-
-        if (feedbackPatterns?.length) {
-          const corrections: string[] = [];
-          const falseEscalations = feedbackPatterns.filter((f: any) => f.escalation_correct === false).length;
-          const badSeverity = feedbackPatterns.filter((f: any) => f.severity_correct === false).length;
-          const badActions = feedbackPatterns.filter((f: any) => f.actions_useful === false).length;
-          const badDeadlines = feedbackPatterns.filter((f: any) => f.deadline_reasonable === false).length;
-
-          if (falseEscalations > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: hay un alto ratio de escalados incorrectos. Sé más selectivo al escalar.');
-          if (badSeverity > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: la severidad frecuentemente se corrige. Calibra mejor los niveles de riesgo.');
-          if (badActions > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: las acciones no se consideran útiles frecuentemente. Sé más específico y accionable.');
-          if (badDeadlines > feedbackPatterns.length * 0.3) corrections.push('ATENCIÓN: los plazos frecuentemente se consideran no razonables. Ancla mejor los plazos a la norma.');
-
-          const correctedSeverities = feedbackPatterns.filter((f: any) => f.corrected_severity).map((f: any) => f.corrected_severity);
-          if (correctedSeverities.length > 0) corrections.push(`Severidades corregidas frecuentes: ${[...new Set(correctedSeverities)].join(', ')}`);
-
-          if (corrections.length > 0) {
-            learningContext += `\n\nAPRENDIZAJE DE FEEDBACK HUMANO:\n${corrections.join('\n')}`;
-          }
-        }
-      } catch (learnErr) {
-        console.warn('[obelixia-supervisor] Learning context load error:', learnErr);
-      }
+      // Phase 2E: Load enriched learning context with document-specific patterns
+      const config = await loadLearningConfig(supabase);
+      const { prompt: learningContext, stats: learningStats } = await buildEnrichedLearningContext(supabase, config, {
+        legal_area: doc.legal_area,
+        impact_domains: doc.impact_domains,
+        source_code: doc.source_code,
+      });
 
       const regulatoryQuery = `Cambio normativo: "${doc.document_title}". Resumen: ${doc.summary || doc.impact_summary || 'Sin resumen'}. Impacto: ${doc.impact_level}. Dominios: ${doc.impact_domains?.join(', ')}. Área legal: ${doc.legal_area || 'no especificada'}.`;
 
@@ -573,7 +714,7 @@ serve(async (req) => {
       const hrResult2 = hrResp2.status === 'fulfilled' ? hrResp2.value : null;
       const legalResult2 = legalResp2.status === 'fulfilled' ? legalResp2.value : null;
 
-      // Resolve with regulatory-specific prompt
+      // Resolve with regulatory-specific prompt + enriched learning context
       const resolverResp2 = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
@@ -630,8 +771,7 @@ serve(async (req) => {
           outcome_status: regOutcome,
           execution_time_ms: regExecTime,
           response_summary: JSON.stringify({
-            conflict: regResolution.has_conflict,
-            risk: regResolution.final_risk_level,
+            conflict: regResolution.has_conflict, risk: regResolution.final_risk_level,
             recommendation: regResolution.final_recommendation?.substring(0, 200),
           }).substring(0, 1000),
           metadata: {
@@ -642,6 +782,8 @@ serve(async (req) => {
             impact_domains: doc.impact_domains,
             impact_level: doc.impact_level,
             source_url: doc.source_url,
+            source_code: doc.source_code,
+            legal_area: doc.legal_area,
             has_conflict: regResolution.has_conflict,
             conflict_type: regResolution.conflict_type,
             final_risk_level: regResolution.final_risk_level,
@@ -652,8 +794,9 @@ serve(async (req) => {
             legal_impact: regResolution.legal_impact,
             priority_actions: regResolution.priority_actions,
             adaptation_deadline: regResolution.adaptation_deadline,
-            phase: '2D',
+            phase: '2E',
             learning_context_used: learningContext.length > 0,
+            learning_stats: learningStats,
           },
         });
       } catch (logErr) {
