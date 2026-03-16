@@ -13,7 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Bot, Brain, Shield, Scale, Activity, RefreshCw,
   CheckCircle, AlertTriangle, ArrowUpRight, Clock,
-  Send, Eye, ExternalLink, Sparkles, UserCheck, Newspaper
+  Send, Eye, ExternalLink, Sparkles, UserCheck, Newspaper,
+  Cpu, Timer
 } from 'lucide-react';
 import { useRegulatoryIntelligence } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
