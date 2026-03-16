@@ -320,6 +320,21 @@ export function useHRContractProcess(companyId: string) {
         setContractData(created);
         toast.success('Datos de contratación inicializados');
         logContractAudit('CONTRACT_INITIALIZED', companyId, user.id, requestId, null, { employee_id: employeeId, request_id: requestId }, 'info');
+        // Ledger: contract created
+        writeLedger({
+          eventType: 'contract_created',
+          entityType: 'contract_process',
+          entityId: created.id,
+          afterSnapshot: { employee_id: employeeId, request_id: requestId, status: 'pending_data' },
+          metadata: { request_id: requestId },
+        });
+        // Version registry: initial version
+        writeVersion({
+          entityType: 'contract',
+          entityId: created.id,
+          state: 'draft',
+          contentSnapshot: { employee_id: employeeId, contract_type: created.contract_type_code },
+        });
         return created;
       }
     } catch (err) {
