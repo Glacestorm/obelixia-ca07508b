@@ -1,4 +1,8 @@
 /**
+ * @deprecated Use HRExecutiveDashboard instead.
+ * V2-RRHH-FASE-1 Sprint 2: Superseded by HRExecutiveDashboard (route 'dashboard').
+ * This panel remains for backward compatibility only.
+ * 
  * HRDashboardPanel - Panel principal del dashboard de RRHH
  * Conectado a datos reales de Supabase
  */

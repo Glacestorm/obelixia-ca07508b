@@ -46,13 +46,42 @@ type EntityStatus = 'draft' | 'pending' | 'active' | 'completed' | 'cancelled' |
 type ProcessStatus = 'idle' | 'running' | 'success' | 'failed';
 ```
 
+## Analytics Consolidation (Sprint 2)
+
+| Panel | Tier | Route | Status |
+|-------|------|-------|--------|
+| HRExecutiveDashboard | Core | `dashboard` | ✅ Primary landing |
+| HRAdvancedAnalyticsPanel | Core | `analytics` | ✅ KPIs predictivos |
+| PeopleAnalyticsModule | Core | `people-analytics` | ✅ Unified PA |
+| HRAnalyticsIntelligencePanel | Specialized | `analytics-intelligence` | ✅ AI workforce |
+| HRAnalyticsBIPremiumPanel | Specialized | `util-analytics-bi` | ✅ Premium BI |
+| HRReportingEnginePanel | Specialized | `util-reporting` | ✅ Reporting |
+| HRBoardPackPanel | Specialized | `board-pack` | ✅ Board |
+| HRDashboardPanel | Deprecated | — | ⚠️ Replaced by HRExecutiveDashboard |
+
+## Root Dialogs → Domain Mapping (Sprint 2)
+
+| Dialog | Domain |
+|--------|--------|
+| HREmployeeFormDialog | D1 People |
+| HRBenefitEnrollmentDialog | D1 People |
+| HRContractFormDialog | D2 Contracts |
+| HRSeveranceCalculatorDialog | D2 Contracts |
+| HRIndemnizationCalculatorDialog | D2 Contracts |
+| HRPayrollEntryDialog | D3 Payroll |
+| HRDocumentGeneratorDialog | D6 Documents |
+| HRDocumentUploadDialog | D6 Documents |
+| HRVacationRequestDialog | D8 Workflows |
+| HRIncidentFormDialog | D8 Workflows |
+
 ## Deprecated Components
 - `HREmployeeDocumentsPanel` → use `DocumentExpedientModule`
 - `HRNewsPanel` → use `HRRegulatoryWatchPanel`
 - `HRTrends2026Panel` → static content, no replacement needed
+- `HRDashboardPanel` → use `HRExecutiveDashboard` (Sprint 2)
 
 ## Sprint Status
 - [x] Sprint 1: Domain barrels, deprecations, architecture doc
-- [ ] Sprint 2: Move root components to domains, unify analytics
-- [ ] Sprint 3: Separate shared/ engines, refactor hooks
+- [x] Sprint 2: Enrich domain barrels, analytics consolidation, dialog mapping, deprecate HRDashboardPanel
+- [ ] Sprint 3: Separate shared/ engines, refactor hooks, move root components physically
 - [ ] Sprint 4: Complete migration, tests, lazy loading
