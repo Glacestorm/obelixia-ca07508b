@@ -539,12 +539,16 @@ async function classifyWithAI(apiKey: string, doc: any, source: any): Promise<an
   }
 }
 
-// === CROSS-DOMAIN TRIGGER EVALUATION ===
-const CROSS_DOMAIN_KEYWORDS = [
-  'despido', 'contratación', 'jornada', 'permiso', 'maternidad', 'paternidad',
-  'cotización', 'seguridad social', 'protección de datos', 'RGPD', 'LOPDGDD',
-  'teletrabajo', 'movilidad', 'ERE', 'ERTE', 'convenio colectivo', 'salario',
-  'indemnización', 'compliance', 'prevención', 'igualdad', 'acoso',
+// === CROSS-DOMAIN TRIGGER EVALUATION (Phase 2C: tightened rules) ===
+// Only keywords that strongly signal cross-domain HR+Legal overlap
+const CROSS_DOMAIN_KEYWORDS_STRONG = [
+  'despido', 'ERE', 'ERTE', 'maternidad', 'paternidad',
+  'movilidad internacional', 'RGPD', 'LOPDGDD', 'acoso',
+  'indemnización', 'convenio colectivo',
+];
+const CROSS_DOMAIN_KEYWORDS_WEAK = [
+  'contratación', 'jornada', 'permiso', 'cotización', 'seguridad social',
+  'teletrabajo', 'salario', 'compliance', 'prevención', 'igualdad',
 ];
 
 function evaluateCrossDomainTrigger(doc: any): { reason: string } | null {
@@ -552,27 +556,43 @@ function evaluateCrossDomainTrigger(doc: any): { reason: string } | null {
   const impactLevel = doc.impact_level || 'low';
   const title = (doc.document_title || '').toLowerCase();
   const summary = (doc.summary || '').toLowerCase();
+  const text = title + ' ' + summary;
 
-  // Rule 1: Multiple relevant domains
+  const hasHR = domains.includes('hr');
+  const hasLegal = domains.includes('legal');
+  const hasCompliance = domains.includes('compliance');
   const relevantDomains = domains.filter((d: string) => ['hr', 'legal', 'compliance', 'fiscal'].includes(d));
-  if (relevantDomains.length >= 2 && relevantDomains.some((d: string) => d === 'hr' || d === 'legal')) {
+
+  // Rule 1: Must have BOTH hr AND (legal OR compliance) for multi-domain trigger
+  if (relevantDomains.length >= 2 && hasHR && (hasLegal || hasCompliance)) {
     return { reason: `Multi-domain impact: ${relevantDomains.join('+')}` };
   }
 
-  // Rule 2: Critical or high impact with HR or legal
-  if ((impactLevel === 'critical' || impactLevel === 'high') && relevantDomains.length >= 1) {
-    return { reason: `${impactLevel} impact on ${relevantDomains.join('+')}` };
+  // Rule 2: Critical impact ONLY if it touches hr+legal (tightened from Phase 2B)
+  if (impactLevel === 'critical' && hasHR && (hasLegal || hasCompliance)) {
+    return { reason: `Critical impact on ${relevantDomains.join('+')}` };
   }
 
-  // Rule 3: Cross-domain keywords in title/summary
-  const matchedKeywords = CROSS_DOMAIN_KEYWORDS.filter(kw => title.includes(kw) || summary.includes(kw));
-  if (matchedKeywords.length >= 2) {
-    return { reason: `Cross-domain keywords: ${matchedKeywords.slice(0, 3).join(', ')}` };
+  // Rule 3: High impact needs BOTH hr+legal domains explicitly
+  if (impactLevel === 'high' && hasHR && hasLegal) {
+    return { reason: `High impact on hr+legal` };
   }
 
-  // Rule 4: Requires human review + multiple domains
-  if (doc.requires_human_review && relevantDomains.length >= 2) {
-    return { reason: `Human review required + multi-domain` };
+  // Rule 4: Strong cross-domain keywords (≥1) + at least 2 relevant domains
+  const strongMatches = CROSS_DOMAIN_KEYWORDS_STRONG.filter(kw => text.includes(kw));
+  if (strongMatches.length >= 1 && relevantDomains.length >= 2) {
+    return { reason: `Cross-domain keyword: ${strongMatches[0]} + ${relevantDomains.join('+')}` };
+  }
+
+  // Rule 5: Multiple weak keywords (≥3) + hr + legal
+  const weakMatches = CROSS_DOMAIN_KEYWORDS_WEAK.filter(kw => text.includes(kw));
+  if (weakMatches.length >= 3 && hasHR && hasLegal) {
+    return { reason: `Multiple cross-domain signals: ${weakMatches.slice(0, 3).join(', ')}` };
+  }
+
+  // Rule 6: Human review + both hr and legal
+  if (doc.requires_human_review && hasHR && hasLegal) {
+    return { reason: `Human review required + hr+legal` };
   }
 
   return null; // Do not escalate
