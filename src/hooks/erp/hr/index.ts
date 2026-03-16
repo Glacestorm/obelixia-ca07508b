@@ -234,7 +234,7 @@ export type {
   EnrichedDocAction,
 } from './useHRDocActionQueue';
 
-// V2-ES.4 Paso 2.2: Motor de alertas y severidad (re-export from component layer)
+// V2-ES.4 Paso 2.2: Motor de alertas y severidad (Sprint 3: still in shared/ — depends on UI component)
 export { computeExpedientAlerts } from '@/components/erp/hr/shared/expedientAlertEngine';
 export type {
   AlertSeverity,
