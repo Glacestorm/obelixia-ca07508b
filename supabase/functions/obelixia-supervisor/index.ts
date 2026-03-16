@@ -652,7 +652,8 @@ serve(async (req) => {
             legal_impact: regResolution.legal_impact,
             priority_actions: regResolution.priority_actions,
             adaptation_deadline: regResolution.adaptation_deadline,
-            phase: '2B',
+            phase: '2D',
+            learning_context_used: learningContext.length > 0,
           },
         });
       } catch (logErr) {
