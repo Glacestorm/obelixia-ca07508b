@@ -691,6 +691,17 @@ export function usePayrollEngine(companyId?: string) {
         { status: 'closed', closure_snapshot: snapshot }
       );
 
+      // Ledger: period closed (with closure evidence)
+      writeLedger({
+        eventType: 'period_closed',
+        entityType: 'payroll_period',
+        entityId: periodId,
+        beforeSnapshot: { status: period.status },
+        afterSnapshot: { status: 'closed', total_gross: updates.total_gross, total_net: updates.total_net },
+        financialImpact: approvedRun ? { gross: approvedRun.total_gross, net: approvedRun.total_net, employer_cost: approvedRun.total_employer_cost } : undefined,
+        complianceImpact: { closure_validation: validation },
+      });
+
       setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
       toast.success('Período cerrado correctamente');
       return { success: true, snapshot };
