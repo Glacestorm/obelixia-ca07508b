@@ -1245,9 +1245,9 @@ export function SupervisorAgentsDashboard() {
               )}
             </CardContent>
           </Card>
+          {/* Phase 2D: Learning Dashboard */}
+          <ObelixIALearningDashboard />
         </TabsContent>
-
-        {/* Insights Tab */}
         <TabsContent value="insights" className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-5 w-5 text-amber-500" />
