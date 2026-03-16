@@ -217,16 +217,7 @@ export function useMonthlyClosing(companyId: string) {
         versionId: null,
       });
 
-      // Ledger: closing context loaded (preparation phase)
-      if (phase === 'not_started' || phase === 'preparation') {
-        writeLedger({
-          eventType: 'system_event',
-          entityType: 'monthly_closing',
-          entityId: period.id,
-          afterSnapshot: { phase, checklist_score: checklist.overallScore, blockers: checklist.blockers },
-          metadata: { action: 'closing_context_loaded' },
-        });
-      }
+      // NOTE: No ledger write on view load — avoids noise (V2-RRHH-FASE-3B)
 
     } catch (err) {
       console.error('[useMonthlyClosing] loadClosingContext error:', err);
