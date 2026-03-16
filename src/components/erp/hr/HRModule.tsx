@@ -55,7 +55,7 @@ import { HRSkillsMatrixPanel } from './talent/HRSkillsMatrixPanel';
 import { HRInternalMarketplacePanel } from './talent/HRInternalMarketplacePanel';
 import { HRSuccessionPlanningPanel } from './talent/HRSuccessionPlanningPanel';
 import { HRAnalyticsIntelligencePanel } from './analytics/HRAnalyticsIntelligencePanel';
-import { HRTimeClockPanel } from './HRTimeClockPanel';
+// HRTimeClockPanel already imported from domains/workflows
 import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard, HRComplianceEnterprisePanel } from './enterprise';
 import { HRCompensationSuitePanel } from './compensation';
 import { HRTalentIntelligencePanel } from './talent/HRTalentIntelligencePanel';
