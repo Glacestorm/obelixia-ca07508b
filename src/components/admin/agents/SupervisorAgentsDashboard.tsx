@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AgentConfigSheet } from './AgentConfigSheet';
 import { RegistryAgentCard } from './RegistryAgentCard';
 import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
+import { ObelixIALearningDashboard } from './ObelixIALearningDashboard';
 import { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
 import { RegulatoryIntelligencePanel } from './RegulatoryIntelligencePanel';
 import { useSupervisorDomainData } from '@/hooks/admin/agents/useSupervisorDomainData';
@@ -1244,9 +1245,9 @@ export function SupervisorAgentsDashboard() {
               )}
             </CardContent>
           </Card>
+          {/* Phase 2D: Learning Dashboard */}
+          <ObelixIALearningDashboard />
         </TabsContent>
-
-        {/* Insights Tab */}
         <TabsContent value="insights" className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="h-5 w-5 text-amber-500" />

@@ -19,6 +19,7 @@ import {
 import { useRegulatoryIntelligence } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
 import { RegulatoryQualityDashboard } from '@/components/admin/agents/RegulatoryQualityDashboard';
+import { ObelixIALearningDashboard } from '@/components/admin/agents/ObelixIALearningDashboard';
 import { useSupervisorDomainData, type RegistryAgent, type InvocationRecord } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { useMultiAgentSupervisor } from '@/hooks/erp/hr/useMultiAgentSupervisor';
 import { RegistryAgentCard } from '@/components/admin/agents/RegistryAgentCard';
@@ -398,6 +399,10 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                   <RegulatoryQualityDashboard stats={hrFeedbackStats} compact />
                 </div>
               )}
+              {/* Phase 2D: Cross-domain learning compact */}
+              <div className="mb-3">
+                <ObelixIALearningDashboard compact domainFilter="hr" />
+              </div>
               <ScrollArea className="h-[340px]">
                 <div className="space-y-3">
                   {hrRegulatoryDocs.length === 0 ? (
