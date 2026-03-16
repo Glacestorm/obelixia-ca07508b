@@ -229,12 +229,11 @@ async function enrichCompaniesWithCounts(inputs: CompanyInput[]): Promise<Portfo
   const periods = (periodData.data || []) as any[];
 
   // Pre-group by company_id for O(n) lookup instead of O(n×m) filter
-  const empByCompany = groupBy(employees, 'company_id');
   const tasksByCompany = groupBy(tasks, 'company_id');
   const periodsByCompany = groupBy(periods, 'company_id');
 
   return inputs.map(input => {
-    const companyEmployees = empByCompany.get(input.companyId) || [];
+    const activeEmployees = empCountMap.get(input.companyId) ?? 0;
     const companyTasks = tasksByCompany.get(input.companyId) || [];
     const companyPeriods = periodsByCompany.get(input.companyId) || [];
 
