@@ -1,4 +1,7 @@
 /**
+ * @deprecated V2-RRHH-FASE-1: Superseded by HRRegulatoryWatchPanel + regulatory-refresh agent.
+ * Kept for backward compatibility — will be removed in Sprint 3.
+ * 
  * HRNewsPanel - Noticias laborales relevantes filtradas por CNAE
  * Con capacidad de guardar y añadir a base de conocimiento
  */

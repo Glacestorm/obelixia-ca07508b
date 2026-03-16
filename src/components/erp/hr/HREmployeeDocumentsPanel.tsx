@@ -1,4 +1,8 @@
 /**
+ * @deprecated V2-RRHH-FASE-1: Use DocumentExpedientModule instead.
+ * This panel is superseded by the full Document Expedient (domains/documents/).
+ * Kept for backward compatibility — will be removed in Sprint 3.
+ * 
  * HREmployeeDocumentsPanel - Gestión de documentación por empleado con IA
  * Subida de documentos, indexación IA, búsqueda semántica
  */
