@@ -12,11 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Newspaper, Globe, FileText, AlertTriangle, CheckCircle, Clock,
   ExternalLink, RefreshCw, Shield, Activity, Eye, Scale, Users,
-  Building2, Zap, History, XCircle, MessageSquare, ThumbsUp, ThumbsDown
+  Building2, Zap, History, XCircle, MessageSquare, ThumbsUp, ThumbsDown,
+  BarChart3
 } from 'lucide-react';
 import { useRegulatoryIntelligence, type RegulatoryDocument, type RegulatorySource, type RefreshLog } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
 import { RegulatoryFeedbackSheet } from './RegulatoryFeedbackSheet';
+import { RegulatoryQualityDashboard } from './RegulatoryQualityDashboard';
 import { RegistryAgentCard } from './RegistryAgentCard';
 import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
 import { useSupervisorDomainData, type RegistryAgent } from '@/hooks/admin/agents/useSupervisorDomainData';
@@ -378,9 +380,9 @@ export function RegulatoryIntelligencePanel() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="documents" className="text-xs gap-1">
-            <FileText className="h-3.5 w-3.5" /> Documentos ({documents.length})
+            <FileText className="h-3.5 w-3.5" /> Docs ({documents.length})
           </TabsTrigger>
           <TabsTrigger value="review" className="text-xs gap-1">
             <Eye className="h-3.5 w-3.5" /> Revisión
@@ -388,8 +390,11 @@ export function RegulatoryIntelligencePanel() {
               <Badge variant="destructive" className="ml-1 h-4 px-1 text-[9px]">{pendingReviewDocs.length}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="quality" className="text-xs gap-1">
+            <BarChart3 className="h-3.5 w-3.5" /> Calidad
+          </TabsTrigger>
           <TabsTrigger value="sources" className="text-xs gap-1">
-            <Globe className="h-3.5 w-3.5" /> Fuentes ({sources.length})
+            <Globe className="h-3.5 w-3.5" /> Fuentes
           </TabsTrigger>
           <TabsTrigger value="refresh" className="text-xs gap-1">
             <History className="h-3.5 w-3.5" /> Refrescos
@@ -483,6 +488,11 @@ export function RegulatoryIntelligencePanel() {
               ))}
             </div>
           </ScrollArea>
+        </TabsContent>
+
+        {/* Quality Dashboard */}
+        <TabsContent value="quality" className="mt-3">
+          <RegulatoryQualityDashboard stats={feedbackStats} />
         </TabsContent>
 
         {/* Sources */}

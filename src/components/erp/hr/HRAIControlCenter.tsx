@@ -16,6 +16,8 @@ import {
   Send, Eye, ExternalLink, Sparkles, UserCheck, Newspaper
 } from 'lucide-react';
 import { useRegulatoryIntelligence } from '@/hooks/admin/useRegulatoryIntelligence';
+import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
+import { RegulatoryQualityDashboard } from '@/components/admin/agents/RegulatoryQualityDashboard';
 import { useSupervisorDomainData, type RegistryAgent, type InvocationRecord } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { useMultiAgentSupervisor } from '@/hooks/erp/hr/useMultiAgentSupervisor';
 import { RegistryAgentCard } from '@/components/admin/agents/RegistryAgentCard';
@@ -45,6 +47,19 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
   const { agents, hrAgents, hrInvocations, escalatedInvocations, humanReviewInvocations, invocations, stats, loading, refresh } = useSupervisorDomainData(companyId);
   const { isLoading, routeQuery, registry } = useMultiAgentSupervisor(companyId);
   const regulatory = useRegulatoryIntelligence();
+
+  const regulatoryFeedback = useRegulatoryFeedback();
+
+  // Filter feedback stats for HR domain only
+  const hrFeedbackStats = useMemo(() => {
+    const hrStats = { ...regulatoryFeedback.stats };
+    // Show only HR domain quality if available
+    if (hrStats.byDomain.hr) {
+      const hr = hrStats.byDomain.hr;
+      hrStats.acceptanceRate = hr.total > 0 ? hr.accepted / hr.total : 0;
+    }
+    return hrStats;
+  }, [regulatoryFeedback.stats]);
 
   const hrRegulatoryDocs = useMemo(() =>
     regulatory.documents.filter(d => d.impact_domains?.includes('hr')).slice(0, 5),
@@ -370,7 +385,13 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
                   </p>
                 </div>
               )}
-              <ScrollArea className="h-[380px]">
+              {/* Compact quality metrics for HR */}
+              {regulatoryFeedback.stats.total > 0 && (
+                <div className="mb-3">
+                  <RegulatoryQualityDashboard stats={hrFeedbackStats} compact />
+                </div>
+              )}
+              <ScrollArea className="h-[340px]">
                 <div className="space-y-3">
                   {hrRegulatoryDocs.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">

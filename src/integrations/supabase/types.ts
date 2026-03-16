@@ -48702,6 +48702,8 @@ export type Database = {
           id: string
           original_value: string | null
           rating: number | null
+          reviewer_domain: string | null
+          reviewer_role: string | null
           user_id: string
         }
         Insert: {
@@ -48715,6 +48717,8 @@ export type Database = {
           id?: string
           original_value?: string | null
           rating?: number | null
+          reviewer_domain?: string | null
+          reviewer_role?: string | null
           user_id: string
         }
         Update: {
@@ -48728,6 +48732,8 @@ export type Database = {
           id?: string
           original_value?: string | null
           rating?: number | null
+          reviewer_domain?: string | null
+          reviewer_role?: string | null
           user_id?: string
         }
         Relationships: [
@@ -82199,6 +82205,10 @@ export type Database = {
           total_amount: number
           total_quantity: number
         }[]
+      }
+      get_user_feedback_domains: {
+        Args: { p_user_id: string }
+        Returns: string[]
       }
       get_user_oficina: { Args: { _user_id: string }; Returns: string }
       get_user_organization_id: { Args: { _user_id: string }; Returns: string }
