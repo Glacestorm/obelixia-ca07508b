@@ -48,6 +48,19 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
   const { isLoading, routeQuery, registry } = useMultiAgentSupervisor(companyId);
   const regulatory = useRegulatoryIntelligence();
 
+  const regulatoryFeedback = useRegulatoryFeedback();
+
+  // Filter feedback stats for HR domain only
+  const hrFeedbackStats = useMemo(() => {
+    const hrStats = { ...regulatoryFeedback.stats };
+    // Show only HR domain quality if available
+    if (hrStats.byDomain.hr) {
+      const hr = hrStats.byDomain.hr;
+      hrStats.acceptanceRate = hr.total > 0 ? hr.accepted / hr.total : 0;
+    }
+    return hrStats;
+  }, [regulatoryFeedback.stats]);
+
   const hrRegulatoryDocs = useMemo(() =>
     regulatory.documents.filter(d => d.impact_domains?.includes('hr')).slice(0, 5),
     [regulatory.documents]
