@@ -1011,11 +1011,13 @@ export function SupervisorAgentsDashboard() {
           </p>
 
           {/* ObelixIA KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Cpu className="h-4 w-4 text-primary" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.length}</p><p className="text-[10px] text-muted-foreground">Casos totales</p></div></div></CardContent></Card>
             <Card><CardContent className="p-3"><div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-amber-500" /><div><p className="text-lg font-bold">{domainData.obelixiaConflicts.length}</p><p className="text-[10px] text-muted-foreground">Conflictos</p></div></div></CardContent></Card>
             <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Shield className="h-4 w-4 text-violet-500" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.filter(i => i.outcome_status === 'human_review').length}</p><p className="text-[10px] text-muted-foreground">Revisión humana</p></div></div></CardContent></Card>
             <Card><CardContent className="p-3"><div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-500" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.filter(i => i.outcome_status === 'success' || i.outcome_status === 'conflict_resolved').length}</p><p className="text-[10px] text-muted-foreground">Resueltos</p></div></div></CardContent></Card>
+            <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Newspaper className="h-4 w-4 text-blue-500" /><div><p className="text-lg font-bold">{domainData.regulatoryCrossDomainCases.length}</p><p className="text-[10px] text-muted-foreground">Normativos cross</p></div></div></CardContent></Card>
+            <Card><CardContent className="p-3"><div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-destructive" /><div><p className="text-lg font-bold">{domainData.regulatoryConflicts.length}</p><p className="text-[10px] text-muted-foreground">Conflictos reg.</p></div></div></CardContent></Card>
             <Card><CardContent className="p-3"><div className="flex items-center gap-2"><Timer className="h-4 w-4 text-amber-500" /><div><p className="text-lg font-bold">{domainData.obelixiaInvocations.length > 0 ? Math.round(domainData.obelixiaInvocations.reduce((s, i) => s + i.execution_time_ms, 0) / domainData.obelixiaInvocations.length) : 0}ms</p><p className="text-[10px] text-muted-foreground">Tiempo medio</p></div></div></CardContent></Card>
           </div>
 
