@@ -60,7 +60,7 @@ const CLOSING_STATUS_CONFIG: Record<string, { label: string; color: string; icon
 type FilterStatus = 'all' | 'open' | 'closing' | 'closed' | 'locked' | 'overdue';
 
 export function AdvisoryDashboardPanel({ onSelectCompany, className }: Props) {
-  const { companies, summary, isLoading, advisorRole, refresh } = useAdvisoryPortfolio();
+  const { companies, summary, isLoading, advisorRole, hasNoAssignments, refresh } = useAdvisoryPortfolio();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
