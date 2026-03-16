@@ -47,7 +47,5 @@ export type {
   ReadinessSignal, DeadlineSignal, CertificateSignal, DryRunSignal, ApprovalSignal,
 } from './proactiveAlertEngine';
 
-// ── Payroll Engines (pre-existing) ──
-export { payrollRunEngine } from './payrollRunEngine';
-export { payrollConceptCatalog } from './payrollConceptCatalog';
-export { payrollIncidentEngine } from './payrollIncidentEngine';
+// ── Payroll Engines (pre-existing, export selectively to avoid name clashes) ──
+// Import directly from individual files: './payrollRunEngine', './payrollConceptCatalog', etc.
