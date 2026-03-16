@@ -9,27 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link2, Link2Off } from 'lucide-react';
-import { normalizeDocType } from './documentExpectedTypes';
-
-/** Tipos documentales que aplican para conciliación */
-const RECONCILABLE_TYPES = new Set([
-  'nomina_mensual',
-  'nomina',
-  'justificante_pago_nomina',
-  'rlc',
-  'rnt',
-  'cra',
-  'modelo_111',
-  'modelo_190',
-  'finiquito',
-  'indemnizacion',
-  'bases_cotizacion',
-  'fdi',
-]);
-
-export function isReconcilableDocType(docType: string): boolean {
-  return RECONCILABLE_TYPES.has(normalizeDocType(docType));
-}
+/**
+ * @migration Sprint 4 — isReconcilableDocType and getApplicableChannels moved to
+ * src/engines/erp/hr/docReconciliationRules.ts. Re-exported here for compatibility.
+ */
+import { isReconcilableDocType, getApplicableChannels as _getApplicableChannels } from '@/engines/erp/hr/docReconciliationRules';
+export { isReconcilableDocType } from '@/engines/erp/hr/docReconciliationRules';
 
 interface ReconciliationFlags {
   reconciled_with_payroll: boolean;
