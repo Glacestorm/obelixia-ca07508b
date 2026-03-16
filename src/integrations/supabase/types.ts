@@ -82603,6 +82603,9 @@ export type Database = {
         | "director_comercial"
         | "director_oficina"
         | "responsable_comercial"
+        | "hr_manager"
+        | "legal_manager"
+        | "gestor"
       auth_factor_type:
         | "password"
         | "otp_email"
@@ -82955,6 +82958,9 @@ export const Constants = {
         "director_comercial",
         "director_oficina",
         "responsable_comercial",
+        "hr_manager",
+        "legal_manager",
+        "gestor",
       ],
       auth_factor_type: [
         "password",
