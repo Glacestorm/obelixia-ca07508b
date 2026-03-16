@@ -71,8 +71,9 @@ async function fetchEnrichedSignals(
     // Readiness: latest submissions per company to derive circuit statuses
     supabase
       .from('hr_official_submissions')
-      .select('company_id, status, submission_domain')
+      .select('company_id, status, submission_domain, submission_type, period_year, period_month, created_at')
       .in('company_id', companyIds)
+      .order('created_at', { ascending: false })
       .limit(500),
 
     // Documental: unresolved HR alerts per company
@@ -131,10 +132,16 @@ async function fetchEnrichedSignals(
 
     for (const [domain, sub] of byDomain) {
       const st = sub.status as string;
-      if (['rejected', 'failed', 'correction_required'].includes(st)) {
+      if (['blocked', 'suspended'].includes(st)) {
+        blocked++;
+        blockDetails.push(`${domain}: bloqueado/suspendido (${st})`);
+      } else if (['rejected', 'failed', 'correction_required'].includes(st)) {
         error++;
-        blockDetails.push(`${domain}: error/rechazado`);
-      } else if (['payload_generated'].includes(st)) {
+        blockDetails.push(`${domain}: error/rechazado (${st})`);
+      } else if (['payload_generated', 'pending_validation', 'pending_correction'].includes(st)) {
+        dataIncomplete++;
+        blockDetails.push(`${domain}: datos incompletos (${st})`);
+      } else if (['draft'].includes(st)) {
         dataIncomplete++;
       }
     }

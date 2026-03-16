@@ -1,21 +1,25 @@
 /**
- * useHRLaborCopilot — V2-RRHH-FASE-7
+ * useHRLaborCopilot — V2-RRHH-FASE-7 + 7B Hardening
  * Hook for the contextual HR labor copilot.
+ *
+ * 7B additions:
+ *  - SSE streaming for real-time token rendering
+ *  - Client-side prompt injection detection
+ *  - Enriched context with granular detail for focused company
  *
  * Connects:
  *  - useControlTower (scored companies, summary, enriched signals)
- *  - useAdvisoryPortfolio (portfolio summary)
- *  - copilotContextEngine (context serialization)
+ *  - copilotContextEngine (context serialization + sanitization)
  *
- * Sends context + question to hr-labor-copilot edge function.
+ * Sends context + question to hr-labor-copilot edge function (streaming).
  * Manages conversation history and loading state.
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useControlTower } from './useControlTower';
 import {
   buildCopilotContext,
+  sanitizeUserQuestion,
   GUIDED_PROMPTS,
   type CopilotFullContext,
   type GuidedPrompt,
@@ -29,6 +33,7 @@ export interface CopilotMessage {
   content: string;
   timestamp: Date;
   promptId?: string; // links to guided prompt if used
+  isStreaming?: boolean;
 }
 
 export interface UseHRLaborCopilotReturn {
@@ -47,6 +52,130 @@ export interface UseHRLaborCopilotReturn {
   // Control Tower passthrough
   isControlTowerLoading: boolean;
   portfolioSize: number;
+}
+
+// ─── SSE Stream Parser ──────────────────────────────────────────────────────
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hr-labor-copilot`;
+
+async function streamCopilotChat({
+  question,
+  context,
+  conversationHistory,
+  onDelta,
+  onDone,
+  onError,
+}: {
+  question: string;
+  context: CopilotFullContext;
+  conversationHistory: Array<{ role: string; content: string }>;
+  onDelta: (text: string) => void;
+  onDone: () => void;
+  onError: (error: string) => void;
+}) {
+  const resp = await fetch(CHAT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    },
+    body: JSON.stringify({ question, context, conversationHistory }),
+  });
+
+  // Handle non-streaming error responses
+  if (!resp.ok) {
+    let errorMsg = 'Error del copiloto';
+    try {
+      const errData = await resp.json();
+      errorMsg = errData.message || errData.error || errorMsg;
+    } catch {
+      // ignore parse error
+    }
+    onError(errorMsg);
+    return;
+  }
+
+  // Check content type — if JSON, it's a guardrail/non-stream response
+  const contentType = resp.headers.get('Content-Type') || '';
+  if (contentType.includes('application/json')) {
+    try {
+      const data = await resp.json();
+      if (data.response) {
+        onDelta(data.response);
+      } else if (data.error) {
+        onError(data.message || data.error);
+        return;
+      }
+    } catch {
+      onError('Error al procesar respuesta');
+      return;
+    }
+    onDone();
+    return;
+  }
+
+  // SSE streaming
+  if (!resp.body) {
+    onError('Sin respuesta del servidor');
+    return;
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let textBuffer = '';
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    textBuffer += decoder.decode(value, { stream: true });
+
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith('\r')) line = line.slice(0, -1);
+      if (line.startsWith(':') || line.trim() === '') continue;
+      if (!line.startsWith('data: ')) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === '[DONE]') {
+        streamDone = true;
+        break;
+      }
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch {
+        // Incomplete JSON — put back and wait
+        textBuffer = line + '\n' + textBuffer;
+        break;
+      }
+    }
+  }
+
+  // Final flush
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split('\n')) {
+      if (!raw) continue;
+      if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+      if (raw.startsWith(':') || raw.trim() === '') continue;
+      if (!raw.startsWith('data: ')) continue;
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch { /* ignore */ }
+    }
+  }
+
+  onDone();
 }
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
@@ -81,6 +210,9 @@ export function useHRLaborCopilot(): UseHRLaborCopilotReturn {
   const sendMessage = useCallback(async (question: string, promptId?: string) => {
     if (!question.trim() || isLoading) return;
 
+    // 7B: Client-side prompt injection check
+    const { sanitized, injectionDetected } = sanitizeUserQuestion(question);
+
     setError(null);
     const userMsgId = `msg-${++messageIdCounter.current}`;
     const userMessage: CopilotMessage = {
@@ -93,12 +225,24 @@ export function useHRLaborCopilot(): UseHRLaborCopilotReturn {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
+    if (injectionDetected) {
+      const errMsgId = `msg-${++messageIdCounter.current}`;
+      setMessages(prev => [...prev, {
+        id: errMsgId,
+        role: 'assistant',
+        content: '⚠️ Tu pregunta contiene un patrón no permitido. Por favor, reformula tu consulta sobre gestión laboral.',
+        timestamp: new Date(),
+      }]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Build context from real Control Tower data
       const context = buildCopilotContext(
         scoredCompanies,
         summary,
-        null, // portfolioSummary is embedded in summary
+        null,
         focusedCompanyId,
         15,
       );
@@ -109,35 +253,56 @@ export function useHRLaborCopilot(): UseHRLaborCopilotReturn {
         content: m.content,
       }));
 
-      const { data, error: fnError } = await supabase.functions.invoke(
-        'hr-labor-copilot',
-        {
-          body: {
-            question: question.trim(),
-            context,
-            conversationHistory,
-          },
+      // Create streaming assistant message
+      const assistantMsgId = `msg-${++messageIdCounter.current}`;
+      let assistantContent = '';
+
+      // Add empty assistant message
+      setMessages(prev => [...prev, {
+        id: assistantMsgId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        isStreaming: true,
+      }]);
+
+      await streamCopilotChat({
+        question: sanitized,
+        context,
+        conversationHistory,
+        onDelta: (chunk) => {
+          assistantContent += chunk;
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantMsgId
+                ? { ...m, content: assistantContent }
+                : m
+            )
+          );
         },
-      );
-
-      if (fnError) throw fnError;
-
-      if (data?.success && data?.response) {
-        const assistantMsgId = `msg-${++messageIdCounter.current}`;
-        const assistantMessage: CopilotMessage = {
-          id: assistantMsgId,
-          role: 'assistant',
-          content: data.response,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-      } else {
-        throw new Error(data?.message || data?.error || 'Respuesta vacía del copiloto');
-      }
+        onDone: () => {
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantMsgId
+                ? { ...m, isStreaming: false }
+                : m
+            )
+          );
+        },
+        onError: (errMsg) => {
+          setError(errMsg);
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === assistantMsgId
+                ? { ...m, content: `⚠️ ${errMsg}. Inténtalo de nuevo.`, isStreaming: false }
+                : m
+            )
+          );
+        },
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al consultar el copiloto';
       setError(message);
-      // Add error as assistant message
       const errMsgId = `msg-${++messageIdCounter.current}`;
       setMessages(prev => [...prev, {
         id: errMsgId,
