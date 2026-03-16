@@ -1036,7 +1036,82 @@ export function SupervisorAgentsDashboard() {
             </div>
           )}
 
-          {/* Recent cross-domain cases */}
+          {/* Regulatory cross-domain cases */}
+          {domainData.regulatoryCrossDomainCases.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Newspaper className="h-4 w-4 text-blue-500" />
+                  Casos normativos cross-domain
+                  <Badge variant="outline" className="text-[9px] bg-blue-500/10 text-blue-700 border-blue-500/30">Fase 2B</Badge>
+                </CardTitle>
+                <CardDescription className="text-xs">Cambios regulatorios escalados automáticamente por impacto multi-dominio</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[250px]">
+                  <div className="space-y-2">
+                    {domainData.regulatoryCrossDomainCases.slice(0, 15).map((inv) => {
+                      const meta = inv.metadata as any;
+                      const riskLevel = meta?.final_risk_level || meta?.impact_level || 'medium';
+                      const hasConflict = meta?.has_conflict;
+                      const domains = meta?.impact_domains || [];
+                      return (
+                        <div key={inv.id} className={cn(
+                          "p-3 rounded-lg border text-sm",
+                          hasConflict ? "border-amber-500/30 bg-amber-500/5" :
+                          inv.outcome_status === 'human_review' ? "border-violet-500/30 bg-violet-500/5" :
+                          "bg-muted/30"
+                        )}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <Newspaper className="h-3.5 w-3.5 text-blue-500" />
+                              {hasConflict && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
+                              <span className="font-medium text-xs truncate max-w-[280px]">{meta?.document_title || inv.input_summary}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="outline" className={cn("text-[9px]",
+                                riskLevel === 'critical' ? 'bg-destructive/10 text-destructive' :
+                                riskLevel === 'high' ? 'bg-amber-500/10 text-amber-700' :
+                                'bg-muted'
+                              )}>{riskLevel}</Badge>
+                              <Badge variant="outline" className={cn("text-[9px]",
+                                inv.outcome_status === 'success' || inv.outcome_status === 'conflict_resolved' ? 'bg-emerald-500/10 text-emerald-700' :
+                                inv.outcome_status === 'human_review' ? 'bg-violet-500/10 text-violet-700' :
+                                'bg-muted'
+                              )}>{inv.outcome_status}</Badge>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">{inv.routing_reason}</p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {domains.map((d: string) => (
+                              <Badge key={d} variant="outline" className="text-[9px]">{d}</Badge>
+                            ))}
+                            {meta?.adaptation_deadline && (
+                              <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-700">⏱ {meta.adaptation_deadline}</Badge>
+                            )}
+                          </div>
+                          {meta?.priority_actions?.length > 0 && (
+                            <div className="mt-1.5 text-[10px] text-muted-foreground">
+                              <span className="font-medium">Acciones:</span> {meta.priority_actions.slice(0, 2).join(' · ')}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                            <span>{inv.execution_time_ms}ms</span>
+                            <span>{new Date(inv.created_at).toLocaleString('es')}</span>
+                            {meta?.source_url && (
+                              <a href={meta.source_url} target="_blank" rel="noopener" className="text-primary hover:underline">📄 Ver fuente</a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recent cross-domain cases (non-regulatory) */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -1054,7 +1129,7 @@ export function SupervisorAgentsDashboard() {
               ) : (
                 <ScrollArea className="h-[300px]">
                   <div className="space-y-2">
-                    {domainData.obelixiaInvocations.slice(0, 20).map((inv) => {
+                    {domainData.obelixiaInvocations.filter(i => (i.metadata as any)?.trigger_type !== 'regulatory_cross_domain').slice(0, 20).map((inv) => {
                       const meta = inv.metadata as any;
                       const hasConflict = meta?.has_conflict;
                       const riskLevel = meta?.final_risk_level || 'medium';
