@@ -191,10 +191,10 @@ export function HRLaborCopilotPanel() {
                 <MessageBubble key={msg.id} message={msg} />
               ))}
 
-              {isLoading && (
+              {isLoading && !messages.some(m => m.isStreaming) && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Analizando datos reales…</span>
+                  <span>Conectando con el copiloto…</span>
                 </div>
               )}
             </div>
