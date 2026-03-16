@@ -188,6 +188,7 @@ export function usePayrollEngine(companyId?: string) {
   const [simulations, setSimulations] = useState<PayrollSimulation[]>([]);
   const [auditLog, setAuditLog] = useState<PayrollAuditEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { writeLedger } = useHRLedgerWriter(companyId || '', 'payroll_engine');
 
   // ---- PERIODS ----
 
