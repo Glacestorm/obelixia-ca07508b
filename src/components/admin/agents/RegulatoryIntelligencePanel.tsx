@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Newspaper, Globe, FileText, AlertTriangle, CheckCircle, Clock,
   ExternalLink, RefreshCw, Shield, Activity, Eye, Scale, Users,
-  Building2, Zap, History, XCircle, MessageSquare, ThumbsUp, ThumbsDown
+  Building2, Zap, History, XCircle, MessageSquare, ThumbsUp, ThumbsDown,
+  BarChart3
 } from 'lucide-react';
 import { useRegulatoryIntelligence, type RegulatoryDocument, type RegulatorySource, type RefreshLog } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
