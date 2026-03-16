@@ -301,6 +301,17 @@ export function useHRContractProcess(companyId: string) {
         setContractData(updated);
         const changedKeys = Object.keys(updates).filter(k => (existing as any)[k] !== (updates as any)[k]);
         logContractAudit('CONTRACT_DATA_UPDATE', companyId, user.id, requestId, { previous: existing }, { updated: updates }, 'info', changedKeys);
+        // Ledger: contract updated
+        if (changedKeys.length > 0) {
+          writeLedger({
+            eventType: 'contract_updated',
+            entityType: 'contract_process',
+            entityId: updated.id,
+            beforeSnapshot: existing as Record<string, unknown>,
+            afterSnapshot: updates as Record<string, unknown>,
+            changedFields: changedKeys,
+          });
+        }
         return updated;
       } else {
         const { data, error } = await supabase
