@@ -71,8 +71,9 @@ async function fetchEnrichedSignals(
     // Readiness: latest submissions per company to derive circuit statuses
     supabase
       .from('hr_official_submissions')
-      .select('company_id, status, submission_domain')
+      .select('company_id, status, submission_domain, submission_type, period_year, period_month, created_at')
       .in('company_id', companyIds)
+      .order('created_at', { ascending: false })
       .limit(500),
 
     // Documental: unresolved HR alerts per company
