@@ -17,6 +17,7 @@ import {
 import { useRegulatoryIntelligence, type RegulatoryDocument, type RegulatorySource, type RefreshLog } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
 import { RegulatoryFeedbackSheet } from './RegulatoryFeedbackSheet';
+import { RegulatoryQualityDashboard } from './RegulatoryQualityDashboard';
 import { RegistryAgentCard } from './RegistryAgentCard';
 import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
 import { useSupervisorDomainData, type RegistryAgent } from '@/hooks/admin/agents/useSupervisorDomainData';
