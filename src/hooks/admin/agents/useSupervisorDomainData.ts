@@ -126,6 +126,17 @@ export function useSupervisorDomainData(companyId?: string) {
     (i.metadata as any)?.has_conflict === true
   );
 
+  // Regulatory cross-domain cases (Phase 2B)
+  const regulatoryCrossDomainCases = obelixiaInvocations.filter(i =>
+    (i.metadata as any)?.trigger_type === 'regulatory_cross_domain'
+  );
+  const regulatoryHumanReview = regulatoryCrossDomainCases.filter(i =>
+    i.outcome_status === 'human_review'
+  );
+  const regulatoryConflicts = regulatoryCrossDomainCases.filter(i =>
+    (i.metadata as any)?.has_conflict === true
+  );
+
   // Stats
   const stats = {
     totalAgents: agents.length,
