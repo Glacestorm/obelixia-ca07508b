@@ -21,7 +21,7 @@ import {
   countBusinessDaysBetween,
   type HolidayCalendar,
   EMPTY_CALENDAR,
-} from '@/components/erp/hr/shared/calendarHelpers';
+} from '@/engines/erp/hr/calendarHelpers';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
