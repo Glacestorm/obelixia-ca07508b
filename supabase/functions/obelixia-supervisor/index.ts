@@ -58,12 +58,58 @@ FORMATO DE RESPUESTA (JSON estricto):
 }`;
 
 interface SuperSupervisorRequest {
-  action: 'coordinate' | 'get_status' | 'get_cross_cases';
+  action: 'coordinate' | 'get_status' | 'get_cross_cases' | 'regulatory_cross_domain';
   company_id: string;
   query?: string;
   context?: Record<string, unknown>;
   session_id?: string;
+  // For regulatory_cross_domain
+  document?: {
+    id: string;
+    document_title: string;
+    summary: string | null;
+    impact_summary: string | null;
+    impact_domains: string[];
+    impact_level: string;
+    requires_human_review: boolean;
+    source_url: string | null;
+    source_code?: string;
+    publication_date?: string;
+    legal_area?: string;
+  };
+  trigger_reason?: string;
 }
+
+const REGULATORY_CROSS_DOMAIN_PROMPT = `Eres un coordinador experto que evalúa el impacto cross-domain de cambios regulatorios.
+Recibes un documento normativo que afecta a múltiples dominios (RRHH + Jurídico) y las respuestas de ambos supervisores.
+
+Tu trabajo:
+1. Evaluar el impacto operativo para RRHH (procesos, nómina, contratos, plantilla).
+2. Evaluar el impacto jurídico/compliance (obligaciones, riesgos, plazos).
+3. Detectar conflictos entre las recomendaciones de ambos supervisores.
+4. Componer una recomendación unificada con acciones concretas.
+5. Decidir si requiere revisión humana.
+
+REGLAS:
+- Cambios en despidos, jornada, permisos protegidos, cotización → SIEMPRE revisión humana.
+- Si un supervisor recomienda acción urgente y otro no → conflicto + revisión humana.
+- Priorizar seguridad jurídica sobre eficiencia operativa.
+- Indicar plazo estimado de adaptación si es posible.
+
+FORMATO (JSON estricto):
+{
+  "has_conflict": true/false,
+  "conflict_type": "none|risk_divergence|recommendation_conflict|priority_mismatch",
+  "hr_impact": "resumen del impacto RRHH",
+  "legal_impact": "resumen del impacto jurídico",
+  "final_risk_level": "low|medium|high|critical",
+  "final_recommendation": "recomendación unificada con acciones",
+  "requires_human_review": true/false,
+  "human_review_reason": "motivo si aplica",
+  "adaptation_deadline": "plazo estimado o null",
+  "priority_actions": ["acción 1", "acción 2"],
+  "composed_response": "respuesta completa para el usuario"
+}`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -427,6 +473,149 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+
+    // === REGULATORY CROSS-DOMAIN ===
+    if (action === 'regulatory_cross_domain') {
+      const doc = input.document;
+      if (!doc) {
+        return new Response(JSON.stringify({ success: false, error: 'document required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
+
+      console.log(`[obelixia-supervisor] Regulatory cross-domain: ${doc.document_title?.substring(0, 60)}`);
+
+      const regulatoryQuery = `Cambio normativo: "${doc.document_title}". Resumen: ${doc.summary || doc.impact_summary || 'Sin resumen'}. Impacto: ${doc.impact_level}. Dominios: ${doc.impact_domains?.join(', ')}. Área legal: ${doc.legal_area || 'no especificada'}.`;
+
+      // Consult both supervisors in parallel
+      const [hrResp2, legalResp2] = await Promise.allSettled([
+        fetch(`${fnUrl}/hr-multiagent-supervisor`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'route_query', company_id, query: regulatoryQuery,
+            context: { source: 'regulatory_cross_domain', document_id: doc.id, impact_domains: doc.impact_domains },
+            session_id: session_id || crypto.randomUUID(),
+          }),
+        }).then(r => r.json()).catch(() => null),
+        fetch(`${fnUrl}/legal-multiagent-supervisor`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'validate_hr_action', company_id, query: regulatoryQuery,
+            context: { source: 'regulatory_cross_domain', document_id: doc.id, impact_domains: doc.impact_domains },
+            source_agent: 'regulatory-intelligence',
+          }),
+        }).then(r => r.json()).catch(() => null),
+      ]);
+
+      const hrResult2 = hrResp2.status === 'fulfilled' ? hrResp2.value : null;
+      const legalResult2 = legalResp2.status === 'fulfilled' ? legalResp2.value : null;
+
+      // Resolve with regulatory-specific prompt
+      const resolverResp2 = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: REGULATORY_CROSS_DOMAIN_PROMPT },
+            { role: 'user', content: JSON.stringify({
+              document: doc,
+              hr_response: hrResult2?.data || null,
+              legal_response: legalResult2?.data || null,
+              trigger_reason: input.trigger_reason,
+            }) }
+          ],
+          temperature: 0.2,
+          max_tokens: 1500,
+        }),
+      });
+
+      let regResolution: any = {
+        has_conflict: false, conflict_type: 'none', hr_impact: '', legal_impact: '',
+        final_risk_level: doc.impact_level || 'medium', final_recommendation: '',
+        requires_human_review: doc.requires_human_review || doc.impact_level === 'critical',
+        human_review_reason: '', adaptation_deadline: null, priority_actions: [], composed_response: '',
+      };
+
+      if (resolverResp2.ok) {
+        const rData = await resolverResp2.json();
+        const rContent = rData.choices?.[0]?.message?.content || '';
+        try {
+          const m = rContent.match(/\{[\s\S]*\}/);
+          if (m) regResolution = { ...regResolution, ...JSON.parse(m[0]) };
+        } catch { console.warn('[obelixia-supervisor] Regulatory resolution parse error'); }
+      }
+
+      if (regResolution.final_risk_level === 'critical' || regResolution.has_conflict) {
+        regResolution.requires_human_review = true;
+      }
+
+      const regExecTime = Date.now() - startTime;
+      const regOutcome = regResolution.requires_human_review ? 'human_review' : regResolution.has_conflict ? 'conflict_resolved' : 'success';
+
+      try {
+        await supabase.from('erp_ai_agent_invocations').insert({
+          agent_code: 'obelixia-supervisor',
+          supervisor_code: 'obelixia-supervisor',
+          company_id,
+          user_id: userId,
+          input_summary: `[REG] ${doc.document_title}`.substring(0, 500),
+          routing_reason: `Regulatory cross-domain: ${input.trigger_reason || doc.impact_domains?.join('+')}`,
+          confidence_score: 0.85,
+          escalated_to: regResolution.requires_human_review ? 'human_review' : null,
+          escalation_reason: regResolution.human_review_reason || null,
+          outcome_status: regOutcome,
+          execution_time_ms: regExecTime,
+          response_summary: JSON.stringify({
+            conflict: regResolution.has_conflict,
+            risk: regResolution.final_risk_level,
+            recommendation: regResolution.final_recommendation?.substring(0, 200),
+          }).substring(0, 1000),
+          metadata: {
+            session_id,
+            trigger_type: 'regulatory_cross_domain',
+            document_id: doc.id,
+            document_title: doc.document_title,
+            impact_domains: doc.impact_domains,
+            impact_level: doc.impact_level,
+            source_url: doc.source_url,
+            has_conflict: regResolution.has_conflict,
+            conflict_type: regResolution.conflict_type,
+            final_risk_level: regResolution.final_risk_level,
+            requires_human_review: regResolution.requires_human_review,
+            hr_available: !!hrResult2?.success,
+            legal_available: !!legalResult2?.success,
+            hr_impact: regResolution.hr_impact,
+            legal_impact: regResolution.legal_impact,
+            priority_actions: regResolution.priority_actions,
+            adaptation_deadline: regResolution.adaptation_deadline,
+            phase: '2B',
+          },
+        });
+      } catch (logErr) {
+        console.error('[obelixia-supervisor] Regulatory log error:', logErr);
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          supersupervisor: {
+            trigger_type: 'regulatory_cross_domain',
+            document_id: doc.id,
+            resolution: regResolution,
+          },
+          hr_response: hrResult2?.data || null,
+          legal_response: legalResult2?.data || null,
+          execution_time_ms: regExecTime,
+          outcome_status: regOutcome,
+          timestamp: new Date().toISOString(),
+        }
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({ success: false, error: `Unknown action: ${action}` }), {

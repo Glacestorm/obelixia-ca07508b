@@ -325,6 +325,57 @@ async function refreshSource(
       },
     });
 
+    // === CROSS-DOMAIN ESCALATION TO OBELIXIA (Phase 2B) ===
+    if (newCount > 0) {
+      try {
+        const { data: newDocs } = await supabase
+          .from('erp_regulatory_documents')
+          .select('*')
+          .eq('source_id', source.id)
+          .eq('change_type', 'new')
+          .eq('data_source', 'live')
+          .order('created_at', { ascending: false })
+          .limit(newCount);
+
+        if (newDocs) {
+          for (const doc of newDocs) {
+            const shouldEscalate = evaluateCrossDomainTrigger(doc);
+            if (shouldEscalate) {
+              console.log(`[regulatory-refresh] Escalating to ObelixIA: ${doc.document_title?.substring(0, 50)}`);
+              try {
+                await fetch(`${supabaseUrl}/functions/v1/obelixia-supervisor`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action: 'regulatory_cross_domain',
+                    company_id: '00000000-0000-0000-0000-000000000000',
+                    document: {
+                      id: doc.id,
+                      document_title: doc.document_title,
+                      summary: doc.summary,
+                      impact_summary: doc.impact_summary,
+                      impact_domains: doc.impact_domains,
+                      impact_level: doc.impact_level,
+                      requires_human_review: doc.requires_human_review,
+                      source_url: doc.source_url,
+                      source_code: source.code,
+                      publication_date: doc.publication_date,
+                      legal_area: doc.legal_area,
+                    },
+                    trigger_reason: shouldEscalate.reason,
+                  }),
+                });
+              } catch (escErr) {
+                console.error(`[regulatory-refresh] ObelixIA escalation error:`, escErr);
+              }
+            }
+          }
+        }
+      } catch (crossErr) {
+        console.error(`[regulatory-refresh] Cross-domain evaluation error:`, crossErr);
+      }
+    }
+
     await completeRefresh(supabase, source.id, logId, {
       status: 'completed',
       documents_found: documents.length,
@@ -486,6 +537,45 @@ async function classifyWithAI(apiKey: string, doc: any, source: any): Promise<an
     console.error('[regulatory-refresh] AI classification error:', e);
     return {};
   }
+}
+
+// === CROSS-DOMAIN TRIGGER EVALUATION ===
+const CROSS_DOMAIN_KEYWORDS = [
+  'despido', 'contratación', 'jornada', 'permiso', 'maternidad', 'paternidad',
+  'cotización', 'seguridad social', 'protección de datos', 'RGPD', 'LOPDGDD',
+  'teletrabajo', 'movilidad', 'ERE', 'ERTE', 'convenio colectivo', 'salario',
+  'indemnización', 'compliance', 'prevención', 'igualdad', 'acoso',
+];
+
+function evaluateCrossDomainTrigger(doc: any): { reason: string } | null {
+  const domains = doc.impact_domains || [];
+  const impactLevel = doc.impact_level || 'low';
+  const title = (doc.document_title || '').toLowerCase();
+  const summary = (doc.summary || '').toLowerCase();
+
+  // Rule 1: Multiple relevant domains
+  const relevantDomains = domains.filter((d: string) => ['hr', 'legal', 'compliance', 'fiscal'].includes(d));
+  if (relevantDomains.length >= 2 && relevantDomains.some((d: string) => d === 'hr' || d === 'legal')) {
+    return { reason: `Multi-domain impact: ${relevantDomains.join('+')}` };
+  }
+
+  // Rule 2: Critical or high impact with HR or legal
+  if ((impactLevel === 'critical' || impactLevel === 'high') && relevantDomains.length >= 1) {
+    return { reason: `${impactLevel} impact on ${relevantDomains.join('+')}` };
+  }
+
+  // Rule 3: Cross-domain keywords in title/summary
+  const matchedKeywords = CROSS_DOMAIN_KEYWORDS.filter(kw => title.includes(kw) || summary.includes(kw));
+  if (matchedKeywords.length >= 2) {
+    return { reason: `Cross-domain keywords: ${matchedKeywords.slice(0, 3).join(', ')}` };
+  }
+
+  // Rule 4: Requires human review + multiple domains
+  if (doc.requires_human_review && relevantDomains.length >= 2) {
+    return { reason: `Human review required + multi-domain` };
+  }
+
+  return null; // Do not escalate
 }
 
 function extractTag(xml: string, tag: string): string | null {
