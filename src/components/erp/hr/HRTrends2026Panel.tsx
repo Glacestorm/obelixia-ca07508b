@@ -1,4 +1,7 @@
 /**
+ * @deprecated V2-RRHH-FASE-1: Static content with diminishing value.
+ * Hidden from navigation in MVP mode. Will be removed in Sprint 3.
+ * 
  * HRTrends2026Panel - Tendencias RRHH 2026+ con demos interactivas
  */
 
