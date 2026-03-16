@@ -209,11 +209,16 @@ export function useOfficialReadinessMatrix(companyId: string) {
         },
         [
           {
-            evidenceType: 'snapshot',
-            sourceType: 'readiness_matrix',
-            sourceId: companyId,
-            contentSnapshot: evidenceSnapshot,
-            description: `Evaluación readiness España: ${result.overallStatus} (${result.configured}/${result.totalCircuits} configurados)`,
+            evidenceType: 'snapshot' as const,
+            evidenceLabel: `Evaluación readiness España: ${result.overallStatus}`,
+            refEntityType: 'readiness_matrix',
+            refEntityId: companyId,
+            evidenceSnapshot: evidenceSnapshot,
+            metadata: {
+              configured: result.configured,
+              totalCircuits: result.totalCircuits,
+              blocked: result.blocked,
+            },
           },
         ],
       );
