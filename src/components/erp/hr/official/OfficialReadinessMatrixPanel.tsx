@@ -1,5 +1,5 @@
 /**
- * OfficialReadinessMatrixPanel — V2-RRHH-FASE-4
+ * OfficialReadinessMatrixPanel — V2-RRHH-FASE-4 / 4B
  * Unified readiness matrix UI for Spanish official integrations.
  * Shows per-circuit honest operational status with drill-down.
  */
@@ -29,9 +29,30 @@ import {
   type CircuitReadinessItem,
   type OfficialOperationalStatus,
 } from '@/engines/erp/hr/officialReadinessMatrixEngine';
+import type { PreparatorySubmissionStatus } from '@/components/erp/hr/shared/preparatorySubmissionEngine';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+// ── Human-readable labels for submission statuses ──
+const SUBMISSION_STATUS_LABELS: Record<PreparatorySubmissionStatus, string> = {
+  draft: 'Borrador',
+  payload_generated: 'Payload generado',
+  validated_internal: 'Validado internamente',
+  ready_for_dry_run: 'Listo para simulación',
+  dry_run_executed: 'Simulación ejecutada',
+  pending_approval: 'Pendiente de aprobación',
+  approved_pre_real: 'Aprobado (pre-real)',
+  ready_for_real: 'Listo para envío real',
+  submitted_real: 'Enviado (oficial)',
+  acknowledged: 'Acuse recibido',
+  accepted: 'Aceptado por organismo',
+  rejected: 'Rechazado',
+  correction_required: 'Requiere corrección',
+  corrected: 'Corregido',
+  failed: 'Error en envío',
+  cancelled: 'Cancelado',
+};
 
 interface Props {
   companyId: string;
