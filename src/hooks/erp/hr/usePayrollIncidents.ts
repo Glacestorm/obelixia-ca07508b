@@ -123,6 +123,20 @@ export function usePayrollIncidents(companyId?: string) {
       const newIncident = data as unknown as PayrollIncident;
       setIncidents(prev => [newIncident, ...prev]);
       toast.success('Incidencia registrada');
+      // Ledger: incident created
+      writeLedger({
+        eventType: 'payroll_incident_created',
+        entityType: 'payroll_incident',
+        entityId: newIncident.id,
+        afterSnapshot: {
+          incident_type: newIncident.incident_type,
+          employee_id: newIncident.employee_id,
+          period_id: newIncident.period_id,
+          status: 'pending',
+        },
+        aggregateType: 'payroll_period',
+        aggregateId: newIncident.period_id || undefined,
+      });
       return newIncident;
     } catch (err) {
       console.error('[usePayrollIncidents] create:', err);
