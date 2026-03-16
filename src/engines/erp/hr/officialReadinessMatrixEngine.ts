@@ -444,6 +444,6 @@ export function getSystemLimitsDeclaration(): SystemLimitDeclaration[] {
     { area: 'Certificados digitales', status: 'preparatory_only', description: 'Se modelan metadatos de certificados. No se almacena material criptográfico real.' },
     { area: 'Expedientes SS/Fiscal internos', status: 'available', description: 'Generación, reconciliación y cierre de expedientes internos completo.' },
     { area: 'Modelos fiscales (111, 190)', status: 'preparatory_only', description: 'Se generan datos preparatorios. No se presenta ante AEAT.' },
-    { area: 'Certific@2 / Delt@', status: 'modeled_only', description: 'Modelo de datos definido. Generador/validador parcial o pendiente.' },
+    { area: 'Certific@2 / Delt@ / RLC-RNT', status: 'modeled_only', description: 'Modelo de datos definido. Sin generador ni validador activo. Solo estructura.' },
   ];
 }

@@ -273,9 +273,9 @@ function CircuitRow({ item, isExpanded, onToggle }: {
           {/* Latest submission */}
           {item.latestSubmission && (
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Último envío:</span>
+              <span className="text-muted-foreground">Último envío preparatorio:</span>
               <Badge variant="outline" className="text-[10px]">
-                {item.latestSubmission.status}
+                {SUBMISSION_STATUS_LABELS[item.latestSubmission.status] ?? item.latestSubmission.status}
               </Badge>
               {item.latestSubmission.referencePeriod && (
                 <span className="text-muted-foreground">— {item.latestSubmission.referencePeriod}</span>
