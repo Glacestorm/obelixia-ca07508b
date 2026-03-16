@@ -51,5 +51,22 @@ export type {
 export { isReconcilableDocType, getApplicableChannels, RECONCILIATION_CHANNEL_LABELS } from './docReconciliationRules';
 export type { ReconciliationChannel } from './docReconciliationRules';
 
+// ── Ledger & Evidence (V2-RRHH-FASE-2) ──
+export {
+  computeImmutableHash, buildLedgerRow, detectChangedFields,
+  canTransitionVersion, getValidTransitions, isTerminalVersionState,
+  LEDGER_EVENT_LABELS, VERSION_STATE_LABELS, VERSION_STATE_COLORS,
+} from './ledgerEngine';
+export type {
+  LedgerEventType, VersionState, EvidenceType,
+  LedgerEventInput, LedgerEventRow,
+} from './ledgerEngine';
+
+export {
+  buildEvidenceRow, validateEvidenceChain, groupEvidenceByEntity, sortEvidenceChain,
+  EVIDENCE_TYPE_LABELS, EVIDENCE_TYPE_ICONS,
+} from './evidenceEngine';
+export type { EvidenceInput, EvidenceRow, EvidenceChainItem } from './evidenceEngine';
+
 // ── Payroll Engines (pre-existing, export selectively to avoid name clashes) ──
 // Import directly from individual files: './payrollRunEngine', './payrollConceptCatalog', etc.

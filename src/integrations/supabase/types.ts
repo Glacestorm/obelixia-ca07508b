@@ -33869,6 +33869,90 @@ export type Database = {
           },
         ]
       }
+      erp_hr_evidence: {
+        Row: {
+          captured_at: string
+          captured_by: string | null
+          company_id: string
+          content_hash: string | null
+          created_at: string
+          document_id: string | null
+          evidence_label: string
+          evidence_snapshot: Json | null
+          evidence_type: Database["public"]["Enums"]["hr_evidence_type"]
+          file_version_id: string | null
+          id: string
+          invalidated_at: string | null
+          invalidation_reason: string | null
+          is_valid: boolean
+          ledger_event_id: string | null
+          metadata: Json | null
+          ref_entity_id: string
+          ref_entity_type: string
+          storage_bucket: string | null
+          storage_path: string | null
+        }
+        Insert: {
+          captured_at?: string
+          captured_by?: string | null
+          company_id: string
+          content_hash?: string | null
+          created_at?: string
+          document_id?: string | null
+          evidence_label: string
+          evidence_snapshot?: Json | null
+          evidence_type: Database["public"]["Enums"]["hr_evidence_type"]
+          file_version_id?: string | null
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          is_valid?: boolean
+          ledger_event_id?: string | null
+          metadata?: Json | null
+          ref_entity_id: string
+          ref_entity_type: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+        }
+        Update: {
+          captured_at?: string
+          captured_by?: string | null
+          company_id?: string
+          content_hash?: string | null
+          created_at?: string
+          document_id?: string | null
+          evidence_label?: string
+          evidence_snapshot?: Json | null
+          evidence_type?: Database["public"]["Enums"]["hr_evidence_type"]
+          file_version_id?: string | null
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          is_valid?: boolean
+          ledger_event_id?: string | null
+          metadata?: Json | null
+          ref_entity_id?: string
+          ref_entity_type?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_evidence_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_evidence_ledger_event_id_fkey"
+            columns: ["ledger_event_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_ledger"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_ext_integration_log: {
         Row: {
           action: string
@@ -36250,6 +36334,114 @@ export type Database = {
           sort_order?: number | null
         }
         Relationships: []
+      }
+      erp_hr_ledger: {
+        Row: {
+          actor_id: string | null
+          actor_role: string | null
+          after_snapshot: Json | null
+          aggregate_id: string | null
+          aggregate_type: string | null
+          before_snapshot: Json | null
+          changed_fields: string[] | null
+          company_id: string
+          compliance_impact: Json | null
+          correlation_id: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          event_label: string
+          event_type: Database["public"]["Enums"]["hr_ledger_event_type"]
+          financial_impact: Json | null
+          id: string
+          immutable_hash: string
+          ip_address: string | null
+          is_rectification: boolean
+          is_reemission: boolean
+          is_reopening: boolean
+          is_reversion: boolean
+          metadata: Json | null
+          parent_event_id: string | null
+          process_id: string | null
+          source_module: string
+          user_agent: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role?: string | null
+          after_snapshot?: Json | null
+          aggregate_id?: string | null
+          aggregate_type?: string | null
+          before_snapshot?: Json | null
+          changed_fields?: string[] | null
+          company_id: string
+          compliance_impact?: Json | null
+          correlation_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          event_label: string
+          event_type: Database["public"]["Enums"]["hr_ledger_event_type"]
+          financial_impact?: Json | null
+          id?: string
+          immutable_hash: string
+          ip_address?: string | null
+          is_rectification?: boolean
+          is_reemission?: boolean
+          is_reopening?: boolean
+          is_reversion?: boolean
+          metadata?: Json | null
+          parent_event_id?: string | null
+          process_id?: string | null
+          source_module?: string
+          user_agent?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string | null
+          after_snapshot?: Json | null
+          aggregate_id?: string | null
+          aggregate_type?: string | null
+          before_snapshot?: Json | null
+          changed_fields?: string[] | null
+          company_id?: string
+          compliance_impact?: Json | null
+          correlation_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          event_label?: string
+          event_type?: Database["public"]["Enums"]["hr_ledger_event_type"]
+          financial_impact?: Json | null
+          id?: string
+          immutable_hash?: string
+          ip_address?: string | null
+          is_rectification?: boolean
+          is_reemission?: boolean
+          is_reopening?: boolean
+          is_reversion?: boolean
+          metadata?: Json | null
+          parent_event_id?: string | null
+          process_id?: string | null
+          source_module?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_ledger_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_ledger_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_ledger"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_legal_audit_trail: {
         Row: {
@@ -43728,6 +43920,95 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_version_registry: {
+        Row: {
+          company_id: string
+          content_hash: string | null
+          content_snapshot: Json | null
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json | null
+          parent_version_id: string | null
+          previous_state: Database["public"]["Enums"]["hr_version_state"] | null
+          state: Database["public"]["Enums"]["hr_version_state"]
+          state_change_reason: string | null
+          state_changed_at: string | null
+          state_changed_by: string | null
+          superseded_by_id: string | null
+          updated_at: string
+          version_number: number
+        }
+        Insert: {
+          company_id: string
+          content_hash?: string | null
+          content_snapshot?: Json | null
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          parent_version_id?: string | null
+          previous_state?:
+            | Database["public"]["Enums"]["hr_version_state"]
+            | null
+          state?: Database["public"]["Enums"]["hr_version_state"]
+          state_change_reason?: string | null
+          state_changed_at?: string | null
+          state_changed_by?: string | null
+          superseded_by_id?: string | null
+          updated_at?: string
+          version_number?: number
+        }
+        Update: {
+          company_id?: string
+          content_hash?: string | null
+          content_snapshot?: Json | null
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          parent_version_id?: string | null
+          previous_state?:
+            | Database["public"]["Enums"]["hr_version_state"]
+            | null
+          state?: Database["public"]["Enums"]["hr_version_state"]
+          state_change_reason?: string | null
+          state_changed_at?: string | null
+          state_changed_by?: string | null
+          superseded_by_id?: string | null
+          updated_at?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_version_registry_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_version_registry_parent_version_id_fkey"
+            columns: ["parent_version_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_version_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_version_registry_superseded_by_id_fkey"
+            columns: ["superseded_by_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_version_registry"
             referencedColumns: ["id"]
           },
         ]
@@ -82985,6 +83266,62 @@ export type Database = {
         | "anniversary"
         | "birthday"
         | "custom"
+      hr_evidence_type:
+        | "document"
+        | "snapshot"
+        | "approval"
+        | "signature"
+        | "export_package"
+        | "closure_package"
+        | "calculation_result"
+        | "validation_result"
+        | "external_receipt"
+        | "system_generated"
+      hr_ledger_event_type:
+        | "employee_created"
+        | "employee_updated"
+        | "master_data_changed"
+        | "contract_created"
+        | "contract_updated"
+        | "contract_terminated"
+        | "salary_changed"
+        | "payroll_incident_created"
+        | "payroll_incident_resolved"
+        | "payroll_calculated"
+        | "payroll_recalculated"
+        | "payroll_closed"
+        | "payroll_reopened"
+        | "payroll_rectified"
+        | "document_generated"
+        | "document_uploaded"
+        | "document_signed"
+        | "document_expired"
+        | "document_version_created"
+        | "settlement_created"
+        | "settlement_calculated"
+        | "termination_initiated"
+        | "official_export_prepared"
+        | "official_export_submitted"
+        | "expedient_action"
+        | "consent_granted"
+        | "consent_revoked"
+        | "approval_requested"
+        | "approval_granted"
+        | "approval_rejected"
+        | "period_closed"
+        | "period_reopened"
+        | "rectification_issued"
+        | "reversion_applied"
+        | "bulk_operation"
+        | "system_event"
+      hr_version_state:
+        | "draft"
+        | "validated"
+        | "closed"
+        | "rectified"
+        | "reopened"
+        | "superseded"
+        | "cancelled"
       impact_level: "critical" | "high" | "medium" | "low" | "informative"
       leave_workflow_status:
         | "draft"
@@ -83350,6 +83687,65 @@ export const Constants = {
         "anniversary",
         "birthday",
         "custom",
+      ],
+      hr_evidence_type: [
+        "document",
+        "snapshot",
+        "approval",
+        "signature",
+        "export_package",
+        "closure_package",
+        "calculation_result",
+        "validation_result",
+        "external_receipt",
+        "system_generated",
+      ],
+      hr_ledger_event_type: [
+        "employee_created",
+        "employee_updated",
+        "master_data_changed",
+        "contract_created",
+        "contract_updated",
+        "contract_terminated",
+        "salary_changed",
+        "payroll_incident_created",
+        "payroll_incident_resolved",
+        "payroll_calculated",
+        "payroll_recalculated",
+        "payroll_closed",
+        "payroll_reopened",
+        "payroll_rectified",
+        "document_generated",
+        "document_uploaded",
+        "document_signed",
+        "document_expired",
+        "document_version_created",
+        "settlement_created",
+        "settlement_calculated",
+        "termination_initiated",
+        "official_export_prepared",
+        "official_export_submitted",
+        "expedient_action",
+        "consent_granted",
+        "consent_revoked",
+        "approval_requested",
+        "approval_granted",
+        "approval_rejected",
+        "period_closed",
+        "period_reopened",
+        "rectification_issued",
+        "reversion_applied",
+        "bulk_operation",
+        "system_event",
+      ],
+      hr_version_state: [
+        "draft",
+        "validated",
+        "closed",
+        "rectified",
+        "reopened",
+        "superseded",
+        "cancelled",
       ],
       impact_level: ["critical", "high", "medium", "low", "informative"],
       leave_workflow_status: [
