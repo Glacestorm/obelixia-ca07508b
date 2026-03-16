@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AgentConfigSheet } from './AgentConfigSheet';
 import { RegistryAgentCard } from './RegistryAgentCard';
 import { RegistryAgentConfigSheet } from './RegistryAgentConfigSheet';
+import { ObelixIALearningDashboard } from './ObelixIALearningDashboard';
 import { SupervisorDomainView, SupervisorConflictsView } from './SupervisorDomainView';
 import { RegulatoryIntelligencePanel } from './RegulatoryIntelligencePanel';
 import { useSupervisorDomainData } from '@/hooks/admin/agents/useSupervisorDomainData';
