@@ -16,6 +16,8 @@ import {
   Send, Eye, ExternalLink, Sparkles, UserCheck, Newspaper
 } from 'lucide-react';
 import { useRegulatoryIntelligence } from '@/hooks/admin/useRegulatoryIntelligence';
+import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
+import { RegulatoryQualityDashboard } from '@/components/admin/agents/RegulatoryQualityDashboard';
 import { useSupervisorDomainData, type RegistryAgent, type InvocationRecord } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { useMultiAgentSupervisor } from '@/hooks/erp/hr/useMultiAgentSupervisor';
 import { RegistryAgentCard } from '@/components/admin/agents/RegistryAgentCard';
