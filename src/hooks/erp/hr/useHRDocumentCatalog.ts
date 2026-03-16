@@ -9,7 +9,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getCatalogEntry, type DocumentCatalogEntry } from '@/components/erp/hr/shared/documentCatalogES';
+import { getCatalogEntry, type DocumentCatalogEntry } from '@/engines/erp/hr/documentCatalogES';
 
 // ─── Types (DB-backed) ──────────────────────────────────────────────────────
 
