@@ -51,6 +51,7 @@ import { HRNavigationMenu } from './HRNavigationMenu';
 import { HRIntegrationDashboard } from './integration';
 import { HREnterpriseDashboard, HRLegalEntitiesPanel, HRWorkCentersPanel, HROrgStructurePanel, HRCalendarsPanel, HRRolesPermissionsPanel, HRAuditTrailPanel, HRWorkflowDesigner, HRApprovalInbox, HRSLADashboard, HRComplianceEnterprisePanel } from './enterprise';
 import { AdvisoryDashboardPanel } from './advisory';
+import { ControlTowerPanel } from './control-tower';
 import { HRCompensationSuitePanel } from './compensation';
 import { HRWellbeingEnterprisePanel } from './wellbeing/HRWellbeingEnterprisePanel';
 import { HRESGSelfServicePanel } from './esg-selfservice/HRESGSelfServicePanel';
