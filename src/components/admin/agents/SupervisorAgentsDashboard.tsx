@@ -61,7 +61,8 @@ import {
   Plus,
    Scale,
    UserCheck,
-   Newspaper
+   Newspaper,
+   MessageSquare as MessageSquareIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
