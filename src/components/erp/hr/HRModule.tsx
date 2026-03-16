@@ -18,14 +18,15 @@ import {
   AlertTriangle,
   Shield
 } from 'lucide-react';
-import { HRPayrollEntryDialog } from './HRPayrollEntryDialog';
-import { HRVacationRequestDialog } from './HRVacationRequestDialog';
+// Sprint 3: Partial domain barrel adoption (low-risk imports)
+import { HRPayrollPanel, HRPayrollRecalculationPanel, HRSocialBenefitsPanel, HRSettlementsPanel, HRPayrollEntryDialog } from './domains/payroll';
+import { HRVacationsPanel, HRTimeClockPanel, HRAlertsPanel, HRVacationRequestDialog, HRIncidentFormDialog } from './domains/workflows';
+import { HRHelpIndex } from './domains/portal';
+
+// Direct imports (not yet migrated to domain barrels)
 import { useERPContext } from '@/hooks/erp';
 import { supabase } from '@/integrations/supabase/client';
 import { HRExecutiveDashboard } from './HRExecutiveDashboard';
-import { HRPayrollPanel } from './HRPayrollPanel';
-import { HRPayrollRecalculationPanel } from './HRPayrollRecalculationPanel';
-import { HRVacationsPanel } from './HRVacationsPanel';
 import { HRContractsPanel } from './HRContractsPanel';
 import { HRDepartmentsPanel } from './HRDepartmentsPanel';
 import { HRAIAgentPanel } from './HRAIAgentPanel';
@@ -36,12 +37,9 @@ import { HRSafetyPanel } from './HRSafetyPanel';
 import { HRSocialSecurityPanel } from './HRSocialSecurityPanel';
 import { HRUnionsPanel } from './HRUnionsPanel';
 import { HREmployeeDocumentsPanel } from './HREmployeeDocumentsPanel';
-import { HRHelpIndex } from './HRHelpIndex';
 import { HREmployeesPanel } from './HREmployeesPanel';
-import { HRAlertsPanel } from './HRAlertsPanel';
 import { HRSeveranceCalculatorDialog } from './HRSeveranceCalculatorDialog';
 import { HRIndemnizationCalculatorDialog } from './HRIndemnizationCalculatorDialog';
-import { HRSocialBenefitsPanel } from './HRSocialBenefitsPanel';
 import { HRRecruitmentPanel } from './HRRecruitmentPanel';
 import { HROnboardingPanel } from './HROnboardingPanel';
 import { HROffboardingPanel } from './HROffboardingPanel';
@@ -49,7 +47,6 @@ import { HRPerformancePanel } from './HRPerformancePanel';
 import { HRTrainingPanel } from './HRTrainingPanel';
 import { HRAdvancedAnalyticsPanel } from './HRAdvancedAnalyticsPanel';
 import { HRNavigationMenu } from './HRNavigationMenu';
-import { HRSettlementsPanel } from './HRSettlementsPanel';
 import { HRRegulatoryWatchPanel } from './HRRegulatoryWatchPanel';
 import { HRLegalComplianceDashboard } from './compliance';
 import { HRIntegrationDashboard } from './integration';
