@@ -265,6 +265,20 @@ export function usePayrollEngine(companyId?: string) {
       await logAudit('status_changed', 'period', periodId, { status: old?.status }, { status: newStatus });
       setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
       toast.success(`Período actualizado a ${newStatus}`);
+      // Ledger: period status change
+      const eventType = newStatus === 'closed' ? 'period_closed' as const
+        : newStatus === 'open' || newStatus === 'reviewing' ? 'period_reopened' as const
+        : 'system_event' as const;
+      writeLedger({
+        eventType,
+        eventLabel: `Período ${old?.status} → ${newStatus}`,
+        entityType: 'payroll_period',
+        entityId: periodId,
+        beforeSnapshot: { status: old?.status },
+        afterSnapshot: { status: newStatus },
+        changedFields: ['status'],
+        isReopening: newStatus === 'open' || newStatus === 'reviewing',
+      });
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);
     }
