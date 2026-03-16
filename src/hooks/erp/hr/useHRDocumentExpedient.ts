@@ -319,9 +319,17 @@ export function useHRDocumentExpedient(companyId: string) {
         .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, id: string) => {
       qc.invalidateQueries({ queryKey: ['hr-documents', companyId] });
       toast.success('Integridad verificada');
+      // Ledger: document integrity verified
+      writeLedger({
+        eventType: 'expedient_action',
+        eventLabel: 'Integridad documental verificada',
+        entityType: 'employee_document',
+        entityId: id,
+        metadata: { action: 'integrity_verified' },
+      });
     },
   });
 

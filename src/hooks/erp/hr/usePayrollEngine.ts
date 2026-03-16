@@ -793,6 +793,17 @@ export function usePayrollEngine(companyId?: string) {
         { status: 'reviewing', reason, reopened_by: user?.id }
       );
 
+      // Ledger: period reopened
+      writeLedger({
+        eventType: 'period_reopened',
+        entityType: 'payroll_period',
+        entityId: periodId,
+        beforeSnapshot: { status: 'closed' },
+        afterSnapshot: { status: 'reviewing', reason },
+        isReopening: true,
+        metadata: { reason },
+      });
+
       setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
       toast.success('Período reabierto para revisión');
       return true;

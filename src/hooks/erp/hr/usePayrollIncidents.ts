@@ -251,6 +251,14 @@ export function usePayrollIncidents(companyId?: string) {
       if (error) throw error;
       setIncidents(prev => prev.map(i => i.id === id ? { ...i, status: 'cancelled' as IncidentStatus } : i));
       toast.success('Incidencia cancelada');
+      // Ledger: incident resolved (cancelled)
+      writeLedger({
+        eventType: 'payroll_incident_resolved',
+        eventLabel: 'Incidencia cancelada',
+        entityType: 'payroll_incident',
+        entityId: id,
+        afterSnapshot: { status: 'cancelled' },
+      });
       return true;
     } catch (err) {
       console.error('[usePayrollIncidents] cancel:', err);

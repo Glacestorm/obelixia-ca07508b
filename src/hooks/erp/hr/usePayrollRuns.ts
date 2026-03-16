@@ -235,6 +235,20 @@ export function usePayrollRuns(companyId?: string) {
         setActiveRun(prev => prev ? { ...prev, ...updates } as PayrollRun : null);
       }
 
+      // Ledger: payroll run status change
+      writeLedger({
+        eventType: newStatus === 'calculated' ? 'payroll_calculated'
+          : newStatus === 'approved' ? 'payroll_closed'
+          : 'payroll_recalculated',
+        eventLabel: `Run estado: ${run?.status} → ${newStatus}`,
+        entityType: 'payroll_run',
+        entityId: runId,
+        beforeSnapshot: { status: run?.status },
+        afterSnapshot: { status: newStatus, ...extras?.totals ? { totals: extras.totals } : {} },
+        changedFields: ['status'],
+        financialImpact: extras?.totals ? { gross: extras.totals.gross, net: extras.totals.net } : undefined,
+      });
+
       return true;
     } catch (e: any) {
       console.error('[usePayrollRuns] updateRunStatus:', e);
