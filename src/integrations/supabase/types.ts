@@ -82247,6 +82247,13 @@ export type Database = {
       }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       cleanup_tpp_rate_limits: { Args: never; Returns: undefined }
+      count_active_employees_by_company: {
+        Args: { p_company_ids: string[] }
+        Returns: {
+          active_count: number
+          company_id: string
+        }[]
+      }
       crm_get_user_workspaces: { Args: { _user_id: string }; Returns: string[] }
       crm_is_workspace_admin: {
         Args: { _user_id: string; _workspace_id: string }
