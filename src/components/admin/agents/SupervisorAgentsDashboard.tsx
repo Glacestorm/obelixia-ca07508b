@@ -1179,20 +1179,24 @@ export function SupervisorAgentsDashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <History className="h-4 w-4" />
-                Casos cross-domain recientes
+                Casos cross-domain manuales
+                <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground">
+                  <MessageSquare className="h-2.5 w-2.5 mr-0.5" /> Manual
+                </Badge>
               </CardTitle>
+              <CardDescription className="text-xs">Consultas cross-domain enviadas por usuarios (no normativas)</CardDescription>
             </CardHeader>
             <CardContent>
-              {domainData.obelixiaInvocations.length === 0 ? (
+              {domainData.manualCrossDomainCases.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Network className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">Sin casos cross-domain aún</p>
-                  <p className="text-xs mt-1">Los casos coordinados por ObelixIA aparecerán aquí</p>
+                  <p className="text-sm">Sin casos manuales cross-domain</p>
+                  <p className="text-xs mt-1">Las consultas coordinadas por ObelixIA aparecerán aquí</p>
                 </div>
               ) : (
                 <ScrollArea className="h-[300px]">
                   <div className="space-y-2">
-                    {domainData.obelixiaInvocations.filter(i => (i.metadata as any)?.trigger_type !== 'regulatory_cross_domain').slice(0, 20).map((inv) => {
+                    {domainData.manualCrossDomainCases.slice(0, 20).map((inv) => {
                       const meta = inv.metadata as any;
                       const hasConflict = meta?.has_conflict;
                       const riskLevel = meta?.final_risk_level || 'medium';
@@ -1205,9 +1209,12 @@ export function SupervisorAgentsDashboard() {
                         )}>
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[9px] bg-muted text-muted-foreground">
+                                <MessageSquare className="h-2.5 w-2.5 mr-0.5" /> Manual
+                              </Badge>
                               {hasConflict && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
                               {inv.outcome_status === 'human_review' && <Shield className="h-3.5 w-3.5 text-violet-500" />}
-                              <span className="font-medium text-xs truncate max-w-[300px]">{inv.input_summary}</span>
+                              <span className="font-medium text-xs truncate max-w-[250px]">{inv.input_summary}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Badge variant="outline" className={cn("text-[9px]",
