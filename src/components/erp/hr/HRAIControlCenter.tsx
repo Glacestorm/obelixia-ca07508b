@@ -454,7 +454,94 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
           </Card>
         </TabsContent>
 
-        {/* Legal Escalations */}
+        {/* Cross-domain regulatory cases impacting HR (Phase 2C) */}
+        <TabsContent value="cross-reg" className="mt-3">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Cpu className="h-4 w-4 text-primary" />
+                  Casos Normativos Escalados con Impacto RRHH
+                  <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700 border-violet-500/30">ObelixIA</Badge>
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[380px]">
+                <div className="space-y-2">
+                  {regulatoryHRCases.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Cpu className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Sin casos normativos cross-domain para RRHH</p>
+                      <p className="text-xs mt-1">Aparecerán aquí cuando ObelixIA escale regulaciones con impacto HR+Legal</p>
+                    </div>
+                  ) : regulatoryHRCases.map(inv => {
+                    const meta = inv.metadata as any;
+                    const riskLevel = meta?.final_risk_level || meta?.impact_level || 'medium';
+                    const hasConflict = meta?.has_conflict;
+                    const domains = meta?.impact_domains || [];
+                    return (
+                      <div key={inv.id} className={cn(
+                        "p-3 rounded-lg border text-sm",
+                        hasConflict ? "border-amber-500/30 bg-amber-500/5" :
+                        inv.outcome_status === 'human_review' ? "border-violet-500/30 bg-violet-500/5" :
+                        "bg-muted/30"
+                      )}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[9px] bg-blue-500/10 text-blue-700 border-blue-500/30">
+                              <Newspaper className="h-2.5 w-2.5 mr-0.5" /> Normativo
+                            </Badge>
+                            {hasConflict && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
+                            <span className="font-medium text-xs truncate max-w-[250px]">{meta?.document_title || inv.input_summary}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className={cn("text-[9px]",
+                              riskLevel === 'critical' ? 'bg-destructive/10 text-destructive' :
+                              riskLevel === 'high' ? 'bg-amber-500/10 text-amber-700' :
+                              'bg-muted'
+                            )}>{riskLevel}</Badge>
+                            {inv.outcome_status === 'human_review' && (
+                              <Badge variant="outline" className="text-[9px] bg-violet-500/10 text-violet-700">Rev. humana</Badge>
+                            )}
+                          </div>
+                        </div>
+                        {meta?.hr_impact && (
+                          <p className="text-[11px] text-foreground mt-1"><strong>Impacto RRHH:</strong> {meta.hr_impact}</p>
+                        )}
+                        {meta?.priority_actions?.length > 0 && (
+                          <div className="mt-1.5 space-y-0.5">
+                            {meta.priority_actions.filter((a: string) => a.toLowerCase().includes('rrhh') || a.toLowerCase().includes('hr') || !a.toLowerCase().includes('jurídico')).slice(0, 2).map((action: string, idx: number) => (
+                              <p key={idx} className="text-[10px] text-muted-foreground flex items-start gap-1">
+                                <CheckCircle className="h-3 w-3 text-primary shrink-0 mt-0.5" /> {action}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground flex-wrap">
+                          {domains.map((d: string) => (
+                            <Badge key={d} variant="outline" className="text-[8px]">{d}</Badge>
+                          ))}
+                          {meta?.adaptation_deadline && (
+                            <span className="text-amber-600 flex items-center gap-0.5">
+                              <Timer className="h-3 w-3" /> {meta.adaptation_deadline}
+                            </span>
+                          )}
+                          <span>{new Date(inv.created_at).toLocaleDateString('es')}</span>
+                          {meta?.source_url && (
+                            <a href={meta.source_url} target="_blank" rel="noopener" className="text-primary hover:underline">📄 Fuente</a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
         <TabsContent value="escalations" className="mt-3">
           <Card>
             <CardHeader className="pb-2">
