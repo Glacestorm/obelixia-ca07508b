@@ -1,11 +1,12 @@
 /**
- * HR Multiagent Supervisor - Phase 1A
+ * HR Multiagent Supervisor - Phase 1B
  * 
- * Real supervisor that:
- * 1. Classifies incoming HR queries via IA
- * 2. Routes to HR-Ops or HR-Compliance
- * 3. Escalates to Legal-Supervisor when needed
- * 4. Logs all invocations for traceability
+ * Routes HR queries to specialized agents:
+ * - HR-Ops: payroll, contracts, leave, admin
+ * - HR-Compliance: labor compliance, audits, risks
+ * - HR-Talent: recruitment, onboarding, offboarding, performance, training, succession
+ * - HR-Analytics: people analytics, anomalies, predictions, workforce metrics
+ * - Legal escalation: dismissals, protected leave, legal risk
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -21,16 +22,20 @@ const CLASSIFIER_SYSTEM_PROMPT = `Eres un clasificador experto de consultas de R
 CATEGORÍAS:
 - ops: Nóminas, contratos laborales, vacaciones, permisos, fichajes, expediente del empleado, Seguridad Social, administración laboral, altas/bajas, datos personales, organigrama, jornada laboral.
 - compliance: Vencimientos documentales, alertas legales laborales, documentación obligatoria, sanciones, auditoría laboral, inspección de trabajo, prevención de riesgos, igualdad, protección de datos RRHH.
+- talent: Reclutamiento, selección, onboarding, offboarding, desempeño, evaluación, formación, planes de desarrollo, sucesión, skills matrix, marketplace interno de talento, planes de carrera.
+- analytics: People analytics, métricas de plantilla, anomalías, predicciones de rotación, absentismo, headcount forecasting, dashboards RRHH, KPIs, benchmarking, insights de workforce.
 - legal_escalation: Despidos (disciplinario, objetivo, colectivo), riesgos legales graves, permisos protegidos (maternidad, paternidad, lactancia), reducción de jornada con implicaciones legales, movilidad internacional, ERE/ERTE, validación jurídica de decisiones, acoso laboral, demandas laborales.
 
 REGLAS:
 - Si la consulta mezcla operativo + compliance, elige la más relevante.
 - Si hay cualquier riesgo legal significativo, elige legal_escalation.
-- En caso de duda entre ops y compliance, elige ops.
+- Reclutamiento, formación, desempeño, onboarding, offboarding → talent.
+- Métricas, estadísticas, predicciones, anomalías, analytics → analytics.
+- En caso de duda entre ops y otro, elige ops.
 - Responde SOLO con JSON válido.
 
 FORMATO DE RESPUESTA (JSON estricto):
-{"domain": "ops|compliance|legal_escalation", "confidence": 0.0-1.0, "reasoning": "explicación breve"}`;
+{"domain": "ops|compliance|talent|analytics|legal_escalation", "confidence": 0.0-1.0, "reasoning": "explicación breve"}`;
 
 interface SupervisorRequest {
   action: 'route_query' | 'get_status' | 'get_registry';
@@ -39,6 +44,14 @@ interface SupervisorRequest {
   context?: Record<string, unknown>;
   session_id?: string;
 }
+
+// Agent routing configuration
+const AGENT_ROUTES: Record<string, { code: string; fn: string; action: string }> = {
+  ops: { code: 'hr-ops', fn: 'erp-hr-ai-agent', action: 'chat' },
+  compliance: { code: 'hr-compliance', fn: 'erp-hr-compliance-monitor', action: 'analyze' },
+  talent: { code: 'hr-talent', fn: 'erp-hr-talent-intelligence', action: 'analyze' },
+  analytics: { code: 'hr-analytics', fn: 'erp-hr-analytics-agent', action: 'analyze' },
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -187,54 +200,9 @@ serve(async (req) => {
 
       const agentFunctionUrl = `${supabaseUrl}/functions/v1`;
 
-      if (classification.domain === 'ops') {
+      if (classification.domain === 'legal_escalation') {
+        // Legal escalation path
         agentCode = 'hr-ops';
-        try {
-          const resp = await fetch(`${agentFunctionUrl}/erp-hr-ai-agent`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              action: 'chat',
-              company_id,
-              message: query,
-              context: context || {},
-            }),
-          });
-          agentResponse = await resp.json();
-        } catch (err) {
-          console.error('[hr-multiagent-supervisor] HR-Ops agent error:', err);
-          outcomeStatus = 'failed';
-          agentResponse = { success: false, error: 'HR-Ops agent unavailable' };
-        }
-
-      } else if (classification.domain === 'compliance') {
-        agentCode = 'hr-compliance';
-        try {
-          const resp = await fetch(`${agentFunctionUrl}/erp-hr-compliance-monitor`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${supabaseKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              action: 'analyze',
-              company_id,
-              query,
-              context: context || {},
-            }),
-          });
-          agentResponse = await resp.json();
-        } catch (err) {
-          console.error('[hr-multiagent-supervisor] HR-Compliance agent error:', err);
-          outcomeStatus = 'failed';
-          agentResponse = { success: false, error: 'HR-Compliance agent unavailable' };
-        }
-
-      } else if (classification.domain === 'legal_escalation') {
-        agentCode = 'hr-ops'; // Original domain is HR
         escalatedTo = 'legal-supervisor';
         escalationReason = classification.reasoning;
         outcomeStatus = 'escalated';
@@ -264,6 +232,39 @@ serve(async (req) => {
           outcomeStatus = 'failed';
           agentResponse = { success: false, error: 'Legal supervisor unavailable' };
         }
+      } else {
+        // Route to HR specialist agent
+        const route = AGENT_ROUTES[classification.domain] || AGENT_ROUTES.ops;
+        agentCode = route.code;
+
+        try {
+          const body: Record<string, unknown> = {
+            action: route.action,
+            company_id,
+            context: context || {},
+          };
+          
+          // Different agents expect different payload shapes
+          if (route.action === 'chat') {
+            body.message = query;
+          } else {
+            body.query = query;
+          }
+
+          const resp = await fetch(`${agentFunctionUrl}/${route.fn}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          });
+          agentResponse = await resp.json();
+        } catch (err) {
+          console.error(`[hr-multiagent-supervisor] ${agentCode} agent error:`, err);
+          outcomeStatus = 'failed';
+          agentResponse = { success: false, error: `${agentCode} agent unavailable` };
+        }
       }
 
       const executionTime = Date.now() - startTime;
@@ -287,6 +288,7 @@ serve(async (req) => {
             session_id,
             classification,
             agent_code: agentCode,
+            phase: '1B',
           },
         });
       } catch (logErr) {

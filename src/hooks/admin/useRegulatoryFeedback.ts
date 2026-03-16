@@ -36,10 +36,12 @@ export interface FeedbackStats {
   weakDomains: string[];
 }
 
-// Domain permissions by role
+// Domain permissions by role — Phase 1B: hr_manager and legal_manager added
 const ROLE_DOMAIN_MAP: Record<string, string[]> = {
   superadmin: ['hr', 'legal', 'compliance', 'fiscal', 'general'],
   admin: ['hr', 'legal', 'compliance', 'fiscal', 'general'],
+  hr_manager: ['hr', 'compliance', 'general'],
+  legal_manager: ['legal', 'compliance', 'general'],
   responsable_comercial: ['compliance', 'fiscal', 'general'],
   director_comercial: ['compliance', 'fiscal', 'general'],
   director_oficina: ['general'],

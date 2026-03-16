@@ -1,11 +1,11 @@
 /**
- * Legal Multiagent Supervisor - Phase 1A
+ * Legal Multiagent Supervisor - Phase 1B
  * 
- * Backend supervisor for Legal module that:
- * 1. Routes queries to Legal-Labor (via legal-ai-advisor)
- * 2. Validates HR actions (via legal-validation-gateway-enhanced)
- * 3. Responds to escalations from HR-Supervisor
- * 4. Logs all invocations for traceability
+ * Routes legal queries to specialized agents:
+ * - Legal-Labor: labor law, dismissals, protected leave
+ * - Legal-Compliance: regulatory compliance, risk, data protection, audits
+ * - Legal-Contracts: CLM, smart contracts, contract review, negotiation
+ * Validates HR actions via escalation protocol
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -16,6 +16,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const LEGAL_CLASSIFIER_PROMPT = `Eres un clasificador de consultas jurídicas. Determina a qué agente legal especializado dirigir cada consulta.
+
+CATEGORÍAS:
+- labor: Derecho laboral, contratos de trabajo, despidos, permisos protegidos, ERE/ERTE, movilidad, acoso, demandas laborales, Seguridad Social, convenios colectivos.
+- compliance: Compliance regulatorio, GDPR/LOPDGDD, protección de datos, riesgo legal, auditoría legal, inspecciones, sanciones, alertas normativas, validación de cumplimiento, ESG legal.
+- contracts: CLM, contratos mercantiles, revisión contractual, negociación, plantillas, cláusulas, smart contracts, lifecycle contractual, NDA, SLA, acuerdos de nivel de servicio.
+
+REGLAS:
+- Contratos de TRABAJO (laborales) → labor.
+- Contratos mercantiles, proveedores, clientes → contracts.
+- Cumplimiento, normativa, GDPR, auditoría → compliance.
+- En caso de duda → labor (por seguridad).
+- Responde SOLO con JSON válido.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{"domain": "labor|compliance|contracts", "confidence": 0.0-1.0, "reasoning": "explicación breve"}`;
+
 interface LegalSupervisorRequest {
   action: 'route_query' | 'validate_hr_action' | 'get_status';
   company_id: string;
@@ -23,6 +40,12 @@ interface LegalSupervisorRequest {
   context?: Record<string, unknown>;
   source_agent?: string;
 }
+
+const LEGAL_ROUTES: Record<string, { code: string; fn: string; action: string }> = {
+  labor: { code: 'legal-labor', fn: 'legal-ai-advisor', action: 'advise' },
+  compliance: { code: 'legal-compliance', fn: 'legal-validation-gateway-enhanced', action: 'validate_operation' },
+  contracts: { code: 'legal-contracts', fn: 'advanced-clm-engine', action: 'analyze' },
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -34,6 +57,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Auth
@@ -89,31 +113,93 @@ serve(async (req) => {
         });
       }
 
-      console.log(`[legal-multiagent-supervisor] Routing query to legal-ai-advisor (labor): ${query.substring(0, 80)}...`);
+      if (!LOVABLE_API_KEY) {
+        throw new Error('LOVABLE_API_KEY is not configured');
+      }
 
+      // Classify the legal query
+      console.log(`[legal-multiagent-supervisor] Classifying legal query: ${query.substring(0, 80)}...`);
+
+      const classifierResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-lite',
+          messages: [
+            { role: 'system', content: LEGAL_CLASSIFIER_PROMPT },
+            { role: 'user', content: query }
+          ],
+          temperature: 0.1,
+          max_tokens: 200,
+        }),
+      });
+
+      if (!classifierResponse.ok) {
+        if (classifierResponse.status === 429) {
+          return new Response(JSON.stringify({ success: false, error: 'Rate limit exceeded.' }), {
+            status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        if (classifierResponse.status === 402) {
+          return new Response(JSON.stringify({ success: false, error: 'Créditos IA insuficientes.' }), {
+            status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        throw new Error(`Classifier API error: ${classifierResponse.status}`);
+      }
+
+      const classifierData = await classifierResponse.json();
+      const classifierContent = classifierData.choices?.[0]?.message?.content || '';
+
+      let classification = { domain: 'labor', confidence: 0.5, reasoning: 'Fallback to labor' };
+      try {
+        const jsonMatch = classifierContent.match(/\{[\s\S]*\}/);
+        if (jsonMatch) classification = JSON.parse(jsonMatch[0]);
+      } catch {
+        console.warn('[legal-multiagent-supervisor] Parse error, defaulting to labor');
+      }
+
+      if (classification.confidence < 0.5) {
+        classification.domain = 'labor';
+        classification.reasoning = `Low confidence (${classification.confidence}), defaulting to labor.`;
+      }
+
+      console.log(`[legal-multiagent-supervisor] Classification: ${classification.domain} (${classification.confidence})`);
+
+      // Route to agent
+      const route = LEGAL_ROUTES[classification.domain] || LEGAL_ROUTES.labor;
       let agentResponse: any = null;
       let outcomeStatus = 'success';
 
       try {
-        const resp = await fetch(`${agentFunctionUrl}/legal-ai-advisor`, {
+        const body: Record<string, unknown> = { company_id, context: { ...context, routed_by: 'legal-supervisor' } };
+        
+        if (route.action === 'advise') {
+          body.action = 'advise';
+          body.query = query;
+          body.legal_area = 'labor';
+        } else if (route.action === 'validate_operation') {
+          body.action = 'validate_operation';
+          body.operation_type = 'legal_query';
+          body.operation_data = { query, ...context };
+        } else {
+          body.action = route.action;
+          body.query = query;
+        }
+
+        const resp = await fetch(`${agentFunctionUrl}/${route.fn}`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'advise',
-            company_id,
-            query,
-            legal_area: 'labor',
-            context: { ...context, routed_by: 'legal-supervisor' },
-          }),
+          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
         });
         agentResponse = await resp.json();
       } catch (err) {
-        console.error('[legal-multiagent-supervisor] legal-ai-advisor error:', err);
+        console.error(`[legal-multiagent-supervisor] ${route.code} error:`, err);
         outcomeStatus = 'failed';
-        agentResponse = { success: false, error: 'Legal advisor unavailable' };
+        agentResponse = { success: false, error: `${route.code} unavailable` };
       }
 
       const executionTime = Date.now() - startTime;
@@ -121,17 +207,17 @@ serve(async (req) => {
       // Log
       try {
         await supabase.from('erp_ai_agent_invocations').insert({
-          agent_code: 'legal-labor',
+          agent_code: route.code,
           supervisor_code: 'legal-supervisor',
           company_id,
           user_id: userId,
           input_summary: query.substring(0, 500),
-          routing_reason: 'Direct legal query routed to Legal-Labor',
-          confidence_score: 0.90,
+          routing_reason: classification.reasoning,
+          confidence_score: classification.confidence,
           outcome_status: outcomeStatus,
           execution_time_ms: executionTime,
           response_summary: JSON.stringify(agentResponse)?.substring(0, 1000),
-          metadata: { source_agent, context_keys: Object.keys(context || {}) },
+          metadata: { source_agent, classification, phase: '1B' },
         });
       } catch (logErr) {
         console.error('[legal-multiagent-supervisor] Logging error:', logErr);
@@ -141,7 +227,12 @@ serve(async (req) => {
         success: true,
         data: {
           response: agentResponse,
-          agent_code: 'legal-labor',
+          routing: {
+            domain: classification.domain,
+            agent_code: route.code,
+            confidence: classification.confidence,
+            reasoning: classification.reasoning,
+          },
           execution_time_ms: executionTime,
           outcome_status: outcomeStatus,
           timestamp: new Date().toISOString(),
@@ -169,10 +260,7 @@ serve(async (req) => {
       try {
         const resp = await fetch(`${agentFunctionUrl}/legal-validation-gateway-enhanced`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'validate_operation',
             company_id,
@@ -189,10 +277,7 @@ serve(async (req) => {
       try {
         const resp = await fetch(`${agentFunctionUrl}/legal-ai-advisor`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'advise',
             company_id,
@@ -256,6 +341,7 @@ serve(async (req) => {
             requires_human_review: requiresHumanReview,
             validation_available: !!validationResponse?.success,
             advisory_available: !!advisorResponse?.success,
+            phase: '1B',
           },
         });
       } catch (logErr) {
