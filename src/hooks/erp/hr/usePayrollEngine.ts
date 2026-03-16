@@ -15,6 +15,7 @@ import {
   type PeriodClosureSnapshot,
   type PayrollRunValidationSummary,
 } from '@/engines/erp/hr/payrollRunEngine';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ============ TYPES ============
 
@@ -187,6 +188,7 @@ export function usePayrollEngine(companyId?: string) {
   const [simulations, setSimulations] = useState<PayrollSimulation[]>([]);
   const [auditLog, setAuditLog] = useState<PayrollAuditEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { writeLedger } = useHRLedgerWriter(companyId || '', 'payroll_engine');
 
   // ---- PERIODS ----
 
@@ -229,6 +231,14 @@ export function usePayrollEngine(companyId?: string) {
       if (error) throw error;
       await logAudit('created', 'period', data.id, null, data);
       toast.success(`Período ${month}/${year} abierto`);
+      // Ledger: period opened
+      writeLedger({
+        eventType: 'system_event',
+        eventLabel: `Período ${month}/${year} abierto`,
+        entityType: 'payroll_period',
+        entityId: data.id,
+        afterSnapshot: { fiscal_year: year, period_number: month, status: 'open', period_type: periodType },
+      });
       await fetchPeriods(year);
       return data as unknown as PayrollPeriod;
     } catch (e: any) {
@@ -255,6 +265,20 @@ export function usePayrollEngine(companyId?: string) {
       await logAudit('status_changed', 'period', periodId, { status: old?.status }, { status: newStatus });
       setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
       toast.success(`Período actualizado a ${newStatus}`);
+      // Ledger: period status change
+      const eventType = newStatus === 'closed' ? 'period_closed' as const
+        : newStatus === 'open' || newStatus === 'reviewing' ? 'period_reopened' as const
+        : 'system_event' as const;
+      writeLedger({
+        eventType,
+        eventLabel: `Período ${old?.status} → ${newStatus}`,
+        entityType: 'payroll_period',
+        entityId: periodId,
+        beforeSnapshot: { status: old?.status },
+        afterSnapshot: { status: newStatus },
+        changedFields: ['status'],
+        isReopening: newStatus === 'open' || newStatus === 'reviewing',
+      });
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);
     }
@@ -667,6 +691,17 @@ export function usePayrollEngine(companyId?: string) {
         { status: 'closed', closure_snapshot: snapshot }
       );
 
+      // Ledger: period closed (with closure evidence)
+      writeLedger({
+        eventType: 'period_closed',
+        entityType: 'payroll_period',
+        entityId: periodId,
+        beforeSnapshot: { status: period.status },
+        afterSnapshot: { status: 'closed', total_gross: updates.total_gross, total_net: updates.total_net },
+        financialImpact: approvedRun ? { gross: approvedRun.total_gross, net: approvedRun.total_net, employer_cost: approvedRun.total_employer_cost } : undefined,
+        complianceImpact: { closure_validation: validation },
+      });
+
       setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
       toast.success('Período cerrado correctamente');
       return { success: true, snapshot };
@@ -757,6 +792,17 @@ export function usePayrollEngine(companyId?: string) {
         { status: 'closed' },
         { status: 'reviewing', reason, reopened_by: user?.id }
       );
+
+      // Ledger: period reopened
+      writeLedger({
+        eventType: 'period_reopened',
+        entityType: 'payroll_period',
+        entityId: periodId,
+        beforeSnapshot: { status: 'closed' },
+        afterSnapshot: { status: 'reviewing', reason },
+        isReopening: true,
+        metadata: { reason },
+      });
 
       setPeriods(prev => prev.map(p => p.id === periodId ? { ...p, ...updates } : p));
       toast.success('Período reabierto para revisión');

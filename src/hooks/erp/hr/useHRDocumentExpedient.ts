@@ -6,6 +6,7 @@ import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -154,6 +155,7 @@ export interface ExpedientStats {
 export function useHRDocumentExpedient(companyId: string) {
   const qc = useQueryClient();
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const { writeLedgerWithEvidence, writeLedger, writeVersion } = useHRLedgerWriter(companyId, 'document_expedient');
 
   // ── Documents ──────────────────────────────────────────────────────────────
 
@@ -246,9 +248,40 @@ export function useHRDocumentExpedient(companyId: string) {
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, variables: any) => {
       qc.invalidateQueries({ queryKey: ['hr-documents', companyId] });
       toast.success('Documento subido correctamente');
+      // Ledger: document uploaded
+      writeLedgerWithEvidence(
+        {
+          eventType: 'document_uploaded',
+          entityType: 'employee_document',
+          entityId: _data?.id || 'unknown',
+          afterSnapshot: {
+            document_type: variables.document_type,
+            document_name: variables.document_name,
+            employee_id: variables.employee_id,
+            category: variables.category,
+          },
+        },
+        variables.file_url ? [{
+          evidenceType: 'document' as const,
+          evidenceLabel: variables.document_name || 'Documento subido',
+          refEntityType: 'employee_document',
+          refEntityId: _data?.id || 'unknown',
+          storagePath: variables.file_url,
+          contentHash: variables.file_hash,
+        }] : []
+      );
+      // Version registry: v1
+      if (_data?.id) {
+        writeVersion({
+          entityType: 'document',
+          entityId: _data.id,
+          state: 'draft',
+          contentSnapshot: { document_type: variables.document_type, version: 1 },
+        });
+      }
     },
     onError: (e: any) => toast.error('Error: ' + e.message),
   });
@@ -261,9 +294,17 @@ export function useHRDocumentExpedient(companyId: string) {
         .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, id: string) => {
       qc.invalidateQueries({ queryKey: ['hr-documents', companyId] });
       toast.success('Documento eliminado');
+      // Ledger: expedient action (deletion)
+      writeLedger({
+        eventType: 'expedient_action',
+        eventLabel: 'Documento eliminado del expediente',
+        entityType: 'employee_document',
+        entityId: id,
+        metadata: { action: 'delete' },
+      });
     },
   });
 
@@ -278,9 +319,17 @@ export function useHRDocumentExpedient(companyId: string) {
         .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data: any, id: string) => {
       qc.invalidateQueries({ queryKey: ['hr-documents', companyId] });
       toast.success('Integridad verificada');
+      // Ledger: document integrity verified
+      writeLedger({
+        eventType: 'expedient_action',
+        eventLabel: 'Integridad documental verificada',
+        entityType: 'employee_document',
+        entityId: id,
+        metadata: { action: 'integrity_verified' },
+      });
     },
   });
 

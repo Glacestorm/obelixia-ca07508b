@@ -25,11 +25,13 @@ import {
   isPeriodWritable,
   type SnapshotInput,
 } from '@/engines/erp/hr/payrollRunEngine';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 export function usePayrollRuns(companyId?: string) {
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeRun, setActiveRun] = useState<PayrollRun | null>(null);
+  const { writeLedger, writeVersion } = useHRLedgerWriter(companyId || '', 'payroll_runs');
 
   // ── Fetch runs for a period ──
   const fetchRuns = useCallback(async (periodId: string) => {
@@ -120,6 +122,29 @@ export function usePayrollRuns(companyId?: string) {
       setRuns(prev => [newRun, ...prev]);
       setActiveRun(newRun);
       toast.success(`Run #${runNumber} creado (${runType})`);
+      // Ledger: payroll run created
+      writeLedger({
+        eventType: 'payroll_calculated',
+        eventLabel: `Run #${runNumber} creado (${runType})`,
+        entityType: 'payroll_run',
+        entityId: newRun.id,
+        aggregateType: 'payroll_period',
+        aggregateId: snapshotInput.period.id,
+        afterSnapshot: {
+          run_number: runNumber,
+          run_type: runType,
+          total_employees: snapshot.employees.total_in_scope,
+          snapshot_hash: snapshotHash,
+        },
+      });
+      // Version registry for the run
+      writeVersion({
+        entityType: 'payroll_run',
+        entityId: newRun.id,
+        state: 'draft',
+        contentSnapshot: { run_number: runNumber, run_type: runType, period_id: snapshotInput.period.id },
+        contentHash: snapshotHash,
+      });
       return newRun;
     } catch (e: any) {
       console.error('[usePayrollRuns] createRun:', e);
@@ -209,6 +234,20 @@ export function usePayrollRuns(companyId?: string) {
       if (activeRun?.id === runId) {
         setActiveRun(prev => prev ? { ...prev, ...updates } as PayrollRun : null);
       }
+
+      // Ledger: payroll run status change
+      writeLedger({
+        eventType: newStatus === 'calculated' ? 'payroll_calculated'
+          : newStatus === 'approved' ? 'payroll_closed'
+          : 'payroll_recalculated',
+        eventLabel: `Run estado: ${run?.status} → ${newStatus}`,
+        entityType: 'payroll_run',
+        entityId: runId,
+        beforeSnapshot: { status: run?.status },
+        afterSnapshot: { status: newStatus, ...extras?.totals ? { totals: extras.totals } : {} },
+        changedFields: ['status'],
+        financialImpact: extras?.totals ? { gross: extras.totals.gross, net: extras.totals.net } : undefined,
+      });
 
       return true;
     } catch (e: any) {

@@ -11,10 +11,12 @@ import { toast } from 'sonner';
 import type { PayrollIncident, IncidentStatus } from '@/engines/erp/hr/payrollIncidentEngine';
 import { deriveOperationalFlags } from '@/engines/erp/hr/payrollIncidentEngine';
 import { isPeriodWritable } from '@/engines/erp/hr/payrollRunEngine';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 export function usePayrollIncidents(companyId?: string) {
   const [incidents, setIncidents] = useState<PayrollIncident[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { writeLedger } = useHRLedgerWriter(companyId || '', 'payroll_incidents');
 
   // ── Fetch ──
 
@@ -121,6 +123,20 @@ export function usePayrollIncidents(companyId?: string) {
       const newIncident = data as unknown as PayrollIncident;
       setIncidents(prev => [newIncident, ...prev]);
       toast.success('Incidencia registrada');
+      // Ledger: incident created
+      writeLedger({
+        eventType: 'payroll_incident_created',
+        entityType: 'payroll_incident',
+        entityId: newIncident.id,
+        afterSnapshot: {
+          incident_type: newIncident.incident_type,
+          employee_id: newIncident.employee_id,
+          period_id: newIncident.period_id,
+          status: 'pending',
+        },
+        aggregateType: 'payroll_period',
+        aggregateId: newIncident.period_id || undefined,
+      });
       return newIncident;
     } catch (err) {
       console.error('[usePayrollIncidents] create:', err);
@@ -193,6 +209,15 @@ export function usePayrollIncidents(companyId?: string) {
       if (error) throw error;
       setIncidents(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
       toast.success('Incidencia validada');
+      // Ledger: incident resolved (validated)
+      writeLedger({
+        eventType: 'payroll_incident_resolved',
+        entityType: 'payroll_incident',
+        entityId: id,
+        beforeSnapshot: { status: 'pending' },
+        afterSnapshot: { status: 'validated' },
+        changedFields: ['status'],
+      });
       return true;
     } catch (err) {
       console.error('[usePayrollIncidents] validate:', err);
@@ -226,6 +251,14 @@ export function usePayrollIncidents(companyId?: string) {
       if (error) throw error;
       setIncidents(prev => prev.map(i => i.id === id ? { ...i, status: 'cancelled' as IncidentStatus } : i));
       toast.success('Incidencia cancelada');
+      // Ledger: incident resolved (cancelled)
+      writeLedger({
+        eventType: 'payroll_incident_resolved',
+        eventLabel: 'Incidencia cancelada',
+        entityType: 'payroll_incident',
+        entityId: id,
+        afterSnapshot: { status: 'cancelled' },
+      });
       return true;
     } catch (err) {
       console.error('[usePayrollIncidents] cancel:', err);

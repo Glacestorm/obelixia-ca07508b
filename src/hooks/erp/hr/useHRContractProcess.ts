@@ -16,6 +16,7 @@ import { buildContrataPayload, type ContrataPayloadResult } from '@/components/e
 import { type HolidayCalendar, EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
 import { buildContractClosureSnapshot } from '@/components/erp/hr/shared/contractClosureEngine';
 import { evaluateContrataPreIntegrationReadiness, type ContrataPreIntegrationContext } from '@/components/erp/hr/shared/contrataPreIntegrationReadiness';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -251,6 +252,7 @@ export function useHRContractProcess(companyId: string) {
   const [contractData, setContractData] = useState<ContractProcessData | null>(null);
   const [loading, setLoading] = useState(false);
   const { getCompleteness } = useHRProcessDocRequirements();
+  const { writeLedger, writeVersion } = useHRLedgerWriter(companyId, 'contracts');
 
   /** Fetch contract process data for a request */
   const fetchContractData = useCallback(async (requestId: string) => {
@@ -299,6 +301,17 @@ export function useHRContractProcess(companyId: string) {
         setContractData(updated);
         const changedKeys = Object.keys(updates).filter(k => (existing as any)[k] !== (updates as any)[k]);
         logContractAudit('CONTRACT_DATA_UPDATE', companyId, user.id, requestId, { previous: existing }, { updated: updates }, 'info', changedKeys);
+        // Ledger: contract updated
+        if (changedKeys.length > 0) {
+          writeLedger({
+            eventType: 'contract_updated',
+            entityType: 'contract_process',
+            entityId: updated.id,
+            beforeSnapshot: existing as unknown as Record<string, unknown>,
+            afterSnapshot: updates as Record<string, unknown>,
+            changedFields: changedKeys,
+          });
+        }
         return updated;
       } else {
         const { data, error } = await supabase
@@ -318,6 +331,21 @@ export function useHRContractProcess(companyId: string) {
         setContractData(created);
         toast.success('Datos de contratación inicializados');
         logContractAudit('CONTRACT_INITIALIZED', companyId, user.id, requestId, null, { employee_id: employeeId, request_id: requestId }, 'info');
+        // Ledger: contract created
+        writeLedger({
+          eventType: 'contract_created',
+          entityType: 'contract_process',
+          entityId: created.id,
+          afterSnapshot: { employee_id: employeeId, request_id: requestId, status: 'pending_data' },
+          metadata: { request_id: requestId },
+        });
+        // Version registry: initial version
+        writeVersion({
+          entityType: 'contract',
+          entityId: created.id,
+          state: 'draft',
+          contentSnapshot: { employee_id: employeeId, contract_type: created.contract_type_code },
+        });
         return created;
       }
     } catch (err) {
@@ -377,6 +405,17 @@ export function useHRContractProcess(companyId: string) {
         newStatus === 'confirmed' ? 'important' : 'info',
         ['contract_process_status'],
       );
+      // Ledger: contract status change
+      writeLedger({
+        eventType: 'contract_updated',
+        eventLabel: `Estado contrato: ${oldStatus} → ${newStatus}`,
+        entityType: 'contract_process',
+        entityId: contractData?.id || requestId,
+        beforeSnapshot: { status: oldStatus },
+        afterSnapshot: { status: newStatus },
+        changedFields: ['contract_process_status'],
+        complianceImpact: newStatus === 'confirmed' ? { confirmed: true } : undefined,
+      });
       return true;
     } catch (err) {
       console.error('[useHRContractProcess] updateStatus error:', err);
@@ -572,6 +611,14 @@ export function useHRContractProcess(companyId: string) {
         'important',
         ['closure_status'],
       );
+      // Ledger: contract terminated/closed
+      writeLedger({
+        eventType: 'contract_terminated',
+        entityType: 'contract_process',
+        entityId: contractData.id,
+        afterSnapshot: { closure_status: 'closed', notes },
+        complianceImpact: { internally_closed: true },
+      });
       return { success: true };
     } catch (err) {
       console.error('[useHRContractProcess] closeContractProcess error:', err);
@@ -625,6 +672,16 @@ export function useHRContractProcess(companyId: string) {
         'warning',
         ['closure_status'],
       );
+      // Ledger: contract reopened (if it was closed)
+      writeLedger({
+        eventType: 'contract_updated',
+        eventLabel: 'Contrato reabierto',
+        entityType: 'contract_process',
+        entityId: contractData?.id || requestId,
+        beforeSnapshot: { closure_status: 'closed' },
+        afterSnapshot: { closure_status: null, reason },
+        isReopening: true,
+      });
       return true;
     } catch (err) {
       console.error('[useHRContractProcess] reopenContractProcess error:', err);

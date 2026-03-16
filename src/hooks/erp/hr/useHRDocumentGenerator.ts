@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useHRDocGenerationRules, type DocGenerationRule } from './useHRDocGenerationRules';
 import { toast } from 'sonner';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -44,6 +45,8 @@ export interface GenerationResult {
 export function useHRDocumentGenerator() {
   const { getRulesForRequest, isLoading: rulesLoading } = useHRDocGenerationRules();
   const [isGenerating, setIsGenerating] = useState(false);
+  // Note: companyId comes from context.companyId in generateDocuments
+  // We use a lazy writer approach below
 
   /**
    * Genera registros documentales draft para un proceso HR.
@@ -173,6 +176,31 @@ export function useHRDocumentGenerator() {
             status: 'created',
             documentId: newDoc?.id,
           });
+
+          // Ledger: document_generated (fire-and-forget, inline since no stable companyId at hook level)
+          if (newDoc?.id) {
+            try {
+              const { buildLedgerRow, LEDGER_EVENT_LABELS } = await import('@/engines/erp/hr/ledgerEngine');
+              const row = await buildLedgerRow({
+                companyId: context.companyId,
+                eventType: 'document_generated',
+                eventLabel: LEDGER_EVENT_LABELS['document_generated'],
+                entityType: 'employee_document',
+                entityId: newDoc.id,
+                sourceModule: 'document_generator',
+                actorId: userId,
+                afterSnapshot: {
+                  document_type: rule.document_type_code,
+                  employee_id: context.employeeId,
+                  process_type: context.requestType,
+                  generation_mode: rule.generation_mode ?? 'auto',
+                },
+              });
+              (supabase as any).from('erp_hr_ledger').insert(row).then(() => {});
+            } catch (ledgerErr) {
+              console.warn('[useHRDocumentGenerator] Ledger write failed (non-blocking):', ledgerErr);
+            }
+          }
 
           // Mark as existing to prevent intra-batch duplicates
           existingTypes.add(normalizedType);
