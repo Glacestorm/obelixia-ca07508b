@@ -1,8 +1,10 @@
 /**
- * ControlTowerPanel — V2-RRHH-FASE-6
+ * ControlTowerPanel — V2-RRHH-FASE-6 + 6B Enrichment
  * Multi-company labor Control Tower dashboard.
  * Shows global KPIs, prioritized company list with health scores,
  * alerts by severity, and drill-down per company.
+ *
+ * 6B: All 6 alert categories now produce real alerts (readiness, documental, traceability).
  */
 
 import { useState } from 'react';
@@ -21,15 +23,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
   RefreshCw, Building2, AlertTriangle, CheckCircle2, ShieldAlert,
   ChevronDown, ChevronRight, Search, Activity, Gauge, XCircle,
-  ClipboardList, CalendarCheck, TrendingDown, ArrowRight, ShieldCheck,
-  Info,
+  ClipboardList, CalendarCheck, ArrowRight, ShieldCheck,
+  Info, FileWarning, Fingerprint, Radio,
 } from 'lucide-react';
 import { useControlTower } from '@/hooks/erp/hr/useControlTower';
 import {
@@ -43,6 +40,15 @@ import {
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+const CATEGORY_ICONS: Record<AlertCategory, typeof AlertTriangle> = {
+  closing: CalendarCheck,
+  readiness: Radio,
+  documental: FileWarning,
+  tasks_sla: ClipboardList,
+  consistency: ShieldAlert,
+  traceability: Fingerprint,
+};
 
 interface Props {
   onNavigateToCompany?: (companyId: string) => void;
@@ -77,6 +83,14 @@ export function ControlTowerPanel({ onNavigateToCompany, onNavigateToModule, cla
         </CardContent>
       </Card>
     );
+  }
+
+  // Count which categories have alerts for showing/hiding filter options
+  const categoriesWithAlerts = new Set<AlertCategory>();
+  for (const c of filteredCompanies) {
+    for (const a of c.alerts) {
+      categoriesWithAlerts.add(a.category);
+    }
   }
 
   return (
@@ -163,6 +177,7 @@ export function ControlTowerPanel({ onNavigateToCompany, onNavigateToModule, cla
                   <SelectItem value="consistency">Consistencia</SelectItem>
                   <SelectItem value="readiness">Readiness</SelectItem>
                   <SelectItem value="documental">Documental</SelectItem>
+                  <SelectItem value="traceability">Trazabilidad</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -239,6 +254,9 @@ function CompanyHealthRow({ company, isSelected, onSelect }: {
 }) {
   const config = SEVERITY_CONFIG[company.severity];
 
+  // Count unique categories for chips
+  const categories = new Set(company.alerts.map(a => a.category));
+
   return (
     <button
       onClick={onSelect}
@@ -262,16 +280,24 @@ function CompanyHealthRow({ company, isSelected, onSelect }: {
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{company.companyName}</p>
-        <p className="text-[11px] text-muted-foreground truncate">
-          {company.reasons[0] || 'Sin incidencias'}
-        </p>
+        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+          {Array.from(categories).slice(0, 3).map(cat => {
+            const CatIcon = CATEGORY_ICONS[cat];
+            return (
+              <span key={cat} className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                <CatIcon className="h-3 w-3" />
+                <span className="hidden sm:inline">{CATEGORY_LABELS[cat]}</span>
+              </span>
+            );
+          })}
+        </div>
       </div>
 
       {/* Alert count + severity badge */}
       <div className="flex items-center gap-1.5 shrink-0">
         {company.alerts.length > 0 && (
           <Badge variant="outline" className="text-[10px]">
-            {company.alerts.length} alerta{company.alerts.length > 1 ? 's' : ''}
+            {company.alerts.length}
           </Badge>
         )}
         <Badge className={cn('text-[10px]', config.bgColor, config.color)}>
@@ -292,6 +318,14 @@ function CompanyDrillDown({ company, onNavigateToCompany, onNavigateToModule }: 
   onNavigateToModule?: (id: string) => void;
 }) {
   const config = SEVERITY_CONFIG[company.severity];
+
+  // Group alerts by category for organized display
+  const alertsByCategory = new Map<AlertCategory, ControlTowerAlert[]>();
+  for (const alert of company.alerts) {
+    const existing = alertsByCategory.get(alert.category) || [];
+    existing.push(alert);
+    alertsByCategory.set(alert.category, existing);
+  }
 
   return (
     <ScrollArea className="h-[480px]">
@@ -372,14 +406,32 @@ function CompanyDrillDown({ company, onNavigateToCompany, onNavigateToModule }: 
 
         <Separator />
 
-        {/* Alerts detail */}
-        {company.alerts.length > 0 && (
+        {/* Alerts grouped by category */}
+        {alertsByCategory.size > 0 && (
           <div>
-            <p className="text-xs font-medium mb-1.5">Alertas ({company.alerts.length})</p>
-            <div className="space-y-1.5">
-              {company.alerts.map(alert => (
-                <AlertCard key={alert.id} alert={alert} />
-              ))}
+            <p className="text-xs font-medium mb-2">
+              Alertas por categoría ({company.alerts.length})
+            </p>
+            <div className="space-y-3">
+              {Array.from(alertsByCategory.entries()).map(([category, catAlerts]) => {
+                const CatIcon = CATEGORY_ICONS[category];
+                return (
+                  <div key={category}>
+                    <p className="text-[11px] font-medium mb-1 flex items-center gap-1 text-muted-foreground">
+                      <CatIcon className="h-3 w-3" />
+                      {CATEGORY_LABELS[category]}
+                      <Badge variant="outline" className="text-[9px] h-4 ml-auto">
+                        {catAlerts.length}
+                      </Badge>
+                    </p>
+                    <div className="space-y-1.5">
+                      {catAlerts.map(alert => (
+                        <AlertCard key={alert.id} alert={alert} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -424,11 +476,6 @@ function AlertCard({ alert }: { alert: ControlTowerAlert }) {
       <p className="text-muted-foreground/70 ml-3.5 mt-0.5 italic">
         → {alert.suggestedAction}
       </p>
-      <div className="flex gap-1 mt-1 ml-3.5">
-        <Badge variant="outline" className="text-[9px] h-4">
-          {CATEGORY_LABELS[alert.category]}
-        </Badge>
-      </div>
     </div>
   );
 }
