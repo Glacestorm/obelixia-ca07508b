@@ -221,13 +221,19 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="text-xs gap-1"><Bot className="h-3.5 w-3.5" /> Agentes</TabsTrigger>
           <TabsTrigger value="chat" className="text-xs gap-1"><Send className="h-3.5 w-3.5" /> Consultar</TabsTrigger>
           <TabsTrigger value="normativa" className="text-xs gap-1">
             <Newspaper className="h-3.5 w-3.5" /> Normativa
             {hrRegulatoryDocs.length > 0 && (
               <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{hrRegulatoryDocs.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="cross-reg" className="text-xs gap-1">
+            <Cpu className="h-3.5 w-3.5" /> Cross
+            {regulatoryHRCases.length > 0 && (
+              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[9px]">{regulatoryHRCases.length}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="escalations" className="text-xs gap-1">
