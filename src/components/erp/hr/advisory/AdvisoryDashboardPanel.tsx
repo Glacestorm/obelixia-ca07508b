@@ -175,14 +175,18 @@ export function AdvisoryDashboardPanel({ onSelectCompany, className }: Props) {
 
         {/* Company list */}
         <ScrollArea className="h-[500px]">
-          {sorted.length === 0 ? (
+          {hasNoAssignments ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <ShieldCheck className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">Sin cartera asignada</p>
+              <p className="text-xs mt-1 max-w-xs mx-auto">
+                No tienes empresas asignadas. Contacta con un supervisor para que te asigne una cartera.
+              </p>
+            </div>
+          ) : sorted.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               <Building2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">
-                {companies.length === 0
-                  ? 'Sin empresas asignadas en cartera'
-                  : 'Sin resultados para los filtros aplicados'}
-              </p>
+              <p className="text-sm">Sin resultados para los filtros aplicados</p>
             </div>
           ) : (
             <div className="space-y-1.5">
