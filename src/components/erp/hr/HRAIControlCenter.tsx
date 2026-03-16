@@ -19,6 +19,7 @@ import {
 import { useRegulatoryIntelligence } from '@/hooks/admin/useRegulatoryIntelligence';
 import { useRegulatoryFeedback } from '@/hooks/admin/useRegulatoryFeedback';
 import { RegulatoryQualityDashboard } from '@/components/admin/agents/RegulatoryQualityDashboard';
+import { ObelixIALearningDashboard } from '@/components/admin/agents/ObelixIALearningDashboard';
 import { useSupervisorDomainData, type RegistryAgent, type InvocationRecord } from '@/hooks/admin/agents/useSupervisorDomainData';
 import { useMultiAgentSupervisor } from '@/hooks/erp/hr/useMultiAgentSupervisor';
 import { RegistryAgentCard } from '@/components/admin/agents/RegistryAgentCard';
