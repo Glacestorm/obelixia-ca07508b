@@ -82857,6 +82857,7 @@ export type Database = {
         Returns: boolean
       }
       is_employee: { Args: { check_user_id: string }; Returns: boolean }
+      is_hr_advisor_supervisor: { Args: { _user_id: string }; Returns: boolean }
       is_license_valid: { Args: { p_license_id: string }; Returns: boolean }
       is_mfa_required_for_role: {
         Args: { p_user_id: string }
