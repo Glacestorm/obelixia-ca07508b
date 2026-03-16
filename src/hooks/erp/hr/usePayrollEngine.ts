@@ -231,6 +231,14 @@ export function usePayrollEngine(companyId?: string) {
       if (error) throw error;
       await logAudit('created', 'period', data.id, null, data);
       toast.success(`Período ${month}/${year} abierto`);
+      // Ledger: period opened
+      writeLedger({
+        eventType: 'system_event',
+        eventLabel: `Período ${month}/${year} abierto`,
+        entityType: 'payroll_period',
+        entityId: data.id,
+        afterSnapshot: { fiscal_year: year, period_number: month, status: 'open', period_type: periodType },
+      });
       await fetchPeriods(year);
       return data as unknown as PayrollPeriod;
     } catch (e: any) {
