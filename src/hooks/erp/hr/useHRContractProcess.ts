@@ -252,6 +252,7 @@ export function useHRContractProcess(companyId: string) {
   const [contractData, setContractData] = useState<ContractProcessData | null>(null);
   const [loading, setLoading] = useState(false);
   const { getCompleteness } = useHRProcessDocRequirements();
+  const { writeLedger, writeVersion } = useHRLedgerWriter(companyId, 'contracts');
 
   /** Fetch contract process data for a request */
   const fetchContractData = useCallback(async (requestId: string) => {
