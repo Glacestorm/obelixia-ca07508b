@@ -45,7 +45,7 @@ export function HRAIControlCenter({ companyId }: HRAIControlCenterProps) {
   const [configAgent, setConfigAgent] = useState<RegistryAgent | null>(null);
   const [configOpen, setConfigOpen] = useState(false);
 
-  const { agents, hrAgents, hrInvocations, escalatedInvocations, humanReviewInvocations, invocations, stats, loading, refresh } = useSupervisorDomainData(companyId);
+  const { agents, hrAgents, hrInvocations, escalatedInvocations, humanReviewInvocations, invocations, stats, loading, refresh, regulatoryHRCases } = useSupervisorDomainData(companyId);
   const { isLoading, routeQuery, registry } = useMultiAgentSupervisor(companyId);
   const regulatory = useRegulatoryIntelligence();
 
