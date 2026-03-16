@@ -61,9 +61,10 @@ export function useHRLedgerWriter(companyId: string, sourceModule: string) {
    * Fire-and-forget ledger write. Never throws — errors are console-logged.
    */
   const writeLedger = useCallback(async (
-    input: Omit<LedgerEventInput, 'companyId' | 'sourceModule'> & {
+    input: Omit<LedgerEventInput, 'companyId' | 'sourceModule' | 'eventLabel'> & {
       companyId?: string;
       sourceModule?: string;
+      eventLabel?: string;
     }
   ): Promise<string | null> => {
     const fullInput: LedgerEventInput = {

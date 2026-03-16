@@ -307,7 +307,7 @@ export function useHRContractProcess(companyId: string) {
             eventType: 'contract_updated',
             entityType: 'contract_process',
             entityId: updated.id,
-            beforeSnapshot: existing as Record<string, unknown>,
+            beforeSnapshot: existing as unknown as Record<string, unknown>,
             afterSnapshot: updates as Record<string, unknown>,
             changedFields: changedKeys,
           });
