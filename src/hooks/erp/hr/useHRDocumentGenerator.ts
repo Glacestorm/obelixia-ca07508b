@@ -45,6 +45,8 @@ export interface GenerationResult {
 export function useHRDocumentGenerator() {
   const { getRulesForRequest, isLoading: rulesLoading } = useHRDocGenerationRules();
   const [isGenerating, setIsGenerating] = useState(false);
+  // Note: companyId comes from context.companyId in generateDocuments
+  // We use a lazy writer approach below
 
   /**
    * Genera registros documentales draft para un proceso HR.
