@@ -1,7 +1,14 @@
 /**
- * OfficialArtifactPackageCard — V2-RRHH-P2
+ * OfficialArtifactPackageCard — V2-RRHH-P2B
  * UI card for displaying an official artifact package with status,
- * validations, evidence links, and honest operational labels.
+ * validations, evidence links, version chain, export, and honest operational labels.
+ *
+ * P2B additions:
+ *  - Version number & chain display
+ *  - DB row ID shown in traceability
+ *  - Download button for JSON export
+ *  - totalLiquidoEstimado honesty label
+ *  - Version registry ID linkable
  */
 
 import { useState } from 'react';
@@ -10,15 +17,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   AlertTriangle, CheckCircle2, XCircle, Info,
   ChevronDown, ChevronRight, FileText, Shield,
   Package, Clock, Building2, User, Calendar,
-  AlertCircle,
+  AlertCircle, Download, GitBranch, Hash,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { AFIArtifact } from '@/engines/erp/hr/afiArtifactEngine';
 import type { FANCotizacionArtifact } from '@/engines/erp/hr/fanCotizacionArtifactEngine';
+import { downloadArtifactJSON } from '@/hooks/erp/hr/useOfficialArtifacts';
 
 // ── Props ──
 
@@ -27,13 +36,16 @@ interface OfficialArtifactPackageCardProps {
   artifact: AFIArtifact | FANCotizacionArtifact;
   ledgerEventId?: string | null;
   evidenceId?: string | null;
+  dbRowId?: string | null;
+  versionNumber?: number;
+  versionRegistryId?: string | null;
   className?: string;
 }
 
 // ── Component ──
 
 export function OfficialArtifactPackageCard({
-  type, artifact, ledgerEventId, evidenceId, className,
+  type, artifact, ledgerEventId, evidenceId, dbRowId, versionNumber, versionRegistryId, className,
 }: OfficialArtifactPackageCardProps) {
   const [showValidations, setShowValidations] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -57,11 +69,15 @@ export function OfficialArtifactPackageCard({
   const isValid = isAFI ? afi!.isValid : fan!.isValid;
   const readinessPercent = isAFI ? afi!.readinessPercent : fan!.readinessPercent;
   const warnings = isAFI ? afi!.warnings : fan!.warnings;
-  const validations = isAFI ? afi!.validations : fan!.validations;
 
   const validationErrors = isAFI
     ? afi!.validations.filter(v => !v.valid)
     : fan!.validations.filter(v => !v.passed);
+
+  const handleDownload = () => {
+    const ver = versionNumber ?? 1;
+    downloadArtifactJSON(artifact, `${artifact.id}_v${ver}.json`);
+  };
 
   return (
     <Card className={cn('border overflow-hidden', className)}>
@@ -78,12 +94,29 @@ export function OfficialArtifactPackageCard({
               </CardTitle>
               <p className="text-xs text-muted-foreground truncate">
                 {artifact.id} · v{artifact.version}
+                {versionNumber != null && (
+                  <span className="ml-1 font-semibold text-primary">
+                    (versión #{versionNumber})
+                  </span>
+                )}
               </p>
             </div>
           </div>
-          <Badge variant="outline" className={cn('text-xs shrink-0', statusColor)}>
-            {statusLabel}
-          </Badge>
+          <div className="flex items-center gap-1 shrink-0">
+            <Badge variant="outline" className={cn('text-xs', statusColor)}>
+              {statusLabel}
+            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDownload}>
+                    <Download className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Descargar artefacto (JSON pre-oficial)</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         {/* Disclaimer banner — always visible */}
@@ -169,7 +202,7 @@ export function OfficialArtifactPackageCard({
           </div>
         </div>
 
-        {/* FAN totals summary */}
+        {/* FAN totals summary — with honesty on líquido estimado */}
         {!isAFI && fan && (
           <div className="grid grid-cols-2 gap-2 p-2 rounded-md bg-muted/50 text-xs">
             <div>
@@ -188,6 +221,30 @@ export function OfficialArtifactPackageCard({
               <span className="text-muted-foreground">Total retención IRPF</span>
               <p className="font-medium">{fan.totals.totalRetencionIRPF.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€</p>
             </div>
+            {fan.totals.totalLiquidoEstimado != null && (
+              <div className="col-span-2 pt-1 border-t border-border/50">
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Líquido</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Badge variant="outline" className="text-[9px] h-4 px-1 bg-amber-500/10 text-amber-700 border-amber-500/20">
+                          estimado
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-64 text-xs">
+                        Valor estimado: totalDevengos − cotizaciones trabajador − IRPF.
+                        No incluye conceptos no salariales ni deducciones adicionales.
+                        Para el valor real, consulte el cierre de nómina.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <p className="font-medium text-muted-foreground">
+                  ~{fan.totals.totalLiquidoEstimado.toLocaleString('es-ES', { minimumFractionDigits: 2 })}€
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -245,35 +302,59 @@ export function OfficialArtifactPackageCard({
           </div>
         )}
 
-        {/* Evidence & traceability */}
+        {/* Evidence, versioning & traceability */}
         <Collapsible open={showDetails} onOpenChange={setShowDetails}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="sm" className="w-full justify-between h-7 text-xs">
               <span className="flex items-center gap-1.5">
-                <FileText className="h-3 w-3" />
-                Trazabilidad
+                <GitBranch className="h-3 w-3" />
+                Trazabilidad & versiones
               </span>
               {showDetails ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="space-y-1 pt-1 text-[11px]">
+              {dbRowId && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1"><Hash className="h-3 w-3" /> DB ID:</span>
+                  <span className="font-mono text-primary">{dbRowId.slice(0, 12)}…</span>
+                </div>
+              )}
+              {versionNumber != null && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground flex items-center gap-1"><GitBranch className="h-3 w-3" /> Versión:</span>
+                  <Badge variant="outline" className="text-[10px] font-mono">v{versionNumber}</Badge>
+                </div>
+              )}
+              {versionRegistryId && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Registry:</span>
+                  <span className="font-mono">{versionRegistryId.slice(0, 12)}…</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Ledger event:</span>
-                <span className="font-mono">{ledgerEventId ? ledgerEventId.slice(0, 8) + '…' : 'N/A'}</span>
+                <span className="font-mono">{ledgerEventId ? ledgerEventId.slice(0, 12) + '…' : 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Evidence:</span>
-                <span className="font-mono">{evidenceId ? evidenceId.slice(0, 8) + '…' : 'N/A'}</span>
+                <span className="font-mono">{evidenceId ? evidenceId.slice(0, 12) + '…' : 'N/A'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Versión motor:</span>
+                <span className="text-muted-foreground">Motor:</span>
                 <span>{artifact.version}</span>
               </div>
-              <div className="flex items-center gap-1 pt-1">
+              <div className="flex items-center gap-1 pt-1 border-t border-border/30 mt-1">
                 <Shield className="h-3 w-3 text-muted-foreground" />
                 <span className="text-muted-foreground italic">
                   Envío real: <strong>bloqueado</strong> (isRealSubmissionBlocked)
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <AlertCircle className="h-3 w-3 text-muted-foreground" />
+                <span className="text-muted-foreground italic text-[10px]">
+                  Persistido en BD · Artefacto descargable como JSON pre-oficial
                 </span>
               </div>
             </div>

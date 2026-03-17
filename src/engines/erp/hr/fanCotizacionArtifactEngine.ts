@@ -111,7 +111,14 @@ export interface FANCotizacionTotals {
   totalCotizacionEmpresa: number;
   totalCotizacionGeneral: number;
   totalRetencionIRPF: number;
+  /**
+   * Estimación: basesCC − cotizaciones trabajador − IRPF.
+   * NO incluye conceptos no salariales ni deducciones adicionales.
+   * Marcado como estimado en la UI. Para dato real, consultar cierre de nómina.
+   */
   totalLiquidoEstimado: number;
+  /** Flag: indica que totalLiquidoEstimado es una aproximación, no un dato real de nómina */
+  liquidoEsEstimado: boolean;
 }
 
 export interface FANValidation {
@@ -254,10 +261,13 @@ export function buildFANCotizacion(params: {
     totalCotizacionGeneral: 0,
     totalRetencionIRPF: r2(records.reduce((s, r) => s + r.retencionIRPF, 0)),
     totalLiquidoEstimado: 0,
+    liquidoEsEstimado: true,
   };
   totals.totalCotizacionGeneral = r2(totals.totalCotizacionTrabajador + totals.totalCotizacionEmpresa);
-  const totalBrutos = r2(records.reduce((s, r) => s + r.baseCCMensual, 0)); // Approximation
-  totals.totalLiquidoEstimado = r2(totalBrutos - totals.totalCotizacionTrabajador - totals.totalRetencionIRPF);
+  // Estimación: basesCC - cotizaciones trabajador - IRPF.
+  // basesCC se usa como proxy de devengos brutos. NO incluye conceptos no salariales ni deducciones adicionales.
+  const totalBrutosProxy = totals.totalBasesCC;
+  totals.totalLiquidoEstimado = r2(totalBrutosProxy - totals.totalCotizacionTrabajador - totals.totalRetencionIRPF);
 
   // ── Validations ──
 
