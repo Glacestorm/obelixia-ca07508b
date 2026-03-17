@@ -753,7 +753,9 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
   const m111BlockReason = m111Blocked ? `${m111PreValidation!.blockingErrors} pre-check(s) bloqueante(s)` : undefined;
 
   const m190Blocked = (m190PreValidation?.blockingErrors ?? 0) > 0;
-  const m190BlockReason = m190Blocked ? `${m190PreValidation!.blockingErrors} pre-check(s) bloqueante(s)` : undefined;
+  const m190BlockReason = m190Blocked
+    ? 'Pipeline anual no disponible'
+    : undefined;
 
   // ── Generation handlers ──
 
