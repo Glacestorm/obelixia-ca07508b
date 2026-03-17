@@ -16,6 +16,7 @@ import { EmployeeTimeSection } from './EmployeeTimeSection';
 import { EmployeeLeaveSection } from './EmployeeLeaveSection';
 import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { EmployeeHelpSection } from './EmployeeHelpSection';
+import { EmployeeNotificationsSection } from './EmployeeNotificationsSection';
 import { OfflineIndicator } from './OfflineIndicator';
 import { type PortalSection } from './EmployeePortalNav';
 
