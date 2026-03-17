@@ -98,15 +98,10 @@ export function EmployeeDocumentsSection({ employee }: Props) {
     return { received, pending, alerts };
   }, [myDocs]);
 
-  // Document completeness
+  // Document completeness — V2-RRHH-P3B: uses canonical required docs
   const completeness = useMemo(() => {
-    const requiredTypes = ['dni_nie', 'contrato_trabajo', 'irpf_modelo_145', 'alta_ss', 'cuenta_bancaria'];
     const presentTypes = new Set(myDocs.map(d => d.document_type));
-    const have = requiredTypes.filter(t => presentTypes.has(t)).length;
-    const total = requiredTypes.length;
-    const percent = total > 0 ? Math.round((have / total) * 100) : 100;
-    const missing = requiredTypes.filter(t => !presentTypes.has(t));
-    return { have, total, percent, missing };
+    return computeEmployeeDocCompleteness(presentTypes);
   }, [myDocs]);
 
   // Apply search + tab filter
