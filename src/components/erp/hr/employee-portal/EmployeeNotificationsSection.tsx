@@ -1,6 +1,7 @@
 /**
  * EmployeeNotificationsSection — "Mis notificaciones y alertas"
  * V2-RRHH-P3: Consolidated view of pending actions, alerts, and notifications
+ * V2-RRHH-P3B: Uses canonical required docs from employeeRequiredDocs
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
