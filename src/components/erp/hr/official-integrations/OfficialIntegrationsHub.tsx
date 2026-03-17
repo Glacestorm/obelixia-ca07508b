@@ -1,6 +1,7 @@
 /**
  * OfficialIntegrationsHub — Panel principal de integraciones oficiales
  * V2-ES.8 T8: + Sandbox real controlado tab + Environment indicator
+ * V2-RRHH-P4C: + P4 Artifacts tab + Monthly Package tab
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +27,8 @@ import { ProactiveAlertsSummaryWidget } from './ProactiveAlertsSummaryWidget';
 import { SandboxControlPanel } from './SandboxControlPanel';
 import { EnvironmentIndicatorWidget } from './EnvironmentIndicatorWidget';
 import { useSandboxEnvironment } from '@/hooks/erp/hr/useSandboxEnvironment';
+import { P4ArtifactsPanel } from '@/components/erp/hr/official/P4ArtifactsPanel';
+import { MonthlyPackageTab } from '@/components/erp/hr/official/MonthlyPackageTab';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
