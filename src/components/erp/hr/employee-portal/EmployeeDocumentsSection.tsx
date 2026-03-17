@@ -1,6 +1,7 @@
 /**
  * EmployeeDocumentsSection — "Mis documentos" del Portal del Empleado
  * V2-RRHH-P3: Added document upload capability + completeness indicator
+ * V2-RRHH-P3B: Uses efficient employee-scoped query + canonical required docs + auto-refetch
  */
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,9 @@ import {
   AlertTriangle, CheckCircle2, Clock, Paperclip, History,
   XCircle, Filter, Loader2, Plus, ShieldCheck,
 } from 'lucide-react';
-import { useHRDocumentExpedient, type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useEmployeeOwnDocuments } from '@/hooks/erp/hr/useEmployeeOwnDocuments';
+import { type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useHRDocumentExpedient } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from '@/components/erp/hr/document-expedient/DocumentDetailPanel';
 import { DocTrafficLightBadge } from '@/components/erp/hr/shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '@/components/erp/hr/shared/DocAlertsSummaryBar';
@@ -27,6 +30,7 @@ import { DocStatusBadge } from '@/components/erp/hr/shared/DocStatusBadge';
 import { ExpedientExecutiveSummary } from '@/components/erp/hr/shared/ExpedientExecutiveSummary';
 import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
 import { computeDocStatus } from '@/components/erp/hr/shared/documentStatusEngine';
+import { computeEmployeeDocCompleteness, EMPLOYEE_REQUIRED_DOCS } from '@/engines/erp/hr/employeeRequiredDocs';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -59,20 +63,20 @@ const UPLOAD_TYPES = [
 ];
 
 export function EmployeeDocumentsSection({ employee }: Props) {
+  // V2-RRHH-P3B: Efficient employee-scoped query (no longer loads all company docs)
   const {
-    documents, isLoadingDocuments, logAccess,
+    documents: myDocs, isLoading: isLoadingDocuments, invalidate: invalidateMyDocs,
+  } = useEmployeeOwnDocuments(employee.company_id, employee.id);
+
+  // We still need logAccess and selectedDocumentId from the expedient hook
+  const {
+    logAccess,
     selectedDocumentId, setSelectedDocumentId,
   } = useHRDocumentExpedient(employee.company_id);
 
   const [search, setSearch] = useState('');
   const [activeView, setActiveView] = useState<DocView>('all');
   const [showUpload, setShowUpload] = useState(false);
-
-  // Filter to own documents only
-  const myDocs = useMemo(() =>
-    documents.filter(d => d.employee_id === employee.id),
-    [documents, employee.id]
-  );
 
   // Categorize documents
   const { received, pending, alerts } = useMemo(() => {
