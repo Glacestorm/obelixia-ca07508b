@@ -134,6 +134,13 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
           />
         </TabsContent>
 
+        <TabsContent value="legal" className="mt-4">
+          <LegalPreClosePanel
+            companyId={companyId}
+            period={selectedPeriod}
+          />
+        </TabsContent>
+
         <TabsContent value="concepts" className="mt-4">
           <HRPayrollConceptsCatalog
             companyId={companyId}
