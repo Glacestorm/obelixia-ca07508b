@@ -88,7 +88,7 @@ export function MonthlyPackageTab({ companyId, companyName, className }: Props) 
         calculation_details: Record<string, unknown> | null;
       }>;
 
-      // Aggregate from calculation_details when available
+      // Aggregate from calculation_details.bases (PayslipData structure)
       let totalSSEmpresa = 0;
       let totalSSTrabajador = 0;
       let totalIRPF = 0;
@@ -97,12 +97,21 @@ export function MonthlyPackageTab({ companyId, companyName, className }: Props) 
 
       for (const r of recs) {
         const d = r.calculation_details;
-        if (d) {
-          totalSSEmpresa += Number(d.ssEmpresa ?? d.ss_empresa ?? 0);
-          totalSSTrabajador += Number(d.ssTrabajador ?? d.ss_trabajador ?? 0);
-          totalIRPF += Number(d.irpf ?? d.retencionIRPF ?? 0);
-          totalBasesCC += Number(d.baseCotizacionCC ?? d.base_cc ?? 0);
-          totalBasesAT += Number(d.baseCotizacionAT ?? d.base_at ?? 0);
+        if (d && typeof d === 'object') {
+          // PayslipData stores SS data under .bases
+          const bases = (d as Record<string, unknown>).bases as Record<string, number> | undefined;
+          if (bases) {
+            totalSSEmpresa += Number(bases.totalCotizacionesEmpresa ?? 0);
+            totalSSTrabajador += Number(bases.totalCotizacionesTrabajador ?? 0);
+            totalBasesCC += Number(bases.baseCotizacionCC ?? 0);
+            totalBasesAT += Number(bases.baseCotizacionAT ?? 0);
+          }
+          // IRPF is in deducciones or totalDeducciones
+          const deducciones = (d as Record<string, unknown>).deducciones as Array<{ concepto?: string; importe?: number }> | undefined;
+          if (deducciones) {
+            const irpfLine = deducciones.find(dd => dd.concepto?.startsWith('IRPF'));
+            if (irpfLine) totalIRPF += Number(irpfLine.importe ?? 0);
+          }
         }
       }
 
