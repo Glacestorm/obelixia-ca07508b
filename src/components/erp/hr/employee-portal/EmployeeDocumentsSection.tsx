@@ -161,9 +161,9 @@ export function EmployeeDocumentsSection({ employee }: Props) {
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Completitud documental</span>
               </div>
-              <span className={`text-sm font-bold ${completeness.percent === 100 ? 'text-emerald-600' : completeness.percent >= 60 ? 'text-amber-600' : 'text-destructive'}`}>
-                {completeness.percent}%
-              </span>
+            <span className={`text-sm font-bold ${completeness.percent === 100 ? 'text-emerald-600' : completeness.percent >= 60 ? 'text-amber-600' : 'text-destructive'}`}>
+              {completeness.percent}%
+            </span>
             </div>
             <Progress
               value={completeness.percent}
