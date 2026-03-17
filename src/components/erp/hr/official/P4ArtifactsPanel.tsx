@@ -212,6 +212,15 @@ function PersistedArtifactCard({ row }: { row: OfficialArtifactDBRow }) {
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Generado:</span>
           <span>{new Date(row.created_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
         </div>
+        {/* P4G: Persistent estimation signal for Modelo 111 */}
+        {row.artifact_type === 'modelo_111' && (row.metadata as Record<string, unknown>)?.baseIRPFEstimated && (
+          <div className="flex items-start gap-1.5 p-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
+            <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
+            <span className="text-[10px] text-amber-700 leading-tight">
+              Base IRPF estimada (gross_salary) en mes(es) {((row.metadata as Record<string, unknown>)?.estimatedMonths as number[] ?? []).join(', ')}
+            </span>
+          </div>
+        )}
         <Collapsible open={showDetails} onOpenChange={setShowDetails}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="sm" className="w-full justify-between h-7 text-xs">
