@@ -1,10 +1,16 @@
 /**
- * payslipEngine.ts — V2-RRHH-P1
+ * payslipEngine.ts — V2-RRHH-P1B
  * Motor puro para generación de nóminas legales españolas y validaciones precierre.
  *
  * Genera:
  *  - Estructura de nómina (payslip) con formato cercano al legal español
  *  - Validaciones de legalidad salarial pre-cierre
+ *
+ * P1B changes:
+ *  - Base IRPF uses corrected value from SS engine (excluding exempt extrasalarial)
+ *  - MEI trabajador as separate deduction line
+ *  - Real period days from employee context
+ *  - Snapshot includes regularization detail
  *
  * Legislación referencia: ET Art. 29.1, Orden ESS/2098/2014 (recibo de salarios)
  * NOTA: Formato operativo interno — no sustituye validación legal final.
@@ -94,7 +100,8 @@ export interface PayslipBases {
   fpEmpresa: number;
   fpTrabajador: number;
   fogasa: number;
-  mei: number;
+  meiEmpresa: number;
+  meiTrabajador: number;
   atEmpresa: number;
 
   totalCotizacionesEmpresa: number;
@@ -109,6 +116,7 @@ export interface PayslipTraceability {
   calculationHash: string;
   ssDataQuality: 'real' | 'estimated' | 'default';
   irpfDataQuality: 'real' | 'estimated' | 'default';
+  irpfRegularized: boolean;
   isLegallyComplete: boolean;
   incompletenessReasons: string[];
 }
@@ -168,7 +176,7 @@ export function buildPayslip(input: BuildPayslipInput): PayslipData {
     concepto: 'Cotización contingencias comunes',
     codigo: 'ES_SS_CC_TRAB',
     base: ss.baseCCMensual,
-    porcentaje: null, // Will be calculated from breakdown
+    porcentaje: null,
     importe: ss.ccTrabajador,
     tipo: 'ss_worker',
   });
@@ -188,13 +196,23 @@ export function buildPayslip(input: BuildPayslipInput): PayslipData {
     importe: ss.fpTrabajador,
     tipo: 'ss_worker',
   });
-
-  // IRPF
-  const irpf = input.irpfResult;
+  // P1B: MEI trabajador
   deducciones.push({
-    concepto: `IRPF (${irpf.tipoEfectivo}%)`,
+    concepto: 'MEI (Mecanismo Equidad Intergeneracional)',
+    codigo: 'ES_SS_MEI_TRAB',
+    base: ss.baseCCMensual,
+    porcentaje: 0.08,
+    importe: ss.meiTrabajador,
+    tipo: 'ss_worker',
+  });
+
+  // IRPF — P1B: Use corrected IRPF base instead of totalDevengos
+  const irpf = input.irpfResult;
+  const baseIRPFDisplay = ss.baseIRPFCorregida > 0 ? ss.baseIRPFCorregida : totalDevengos;
+  deducciones.push({
+    concepto: `IRPF (${irpf.tipoEfectivo}%)${irpf.regularization ? ' [regularizado]' : ''}`,
     codigo: 'ES_IRPF',
-    base: totalDevengos,
+    base: baseIRPFDisplay,
     porcentaje: irpf.tipoEfectivo,
     importe: irpf.retencionMensual,
     tipo: 'irpf',
@@ -218,11 +236,11 @@ export function buildPayslip(input: BuildPayslipInput): PayslipData {
 
   const totalDeducciones = r2(deducciones.reduce((sum, d) => sum + d.importe, 0));
 
-  // ── Bases ──
+  // ── Bases — P1B: Use corrected IRPF base ──
   const bases: PayslipBases = {
     baseCotizacionCC: ss.baseCCMensual,
     baseCotizacionAT: ss.baseATMensual,
-    baseIRPF: totalDevengos, // Simplified: all devengos as IRPF base
+    baseIRPF: baseIRPFDisplay,
     baseHorasExtra: ss.baseHorasExtra,
     ccEmpresa: ss.ccEmpresa,
     ccTrabajador: ss.ccTrabajador,
@@ -231,7 +249,8 @@ export function buildPayslip(input: BuildPayslipInput): PayslipData {
     fpEmpresa: ss.fpEmpresa,
     fpTrabajador: ss.fpTrabajador,
     fogasa: ss.fogasa,
-    mei: ss.mei,
+    meiEmpresa: ss.meiEmpresa,
+    meiTrabajador: ss.meiTrabajador,
     atEmpresa: ss.atEmpresa,
     totalCotizacionesEmpresa: ss.totalEmpresa,
     totalCotizacionesTrabajador: ss.totalTrabajador,
@@ -254,12 +273,13 @@ export function buildPayslip(input: BuildPayslipInput): PayslipData {
 
   const traceability: PayslipTraceability = {
     generatedAt: new Date().toISOString(),
-    snapshotVersion: '1.0-P1',
+    snapshotVersion: '1.1-P1B',
     runId: input.runId,
     periodId: input.periodId,
-    calculationHash: computeSimpleHash(`${totalDevengos}|${totalDeducciones}|${liquidoTotal}`),
+    calculationHash: computeSimpleHash(`${totalDevengos}|${totalDeducciones}|${liquidoTotal}|${ss.baseCCMensual}|${irpf.tipoEfectivo}`),
     ssDataQuality: input.ssResult.dataQuality.ratesFromDB ? 'real' : 'default',
     irpfDataQuality: input.irpfResult.dataQuality.tramosFromDB ? 'real' : 'estimated',
+    irpfRegularized: !!input.irpfResult.regularization,
     isLegallyComplete: incompletenessReasons.length === 0,
     incompletenessReasons,
   };
@@ -314,6 +334,8 @@ export interface LegalPreCloseEmployee {
   hasLaborData: boolean;
   hasFamilyData: boolean;
   hasSSData: boolean;
+  irpfRegularized?: boolean;
+  baseIRPFCorregida?: number;
 }
 
 export function validateLegalPreClose(input: LegalPreCloseInput): LegalPreCloseCheck[] {
@@ -400,7 +422,7 @@ export function validateLegalPreClose(input: LegalPreCloseInput): LegalPreCloseC
   const ssAbnormal = input.employees.filter(e => {
     if (e.grossSalary <= 0) return false;
     const ssRate = (e.ssWorker / e.grossSalary) * 100;
-    return ssRate < 4 || ssRate > 10; // Worker SS normally 6.35%
+    return ssRate < 4 || ssRate > 10; // Worker SS normally ~6.43% with MEI
   });
   checks.push({
     id: 'ss_contributions_range',
@@ -427,6 +449,31 @@ export function validateLegalPreClose(input: LegalPreCloseInput): LegalPreCloseC
       : 'OK',
     legalReference: 'LIRPF Art. 63',
   });
+
+  // ── 9. P1B: IRPF regularization applied ──
+  const withoutRegularization = input.employees.filter(e => !e.irpfRegularized);
+  checks.push({
+    id: 'irpf_regularized',
+    label: 'IRPF con regularización progresiva',
+    passed: withoutRegularization.length === 0,
+    severity: 'info',
+    detail: withoutRegularization.length > 0
+      ? `${withoutRegularization.length} empleado(s) sin regularización IRPF — tipo fijo anual aplicado`
+      : 'Todos con regularización progresiva',
+    legalReference: 'RIRPF Art. 82-86',
+  });
+
+  // ── 10. P1B: Base IRPF differs from total devengos (exempt concepts exist) ──
+  const withExempt = input.employees.filter(e => e.baseIRPFCorregida !== undefined && e.baseIRPFCorregida < e.grossSalary);
+  if (withExempt.length > 0) {
+    checks.push({
+      id: 'irpf_base_corrected',
+      label: 'Base IRPF corregida (conceptos exentos)',
+      passed: true,
+      severity: 'info',
+      detail: `${withExempt.length} empleado(s) con base IRPF < total devengos (exentos excluidos correctamente)`,
+    });
+  }
 
   return checks;
 }

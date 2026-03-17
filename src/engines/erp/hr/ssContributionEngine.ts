@@ -1,5 +1,5 @@
 /**
- * ssContributionEngine.ts — V2-RRHH-P1
+ * ssContributionEngine.ts — V2-RRHH-P1B
  * Motor puro de cálculo de bases de cotización a la Seguridad Social (España)
  *
  * Calcula:
@@ -8,6 +8,7 @@
  *  - Base de cotización por horas extra
  *  - Aplica topes min/max por grupo de cotización
  *  - Diferencia contrato general vs temporal para desempleo
+ *  - MEI trabajador + empresa (P1B)
  *
  * Legislación referencia: LGSS Art. 147, Orden TMS/83/2019 (actualizada anualmente)
  * NOTA: Clasificación operativa interna — no constituye asesoramiento jurídico
@@ -31,7 +32,7 @@ export interface SSGroupLimits {
   tipo_fogasa: number;
   tipo_fp_empresa: number;
   tipo_fp_trabajador: number;
-  tipo_mei: number;
+  tipo_mei: number; // Total MEI (will be split empresa/trabajador)
   tipo_at_empresa: number | null;
 }
 
@@ -42,9 +43,14 @@ export interface SSPayrollLineInput {
   amount: number;
   isSalary: boolean;
   isSSContributable: boolean;
-  isProrrateado: boolean;
+  isProrrateado: boolean; // P1B: true if this line is already a prorated extra pay
   isOvertime: boolean;
+  /** P1B: Fiscal classification for IRPF base calculation */
+  fiscalClass: SSFiscalClass;
 }
+
+/** P1B: Fiscal classification for correct IRPF base */
+export type SSFiscalClass = 'salarial_sujeto' | 'extrasalarial_exento' | 'extrasalarial_sujeto' | 'no_sujeto';
 
 // ── Employee context for SS ──
 
@@ -53,8 +59,11 @@ export interface SSEmployeeContext {
   isTemporaryContract: boolean;
   coeficienteParcialidad: number; // 1.0 = full time
   pagasExtrasAnuales: number; // Normally 2
+  pagasExtrasProrrateadas: boolean; // P1B: true if pagas extras are paid monthly (prorated)
   salarioBaseAnual: number; // For prorrateo calculation
   epigrafAT?: string | null; // AT/EP tariff code (affects AT rate)
+  /** P1B: Real period days (28-31) instead of fixed 30 */
+  diasRealesPeriodo?: number;
 }
 
 // ── Output ──
@@ -71,6 +80,7 @@ export interface SSContributionBreakdown {
   ccTrabajador: number;
   desempleoTrabajador: number;
   fpTrabajador: number;
+  meiTrabajador: number; // P1B
   totalTrabajador: number;
 
   // Employer costs
@@ -78,13 +88,21 @@ export interface SSContributionBreakdown {
   desempleoEmpresa: number;
   fogasa: number;
   fpEmpresa: number;
-  mei: number;
+  meiEmpresa: number; // P1B (renamed from mei)
   atEmpresa: number;
   totalEmpresa: number;
+
+  // P1B: Correct IRPF base (excluding exempt extrasalarial)
+  baseIRPFCorregida: number;
+  conceptosExentos: number;
 
   // Topes applied
   topeMinAplicado: boolean;
   topeMaxAplicado: boolean;
+
+  // P1B: Prorrateo handling
+  prorrateoApplied: boolean;
+  prorrateoSource: 'calculated' | 'from_lines' | 'none';
 
   // Traceability
   dataQuality: SSDataQuality;
@@ -99,6 +117,7 @@ export interface SSDataQuality {
   topesFromDB: boolean;
   coeficienteParcialidad: 'real' | 'default';
   pagasExtras: 'real' | 'estimated';
+  diasReales: boolean; // P1B
 }
 
 export interface SSCalculationTrace {
@@ -130,6 +149,12 @@ const DEFAULT_SS_RATES_2025 = {
   tipo_at_empresa: 1.50,
 };
 
+/** P1B: MEI split 2025 — total 0.58%: empresa 0.50%, trabajador 0.08% (RD 322/2024) */
+const MEI_SPLIT_2025 = {
+  empresa: 0.50,
+  trabajador: 0.08,
+};
+
 // ── Core calculation ──
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -148,7 +173,7 @@ export function computeSSContributions(
 ): SSContributionBreakdown {
   const warnings: string[] = [];
   const traces: SSCalculationTrace[] = [];
-  const legalRefs: string[] = ['LGSS Art. 147', 'Orden ISM/2024 (bases y tipos)'];
+  const legalRefs: string[] = ['LGSS Art. 147', 'Orden ISM/2024 (bases y tipos)', 'RD 322/2024 (MEI)'];
 
   // ── Data quality tracking ──
   const dataQuality: SSDataQuality = {
@@ -157,6 +182,7 @@ export function computeSSContributions(
     topesFromDB: limits !== null,
     coeficienteParcialidad: employee.coeficienteParcialidad !== 1.0 ? 'real' : 'default',
     pagasExtras: employee.pagasExtrasAnuales !== 2 ? 'real' : 'estimated',
+    diasReales: !!employee.diasRealesPeriodo,
   };
 
   if (!limits) {
@@ -171,17 +197,32 @@ export function computeSSContributions(
   } : DEFAULT_SS_TOPES_2025;
 
   // ── 1. Sum contributable salary amounts (excluding overtime) ──
+  // P1B: Also track prorated amounts from lines and fiscal classification
   let remuneracionMensual = 0;
   let horasExtra = 0;
+  let prorrateoFromLines = 0;
+  let baseIRPFSujeta = 0;
+  let conceptosExentos = 0;
 
   for (const line of lines) {
+    // P1B: Track IRPF base correctly
+    if (line.fiscalClass === 'salarial_sujeto' || line.fiscalClass === 'extrasalarial_sujeto') {
+      baseIRPFSujeta += line.amount;
+    } else if (line.fiscalClass === 'extrasalarial_exento') {
+      conceptosExentos += line.amount;
+    }
+    // 'no_sujeto' — neither IRPF nor SS
+
     if (!line.isSSContributable) continue;
+
     if (line.isOvertime) {
       horasExtra += line.amount;
-    } else if (!line.isProrrateado) {
+    } else if (line.isProrrateado) {
+      // P1B: If lines are already prorated extras, track them separately
+      prorrateoFromLines += line.amount;
+    } else {
       remuneracionMensual += line.amount;
     }
-    // Prorrateado lines are handled via prorrateo calculation below
   }
 
   traces.push({
@@ -191,18 +232,34 @@ export function computeSSContributions(
   });
 
   // ── 2. Prorrateo de pagas extraordinarias ──
-  // BCCC = Remuneración mensual + (Pagas extras anuales / 12)
-  // If pagas extras are prorrateadas (paid monthly), they're already included in remuneracionMensual
-  const pagasExtrasAnuales = employee.pagasExtrasAnuales;
-  // Simple estimation: each paga extra ≈ salario base mensual
-  const salarioBaseMensual = employee.salarioBaseAnual / (12 + pagasExtrasAnuales);
-  const prorrateoMensual = (salarioBaseMensual * pagasExtrasAnuales) / 12;
+  // P1B: If pagas extras are already prorated in lines, use line amounts directly.
+  // If NOT prorated, calculate the monthly fraction.
+  let prorrateoMensual: number;
+  let prorrateoSource: 'calculated' | 'from_lines' | 'none';
 
-  traces.push({
-    step: 'Prorrateo pagas extras',
-    formula: `(salBase ${r2(salarioBaseMensual)} × ${pagasExtrasAnuales} pagas) / 12 = ${r2(prorrateoMensual)}`,
-    result: r2(prorrateoMensual),
-  });
+  if (employee.pagasExtrasProrrateadas && prorrateoFromLines > 0) {
+    // Pagas are prorated and appear as lines — use directly, don't add extra
+    prorrateoMensual = prorrateoFromLines;
+    prorrateoSource = 'from_lines';
+    traces.push({
+      step: 'Prorrateo pagas extras (desde líneas)',
+      formula: `Pagas prorrateadas en líneas = ${r2(prorrateoFromLines)}€ (no se añade cálculo adicional)`,
+      result: r2(prorrateoMensual),
+    });
+  } else if (!employee.pagasExtrasProrrateadas && employee.pagasExtrasAnuales > 0) {
+    // Pagas NOT prorated — calculate monthly fraction
+    const salarioBaseMensual = employee.salarioBaseAnual / (12 + employee.pagasExtrasAnuales);
+    prorrateoMensual = (salarioBaseMensual * employee.pagasExtrasAnuales) / 12;
+    prorrateoSource = 'calculated';
+    traces.push({
+      step: 'Prorrateo pagas extras (calculado)',
+      formula: `(salBase ${r2(salarioBaseMensual)} × ${employee.pagasExtrasAnuales} pagas) / 12 = ${r2(prorrateoMensual)}`,
+      result: r2(prorrateoMensual),
+    });
+  } else {
+    prorrateoMensual = 0;
+    prorrateoSource = 'none';
+  }
 
   // ── 3. Base CC bruta ──
   const baseCCBruta = remuneracionMensual + prorrateoMensual;
@@ -264,27 +321,39 @@ export function computeSSContributions(
   const ccTrabajador = r2((baseCCFinal * ((rates as any).tipo_cc_trabajador ?? DEFAULT_SS_RATES_2025.tipo_cc_trabajador)) / 100);
   const desempleoTrabajador = r2((baseCCFinal * tipoDesempleoTrab) / 100);
   const fpTrabajador = r2((baseCCFinal * ((rates as any).tipo_fp_trabajador ?? DEFAULT_SS_RATES_2025.tipo_fp_trabajador)) / 100);
-  const totalTrabajador = r2(ccTrabajador + desempleoTrabajador + fpTrabajador);
+
+  // P1B: MEI split — trabajador pays 0.08%, empresa pays 0.50% (total 0.58%)
+  const meiTrabajador = r2((baseCCFinal * MEI_SPLIT_2025.trabajador) / 100);
+  const totalTrabajador = r2(ccTrabajador + desempleoTrabajador + fpTrabajador + meiTrabajador);
 
   const ccEmpresa = r2((baseCCFinal * ((rates as any).tipo_cc_empresa ?? DEFAULT_SS_RATES_2025.tipo_cc_empresa)) / 100);
   const desempleoEmpresa = r2((baseCCFinal * tipoDesempleoEmp) / 100);
   const fogasa = r2((baseCCFinal * ((rates as any).tipo_fogasa ?? DEFAULT_SS_RATES_2025.tipo_fogasa)) / 100);
   const fpEmpresa = r2((baseCCFinal * ((rates as any).tipo_fp_empresa ?? DEFAULT_SS_RATES_2025.tipo_fp_empresa)) / 100);
-  const mei = r2((baseCCFinal * ((rates as any).tipo_mei ?? DEFAULT_SS_RATES_2025.tipo_mei)) / 100);
+  const meiEmpresa = r2((baseCCFinal * MEI_SPLIT_2025.empresa) / 100);
   const tipoAT = (rates as any).tipo_at_empresa ?? DEFAULT_SS_RATES_2025.tipo_at_empresa;
   const atEmpresa = r2((baseATFinal * tipoAT) / 100);
-  const totalEmpresa = r2(ccEmpresa + desempleoEmpresa + fogasa + fpEmpresa + mei + atEmpresa);
+  const totalEmpresa = r2(ccEmpresa + desempleoEmpresa + fogasa + fpEmpresa + meiEmpresa + atEmpresa);
 
   traces.push({
-    step: 'Cotizaciones trabajador',
-    formula: `CC=${ccTrabajador} + Desemp=${desempleoTrabajador} + FP=${fpTrabajador} = ${totalTrabajador}`,
+    step: 'Cotizaciones trabajador (incl. MEI)',
+    formula: `CC=${ccTrabajador} + Desemp=${desempleoTrabajador} + FP=${fpTrabajador} + MEI=${meiTrabajador} = ${totalTrabajador}`,
     result: totalTrabajador,
   });
 
   traces.push({
-    step: 'Cotizaciones empresa',
-    formula: `CC=${ccEmpresa} + Desemp=${desempleoEmpresa} + FOGASA=${fogasa} + FP=${fpEmpresa} + MEI=${mei} + AT=${atEmpresa} = ${totalEmpresa}`,
+    step: 'Cotizaciones empresa (incl. MEI)',
+    formula: `CC=${ccEmpresa} + Desemp=${desempleoEmpresa} + FOGASA=${fogasa} + FP=${fpEmpresa} + MEI=${meiEmpresa} + AT=${atEmpresa} = ${totalEmpresa}`,
     result: totalEmpresa,
+  });
+
+  // P1B: Correct IRPF base (only taxable income, excluding exempt extrasalarial)
+  const baseIRPFCorregida = r2(baseIRPFSujeta);
+
+  traces.push({
+    step: 'Base IRPF corregida (P1B)',
+    formula: `Σ salariales sujetos + extrasalariales sujetos = ${r2(baseIRPFSujeta)} (exentos excluidos: ${r2(conceptosExentos)})`,
+    result: baseIRPFCorregida,
   });
 
   return {
@@ -296,16 +365,21 @@ export function computeSSContributions(
     ccTrabajador,
     desempleoTrabajador,
     fpTrabajador,
+    meiTrabajador,
     totalTrabajador,
     ccEmpresa,
     desempleoEmpresa,
     fogasa,
     fpEmpresa,
-    mei,
+    meiEmpresa,
     atEmpresa,
     totalEmpresa,
+    baseIRPFCorregida,
+    conceptosExentos: r2(conceptosExentos),
     topeMinAplicado,
     topeMaxAplicado,
+    prorrateoApplied: prorrateoMensual > 0,
+    prorrateoSource,
     dataQuality,
     calculations: traces,
     warnings,
@@ -322,24 +396,53 @@ export function isOvertimeConcept(code: string): boolean {
 
 /** Check if a concept is prorrateado (e.g. pagas extras paid monthly) */
 export function isProrrateadoConcept(code: string): boolean {
-  return code === 'ES_PAGA_EXTRA';
+  return code === 'ES_PAGA_EXTRA' || code === 'ES_PAGA_EXTRA_PRORRATEADA';
 }
 
-/** Map payroll lines from concept catalog flags to SS input format */
+/**
+ * P1B: Derive fiscal class from concept properties.
+ * More precise than the P1 `is_taxable` boolean.
+ */
+export function deriveFiscalClass(conceptCode: string, isTaxable: boolean, isSalary: boolean): SSFiscalClass {
+  // Known exempt extrasalarial concepts (Spanish payroll)
+  const EXEMPT_EXTRASALARIAL = [
+    'ES_DIETAS', 'ES_GASTOS_LOCOMOCION', 'ES_GASTOS_TRANSPORTE',
+    'ES_INDEMNIZACION', 'ES_SEGURO_MEDICO', 'ES_GUARDERIA',
+    'ES_FORMACION', 'ES_TICKET_TRANSPORTE',
+  ];
+
+  if (EXEMPT_EXTRASALARIAL.some(ex => conceptCode.startsWith(ex))) {
+    return 'extrasalarial_exento';
+  }
+  if (!isTaxable) {
+    return 'no_sujeto';
+  }
+  if (isSalary) {
+    return 'salarial_sujeto';
+  }
+  return 'extrasalarial_sujeto';
+}
+
+/** Map payroll lines from concept catalog flags to SS input format — P1B enhanced */
 export function mapLinesToSSInput(lines: Array<{
   concept_code: string;
   amount: number;
   is_ss_contributable: boolean;
   is_taxable: boolean;
+  category?: string;
 }>): SSPayrollLineInput[] {
-  return lines.map(l => ({
-    conceptCode: l.concept_code,
-    amount: l.amount,
-    isSalary: l.is_taxable, // Approximation: taxable ≈ salary for SS purposes
-    isSSContributable: l.is_ss_contributable,
-    isProrrateado: isProrrateadoConcept(l.concept_code),
-    isOvertime: isOvertimeConcept(l.concept_code),
-  }));
+  return lines.map(l => {
+    const isSalary = l.category !== 'extrasalarial' && l.is_taxable;
+    return {
+      conceptCode: l.concept_code,
+      amount: l.amount,
+      isSalary,
+      isSSContributable: l.is_ss_contributable,
+      isProrrateado: isProrrateadoConcept(l.concept_code),
+      isOvertime: isOvertimeConcept(l.concept_code),
+      fiscalClass: deriveFiscalClass(l.concept_code, l.is_taxable, isSalary),
+    };
+  });
 }
 
 /** Format SS group label */
