@@ -17,6 +17,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
 import { computeDocStatus } from '@/components/erp/hr/shared/documentStatusEngine';
+import { EMPLOYEE_REQUIRED_DOCS } from '@/engines/erp/hr/employeeRequiredDocs';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type PortalSection } from './EmployeePortalNav';
