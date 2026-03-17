@@ -385,7 +385,7 @@ function EmployeeDocUploadDialog({ open, onClose, employee }: {
       if (uploadError) throw uploadError;
 
       // Create document record
-      const { error: insertError } = await supabase
+      const { error: insertError } = await (supabase as any)
         .from('erp_hr_employee_documents')
         .insert({
           employee_id: employee.id,
