@@ -1,9 +1,10 @@
 /**
- * useP4OfficialArtifacts — V2-RRHH-P4B
+ * useP4OfficialArtifacts — V2-RRHH-P4B + PINST-B1
  * Orchestration hook for P4 official artifacts: RLC, RNT, CRA, Modelo 111, Modelo 190.
  * Follows the same persist pipeline as useOfficialArtifacts (P2B) for AFI/FAN.
  *
- * Flow: engine → validation → DB persistence → version registry → ledger → evidence
+ * Flow: engine → validation → DB persistence → version registry → ledger → evidence → institutional queue
+ * PINST-B1: Auto-enqueues artifacts into institutional submission queue after persist.
  */
 
 import { useState, useCallback } from 'react';
