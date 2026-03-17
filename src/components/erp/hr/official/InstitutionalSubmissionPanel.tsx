@@ -24,6 +24,8 @@ import {
   getInstitutionalChainStatus,
   ORGANISM_LABELS,
   type InstitutionalStatus,
+  type TransitionGuardContext,
+  validateTransitionContent,
 } from '@/engines/erp/hr/institutionalSubmissionEngine';
 import { cn } from '@/lib/utils';
 
