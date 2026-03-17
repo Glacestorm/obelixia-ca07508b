@@ -346,7 +346,6 @@ export function EmployeeDocumentsSection({ employee }: Props) {
 
 function EmployeeDocUploadDialog({ open, onClose, employee, onUploadSuccess }: {
   open: boolean; onClose: () => void; employee: EmployeeProfile; onUploadSuccess?: () => void;
-})
 }) {
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState('');
