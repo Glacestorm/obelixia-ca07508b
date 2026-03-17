@@ -12,9 +12,15 @@ import type { AFIWorkerData, AFIEmployerData, AFIContractData } from './afiArtif
 
 // ── Types ──
 
+export type P4ArtifactType =
+  | 'afi_alta' | 'afi_baja' | 'afi_variacion'
+  | 'fan_cotizacion'
+  | 'rlc' | 'rnt' | 'cra'
+  | 'modelo_111' | 'modelo_190';
+
 export interface ArtifactPreValidation {
   circuitId: string;
-  artifactType: 'afi_alta' | 'afi_baja' | 'afi_variacion' | 'fan_cotizacion';
+  artifactType: P4ArtifactType;
   checks: ArtifactPreCheck[];
   isReady: boolean;
   readinessPercent: number;
