@@ -37608,6 +37608,107 @@ export type Database = {
           },
         ]
       }
+      erp_hr_official_artifacts: {
+        Row: {
+          artifact_id: string
+          artifact_payload: Json
+          artifact_type: string
+          circuit_id: string
+          company_id: string
+          created_at: string
+          effective_date: string | null
+          employee_ids: string[]
+          engine_version: string
+          evidence_id: string | null
+          generated_by: string | null
+          id: string
+          is_valid: boolean
+          ledger_event_id: string | null
+          metadata: Json
+          period_label: string | null
+          period_month: number | null
+          period_year: number | null
+          previous_artifact_id: string | null
+          readiness_percent: number
+          status: string
+          superseded_by_id: string | null
+          totals: Json | null
+          updated_at: string
+          validations: Json
+          version_number: number
+          version_registry_id: string | null
+          warnings: string[]
+        }
+        Insert: {
+          artifact_id: string
+          artifact_payload: Json
+          artifact_type: string
+          circuit_id: string
+          company_id: string
+          created_at?: string
+          effective_date?: string | null
+          employee_ids?: string[]
+          engine_version?: string
+          evidence_id?: string | null
+          generated_by?: string | null
+          id?: string
+          is_valid?: boolean
+          ledger_event_id?: string | null
+          metadata?: Json
+          period_label?: string | null
+          period_month?: number | null
+          period_year?: number | null
+          previous_artifact_id?: string | null
+          readiness_percent?: number
+          status?: string
+          superseded_by_id?: string | null
+          totals?: Json | null
+          updated_at?: string
+          validations?: Json
+          version_number?: number
+          version_registry_id?: string | null
+          warnings?: string[]
+        }
+        Update: {
+          artifact_id?: string
+          artifact_payload?: Json
+          artifact_type?: string
+          circuit_id?: string
+          company_id?: string
+          created_at?: string
+          effective_date?: string | null
+          employee_ids?: string[]
+          engine_version?: string
+          evidence_id?: string | null
+          generated_by?: string | null
+          id?: string
+          is_valid?: boolean
+          ledger_event_id?: string | null
+          metadata?: Json
+          period_label?: string | null
+          period_month?: number | null
+          period_year?: number | null
+          previous_artifact_id?: string | null
+          readiness_percent?: number
+          status?: string
+          superseded_by_id?: string | null
+          totals?: Json | null
+          updated_at?: string
+          validations?: Json
+          version_number?: number
+          version_registry_id?: string | null
+          warnings?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_official_artifacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_onboarding_tasks: {
         Row: {
           ai_generated: boolean | null
