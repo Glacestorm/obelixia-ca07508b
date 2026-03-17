@@ -1,15 +1,17 @@
 /**
- * MonthlyPackageTab — V2-RRHH-P4C
+ * MonthlyPackageTab — V2-RRHH-P4D
  * Container that wires useMonthlyOfficialPackage to MonthlyOfficialPackagePanel.
- * Provides real data from DB + cross-validation runtime.
+ * P4D: + real payrollSummary from DB aggregation + honest fallback
  */
 
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Package, AlertCircle } from 'lucide-react';
+import { RefreshCw, Package, AlertCircle, Info } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { MonthlyOfficialPackagePanel } from './MonthlyOfficialPackagePanel';
 import { useMonthlyOfficialPackage } from '@/hooks/erp/hr/useMonthlyOfficialPackage';
 import { cn } from '@/lib/utils';
@@ -25,20 +27,115 @@ const MONTH_LABELS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ];
 
+interface PayrollSummary {
+  totalBruto: number;
+  totalNeto: number;
+  totalSSEmpresa: number;
+  totalSSTrabajador: number;
+  totalIRPF: number;
+  totalBasesCC: number;
+  totalBasesAT: number;
+  employeeCount: number;
+}
+
 export function MonthlyPackageTab({ companyId, companyName, className }: Props) {
   const now = new Date();
   const [periodYear, setPeriodYear] = useState(now.getFullYear());
-  const [periodMonth, setPeriodMonth] = useState(now.getMonth()); // Previous month as default
+  const [periodMonth, setPeriodMonth] = useState(now.getMonth()); // 0-indexed for UI
 
-  // Note: payrollSummary would come from real payroll data in a full implementation.
-  // For now we pass null — the hook handles this gracefully.
+  const periodMonth1 = periodMonth + 1; // 1-indexed for queries
+
+  // ── Fetch real payroll period data for this month ──
+  const { data: payrollPeriodData, isLoading: isLoadingPayroll } = useQuery({
+    queryKey: ['hr-payroll-period-summary', companyId, periodYear, periodMonth1],
+    queryFn: async () => {
+      const sb = supabase as unknown as { from: (t: string) => any };
+      // Find the payroll period for this month
+      const { data: periods } = await sb
+        .from('hr_payroll_periods')
+        .select('id, status, total_gross, total_net, total_employer_cost, employee_count, closed_at')
+        .eq('company_id', companyId)
+        .eq('fiscal_year', periodYear)
+        .eq('period_number', periodMonth1)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const period = periods?.[0] as {
+        id: string;
+        status: string;
+        total_gross: number;
+        total_net: number;
+        total_employer_cost: number;
+        employee_count: number;
+        closed_at: string | null;
+      } | undefined;
+
+      if (!period) return null;
+
+      // Fetch aggregated line data for SS/IRPF breakdowns
+      const { data: records } = await sb
+        .from('hr_payroll_records')
+        .select('id, gross_salary, net_salary, total_deductions, employer_cost, calculation_details')
+        .eq('payroll_period_id', period.id)
+        .limit(500);
+
+      const recs = (records ?? []) as Array<{
+        id: string;
+        gross_salary: number;
+        net_salary: number;
+        total_deductions: number;
+        employer_cost: number;
+        calculation_details: Record<string, unknown> | null;
+      }>;
+
+      // Aggregate from calculation_details when available
+      let totalSSEmpresa = 0;
+      let totalSSTrabajador = 0;
+      let totalIRPF = 0;
+      let totalBasesCC = 0;
+      let totalBasesAT = 0;
+
+      for (const r of recs) {
+        const d = r.calculation_details;
+        if (d) {
+          totalSSEmpresa += Number(d.ssEmpresa ?? d.ss_empresa ?? 0);
+          totalSSTrabajador += Number(d.ssTrabajador ?? d.ss_trabajador ?? 0);
+          totalIRPF += Number(d.irpf ?? d.retencionIRPF ?? 0);
+          totalBasesCC += Number(d.baseCotizacionCC ?? d.base_cc ?? 0);
+          totalBasesAT += Number(d.baseCotizacionAT ?? d.base_at ?? 0);
+        }
+      }
+
+      return {
+        period,
+        summary: {
+          totalBruto: period.total_gross ?? recs.reduce((s, r) => s + r.gross_salary, 0),
+          totalNeto: period.total_net ?? recs.reduce((s, r) => s + r.net_salary, 0),
+          totalSSEmpresa,
+          totalSSTrabajador,
+          totalIRPF,
+          totalBasesCC,
+          totalBasesAT,
+          employeeCount: period.employee_count ?? recs.length,
+        } as PayrollSummary,
+        periodClosed: period.status === 'closed' || period.status === 'locked',
+        hasDetailedData: recs.some(r => r.calculation_details != null),
+      };
+    },
+    enabled: !!companyId && !!periodYear,
+  });
+
+  const payrollSummary = payrollPeriodData?.summary ?? null;
+  const periodClosed = payrollPeriodData?.periodClosed ?? false;
+  const hasDetailedData = payrollPeriodData?.hasDetailedData ?? false;
+
   const { pkg, crossValidation, isLoading, error, refresh } = useMonthlyOfficialPackage(
     companyId,
     companyName ?? 'Empresa',
     periodYear,
-    periodMonth + 1, // 1-indexed
-    null, // payrollSummary — will be wired when payroll closing data is available
-    false, // periodClosed
+    periodMonth1,
+    payrollSummary,
+    periodClosed,
   );
 
   const years = useMemo(() => {
@@ -56,13 +153,13 @@ export function MonthlyPackageTab({ companyId, companyName, className }: Props) 
               <Package className="h-5 w-5 text-primary" />
               <CardTitle className="text-base">Paquete Oficial Mensual</CardTitle>
             </div>
-            <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading}>
-              <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', isLoading && 'animate-spin')} />
+            <Button variant="outline" size="sm" onClick={refresh} disabled={isLoading || isLoadingPayroll}>
+              <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', (isLoading || isLoadingPayroll) && 'animate-spin')} />
               Actualizar
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-3">
           <div className="flex items-center gap-3">
             <Select value={String(periodYear)} onValueChange={(v) => setPeriodYear(Number(v))}>
               <SelectTrigger className="w-24">
@@ -84,10 +181,41 @@ export function MonthlyPackageTab({ companyId, companyName, className }: Props) 
                 ))}
               </SelectContent>
             </Select>
-            {isLoading && (
+            {(isLoading || isLoadingPayroll) && (
               <Badge variant="outline" className="text-xs animate-pulse">
                 Cargando…
               </Badge>
+            )}
+          </div>
+
+          {/* Payroll data status indicator */}
+          <div className={cn(
+            'flex items-center gap-2 p-2 rounded-md border text-xs',
+            payrollSummary
+              ? hasDetailedData
+                ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-700'
+                : 'bg-amber-500/5 border-amber-500/20 text-amber-700'
+              : 'bg-muted/50 border-border text-muted-foreground'
+          )}>
+            <Info className="h-3.5 w-3.5 shrink-0" />
+            {payrollSummary ? (
+              hasDetailedData ? (
+                <span>
+                  Datos de nómina disponibles: {payrollSummary.employeeCount} empleados,
+                  bruto total {payrollSummary.totalBruto.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                  {periodClosed ? ' — período cerrado' : ' — período abierto'}
+                </span>
+              ) : (
+                <span>
+                  Datos de nómina parciales (sin desglose SS/IRPF detallado).
+                  La validación cruzada puede ser limitada.
+                </span>
+              )
+            ) : (
+              <span>
+                No hay datos de nómina para {MONTH_LABELS[periodMonth]} {periodYear}.
+                La validación cruzada no incluirá comparativas de payroll.
+              </span>
             )}
           </div>
         </CardContent>
@@ -108,7 +236,7 @@ export function MonthlyPackageTab({ companyId, companyName, className }: Props) 
       {/* Package panel */}
       {pkg ? (
         <MonthlyOfficialPackagePanel pkg={pkg} />
-      ) : !isLoading ? (
+      ) : !isLoading && !isLoadingPayroll ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             <Package className="h-10 w-10 mx-auto mb-3 opacity-50" />
