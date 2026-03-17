@@ -369,12 +369,22 @@ export function useP4OfficialArtifacts(companyId: string) {
     fiscalYear: number;
     trimester: number;
     monthInputs: Modelo111MonthInput[];
+    estimationMeta?: {
+      baseIRPFEstimated: boolean;
+      estimatedMonths: number[];
+      estimationMethod: string;
+      disclaimer: string;
+    };
   }) => {
     setIsGenerating(true);
     try {
-      const artifact = buildModelo111({ ...params, companyId });
+      const { estimationMeta, ...buildParams } = params;
+      const artifact = buildModelo111({ ...buildParams, companyId });
       const snapshot = serializeModelo111ForSnapshot(artifact);
-      return await persistP4Artifact('modelo_111', artifact, snapshot, `Modelo 111 ${artifact.trimesterLabel}`);
+
+      // P4G: persist estimation signal in DB metadata via patched persistP4Artifact
+      const record = await persistP4Artifact('modelo_111', artifact, snapshot, `Modelo 111 ${artifact.trimesterLabel}`, estimationMeta);
+      return record;
     } finally {
       setIsGenerating(false);
     }
