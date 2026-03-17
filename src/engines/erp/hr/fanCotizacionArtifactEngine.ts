@@ -111,7 +111,14 @@ export interface FANCotizacionTotals {
   totalCotizacionEmpresa: number;
   totalCotizacionGeneral: number;
   totalRetencionIRPF: number;
+  /**
+   * Estimación: basesCC − cotizaciones trabajador − IRPF.
+   * NO incluye conceptos no salariales ni deducciones adicionales.
+   * Marcado como estimado en la UI. Para dato real, consultar cierre de nómina.
+   */
   totalLiquidoEstimado: number;
+  /** Flag: indica que totalLiquidoEstimado es una aproximación, no un dato real de nómina */
+  liquidoEsEstimado: boolean;
 }
 
 export interface FANValidation {
