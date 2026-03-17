@@ -275,7 +275,7 @@ export function EmployeeNotificationsSection({ employee, onNavigate }: Props) {
           {filtered.map(alert => {
             const cfg = SEVERITY_CONFIG[alert.severity];
             const Icon = cfg.icon;
-            const typeIcon = alert.type === 'document' ? FolderOpen :
+            const TypeIcon = alert.type === 'document' ? FolderOpen :
               alert.type === 'request' ? Send :
               alert.type === 'leave' ? Palmtree :
               alert.type === 'payslip' ? FileText :
