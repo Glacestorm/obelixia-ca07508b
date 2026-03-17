@@ -66,6 +66,8 @@ export interface Modelo111MonthInput {
   periodYear: number;
   periodMonth: number;
   perceptoresCount: number;
+  /** Unique employee identifiers for this month (NIF/DNI or employeeId). Used for accurate cross-month deduplication. */
+  perceptorIds?: string[];
   baseImponible: number;
   retencionPracticada: number;
   payrollClosed: boolean;
