@@ -169,7 +169,7 @@ export function useP4OfficialArtifacts(companyId: string) {
           : periodInfo.year ? `${periodInfo.year}-01-01` : null,
         generated_by: user?.id ?? null,
         engine_version: artifact.version,
-        metadata: { disclaimer: 'Artefacto interno preparatorio — NO constituye presentación oficial' },
+        metadata: { disclaimer: 'Artefacto interno preparatorio — NO constituye presentación oficial', ...extraMeta },
       };
 
       const { data: insertedRow, error: insertError } = await sb
