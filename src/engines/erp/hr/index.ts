@@ -105,11 +105,15 @@ export type {
 // ── IRPF Engine (V2-RRHH-P1B) ──
 export {
   computeIRPF, buildIRPFInputFromLaborData, checkIRPFDataCompleteness,
+  getSupportedCCAA, isCCAAForal,
 } from './irpfEngine';
 export type {
   IRPFEmployeeInput, IRPFDisabilityLevel, IRPFDescendant, IRPFTramo,
   IRPFCalculationResult, IRPFTramoAplicado, IRPFDataQuality, IRPFCalculationTrace,
   IRPFRegularizationContext, IRPFRegularizationDetail,
+  IRPFIrregularIncome, IRPFIrregularIncomeResult,
+  IRPFFamilyChange, IRPFFamilyChangeImpact,
+  IRPFRegionalDeduction, IRPFRegionalDeductionResult,
 } from './irpfEngine';
 
 // ── Payslip Engine (V2-RRHH-P1B) ──
