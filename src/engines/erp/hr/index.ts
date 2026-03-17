@@ -152,3 +152,49 @@ export {
 export type {
   ArtifactPreValidation, ArtifactPreCheck,
 } from './officialArtifactValidationEngine';
+
+// ── RLC / RNT / CRA Artifact Engine (V2-RRHH-P4) ──
+export {
+  buildRLC, buildRNT, buildCRA,
+  promoteRLCRNTCRAStatus,
+  serializeRLCForSnapshot, serializeRNTForSnapshot, serializeCRAForSnapshot,
+  RLCRNTCRA_STATUS_META,
+} from './rlcRntCraArtifactEngine';
+export type {
+  RLCArtifact, RNTArtifact, CRAArtifact,
+  RNTWorkerLine, RLCConceptLine, CRASection,
+  RLCRNTCRAArtifactStatus, ArtifactValidationItem,
+} from './rlcRntCraArtifactEngine';
+
+// ── AEAT Artifact Engine (V2-RRHH-P4) ──
+export {
+  buildModelo111, buildModelo190,
+  promoteAEATStatus,
+  serializeModelo111ForSnapshot, serializeModelo190ForSnapshot,
+  AEAT_STATUS_META,
+} from './aeatArtifactEngine';
+export type {
+  Modelo111Artifact, Modelo190Artifact,
+  Modelo111MonthInput, Modelo190KeySummary,
+  AEATArtifactStatus, AEATValidationItem,
+} from './aeatArtifactEngine';
+
+// ── Official Cross-Validation Engine (V2-RRHH-P4) ──
+export {
+  runCrossValidation,
+  CATEGORY_LABELS as CROSS_VALIDATION_CATEGORY_LABELS,
+} from './officialCrossValidationEngine';
+export type {
+  CrossValidationResult, CrossValidationCheck, CrossValidationInput,
+  CrossValidationCategory, CrossValidationSeverity, CategorySummary,
+} from './officialCrossValidationEngine';
+
+// ── Monthly Official Package Engine (V2-RRHH-P4) ──
+export {
+  buildMonthlyOfficialPackage, serializePackageForSnapshot,
+  PACKAGE_STATUS_META,
+} from './monthlyOfficialPackageEngine';
+export type {
+  MonthlyOfficialPackage, MonthlyPackageInput, PackageStatus,
+  ArtifactSummary, CircuitReadiness,
+} from './monthlyOfficialPackageEngine';
