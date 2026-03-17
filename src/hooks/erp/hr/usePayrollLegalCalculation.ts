@@ -389,10 +389,10 @@ export function usePayrollLegalCalculation(companyId: string) {
           // Evidence: snapshot of each employee's calculation summary
           results.slice(0, 10).map(r => ({
             evidenceType: 'snapshot' as any,
-            entityType: 'payroll_legal_calc',
-            entityId: r.employeeId,
-            title: `Cálculo legal ${periodName} - ${r.employeeName}`,
-            snapshotData: {
+            evidenceLabel: `Cálculo legal ${periodName} - ${r.employeeName}`,
+            refEntityType: 'payroll_legal_calc',
+            refEntityId: r.employeeId,
+            evidenceSnapshot: {
               ss: {
                 baseCCMensual: r.ss.baseCCMensual,
                 baseATMensual: r.ss.baseATMensual,
