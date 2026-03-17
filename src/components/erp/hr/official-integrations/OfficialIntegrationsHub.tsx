@@ -126,6 +126,15 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
             )}
           </TabsTrigger>
           <TabsTrigger value="p4-artifacts" className="text-xs">Artefactos P4</TabsTrigger>
+          <TabsTrigger value="institutional-chain" className="text-xs relative">
+            Cadena Institucional
+            {activeInstCount > 0 && (
+              <Badge variant="secondary" className="absolute -top-1.5 -right-1.5 h-4 min-w-4 text-[8px] px-1 flex items-center justify-center">
+                {activeInstCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="pipeline-190" className="text-xs">Pipeline 190</TabsTrigger>
           <TabsTrigger value="monthly-package" className="text-xs">Paquete Mensual</TabsTrigger>
           <TabsTrigger value="dry-run" className="text-xs">Dry-Run</TabsTrigger>
           <TabsTrigger value="sandbox" className="text-xs">Sandbox</TabsTrigger>
