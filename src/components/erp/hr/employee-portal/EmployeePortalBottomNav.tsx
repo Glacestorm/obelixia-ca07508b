@@ -1,14 +1,15 @@
 /**
  * EmployeePortalBottomNav — Modern bottom tab bar
  * RRHH-PORTAL.2 Block F: Navegación moderna mobile-first
+ * V2-RRHH-P3B: Added Alerts tab, restructured to 5 visible tabs with Alerts
  */
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Home, FileText, Send, Clock, User, Users, Settings } from 'lucide-react';
+import { Home, FileText, Send, Clock, Bell, User, Users, Settings } from 'lucide-react';
 import { type PortalSection } from './EmployeePortalNav';
 import { type PortalRole } from '@/hooks/erp/hr/usePortalRole';
 
-export type MobileTab = 'home' | 'payslips' | 'requests' | 'time' | 'profile' | 'team' | 'management';
+export type MobileTab = 'home' | 'payslips' | 'requests' | 'time' | 'notifications' | 'profile' | 'team' | 'management';
 
 interface TabDef {
   id: MobileTab;
@@ -20,17 +21,18 @@ interface TabDef {
 
 const TAB_REGISTRY: TabDef[] = [
   { id: 'home', portalSection: 'home', label: 'Inicio', icon: Home, roles: ['employee', 'manager', 'hr_light'] },
-  { id: 'payslips', portalSection: 'payslips', label: 'Nóminas', icon: FileText, roles: ['employee', 'manager', 'hr_light'] },
   { id: 'requests', portalSection: 'requests', label: 'Solicitudes', icon: Send, roles: ['employee', 'manager', 'hr_light'] },
+  { id: 'notifications', portalSection: 'notifications', label: 'Alertas', icon: Bell, roles: ['employee', 'manager', 'hr_light'] },
   { id: 'time', portalSection: 'time', label: 'Tiempo', icon: Clock, roles: ['employee', 'manager', 'hr_light'] },
   { id: 'profile', portalSection: 'profile', label: 'Perfil', icon: User, roles: ['employee', 'manager', 'hr_light'] },
 ];
 
 const SECTION_TO_TAB: Record<string, MobileTab> = {
   home: 'home',
-  payslips: 'payslips',
+  payslips: 'home',
   documents: 'home',
   requests: 'requests',
+  notifications: 'notifications',
   time: 'time',
   leave: 'time',
   profile: 'profile',

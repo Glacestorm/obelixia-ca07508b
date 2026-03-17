@@ -1,6 +1,7 @@
 /**
  * EmployeeDocumentsSection — "Mis documentos" del Portal del Empleado
  * V2-RRHH-P3: Added document upload capability + completeness indicator
+ * V2-RRHH-P3B: Uses efficient employee-scoped query + canonical required docs + auto-refetch
  */
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,9 @@ import {
   AlertTriangle, CheckCircle2, Clock, Paperclip, History,
   XCircle, Filter, Loader2, Plus, ShieldCheck,
 } from 'lucide-react';
-import { useHRDocumentExpedient, type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useEmployeeOwnDocuments } from '@/hooks/erp/hr/useEmployeeOwnDocuments';
+import { type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useHRDocumentExpedient } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from '@/components/erp/hr/document-expedient/DocumentDetailPanel';
 import { DocTrafficLightBadge } from '@/components/erp/hr/shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '@/components/erp/hr/shared/DocAlertsSummaryBar';
@@ -27,6 +30,7 @@ import { DocStatusBadge } from '@/components/erp/hr/shared/DocStatusBadge';
 import { ExpedientExecutiveSummary } from '@/components/erp/hr/shared/ExpedientExecutiveSummary';
 import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
 import { computeDocStatus } from '@/components/erp/hr/shared/documentStatusEngine';
+import { computeEmployeeDocCompleteness, EMPLOYEE_REQUIRED_DOCS } from '@/engines/erp/hr/employeeRequiredDocs';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -59,20 +63,20 @@ const UPLOAD_TYPES = [
 ];
 
 export function EmployeeDocumentsSection({ employee }: Props) {
+  // V2-RRHH-P3B: Efficient employee-scoped query (no longer loads all company docs)
   const {
-    documents, isLoadingDocuments, logAccess,
+    documents: myDocs, isLoading: isLoadingDocuments, invalidate: invalidateMyDocs,
+  } = useEmployeeOwnDocuments(employee.company_id, employee.id);
+
+  // We still need logAccess and selectedDocumentId from the expedient hook
+  const {
+    logAccess,
     selectedDocumentId, setSelectedDocumentId,
   } = useHRDocumentExpedient(employee.company_id);
 
   const [search, setSearch] = useState('');
   const [activeView, setActiveView] = useState<DocView>('all');
   const [showUpload, setShowUpload] = useState(false);
-
-  // Filter to own documents only
-  const myDocs = useMemo(() =>
-    documents.filter(d => d.employee_id === employee.id),
-    [documents, employee.id]
-  );
 
   // Categorize documents
   const { received, pending, alerts } = useMemo(() => {
@@ -94,15 +98,10 @@ export function EmployeeDocumentsSection({ employee }: Props) {
     return { received, pending, alerts };
   }, [myDocs]);
 
-  // Document completeness
+  // Document completeness — V2-RRHH-P3B: uses canonical required docs
   const completeness = useMemo(() => {
-    const requiredTypes = ['dni_nie', 'contrato_trabajo', 'irpf_modelo_145', 'alta_ss', 'cuenta_bancaria'];
     const presentTypes = new Set(myDocs.map(d => d.document_type));
-    const have = requiredTypes.filter(t => presentTypes.has(t)).length;
-    const total = requiredTypes.length;
-    const percent = total > 0 ? Math.round((have / total) * 100) : 100;
-    const missing = requiredTypes.filter(t => !presentTypes.has(t));
-    return { have, total, percent, missing };
+    return computeEmployeeDocCompleteness(presentTypes);
   }, [myDocs]);
 
   // Apply search + tab filter
@@ -162,9 +161,9 @@ export function EmployeeDocumentsSection({ employee }: Props) {
                 <ShieldCheck className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">Completitud documental</span>
               </div>
-              <span className={`text-sm font-bold ${completeness.percent === 100 ? 'text-emerald-600' : completeness.percent >= 60 ? 'text-amber-600' : 'text-destructive'}`}>
-                {completeness.percent}%
-              </span>
+            <span className={`text-sm font-bold ${completeness.percent === 100 ? 'text-emerald-600' : completeness.percent >= 60 ? 'text-amber-600' : 'text-destructive'}`}>
+              {completeness.percent}%
+            </span>
             </div>
             <Progress
               value={completeness.percent}
@@ -173,9 +172,9 @@ export function EmployeeDocumentsSection({ employee }: Props) {
             {completeness.missing.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <span className="text-xs text-muted-foreground">Pendientes:</span>
-                {completeness.missing.map(t => (
-                  <Badge key={t} variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/20">
-                    {t.replace(/_/g, ' ')}
+                {completeness.missing.map(d => (
+                  <Badge key={d.type} variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/20">
+                    {d.label}
                   </Badge>
                 ))}
               </div>
@@ -337,6 +336,7 @@ export function EmployeeDocumentsSection({ employee }: Props) {
         open={showUpload}
         onClose={() => setShowUpload(false)}
         employee={employee}
+        onUploadSuccess={invalidateMyDocs}
       />
     </>
   );
@@ -344,8 +344,8 @@ export function EmployeeDocumentsSection({ employee }: Props) {
 
 // ─── Upload Dialog ──────────────────────────────────────────────────────────
 
-function EmployeeDocUploadDialog({ open, onClose, employee }: {
-  open: boolean; onClose: () => void; employee: EmployeeProfile;
+function EmployeeDocUploadDialog({ open, onClose, employee, onUploadSuccess }: {
+  open: boolean; onClose: () => void; employee: EmployeeProfile; onUploadSuccess?: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState('');
@@ -384,14 +384,15 @@ function EmployeeDocUploadDialog({ open, onClose, employee }: {
 
       if (uploadError) throw uploadError;
 
-      // Create document record
-      const { error: insertError } = await (supabase as any)
+      // Create document record — V2-RRHH-P3B: removed `as any`, proper typed insert
+      const { error: insertError } = await supabase
         .from('erp_hr_employee_documents')
         .insert({
           employee_id: employee.id,
           company_id: employee.company_id,
           document_name: docName.trim(),
           document_type: docType,
+          document_url: storagePath, // required column
           category: docType === 'medico' ? 'medical' : docType === 'formacion' ? 'training' : 'personal',
           document_status: 'pending_review',
           storage_path: storagePath,
@@ -407,6 +408,9 @@ function EmployeeDocUploadDialog({ open, onClose, employee }: {
       toast.success('Documento aportado correctamente', {
         description: 'Será revisado por RRHH.',
       });
+
+      // V2-RRHH-P3B: Auto-refetch document list
+      onUploadSuccess?.();
 
       // Reset
       setFile(null);

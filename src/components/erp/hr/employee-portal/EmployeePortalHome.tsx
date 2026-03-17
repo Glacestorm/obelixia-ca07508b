@@ -1,16 +1,19 @@
 /**
  * EmployeePortalHome — Modern action-oriented dashboard
  * RRHH-PORTAL.2 Block B: Hero + fichaje + quick actions + status cards
+ * V2-RRHH-P3B: Added leave balance card + notifications quick action
  */
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   FileText, FolderOpen, Send, Clock, Palmtree, User,
   CalendarDays, Building2, Briefcase, AlertTriangle,
-  ArrowRight, Euro, Loader2, Smartphone, ChevronRight,
+  ArrowRight, Euro, Loader2, Smartphone, ChevronRight, Bell,
 } from 'lucide-react';
 import { EmployeeProfile, DashboardSummary } from '@/hooks/erp/hr/useEmployeePortal';
+import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type PortalSection } from './EmployeePortalNav';
@@ -49,6 +52,26 @@ const REQUEST_STATUS_STYLE: Record<string, { label: string; color: string }> = {
 export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, onNavigate }: Props) {
   const isMobile = useIsMobile();
   const statusInfo = STATUS_LABELS[employee.status || ''] || { label: employee.status || 'Desconocido', variant: 'outline' as const };
+
+  // V2-RRHH-P3B: Fetch leave balance for current year
+  const [leaveBalance, setLeaveBalance] = useState<{ remaining: number; total: number } | null>(null);
+  useEffect(() => {
+    const year = new Date().getFullYear();
+    supabase
+      .from('erp_hr_leave_balances')
+      .select('entitled_days, used_days, pending_days, adjustment_days, carried_over_days')
+      .eq('employee_id', employee.id)
+      .eq('year', year)
+      .eq('leave_type_code', 'vacaciones')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          const total = (data.entitled_days ?? 0) + (data.carried_over_days ?? 0) + (data.adjustment_days ?? 0);
+          const used = (data.used_days ?? 0) + (data.pending_days ?? 0);
+          setLeaveBalance({ remaining: Math.max(0, total - used), total });
+        }
+      });
+  }, [employee.id]);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -94,8 +117,8 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
         <QuickActionPill icon={Send} label="Solicitud" onClick={() => onNavigate('requests')} />
       </div>
 
-      {/* ═══ STATUS CARDS ROW ═══ */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* ═══ STATUS CARDS ROW — V2-RRHH-P3B: added leave balance ═══ */}
+      <div className="grid grid-cols-3 gap-3">
         <StatusCard
           icon={Send}
           label="Solicitudes"
@@ -106,12 +129,20 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
           accent={!!dashboard && dashboard.pendingRequests > 0}
         />
         <StatusCard
+          icon={Palmtree}
+          label="Vacaciones"
+          value={leaveBalance?.remaining ?? 0}
+          suffix={`de ${leaveBalance?.total ?? '—'} días`}
+          loading={!leaveBalance && isDashboardLoading}
+          onClick={() => onNavigate('leave')}
+        />
+        <StatusCard
           icon={AlertTriangle}
-          label="Alertas docs"
+          label="Alertas"
           value={dashboard?.documentsWithAlerts ?? 0}
           suffix="pendientes"
           loading={isDashboardLoading}
-          onClick={() => onNavigate('documents')}
+          onClick={() => onNavigate('notifications')}
           warning={!!dashboard && dashboard.documentsWithAlerts > 0}
         />
       </div>

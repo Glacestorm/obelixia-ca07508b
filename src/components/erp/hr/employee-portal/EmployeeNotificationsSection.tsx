@@ -1,6 +1,7 @@
 /**
  * EmployeeNotificationsSection — "Mis notificaciones y alertas"
  * V2-RRHH-P3: Consolidated view of pending actions, alerts, and notifications
+ * V2-RRHH-P3B: Uses canonical required docs from employeeRequiredDocs
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
 import { computeDocStatus } from '@/components/erp/hr/shared/documentStatusEngine';
+import { EMPLOYEE_REQUIRED_DOCS } from '@/engines/erp/hr/employeeRequiredDocs';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type PortalSection } from './EmployeePortalNav';
@@ -119,17 +121,16 @@ export function EmployeeNotificationsSection({ employee, onNavigate }: Props) {
           }
         }
 
-        // Completeness check
+        // Completeness check — V2-RRHH-P3B: uses canonical required docs
         const types = new Set((docsRes.data as any[]).map((d: any) => d.document_type));
-        const required = ['dni_nie', 'contrato_trabajo', 'irpf_modelo_145'];
-        const missing = required.filter(t => !types.has(t));
+        const missing = EMPLOYEE_REQUIRED_DOCS.filter(d => !types.has(d.type));
         if (missing.length > 0) {
           items.push({
             id: 'doc-completeness',
             type: 'document',
             severity: 'warning',
             title: 'Documentación básica incompleta',
-            description: `Faltan: ${missing.map(t => t.replace(/_/g, ' ')).join(', ')}`,
+            description: `Faltan: ${missing.map(d => d.label).join(', ')}`,
             date: now.toISOString(),
             action: 'documents',
             actionLabel: 'Ver documentos',
