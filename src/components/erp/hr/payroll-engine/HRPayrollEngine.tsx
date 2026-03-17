@@ -3,9 +3,9 @@
  * MVP: Períodos + Nóminas + Conceptos + Incidencias + Runs
  * Full: + Simulación + Auditoría
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, FileText, BookOpen, FlaskConical, Shield, AlertCircle, Play } from 'lucide-react';
+import { Calendar, FileText, BookOpen, FlaskConical, Shield, AlertCircle, Play, Scale } from 'lucide-react';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 import { useESPayrollBridge } from '@/hooks/erp/hr/useESPayrollBridge';
 import { HRPayrollPeriodManager } from './HRPayrollPeriodManager';
