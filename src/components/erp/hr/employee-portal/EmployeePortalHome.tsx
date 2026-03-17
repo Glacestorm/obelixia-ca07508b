@@ -1,16 +1,19 @@
 /**
  * EmployeePortalHome — Modern action-oriented dashboard
  * RRHH-PORTAL.2 Block B: Hero + fichaje + quick actions + status cards
+ * V2-RRHH-P3B: Added leave balance card + notifications quick action
  */
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   FileText, FolderOpen, Send, Clock, Palmtree, User,
   CalendarDays, Building2, Briefcase, AlertTriangle,
-  ArrowRight, Euro, Loader2, Smartphone, ChevronRight,
+  ArrowRight, Euro, Loader2, Smartphone, ChevronRight, Bell,
 } from 'lucide-react';
 import { EmployeeProfile, DashboardSummary } from '@/hooks/erp/hr/useEmployeePortal';
+import { supabase } from '@/integrations/supabase/client';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type PortalSection } from './EmployeePortalNav';
