@@ -121,17 +121,16 @@ export function EmployeeNotificationsSection({ employee, onNavigate }: Props) {
           }
         }
 
-        // Completeness check
+        // Completeness check — V2-RRHH-P3B: uses canonical required docs
         const types = new Set((docsRes.data as any[]).map((d: any) => d.document_type));
-        const required = ['dni_nie', 'contrato_trabajo', 'irpf_modelo_145'];
-        const missing = required.filter(t => !types.has(t));
+        const missing = EMPLOYEE_REQUIRED_DOCS.filter(d => !types.has(d.type));
         if (missing.length > 0) {
           items.push({
             id: 'doc-completeness',
             type: 'document',
             severity: 'warning',
             title: 'Documentación básica incompleta',
-            description: `Faltan: ${missing.map(t => t.replace(/_/g, ' ')).join(', ')}`,
+            description: `Faltan: ${missing.map(d => d.label).join(', ')}`,
             date: now.toISOString(),
             action: 'documents',
             actionLabel: 'Ver documentos',

@@ -408,6 +408,9 @@ function EmployeeDocUploadDialog({ open, onClose, employee, onUploadSuccess }: {
         description: 'Será revisado por RRHH.',
       });
 
+      // V2-RRHH-P3B: Auto-refetch document list
+      onUploadSuccess?.();
+
       // Reset
       setFile(null);
       setDocType('');
