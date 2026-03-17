@@ -3,9 +3,9 @@
  * MVP: Períodos + Nóminas + Conceptos + Incidencias + Runs
  * Full: + Simulación + Auditoría
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, FileText, BookOpen, FlaskConical, Shield, AlertCircle, Play } from 'lucide-react';
+import { Calendar, FileText, BookOpen, FlaskConical, Shield, AlertCircle, Play, Scale } from 'lucide-react';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 import { useESPayrollBridge } from '@/hooks/erp/hr/useESPayrollBridge';
 import { HRPayrollPeriodManager } from './HRPayrollPeriodManager';
@@ -15,7 +15,7 @@ import { HRPayrollIncidentsPanel } from './HRPayrollIncidentsPanel';
 import { HRPayrollRunsPanel } from './HRPayrollRunsPanel';
 import { HRPayrollSimulator } from './HRPayrollSimulator';
 import { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
-
+import { LegalPreClosePanel } from './LegalPreClosePanel';
 interface Props {
   companyId: string;
   mvpMode?: boolean;
@@ -61,6 +61,11 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
     return bridge.startPayrollApprovalWorkflow(periodId);
   }, [bridge.startPayrollApprovalWorkflow]);
 
+  const selectedPeriod = useMemo(
+    () => engine.periods.find(p => p.id === selectedPeriodId) ?? null,
+    [engine.periods, selectedPeriodId]
+  );
+
   return (
     <div className="space-y-4">
       <div>
@@ -69,10 +74,11 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${showFull ? 'grid-cols-7' : 'grid-cols-5'}`}>
+        <TabsList className={`grid w-full ${showFull ? 'grid-cols-8' : 'grid-cols-6'}`}>
           <TabsTrigger value="periods" className="gap-1.5 text-xs"><Calendar className="h-3.5 w-3.5" />Períodos</TabsTrigger>
           <TabsTrigger value="runs" className="gap-1.5 text-xs"><Play className="h-3.5 w-3.5" />Runs</TabsTrigger>
           <TabsTrigger value="payslips" className="gap-1.5 text-xs"><FileText className="h-3.5 w-3.5" />Nóminas</TabsTrigger>
+          <TabsTrigger value="legal" className="gap-1.5 text-xs"><Scale className="h-3.5 w-3.5" />SS + IRPF</TabsTrigger>
           <TabsTrigger value="concepts" className="gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" />Conceptos</TabsTrigger>
           <TabsTrigger value="incidents" className="gap-1.5 text-xs"><AlertCircle className="h-3.5 w-3.5" />Incidencias</TabsTrigger>
           {showFull && <TabsTrigger value="simulation" className="gap-1.5 text-xs"><FlaskConical className="h-3.5 w-3.5" />Simulación</TabsTrigger>}
@@ -125,6 +131,13 @@ export function HRPayrollEngine({ companyId, mvpMode = true }: Props) {
             onDeleteLine={engine.deleteLine}
             onReviewRecord={handleReviewRecord}
             onComputeDiff={handleComputeDiff}
+          />
+        </TabsContent>
+
+        <TabsContent value="legal" className="mt-4">
+          <LegalPreClosePanel
+            companyId={companyId}
+            period={selectedPeriod}
           />
         </TabsContent>
 
