@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useEmployeeOwnDocuments } from '@/hooks/erp/hr/useEmployeeOwnDocuments';
 import { type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
-import { useHRDocumentExpedient } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useDocumentInteractions } from '@/hooks/erp/hr/useDocumentInteractions';
 import { DocumentDetailPanel } from '@/components/erp/hr/document-expedient/DocumentDetailPanel';
 import { DocTrafficLightBadge } from '@/components/erp/hr/shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '@/components/erp/hr/shared/DocAlertsSummaryBar';
