@@ -1,9 +1,10 @@
 /**
- * useP4OfficialArtifacts — V2-RRHH-P4B
+ * useP4OfficialArtifacts — V2-RRHH-P4B + PINST-B1
  * Orchestration hook for P4 official artifacts: RLC, RNT, CRA, Modelo 111, Modelo 190.
  * Follows the same persist pipeline as useOfficialArtifacts (P2B) for AFI/FAN.
  *
- * Flow: engine → validation → DB persistence → version registry → ledger → evidence
+ * Flow: engine → validation → DB persistence → version registry → ledger → evidence → institutional queue
+ * PINST-B1: Auto-enqueues artifacts into institutional submission queue after persist.
  */
 
 import { useState, useCallback } from 'react';
@@ -55,6 +56,11 @@ function getCircuitId(type: P4ArtifactType): string {
   if (type === 'modelo_111') return 'aeat_111';
   if (type === 'modelo_190') return 'aeat_190';
   return 'tgss_cotizacion';
+}
+
+function getTargetOrganism(type: P4ArtifactType): string {
+  if (type === 'modelo_111' || type === 'modelo_190') return 'aeat';
+  return 'tgss';
 }
 
 function getPeriodInfo(artifact: P4Artifact): { year: number | null; month: number | null; label: string | null } {
@@ -258,6 +264,52 @@ export function useP4OfficialArtifacts(companyId: string) {
       if (dbRowId && evidenceId) {
         await sb.from('erp_hr_official_artifacts').update({ evidence_id: evidenceId }).eq('id', dbRowId);
       }
+
+      // 7. PINST-B1: Auto-enqueue into institutional submission queue
+      if (dbRowId) {
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          const trimester = type === 'modelo_111' && 'trimester' in artifact
+            ? (artifact as any).trimester : null;
+          await sb.from('erp_hr_institutional_submissions').insert({
+            company_id: companyId,
+            artifact_id: dbRowId,
+            artifact_type: type,
+            circuit_id: circuitId,
+            target_organism: getTargetOrganism(type),
+            institutional_status: artifact.isValid ? 'validated_internal' : 'generated',
+            period_year: periodInfo.year,
+            period_month: periodInfo.month,
+            fiscal_year: periodInfo.year,
+            trimester,
+            created_by: currentUser?.id ?? null,
+            status_history: [{
+              from: 'generated',
+              to: artifact.isValid ? 'validated_internal' : 'generated',
+              action: 'auto_enqueue_on_generation',
+              performedBy: currentUser?.id ?? 'system',
+              performedAt: new Date().toISOString(),
+              notes: artifact.isValid
+                ? 'Validación interna superada — encolado automáticamente'
+                : 'Generado con errores de validación',
+            }],
+            ledger_event_id: ledgerEventId,
+            evidence_id: evidenceId,
+            version_registry_id: versionRegistryId,
+            metadata: {
+              autoEnqueued: true,
+              versionNumber,
+              isValid: artifact.isValid,
+              readinessPercent: artifact.readinessPercent,
+              ...(extraMeta ?? {}),
+            },
+          });
+          queryClient.invalidateQueries({ queryKey: ['institutional-submissions', companyId] });
+        } catch (enqueueErr) {
+          console.error('[useP4OfficialArtifacts] institutional enqueue error:', enqueueErr);
+          // Non-blocking: artifact is persisted even if enqueue fails
+        }
+      }
     } catch (err) {
       console.error('[useP4OfficialArtifacts] persist/trace error:', err);
     }
@@ -298,7 +350,9 @@ export function useP4OfficialArtifacts(companyId: string) {
 
     const isValid = artifact.isValid;
     toast.success(`${label} generado (v${versionNumber})`, {
-      description: isValid ? 'Validación interna OK' : 'Con errores — revisar validaciones',
+      description: isValid
+        ? 'Validación interna OK — encolado en cadena institucional'
+        : 'Con errores — revisar validaciones',
     });
 
     return record;

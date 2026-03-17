@@ -2,6 +2,7 @@
  * OfficialIntegrationsHub — Panel principal de integraciones oficiales
  * V2-ES.8 T8: + Sandbox real controlado tab + Environment indicator
  * V2-RRHH-P4C: + P4 Artifacts tab + Monthly Package tab
+ * V2-RRHH-PINST-B1: + Cadena Institucional tab + Pipeline 190 tab
  */
 import { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +30,9 @@ import { EnvironmentIndicatorWidget } from './EnvironmentIndicatorWidget';
 import { useSandboxEnvironment } from '@/hooks/erp/hr/useSandboxEnvironment';
 import { P4ArtifactsPanel } from '@/components/erp/hr/official/P4ArtifactsPanel';
 import { MonthlyPackageTab } from '@/components/erp/hr/official/MonthlyPackageTab';
+import { InstitutionalSubmissionPanel } from '@/components/erp/hr/official/InstitutionalSubmissionPanel';
+import { Modelo190PipelinePanel } from '@/components/erp/hr/official/Modelo190PipelinePanel';
+import { useInstitutionalSubmission } from '@/hooks/erp/hr/useInstitutionalSubmission';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
@@ -39,6 +43,11 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   const hub = useOfficialIntegrationsHub(companyId);
   const { pendingCount, approvals, fetchApprovals } = usePreRealApproval(companyId);
   const sandboxEnv = useSandboxEnvironment({ companyId, adapters: hub.adapters });
+  const { submissions: instSubmissions } = useInstitutionalSubmission(companyId);
+  const activeInstCount = useMemo(() =>
+    instSubmissions.filter(s => !['reconciled', 'cancelled'].includes(s.institutional_status)).length,
+    [instSubmissions]
+  );
 
   // Data sources for proactive alerts at hub level
   const { summary: readinessSummary } = useOfficialReadiness(companyId);
@@ -117,6 +126,15 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
             )}
           </TabsTrigger>
           <TabsTrigger value="p4-artifacts" className="text-xs">Artefactos P4</TabsTrigger>
+          <TabsTrigger value="institutional-chain" className="text-xs relative">
+            Cadena Institucional
+            {activeInstCount > 0 && (
+              <Badge variant="secondary" className="absolute -top-1.5 -right-1.5 h-4 min-w-4 text-[8px] px-1 flex items-center justify-center">
+                {activeInstCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="pipeline-190" className="text-xs">Pipeline 190</TabsTrigger>
           <TabsTrigger value="monthly-package" className="text-xs">Paquete Mensual</TabsTrigger>
           <TabsTrigger value="dry-run" className="text-xs">Dry-Run</TabsTrigger>
           <TabsTrigger value="sandbox" className="text-xs">Sandbox</TabsTrigger>
@@ -140,6 +158,12 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         </TabsContent>
         <TabsContent value="p4-artifacts">
           <P4ArtifactsPanel companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="institutional-chain">
+          <InstitutionalSubmissionPanel companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="pipeline-190">
+          <Modelo190PipelinePanel companyId={companyId} />
         </TabsContent>
         <TabsContent value="monthly-package">
           <MonthlyPackageTab companyId={companyId} />

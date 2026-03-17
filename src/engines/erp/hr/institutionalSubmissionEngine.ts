@@ -1,8 +1,9 @@
 /**
- * institutionalSubmissionEngine.ts — V2-RRHH-PINST
+ * institutionalSubmissionEngine.ts — V2-RRHH-PINST + PINST-B1
  * Pure logic engine for institutional submission lifecycle.
  * Manages the state machine: generated → signed → submitted → accepted/rejected → reconciled
  *
+ * PINST-B1: Added transition guards with content validation.
  * No side effects. Deterministic functions only.
  */
 
@@ -41,6 +42,8 @@ export interface InstitutionalStatusMeta {
   description: string;
   isTerminal: boolean;
   requiresAction: boolean;
+  /** PINST-B1: Whether this status can be reached manually or requires automated backing */
+  manualAllowed: boolean;
 }
 
 export interface StatusTransitionEntry {
@@ -78,6 +81,118 @@ export function getValidInstitutionalTransitions(from: InstitutionalStatus): Ins
   return INSTITUTIONAL_TRANSITIONS[from] || [];
 }
 
+// ── PINST-B1: Transition Content Guards ──
+
+export interface TransitionGuardContext {
+  hasPayload: boolean;
+  hasSignature: boolean;
+  hasReceipt: boolean;
+  hasReconciliationData: boolean;
+  artifactIsValid: boolean;
+  hasCertificate: boolean;
+}
+
+export interface TransitionGuardResult {
+  allowed: boolean;
+  blockers: string[];
+}
+
+/**
+ * PINST-B1: Validates that a transition has the required content/evidence.
+ * States beyond 'validated_internal' require progressively stronger backing.
+ */
+export function validateTransitionContent(
+  from: InstitutionalStatus,
+  to: InstitutionalStatus,
+  context: TransitionGuardContext,
+): TransitionGuardResult {
+  const blockers: string[] = [];
+
+  // Basic state machine check
+  if (!canTransitionInstitutional(from, to)) {
+    return { allowed: false, blockers: [`Transición ${from} → ${to} no permitida por máquina de estados`] };
+  }
+
+  // Content guards by target state
+  switch (to) {
+    case 'validated_internal':
+      if (!context.artifactIsValid) {
+        blockers.push('El artefacto tiene errores de validación — no puede marcarse como validado internamente');
+      }
+      break;
+
+    case 'pending_signature':
+      if (!context.artifactIsValid) {
+        blockers.push('El artefacto debe estar validado antes de solicitar firma');
+      }
+      if (!context.hasCertificate) {
+        blockers.push('No hay certificado digital configurado — no se puede solicitar firma');
+      }
+      break;
+
+    case 'signed':
+      if (!context.hasSignature) {
+        blockers.push('No hay operación de firma registrada — no se puede marcar como firmado');
+      }
+      break;
+
+    case 'queued_for_submission':
+      if (!context.hasSignature) {
+        blockers.push('El artefacto debe estar firmado antes de encolar para envío');
+      }
+      if (!context.hasPayload) {
+        blockers.push('No hay payload de envío preparado');
+      }
+      break;
+
+    case 'submitted':
+      // PINST-B1: This is a strong state — requires real submission action
+      // Currently blocked since no real connector exists
+      blockers.push('El envío real requiere conector activo con el organismo oficial — funcionalidad no disponible');
+      break;
+
+    case 'accepted':
+    case 'rejected':
+    case 'partially_accepted':
+      if (!context.hasReceipt) {
+        blockers.push(`Estado "${to}" requiere acuse/respuesta oficial registrado`);
+      }
+      break;
+
+    case 'reconciled':
+      if (!context.hasReconciliationData) {
+        blockers.push('La reconciliación requiere datos de comparación artefacto vs respuesta oficial');
+      }
+      if (!context.hasReceipt) {
+        blockers.push('No se puede reconciliar sin acuse/respuesta oficial');
+      }
+      break;
+
+    case 'cancelled':
+    case 'generated':
+    case 'requires_correction':
+      // Always allowed if state machine allows
+      break;
+  }
+
+  return { allowed: blockers.length === 0, blockers };
+}
+
+/**
+ * PINST-B1: Returns which transitions are actually available given current content.
+ * Filters out transitions that would be blocked by content guards.
+ */
+export function getAvailableTransitions(
+  currentStatus: InstitutionalStatus,
+  context: TransitionGuardContext,
+): Array<{ target: InstitutionalStatus; allowed: boolean; blockers: string[] }> {
+  const possibleTargets = getValidInstitutionalTransitions(currentStatus);
+  return possibleTargets.map(target => {
+    const guard = validateTransitionContent(currentStatus, target, context);
+    return { target, allowed: guard.allowed, blockers: guard.blockers };
+  });
+}
+
 // ── Status Configuration ──
 
 export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, InstitutionalStatusMeta> = {
@@ -87,6 +202,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Artefacto generado internamente',
     isTerminal: false,
     requiresAction: true,
+    manualAllowed: true,
   },
   validated_internal: {
     label: 'Validado internamente',
@@ -94,6 +210,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Validaciones internas superadas',
     isTerminal: false,
     requiresAction: true,
+    manualAllowed: true,
   },
   pending_signature: {
     label: 'Pendiente de firma',
@@ -101,6 +218,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Requiere firma digital con certificado válido',
     isTerminal: false,
     requiresAction: true,
+    manualAllowed: true,
   },
   signed: {
     label: 'Firmado',
@@ -108,6 +226,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Firmado digitalmente — listo para envío',
     isTerminal: false,
     requiresAction: true,
+    manualAllowed: false, // Requires signature operation
   },
   queued_for_submission: {
     label: 'En cola de envío',
@@ -115,6 +234,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Encolado para envío al organismo',
     isTerminal: false,
     requiresAction: false,
+    manualAllowed: false, // Requires payload
   },
   submitted: {
     label: 'Enviado',
@@ -122,6 +242,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Enviado al organismo — pendiente de respuesta',
     isTerminal: false,
     requiresAction: false,
+    manualAllowed: false, // Requires real connector
   },
   accepted: {
     label: 'Aceptado',
@@ -129,6 +250,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Aceptado por el organismo oficial',
     isTerminal: false,
     requiresAction: false,
+    manualAllowed: false, // Requires receipt
   },
   rejected: {
     label: 'Rechazado',
@@ -136,6 +258,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Rechazado por el organismo — requiere corrección',
     isTerminal: false,
     requiresAction: true,
+    manualAllowed: false, // Requires receipt
   },
   partially_accepted: {
     label: 'Parcialmente aceptado',
@@ -143,6 +266,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Aceptado parcialmente — algunos registros con errores',
     isTerminal: false,
     requiresAction: true,
+    manualAllowed: false, // Requires receipt
   },
   reconciled: {
     label: 'Reconciliado',
@@ -150,6 +274,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Artefacto reconciliado con respuesta oficial',
     isTerminal: true,
     requiresAction: false,
+    manualAllowed: false, // Requires reconciliation data
   },
   requires_correction: {
     label: 'Requiere corrección',
@@ -157,6 +282,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Requiere corrección antes de re-envío',
     isTerminal: false,
     requiresAction: true,
+    manualAllowed: true,
   },
   cancelled: {
     label: 'Cancelado',
@@ -164,6 +290,7 @@ export const INSTITUTIONAL_STATUS_CONFIG: Record<InstitutionalStatus, Institutio
     description: 'Proceso institucional cancelado',
     isTerminal: true,
     requiresAction: false,
+    manualAllowed: true,
   },
 };
 
