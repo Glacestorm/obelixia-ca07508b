@@ -1,19 +1,23 @@
 /**
  * EmployeeDocumentsSection — "Mis documentos" del Portal del Empleado
- * V2-ES.9.3: Reutiliza infraestructura documental existente con UX employee-facing
+ * V2-RRHH-P3: Added document upload capability + completeness indicator
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   FolderOpen, Search, FileText, Download, Upload, Eye,
   AlertTriangle, CheckCircle2, Clock, Paperclip, History,
-  XCircle, Filter, Loader2,
+  XCircle, Filter, Loader2, Plus, ShieldCheck,
 } from 'lucide-react';
 import { useHRDocumentExpedient, type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
 import { DocumentDetailPanel } from '@/components/erp/hr/document-expedient/DocumentDetailPanel';
@@ -24,6 +28,8 @@ import { ExpedientExecutiveSummary } from '@/components/erp/hr/shared/ExpedientE
 import { useDocumentVersionCounts } from '@/hooks/erp/hr/useDocumentVersionCounts';
 import { computeDocStatus } from '@/components/erp/hr/shared/documentStatusEngine';
 import { EmployeeProfile } from '@/hooks/erp/hr/useEmployeePortal';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Props {
   employee: EmployeeProfile;
@@ -43,6 +49,15 @@ const STATUS_FRIENDLY: Record<string, string> = {
   active: 'Activo', archived: 'Archivado',
 };
 
+const UPLOAD_TYPES = [
+  { value: 'personal', label: 'Documento personal' },
+  { value: 'justificante', label: 'Justificante' },
+  { value: 'certificado', label: 'Certificado' },
+  { value: 'formacion', label: 'Formación / Titulación' },
+  { value: 'medico', label: 'Documento médico' },
+  { value: 'otro', label: 'Otro' },
+];
+
 export function EmployeeDocumentsSection({ employee }: Props) {
   const {
     documents, isLoadingDocuments, logAccess,
@@ -51,6 +66,7 @@ export function EmployeeDocumentsSection({ employee }: Props) {
 
   const [search, setSearch] = useState('');
   const [activeView, setActiveView] = useState<DocView>('all');
+  const [showUpload, setShowUpload] = useState(false);
 
   // Filter to own documents only
   const myDocs = useMemo(() =>
@@ -76,6 +92,17 @@ export function EmployeeDocumentsSection({ employee }: Props) {
     }
 
     return { received, pending, alerts };
+  }, [myDocs]);
+
+  // Document completeness
+  const completeness = useMemo(() => {
+    const requiredTypes = ['dni_nie', 'contrato_trabajo', 'irpf_modelo_145', 'alta_ss', 'cuenta_bancaria'];
+    const presentTypes = new Set(myDocs.map(d => d.document_type));
+    const have = requiredTypes.filter(t => presentTypes.has(t)).length;
+    const total = requiredTypes.length;
+    const percent = total > 0 ? Math.round((have / total) * 100) : 100;
+    const missing = requiredTypes.filter(t => !presentTypes.has(t));
+    return { have, total, percent, missing };
   }, [myDocs]);
 
   // Apply search + tab filter
@@ -112,15 +139,54 @@ export function EmployeeDocumentsSection({ employee }: Props) {
     <>
       <div className="space-y-4">
         {/* Header */}
-        <div>
-          <h2 className="text-lg font-bold flex items-center gap-2">
-            <FolderOpen className="h-5 w-5 text-primary" />
-            Mis Documentos
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Tu expediente documental personal. Consulta, descarga o aporta documentos.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-primary" />
+              Mis Documentos
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Tu expediente documental personal. Consulta, descarga o aporta documentos.
+            </p>
+          </div>
+          <Button className="gap-2" onClick={() => setShowUpload(true)}>
+            <Upload className="h-4 w-4" /> Aportar documento
+          </Button>
         </div>
+
+        {/* Completeness indicator */}
+        <Card className="border-0 shadow-sm bg-card/80 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Completitud documental</span>
+              </div>
+              <span className={`text-sm font-bold ${completeness.percent === 100 ? 'text-emerald-600' : completeness.percent >= 60 ? 'text-amber-600' : 'text-destructive'}`}>
+                {completeness.percent}%
+              </span>
+            </div>
+            <Progress
+              value={completeness.percent}
+              className="h-2"
+            />
+            {completeness.missing.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <span className="text-xs text-muted-foreground">Pendientes:</span>
+                {completeness.missing.map(t => (
+                  <Badge key={t} variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/20">
+                    {t.replace(/_/g, ' ')}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {completeness.percent === 100 && (
+              <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Documentación básica completa
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Executive summary */}
         {!isLoadingDocuments && myDocs.length > 0 && (
@@ -200,7 +266,6 @@ export function EmployeeDocumentsSection({ employee }: Props) {
                   const hasFile = !!doc.storage_path || !!doc.file_name;
                   const vCount = versionCounts.get(doc.id) ?? 0;
                   const catLabel = CATEGORY_LABELS[doc.category] || doc.category;
-                  const statusLabel = STATUS_FRIENDLY[doc.document_status] || doc.document_status;
 
                   return (
                     <div
@@ -208,7 +273,6 @@ export function EmployeeDocumentsSection({ employee }: Props) {
                       className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer gap-3"
                       onClick={() => handleView(doc)}
                     >
-                      {/* Left: info */}
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="h-9 w-9 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">
                           <FileText className="h-4 w-4 text-muted-foreground" />
@@ -223,7 +287,6 @@ export function EmployeeDocumentsSection({ employee }: Props) {
                         </div>
                       </div>
 
-                      {/* Right: badges + actions */}
                       <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                         {hasFile && (
                           <Tooltip>
@@ -268,6 +331,185 @@ export function EmployeeDocumentsSection({ employee }: Props) {
           onClose={() => setSelectedDocumentId(null)}
         />
       )}
+
+      {/* Upload dialog */}
+      <EmployeeDocUploadDialog
+        open={showUpload}
+        onClose={() => setShowUpload(false)}
+        employee={employee}
+      />
     </>
+  );
+}
+
+// ─── Upload Dialog ──────────────────────────────────────────────────────────
+
+function EmployeeDocUploadDialog({ open, onClose, employee }: {
+  open: boolean; onClose: () => void; employee: EmployeeProfile;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [docType, setDocType] = useState('');
+  const [docName, setDocName] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setFile(f);
+      if (!docName) setDocName(f.name.replace(/\.[^.]+$/, ''));
+    }
+  };
+
+  const handleUpload = useCallback(async () => {
+    if (!file || !docType || !docName.trim()) {
+      toast.error('Completa todos los campos antes de subir');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('El archivo no puede superar los 10 MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Upload to storage
+      const ext = file.name.split('.').pop() || 'pdf';
+      const storagePath = `employees/${employee.id}/uploads/${Date.now()}_${docName.trim().replace(/\s+/g, '_')}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('hr-documents')
+        .upload(storagePath, file, { contentType: file.type, upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      // Create document record
+      const { error: insertError } = await (supabase as any)
+        .from('erp_hr_employee_documents')
+        .insert({
+          employee_id: employee.id,
+          company_id: employee.company_id,
+          document_name: docName.trim(),
+          document_type: docType,
+          category: docType === 'medico' ? 'medical' : docType === 'formacion' ? 'training' : 'personal',
+          document_status: 'pending_review',
+          storage_path: storagePath,
+          storage_bucket: 'hr-documents',
+          file_name: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+          uploaded_by: employee.id,
+        });
+
+      if (insertError) throw insertError;
+
+      toast.success('Documento aportado correctamente', {
+        description: 'Será revisado por RRHH.',
+      });
+
+      // Reset
+      setFile(null);
+      setDocType('');
+      setDocName('');
+      onClose();
+    } catch (err) {
+      console.error('[EmployeeDocUpload] error:', err);
+      toast.error('Error al subir el documento');
+    } finally {
+      setUploading(false);
+    }
+  }, [file, docType, docName, employee, onClose]);
+
+  return (
+    <Dialog open={open} onOpenChange={o => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5 text-primary" />
+            Aportar documento
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Tipo de documento</Label>
+            <Select value={docType} onValueChange={setDocType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona tipo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {UPLOAD_TYPES.map(t => (
+                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Nombre del documento</Label>
+            <Input
+              value={docName}
+              onChange={e => setDocName(e.target.value)}
+              placeholder="Ej: Certificado de formación..."
+              maxLength={200}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Archivo</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {file ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+                <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(file.size / 1024).toFixed(0)} KB
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-xs"
+                  onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                >
+                  Cambiar
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full gap-2 h-20 flex-col border-dashed"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  PDF, JPG, PNG, DOC · Máx. 10 MB
+                </span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={uploading}>Cancelar</Button>
+          <Button
+            onClick={handleUpload}
+            disabled={uploading || !file || !docType || !docName.trim()}
+            className="gap-2"
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            Subir documento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

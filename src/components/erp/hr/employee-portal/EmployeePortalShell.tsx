@@ -17,6 +17,7 @@ import { EmployeeTimeSection } from './EmployeeTimeSection';
 import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { EmployeeHelpSection } from './EmployeeHelpSection';
 import { EmployeeLeaveSection } from './EmployeeLeaveSection';
+import { EmployeeNotificationsSection } from './EmployeeNotificationsSection';
 
 export function EmployeePortalShell() {
   const isMobile = useIsMobile();
@@ -65,6 +66,8 @@ function EmployeePortalDesktopShell() {
         return <EmployeeTimeSection employee={employee} onNavigate={handleNavigate} />;
       case 'leave':
         return <EmployeeLeaveSection employee={employee} onNavigate={handleNavigate} />;
+      case 'notifications':
+        return <EmployeeNotificationsSection employee={employee} onNavigate={handleNavigate} />;
       case 'profile':
         return <EmployeeProfileSection employee={employee} onNavigate={handleNavigate} onRefresh={refresh} />;
       case 'help':

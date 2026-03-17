@@ -18,6 +18,7 @@ import {
   HelpCircle,
   Menu,
   ChevronLeft,
+  Bell,
 } from 'lucide-react';
 
 export type PortalSection =
@@ -27,6 +28,7 @@ export type PortalSection =
   | 'requests'
   | 'time'
   | 'leave'
+  | 'notifications'
   | 'profile'
   | 'help';
 
@@ -44,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'requests', label: 'Mis solicitudes', icon: Send, description: 'Solicitudes y trámites' },
   { id: 'time', label: 'Mi tiempo', icon: Clock, description: 'Fichaje y horario' },
   { id: 'leave', label: 'Vacaciones y permisos', icon: Palmtree, description: 'Ausencias y licencias' },
+  { id: 'notifications', label: 'Alertas', icon: Bell, description: 'Pendientes y avisos' },
   { id: 'profile', label: 'Mi perfil', icon: User, description: 'Datos personales' },
   { id: 'help', label: 'Ayuda RRHH', icon: HelpCircle, description: 'Preguntas frecuentes' },
 ];
