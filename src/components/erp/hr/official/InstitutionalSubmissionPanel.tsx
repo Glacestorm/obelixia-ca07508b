@@ -160,22 +160,34 @@ function SubmissionCard({ row, onTransition }: {
 
         {/* Available transitions */}
         {validTransitions.length > 0 && (
-          <div className="flex flex-wrap gap-1 pt-1">
-            {validTransitions.map(target => {
-              const targetConfig = INSTITUTIONAL_STATUS_CONFIG[target];
-              return (
-                <Button
-                  key={target}
-                  variant="outline"
-                  size="sm"
-                  className="h-6 text-[10px] gap-1"
-                  onClick={() => onTransition(row.id, row.institutional_status, target, `transition_to_${target}`)}
-                >
-                  <ArrowRight className="h-2.5 w-2.5" />
-                  {targetConfig.label}
-                </Button>
-              );
-            })}
+          <div className="space-y-1 pt-1">
+            <div className="flex flex-wrap gap-1">
+              {validTransitions.map(target => {
+                const targetConfig = INSTITUTIONAL_STATUS_CONFIG[target];
+                const guard = validateTransitionContent(row.institutional_status, target, guardContext);
+                const isBlocked = !guard.allowed;
+                return (
+                  <div key={target} className="flex flex-col">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn("h-6 text-[10px] gap-1", isBlocked && "opacity-50")}
+                      onClick={() => onTransition(row.id, row.institutional_status, target, `transition_to_${target}`)}
+                      disabled={isBlocked}
+                      title={isBlocked ? guard.blockers[0] : `Avanzar a ${targetConfig.label}`}
+                    >
+                      {isBlocked ? <Ban className="h-2.5 w-2.5" /> : <ArrowRight className="h-2.5 w-2.5" />}
+                      {targetConfig.label}
+                    </Button>
+                    {isBlocked && (
+                      <span className="text-[8px] text-amber-600 pl-1 max-w-[140px] truncate" title={guard.blockers[0]}>
+                        {guard.blockers[0]}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
