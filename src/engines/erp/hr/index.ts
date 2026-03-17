@@ -200,3 +200,30 @@ export type {
   MonthlyOfficialPackage, MonthlyPackageInput, PackageStatus,
   ArtifactSummary, CircuitReadiness,
 } from './monthlyOfficialPackageEngine';
+
+// ── Institutional Submission Engine (V2-RRHH-PINST) ──
+export {
+  canTransitionInstitutional, getValidInstitutionalTransitions,
+  validateTransitionContent, getAvailableTransitions,
+  getInstitutionalChainStatus, checkSignatureReadiness,
+  reconcileArtifactWithReceipt, mapReceiptToStatus,
+  buildStatusTransition, INSTITUTIONAL_STATUS_CONFIG, ORGANISM_LABELS,
+} from './institutionalSubmissionEngine';
+export type {
+  InstitutionalStatus, ReceiptType, ReconciliationStatus, TargetOrganism,
+  InstitutionalStatusMeta, StatusTransitionEntry, TransitionGuardContext,
+  TransitionGuardResult, ReconciliationCheckResult, SignatureReadiness,
+  InstitutionalChainStatus,
+} from './institutionalSubmissionEngine';
+
+// ── Modelo 190 Pipeline Engine (V2-RRHH-PINST) ──
+export {
+  aggregatePerceptorsForModelo190, checkModelo190PipelineReadiness,
+} from './modelo190PipelineEngine';
+export type {
+  Modelo190PerceptorInput, MonthlyPerceptorData, FamilySituationChange,
+  IrregularIncomeEntry, RegionalDeductionEntry,
+  Modelo190AggregationResult, Modelo190QualityReport,
+  QuarterlyTotals, CrossCheckData, RegulatoryEdgeCaseSummary,
+  Modelo190PipelineReadiness,
+} from './modelo190PipelineEngine';
