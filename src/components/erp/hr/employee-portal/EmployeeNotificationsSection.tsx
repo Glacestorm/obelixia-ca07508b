@@ -294,7 +294,7 @@ export function EmployeeNotificationsSection({ employee, onNavigate }: Props) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <typeIcon className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <TypeIcon className="h-3 w-3 text-muted-foreground shrink-0" />
                         <p className="text-sm font-medium truncate">{alert.title}</p>
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-2">{alert.description}</p>
