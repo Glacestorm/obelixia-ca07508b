@@ -138,6 +138,12 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         <TabsContent value="readiness">
           <ReadinessDashboard companyId={companyId} adapters={hub.adapters} />
         </TabsContent>
+        <TabsContent value="p4-artifacts">
+          <P4ArtifactsPanel companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="monthly-package">
+          <MonthlyPackageTab companyId={companyId} />
+        </TabsContent>
         <TabsContent value="dry-run">
           <PreparatoryDryRunPanel companyId={companyId} />
         </TabsContent>
