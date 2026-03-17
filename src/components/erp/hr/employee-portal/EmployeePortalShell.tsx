@@ -17,6 +17,7 @@ import { EmployeeTimeSection } from './EmployeeTimeSection';
 import { EmployeeProfileSection } from './EmployeeProfileSection';
 import { EmployeeHelpSection } from './EmployeeHelpSection';
 import { EmployeeLeaveSection } from './EmployeeLeaveSection';
+import { EmployeeNotificationsSection } from './EmployeeNotificationsSection';
 
 export function EmployeePortalShell() {
   const isMobile = useIsMobile();
