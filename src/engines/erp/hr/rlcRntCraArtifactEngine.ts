@@ -200,6 +200,8 @@ export interface CRASection {
   trabajador: number;
   total: number;
   workerCount: number;
+  /** A6 fix: optional breakdown by grupo de cotización */
+  byGrupo?: Array<{ grupo: number; empresa: number; trabajador: number; total: number; workerCount: number }>;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -375,48 +377,57 @@ export function buildRLC(params: {
 }): RLCArtifact {
   const periodLabel = `${String(params.periodMonth).padStart(2, '0')}/${params.periodYear}`;
 
-  // Build concept breakdown from aggregated records
+  // Build concept breakdown from aggregated records (A5 fix: derive rates from actual cuotas)
+  const ccCuota = r2(params.records.reduce((s, r) => s + r.ccEmpresa + r.ccTrabajador, 0));
+  const desempleoCuota = r2(params.records.reduce((s, r) => s + r.desempleoEmpresa + r.desempleoTrabajador, 0));
+  const fogasaCuota = r2(params.records.reduce((s, r) => s + r.fogasa, 0));
+  const fpCuota = r2(params.records.reduce((s, r) => s + r.fpEmpresa + r.fpTrabajador, 0));
+  const meiCuota = r2(params.records.reduce((s, r) => s + r.meiEmpresa + r.meiTrabajador, 0));
+  const atCuota = r2(params.records.reduce((s, r) => s + r.atEmpresa, 0));
+
+  const deriveRate = (cuota: number, base: number) => base > 0 ? r2((cuota / base) * 100) : 0;
+
   const conceptBreakdown: RLCConceptLine[] = [
     {
       conceptCode: 'CC', conceptLabel: 'Contingencias Comunes',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 28.30, // 23.60 empresa + 4.70 trabajador
-      cuota: r2(params.records.reduce((s, r) => s + r.ccEmpresa + r.ccTrabajador, 0)),
+      tipoPercent: deriveRate(ccCuota, params.totals.totalBasesCC),
+      cuota: ccCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'DESEMP', conceptLabel: 'Desempleo',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 7.05, // general
-      cuota: r2(params.records.reduce((s, r) => s + r.desempleoEmpresa + r.desempleoTrabajador, 0)),
+      tipoPercent: deriveRate(desempleoCuota, params.totals.totalBasesCC),
+      cuota: desempleoCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'FOGASA', conceptLabel: 'FOGASA',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 0.20,
-      cuota: r2(params.records.reduce((s, r) => s + r.fogasa, 0)),
+      tipoPercent: deriveRate(fogasaCuota, params.totals.totalBasesCC),
+      cuota: fogasaCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'FP', conceptLabel: 'Formación Profesional',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 0.70, // 0.60 + 0.10
-      cuota: r2(params.records.reduce((s, r) => s + r.fpEmpresa + r.fpTrabajador, 0)),
+      tipoPercent: deriveRate(fpCuota, params.totals.totalBasesCC),
+      cuota: fpCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'MEI', conceptLabel: 'Mecanismo Equidad Intergeneracional',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 0.58,
-      cuota: r2(params.records.reduce((s, r) => s + r.meiEmpresa + r.meiTrabajador, 0)),
+      tipoPercent: deriveRate(meiCuota, params.totals.totalBasesCC),
+      cuota: meiCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'AT', conceptLabel: 'Accidentes de Trabajo / EP',
       baseImponible: params.totals.totalBasesAT,
-      tipoPercent: 1.50, // variable per company
-      cuota: r2(params.records.reduce((s, r) => s + r.atEmpresa, 0)),
+      tipoPercent: deriveRate(atCuota, params.totals.totalBasesAT),
+      cuota: atCuota,
       source: 'empresa',
     },
   ];
@@ -490,42 +501,64 @@ export function buildCRA(params: {
   const { records } = params;
   const n = records.length;
 
+  // A6 fix: helper to build grupo breakdown for a section
+  const grupoSet = new Set(records.map(r => r.grupoCotizacion));
+  const grupoArr = Array.from(grupoSet).sort((a, b) => a - b);
+
+  function buildGrupoBreakdown(
+    empresaFn: (r: FANEmployeeRecord) => number,
+    trabajadorFn: (r: FANEmployeeRecord) => number,
+  ) {
+    return grupoArr.map(g => {
+      const grp = records.filter(r => r.grupoCotizacion === g);
+      const emp = r2(grp.reduce((s, r) => s + empresaFn(r), 0));
+      const trab = r2(grp.reduce((s, r) => s + trabajadorFn(r), 0));
+      return { grupo: g, empresa: emp, trabajador: trab, total: r2(emp + trab), workerCount: grp.length };
+    });
+  }
+
   const sections: CRASection[] = [
     {
       sectionId: 'cc', sectionLabel: 'Contingencias Comunes',
       empresa: r2(records.reduce((s, r) => s + r.ccEmpresa, 0)),
       trabajador: r2(records.reduce((s, r) => s + r.ccTrabajador, 0)),
       total: 0, workerCount: n,
+      byGrupo: buildGrupoBreakdown(r => r.ccEmpresa, r => r.ccTrabajador),
     },
     {
       sectionId: 'desempleo', sectionLabel: 'Desempleo',
       empresa: r2(records.reduce((s, r) => s + r.desempleoEmpresa, 0)),
       trabajador: r2(records.reduce((s, r) => s + r.desempleoTrabajador, 0)),
       total: 0, workerCount: n,
+      byGrupo: buildGrupoBreakdown(r => r.desempleoEmpresa, r => r.desempleoTrabajador),
     },
     {
       sectionId: 'fogasa', sectionLabel: 'FOGASA',
       empresa: r2(records.reduce((s, r) => s + r.fogasa, 0)),
       trabajador: 0,
       total: 0, workerCount: n,
+      byGrupo: buildGrupoBreakdown(r => r.fogasa, () => 0),
     },
     {
       sectionId: 'fp', sectionLabel: 'Formación Profesional',
       empresa: r2(records.reduce((s, r) => s + r.fpEmpresa, 0)),
       trabajador: r2(records.reduce((s, r) => s + r.fpTrabajador, 0)),
       total: 0, workerCount: n,
+      byGrupo: buildGrupoBreakdown(r => r.fpEmpresa, r => r.fpTrabajador),
     },
     {
       sectionId: 'mei', sectionLabel: 'MEI',
       empresa: r2(records.reduce((s, r) => s + r.meiEmpresa, 0)),
       trabajador: r2(records.reduce((s, r) => s + r.meiTrabajador, 0)),
       total: 0, workerCount: n,
+      byGrupo: buildGrupoBreakdown(r => r.meiEmpresa, r => r.meiTrabajador),
     },
     {
       sectionId: 'at', sectionLabel: 'AT / EP',
       empresa: r2(records.reduce((s, r) => s + r.atEmpresa, 0)),
       trabajador: 0,
       total: 0, workerCount: n,
+      byGrupo: buildGrupoBreakdown(r => r.atEmpresa, () => 0),
     },
   ];
 

@@ -12,9 +12,15 @@ import type { AFIWorkerData, AFIEmployerData, AFIContractData } from './afiArtif
 
 // ── Types ──
 
+export type P4ArtifactType =
+  | 'afi_alta' | 'afi_baja' | 'afi_variacion'
+  | 'fan_cotizacion'
+  | 'rlc' | 'rnt' | 'cra'
+  | 'modelo_111' | 'modelo_190';
+
 export interface ArtifactPreValidation {
   circuitId: string;
-  artifactType: 'afi_alta' | 'afi_baja' | 'afi_variacion' | 'fan_cotizacion';
+  artifactType: P4ArtifactType;
   checks: ArtifactPreCheck[];
   isReady: boolean;
   readinessPercent: number;
@@ -220,4 +226,234 @@ export function validateFANPrerequisites(params: {
     blockingErrors: blocking,
     warnings: warningCount,
   };
+}
+
+// ── Shared helper for TGSS cotización pre-validations ──
+
+function buildTGSSCotizacionChecks(params: {
+  companyCCC: string;
+  companyCIF: string;
+  employeeCount: number;
+  allHaveNAF: boolean;
+  periodYear: number;
+  periodMonth: number;
+  payrollClosed: boolean;
+}): ArtifactPreCheck[] {
+  const checks: ArtifactPreCheck[] = [];
+
+  checks.push({
+    id: 'has_ccc', label: 'CCC empresa',
+    passed: params.companyCCC.trim().length > 0,
+    severity: 'blocking', detail: params.companyCCC || 'No configurado',
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'has_cif', label: 'CIF empresa',
+    passed: params.companyCIF.trim().length > 0,
+    severity: 'blocking', detail: params.companyCIF || 'No configurado',
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'has_employees', label: 'Empleados en período',
+    passed: params.employeeCount > 0,
+    severity: 'blocking', detail: params.employeeCount > 0 ? `${params.employeeCount} empleado(s)` : 'Sin empleados',
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'all_naf', label: 'NAF en todos los trabajadores',
+    passed: params.allHaveNAF,
+    severity: 'blocking', detail: params.allHaveNAF ? 'OK' : 'Trabajadores sin NAF detectados',
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'payroll_closed', label: 'Nómina del período cerrada',
+    passed: params.payrollClosed,
+    severity: 'warning', detail: params.payrollClosed ? 'Cerrada' : 'Abierta — se recomienda cerrar antes',
+    category: 'consistency',
+  });
+
+  checks.push({
+    id: 'valid_period', label: 'Período válido',
+    passed: params.periodMonth >= 1 && params.periodMonth <= 12 && params.periodYear >= 2020,
+    severity: 'blocking', detail: `${String(params.periodMonth).padStart(2, '0')}/${params.periodYear}`,
+    category: 'format',
+  });
+
+  return checks;
+}
+
+function computeResult(checks: ArtifactPreCheck[], circuitId: string, artifactType: P4ArtifactType): ArtifactPreValidation {
+  const blocking = checks.filter(c => c.severity === 'blocking' && !c.passed).length;
+  const warningCount = checks.filter(c => c.severity === 'warning' && !c.passed).length;
+  const passed = checks.filter(c => c.passed).length;
+  const readinessPercent = checks.length > 0 ? Math.round((passed / checks.length) * 100) : 0;
+  return { circuitId, artifactType, checks, isReady: blocking === 0, readinessPercent, blockingErrors: blocking, warnings: warningCount };
+}
+
+// ── RLC Pre-Validation ──
+
+export function validateRLCPrerequisites(params: {
+  companyCCC: string;
+  companyCIF: string;
+  employeeCount: number;
+  allHaveNAF: boolean;
+  periodYear: number;
+  periodMonth: number;
+  payrollClosed: boolean;
+  fanGenerated: boolean;
+}): ArtifactPreValidation {
+  const checks = buildTGSSCotizacionChecks(params);
+  checks.push({
+    id: 'fan_exists', label: 'FAN generado previamente',
+    passed: params.fanGenerated,
+    severity: 'blocking', detail: params.fanGenerated ? 'Disponible' : 'Debe generar FAN antes de RLC',
+    category: 'consistency',
+  });
+  return computeResult(checks, 'tgss_cotizacion', 'rlc');
+}
+
+// ── RNT Pre-Validation ──
+
+export function validateRNTPrerequisites(params: {
+  companyCCC: string;
+  companyCIF: string;
+  employeeCount: number;
+  allHaveNAF: boolean;
+  periodYear: number;
+  periodMonth: number;
+  payrollClosed: boolean;
+  fanGenerated: boolean;
+}): ArtifactPreValidation {
+  const checks = buildTGSSCotizacionChecks(params);
+  checks.push({
+    id: 'fan_exists', label: 'FAN generado previamente',
+    passed: params.fanGenerated,
+    severity: 'blocking', detail: params.fanGenerated ? 'Disponible' : 'Debe generar FAN antes de RNT',
+    category: 'consistency',
+  });
+  return computeResult(checks, 'tgss_cotizacion', 'rnt');
+}
+
+// ── CRA Pre-Validation ──
+
+export function validateCRAPrerequisites(params: {
+  companyCCC: string;
+  companyCIF: string;
+  employeeCount: number;
+  allHaveNAF: boolean;
+  periodYear: number;
+  periodMonth: number;
+  payrollClosed: boolean;
+  fanGenerated: boolean;
+}): ArtifactPreValidation {
+  const checks = buildTGSSCotizacionChecks(params);
+  checks.push({
+    id: 'fan_exists', label: 'FAN generado previamente',
+    passed: params.fanGenerated,
+    severity: 'blocking', detail: params.fanGenerated ? 'Disponible' : 'Debe generar FAN antes de CRA',
+    category: 'consistency',
+  });
+  return computeResult(checks, 'tgss_cotizacion', 'cra');
+}
+
+// ── Modelo 111 Pre-Validation ──
+
+export function validateModelo111Prerequisites(params: {
+  companyCIF: string;
+  fiscalYear: number;
+  trimester: number;
+  monthsAvailable: number;
+  allMonthsClosed: boolean;
+}): ArtifactPreValidation {
+  const checks: ArtifactPreCheck[] = [];
+
+  checks.push({
+    id: 'has_cif', label: 'CIF empresa',
+    passed: params.companyCIF.trim().length > 0,
+    severity: 'blocking', detail: params.companyCIF || 'No configurado',
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'valid_trimester', label: 'Trimestre válido (1-4)',
+    passed: params.trimester >= 1 && params.trimester <= 4,
+    severity: 'blocking', detail: `${params.trimester}T/${params.fiscalYear}`,
+    category: 'format',
+  });
+
+  checks.push({
+    id: 'has_months', label: 'Meses del trimestre disponibles',
+    passed: params.monthsAvailable >= 1,
+    severity: 'blocking', detail: `${params.monthsAvailable} de 3 meses`,
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'complete_quarter', label: 'Trimestre completo (3 meses)',
+    passed: params.monthsAvailable === 3,
+    severity: 'warning', detail: params.monthsAvailable === 3 ? 'Completo' : `Solo ${params.monthsAvailable} meses`,
+    category: 'consistency',
+  });
+
+  checks.push({
+    id: 'all_closed', label: 'Nóminas del trimestre cerradas',
+    passed: params.allMonthsClosed,
+    severity: 'warning', detail: params.allMonthsClosed ? 'Todas cerradas' : 'Meses sin cerrar',
+    category: 'consistency',
+  });
+
+  return computeResult(checks, 'aeat_111', 'modelo_111');
+}
+
+// ── Modelo 190 Pre-Validation ──
+
+export function validateModelo190Prerequisites(params: {
+  companyCIF: string;
+  fiscalYear: number;
+  perceptorCount: number;
+  allHaveNIF: boolean;
+  quarterly111Count: number;
+}): ArtifactPreValidation {
+  const checks: ArtifactPreCheck[] = [];
+
+  checks.push({
+    id: 'has_cif', label: 'CIF empresa',
+    passed: params.companyCIF.trim().length > 0,
+    severity: 'blocking', detail: params.companyCIF || 'No configurado',
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'has_perceptores', label: 'Perceptores disponibles',
+    passed: params.perceptorCount > 0,
+    severity: 'blocking', detail: `${params.perceptorCount} perceptor(es)`,
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'all_nif', label: 'NIF en todos los perceptores',
+    passed: params.allHaveNIF,
+    severity: 'blocking', detail: params.allHaveNIF ? 'OK' : 'Perceptores sin NIF',
+    category: 'data_completeness',
+  });
+
+  checks.push({
+    id: 'quarterly_111s', label: 'Modelos 111 trimestrales disponibles',
+    passed: params.quarterly111Count === 4,
+    severity: 'warning', detail: `${params.quarterly111Count} de 4 trimestres`,
+    category: 'consistency',
+  });
+
+  checks.push({
+    id: 'valid_year', label: 'Ejercicio fiscal válido',
+    passed: params.fiscalYear >= 2020,
+    severity: 'blocking', detail: `${params.fiscalYear}`,
+    category: 'format',
+  });
+
+  return computeResult(checks, 'aeat_190', 'modelo_190');
 }

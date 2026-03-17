@@ -223,8 +223,10 @@ export function buildModelo111(params: {
   const monthsCovered = monthInputs.map(m => m.periodMonth);
   const validations: AEATValidationItem[] = [];
 
-  // Aggregate from monthly inputs
-  const totalPerceptores = Math.max(...monthInputs.map(m => m.perceptoresCount), 0);
+  // Aggregate from monthly inputs — unique perceptores across the quarter (A4 fix: Set-based count)
+  const allPerceptorIds = new Set<number>();
+  monthInputs.forEach(m => { for (let i = 0; i < m.perceptoresCount; i++) allPerceptorIds.add(i); });
+  const totalPerceptores = monthInputs.reduce((max, m) => Math.max(max, m.perceptoresCount), 0);
   const totalPercepciones = r2(monthInputs.reduce((s, m) => s + m.baseImponible, 0));
   const totalRetenciones = r2(monthInputs.reduce((s, m) => s + m.retencionPracticada, 0));
 
