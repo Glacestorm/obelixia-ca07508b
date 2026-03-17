@@ -336,6 +336,7 @@ export function EmployeeDocumentsSection({ employee }: Props) {
         open={showUpload}
         onClose={() => setShowUpload(false)}
         employee={employee}
+        onUploadSuccess={invalidateMyDocs}
       />
     </>
   );
