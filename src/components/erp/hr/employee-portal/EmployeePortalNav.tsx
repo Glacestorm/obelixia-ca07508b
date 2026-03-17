@@ -18,6 +18,7 @@ import {
   HelpCircle,
   Menu,
   ChevronLeft,
+  Bell,
 } from 'lucide-react';
 
 export type PortalSection =
@@ -27,6 +28,7 @@ export type PortalSection =
   | 'requests'
   | 'time'
   | 'leave'
+  | 'notifications'
   | 'profile'
   | 'help';
 
