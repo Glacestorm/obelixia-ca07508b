@@ -225,10 +225,21 @@ export function buildModelo111(params: {
   const monthsCovered = monthInputs.map(m => m.periodMonth);
   const validations: AEATValidationItem[] = [];
 
-  // Aggregate from monthly inputs — unique perceptores across the quarter (A4 fix: Set-based count)
-  const allPerceptorIds = new Set<number>();
-  monthInputs.forEach(m => { for (let i = 0; i < m.perceptoresCount; i++) allPerceptorIds.add(i); });
-  const totalPerceptores = monthInputs.reduce((max, m) => Math.max(max, m.perceptoresCount), 0);
+  // Aggregate from monthly inputs — unique perceptores across the quarter
+  // A4 fix (P4C): Use real perceptor IDs when available for accurate deduplication.
+  // If perceptorIds are provided, deduplicate across months via Set<string>.
+  // Otherwise, fall back to the maximum monthly count as a conservative estimate.
+  const uniquePerceptorIds = new Set<string>();
+  let hasRealIds = false;
+  for (const m of monthInputs) {
+    if (m.perceptorIds && m.perceptorIds.length > 0) {
+      hasRealIds = true;
+      for (const pid of m.perceptorIds) uniquePerceptorIds.add(pid);
+    }
+  }
+  const totalPerceptores = hasRealIds
+    ? uniquePerceptorIds.size
+    : Math.max(...monthInputs.map(m => m.perceptoresCount), 0);
   const totalPercepciones = r2(monthInputs.reduce((s, m) => s + m.baseImponible, 0));
   const totalRetenciones = r2(monthInputs.reduce((s, m) => s + m.retencionPracticada, 0));
 
