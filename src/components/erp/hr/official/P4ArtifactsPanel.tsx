@@ -212,6 +212,15 @@ function PersistedArtifactCard({ row }: { row: OfficialArtifactDBRow }) {
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> Generado:</span>
           <span>{new Date(row.created_at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
         </div>
+        {/* P4G: Persistent estimation signal for Modelo 111 */}
+        {row.artifact_type === 'modelo_111' && (row.metadata as Record<string, unknown>)?.baseIRPFEstimated && (
+          <div className="flex items-start gap-1.5 p-1.5 rounded-md bg-amber-500/5 border border-amber-500/20">
+            <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
+            <span className="text-[10px] text-amber-700 leading-tight">
+              Base IRPF estimada (gross_salary) en mes(es) {((row.metadata as Record<string, unknown>)?.estimatedMonths as number[] ?? []).join(', ')}
+            </span>
+          </div>
+        )}
         <Collapsible open={showDetails} onOpenChange={setShowDetails}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="sm" className="w-full justify-between h-7 text-xs">
@@ -690,19 +699,48 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     });
   }, [companyInfo, cotizacionData, periodYear, periodMonth, payrollClosed, fanGenerated, validateRLC]);
 
+  // ── Fetch trimester payroll availability for real 111 pre-validation (P4G M2 fix) ──
+  const trimesterForMonth = Math.ceil(periodMonth / 3);
+  const trimesterStartMonth = (trimesterForMonth - 1) * 3 + 1;
+  const trimesterMonths = [trimesterStartMonth, trimesterStartMonth + 1, trimesterStartMonth + 2];
+
+  const { data: trimesterAvailability } = useQuery({
+    queryKey: ['hr-trimester-availability', companyId, periodYear, trimesterForMonth],
+    queryFn: async () => {
+      const sb = supabase as unknown as { from: (t: string) => any };
+      const { data: periods } = await sb
+        .from('hr_payroll_periods')
+        .select('id, period_number, status')
+        .eq('company_id', companyId)
+        .eq('fiscal_year', periodYear)
+        .in('period_number', trimesterMonths)
+        .limit(3);
+
+      const found = (periods ?? []) as Array<{ id: string; period_number: number; status: string }>;
+      const monthsWithData: number[] = [];
+      let allClosed = true;
+      for (const m of trimesterMonths) {
+        const p = found.find(f => f.period_number === m);
+        if (p) {
+          monthsWithData.push(m);
+          if (p.status !== 'closed' && p.status !== 'locked') allClosed = false;
+        }
+      }
+      return { monthsWithData, monthsAvailable: monthsWithData.length, allClosed: monthsWithData.length > 0 && allClosed };
+    },
+    enabled: !!companyId,
+  });
+
   const m111PreValidation = useMemo((): ArtifactPreValidation | null => {
     if (!companyInfo) return null;
-    const trimester = Math.ceil(periodMonth / 3);
-    // Simplified: check if we have payroll data for this period as proxy for months available
-    const monthsAvailable = payrollData?.records && payrollData.records.length > 0 ? 1 : 0;
     return validate111({
       companyCIF: companyInfo.cif ?? '',
       fiscalYear: periodYear,
-      trimester,
-      monthsAvailable: Math.max(monthsAvailable, hasSSData ? 1 : 0),
-      allMonthsClosed: payrollClosed,
+      trimester: trimesterForMonth,
+      monthsAvailable: trimesterAvailability?.monthsAvailable ?? 0,
+      allMonthsClosed: trimesterAvailability?.allClosed ?? false,
     });
-  }, [companyInfo, periodYear, periodMonth, payrollData, hasSSData, payrollClosed, validate111]);
+  }, [companyInfo, periodYear, trimesterForMonth, trimesterAvailability, validate111]);
 
   const m190PreValidation = useMemo((): ArtifactPreValidation | null => {
     if (!companyInfo) return null;
@@ -724,7 +762,9 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
   const m111BlockReason = m111Blocked ? `${m111PreValidation!.blockingErrors} pre-check(s) bloqueante(s)` : undefined;
 
   const m190Blocked = (m190PreValidation?.blockingErrors ?? 0) > 0;
-  const m190BlockReason = m190Blocked ? `${m190PreValidation!.blockingErrors} pre-check(s) bloqueante(s)` : undefined;
+  const m190BlockReason = m190Blocked
+    ? 'Pipeline anual no disponible'
+    : undefined;
 
   // ── Generation handlers ──
 
@@ -880,11 +920,13 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       return;
     }
 
-    // Warn about estimated IRPF
-    const estimatedMonths = monthInputs.filter(m => m.irpfIsEstimated && m.perceptoresCount > 0);
-    if (estimatedMonths.length > 0) {
+    // P4G M1: Track estimation flags persistently in monthInputs metadata
+    const estimatedMonths = monthInputs.filter(m => (m as any).irpfIsEstimated && m.perceptoresCount > 0);
+    const hasEstimation = estimatedMonths.length > 0;
+
+    if (hasEstimation) {
       toast.warning(
-        `IRPF estimado en ${estimatedMonths.length} mes(es): se usó gross_salary como base porque no se encontró desglose IRPF detallado.`,
+        `IRPF estimado en ${estimatedMonths.length} mes(es): se usó gross_salary como base porque no se encontró desglose IRPF detallado. Esta señal queda registrada en el artefacto.`,
         { duration: 6000 },
       );
     }
@@ -893,12 +935,21 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       toast.warning(`Generando Mod. 111 con ${preVal.warnings} advertencia(s).`, { duration: 4000 });
     }
 
+    // P4G: Pass estimation metadata so artifact persists the signal
+    const estimationMeta = hasEstimation ? {
+      baseIRPFEstimated: true,
+      estimatedMonths: estimatedMonths.map(m => m.periodMonth),
+      estimationMethod: 'gross_salary_fallback',
+      disclaimer: 'La base imponible de uno o más meses usa el salario bruto como estimación por ausencia de baseIRPF en el desglose de nómina.',
+    } : undefined;
+
     await generateModelo111({
       companyCIF: companyInfo.cif ?? '',
       companyName: companyInfo.company_name ?? '',
       fiscalYear: periodYear,
       trimester,
       monthInputs,
+      estimationMeta,
     });
   };
 
@@ -1079,6 +1130,16 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   blocked={m190Blocked}
                   blockReason={m190BlockReason}
                 />
+                {/* P4G: Honest explanation for 190 permanent block */}
+                {m190Blocked && (
+                  <div className="flex items-start gap-2 p-2 ml-6 rounded-md bg-muted/50 border border-border/50 text-[11px] text-muted-foreground leading-relaxed">
+                    <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>No es un error.</strong> El Modelo 190 (resumen anual) requiere un pipeline de perceptores anuales con NIF, claves de percepción y los 4 Modelos 111 trimestrales del ejercicio.
+                      Este pipeline aún no está implementado. El bloqueo es intencional.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
