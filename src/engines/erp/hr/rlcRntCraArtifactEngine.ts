@@ -377,48 +377,57 @@ export function buildRLC(params: {
 }): RLCArtifact {
   const periodLabel = `${String(params.periodMonth).padStart(2, '0')}/${params.periodYear}`;
 
-  // Build concept breakdown from aggregated records
+  // Build concept breakdown from aggregated records (A5 fix: derive rates from actual cuotas)
+  const ccCuota = r2(params.records.reduce((s, r) => s + r.ccEmpresa + r.ccTrabajador, 0));
+  const desempleoCuota = r2(params.records.reduce((s, r) => s + r.desempleoEmpresa + r.desempleoTrabajador, 0));
+  const fogasaCuota = r2(params.records.reduce((s, r) => s + r.fogasa, 0));
+  const fpCuota = r2(params.records.reduce((s, r) => s + r.fpEmpresa + r.fpTrabajador, 0));
+  const meiCuota = r2(params.records.reduce((s, r) => s + r.meiEmpresa + r.meiTrabajador, 0));
+  const atCuota = r2(params.records.reduce((s, r) => s + r.atEmpresa, 0));
+
+  const deriveRate = (cuota: number, base: number) => base > 0 ? r2((cuota / base) * 100) : 0;
+
   const conceptBreakdown: RLCConceptLine[] = [
     {
       conceptCode: 'CC', conceptLabel: 'Contingencias Comunes',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 28.30, // 23.60 empresa + 4.70 trabajador
-      cuota: r2(params.records.reduce((s, r) => s + r.ccEmpresa + r.ccTrabajador, 0)),
+      tipoPercent: deriveRate(ccCuota, params.totals.totalBasesCC),
+      cuota: ccCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'DESEMP', conceptLabel: 'Desempleo',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 7.05, // general
-      cuota: r2(params.records.reduce((s, r) => s + r.desempleoEmpresa + r.desempleoTrabajador, 0)),
+      tipoPercent: deriveRate(desempleoCuota, params.totals.totalBasesCC),
+      cuota: desempleoCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'FOGASA', conceptLabel: 'FOGASA',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 0.20,
-      cuota: r2(params.records.reduce((s, r) => s + r.fogasa, 0)),
+      tipoPercent: deriveRate(fogasaCuota, params.totals.totalBasesCC),
+      cuota: fogasaCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'FP', conceptLabel: 'Formación Profesional',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 0.70, // 0.60 + 0.10
-      cuota: r2(params.records.reduce((s, r) => s + r.fpEmpresa + r.fpTrabajador, 0)),
+      tipoPercent: deriveRate(fpCuota, params.totals.totalBasesCC),
+      cuota: fpCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'MEI', conceptLabel: 'Mecanismo Equidad Intergeneracional',
       baseImponible: params.totals.totalBasesCC,
-      tipoPercent: 0.58,
-      cuota: r2(params.records.reduce((s, r) => s + r.meiEmpresa + r.meiTrabajador, 0)),
+      tipoPercent: deriveRate(meiCuota, params.totals.totalBasesCC),
+      cuota: meiCuota,
       source: 'empresa',
     },
     {
       conceptCode: 'AT', conceptLabel: 'Accidentes de Trabajo / EP',
       baseImponible: params.totals.totalBasesAT,
-      tipoPercent: 1.50, // variable per company
-      cuota: r2(params.records.reduce((s, r) => s + r.atEmpresa, 0)),
+      tipoPercent: deriveRate(atCuota, params.totals.totalBasesAT),
+      cuota: atCuota,
       source: 'empresa',
     },
   ];
