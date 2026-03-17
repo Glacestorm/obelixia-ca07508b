@@ -154,6 +154,12 @@ export function PayslipViewerPanel({ payslip, className }: Props) {
               <div className="space-y-0.5">
                 <div className="flex justify-between text-muted-foreground"><span>Cot. empresa:</span><span>{r2(bases.totalCotizacionesEmpresa)}</span></div>
                 <div className="flex justify-between text-muted-foreground"><span>Cot. trabajador:</span><span>{r2(bases.totalCotizacionesTrabajador)}</span></div>
+                {bases.meiTrabajador > 0 && (
+                  <div className="flex justify-between text-muted-foreground"><span>MEI trab.:</span><span>{r2(bases.meiTrabajador)}</span></div>
+                )}
+                {bases.meiEmpresa > 0 && (
+                  <div className="flex justify-between text-muted-foreground"><span>MEI emp.:</span><span>{r2(bases.meiEmpresa)}</span></div>
+                )}
               </div>
             </div>
           </div>
