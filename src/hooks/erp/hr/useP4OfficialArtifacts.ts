@@ -68,8 +68,22 @@ function getPeriodInfo(artifact: P4Artifact): { year: number | null; month: numb
 }
 
 function getEmployeeIds(artifact: P4Artifact): string[] {
+  // RNT workers have NAF+DNI
   if ('workers' in artifact && Array.isArray((artifact as RNTArtifact).workers)) {
-    return []; // RNT workers don't carry employeeId
+    return (artifact as RNTArtifact).workers.map(w => w.naf).filter(Boolean);
+  }
+  // Modelo 190 perceptor lines have NIF
+  if ('perceptorLines' in artifact && Array.isArray((artifact as Modelo190Artifact).perceptorLines)) {
+    return [...new Set((artifact as Modelo190Artifact).perceptorLines.map(l => l.nif).filter(Boolean))];
+  }
+  // Modelo 111: extract from perceptorIds in monthInputs if available
+  if ('monthlyBreakdown' in artifact) {
+    const m111 = artifact as Modelo111Artifact;
+    const ids = new Set<string>();
+    for (const m of m111.monthlyBreakdown) {
+      if (m.perceptorIds) for (const id of m.perceptorIds) ids.add(id);
+    }
+    if (ids.size > 0) return [...ids];
   }
   return [];
 }
@@ -210,7 +224,7 @@ export function useP4OfficialArtifacts(companyId: string) {
         sourceModule: 'hr_official_artifacts_p4',
         afterSnapshot: snapshot,
       };
-      const ledgerRow = buildLedgerRow(ledgerInput);
+      const ledgerRow = await buildLedgerRow(ledgerInput);
       const { data: ledgerData } = await sb.from('erp_hr_ledger').insert(ledgerRow).select('id').single();
       ledgerEventId = ledgerData?.id ?? null;
 

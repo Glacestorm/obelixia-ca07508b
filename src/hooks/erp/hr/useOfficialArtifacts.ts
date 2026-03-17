@@ -360,7 +360,7 @@ export function useOfficialArtifacts(companyId: string): UseOfficialArtifactsRet
         sourceModule: 'hr_official_artifacts',
         afterSnapshot: snapshot,
       };
-      const ledgerRow = buildLedgerRow(ledgerInput);
+      const ledgerRow = await buildLedgerRow(ledgerInput);
       const { data: ledgerData } = await sb
         .from('erp_hr_ledger')
         .insert(ledgerRow)
