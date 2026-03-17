@@ -1,18 +1,23 @@
 /**
- * usePayrollLegalCalculation — V2-RRHH-P1
+ * usePayrollLegalCalculation — V2-RRHH-P1B
  * Hook that connects SS + IRPF engines to real employee/payroll data.
+ *
+ * P1B enhancements:
+ *  - Progressive IRPF regularization with accumulated data
+ *  - Correct IRPF base (excluding exempt extrasalarial)
+ *  - Smart prorrateo handling (from_lines vs calculated)
+ *  - MEI trabajador
+ *  - Real period days
+ *  - CCC empresa from DB
+ *  - Batch payroll lines fetch (N+1 elimination)
+ *  - Ledger/Evidence/Version registry integration
  *
  * Fetches:
  *  - Employee ES labor data (grupo cotización, situación familiar, etc.)
  *  - SS bases/rates from hr_es_ss_bases
  *  - IRPF tramos from hr_es_irpf_tables
- *  - Payroll lines for the period
- *
- * Produces:
- *  - Per-employee SS contribution breakdown
- *  - Per-employee IRPF calculation
- *  - Payslip data structure
- *  - Legal pre-close validations
+ *  - Payroll lines for the period (batched)
+ *  - Prior period accumulated data for IRPF regularization
  */
 
 import { useState, useCallback } from 'react';
@@ -31,6 +36,7 @@ import {
   checkIRPFDataCompleteness,
   type IRPFTramo,
   type IRPFCalculationResult,
+  type IRPFRegularizationContext,
 } from '@/engines/erp/hr/irpfEngine';
 import {
   buildPayslip,
@@ -40,6 +46,7 @@ import {
   type LegalPreCloseCheck,
   type LegalPreCloseEmployee,
 } from '@/engines/erp/hr/payslipEngine';
+import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ── Types ──
 
@@ -61,15 +68,28 @@ export interface LegalCalculationSummary {
   calculatedAt: string;
 }
 
+// ── Helper: compute real days in period ──
+function computeRealDays(startDate: string, endDate: string): number {
+  try {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffMs = end.getTime() - start.getTime();
+    return Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
+  } catch {
+    return 30;
+  }
+}
+
 // ── Hook ──
 
 export function usePayrollLegalCalculation(companyId: string) {
   const [isCalculating, setIsCalculating] = useState(false);
   const [lastResult, setLastResult] = useState<LegalCalculationSummary | null>(null);
+  const { writeLedgerWithEvidence, writeVersion } = useHRLedgerWriter(companyId, 'payroll_legal_calc');
 
   /**
    * Calculate SS + IRPF for all employees in a payroll period.
-   * Uses real data from hr_es_ss_bases, hr_es_irpf_tables, hr_es_employee_labor_data.
+   * P1B: With progressive regularization, correct bases, and traceability.
    */
   const calculateForPeriod = useCallback(async (
     periodId: string,
@@ -148,12 +168,63 @@ export function usePayrollLegalCalculation(companyId: string) {
       const laborDataMap = new Map<string, any>();
       (laborDataRaw ?? []).forEach((ld: any) => laborDataMap.set(ld.employee_id, ld));
 
-      // ── 5. Fetch company data for header ──
+      // ── 5. Fetch company data for header (P1B: CCC from DB) ──
       const { data: companyData } = await (supabase as any)
         .from('erp_companies')
-        .select('name, legal_name, tax_id, address, city, postal_code')
+        .select('name, legal_name, tax_id, address, city, postal_code, ss_ccc')
         .eq('id', companyId)
         .single();
+
+      // ── 5b. P1B: Batch fetch ALL payroll lines for ALL records (eliminates N+1) ──
+      const recordIds = records.map((r: any) => r.id);
+      const { data: allLines } = await (supabase as any)
+        .from('erp_hr_payroll_lines')
+        .select('payroll_record_id, concept_code, concept_name, line_type, amount, units, unit_price, is_taxable, is_ss_contributable, sort_order, category')
+        .in('payroll_record_id', recordIds);
+
+      const linesByRecord = new Map<string, any[]>();
+      (allLines ?? []).forEach((line: any) => {
+        const existing = linesByRecord.get(line.payroll_record_id) ?? [];
+        existing.push(line);
+        linesByRecord.set(line.payroll_record_id, existing);
+      });
+
+      // ── 5c. P1B: Fetch accumulated data for IRPF regularization ──
+      // Get prior months' payroll records for the same fiscal year to compute accumulated gross/SS/retention
+      const accumulatedMap = new Map<string, { bruto: number; ss: number; retencion: number }>();
+      if (periodMonth > 1) {
+        const { data: priorPeriods } = await (supabase as any)
+          .from('erp_hr_payroll_periods')
+          .select('id')
+          .eq('company_id', companyId)
+          .eq('fiscal_year', periodYear)
+          .lt('period_number', periodMonth);
+
+        if (priorPeriods && priorPeriods.length > 0) {
+          const priorPeriodIds = priorPeriods.map((p: any) => p.id);
+          const { data: priorRecords } = await (supabase as any)
+            .from('erp_hr_payroll_records')
+            .select('employee_id, gross_salary, total_deductions')
+            .eq('company_id', companyId)
+            .in('payroll_period_id', priorPeriodIds)
+            .in('status', ['confirmed', 'closed']);
+
+          if (priorRecords) {
+            for (const pr of priorRecords) {
+              const acc = accumulatedMap.get(pr.employee_id) ?? { bruto: 0, ss: 0, retencion: 0 };
+              acc.bruto += pr.gross_salary ?? 0;
+              // Approximate SS and IRPF from total_deductions
+              // In future, use detailed breakdown stored in ledger
+              acc.ss += (pr.gross_salary ?? 0) * 0.0643; // Approximate SS worker %
+              acc.retencion += (pr.total_deductions ?? 0) - ((pr.gross_salary ?? 0) * 0.0643);
+              accumulatedMap.set(pr.employee_id, acc);
+            }
+          }
+        }
+      }
+
+      // ── Real period days ──
+      const diasReales = computeRealDays(periodStartDate, periodEndDate);
 
       // ── 6. For each employee, calculate SS + IRPF ──
       for (const record of records) {
@@ -169,35 +240,52 @@ export function usePayrollLegalCalculation(companyId: string) {
         const empName = `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim();
         const grupoCot = laborData?.grupo_cotizacion ?? null;
 
-        // Fetch payroll lines for this record
-        const { data: lines } = await (supabase as any)
-          .from('erp_hr_payroll_lines')
-          .select('concept_code, concept_name, line_type, amount, units, unit_price, is_taxable, is_ss_contributable, sort_order, category')
-          .eq('payroll_record_id', record.id);
+        // P1B: Get lines from batch (no N+1)
+        const payrollLines = linesByRecord.get(record.id) ?? [];
 
-        const payrollLines = lines ?? [];
-
-        // ── SS Calculation ──
+        // ── SS Calculation (P1B: with prorrateo flag and real days) ──
         const ssInput = mapLinesToSSInput(payrollLines);
         const ssLimits = grupoCot ? ssBasesMap.get(grupoCot) ?? null : null;
+        const pagasProrrateadas = laborData?.pagas_extras_prorrateadas ?? false;
         const ssContext: SSEmployeeContext = {
           grupoCotizacion: grupoCot ?? 1,
           isTemporaryContract: laborData?.contrato_inferior_anual ?? false,
           coeficienteParcialidad: laborData?.coeficiente_parcialidad ?? 1.0,
           pagasExtrasAnuales: 2,
+          pagasExtrasProrrateadas: pagasProrrateadas,
           salarioBaseAnual: (emp.base_salary ?? record.gross_salary * 12) || record.gross_salary * 12,
           epigrafAT: laborData?.epigrafe_at ?? null,
+          diasRealesPeriodo: diasReales,
         };
 
         const ssResult = computeSSContributions(ssInput, ssContext, ssLimits);
 
-        // ── IRPF Calculation ──
+        // ── IRPF Calculation (P1B: with regularization context) ──
         const salarioBrutoAnual = (emp.base_salary ?? record.gross_salary * 12) || record.gross_salary * 12;
         const ssWorkerAnual = ssResult.totalTrabajador * 12;
         const irpfInput = buildIRPFInputFromLaborData(laborData, salarioBrutoAnual, ssWorkerAnual);
-        const irpfResult = computeIRPF(irpfInput, irpfTramos.length > 0 ? irpfTramos : null);
 
-        // ── Build Payslip ──
+        // P1B: Build regularization context
+        let regularizationCtx: IRPFRegularizationContext | null = null;
+        const accumulated = accumulatedMap.get(empId);
+        if (periodMonth >= 1) {
+          regularizationCtx = {
+            currentMonth: periodMonth,
+            acumuladoBrutoAnterior: accumulated?.bruto ?? 0,
+            acumuladoSSAnterior: accumulated?.ss ?? 0,
+            acumuladoRetencionAnterior: accumulated?.retencion ?? 0,
+            brutoMesActual: record.gross_salary ?? 0,
+            ssMesActual: ssResult.totalTrabajador,
+          };
+        }
+
+        const irpfResult = computeIRPF(
+          irpfInput,
+          irpfTramos.length > 0 ? irpfTramos : null,
+          regularizationCtx,
+        );
+
+        // ── Build Payslip (P1B: with real days and CCC) ──
         const payslipLines: PayslipLineInput[] = payrollLines.map((l: any) => ({
           conceptCode: l.concept_code,
           conceptName: l.concept_name,
@@ -216,7 +304,7 @@ export function usePayrollLegalCalculation(companyId: string) {
             empresaNombre: companyData?.legal_name ?? companyData?.name ?? '',
             empresaCIF: companyData?.tax_id ?? '',
             empresaDomicilio: [companyData?.address, companyData?.city, companyData?.postal_code].filter(Boolean).join(', '),
-            empresaCCC: '',
+            empresaCCC: companyData?.ss_ccc ?? laborData?.ccc_empresa ?? '',
             trabajadorNombre: empName,
             trabajadorDNI: emp.tax_id ?? '',
             trabajadorNAF: laborData?.naf ?? '',
@@ -226,7 +314,7 @@ export function usePayrollLegalCalculation(companyId: string) {
             periodoNombre: periodName,
             periodoDesde: periodStartDate,
             periodoHasta: periodEndDate,
-            diasTotales: 30,
+            diasTotales: diasReales,
           },
           lines: payslipLines,
           ssResult,
@@ -238,7 +326,7 @@ export function usePayrollLegalCalculation(companyId: string) {
         results.push({ employeeId: empId, employeeName: empName, ss: ssResult, irpf: irpfResult, payslip });
       }
 
-      // ── 7. Legal pre-close validations ──
+      // ── 7. Legal pre-close validations (P1B enhanced) ──
       const preCloseEmployees: LegalPreCloseEmployee[] = results.map(r => ({
         employeeId: r.employeeId,
         employeeName: r.employeeName,
@@ -250,6 +338,8 @@ export function usePayrollLegalCalculation(companyId: string) {
         hasLaborData: laborDataMap.has(r.employeeId),
         hasFamilyData: checkIRPFDataCompleteness(laborDataMap.get(r.employeeId) ?? null).complete,
         hasSSData: ssBasesMap.size > 0,
+        irpfRegularized: !!r.irpf.regularization,
+        baseIRPFCorregida: r.ss.baseIRPFCorregida,
       }));
 
       const preCloseChecks = validateLegalPreClose({
@@ -269,6 +359,90 @@ export function usePayrollLegalCalculation(companyId: string) {
       };
 
       setLastResult(summary);
+
+      // ── 8. P1B: Write to Ledger + Evidence + Version Registry ──
+      try {
+        // Ledger event for the calculation
+        const eventId = await writeLedgerWithEvidence(
+          {
+            eventType: 'payroll_calculation' as any,
+            entityType: 'payroll_period',
+            entityId: periodId,
+            afterSnapshot: {
+              totalEmployees: summary.totalEmployees,
+              calculated: summary.calculated,
+              skipped: summary.skipped,
+              errors: summary.errors.length,
+              checksPassedCount: preCloseChecks.filter(c => c.passed).length,
+              checksTotal: preCloseChecks.length,
+              version: '1.1-P1B',
+              method: 'progressive_regularization',
+            },
+            metadata: {
+              periodYear,
+              periodMonth,
+              periodName,
+              phase: 'P1B',
+              engineVersion: '1.1',
+            },
+          },
+          // Evidence: snapshot of each employee's calculation summary
+          results.slice(0, 10).map(r => ({
+            evidenceType: 'snapshot' as any,
+            entityType: 'payroll_legal_calc',
+            entityId: r.employeeId,
+            title: `Cálculo legal ${periodName} - ${r.employeeName}`,
+            snapshotData: {
+              ss: {
+                baseCCMensual: r.ss.baseCCMensual,
+                baseATMensual: r.ss.baseATMensual,
+                totalTrabajador: r.ss.totalTrabajador,
+                totalEmpresa: r.ss.totalEmpresa,
+                baseIRPFCorregida: r.ss.baseIRPFCorregida,
+                prorrateoSource: r.ss.prorrateoSource,
+                meiTrabajador: r.ss.meiTrabajador,
+              },
+              irpf: {
+                tipoEfectivo: r.irpf.tipoEfectivo,
+                retencionMensual: r.irpf.retencionMensual,
+                regularized: !!r.irpf.regularization,
+                regularizationDetail: r.irpf.regularization,
+              },
+              payslip: {
+                totalDevengos: r.payslip.totalDevengos,
+                totalDeducciones: r.payslip.totalDeducciones,
+                liquidoTotal: r.payslip.liquidoTotal,
+                hash: r.payslip.traceability.calculationHash,
+              },
+            },
+          })),
+        );
+
+        // Version registry for the period calculation
+        if (eventId) {
+          await writeVersion({
+            entityType: 'payroll_legal_calculation',
+            entityId: `${periodId}_${periodYear}_${periodMonth}`,
+            state: 'closed',
+            contentSnapshot: {
+              totalEmployees: summary.totalEmployees,
+              calculated: summary.calculated,
+              checksPassedCount: preCloseChecks.filter(c => c.passed).length,
+              checksTotal: preCloseChecks.length,
+              calculatedAt: summary.calculatedAt,
+              engineVersion: '1.1-P1B',
+            },
+            metadata: {
+              ledgerEventId: eventId,
+              periodYear,
+              periodMonth,
+            },
+          });
+        }
+      } catch (traceErr) {
+        console.warn('[usePayrollLegalCalculation] Traceability write failed (non-blocking):', traceErr);
+      }
+
       toast.success(`Cálculo legal completado: ${results.length} nóminas`);
       return summary;
 
@@ -279,7 +453,7 @@ export function usePayrollLegalCalculation(companyId: string) {
     } finally {
       setIsCalculating(false);
     }
-  }, [companyId]);
+  }, [companyId, writeLedgerWithEvidence, writeVersion]);
 
   return {
     isCalculating,
