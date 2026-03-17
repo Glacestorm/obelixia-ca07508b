@@ -43,6 +43,11 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   const hub = useOfficialIntegrationsHub(companyId);
   const { pendingCount, approvals, fetchApprovals } = usePreRealApproval(companyId);
   const sandboxEnv = useSandboxEnvironment({ companyId, adapters: hub.adapters });
+  const { submissions: instSubmissions } = useInstitutionalSubmission(companyId);
+  const activeInstCount = useMemo(() =>
+    instSubmissions.filter(s => !['reconciled', 'cancelled'].includes(s.institutional_status)).length,
+    [instSubmissions]
+  );
 
   // Data sources for proactive alerts at hub level
   const { summary: readinessSummary } = useOfficialReadiness(companyId);
