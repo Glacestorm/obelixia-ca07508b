@@ -58,6 +58,11 @@ function getCircuitId(type: P4ArtifactType): string {
   return 'tgss_cotizacion';
 }
 
+function getTargetOrganism(type: P4ArtifactType): string {
+  if (type === 'modelo_111' || type === 'modelo_190') return 'aeat';
+  return 'tgss';
+}
+
 function getPeriodInfo(artifact: P4Artifact): { year: number | null; month: number | null; label: string | null } {
   if ('periodYear' in artifact && 'periodMonth' in artifact) {
     return { year: artifact.periodYear, month: artifact.periodMonth, label: (artifact as any).periodLabel ?? null };
