@@ -41702,6 +41702,56 @@ export type Database = {
           },
         ]
       }
+      erp_hr_simulation_snapshots: {
+        Row: {
+          ai_narrative: string | null
+          baseline_snapshot: Json
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          impact_result: Json
+          metadata: Json | null
+          parameters: Json
+          scenario_label: string
+          scenario_type: string
+        }
+        Insert: {
+          ai_narrative?: string | null
+          baseline_snapshot?: Json
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          impact_result?: Json
+          metadata?: Json | null
+          parameters?: Json
+          scenario_label: string
+          scenario_type: string
+        }
+        Update: {
+          ai_narrative?: string | null
+          baseline_snapshot?: Json
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          impact_result?: Json
+          metadata?: Json | null
+          parameters?: Json
+          scenario_label?: string
+          scenario_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_simulation_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_skill_gap_forecasts: {
         Row: {
           company_id: string

@@ -1,6 +1,7 @@
 /**
- * HRLaborDigitalTwinPanel — V2-RRHH-FASE-8
+ * HRLaborDigitalTwinPanel — V2-RRHH-FASE-8B
  * MVP panel for workforce what-if simulations connected to real HR data.
+ * 8B: Added data quality indicators (real / estimated / unavailable).
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,11 +14,11 @@ import { Separator } from '@/components/ui/separator';
 import {
   Layers, RefreshCw, Play, Sparkles, TrendingUp, TrendingDown,
   AlertTriangle, Clock, UserPlus, Heart, Gift, Info, ChevronRight,
-  ArrowUpRight, ArrowDownRight, Minus, FileText,
+  ArrowUpRight, ArrowDownRight, Minus, FileText, Database, HelpCircle,
 } from 'lucide-react';
 import { useERPContext } from '@/hooks/erp';
 import { useWorkforceSimulation, SCENARIO_CATALOG } from '@/hooks/erp/hr/useWorkforceSimulation';
-import type { SimulationResult, SimulationScenarioType } from '@/hooks/erp/hr/useWorkforceSimulation';
+import type { SimulationResult, SimulationScenarioType, DataQualityLevel } from '@/hooks/erp/hr/useWorkforceSimulation';
 import { cn } from '@/lib/utils';
 
 // Icon mapping for scenario types
@@ -46,6 +47,17 @@ function DeltaBadge({ value, unit = '€' }: { value: number; unit?: string }) {
   );
 }
 
+/** 8B: data quality indicator */
+function QualityDot({ level }: { level?: DataQualityLevel }) {
+  if (!level || level === 'real') {
+    return <span title="Dato real del sistema" className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />;
+  }
+  if (level === 'estimated') {
+    return <span title="Estimación" className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />;
+  }
+  return <span title="No disponible" className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />;
+}
+
 export function HRLaborDigitalTwinPanel() {
   const { currentCompany } = useERPContext();
   const companyId = currentCompany?.id || '';
@@ -61,12 +73,10 @@ export function HRLaborDigitalTwinPanel() {
   const [params, setParams] = useState<Record<string, number>>({});
   const [activeResult, setActiveResult] = useState<SimulationResult | null>(null);
 
-  // Load baseline on mount
   useEffect(() => {
     if (companyId) fetchBaseline();
   }, [companyId, fetchBaseline]);
 
-  // Initialize params when scenario changes
   useEffect(() => {
     if (!selectedScenario) return;
     const catalog = scenarioCatalog.find(s => s.type === selectedScenario);
@@ -100,6 +110,7 @@ export function HRLaborDigitalTwinPanel() {
   }
 
   const selectedCatalog = scenarioCatalog.find(s => s.type === selectedScenario);
+  const dq = baseline?.dataQuality || {};
 
   return (
     <div className="space-y-4">
@@ -120,25 +131,43 @@ export function HRLaborDigitalTwinPanel() {
         </Button>
       </div>
 
-      {/* Baseline KPIs */}
+      {/* Baseline KPIs with quality indicators */}
       {baseline && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {[
-            { label: 'Empleados', value: baseline.activeEmployees.toString(), sub: `de ${baseline.headcount} total` },
-            { label: 'Salario medio', value: formatCurrency(baseline.avgSalary), sub: `Mediana: ${formatCurrency(baseline.medianSalary)}` },
-            { label: 'Coste empresa/mes', value: formatCurrency(baseline.totalEmployerMonthlyCost), sub: `Bruto: ${formatCurrency(baseline.totalGrossMonthlyCost)}` },
-            { label: 'Absentismo', value: `${baseline.absenteeismRate}%`, sub: `${baseline.totalDaysLostMonth} días/mes` },
-            { label: 'Rotación anual', value: `${baseline.turnoverRate}%`, sub: 'tasa estimada' },
-          ].map((kpi, i) => (
-            <Card key={i} className="bg-muted/30">
-              <CardContent className="p-3 text-center">
-                <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                <p className="text-lg font-bold">{kpi.value}</p>
-                <p className="text-[10px] text-muted-foreground">{kpi.sub}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: 'Empleados', value: baseline.activeEmployees.toString(), sub: `de ${baseline.headcount} total`, quality: 'real' as DataQualityLevel },
+              { label: 'Salario medio', value: formatCurrency(baseline.avgSalary), sub: `Mediana: ${formatCurrency(baseline.medianSalary)}`, quality: dq.avgSalary },
+              { label: 'Coste empresa/mes', value: formatCurrency(baseline.totalEmployerMonthlyCost), sub: `Bruto: ${formatCurrency(baseline.totalGrossMonthlyCost)}`, quality: dq.totalEmployerMonthlyCost },
+              { label: 'Absentismo', value: `${baseline.absenteeismRate}%`, sub: `${baseline.totalDaysLostMonth} días/mes (90d)`, quality: dq.absenteeismRate },
+              { label: 'Rotación anual', value: `${baseline.turnoverRate}%`, sub: 'ventana 12 meses', quality: dq.turnoverRate },
+            ].map((kpi, i) => (
+              <Card key={i} className="bg-muted/30">
+                <CardContent className="p-3 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-0.5">
+                    <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                    <QualityDot level={kpi.quality} />
+                  </div>
+                  <p className="text-lg font-bold">{kpi.value}</p>
+                  <p className="text-[10px] text-muted-foreground">{kpi.sub}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* 8B: Data quality legend */}
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground px-1">
+            <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" /> Dato real</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" /> Estimación</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground/30" /> No disponible</span>
+            {dq.avgWorkingHoursWeek === 'estimated' && (
+              <span className="ml-auto opacity-70">Jornada: {baseline.avgWorkingHoursWeek}h/sem (defecto convenio)</span>
+            )}
+            {dq.avgWorkingHoursWeek === 'real' && (
+              <span className="ml-auto opacity-70">Jornada: {baseline.avgWorkingHoursWeek}h/sem (contratos)</span>
+            )}
+          </div>
+        </>
       )}
 
       {!baseline && isLoadingBaseline && (
@@ -184,7 +213,6 @@ export function HRLaborDigitalTwinPanel() {
 
         {/* Right: Config + Results */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Parameter controls */}
           {selectedCatalog && (
             <Card>
               <CardHeader className="pb-2">
@@ -278,7 +306,7 @@ export function HRLaborDigitalTwinPanel() {
                   </div>
                 </div>
 
-                {/* Before / After comparison */}
+                {/* Before / After */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg border bg-card">
                     <p className="text-xs font-medium text-muted-foreground mb-2">ANTES</p>
@@ -361,6 +389,7 @@ export function HRLaborDigitalTwinPanel() {
 
                 {/* Data sources */}
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <Database className="h-3 w-3" />
                   <span>Fuentes:</span>
                   {activeResult.impact.dataSourcesUsed.map(ds => (
                     <Badge key={ds} variant="outline" className="text-[9px]">{ds}</Badge>
@@ -382,7 +411,7 @@ export function HRLaborDigitalTwinPanel() {
               <CardContent>
                 <ScrollArea className="h-[200px]">
                   <div className="space-y-1">
-                    {results.map((r, i) => (
+                    {results.map((r) => (
                       <button
                         key={r.id}
                         onClick={() => setActiveResult(r)}
@@ -415,6 +444,7 @@ export function HRLaborDigitalTwinPanel() {
           <strong>Modo preparatorio.</strong> Las simulaciones son estimaciones basadas en datos actuales del sistema.
           No constituyen asesoramiento legal, fiscal ni laboral vinculante. Los costes de Seguridad Social
           son aproximaciones estándar para España y pueden variar según convenio colectivo y legislación vigente.
+          Las simulaciones se registran para trazabilidad interna.
         </span>
       </div>
     </div>
