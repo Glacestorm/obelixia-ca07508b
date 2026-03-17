@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useEmployeeOwnDocuments } from '@/hooks/erp/hr/useEmployeeOwnDocuments';
 import { type EmployeeDocument, type DocumentCategory } from '@/hooks/erp/hr/useHRDocumentExpedient';
-import { useHRDocumentExpedient } from '@/hooks/erp/hr/useHRDocumentExpedient';
+import { useDocumentInteractions } from '@/hooks/erp/hr/useDocumentInteractions';
 import { DocumentDetailPanel } from '@/components/erp/hr/document-expedient/DocumentDetailPanel';
 import { DocTrafficLightBadge } from '@/components/erp/hr/shared/DocTrafficLightBadge';
 import { DocAlertsSummaryBar } from '@/components/erp/hr/shared/DocAlertsSummaryBar';
@@ -68,11 +68,11 @@ export function EmployeeDocumentsSection({ employee }: Props) {
     documents: myDocs, isLoading: isLoadingDocuments, invalidate: invalidateMyDocs,
   } = useEmployeeOwnDocuments(employee.company_id, employee.id);
 
-  // We still need logAccess and selectedDocumentId from the expedient hook
+  // V2-RRHH-P3C: Lightweight interactions hook — no company-wide query
   const {
     logAccess,
     selectedDocumentId, setSelectedDocumentId,
-  } = useHRDocumentExpedient(employee.company_id);
+  } = useDocumentInteractions(employee.company_id);
 
   const [search, setSearch] = useState('');
   const [activeView, setActiveView] = useState<DocView>('all');
