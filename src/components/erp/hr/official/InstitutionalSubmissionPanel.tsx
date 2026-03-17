@@ -88,6 +88,16 @@ function SubmissionCard({ row, onTransition }: {
   const statusConfig = INSTITUTIONAL_STATUS_CONFIG[row.institutional_status];
   const validTransitions = getValidInstitutionalTransitions(row.institutional_status);
 
+  // PINST-B1: Build guard context from row data to show which transitions are actually available
+  const guardContext: TransitionGuardContext = {
+    hasPayload: !!row.submission_payload,
+    hasSignature: !!row.signature_id || !!row.signed_at,
+    hasReceipt: !!row.receipt_id || !!row.receipt_received_at,
+    hasReconciliationData: !!row.reconciliation_data,
+    artifactIsValid: (row.metadata as Record<string, unknown>)?.isValid !== false,
+    hasCertificate: false, // Unknown at UI level, hook will validate
+  };
+
   return (
     <Card className="border overflow-hidden">
       <CardHeader className="pb-2 space-y-1.5">
