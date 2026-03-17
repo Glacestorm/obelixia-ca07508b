@@ -373,12 +373,17 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       companyName: companyInfo.company_name ?? '',
       periodYear: currentYear,
       periodMonth: currentMonth,
-      records: [], // FANEmployeeRecord[] — populated from existing FAN data when available
+      records: [] as import('@/engines/erp/hr/fanCotizacionArtifactEngine').FANEmployeeRecord[],
       totals: {
         totalBasesCC: 0,
         totalBasesAT: 0,
+        totalHorasExtra: 0,
         totalCotizacionEmpresa: 0,
         totalCotizacionTrabajador: 0,
+        totalCotizacionGeneral: 0,
+        totalRetencionIRPF: 0,
+        totalLiquidoEstimado: 0,
+        liquidoEsEstimado: true,
         totalBonificaciones: 0,
         totalLiquidacion: 0,
       },
