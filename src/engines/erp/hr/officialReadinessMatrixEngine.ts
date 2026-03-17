@@ -215,9 +215,9 @@ export const CIRCUIT_DEFINITIONS: CircuitDefinition[] = [
   },
   {
     id: 'rlc_rnt', connectorId: 'tgss_siltra', domain: 'TGSS',
-    label: 'RLC / RNT', organism: 'TGSS / SILTRA',
-    description: 'Recibo de Liquidación de Cotizaciones y Relación Nominal de Trabajadores.',
-    periodicity: 'monthly', systemLimit: 'modeled_only',
+    label: 'RLC / RNT / CRA', organism: 'TGSS / SILTRA',
+    description: 'Recibo de Liquidación de Cotizaciones, Relación Nominal de Trabajadores y Cuadro Resumen de Aportaciones.',
+    periodicity: 'monthly', systemLimit: 'full_preparatory',
   },
 ];
 
