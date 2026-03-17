@@ -1,8 +1,9 @@
 /**
- * P4ArtifactsPanel — V2-RRHH-P4D
+ * P4ArtifactsPanel — V2-RRHH-P4E
  * UI consumer for useP4OfficialArtifacts: allows generating and viewing
  * RLC, RNT, CRA, Modelo 111, Modelo 190 artifacts from runtime.
  * P4D: + generation triggers + persisted artifacts from DB + cleanup
+ * P4E: + real FAN/payroll data feeding for RLC/RNT/CRA + period selector + honest messaging
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -12,15 +13,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   FileText, CheckCircle, XCircle, AlertTriangle, Clock,
   ChevronDown, ChevronRight, Shield, RefreshCw, Download,
-  GitBranch, Hash, AlertCircle, Package, Play, Database,
+  GitBranch, Hash, AlertCircle, Package, Play, Database, Info,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useP4OfficialArtifacts, type P4ArtifactRecord } from '@/hooks/erp/hr/useP4OfficialArtifacts';
 import type { OfficialArtifactDBRow } from '@/hooks/erp/hr/useOfficialArtifacts';
+import type { FANEmployeeRecord, FANCotizacionTotals } from '@/engines/erp/hr/fanCotizacionArtifactEngine';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -44,6 +47,102 @@ const ARTIFACT_SHORT: Record<string, string> = {
   modelo_111: 'Mod. 111',
   modelo_190: 'Mod. 190',
 };
+
+const MONTH_LABELS = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+// ── Build FANEmployeeRecord from payroll record calculation_details ──
+
+interface PayrollRecordRow {
+  id: string;
+  employee_id: string;
+  payroll_period_id: string;
+  gross_salary: number;
+  net_salary: number;
+  total_deductions: number;
+  employer_cost: number;
+  calculation_details: Record<string, unknown> | null;
+}
+
+function buildFANRecordFromPayroll(rec: PayrollRecordRow): FANEmployeeRecord {
+  const d = rec.calculation_details;
+  const bases = (d?.bases ?? {}) as Record<string, number>;
+  const header = (d?.header ?? {}) as Record<string, string>;
+
+  return {
+    employeeId: rec.employee_id,
+    employeeName: header.trabajadorNombre ?? header.empleadoNombre ?? rec.employee_id,
+    naf: header.trabajadorNAF ?? header.naf ?? '',
+    dniNie: header.trabajadorNIF ?? header.dniNie ?? '',
+    grupoCotizacion: Number(header.grupoCotizacion ?? 1),
+    contractTypeCode: header.codigoContrato ?? '100',
+    isTemporary: false,
+    coeficienteParcialidad: 1,
+    diasCotizados: 30,
+
+    baseCCMensual: bases.baseCotizacionCC ?? 0,
+    baseATMensual: bases.baseCotizacionAT ?? 0,
+    baseHorasExtra: bases.baseHorasExtra ?? 0,
+    prorrateoMensual: 0,
+
+    ccTrabajador: bases.ccTrabajador ?? 0,
+    desempleoTrabajador: bases.desempleoTrabajador ?? 0,
+    fpTrabajador: bases.fpTrabajador ?? 0,
+    meiTrabajador: bases.meiTrabajador ?? 0,
+    totalTrabajador: bases.totalCotizacionesTrabajador ?? 0,
+
+    ccEmpresa: bases.ccEmpresa ?? 0,
+    desempleoEmpresa: bases.desempleoEmpresa ?? 0,
+    fogasa: bases.fogasa ?? 0,
+    fpEmpresa: bases.fpEmpresa ?? 0,
+    meiEmpresa: bases.meiEmpresa ?? 0,
+    atEmpresa: bases.atEmpresa ?? 0,
+    totalEmpresa: bases.totalCotizacionesEmpresa ?? 0,
+
+    baseIRPFCorregida: bases.baseIRPF ?? 0,
+    tipoIRPF: 0,
+    retencionIRPF: 0,
+
+    topeMinAplicado: false,
+    topeMaxAplicado: false,
+    prorrateoSource: 'none',
+    ssDataFromDB: true,
+    validationIssues: [],
+  };
+}
+
+function aggregateTotals(records: FANEmployeeRecord[]): FANCotizacionTotals {
+  const totalBasesCC = r2(records.reduce((s, r) => s + r.baseCCMensual, 0));
+  const totalBasesAT = r2(records.reduce((s, r) => s + r.baseATMensual, 0));
+  const totalHorasExtra = r2(records.reduce((s, r) => s + r.baseHorasExtra, 0));
+  const totalCotizacionTrabajador = r2(records.reduce((s, r) => s + r.totalTrabajador, 0));
+  const totalCotizacionEmpresa = r2(records.reduce((s, r) => s + r.totalEmpresa, 0));
+  const totalRetencionIRPF = r2(records.reduce((s, r) => s + r.retencionIRPF, 0));
+  return {
+    totalBasesCC,
+    totalBasesAT,
+    totalHorasExtra,
+    totalCotizacionTrabajador,
+    totalCotizacionEmpresa,
+    totalCotizacionGeneral: r2(totalCotizacionTrabajador + totalCotizacionEmpresa),
+    totalRetencionIRPF,
+    totalLiquidoEstimado: r2(totalBasesCC - totalCotizacionTrabajador - totalRetencionIRPF),
+    liquidoEsEstimado: true,
+  };
+}
+
+type DataSourceKind = 'fan_artifact' | 'payroll_records' | 'none';
+
+interface CotizacionData {
+  source: DataSourceKind;
+  records: FANEmployeeRecord[];
+  totals: FANCotizacionTotals;
+  sourceLabel: string;
+}
 
 // ── Persisted artifact card (from DB) ──
 
@@ -241,23 +340,32 @@ interface GenerateActionProps {
   onGenerate: () => void;
   isGenerating: boolean;
   existingCount: number;
+  dataAvailable: boolean;
+  dataSourceLabel?: string;
 }
 
-function GenerateActionRow({ label, shortLabel, artifactType, onGenerate, isGenerating, existingCount }: GenerateActionProps) {
+function GenerateActionRow({ label, shortLabel, onGenerate, isGenerating, existingCount, dataAvailable, dataSourceLabel }: GenerateActionProps) {
   return (
     <div className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
       <div className="flex items-center gap-2 min-w-0">
         <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{label}</p>
-          {existingCount > 0 && (
-            <p className="text-[10px] text-muted-foreground">{existingCount} versión(es) existente(s)</p>
-          )}
+          <div className="flex items-center gap-1.5">
+            {existingCount > 0 && (
+              <span className="text-[10px] text-muted-foreground">{existingCount} versión(es)</span>
+            )}
+            {dataSourceLabel && (
+              <Badge variant="outline" className={cn("text-[9px] h-4", dataAvailable ? 'border-emerald-500/30 text-emerald-700' : 'border-amber-500/30 text-amber-700')}>
+                {dataSourceLabel}
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
       <Button
         size="sm"
-        variant="outline"
+        variant={dataAvailable ? 'outline' : 'ghost'}
         onClick={onGenerate}
         disabled={isGenerating}
         className="shrink-0 gap-1.5"
@@ -273,8 +381,16 @@ function GenerateActionRow({ label, shortLabel, artifactType, onGenerate, isGene
 
 export function P4ArtifactsPanel({ companyId, className }: Props) {
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth()); // 0-indexed
+
+  const periodYear = selectedYear;
+  const periodMonth = selectedMonth + 1; // 1-indexed
+
+  const years = useMemo(() => {
+    const c = now.getFullYear();
+    return [c - 1, c, c + 1];
+  }, []);
 
   const {
     isGenerating,
@@ -305,7 +421,6 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     enabled: !!companyId,
   });
 
-  // Count persisted per type
   const persistedCountByType = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const row of persistedArtifacts) {
@@ -314,14 +429,11 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     return counts;
   }, [persistedArtifacts]);
 
-  // Refetch persisted when session artifacts change (new generation)
   useEffect(() => {
-    if (sessionArtifacts.length > 0) {
-      refetchPersisted();
-    }
+    if (sessionArtifacts.length > 0) refetchPersisted();
   }, [sessionArtifacts.length, refetchPersisted]);
 
-  // ── Fetch company info for generation params ──
+  // ── Fetch company info ──
   const { data: companyInfo } = useQuery({
     queryKey: ['hr-company-info', companyId],
     queryFn: async () => {
@@ -336,29 +448,121 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     enabled: !!companyId,
   });
 
-  // ── Fetch payroll records for perceptorIds (Modelo 111) ──
-  const { data: payrollRecords = [] } = useQuery({
-    queryKey: ['hr-payroll-records-for-p4', companyId, currentYear],
+  // ── PRIMARY SOURCE: Persisted FAN artifact for the selected period ──
+  const { data: fanArtifactData } = useQuery({
+    queryKey: ['hr-fan-artifact-for-p4', companyId, periodYear, periodMonth],
     queryFn: async () => {
       const sb = supabase as unknown as { from: (t: string) => any };
       const { data } = await sb
-        .from('hr_payroll_records')
-        .select('id, employee_id, payroll_period_id, gross_salary, net_salary, total_deductions, employer_cost, calculation_details')
+        .from('erp_hr_official_artifacts')
+        .select('artifact_payload, totals, employee_ids')
         .eq('company_id', companyId)
-        .limit(500);
-      return (data ?? []) as Array<{
-        id: string;
-        employee_id: string;
-        payroll_period_id: string;
-        gross_salary: number;
-        net_salary: number;
-        total_deductions: number;
-        employer_cost: number;
-        calculation_details: Record<string, unknown> | null;
-      }>;
+        .eq('artifact_type', 'fan_cotizacion')
+        .eq('period_year', periodYear)
+        .eq('period_month', periodMonth)
+        .is('superseded_by_id', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data as { artifact_payload: Record<string, unknown>; totals: Record<string, number>; employee_ids: string[] } | null;
     },
     enabled: !!companyId,
   });
+
+  // ── SECONDARY SOURCE: Payroll records for the selected period ──
+  const { data: payrollData } = useQuery({
+    queryKey: ['hr-payroll-records-for-p4e', companyId, periodYear, periodMonth],
+    queryFn: async () => {
+      const sb = supabase as unknown as { from: (t: string) => any };
+      // Find the payroll period
+      const { data: periods } = await sb
+        .from('hr_payroll_periods')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('fiscal_year', periodYear)
+        .eq('period_number', periodMonth)
+        .limit(1);
+
+      const periodId = periods?.[0]?.id;
+      if (!periodId) return null;
+
+      const { data: records } = await sb
+        .from('hr_payroll_records')
+        .select('id, employee_id, payroll_period_id, gross_salary, net_salary, total_deductions, employer_cost, calculation_details')
+        .eq('payroll_period_id', periodId)
+        .limit(500);
+
+      return {
+        periodId,
+        records: (records ?? []) as PayrollRecordRow[],
+      };
+    },
+    enabled: !!companyId,
+  });
+
+  // ── Resolve best cotización data source ──
+  const cotizacionData = useMemo((): CotizacionData => {
+    // Priority 1: FAN artifact payload (already has FANEmployeeRecord[] + FANCotizacionTotals)
+    if (fanArtifactData?.artifact_payload) {
+      const payload = fanArtifactData.artifact_payload;
+      const fanRecords = (payload.records ?? []) as FANEmployeeRecord[];
+      const fanTotals = (payload.totals ?? {}) as FANCotizacionTotals;
+
+      if (fanRecords.length > 0) {
+        return {
+          source: 'fan_artifact',
+          records: fanRecords,
+          totals: fanTotals,
+          sourceLabel: `FAN persistido (${fanRecords.length} trabajadores)`,
+        };
+      }
+    }
+
+    // Priority 2: Payroll records with calculation_details.bases
+    if (payrollData?.records && payrollData.records.length > 0) {
+      const withBases = payrollData.records.filter(r => {
+        const d = r.calculation_details;
+        return d && typeof d === 'object' && 'bases' in d;
+      });
+
+      if (withBases.length > 0) {
+        const records = withBases.map(buildFANRecordFromPayroll);
+        const totals = aggregateTotals(records);
+        return {
+          source: 'payroll_records',
+          records,
+          totals,
+          sourceLabel: `Nómina calculada (${records.length} empleados)`,
+        };
+      }
+
+      // Payroll exists but without SS detail — still better than nothing
+      if (payrollData.records.length > 0) {
+        const records = payrollData.records.map(buildFANRecordFromPayroll);
+        const totals = aggregateTotals(records);
+        return {
+          source: 'payroll_records',
+          records,
+          totals,
+          sourceLabel: `Nómina sin desglose SS (${records.length} empleados)`,
+        };
+      }
+    }
+
+    return {
+      source: 'none',
+      records: [],
+      totals: {
+        totalBasesCC: 0, totalBasesAT: 0, totalHorasExtra: 0,
+        totalCotizacionTrabajador: 0, totalCotizacionEmpresa: 0,
+        totalCotizacionGeneral: 0, totalRetencionIRPF: 0,
+        totalLiquidoEstimado: 0, liquidoEsEstimado: true,
+      },
+      sourceLabel: 'Sin datos disponibles',
+    };
+  }, [fanArtifactData, payrollData]);
+
+  const hasSSData = cotizacionData.source !== 'none';
 
   // ── Generation handlers ──
 
@@ -367,26 +571,21 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       toast.error('Información de empresa no disponible');
       return;
     }
+
+    if (!hasSSData) {
+      toast.warning('No hay datos de cotización disponibles para este período. El artefacto se generará vacío.', {
+        duration: 5000,
+      });
+    }
+
     const params = {
       companyCIF: companyInfo.cif ?? '',
       companyCCC: companyInfo.ccc ?? '',
       companyName: companyInfo.company_name ?? '',
-      periodYear: currentYear,
-      periodMonth: currentMonth,
-      records: [] as import('@/engines/erp/hr/fanCotizacionArtifactEngine').FANEmployeeRecord[],
-      totals: {
-        totalBasesCC: 0,
-        totalBasesAT: 0,
-        totalHorasExtra: 0,
-        totalCotizacionEmpresa: 0,
-        totalCotizacionTrabajador: 0,
-        totalCotizacionGeneral: 0,
-        totalRetencionIRPF: 0,
-        totalLiquidoEstimado: 0,
-        liquidoEsEstimado: true,
-        totalBonificaciones: 0,
-        totalLiquidacion: 0,
-      },
+      periodYear,
+      periodMonth,
+      records: cotizacionData.records,
+      totals: cotizacionData.totals,
     };
 
     if (type === 'rlc') await generateRLC(params);
@@ -399,35 +598,60 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       toast.error('Información de empresa no disponible');
       return;
     }
-    const trimester = Math.ceil(currentMonth / 3);
+    const trimester = Math.ceil(periodMonth / 3);
     const startMonth = (trimester - 1) * 3 + 1;
 
-    // Build monthInputs with real perceptorIds from payroll records
-    const monthInputs = [0, 1, 2].map(offset => {
+    // Build monthInputs: for each month of the trimester, try to find payroll records
+    const monthInputs = await Promise.all([0, 1, 2].map(async (offset) => {
       const m = startMonth + offset;
-      // Gather unique employee IDs for this month from payroll records
-      const monthRecords = payrollRecords.filter(r => {
-        const details = r.calculation_details as Record<string, unknown> | null;
-        const periodMonth = details?.periodMonth ?? details?.period_month;
-        return periodMonth === m;
-      });
-      const perceptorIds = [...new Set(monthRecords.map(r => r.employee_id).filter(Boolean))];
-      
+
+      // Try to find payroll period for this month
+      const sb = supabase as unknown as { from: (t: string) => any };
+      const { data: periods } = await sb
+        .from('hr_payroll_periods')
+        .select('id, status')
+        .eq('company_id', companyId)
+        .eq('fiscal_year', periodYear)
+        .eq('period_number', m)
+        .limit(1);
+
+      const period = periods?.[0] as { id: string; status: string } | undefined;
+      if (!period) {
+        return {
+          periodYear,
+          periodMonth: m,
+          perceptoresCount: 0,
+          perceptorIds: undefined,
+          baseImponible: 0,
+          retencionPracticada: 0,
+          payrollClosed: false,
+        };
+      }
+
+      const { data: records } = await sb
+        .from('hr_payroll_records')
+        .select('employee_id, gross_salary, total_deductions')
+        .eq('payroll_period_id', period.id)
+        .limit(500);
+
+      const recs = (records ?? []) as Array<{ employee_id: string; gross_salary: number; total_deductions: number }>;
+      const perceptorIds = [...new Set(recs.map(r => r.employee_id).filter(Boolean))];
+
       return {
-        periodYear: currentYear,
+        periodYear,
         periodMonth: m,
-        perceptoresCount: perceptorIds.length || monthRecords.length,
+        perceptoresCount: perceptorIds.length,
         perceptorIds: perceptorIds.length > 0 ? perceptorIds : undefined,
-        baseImponible: monthRecords.reduce((s, r) => s + (r.gross_salary ?? 0), 0),
-        retencionPracticada: monthRecords.reduce((s, r) => s + (r.total_deductions ?? 0), 0),
-        payrollClosed: true,
-      } satisfies import('@/engines/erp/hr/aeatArtifactEngine').Modelo111MonthInput;
-    });
+        baseImponible: recs.reduce((s, r) => s + (r.gross_salary ?? 0), 0),
+        retencionPracticada: recs.reduce((s, r) => s + (r.total_deductions ?? 0), 0),
+        payrollClosed: period.status === 'closed' || period.status === 'locked',
+      };
+    }));
 
     await generateModelo111({
       companyCIF: companyInfo.cif ?? '',
       companyName: companyInfo.company_name ?? '',
-      fiscalYear: currentYear,
+      fiscalYear: periodYear,
       trimester,
       monthInputs,
     });
@@ -441,7 +665,7 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     await generateModelo190({
       companyCIF: companyInfo.cif ?? '',
       companyName: companyInfo.company_name ?? '',
-      fiscalYear: currentYear,
+      fiscalYear: periodYear,
       perceptorLines: [],
     });
   };
@@ -478,10 +702,52 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       <CardContent className="pt-3">
         <ScrollArea className="max-h-[700px]">
           <div className="space-y-4">
+            {/* Period selector */}
+            <div className="flex items-center gap-3">
+              <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(y => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_LABELS.map((label, i) => (
+                    <SelectItem key={i} value={String(i)}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Data source indicator */}
+            <div className={cn(
+              'flex items-center gap-2 p-2 rounded-md border text-xs',
+              cotizacionData.source === 'fan_artifact'
+                ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-700'
+                : cotizacionData.source === 'payroll_records'
+                  ? 'bg-amber-500/5 border-amber-500/20 text-amber-700'
+                  : 'bg-muted/50 border-border text-muted-foreground'
+            )}>
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              <span>
+                <strong>Fuente de datos SS:</strong> {cotizacionData.sourceLabel}
+                {cotizacionData.source === 'fan_artifact' && ' — datos completos de cotización'}
+                {cotizacionData.source === 'payroll_records' && ' — derivado de nóminas calculadas'}
+                {cotizacionData.source === 'none' && ` para ${MONTH_LABELS[selectedMonth]} ${selectedYear}. Genera primero un FAN o calcula nóminas.`}
+              </span>
+            </div>
+
             {/* Generation triggers */}
             <div>
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                Generar artefactos
+                Generar artefactos — {MONTH_LABELS[selectedMonth]} {selectedYear}
               </h4>
               <div className="space-y-1.5">
                 <GenerateActionRow
@@ -491,6 +757,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   onGenerate={() => handleGenerateSSArtifact('rlc')}
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['rlc'] ?? 0}
+                  dataAvailable={hasSSData}
+                  dataSourceLabel={hasSSData ? cotizacionData.source === 'fan_artifact' ? 'FAN' : 'Nómina' : undefined}
                 />
                 <GenerateActionRow
                   label={ARTIFACT_LABELS.rnt}
@@ -499,6 +767,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   onGenerate={() => handleGenerateSSArtifact('rnt')}
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['rnt'] ?? 0}
+                  dataAvailable={hasSSData}
+                  dataSourceLabel={hasSSData ? cotizacionData.source === 'fan_artifact' ? 'FAN' : 'Nómina' : undefined}
                 />
                 <GenerateActionRow
                   label={ARTIFACT_LABELS.cra}
@@ -507,6 +777,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   onGenerate={() => handleGenerateSSArtifact('cra')}
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['cra'] ?? 0}
+                  dataAvailable={hasSSData}
+                  dataSourceLabel={hasSSData ? cotizacionData.source === 'fan_artifact' ? 'FAN' : 'Nómina' : undefined}
                 />
                 <GenerateActionRow
                   label={ARTIFACT_LABELS.modelo_111}
@@ -515,6 +787,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   onGenerate={handleGenerateModelo111}
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['modelo_111'] ?? 0}
+                  dataAvailable={true}
+                  dataSourceLabel="Nómina"
                 />
                 <GenerateActionRow
                   label={ARTIFACT_LABELS.modelo_190}
@@ -523,6 +797,7 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   onGenerate={handleGenerateModelo190}
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['modelo_190'] ?? 0}
+                  dataAvailable={true}
                 />
               </div>
             </div>
