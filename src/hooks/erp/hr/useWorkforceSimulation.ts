@@ -70,7 +70,7 @@ export function useWorkforceSimulation(companyId: string) {
           .limit(500),
         // 8B: fetch contract hours if available
         supabase
-          .from('erp_hr_contracts')
+          .from('erp_hr_contracts' as any)
           .select('id, weekly_hours, contract_type, status')
           .eq('company_id', companyId)
           .eq('status', 'active')
