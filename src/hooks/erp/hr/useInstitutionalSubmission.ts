@@ -12,9 +12,11 @@ import {
   canTransitionInstitutional,
   buildStatusTransition,
   reconcileArtifactWithReceipt,
+  validateTransitionContent,
   type InstitutionalStatus,
   type ReceiptType,
   type StatusTransitionEntry,
+  type TransitionGuardContext,
 } from '@/engines/erp/hr/institutionalSubmissionEngine';
 import { buildLedgerRow, type LedgerEventInput } from '@/engines/erp/hr/ledgerEngine';
 import { buildEvidenceRow, type EvidenceInput } from '@/engines/erp/hr/evidenceEngine';
