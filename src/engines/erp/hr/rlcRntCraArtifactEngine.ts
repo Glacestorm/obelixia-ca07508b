@@ -200,6 +200,8 @@ export interface CRASection {
   trabajador: number;
   total: number;
   workerCount: number;
+  /** A6 fix: optional breakdown by grupo de cotización */
+  byGrupo?: Array<{ grupo: number; empresa: number; trabajador: number; total: number; workerCount: number }>;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
