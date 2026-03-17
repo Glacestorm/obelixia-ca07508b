@@ -145,12 +145,14 @@ export type {
   FANValidation, FANArtifactStatus,
 } from './fanCotizacionArtifactEngine';
 
-// ── Official Artifact Validation Engine (V2-RRHH-P2) ──
+// ── Official Artifact Validation Engine (V2-RRHH-P2 + P4B) ──
 export {
   validateAFIPrerequisites, validateFANPrerequisites,
+  validateRLCPrerequisites, validateRNTPrerequisites, validateCRAPrerequisites,
+  validateModelo111Prerequisites, validateModelo190Prerequisites,
 } from './officialArtifactValidationEngine';
 export type {
-  ArtifactPreValidation, ArtifactPreCheck,
+  ArtifactPreValidation, ArtifactPreCheck, P4ArtifactType,
 } from './officialArtifactValidationEngine';
 
 // ── RLC / RNT / CRA Artifact Engine (V2-RRHH-P4) ──
