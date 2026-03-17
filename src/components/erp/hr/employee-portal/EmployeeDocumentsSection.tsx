@@ -384,14 +384,15 @@ function EmployeeDocUploadDialog({ open, onClose, employee, onUploadSuccess }: {
 
       if (uploadError) throw uploadError;
 
-      // Create document record
-      const { error: insertError } = await (supabase as any)
+      // Create document record — V2-RRHH-P3B: removed `as any`, proper typed insert
+      const { error: insertError } = await supabase
         .from('erp_hr_employee_documents')
         .insert({
           employee_id: employee.id,
           company_id: employee.company_id,
           document_name: docName.trim(),
           document_type: docType,
+          document_url: storagePath, // required column
           category: docType === 'medico' ? 'medical' : docType === 'formacion' ? 'training' : 'personal',
           document_status: 'pending_review',
           storage_path: storagePath,
