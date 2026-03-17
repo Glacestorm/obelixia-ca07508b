@@ -117,8 +117,8 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
         <QuickActionPill icon={Send} label="Solicitud" onClick={() => onNavigate('requests')} />
       </div>
 
-      {/* ═══ STATUS CARDS ROW ═══ */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* ═══ STATUS CARDS ROW — V2-RRHH-P3B: added leave balance ═══ */}
+      <div className="grid grid-cols-3 gap-3">
         <StatusCard
           icon={Send}
           label="Solicitudes"
@@ -129,12 +129,20 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
           accent={!!dashboard && dashboard.pendingRequests > 0}
         />
         <StatusCard
+          icon={Palmtree}
+          label="Vacaciones"
+          value={leaveBalance?.remaining ?? 0}
+          suffix={`de ${leaveBalance?.total ?? '—'} días`}
+          loading={!leaveBalance && isDashboardLoading}
+          onClick={() => onNavigate('leave')}
+        />
+        <StatusCard
           icon={AlertTriangle}
-          label="Alertas docs"
+          label="Alertas"
           value={dashboard?.documentsWithAlerts ?? 0}
           suffix="pendientes"
           loading={isDashboardLoading}
-          onClick={() => onNavigate('documents')}
+          onClick={() => onNavigate('notifications')}
           warning={!!dashboard && dashboard.documentsWithAlerts > 0}
         />
       </div>
