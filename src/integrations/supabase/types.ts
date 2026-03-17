@@ -35387,6 +35387,122 @@ export type Database = {
           },
         ]
       }
+      erp_hr_institutional_submissions: {
+        Row: {
+          artifact_id: string
+          artifact_type: string
+          certificate_id: string | null
+          circuit_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          evidence_id: string | null
+          fiscal_year: number | null
+          id: string
+          institutional_status: string
+          ledger_event_id: string | null
+          metadata: Json
+          period_month: number | null
+          period_year: number | null
+          receipt_data: Json | null
+          receipt_id: string | null
+          receipt_received_at: string | null
+          reconciled_at: string | null
+          reconciliation_data: Json | null
+          reconciliation_status: string | null
+          signature_id: string | null
+          signature_method: string | null
+          signed_at: string | null
+          status_history: Json
+          submission_channel: string | null
+          submission_payload: Json | null
+          submission_reference: string | null
+          submitted_at: string | null
+          target_organism: string
+          trimester: number | null
+          updated_at: string
+          version_registry_id: string | null
+        }
+        Insert: {
+          artifact_id: string
+          artifact_type: string
+          certificate_id?: string | null
+          circuit_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          evidence_id?: string | null
+          fiscal_year?: number | null
+          id?: string
+          institutional_status?: string
+          ledger_event_id?: string | null
+          metadata?: Json
+          period_month?: number | null
+          period_year?: number | null
+          receipt_data?: Json | null
+          receipt_id?: string | null
+          receipt_received_at?: string | null
+          reconciled_at?: string | null
+          reconciliation_data?: Json | null
+          reconciliation_status?: string | null
+          signature_id?: string | null
+          signature_method?: string | null
+          signed_at?: string | null
+          status_history?: Json
+          submission_channel?: string | null
+          submission_payload?: Json | null
+          submission_reference?: string | null
+          submitted_at?: string | null
+          target_organism: string
+          trimester?: number | null
+          updated_at?: string
+          version_registry_id?: string | null
+        }
+        Update: {
+          artifact_id?: string
+          artifact_type?: string
+          certificate_id?: string | null
+          circuit_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          evidence_id?: string | null
+          fiscal_year?: number | null
+          id?: string
+          institutional_status?: string
+          ledger_event_id?: string | null
+          metadata?: Json
+          period_month?: number | null
+          period_year?: number | null
+          receipt_data?: Json | null
+          receipt_id?: string | null
+          receipt_received_at?: string | null
+          reconciled_at?: string | null
+          reconciliation_data?: Json | null
+          reconciliation_status?: string | null
+          signature_id?: string | null
+          signature_method?: string | null
+          signed_at?: string | null
+          status_history?: Json
+          submission_channel?: string | null
+          submission_payload?: Json | null
+          submission_reference?: string | null
+          submitted_at?: string | null
+          target_organism?: string
+          trimester?: number | null
+          updated_at?: string
+          version_registry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_institutional_submissions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_integration_log: {
         Row: {
           action: string
@@ -37404,6 +37520,119 @@ export type Database = {
           },
         ]
       }
+      erp_hr_modelo190_perceptors: {
+        Row: {
+          clave_percepcion: string
+          company_id: string
+          created_at: string
+          data_quality: string
+          employee_id: string
+          employee_name: string
+          estimation_flags: Json
+          family_situation_changes: Json | null
+          fiscal_year: number
+          id: string
+          ingresos_a_cuenta: number
+          irregular_income: Json | null
+          metadata: Json
+          nif: string
+          percepciones_en_especie: number
+          percepciones_integras: number
+          q1_percepciones: number
+          q1_retenciones: number
+          q2_percepciones: number
+          q2_retenciones: number
+          q3_percepciones: number
+          q3_retenciones: number
+          q4_percepciones: number
+          q4_retenciones: number
+          regional_deductions: Json | null
+          retenciones_practicadas: number
+          source_111_ids: Json | null
+          source_payroll_ids: Json | null
+          subclave: string
+          updated_at: string
+          zero_retention_justified: boolean
+          zero_retention_reason: string | null
+        }
+        Insert: {
+          clave_percepcion?: string
+          company_id: string
+          created_at?: string
+          data_quality?: string
+          employee_id: string
+          employee_name: string
+          estimation_flags?: Json
+          family_situation_changes?: Json | null
+          fiscal_year: number
+          id?: string
+          ingresos_a_cuenta?: number
+          irregular_income?: Json | null
+          metadata?: Json
+          nif: string
+          percepciones_en_especie?: number
+          percepciones_integras?: number
+          q1_percepciones?: number
+          q1_retenciones?: number
+          q2_percepciones?: number
+          q2_retenciones?: number
+          q3_percepciones?: number
+          q3_retenciones?: number
+          q4_percepciones?: number
+          q4_retenciones?: number
+          regional_deductions?: Json | null
+          retenciones_practicadas?: number
+          source_111_ids?: Json | null
+          source_payroll_ids?: Json | null
+          subclave?: string
+          updated_at?: string
+          zero_retention_justified?: boolean
+          zero_retention_reason?: string | null
+        }
+        Update: {
+          clave_percepcion?: string
+          company_id?: string
+          created_at?: string
+          data_quality?: string
+          employee_id?: string
+          employee_name?: string
+          estimation_flags?: Json
+          family_situation_changes?: Json | null
+          fiscal_year?: number
+          id?: string
+          ingresos_a_cuenta?: number
+          irregular_income?: Json | null
+          metadata?: Json
+          nif?: string
+          percepciones_en_especie?: number
+          percepciones_integras?: number
+          q1_percepciones?: number
+          q1_retenciones?: number
+          q2_percepciones?: number
+          q2_retenciones?: number
+          q3_percepciones?: number
+          q3_retenciones?: number
+          q4_percepciones?: number
+          q4_retenciones?: number
+          regional_deductions?: Json | null
+          retenciones_practicadas?: number
+          source_111_ids?: Json | null
+          source_payroll_ids?: Json | null
+          subclave?: string
+          updated_at?: string
+          zero_retention_justified?: boolean
+          zero_retention_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_modelo190_perceptors_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_hr_obligation_deadlines: {
         Row: {
           ai_reminded: boolean | null
@@ -37705,6 +37934,78 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_official_receipts: {
+        Row: {
+          company_id: string
+          created_at: string
+          error_codes: Json | null
+          evidence_id: string | null
+          id: string
+          ledger_event_id: string | null
+          metadata: Json
+          organism: string
+          processed_at: string | null
+          receipt_message: string | null
+          receipt_payload: Json | null
+          receipt_type: string
+          received_at: string
+          reference_code: string | null
+          submission_id: string
+          version_number: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          error_codes?: Json | null
+          evidence_id?: string | null
+          id?: string
+          ledger_event_id?: string | null
+          metadata?: Json
+          organism: string
+          processed_at?: string | null
+          receipt_message?: string | null
+          receipt_payload?: Json | null
+          receipt_type: string
+          received_at?: string
+          reference_code?: string | null
+          submission_id: string
+          version_number?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          error_codes?: Json | null
+          evidence_id?: string | null
+          id?: string
+          ledger_event_id?: string | null
+          metadata?: Json
+          organism?: string
+          processed_at?: string | null
+          receipt_message?: string | null
+          receipt_payload?: Json | null
+          receipt_type?: string
+          received_at?: string
+          reference_code?: string | null
+          submission_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_official_receipts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_hr_official_receipts_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_institutional_submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -41799,6 +42100,89 @@ export type Database = {
             columns: ["legal_validated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_signature_operations: {
+        Row: {
+          artifact_id: string | null
+          certificate_id: string | null
+          certificate_issuer: string | null
+          certificate_serial: string | null
+          certificate_valid_from: string | null
+          certificate_valid_to: string | null
+          company_id: string
+          created_at: string
+          document_hash: string | null
+          eidas_level: string | null
+          evidence_id: string | null
+          id: string
+          ledger_event_id: string | null
+          metadata: Json
+          operation_type: string
+          signature_algorithm: string | null
+          signature_status: string
+          signed_at: string | null
+          signer_id: string | null
+          signer_name: string | null
+          submission_id: string | null
+          timestamp_token: string | null
+        }
+        Insert: {
+          artifact_id?: string | null
+          certificate_id?: string | null
+          certificate_issuer?: string | null
+          certificate_serial?: string | null
+          certificate_valid_from?: string | null
+          certificate_valid_to?: string | null
+          company_id: string
+          created_at?: string
+          document_hash?: string | null
+          eidas_level?: string | null
+          evidence_id?: string | null
+          id?: string
+          ledger_event_id?: string | null
+          metadata?: Json
+          operation_type: string
+          signature_algorithm?: string | null
+          signature_status?: string
+          signed_at?: string | null
+          signer_id?: string | null
+          signer_name?: string | null
+          submission_id?: string | null
+          timestamp_token?: string | null
+        }
+        Update: {
+          artifact_id?: string | null
+          certificate_id?: string | null
+          certificate_issuer?: string | null
+          certificate_serial?: string | null
+          certificate_valid_from?: string | null
+          certificate_valid_to?: string | null
+          company_id?: string
+          created_at?: string
+          document_hash?: string | null
+          eidas_level?: string | null
+          evidence_id?: string | null
+          id?: string
+          ledger_event_id?: string | null
+          metadata?: Json
+          operation_type?: string
+          signature_algorithm?: string | null
+          signature_status?: string
+          signed_at?: string | null
+          signer_id?: string | null
+          signer_name?: string | null
+          submission_id?: string | null
+          timestamp_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_signature_operations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
