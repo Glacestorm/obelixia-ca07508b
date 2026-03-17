@@ -68,11 +68,11 @@ export function EmployeeDocumentsSection({ employee }: Props) {
     documents: myDocs, isLoading: isLoadingDocuments, invalidate: invalidateMyDocs,
   } = useEmployeeOwnDocuments(employee.company_id, employee.id);
 
-  // We still need logAccess and selectedDocumentId from the expedient hook
+  // V2-RRHH-P3C: Lightweight interactions hook — no company-wide query
   const {
     logAccess,
     selectedDocumentId, setSelectedDocumentId,
-  } = useHRDocumentExpedient(employee.company_id);
+  } = useDocumentInteractions(employee.company_id);
 
   const [search, setSearch] = useState('');
   const [activeView, setActiveView] = useState<DocView>('all');
