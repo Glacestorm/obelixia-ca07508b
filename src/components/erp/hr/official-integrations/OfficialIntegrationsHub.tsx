@@ -107,7 +107,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1">
           <TabsTrigger value="readiness" className="text-xs relative">
             Readiness
             {activeAlertCount > 0 && activeTab !== 'readiness' && (
@@ -116,6 +116,8 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="p4-artifacts" className="text-xs">Artefactos P4</TabsTrigger>
+          <TabsTrigger value="monthly-package" className="text-xs">Paquete Mensual</TabsTrigger>
           <TabsTrigger value="dry-run" className="text-xs">Dry-Run</TabsTrigger>
           <TabsTrigger value="sandbox" className="text-xs">Sandbox</TabsTrigger>
           <TabsTrigger value="approvals" className="text-xs relative">
