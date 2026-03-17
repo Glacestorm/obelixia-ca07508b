@@ -15,7 +15,7 @@ import { HRPayrollIncidentsPanel } from './HRPayrollIncidentsPanel';
 import { HRPayrollRunsPanel } from './HRPayrollRunsPanel';
 import { HRPayrollSimulator } from './HRPayrollSimulator';
 import { HRPayrollAuditTrail } from './HRPayrollAuditTrail';
-
+import { LegalPreClosePanel } from './LegalPreClosePanel';
 interface Props {
   companyId: string;
   mvpMode?: boolean;
