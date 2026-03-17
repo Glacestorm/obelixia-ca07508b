@@ -1,17 +1,23 @@
 /**
- * irpfEngine.ts — V2-RRHH-P1
- * Motor puro de cálculo de retención IRPF (España) — Preparatorio avanzado
+ * irpfEngine.ts — V2-RRHH-P1B
+ * Motor puro de cálculo de retención IRPF (España) — Con regularización progresiva
  *
  * Calcula:
- *  - Base imponible IRPF (rendimientos del trabajo)
+ *  - Base imponible IRPF (rendimientos del trabajo) con exclusión de exentos
  *  - Reducciones y mínimos personales/familiares
  *  - Cuota íntegra por tramos (estatal + autonómico)
+ *  - Regularización progresiva mensual acumulada (RIRPF Art. 82-86)
  *  - Tipo efectivo de retención
  *  - Retención mensual
  *
  * Legislación referencia: LIRPF Arts. 17-20, 56-66, 80-86, 99-101; RIRPF Art. 82-86
- * NOTA: Cálculo preparatorio — puede diferir del resultado exacto de la AEAT.
+ * NOTA: Cálculo preparatorio avanzado — puede diferir del resultado exacto de la AEAT.
  *       No constituye asesoramiento fiscal.
+ *
+ * LIMITACIONES EXPLÍCITAS P1B:
+ *  - Regularización progresiva implementada pero sin recálculo retroactivo por cambio de situación familiar mid-year
+ *  - Deducciones autonómicas específicas no implementadas
+ *  - Rentas irregulares (indemnizaciones, etc.) no tratadas con regla 30%
  */
 
 // ── Input types ──
@@ -68,6 +74,25 @@ export interface IRPFTramo {
   tipo_total: number;
 }
 
+// ── Regularization input (P1B) ──
+
+export interface IRPFRegularizationContext {
+  /** Current month number (1-12) being calculated */
+  currentMonth: number;
+  /** Accumulated gross pay from Jan to previous month */
+  acumuladoBrutoAnterior: number;
+  /** Accumulated SS worker deductions from Jan to previous month */
+  acumuladoSSAnterior: number;
+  /** Accumulated IRPF withholdings already applied from Jan to previous month */
+  acumuladoRetencionAnterior: number;
+  /** Gross pay of the current month being calculated */
+  brutoMesActual: number;
+  /** SS worker deduction of the current month */
+  ssMesActual: number;
+  /** Projected remaining months gross (if different from current month avg) */
+  brutoProyectadoRestante?: number;
+}
+
 // ── Output ──
 
 export interface IRPFCalculationResult {
@@ -96,6 +121,9 @@ export interface IRPFCalculationResult {
   retencionMensual: number;      // Monthly withholding
   retencionAnual: number;        // Annual withholding
 
+  // Regularization (P1B)
+  regularization: IRPFRegularizationDetail | null;
+
   // Traceability
   tramosAplicados: IRPFTramoAplicado[];
   dataQuality: IRPFDataQuality;
@@ -103,6 +131,18 @@ export interface IRPFCalculationResult {
   warnings: string[];
   limitations: string[];
   legalReferences: string[];
+}
+
+export interface IRPFRegularizationDetail {
+  method: 'progressive_cumulative';
+  currentMonth: number;
+  projectedAnnualGross: number;
+  projectedAnnualSS: number;
+  annualCuotaProjected: number;
+  accumulatedRetentionPrior: number;
+  remainingMonths: number;
+  adjustedMonthlyRetention: number;
+  adjustedTipoEfectivo: number;
 }
 
 export interface IRPFTramoAplicado {
@@ -118,6 +158,7 @@ export interface IRPFDataQuality {
   familyDataAvailable: boolean;
   ssContributionsReal: boolean;
   comunidadEspecifica: boolean;
+  regularizationApplied: boolean;
 }
 
 export interface IRPFCalculationTrace {
@@ -151,13 +192,16 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
  * Compute IRPF retention for one employee for the current fiscal year.
+ * If regularizationCtx is provided, applies progressive cumulative regularization (RIRPF Art. 82-86).
  *
- * @param input   — Employee data (salary, family, etc.)
- * @param tramos  — Tax brackets from hr_es_irpf_tables (or null for defaults)
+ * @param input              — Employee data (salary, family, etc.)
+ * @param tramos             — Tax brackets from hr_es_irpf_tables (or null for defaults)
+ * @param regularizationCtx  — (P1B) Monthly cumulative data for progressive regularization
  */
 export function computeIRPF(
   input: IRPFEmployeeInput,
   tramos: IRPFTramo[] | null,
+  regularizationCtx?: IRPFRegularizationContext | null,
 ): IRPFCalculationResult {
   const warnings: string[] = [];
   const limitations: string[] = [];
@@ -175,6 +219,7 @@ export function computeIRPF(
     familyDataAvailable: input.hijosConvivencia.length > 0 || input.ascendientesCargo > 0,
     ssContributionsReal: input.ssWorkerAnual > 0,
     comunidadEspecifica: !!input.comunidadAutonoma,
+    regularizationApplied: !!regularizationCtx,
   };
 
   if (!dataQuality.tramosFromDB) {
@@ -296,14 +341,14 @@ export function computeIRPF(
   // ── 13. Cuota resultante ──
   const cuotaResultante = Math.max(0, cuotaIntegra - cuotaMinimos);
 
-  // ── 14. Tipo efectivo ──
-  const tipoEfectivo = rendimientosBrutos > 0
+  // ── 14. Tipo efectivo base ──
+  const tipoEfectivoBase = rendimientosBrutos > 0
     ? r2((cuotaResultante / rendimientosBrutos) * 100)
     : 0;
 
   // ── 15. Apply minimum thresholds ──
   const threshold = IRPF_EXEMPT_THRESHOLDS[input.situacionFamiliar] ?? 14852;
-  let finalTipo = tipoEfectivo;
+  let finalTipo = tipoEfectivoBase;
   if (rendimientosBrutos <= threshold && input.hijosConvivencia.length === 0) {
     finalTipo = 0;
     warnings.push(`Rendimientos (${r2(rendimientosBrutos)}€) ≤ umbral exención (${threshold}€) — retención 0%`);
@@ -315,19 +360,88 @@ export function computeIRPF(
     warnings.push('Tipo mínimo 2% aplicado por contrato inferior a un año');
   }
 
-  const retencionAnual = r2((rendimientosBrutos * finalTipo) / 100);
-  const retencionMensual = r2(retencionAnual / 12);
+  let retencionAnual = r2((rendimientosBrutos * finalTipo) / 100);
+  let retencionMensual = r2(retencionAnual / 12);
+  let regularizationDetail: IRPFRegularizationDetail | null = null;
+
+  // ── 16. REGULARIZACIÓN PROGRESIVA (P1B — RIRPF Art. 82-86) ──
+  // Instead of fixed annual_rate/12, we project the full year based on accumulated data
+  // and distribute the remaining annual withholding across remaining months.
+  if (regularizationCtx && regularizationCtx.currentMonth >= 1 && regularizationCtx.currentMonth <= 12) {
+    const ctx = regularizationCtx;
+    const month = ctx.currentMonth;
+    const remainingMonths = 12 - month + 1; // Including current month
+
+    // Project annual gross based on accumulated + current + projected remaining
+    const accumulatedGrossInclCurrent = ctx.acumuladoBrutoAnterior + ctx.brutoMesActual;
+    const avgMonthlyGross = accumulatedGrossInclCurrent / month;
+    const projectedRemainingGross = ctx.brutoProyectadoRestante ?? (avgMonthlyGross * (12 - month));
+    const projectedAnnualGross = accumulatedGrossInclCurrent + projectedRemainingGross;
+
+    // Project annual SS
+    const accumulatedSSInclCurrent = ctx.acumuladoSSAnterior + ctx.ssMesActual;
+    const avgMonthlySS = accumulatedSSInclCurrent / month;
+    const projectedAnnualSS = accumulatedSSInclCurrent + (avgMonthlySS * (12 - month));
+
+    // Recalculate annual IRPF with projected figures
+    const projectedInput: IRPFEmployeeInput = {
+      ...input,
+      salarioBrutoAnual: r2(projectedAnnualGross),
+      ssWorkerAnual: r2(projectedAnnualSS),
+    };
+    // Recursive call WITHOUT regularization to get projected annual cuota
+    const projectedResult = computeIRPF(projectedInput, tramos, null);
+    const projectedAnnualCuota = r2((projectedResult.tipoEfectivo / 100) * projectedAnnualGross);
+
+    // How much is left to withhold this year?
+    const remainingToWithhold = Math.max(0, projectedAnnualCuota - ctx.acumuladoRetencionAnterior);
+
+    // Distribute across remaining months (including current)
+    const adjustedMonthlyRetention = r2(remainingToWithhold / remainingMonths);
+    const adjustedTipoEfectivo = ctx.brutoMesActual > 0
+      ? r2((adjustedMonthlyRetention / ctx.brutoMesActual) * 100)
+      : finalTipo;
+
+    regularizationDetail = {
+      method: 'progressive_cumulative',
+      currentMonth: month,
+      projectedAnnualGross: r2(projectedAnnualGross),
+      projectedAnnualSS: r2(projectedAnnualSS),
+      annualCuotaProjected: r2(projectedAnnualCuota),
+      accumulatedRetentionPrior: ctx.acumuladoRetencionAnterior,
+      remainingMonths,
+      adjustedMonthlyRetention,
+      adjustedTipoEfectivo,
+    };
+
+    // Override the simple calculation
+    retencionMensual = adjustedMonthlyRetention;
+    finalTipo = adjustedTipoEfectivo;
+    retencionAnual = r2(projectedAnnualCuota);
+
+    traces.push({
+      step: 'Regularización progresiva (P1B)',
+      formula: `Mes ${month}: proyección anual ${r2(projectedAnnualGross)}€ → cuota proyectada ${r2(projectedAnnualCuota)}€ - ya retenido ${ctx.acumuladoRetencionAnterior}€ = pendiente ${r2(remainingToWithhold)}€ / ${remainingMonths} meses = ${adjustedMonthlyRetention}€/mes (${adjustedTipoEfectivo}%)`,
+      result: adjustedMonthlyRetention,
+    });
+
+    legalRefs.push('RIRPF Art. 82-86 (Regularización tipo retención)');
+  }
 
   traces.push({
     step: 'Tipo efectivo final',
-    formula: `cuotaResultante ${r2(cuotaResultante)} / brutoAnual ${r2(rendimientosBrutos)} × 100 = ${finalTipo}%`,
+    formula: `${regularizationCtx ? 'Regularizado' : 'Base'}: ${finalTipo}% → retención mensual ${retencionMensual}€`,
     result: finalTipo,
   });
 
   // ── Limitations ──
   limitations.push('Este cálculo es preparatorio — puede diferir del resultado oficial AEAT');
   limitations.push('No incluye deducciones autonómicas específicas');
-  limitations.push('Regularización progresiva (recálculo mensual acumulado) no implementada');
+  if (!regularizationCtx) {
+    limitations.push('Sin regularización progresiva — tipo fijo anual. Proporcione contexto de regularización para cálculo mensual acumulado');
+  } else {
+    limitations.push('Regularización progresiva aplicada — no incluye recálculo por cambio de situación familiar mid-year');
+  }
   if (!dataQuality.familyDataAvailable) {
     limitations.push('Sin datos familiares del empleado — mínimos familiares no aplicados');
   }
@@ -350,6 +464,7 @@ export function computeIRPF(
     tipoEfectivo: finalTipo,
     retencionMensual,
     retencionAnual,
+    regularization: regularizationDetail,
     tramosAplicados,
     dataQuality,
     calculations: traces,
