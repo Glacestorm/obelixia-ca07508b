@@ -215,9 +215,9 @@ export const CIRCUIT_DEFINITIONS: CircuitDefinition[] = [
   },
   {
     id: 'rlc_rnt', connectorId: 'tgss_siltra', domain: 'TGSS',
-    label: 'RLC / RNT', organism: 'TGSS / SILTRA',
-    description: 'Recibo de Liquidación de Cotizaciones y Relación Nominal de Trabajadores.',
-    periodicity: 'monthly', systemLimit: 'modeled_only',
+    label: 'RLC / RNT / CRA', organism: 'TGSS / SILTRA',
+    description: 'Recibo de Liquidación de Cotizaciones, Relación Nominal de Trabajadores y Cuadro Resumen de Aportaciones.',
+    periodicity: 'monthly', systemLimit: 'full_preparatory',
   },
 ];
 
@@ -435,7 +435,10 @@ export interface SystemLimitDeclaration {
 
 export function getSystemLimitsDeclaration(): SystemLimitDeclaration[] {
   return [
-    { area: 'Generación de payloads AFI/FAN (TGSS)', status: 'preparatory_only', description: 'Se generan archivos válidos en formato pero no se transmiten a SILTRA.' },
+    { area: 'Generación de payloads AFI/FAN/RLC/RNT/CRA (TGSS)', status: 'preparatory_only', description: 'Se generan artefactos completos (bases, recibo, relación nominal, cuadro resumen) pero no se transmiten a SILTRA.' },
+    { area: 'Generación de Modelo 111/190 (AEAT)', status: 'preparatory_only', description: 'Se generan modelos fiscales preparatorios con validaciones cruzadas, pero no se presentan ante la AEAT.' },
+    { area: 'Validaciones cruzadas nómina-artefactos', status: 'available', description: 'Validación completa de coherencia entre nómina legal, cierre mensual y artefactos oficiales.' },
+    { area: 'Paquete oficial mensual', status: 'preparatory_only', description: 'Agregación de todos los artefactos del período con readiness por circuito.' },
     { area: 'Validación interna de datos', status: 'available', description: 'Validación completa de formato, consistencia y completitud de datos.' },
     { area: 'Dry-run / sandbox', status: 'preparatory_only', description: 'Ejecución de simulación sin conexión a organismos reales.' },
     { area: 'Envío real a organismos', status: 'not_available', description: 'Requiere certificados digitales reales, endpoints oficiales y fase V2-ES.10+.' },
