@@ -1,11 +1,9 @@
 /**
- * workforceSimulationEngine.ts — V2-RRHH-FASE-8
+ * workforceSimulationEngine.ts — V2-RRHH-FASE-8B
  * Pure logic engine for workforce what-if simulations.
  * No React, no Supabase — deterministic calculations only.
  *
- * Supported scenarios:
- *   salary_increase | new_hires | working_hours_change |
- *   absenteeism_change | variable_bonus | flexible_benefits
+ * 8B fixes: removed phantom erp_hr_contracts source, added dataQuality tracking.
  */
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -24,6 +22,9 @@ export interface SimulationInput {
   parameters: Record<string, number>;
 }
 
+/** Quality indicator for each baseline field */
+export type DataQualityLevel = 'real' | 'estimated' | 'unavailable';
+
 export interface WorkforceBaseline {
   headcount: number;
   activeEmployees: number;
@@ -31,14 +32,16 @@ export interface WorkforceBaseline {
   totalEmployerMonthlyCost: number;
   avgSalary: number;
   medianSalary: number;
-  absenteeismRate: number;       // % (0-100)
+  absenteeismRate: number;
   totalDaysLostMonth: number;
   avgWorkingHoursWeek: number;
   variablePayTotal: number;
   benefitsCostTotal: number;
-  turnoverRate: number;          // % annual
+  turnoverRate: number;
   companyId: string;
   snapshotDate: string;
+  /** 8B: tracks data quality per field */
+  dataQuality?: Partial<Record<keyof WorkforceBaseline, DataQualityLevel>>;
 }
 
 export interface SimulationImpact {
@@ -77,7 +80,7 @@ export interface ScenarioCatalogEntry {
   type: SimulationScenarioType;
   label: string;
   description: string;
-  icon: string; // lucide icon name
+  icon: string;
   parameters: Array<{
     key: string;
     label: string;
@@ -150,7 +153,6 @@ export const SCENARIO_CATALOG: ScenarioCatalogEntry[] = [
 ];
 
 // ─── Employer cost multiplier (Spain approximate) ────────────────────────────
-// SS empresa ≈ 30-33% of gross. We use 1.32 as conservative multiplier.
 const EMPLOYER_COST_MULTIPLIER = 1.32;
 
 // ─── Simulation Engine ──────────────────────────────────────────────────────
@@ -175,12 +177,16 @@ function computeImpact(b: WorkforceBaseline, input: SimulationInput): Simulation
   const risks: OperationalRisk[] = [];
   const assumptions: string[] = [];
   const limitations: string[] = [];
+  // 8B: only list sources actually queried by the hook
   const dataSources: string[] = ['erp_hr_employees', 'erp_hr_payrolls'];
 
   let deltaGross = 0;
   let deltaEmployer = 0;
   let deltaHeadcount = 0;
   let newAvgSalary = b.avgSalary;
+
+  // 8B: warn if relevant baseline fields are not real data
+  const dq = b.dataQuality || {};
 
   switch (input.scenarioType) {
     case 'salary_increase': {
@@ -217,7 +223,6 @@ function computeImpact(b: WorkforceBaseline, input: SimulationInput): Simulation
         risks.push({ label: 'Capacidad de onboarding', severity: 'medium', description: 'Más de 10 altas simultáneas pueden saturar el proceso de onboarding' });
       }
       risks.push({ label: 'Coste real primer mes', severity: 'low', description: 'El primer mes puede incluir prorrata y costes adicionales de alta' });
-      dataSources.push('erp_hr_contracts');
       break;
     }
 
@@ -225,10 +230,11 @@ function computeImpact(b: WorkforceBaseline, input: SimulationInput): Simulation
       const currentHours = b.avgWorkingHoursWeek || 40;
       const newHours = p.newWeeklyHours ?? 37.5;
       const ratio = newHours / currentHours;
-      // Salary typically maintained if reduction, cost per hour increases
+      if (dq.avgWorkingHoursWeek !== 'real') {
+        limitations.push(`Horas semanales base (${currentHours}h) es valor por defecto de convenio, no dato real del sistema`);
+      }
       if (newHours < currentHours) {
-        // Cost stays same but productivity decreases proportionally
-        deltaGross = 0; // Salary maintained in Spain for hour reductions
+        deltaGross = 0;
         deltaEmployer = 0;
         assumptions.push(
           `Reducción de jornada de ${currentHours}h a ${newHours}h semanales`,
@@ -253,10 +259,12 @@ function computeImpact(b: WorkforceBaseline, input: SimulationInput): Simulation
       const currentRate = b.absenteeismRate || 4;
       const newRate = p.newAbsenteeismRate ?? 5;
       const deltaRate = newRate - currentRate;
-      // Rough cost: each 1% absenteeism ≈ 1% of total payroll lost in productivity
       const productivityImpact = b.totalGrossMonthlyCost * (deltaRate / 100);
       deltaGross = productivityImpact > 0 ? productivityImpact : 0;
       deltaEmployer = deltaGross * EMPLOYER_COST_MULTIPLIER;
+      if (dq.absenteeismRate !== 'real') {
+        limitations.push('La tasa de absentismo base es una estimación — no hay datos suficientes de ausencias en el sistema');
+      }
       assumptions.push(
         `Variación de tasa de absentismo de ${currentRate}% a ${newRate}%`,
         `Impacto productivo estimado: 1% de absentismo ≈ 1% de coste de nómina`,
@@ -281,6 +289,9 @@ function computeImpact(b: WorkforceBaseline, input: SimulationInput): Simulation
       deltaGross = pool;
       deltaEmployer = pool * EMPLOYER_COST_MULTIPLIER;
       deltaHeadcount = 0;
+      if (dq.variablePayTotal !== 'real') {
+        limitations.push('No se dispone de datos históricos de paga variable — el cálculo asume que es un concepto nuevo');
+      }
       assumptions.push(
         `Pool de bonus: €${pool.toLocaleString()} distribuido entre ${eligibleEmployees} empleados (${(coverage * 100).toFixed(0)}% de plantilla)`,
         `Bonus medio por empleado: €${Math.round(avgBonus).toLocaleString()}`,
@@ -299,6 +310,9 @@ function computeImpact(b: WorkforceBaseline, input: SimulationInput): Simulation
       const enrolled = Math.round(b.activeEmployees * adoption);
       deltaGross = monthlyCost * enrolled;
       deltaEmployer = deltaGross; // Benefits typically don't carry extra SS
+      if (dq.benefitsCostTotal !== 'real') {
+        limitations.push('No se dispone de datos históricos de beneficios sociales — se calcula como coste incremental nuevo');
+      }
       assumptions.push(
         `Coste mensual: €${monthlyCost}/empleado × ${enrolled} empleados (tasa adopción ${(adoption * 100).toFixed(0)}%)`,
         `Beneficios sociales: exentos de cotización SS en muchos casos`,
