@@ -172,9 +172,9 @@ export function EmployeeDocumentsSection({ employee }: Props) {
             {completeness.missing.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <span className="text-xs text-muted-foreground">Pendientes:</span>
-                {completeness.missing.map(t => (
-                  <Badge key={t} variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/20">
-                    {t.replace(/_/g, ' ')}
+                {completeness.missing.map(d => (
+                  <Badge key={d.type} variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/20">
+                    {d.label}
                   </Badge>
                 ))}
               </div>
