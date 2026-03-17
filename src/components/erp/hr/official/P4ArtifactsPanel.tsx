@@ -1,9 +1,10 @@
 /**
- * P4ArtifactsPanel — V2-RRHH-P4E
+ * P4ArtifactsPanel — V2-RRHH-P4F
  * UI consumer for useP4OfficialArtifacts: allows generating and viewing
  * RLC, RNT, CRA, Modelo 111, Modelo 190 artifacts from runtime.
  * P4D: + generation triggers + persisted artifacts from DB + cleanup
  * P4E: + real FAN/payroll data feeding for RLC/RNT/CRA + period selector + honest messaging
+ * P4F: + pre-validations wired + generation blocking + IRPF fix in 111 + IRPF per worker
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -19,11 +20,13 @@ import {
   FileText, CheckCircle, XCircle, AlertTriangle, Clock,
   ChevronDown, ChevronRight, Shield, RefreshCw, Download,
   GitBranch, Hash, AlertCircle, Package, Play, Database, Info,
+  Ban,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useP4OfficialArtifacts, type P4ArtifactRecord } from '@/hooks/erp/hr/useP4OfficialArtifacts';
 import type { OfficialArtifactDBRow } from '@/hooks/erp/hr/useOfficialArtifacts';
 import type { FANEmployeeRecord, FANCotizacionTotals } from '@/engines/erp/hr/fanCotizacionArtifactEngine';
+import type { ArtifactPreValidation } from '@/engines/erp/hr/officialArtifactValidationEngine';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -56,6 +59,7 @@ const MONTH_LABELS = [
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 // ── Build FANEmployeeRecord from payroll record calculation_details ──
+// P4F: now extracts real IRPF per worker from deducciones array
 
 interface PayrollRecordRow {
   id: string;
@@ -68,10 +72,38 @@ interface PayrollRecordRow {
   calculation_details: Record<string, unknown> | null;
 }
 
+function extractIRPFFromRecord(d: Record<string, unknown> | null): { tipoIRPF: number; retencionIRPF: number; irpfAvailable: boolean } {
+  if (!d || typeof d !== 'object') return { tipoIRPF: 0, retencionIRPF: 0, irpfAvailable: false };
+
+  // Try deducciones array first (most reliable)
+  const deducciones = d.deducciones as Array<{ concepto?: string; importe?: number; porcentaje?: number }> | undefined;
+  if (deducciones && Array.isArray(deducciones)) {
+    const irpfLine = deducciones.find(dd => dd.concepto?.startsWith('IRPF') || dd.concepto?.includes('IRPF'));
+    if (irpfLine) {
+      return {
+        tipoIRPF: Number(irpfLine.porcentaje ?? 0),
+        retencionIRPF: Number(irpfLine.importe ?? 0),
+        irpfAvailable: true,
+      };
+    }
+  }
+
+  // Fallback: check bases.retencionIRPF or bases.irpf
+  const bases = d.bases as Record<string, number> | undefined;
+  if (bases) {
+    const ret = Number(bases.retencionIRPF ?? bases.irpf ?? 0);
+    const tipo = Number(bases.tipoIRPF ?? bases.porcentajeIRPF ?? 0);
+    if (ret > 0) return { tipoIRPF: tipo, retencionIRPF: ret, irpfAvailable: true };
+  }
+
+  return { tipoIRPF: 0, retencionIRPF: 0, irpfAvailable: false };
+}
+
 function buildFANRecordFromPayroll(rec: PayrollRecordRow): FANEmployeeRecord {
   const d = rec.calculation_details;
-  const bases = (d?.bases ?? {}) as Record<string, number>;
-  const header = (d?.header ?? {}) as Record<string, string>;
+  const bases = ((d?.bases ?? {}) as Record<string, number>);
+  const header = ((d?.header ?? {}) as Record<string, string>);
+  const irpf = extractIRPFFromRecord(d);
 
   return {
     employeeId: rec.employee_id,
@@ -103,15 +135,15 @@ function buildFANRecordFromPayroll(rec: PayrollRecordRow): FANEmployeeRecord {
     atEmpresa: bases.atEmpresa ?? 0,
     totalEmpresa: bases.totalCotizacionesEmpresa ?? 0,
 
-    baseIRPFCorregida: bases.baseIRPF ?? 0,
-    tipoIRPF: 0,
-    retencionIRPF: 0,
+    baseIRPFCorregida: bases.baseIRPF ?? rec.gross_salary ?? 0,
+    tipoIRPF: irpf.tipoIRPF,
+    retencionIRPF: irpf.retencionIRPF,
 
     topeMinAplicado: false,
     topeMaxAplicado: false,
     prorrateoSource: 'none',
     ssDataFromDB: true,
-    validationIssues: [],
+    validationIssues: irpf.irpfAvailable ? [] : ['irpf_not_available'],
   };
 }
 
@@ -142,6 +174,7 @@ interface CotizacionData {
   records: FANEmployeeRecord[];
   totals: FANCotizacionTotals;
   sourceLabel: string;
+  irpfAvailableCount: number;
 }
 
 // ── Persisted artifact card (from DB) ──
@@ -331,7 +364,55 @@ function ArtifactRecordCard({ record }: { record: P4ArtifactRecord }) {
   );
 }
 
-// ── Generation action row ──
+// ── Pre-validation display ──
+
+function PreValidationBanner({ validation, onDismiss }: { validation: ArtifactPreValidation; onDismiss: () => void }) {
+  if (validation.isReady && validation.warnings === 0) return null;
+
+  const failedChecks = validation.checks.filter(c => !c.passed);
+  if (failedChecks.length === 0) return null;
+
+  return (
+    <div className={cn(
+      'p-2.5 rounded-lg border text-xs space-y-1.5',
+      validation.blockingErrors > 0
+        ? 'bg-destructive/5 border-destructive/30'
+        : 'bg-amber-500/5 border-amber-500/20'
+    )}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          {validation.blockingErrors > 0 ? (
+            <Ban className="h-3.5 w-3.5 text-destructive shrink-0" />
+          ) : (
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+          )}
+          <span className="font-medium">
+            {validation.blockingErrors > 0
+              ? `Generación bloqueada — ${validation.blockingErrors} error(es) crítico(s)`
+              : `${validation.warnings} advertencia(s)`}
+          </span>
+        </div>
+        <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={onDismiss}>✕</Button>
+      </div>
+      <div className="space-y-0.5">
+        {failedChecks.map(c => (
+          <div key={c.id} className="flex items-start gap-1.5 pl-5">
+            {c.severity === 'blocking' ? (
+              <XCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="h-3 w-3 text-amber-600 shrink-0 mt-0.5" />
+            )}
+            <span className={cn(c.severity === 'blocking' ? 'text-destructive' : 'text-amber-700')}>
+              {c.label}: {c.detail}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Generation action row (P4F: with blocking support) ──
 
 interface GenerateActionProps {
   label: string;
@@ -341,21 +422,33 @@ interface GenerateActionProps {
   isGenerating: boolean;
   existingCount: number;
   dataAvailable: boolean;
+  blocked: boolean;
+  blockReason?: string;
   dataSourceLabel?: string;
 }
 
-function GenerateActionRow({ label, shortLabel, onGenerate, isGenerating, existingCount, dataAvailable, dataSourceLabel }: GenerateActionProps) {
+function GenerateActionRow({ label, shortLabel, onGenerate, isGenerating, existingCount, dataAvailable, blocked, blockReason, dataSourceLabel }: GenerateActionProps) {
+  const isDisabled = isGenerating || blocked;
+
   return (
-    <div className="flex items-center justify-between p-2.5 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
+    <div className={cn(
+      "flex items-center justify-between p-2.5 rounded-lg border bg-card transition-colors",
+      blocked ? 'opacity-60' : 'hover:bg-muted/30'
+    )}>
       <div className="flex items-center gap-2 min-w-0">
-        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+        <FileText className={cn("h-4 w-4 shrink-0", blocked ? 'text-destructive/50' : 'text-muted-foreground')} />
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{label}</p>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {existingCount > 0 && (
               <span className="text-[10px] text-muted-foreground">{existingCount} versión(es)</span>
             )}
-            {dataSourceLabel && (
+            {blocked && blockReason && (
+              <Badge variant="outline" className="text-[9px] h-4 border-destructive/30 text-destructive">
+                {blockReason}
+              </Badge>
+            )}
+            {!blocked && dataSourceLabel && (
               <Badge variant="outline" className={cn("text-[9px] h-4", dataAvailable ? 'border-emerald-500/30 text-emerald-700' : 'border-amber-500/30 text-amber-700')}>
                 {dataSourceLabel}
               </Badge>
@@ -365,13 +458,14 @@ function GenerateActionRow({ label, shortLabel, onGenerate, isGenerating, existi
       </div>
       <Button
         size="sm"
-        variant={dataAvailable ? 'outline' : 'ghost'}
+        variant={blocked ? 'ghost' : dataAvailable ? 'outline' : 'ghost'}
         onClick={onGenerate}
-        disabled={isGenerating}
+        disabled={isDisabled}
         className="shrink-0 gap-1.5"
+        title={blocked ? blockReason : undefined}
       >
-        {isGenerating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-        Generar {shortLabel}
+        {isGenerating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : blocked ? <Ban className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+        {blocked ? 'Bloqueado' : `Generar ${shortLabel}`}
       </Button>
     </div>
   );
@@ -383,6 +477,7 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth()); // 0-indexed
+  const [lastValidation, setLastValidation] = useState<ArtifactPreValidation | null>(null);
 
   const periodYear = selectedYear;
   const periodMonth = selectedMonth + 1; // 1-indexed
@@ -397,6 +492,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     artifacts: sessionArtifacts,
     generateRLC, generateRNT, generateCRA,
     generateModelo111, generateModelo190,
+    validateRLC, validateRNT, validateCRA,
+    validate111, validate190,
   } = useP4OfficialArtifacts(companyId);
 
   // ── Fetch persisted artifacts from DB ──
@@ -432,6 +529,11 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
   useEffect(() => {
     if (sessionArtifacts.length > 0) refetchPersisted();
   }, [sessionArtifacts.length, refetchPersisted]);
+
+  // Clear validation when period changes
+  useEffect(() => {
+    setLastValidation(null);
+  }, [selectedYear, selectedMonth]);
 
   // ── Fetch company info ──
   const { data: companyInfo } = useQuery({
@@ -474,26 +576,26 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     queryKey: ['hr-payroll-records-for-p4e', companyId, periodYear, periodMonth],
     queryFn: async () => {
       const sb = supabase as unknown as { from: (t: string) => any };
-      // Find the payroll period
       const { data: periods } = await sb
         .from('hr_payroll_periods')
-        .select('id')
+        .select('id, status')
         .eq('company_id', companyId)
         .eq('fiscal_year', periodYear)
         .eq('period_number', periodMonth)
         .limit(1);
 
-      const periodId = periods?.[0]?.id;
-      if (!periodId) return null;
+      const period = periods?.[0] as { id: string; status: string } | undefined;
+      if (!period) return null;
 
       const { data: records } = await sb
         .from('hr_payroll_records')
         .select('id, employee_id, payroll_period_id, gross_salary, net_salary, total_deductions, employer_cost, calculation_details')
-        .eq('payroll_period_id', periodId)
+        .eq('payroll_period_id', period.id)
         .limit(500);
 
       return {
-        periodId,
+        periodId: period.id,
+        periodStatus: period.status,
         records: (records ?? []) as PayrollRecordRow[],
       };
     },
@@ -502,18 +604,20 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
 
   // ── Resolve best cotización data source ──
   const cotizacionData = useMemo((): CotizacionData => {
-    // Priority 1: FAN artifact payload (already has FANEmployeeRecord[] + FANCotizacionTotals)
+    // Priority 1: FAN artifact payload
     if (fanArtifactData?.artifact_payload) {
       const payload = fanArtifactData.artifact_payload;
       const fanRecords = (payload.records ?? []) as FANEmployeeRecord[];
       const fanTotals = (payload.totals ?? {}) as FANCotizacionTotals;
 
       if (fanRecords.length > 0) {
+        const irpfCount = fanRecords.filter(r => r.retencionIRPF > 0 || r.tipoIRPF > 0).length;
         return {
           source: 'fan_artifact',
           records: fanRecords,
           totals: fanTotals,
           sourceLabel: `FAN persistido (${fanRecords.length} trabajadores)`,
+          irpfAvailableCount: irpfCount,
         };
       }
     }
@@ -528,23 +632,27 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       if (withBases.length > 0) {
         const records = withBases.map(buildFANRecordFromPayroll);
         const totals = aggregateTotals(records);
+        const irpfCount = records.filter(r => r.retencionIRPF > 0).length;
         return {
           source: 'payroll_records',
           records,
           totals,
           sourceLabel: `Nómina calculada (${records.length} empleados)`,
+          irpfAvailableCount: irpfCount,
         };
       }
 
-      // Payroll exists but without SS detail — still better than nothing
+      // Payroll exists but without SS detail
       if (payrollData.records.length > 0) {
         const records = payrollData.records.map(buildFANRecordFromPayroll);
         const totals = aggregateTotals(records);
+        const irpfCount = records.filter(r => r.retencionIRPF > 0).length;
         return {
           source: 'payroll_records',
           records,
           totals,
           sourceLabel: `Nómina sin desglose SS (${records.length} empleados)`,
+          irpfAvailableCount: irpfCount,
         };
       }
     }
@@ -559,10 +667,64 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
         totalLiquidoEstimado: 0, liquidoEsEstimado: true,
       },
       sourceLabel: 'Sin datos disponibles',
+      irpfAvailableCount: 0,
     };
   }, [fanArtifactData, payrollData]);
 
   const hasSSData = cotizacionData.source !== 'none';
+  const payrollClosed = payrollData?.periodStatus === 'closed' || payrollData?.periodStatus === 'locked';
+  const fanGenerated = cotizacionData.source === 'fan_artifact';
+
+  // ── Pre-validation results (computed reactively) ──
+  const ssPreValidation = useMemo((): ArtifactPreValidation | null => {
+    if (!companyInfo) return null;
+    return validateRLC({
+      companyCCC: companyInfo.ccc ?? '',
+      companyCIF: companyInfo.cif ?? '',
+      employeeCount: cotizacionData.records.length,
+      allHaveNAF: cotizacionData.records.every(r => r.naf && r.naf.length > 0),
+      periodYear,
+      periodMonth,
+      payrollClosed,
+      fanGenerated,
+    });
+  }, [companyInfo, cotizacionData, periodYear, periodMonth, payrollClosed, fanGenerated, validateRLC]);
+
+  const m111PreValidation = useMemo((): ArtifactPreValidation | null => {
+    if (!companyInfo) return null;
+    const trimester = Math.ceil(periodMonth / 3);
+    // Simplified: check if we have payroll data for this period as proxy for months available
+    const monthsAvailable = payrollData?.records && payrollData.records.length > 0 ? 1 : 0;
+    return validate111({
+      companyCIF: companyInfo.cif ?? '',
+      fiscalYear: periodYear,
+      trimester,
+      monthsAvailable: Math.max(monthsAvailable, hasSSData ? 1 : 0),
+      allMonthsClosed: payrollClosed,
+    });
+  }, [companyInfo, periodYear, periodMonth, payrollData, hasSSData, payrollClosed, validate111]);
+
+  const m190PreValidation = useMemo((): ArtifactPreValidation | null => {
+    if (!companyInfo) return null;
+    return validate190({
+      companyCIF: companyInfo.cif ?? '',
+      fiscalYear: periodYear,
+      perceptorCount: 0, // 190 requires perceptor lines which we don't have yet
+      allHaveNIF: false,
+      quarterly111Count: persistedCountByType['modelo_111'] ?? 0,
+    });
+  }, [companyInfo, periodYear, persistedCountByType, validate190]);
+
+  // Determine blocking state for each artifact type
+  const ssBlocked = !hasSSData || (ssPreValidation?.blockingErrors ?? 0) > 0;
+  const ssBlockReason = !hasSSData ? 'Sin datos de cotización' :
+    (ssPreValidation?.blockingErrors ?? 0) > 0 ? `${ssPreValidation!.blockingErrors} pre-check(s) bloqueante(s)` : undefined;
+
+  const m111Blocked = (m111PreValidation?.blockingErrors ?? 0) > 0;
+  const m111BlockReason = m111Blocked ? `${m111PreValidation!.blockingErrors} pre-check(s) bloqueante(s)` : undefined;
+
+  const m190Blocked = (m190PreValidation?.blockingErrors ?? 0) > 0;
+  const m190BlockReason = m190Blocked ? `${m190PreValidation!.blockingErrors} pre-check(s) bloqueante(s)` : undefined;
 
   // ── Generation handlers ──
 
@@ -572,10 +734,38 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       return;
     }
 
+    // Run pre-validation and block
+    const preVal = type === 'rlc' ? validateRLC({
+      companyCCC: companyInfo.ccc ?? '', companyCIF: companyInfo.cif ?? '',
+      employeeCount: cotizacionData.records.length,
+      allHaveNAF: cotizacionData.records.every(r => r.naf && r.naf.length > 0),
+      periodYear, periodMonth, payrollClosed, fanGenerated,
+    }) : type === 'rnt' ? validateRNT({
+      companyCCC: companyInfo.ccc ?? '', companyCIF: companyInfo.cif ?? '',
+      employeeCount: cotizacionData.records.length,
+      allHaveNAF: cotizacionData.records.every(r => r.naf && r.naf.length > 0),
+      periodYear, periodMonth, payrollClosed, fanGenerated,
+    }) : validateCRA({
+      companyCCC: companyInfo.ccc ?? '', companyCIF: companyInfo.cif ?? '',
+      employeeCount: cotizacionData.records.length,
+      allHaveNAF: cotizacionData.records.every(r => r.naf && r.naf.length > 0),
+      periodYear, periodMonth, payrollClosed, fanGenerated,
+    });
+
+    setLastValidation(preVal);
+
+    if (preVal.blockingErrors > 0) {
+      toast.error(`Generación bloqueada: ${preVal.blockingErrors} error(es) en pre-validación`, { duration: 5000 });
+      return;
+    }
+
     if (!hasSSData) {
-      toast.warning('No hay datos de cotización disponibles para este período. El artefacto se generará vacío.', {
-        duration: 5000,
-      });
+      toast.error('No hay datos de cotización disponibles para este período. Genera primero un FAN o calcula nóminas.', { duration: 5000 });
+      return;
+    }
+
+    if (preVal.warnings > 0) {
+      toast.warning(`Generando con ${preVal.warnings} advertencia(s). Revisa el resultado.`, { duration: 4000 });
     }
 
     const params = {
@@ -601,11 +791,10 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
     const trimester = Math.ceil(periodMonth / 3);
     const startMonth = (trimester - 1) * 3 + 1;
 
-    // Build monthInputs: for each month of the trimester, try to find payroll records
+    // Build monthInputs: for each month of the trimester, extract IRPF-only data
     const monthInputs = await Promise.all([0, 1, 2].map(async (offset) => {
       const m = startMonth + offset;
 
-      // Try to find payroll period for this month
       const sb = supabase as unknown as { from: (t: string) => any };
       const { data: periods } = await sb
         .from('hr_payroll_periods')
@@ -624,29 +813,85 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
           perceptorIds: undefined,
           baseImponible: 0,
           retencionPracticada: 0,
+          irpfIsEstimated: true,
           payrollClosed: false,
         };
       }
 
       const { data: records } = await sb
         .from('hr_payroll_records')
-        .select('employee_id, gross_salary, total_deductions')
+        .select('employee_id, gross_salary, total_deductions, calculation_details')
         .eq('payroll_period_id', period.id)
         .limit(500);
 
-      const recs = (records ?? []) as Array<{ employee_id: string; gross_salary: number; total_deductions: number }>;
+      const recs = (records ?? []) as Array<{
+        employee_id: string;
+        gross_salary: number;
+        total_deductions: number;
+        calculation_details: Record<string, unknown> | null;
+      }>;
+
       const perceptorIds = [...new Set(recs.map(r => r.employee_id).filter(Boolean))];
+
+      // P4F FIX: Extract IRPF-only, NOT total_deductions
+      let totalIRPF = 0;
+      let totalBaseIRPF = 0;
+      let irpfExtractedCount = 0;
+
+      for (const rec of recs) {
+        const irpf = extractIRPFFromRecord(rec.calculation_details);
+        if (irpf.irpfAvailable) {
+          totalIRPF += irpf.retencionIRPF;
+          irpfExtractedCount++;
+        }
+        // Base imponible from calculation_details or gross_salary
+        const bases = (rec.calculation_details?.bases ?? {}) as Record<string, number>;
+        totalBaseIRPF += Number(bases.baseIRPF ?? rec.gross_salary ?? 0);
+      }
 
       return {
         periodYear,
         periodMonth: m,
         perceptoresCount: perceptorIds.length,
         perceptorIds: perceptorIds.length > 0 ? perceptorIds : undefined,
-        baseImponible: recs.reduce((s, r) => s + (r.gross_salary ?? 0), 0),
-        retencionPracticada: recs.reduce((s, r) => s + (r.total_deductions ?? 0), 0),
+        baseImponible: r2(totalBaseIRPF),
+        retencionPracticada: r2(totalIRPF),
+        irpfIsEstimated: irpfExtractedCount < recs.length,
         payrollClosed: period.status === 'closed' || period.status === 'locked',
       };
     }));
+
+    // Run pre-validation
+    const monthsWithData = monthInputs.filter(m => m.perceptoresCount > 0).length;
+    const allClosed = monthInputs.every(m => m.payrollClosed || m.perceptoresCount === 0);
+
+    const preVal = validate111({
+      companyCIF: companyInfo.cif ?? '',
+      fiscalYear: periodYear,
+      trimester,
+      monthsAvailable: monthsWithData,
+      allMonthsClosed: allClosed,
+    });
+
+    setLastValidation(preVal);
+
+    if (preVal.blockingErrors > 0) {
+      toast.error(`Generación Mod. 111 bloqueada: ${preVal.blockingErrors} error(es) en pre-validación`, { duration: 5000 });
+      return;
+    }
+
+    // Warn about estimated IRPF
+    const estimatedMonths = monthInputs.filter(m => m.irpfIsEstimated && m.perceptoresCount > 0);
+    if (estimatedMonths.length > 0) {
+      toast.warning(
+        `IRPF estimado en ${estimatedMonths.length} mes(es): se usó gross_salary como base porque no se encontró desglose IRPF detallado.`,
+        { duration: 6000 },
+      );
+    }
+
+    if (preVal.warnings > 0) {
+      toast.warning(`Generando Mod. 111 con ${preVal.warnings} advertencia(s).`, { duration: 4000 });
+    }
 
     await generateModelo111({
       companyCIF: companyInfo.cif ?? '',
@@ -662,6 +907,22 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       toast.error('Información de empresa no disponible');
       return;
     }
+
+    const preVal = validate190({
+      companyCIF: companyInfo.cif ?? '',
+      fiscalYear: periodYear,
+      perceptorCount: 0,
+      allHaveNIF: false,
+      quarterly111Count: persistedCountByType['modelo_111'] ?? 0,
+    });
+
+    setLastValidation(preVal);
+
+    if (preVal.blockingErrors > 0) {
+      toast.error(`Generación Mod. 190 bloqueada: ${preVal.blockingErrors} error(es). Se necesitan perceptores con NIF y Modelos 111 previos.`, { duration: 6000 });
+      return;
+    }
+
     await generateModelo190({
       companyCIF: companyInfo.cif ?? '',
       companyName: companyInfo.company_name ?? '',
@@ -733,16 +994,25 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                 ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-700'
                 : cotizacionData.source === 'payroll_records'
                   ? 'bg-amber-500/5 border-amber-500/20 text-amber-700'
-                  : 'bg-muted/50 border-border text-muted-foreground'
+                  : 'bg-destructive/5 border-destructive/20 text-destructive'
             )}>
-              <Info className="h-3.5 w-3.5 shrink-0" />
+              {cotizacionData.source === 'none' ? (
+                <Ban className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <Info className="h-3.5 w-3.5 shrink-0" />
+              )}
               <span>
                 <strong>Fuente de datos SS:</strong> {cotizacionData.sourceLabel}
                 {cotizacionData.source === 'fan_artifact' && ' — datos completos de cotización'}
-                {cotizacionData.source === 'payroll_records' && ' — derivado de nóminas calculadas'}
-                {cotizacionData.source === 'none' && ` para ${MONTH_LABELS[selectedMonth]} ${selectedYear}. Genera primero un FAN o calcula nóminas.`}
+                {cotizacionData.source === 'payroll_records' && ` — IRPF disponible en ${cotizacionData.irpfAvailableCount}/${cotizacionData.records.length} trabajadores`}
+                {cotizacionData.source === 'none' && ` para ${MONTH_LABELS[selectedMonth]} ${selectedYear}. Generación de SS bloqueada.`}
               </span>
             </div>
+
+            {/* Pre-validation banner */}
+            {lastValidation && (
+              <PreValidationBanner validation={lastValidation} onDismiss={() => setLastValidation(null)} />
+            )}
 
             {/* Generation triggers */}
             <div>
@@ -758,6 +1028,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['rlc'] ?? 0}
                   dataAvailable={hasSSData}
+                  blocked={ssBlocked}
+                  blockReason={ssBlockReason}
                   dataSourceLabel={hasSSData ? cotizacionData.source === 'fan_artifact' ? 'FAN' : 'Nómina' : undefined}
                 />
                 <GenerateActionRow
@@ -768,6 +1040,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['rnt'] ?? 0}
                   dataAvailable={hasSSData}
+                  blocked={ssBlocked}
+                  blockReason={ssBlockReason}
                   dataSourceLabel={hasSSData ? cotizacionData.source === 'fan_artifact' ? 'FAN' : 'Nómina' : undefined}
                 />
                 <GenerateActionRow
@@ -778,6 +1052,8 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['cra'] ?? 0}
                   dataAvailable={hasSSData}
+                  blocked={ssBlocked}
+                  blockReason={ssBlockReason}
                   dataSourceLabel={hasSSData ? cotizacionData.source === 'fan_artifact' ? 'FAN' : 'Nómina' : undefined}
                 />
                 <GenerateActionRow
@@ -787,8 +1063,10 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   onGenerate={handleGenerateModelo111}
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['modelo_111'] ?? 0}
-                  dataAvailable={true}
-                  dataSourceLabel="Nómina"
+                  dataAvailable={!m111Blocked}
+                  blocked={m111Blocked}
+                  blockReason={m111BlockReason}
+                  dataSourceLabel={!m111Blocked ? 'Nómina (IRPF)' : undefined}
                 />
                 <GenerateActionRow
                   label={ARTIFACT_LABELS.modelo_190}
@@ -797,7 +1075,9 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   onGenerate={handleGenerateModelo190}
                   isGenerating={isGenerating}
                   existingCount={persistedCountByType['modelo_190'] ?? 0}
-                  dataAvailable={true}
+                  dataAvailable={!m190Blocked}
+                  blocked={m190Blocked}
+                  blockReason={m190BlockReason}
                 />
               </div>
             </div>
