@@ -91,3 +91,30 @@ export type {
 
 // ── Payroll Engines (pre-existing, export selectively to avoid name clashes) ──
 // Import directly from individual files: './payrollRunEngine', './payrollConceptCatalog', etc.
+
+// ── SS Contribution Engine (V2-RRHH-P1) ──
+export {
+  computeSSContributions, mapLinesToSSInput, isOvertimeConcept, isProrrateadoConcept, formatSSGroupLabel,
+} from './ssContributionEngine';
+export type {
+  SSGroupLimits, SSPayrollLineInput, SSEmployeeContext, SSContributionBreakdown,
+  SSDataQuality, SSCalculationTrace,
+} from './ssContributionEngine';
+
+// ── IRPF Engine (V2-RRHH-P1) ──
+export {
+  computeIRPF, buildIRPFInputFromLaborData, checkIRPFDataCompleteness,
+} from './irpfEngine';
+export type {
+  IRPFEmployeeInput, IRPFDisabilityLevel, IRPFDescendant, IRPFTramo,
+  IRPFCalculationResult, IRPFTramoAplicado, IRPFDataQuality, IRPFCalculationTrace,
+} from './irpfEngine';
+
+// ── Payslip Engine (V2-RRHH-P1) ──
+export {
+  buildPayslip, validateLegalPreClose,
+} from './payslipEngine';
+export type {
+  PayslipData, PayslipHeader, PayslipDevengo, PayslipDeduccion, PayslipBases,
+  PayslipTraceability, PayslipLineInput, LegalPreCloseCheck, LegalPreCloseInput,
+} from './payslipEngine';
