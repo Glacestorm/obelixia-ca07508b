@@ -195,7 +195,7 @@ export function PayslipViewerPanel({ payslip, className }: Props) {
           {/* ── Traceability footer ── */}
           <div className="pt-2 border-t text-[10px] text-muted-foreground flex items-center gap-2">
             <Shield className="h-3 w-3" />
-            <span>Hash: {traceability.calculationHash} · SS: {traceability.ssDataQuality} · IRPF: {traceability.irpfDataQuality} · v{traceability.snapshotVersion}</span>
+            <span>Hash: {traceability.calculationHash} · SS: {traceability.ssDataQuality} · IRPF: {traceability.irpfDataQuality}{traceability.irpfRegularized ? ' [reg.]' : ''} · v{traceability.snapshotVersion}</span>
           </div>
         </ScrollArea>
       </CardContent>
