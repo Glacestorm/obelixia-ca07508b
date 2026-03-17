@@ -261,10 +261,13 @@ export function buildFANCotizacion(params: {
     totalCotizacionGeneral: 0,
     totalRetencionIRPF: r2(records.reduce((s, r) => s + r.retencionIRPF, 0)),
     totalLiquidoEstimado: 0,
+    liquidoEsEstimado: true,
   };
   totals.totalCotizacionGeneral = r2(totals.totalCotizacionTrabajador + totals.totalCotizacionEmpresa);
-  const totalBrutos = r2(records.reduce((s, r) => s + r.baseCCMensual, 0)); // Approximation
-  totals.totalLiquidoEstimado = r2(totalBrutos - totals.totalCotizacionTrabajador - totals.totalRetencionIRPF);
+  // Estimación: basesCC - cotizaciones trabajador - IRPF.
+  // basesCC se usa como proxy de devengos brutos. NO incluye conceptos no salariales ni deducciones adicionales.
+  const totalBrutosProxy = totals.totalBasesCC;
+  totals.totalLiquidoEstimado = r2(totalBrutosProxy - totals.totalCotizacionTrabajador - totals.totalRetencionIRPF);
 
   // ── Validations ──
 
