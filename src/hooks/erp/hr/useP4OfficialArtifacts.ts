@@ -224,7 +224,7 @@ export function useP4OfficialArtifacts(companyId: string) {
         sourceModule: 'hr_official_artifacts_p4',
         afterSnapshot: snapshot,
       };
-      const ledgerRow = buildLedgerRow(ledgerInput);
+      const ledgerRow = await buildLedgerRow(ledgerInput);
       const { data: ledgerData } = await sb.from('erp_hr_ledger').insert(ledgerRow).select('id').single();
       ledgerEventId = ledgerData?.id ?? null;
 
