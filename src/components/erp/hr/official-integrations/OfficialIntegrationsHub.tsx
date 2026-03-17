@@ -159,6 +159,12 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         <TabsContent value="p4-artifacts">
           <P4ArtifactsPanel companyId={companyId} />
         </TabsContent>
+        <TabsContent value="institutional-chain">
+          <InstitutionalSubmissionPanel companyId={companyId} />
+        </TabsContent>
+        <TabsContent value="pipeline-190">
+          <Modelo190PipelinePanel companyId={companyId} />
+        </TabsContent>
         <TabsContent value="monthly-package">
           <MonthlyPackageTab companyId={companyId} />
         </TabsContent>

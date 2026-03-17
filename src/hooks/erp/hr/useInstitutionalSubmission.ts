@@ -166,7 +166,28 @@ export function useInstitutionalSubmission(companyId: string) {
     }
   }, [companyId, queryClient]);
 
-  // ── Transition status ──
+  // ── PINST-B1: Build guard context from submission row ──
+  const buildGuardContext = useCallback(async (submissionId: string): Promise<TransitionGuardContext> => {
+    const row = submissions.find(s => s.id === submissionId);
+    // Check for certificate
+    const { data: certs } = await sb
+      .from('erp_hr_domain_certificates')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .limit(1);
+
+    return {
+      hasPayload: !!row?.submission_payload,
+      hasSignature: !!row?.signature_id || !!row?.signed_at,
+      hasReceipt: !!row?.receipt_id || !!row?.receipt_received_at,
+      hasReconciliationData: !!row?.reconciliation_data,
+      artifactIsValid: (row?.metadata as Record<string, unknown>)?.isValid !== false,
+      hasCertificate: ((certs ?? []) as unknown[]).length > 0,
+    };
+  }, [submissions, companyId]);
+
+  // ── Transition status (PINST-B1: with content validation) ──
   const transitionStatus = useCallback(async (
     submissionId: string,
     currentStatus: InstitutionalStatus,
@@ -176,6 +197,17 @@ export function useInstitutionalSubmission(companyId: string) {
   ): Promise<boolean> => {
     if (!canTransitionInstitutional(currentStatus, targetStatus)) {
       toast.error(`Transición no permitida: ${currentStatus} → ${targetStatus}`);
+      return false;
+    }
+
+    // PINST-B1: Content validation guard
+    const guardContext = await buildGuardContext(submissionId);
+    const guard = validateTransitionContent(currentStatus, targetStatus, guardContext);
+    if (!guard.allowed) {
+      toast.error('Transición bloqueada', {
+        description: guard.blockers[0],
+        duration: 6000,
+      });
       return false;
     }
 
@@ -233,7 +265,7 @@ export function useInstitutionalSubmission(companyId: string) {
     } finally {
       setIsProcessing(false);
     }
-  }, [companyId, queryClient]);
+  }, [companyId, queryClient, buildGuardContext]);
 
   // ── Register receipt ──
   const registerReceipt = useCallback(async (params: {
