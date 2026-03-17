@@ -53,6 +53,26 @@ export function EmployeePortalHome({ employee, dashboard, isDashboardLoading, on
   const isMobile = useIsMobile();
   const statusInfo = STATUS_LABELS[employee.status || ''] || { label: employee.status || 'Desconocido', variant: 'outline' as const };
 
+  // V2-RRHH-P3B: Fetch leave balance for current year
+  const [leaveBalance, setLeaveBalance] = useState<{ remaining: number; total: number } | null>(null);
+  useEffect(() => {
+    const year = new Date().getFullYear();
+    supabase
+      .from('erp_hr_leave_balances')
+      .select('entitled_days, used_days, pending_days, adjustment_days, carried_over_days')
+      .eq('employee_id', employee.id)
+      .eq('year', year)
+      .eq('leave_type_code', 'vacaciones')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          const total = (data.entitled_days ?? 0) + (data.carried_over_days ?? 0) + (data.adjustment_days ?? 0);
+          const used = (data.used_days ?? 0) + (data.pending_days ?? 0);
+          setLeaveBalance({ remaining: Math.max(0, total - used), total });
+        }
+      });
+  }, [employee.id]);
+
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 7) return 'Buenas noches';
