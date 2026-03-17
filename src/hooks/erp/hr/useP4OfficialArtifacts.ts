@@ -102,6 +102,7 @@ export function useP4OfficialArtifacts(companyId: string) {
     artifact: P4Artifact,
     snapshot: Record<string, unknown>,
     label: string,
+    extraMeta?: Record<string, unknown>,
   ): Promise<P4ArtifactRecord> => {
     let dbRowId: string | null = null;
     let ledgerEventId: string | null = null;
