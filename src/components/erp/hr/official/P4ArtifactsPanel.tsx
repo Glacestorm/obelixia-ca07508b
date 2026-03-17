@@ -911,11 +911,13 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       return;
     }
 
-    // Warn about estimated IRPF
-    const estimatedMonths = monthInputs.filter(m => m.irpfIsEstimated && m.perceptoresCount > 0);
-    if (estimatedMonths.length > 0) {
+    // P4G M1: Track estimation flags persistently in monthInputs metadata
+    const estimatedMonths = monthInputs.filter(m => (m as any).irpfIsEstimated && m.perceptoresCount > 0);
+    const hasEstimation = estimatedMonths.length > 0;
+
+    if (hasEstimation) {
       toast.warning(
-        `IRPF estimado en ${estimatedMonths.length} mes(es): se usó gross_salary como base porque no se encontró desglose IRPF detallado.`,
+        `IRPF estimado en ${estimatedMonths.length} mes(es): se usó gross_salary como base porque no se encontró desglose IRPF detallado. Esta señal queda registrada en el artefacto.`,
         { duration: 6000 },
       );
     }
@@ -924,12 +926,21 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
       toast.warning(`Generando Mod. 111 con ${preVal.warnings} advertencia(s).`, { duration: 4000 });
     }
 
+    // P4G: Pass estimation metadata so artifact persists the signal
+    const estimationMeta = hasEstimation ? {
+      baseIRPFEstimated: true,
+      estimatedMonths: estimatedMonths.map(m => m.periodMonth),
+      estimationMethod: 'gross_salary_fallback',
+      disclaimer: 'La base imponible de uno o más meses usa el salario bruto como estimación por ausencia de baseIRPF en el desglose de nómina.',
+    } : undefined;
+
     await generateModelo111({
       companyCIF: companyInfo.cif ?? '',
       companyName: companyInfo.company_name ?? '',
       fiscalYear: periodYear,
       trimester,
       monthInputs,
+      estimationMeta,
     });
   };
 
