@@ -1121,6 +1121,16 @@ export function P4ArtifactsPanel({ companyId, className }: Props) {
                   blocked={m190Blocked}
                   blockReason={m190BlockReason}
                 />
+                {/* P4G: Honest explanation for 190 permanent block */}
+                {m190Blocked && (
+                  <div className="flex items-start gap-2 p-2 ml-6 rounded-md bg-muted/50 border border-border/50 text-[11px] text-muted-foreground leading-relaxed">
+                    <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>No es un error.</strong> El Modelo 190 (resumen anual) requiere un pipeline de perceptores anuales con NIF, claves de percepción y los 4 Modelos 111 trimestrales del ejercicio.
+                      Este pipeline aún no está implementado. El bloqueo es intencional.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
