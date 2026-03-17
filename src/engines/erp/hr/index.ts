@@ -120,3 +120,35 @@ export type {
   PayslipData, PayslipHeader, PayslipDevengo, PayslipDeduccion, PayslipBases,
   PayslipTraceability, PayslipLineInput, LegalPreCloseCheck, LegalPreCloseInput,
 } from './payslipEngine';
+
+// ── AFI Artifact Engine (V2-RRHH-P2) ──
+export {
+  buildAFIAlta, buildAFIBaja, buildAFIVariacion,
+  promoteAFIStatus, serializeAFIForSnapshot,
+  AFI_STATUS_META,
+} from './afiArtifactEngine';
+export type {
+  AFIActionType, AFIAltaSubtype, AFIBajaSubtype, AFIVariacionSubtype,
+  AFIWorkerData, AFIEmployerData, AFIContractData,
+  AFIVariacionChange, AFIBajaDetails,
+  AFIArtifact, AFIArtifactStatus, AFIFieldValidation,
+} from './afiArtifactEngine';
+
+// ── FAN Cotización Artifact Engine (V2-RRHH-P2) ──
+export {
+  buildFANEmployeeRecord, buildFANCotizacion,
+  promoteFANStatus, serializeFANForSnapshot,
+  FAN_STATUS_META,
+} from './fanCotizacionArtifactEngine';
+export type {
+  FANEmployeeRecord, FANCotizacionArtifact, FANCotizacionTotals,
+  FANValidation, FANArtifactStatus,
+} from './fanCotizacionArtifactEngine';
+
+// ── Official Artifact Validation Engine (V2-RRHH-P2) ──
+export {
+  validateAFIPrerequisites, validateFANPrerequisites,
+} from './officialArtifactValidationEngine';
+export type {
+  ArtifactPreValidation, ArtifactPreCheck,
+} from './officialArtifactValidationEngine';
