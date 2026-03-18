@@ -139,7 +139,16 @@ export function HRCollectiveAgreementSelect({
     const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     // Convertir catálogo local a formato AgreementData
-    const localAgreements: AgreementData[] = SPANISH_COLLECTIVE_AGREEMENTS.map(a => ({
+    const localAgreements: AgreementData[] = SPANISH_COLLECTIVE_AGREEMENTS
+      .filter(a => {
+        // If companyCNAE is set, filter local catalog too
+        if (companyCNAE && shouldFilter) {
+          const cnaePrefix = companyCNAE.substring(0, 2);
+          return a.cnae_codes?.some(c => c === companyCNAE || c === cnaePrefix || companyCNAE.startsWith(c)) ?? false;
+        }
+        return true;
+      })
+      .map(a => ({
       id: `local_${a.code}`,
       code: a.code,
       name: a.name,
