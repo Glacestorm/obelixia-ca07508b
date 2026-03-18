@@ -438,7 +438,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent portalContainer={selectPortalContainer} position="popper">
                       {COUNTRIES.map(c => (
-                        <SelectItem key={c.code} value={c.code}>{c.flag} {c.name}</SelectItem>
+                        <SelectItem key={c.code} value={c.code} textValue={`${c.flag} ${c.name}`}>{c.flag} {c.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
