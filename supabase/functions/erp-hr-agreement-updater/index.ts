@@ -337,35 +337,54 @@ async function applyAgreementUpdate(supabase: any, update: any, year: number) {
   const effectiveDate = update.effective_date || `${year}-01-01`;
   const expirationDate = update.expiration_date || `${year}-12-31`;
 
-  // Upsert agreement
-  const { error: agError } = await supabase
+  const agreementData = {
+    code: update.code,
+    name: update.name,
+    effective_date: effectiveDate,
+    expiration_date: expirationDate,
+    jurisdiction_code: update.jurisdiction_code || 'ES',
+    working_hours_week: update.working_hours_week || 40,
+    vacation_days: update.vacation_days || 30,
+    extra_payments: update.extra_payments || 2,
+    cnae_codes: update.cnae_codes || [],
+    is_active: true,
+    is_system: true,
+    source_url: update.source_url || update.boe_reference || null,
+    seniority_rules: update.seniority_rules || null,
+    metadata: {
+      update_type: update.update_type || 'renewal',
+      boe_reference: update.boe_reference,
+      legal_summary: update.legal_summary,
+      last_auto_update: new Date().toISOString(),
+      year
+    },
+    updated_at: new Date().toISOString(),
+  };
+
+  // Check if exists
+  const { data: existing } = await supabase
     .from('erp_hr_collective_agreements')
-    .upsert({
-      code: update.code,
-      name: update.name,
-      effective_date: effectiveDate,
-      expiration_date: expirationDate,
-      jurisdiction_code: update.jurisdiction_code || 'ES',
-      working_hours_week: update.working_hours_week || 40,
-      vacation_days: update.vacation_days || 30,
-      extra_payments: update.extra_payments || 2,
-      cnae_codes: update.cnae_codes || [],
-      is_active: true,
-      is_system: true,
-      source_url: update.source_url || update.boe_reference || null,
-      seniority_rules: update.seniority_rules || null,
-      metadata: {
-        update_type: update.update_type || 'renewal',
-        boe_reference: update.boe_reference,
-        legal_summary: update.legal_summary,
-        last_auto_update: new Date().toISOString(),
-        year
-      },
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'code' });
+    .select('id')
+    .eq('code', update.code)
+    .eq('is_system', true)
+    .maybeSingle();
+
+  let agError;
+  if (existing) {
+    const { error } = await supabase
+      .from('erp_hr_collective_agreements')
+      .update(agreementData)
+      .eq('id', existing.id);
+    agError = error;
+  } else {
+    const { error } = await supabase
+      .from('erp_hr_collective_agreements')
+      .insert(agreementData);
+    agError = error;
+  }
 
   if (agError) {
-    console.error(`[agreement-updater] Error upserting agreement ${update.code}:`, agError);
+    console.error(`[agreement-updater] Error saving agreement ${update.code}:`, agError);
     throw agError;
   }
 
@@ -378,7 +397,6 @@ async function applyAgreementUpdate(supabase: any, update: any, year: number) {
       .eq('agreement_code', update.code)
       .eq('year', year);
 
-    // Insert new salary rows
     const salaryRows = update.salary_groups.map((sg: any) => ({
       agreement_code: update.code,
       agreement_name: update.name,
