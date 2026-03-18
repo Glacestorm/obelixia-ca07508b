@@ -163,19 +163,19 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
     }
   }, [companyId]);
 
-  // Fetch legal entities for filter
+  // Fetch legal entities and work centers for filters
   useEffect(() => {
-    const fetchEntities = async () => {
+    const fetchFilters = async () => {
       try {
-        const { data } = await supabase
-          .from('erp_hr_legal_entities')
-          .select('id, name')
-          .eq('company_id', companyId)
-          .order('name');
-        if (data) setAvailableEntities(data as any);
+        const [entitiesRes, centersRes] = await Promise.all([
+          supabase.from('erp_hr_legal_entities').select('id, name').eq('company_id', companyId).order('name'),
+          supabase.from('erp_hr_work_centers').select('id, name').eq('company_id', companyId).order('name'),
+        ]);
+        if (entitiesRes.data) setAvailableEntities(entitiesRes.data as any);
+        if (centersRes.data) setAvailableWorkCenters(centersRes.data as any);
       } catch { /* ignore */ }
     };
-    fetchEntities();
+    fetchFilters();
   }, [companyId]);
 
   useEffect(() => {
