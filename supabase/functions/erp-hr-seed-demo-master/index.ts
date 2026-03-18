@@ -445,7 +445,8 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
       const grossSalary = parseFloat((monthlySalary + extraGross).toFixed(2));
       const ssWorker = parseFloat((grossSalary * 0.0635).toFixed(2));
       const irpfAmount = parseFloat((grossSalary * irpfPct / 100).toFixed(2));
-      const totalDeductions = parseFloat((ssWorker + irpfAmount).toFixed(2));
+      const otherDeductionsTotal = otherDeductions.reduce((sum, d) => sum + d.amount, 0);
+      const totalDeductions = parseFloat((ssWorker + irpfAmount + otherDeductionsTotal).toFixed(2));
       const netSalary = parseFloat((grossSalary - totalDeductions).toFixed(2));
       const ssCompany = parseFloat((grossSalary * 0.305).toFixed(2));
       const totalCost = parseFloat((grossSalary + ssCompany).toFixed(2));
