@@ -30,6 +30,8 @@ interface HRCollectiveAgreementSelectProps {
   onValueChange: (id: string, agreement: AgreementData | null) => void;
   companyId?: string;
   companyCNAE?: string;
+  /** If true, only show agreements matching the CNAE (strict filter). Default: true when companyCNAE is set */
+  filterByCNAE?: boolean;
   required?: boolean;
   showValidation?: boolean;
   disabled?: boolean;
