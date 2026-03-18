@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Home, Sparkles, Shield, Construction } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Sparkles, Shield, Construction, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
