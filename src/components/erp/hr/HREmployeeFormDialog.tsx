@@ -122,6 +122,17 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     legal_entity_id: '', work_center_id: '', reports_to: '',
   });
 
+  // ES localization fields
+  const [esFields, setEsFields] = useState({
+    naf: '',
+    contribution_group: '',
+    contract_type_rd: '',
+    collective_agreement: '',
+    autonomous_community: '',
+    cno_code: '',
+    irpf_percentage: '',
+  });
+
   // Module access state
   const [moduleAccess, setModuleAccess] = useState<Record<string, 'none' | 'read' | 'write' | 'admin'>>({});
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
