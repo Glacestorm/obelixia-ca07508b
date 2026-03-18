@@ -393,7 +393,6 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   <Select
                     value={formData.legal_entity_id || '__none'}
                     onValueChange={(v) => handleChange('legal_entity_id', v === '__none' ? '' : v)}
-                    disabled={legalEntities.length === 0}
                   >
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent portalContainer={selectPortalContainer} position="popper">
@@ -402,7 +401,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                     </SelectContent>
                   </Select>
                   {legalEntities.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No hay entidades legales configuradas para esta empresa.</p>
+                    <p className="text-xs text-muted-foreground">No hay entidades legales configuradas para esta empresa, pero ya puede abrir el desplegable y dejarlo en “Sin asignar”.</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -410,7 +409,6 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   <Select
                     value={formData.work_center_id || '__none'}
                     onValueChange={(v) => handleChange('work_center_id', v === '__none' ? '' : v)}
-                    disabled={filteredWorkCenters.length === 0}
                   >
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent portalContainer={selectPortalContainer} position="popper">
@@ -421,8 +419,8 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   {filteredWorkCenters.length === 0 && (
                     <p className="text-xs text-muted-foreground">
                       {formData.legal_entity_id
-                        ? 'No hay centros de trabajo para la entidad legal seleccionada.'
-                        : 'No hay centros de trabajo configurados para esta empresa.'}
+                        ? 'No hay centros de trabajo para la entidad legal seleccionada, pero puede abrir el desplegable y dejarlo en “Sin asignar”.'
+                        : 'No hay centros de trabajo configurados para esta empresa, pero ya puede abrir el desplegable y dejarlo en “Sin asignar”.'}
                     </p>
                   )}
                 </div>
