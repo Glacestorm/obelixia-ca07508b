@@ -1942,6 +1942,21 @@ const Admin = () => {
                         <p>{isMaintenanceMode ? 'Desactivar modo mantenimiento' : 'Activar modo mantenimiento'}</p>
                       </TooltipContent>
                     </Tooltip>
+                    {isMaintenanceMode && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowMaintenancePreview(true)}
+                            className="h-9 w-9 rounded-xl border bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Previsualizar página de mantenimiento</TooltipContent>
+                      </Tooltip>
+                    )}
                     <AdminGlobalSearch />
                     <AdminPanelSwitcher />
                   </div>
