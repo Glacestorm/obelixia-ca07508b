@@ -113,6 +113,7 @@ const ES_CONCEPT_CATALOG: ESPayrollConceptDef[] = [
   // Devengos
   { code: 'ES_SAL_BASE', name: 'Salario base', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 10, legal_reference: 'ET Art. 26' },
   { code: 'ES_COMP_CONVENIO', name: 'Plus convenio', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 20 },
+  { code: 'ES_MEJORA_VOLUNTARIA', name: 'Mejora voluntaria', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 15, legal_reference: 'ET Art. 26.5 — Absorbible y compensable' },
   { code: 'ES_COMP_ANTIGUEDAD', name: 'Complemento antigüedad', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 21 },
   { code: 'ES_COMP_PUESTO', name: 'Complemento de puesto', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 22 },
   { code: 'ES_COMP_NOCTURNIDAD', name: 'Plus nocturnidad', line_type: 'earning', category: 'variable', taxable: true, contributable: true, is_percentage: false, sort_order: 23 },
