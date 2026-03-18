@@ -20,6 +20,9 @@ import { GeoLanguageDetector } from "@/components/GeoLanguageDetector";
 import { WelcomeLanguageModal } from "@/components/WelcomeLanguageModal";
 import { TranslationLoadingIndicator } from "@/components/TranslationLoadingIndicator";
 import { AppRoutes } from "@/components/routing";
+import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
+
+const MaintenancePage = lazy(() => import("@/components/maintenance/MaintenancePage"));
 
 // Lazy load non-critical components for better initial load
 const CookieConsent = lazy(() => import("@/components/cookies/CookieConsent"));
@@ -48,6 +51,21 @@ export const routePreloaders = {
   profile: () => preloadRoute(() => import("./pages/Profile")),
   store: () => preloadRoute(() => import("./pages/store/StoreLanding")),
   chat: () => preloadRoute(() => import("./pages/Chat")),
+};
+
+// Maintenance guard — blocks non-admin users when maintenance is on
+const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
+  const { isMaintenanceMode, loading, canBypass } = useMaintenanceMode();
+
+  if (loading) return null;
+  if (isMaintenanceMode && !canBypass) {
+    return (
+      <Suspense fallback={null}>
+        <MaintenancePage />
+      </Suspense>
+    );
+  }
+  return <>{children}</>;
 };
 
 // Deferred components that load after initial render
@@ -108,10 +126,12 @@ const App = () => (
                       <DemoBanner />
                       <DemoTour />
                       
-                      {/* Routes */}
-                      <StreamingBoundary priority="high" fallback={<PageStreamingSkeleton />}>
-                        <AppRoutes />
-                      </StreamingBoundary>
+                      {/* Routes — guarded by maintenance mode */}
+                      <MaintenanceGuard>
+                        <StreamingBoundary priority="high" fallback={<PageStreamingSkeleton />}>
+                          <AppRoutes />
+                        </StreamingBoundary>
+                      </MaintenanceGuard>
                       
                       {/* Deferred non-critical components */}
                       <DeferredComponents />

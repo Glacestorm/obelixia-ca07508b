@@ -1,13 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Home, Sparkles, Shield } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Sparkles, Shield, Construction } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { AdminBreadcrumbs } from '@/components/admin/AdminBreadcrumbs';
 import { AdminPanelSwitcher } from '@/components/admin/AdminPanelSwitcher';
 import { AdminGlobalSearch } from '@/components/admin/AdminGlobalSearch';
 import NewsNotificationSystem from '@/components/admin/NewsNotificationSystem';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
+import { toast } from 'sonner';
 import type { ObelixiaTheme } from '@/hooks/useObelixiaAdminPreferences';
 
 interface ObelixiaAdminHeaderProps {
@@ -25,6 +29,16 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const isDark = theme === 'dark';
+  const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+
+  const handleToggleMaintenance = async () => {
+    const ok = await toggleMaintenance();
+    if (ok) {
+      toast.success(isMaintenanceMode ? 'Modo mantenimiento desactivado' : 'Modo mantenimiento activado');
+    } else {
+      toast.error('Error al cambiar el modo mantenimiento');
+    }
+  };
 
   const navButtonClass = cn(
     "h-9 w-9 rounded-xl transition-all hover:scale-105 border",
@@ -128,6 +142,30 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
 
           {/* Tools group */}
           <div className="flex items-center gap-1.5">
+            {/* Maintenance toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn(
+                  "flex items-center gap-1.5 px-2 py-1.5 rounded-xl transition-colors",
+                  isMaintenanceMode
+                    ? "bg-amber-500/15 border border-amber-500/30"
+                    : isDark ? "bg-slate-800/30" : "bg-slate-100/80"
+                )}>
+                  <Construction className={cn("h-4 w-4", isMaintenanceMode ? "text-amber-400" : isDark ? "text-slate-500" : "text-slate-400")} />
+                  <Switch
+                    checked={isMaintenanceMode}
+                    onCheckedChange={handleToggleMaintenance}
+                    className="scale-75"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>{isMaintenanceMode ? 'Desactivar modo mantenimiento' : 'Activar modo mantenimiento'}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className={cn("w-px h-6", isDark ? "bg-slate-700/50" : "bg-slate-300")} />
+
             <AdminGlobalSearch />
             <NewsNotificationSystem />
             <AdminPanelSwitcher />
