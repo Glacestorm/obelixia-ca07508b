@@ -773,6 +773,31 @@ export function useESPayrollBridge(companyId?: string) {
             continue;
           }
 
+          // ── Salary resolution from agreement tables ──
+          let salaryResolution: ESPayrollInput['salaryResolution'] = undefined;
+          const agreementCode = (laborData as any).convenio_colectivo_id || (contract as any)?.collective_agreement_id;
+          const professionalGroup = (laborData as any).categoria_profesional || (contract as any)?.professional_group;
+          
+          if (agreementCode && professionalGroup && companyId) {
+            try {
+              const { resolveSalaryFromAgreement, fetchAgreementSalaryTable } = await import('@/engines/erp/hr/agreementSalaryResolver');
+              const tableEntry = await fetchAgreementSalaryTable(companyId, agreementCode, professionalGroup, currentYear);
+              if (tableEntry) {
+                const resolution = resolveSalaryFromAgreement(salarioBase, tableEntry, agreementCode, professionalGroup, currentYear);
+                salaryResolution = {
+                  salarioBaseConvenio: resolution.salarioBaseConvenio,
+                  plusConvenioTabla: resolution.plusConvenioTabla,
+                  mejoraVoluntaria: resolution.mejoraVoluntaria,
+                  hasMejoraVoluntaria: resolution.hasMejoraVoluntaria,
+                  agreementCode,
+                  professionalGroup,
+                };
+              }
+            } catch (resolveErr) {
+              console.warn('[useESPayrollBridge] salary resolution skipped:', resolveErr);
+            }
+          }
+
           // Build flex remuneration from plan
           const flexPlan = (flexPlans || []).find((fp: any) => fp.employee_id === emp.id);
 
@@ -780,6 +805,7 @@ export function useESPayrollBridge(companyId?: string) {
             employeeId: emp.id,
             periodId,
             salarioBase,
+            salaryResolution,
             seguroMedico: flexPlan ? Number((flexPlan as any).seguro_medico_mensual || 0) : 0,
             ticketRestaurante: flexPlan ? Number((flexPlan as any).ticket_restaurante_mensual || 0) : 0,
             chequeGuarderia: flexPlan ? Number((flexPlan as any).cheque_guarderia_mensual || 0) : 0,
