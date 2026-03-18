@@ -48,7 +48,7 @@ interface Contract {
   };
 }
 
-export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
+export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('contracts');
   const [contracts, setContracts] = useState<Contract[]>([]);
