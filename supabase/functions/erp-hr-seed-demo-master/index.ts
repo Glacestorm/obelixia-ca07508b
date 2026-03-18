@@ -425,6 +425,8 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
       let complements: Record<string, number> = {};
       let extraGross = 0;
 
+      let otherDeductions: Array<{ code: string; name: string; amount: number }> = [];
+
       // Scenario-specific
       if (p.scenario === 'overtime_bonus' && month >= 2) {
         complements = { horas_extra: 850, plus_productividad: 400 };
@@ -432,6 +434,9 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
       } else if (p.scenario === 'stock_options' && month === 1) {
         complements = { stock_options: 5000, plus_responsabilidad: 500 };
         extraGross = 5500;
+      } else if (p.scenario === 'flex_benefits') {
+        complements = { seguro_medico: 100 };
+        otherDeductions = [{ code: 'ES_ANTICIPO', name: 'Anticipo a descontar', amount: 500 }];
       } else if (p.scenario === 'reduced_hours') {
         // 30h/40h = 75% salary
         // Already reflected in base
