@@ -203,7 +203,88 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     };
     load();
   }, [companyId, open]);
-...
+
+  const loadModuleAccess = async (employeeId: string) => {
+    try {
+      const { data } = await supabase.from('erp_hr_employee_module_access').select('module_code, access_level').eq('employee_id', employeeId);
+      const access: Record<string, 'none' | 'read' | 'write' | 'admin'> = {};
+      AVAILABLE_MODULES.forEach(m => {
+        const found = data?.find((d: any) => d.module_code === m.module_code);
+        access[m.module_code] = found ? found.access_level : 'none';
+      });
+      setModuleAccess(access);
+    } catch {
+      const defaultAccess: Record<string, 'none'> = {};
+      AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
+      setModuleAccess(defaultAccess);
+    }
+  };
+
+  const handleChange = useCallback((field: string, value: string | number) => {
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'legal_entity_id') {
+        next.work_center_id = '';
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSave = async () => {
+    if (!formData.first_name || !formData.last_name || !formData.email) {
+      toast.error('Complete los campos obligatorios');
+      return;
+    }
+    setSaving(true);
+    try {
+      const dbData = {
+        company_id: companyId,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        phone: formData.phone || null,
+        employee_number: formData.employee_number || null,
+        job_title: formData.position || null,
+        department_id: formData.department_id || null,
+        hire_date: formData.hire_date,
+        status: formData.status,
+        country_code: formData.country_code,
+        base_salary: Number(formData.base_salary) || null,
+        legal_entity_id: formData.legal_entity_id || null,
+        work_center_id: formData.work_center_id || null,
+        reports_to: formData.reports_to || null,
+      };
+
+      let employeeId = employee?.id;
+      if (isNew) {
+        const { data, error } = await supabase.from('erp_hr_employees').insert([dbData]).select().single();
+        if (error) throw error;
+        employeeId = data.id;
+        toast.success('Empleado creado');
+      } else {
+        const { error } = await supabase.from('erp_hr_employees').update(dbData).eq('id', employee.id);
+        if (error) throw error;
+        toast.success('Empleado actualizado');
+      }
+
+      if (employeeId) {
+        await supabase.from('erp_hr_employee_module_access').delete().eq('employee_id', employeeId);
+        const accessRecords = Object.entries(moduleAccess)
+          .filter(([_, level]) => level !== 'none')
+          .map(([code, level]) => ({ employee_id: employeeId, company_id: companyId, module_code: code, access_level: level }));
+        if (accessRecords.length > 0) {
+          await supabase.from('erp_hr_employee_module_access').insert(accessRecords);
+        }
+      }
+      onSave();
+    } catch (error) {
+      console.error('Error saving employee:', error);
+      toast.error('Error al guardar empleado');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const selectedCountry = COUNTRIES.find(c => c.code === formData.country_code);
   const filteredWorkCenters = formData.legal_entity_id
     ? workCenters.filter((center) => center.legal_entity_id === formData.legal_entity_id)
