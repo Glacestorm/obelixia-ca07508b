@@ -234,7 +234,7 @@ Convenios existentes en el sistema (actualiza si hay nuevos datos): ${existingCo
           },
           {
             role: 'user',
-            content: `Busca TODOS los convenios colectivos del sector "${sector}" renovados o actualizados para ${year}. Solo datos reales y verificables.`
+            content: `Genera los datos completos de los principales convenios colectivos estatales del sector "${sector}" para ${year}. Incluye tablas salariales por grupo profesional. Si no hay publicación oficial, proyecta con +3.5% sobre 2025. JSON puro, array con mínimo 3 convenios.`
           }
         ],
         temperature: 0.3,
