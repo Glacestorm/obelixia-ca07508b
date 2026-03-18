@@ -111,10 +111,12 @@ const App = () => (
                       <DemoBanner />
                       <DemoTour />
                       
-                      {/* Routes */}
-                      <StreamingBoundary priority="high" fallback={<PageStreamingSkeleton />}>
-                        <AppRoutes />
-                      </StreamingBoundary>
+                      {/* Routes — guarded by maintenance mode */}
+                      <MaintenanceGuard>
+                        <StreamingBoundary priority="high" fallback={<PageStreamingSkeleton />}>
+                          <AppRoutes />
+                        </StreamingBoundary>
+                      </MaintenanceGuard>
                       
                       {/* Deferred non-critical components */}
                       <DeferredComponents />
