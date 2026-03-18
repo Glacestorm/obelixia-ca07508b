@@ -4,6 +4,7 @@
  */
 
 import { Json } from '@/integrations/supabase/types';
+import type { CompanyEntityType } from '@/types/erp/entityTypes';
 
 // ============ EMPRESAS Y GRUPOS ============
 
