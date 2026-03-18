@@ -139,6 +139,16 @@ const Admin = () => {
   
   // Navigation history
   const { canGoBack, canGoForward, goBack, goForward, push } = useNavigationHistory(initialSection);
+  const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+
+  const handleToggleMaintenance = async () => {
+    const ok = await toggleMaintenance();
+    if (ok) {
+      toast.success(isMaintenanceMode ? 'Modo mantenimiento desactivado' : 'Modo mantenimiento activado');
+    } else {
+      toast.error('Error al cambiar el modo mantenimiento');
+    }
+  };
 
   // Sync URL with active section - always prioritize URL
   // Solo hacer push cuando NO estamos navegando con back/forward
