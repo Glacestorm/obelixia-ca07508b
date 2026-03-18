@@ -459,6 +459,7 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
         payroll_type: 'mensual',
         base_salary: parseFloat(monthlySalary.toFixed(2)),
         complements: Object.keys(complements).length > 0 ? complements : null,
+        other_deductions: otherDeductions.length > 0 ? otherDeductions : null,
         gross_salary: grossSalary,
         ss_worker: ssWorker,
         irpf_amount: irpfAmount,
