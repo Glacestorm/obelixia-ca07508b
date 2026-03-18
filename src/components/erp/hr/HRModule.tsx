@@ -130,6 +130,21 @@ function HRModuleInner() {
   const { currentCompany } = useERPContext();
   const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
+  const [companyCNAE, setCompanyCNAE] = useState<string | undefined>();
+
+  // Fetch primary CNAE for the company
+  useEffect(() => {
+    if (!companyId) return;
+    supabase
+      .from('company_cnaes')
+      .select('cnae_code')
+      .eq('company_id', companyId)
+      .eq('is_primary', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.cnae_code) setCompanyCNAE(data.cnae_code);
+      });
+  }, [companyId]);
   
   // Estados para dialogs
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
