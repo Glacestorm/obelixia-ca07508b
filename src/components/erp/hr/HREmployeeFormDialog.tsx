@@ -110,6 +110,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   const isNew = !employee;
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setSaving] = useState(false);
+  const [selectPortalContainer, setSelectPortalContainer] = useState<HTMLElement | null>(null);
 
   // Global form state (country-agnostic)
   const [formData, setFormData] = useState({
@@ -125,7 +126,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   const [moduleAccess, setModuleAccess] = useState<Record<string, 'none' | 'read' | 'write' | 'admin'>>({});
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
   const [legalEntities, setLegalEntities] = useState<Array<{ id: string; name: string }>>([]);
-  const [workCenters, setWorkCenters] = useState<Array<{ id: string; name: string }>>([]);
+  const [workCenters, setWorkCenters] = useState<Array<{ id: string; name: string; legal_entity_id: string | null }>>([]);
   const [managers, setManagers] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -161,105 +162,62 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     }
   }, [employee, open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => {
+      setSelectPortalContainer(document.getElementById('hr-employee-form-dialog'));
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
+
   // Load reference data
   useEffect(() => {
     if (!open) return;
     const load = async () => {
       const [depts, entities, centers, mgrs] = await Promise.all([
         supabase.from('erp_hr_departments').select('id, name').eq('company_id', companyId).order('name'),
-        supabase.from('erp_hr_legal_entities').select('id, name').eq('company_id', companyId).order('name'),
-        supabase.from('erp_hr_work_centers').select('id, name').eq('company_id', companyId).order('name'),
+        supabase.from('erp_hr_legal_entities').select('id, name, legal_name').eq('company_id', companyId).order('name'),
+        supabase.from('erp_hr_work_centers').select('id, name, code, legal_entity_id').eq('company_id', companyId).order('name'),
         supabase.from('erp_hr_employees').select('id, first_name, last_name').eq('company_id', companyId).eq('status', 'active').order('last_name'),
       ]);
       if (depts.data) setDepartments(depts.data as any);
-      if (entities.data) setLegalEntities(entities.data as any);
-      if (centers.data) setWorkCenters(centers.data as any);
+      if (entities.data) {
+        setLegalEntities(
+          entities.data.map((entity: any) => ({
+            id: entity.id,
+            name: entity.name || entity.legal_name || 'Entidad legal',
+          })),
+        );
+      }
+      if (centers.data) {
+        setWorkCenters(
+          centers.data.map((center: any) => ({
+            id: center.id,
+            name: center.name || center.code || 'Centro de trabajo',
+            legal_entity_id: center.legal_entity_id ?? null,
+          })),
+        );
+      }
       if (mgrs.data) setManagers(mgrs.data.map((m: any) => ({ id: m.id, name: `${m.first_name} ${m.last_name}` })));
     };
     load();
   }, [companyId, open]);
-
-  const loadModuleAccess = async (employeeId: string) => {
-    try {
-      const { data } = await supabase.from('erp_hr_employee_module_access').select('module_code, access_level').eq('employee_id', employeeId);
-      const access: Record<string, 'none' | 'read' | 'write' | 'admin'> = {};
-      AVAILABLE_MODULES.forEach(m => {
-        const found = data?.find((d: any) => d.module_code === m.module_code);
-        access[m.module_code] = found ? found.access_level : 'none';
-      });
-      setModuleAccess(access);
-    } catch {
-      const defaultAccess: Record<string, 'none'> = {};
-      AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
-      setModuleAccess(defaultAccess);
-    }
-  };
-
-  const handleChange = (field: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSave = async () => {
-    if (!formData.first_name || !formData.last_name || !formData.email) {
-      toast.error('Complete los campos obligatorios');
-      return;
-    }
-    setSaving(true);
-    try {
-      const dbData = {
-        company_id: companyId,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
-        phone: formData.phone || null,
-        employee_number: formData.employee_number || null,
-        job_title: formData.position || null,
-        department_id: formData.department_id || null,
-        hire_date: formData.hire_date,
-        status: formData.status,
-        country_code: formData.country_code,
-        base_salary: Number(formData.base_salary) || null,
-        legal_entity_id: formData.legal_entity_id || null,
-        work_center_id: formData.work_center_id || null,
-        reports_to: formData.reports_to || null,
-      };
-
-      let employeeId = employee?.id;
-      if (isNew) {
-        const { data, error } = await supabase.from('erp_hr_employees').insert([dbData]).select().single();
-        if (error) throw error;
-        employeeId = data.id;
-        toast.success('Empleado creado');
-      } else {
-        const { error } = await supabase.from('erp_hr_employees').update(dbData).eq('id', employee.id);
-        if (error) throw error;
-        toast.success('Empleado actualizado');
-      }
-
-      // Save module access
-      if (employeeId) {
-        await supabase.from('erp_hr_employee_module_access').delete().eq('employee_id', employeeId);
-        const accessRecords = Object.entries(moduleAccess)
-          .filter(([_, level]) => level !== 'none')
-          .map(([code, level]) => ({ employee_id: employeeId, company_id: companyId, module_code: code, access_level: level }));
-        if (accessRecords.length > 0) {
-          await supabase.from('erp_hr_employee_module_access').insert(accessRecords);
-        }
-      }
-      onSave();
-    } catch (error) {
-      console.error('Error saving employee:', error);
-      toast.error('Error al guardar empleado');
-    } finally {
-      setSaving(false);
-    }
-  };
-
+...
   const selectedCountry = COUNTRIES.find(c => c.code === formData.country_code);
+  const filteredWorkCenters = formData.legal_entity_id
+    ? workCenters.filter((center) => center.legal_entity_id === formData.legal_entity_id)
+    : workCenters;
+
+  useEffect(() => {
+    if (formData.work_center_id && !filteredWorkCenters.some((center) => center.id === formData.work_center_id)) {
+      setFormData((prev) => ({ ...prev, work_center_id: '' }));
+    }
+  }, [filteredWorkCenters, formData.work_center_id]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent id="hr-employee-form-dialog" className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -327,7 +285,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   <Label>País de empleo *</Label>
                   <Select value={formData.country_code} onValueChange={(v) => handleChange('country_code', v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portalContainer={selectPortalContainer} position="popper">
                       {COUNTRIES.map(c => (
                         <SelectItem key={c.code} value={c.code}>{c.flag} {c.name}</SelectItem>
                       ))}
@@ -336,9 +294,13 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                 </div>
                 <div className="space-y-2">
                   <Label>Departamento</Label>
-                  <Select value={formData.department_id} onValueChange={(v) => handleChange('department_id', v)}>
+                  <Select
+                    value={formData.department_id || '__none'}
+                    onValueChange={(v) => handleChange('department_id', v === '__none' ? '' : v)}
+                  >
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portalContainer={selectPortalContainer} position="popper">
+                      <SelectItem value="__none">Sin asignar</SelectItem>
                       {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -347,28 +309,52 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Entidad legal</Label>
-                  <Select value={formData.legal_entity_id} onValueChange={(v) => handleChange('legal_entity_id', v)}>
+                  <Select
+                    value={formData.legal_entity_id || '__none'}
+                    onValueChange={(v) => handleChange('legal_entity_id', v === '__none' ? '' : v)}
+                    disabled={legalEntities.length === 0}
+                  >
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portalContainer={selectPortalContainer} position="popper">
+                      <SelectItem value="__none">Sin asignar</SelectItem>
                       {legalEntities.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {legalEntities.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No hay entidades legales configuradas para esta empresa.</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Centro de trabajo</Label>
-                  <Select value={formData.work_center_id} onValueChange={(v) => handleChange('work_center_id', v)}>
+                  <Select
+                    value={formData.work_center_id || '__none'}
+                    onValueChange={(v) => handleChange('work_center_id', v === '__none' ? '' : v)}
+                    disabled={filteredWorkCenters.length === 0}
+                  >
                     <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                    <SelectContent>
-                      {workCenters.map(wc => <SelectItem key={wc.id} value={wc.id}>{wc.name}</SelectItem>)}
+                    <SelectContent portalContainer={selectPortalContainer} position="popper">
+                      <SelectItem value="__none">Sin asignar</SelectItem>
+                      {filteredWorkCenters.map(wc => <SelectItem key={wc.id} value={wc.id}>{wc.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {filteredWorkCenters.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {formData.legal_entity_id
+                        ? 'No hay centros de trabajo para la entidad legal seleccionada.'
+                        : 'No hay centros de trabajo configurados para esta empresa.'}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Manager directo</Label>
-                <Select value={formData.reports_to} onValueChange={(v) => handleChange('reports_to', v)}>
+                <Select
+                  value={formData.reports_to || '__none'}
+                  onValueChange={(v) => handleChange('reports_to', v === '__none' ? '' : v)}
+                >
                   <SelectTrigger><SelectValue placeholder="Seleccionar manager" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent portalContainer={selectPortalContainer} position="popper">
+                    <SelectItem value="__none">Sin asignar</SelectItem>
                     {managers.filter(m => m.id !== employee?.id).map(m => (
                       <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                     ))}
