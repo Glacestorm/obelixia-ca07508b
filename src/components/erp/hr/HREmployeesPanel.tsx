@@ -125,6 +125,8 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
   // Available countries and entities for filters
   const [availableCountries, setAvailableCountries] = useState<string[]>([]);
   const [availableEntities, setAvailableEntities] = useState<Array<{ id: string; name: string }>>([]);
+  const [availableWorkCenters, setAvailableWorkCenters] = useState<Array<{ id: string; name: string }>>([]);
+  const [workCenterFilter, setWorkCenterFilter] = useState('all');
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
