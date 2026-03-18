@@ -29,6 +29,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { EntityTypeSelect } from '@/components/erp/shared/EntityTypeSelect';
+import { isMultiCnaeEntityType, getEntityTypeOption } from '@/types/erp/entityTypes';
+import type { CompanyEntityType } from '@/types/erp/entityTypes';
 
 interface ERPInitialSetupProps {
   onComplete: () => void;
@@ -46,6 +49,7 @@ interface CompanyForm {
   postal_code: string;
   phone: string;
   email: string;
+  entity_type: CompanyEntityType;
 }
 
 const initialForm: CompanyForm = {
@@ -60,6 +64,7 @@ const initialForm: CompanyForm = {
   postal_code: '',
   phone: '',
   email: '',
+  entity_type: 'sociedad_limitada',
 };
 
 export function ERPInitialSetup({ onComplete }: ERPInitialSetupProps) {
