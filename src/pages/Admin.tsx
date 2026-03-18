@@ -1971,6 +1971,22 @@ const Admin = () => {
         )}
       </main>
     </div>
+
+    {/* Fullscreen maintenance preview */}
+    {showMaintenancePreview && (
+      <div className="fixed inset-0 z-[9999]">
+        <Suspense fallback={null}>
+          <MaintenancePreview />
+        </Suspense>
+        <button
+          onClick={() => setShowMaintenancePreview(false)}
+          className="fixed top-6 right-6 z-[10000] px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+        >
+          ✕ Cerrar previsualización
+        </button>
+      </div>
+    )}
+  </>
   );
 };
 
