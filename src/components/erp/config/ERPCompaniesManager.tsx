@@ -325,7 +325,7 @@ export function ERPCompaniesManager() {
                 </div>
               </div>
 
-
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="tax_id">CIF/NIF</Label>
                   <Input
