@@ -140,6 +140,7 @@ const Admin = () => {
   // Navigation history
   const { canGoBack, canGoForward, goBack, goForward, push } = useNavigationHistory(initialSection);
   const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+  const [showMaintenancePreview, setShowMaintenancePreview] = useState(false);
 
   const handleToggleMaintenance = async () => {
     const ok = await toggleMaintenance();
