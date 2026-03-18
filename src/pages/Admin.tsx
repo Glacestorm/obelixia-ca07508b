@@ -5,7 +5,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigationHistory } from '@/hooks/useNavigationHistory';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Activity, History, Shield, Rocket, Bot, BarChart3, Users, Palette, FileCode2, Eye, MessageSquare, Bell, MessagesSquare, Database, Trophy, Store, ClipboardCheck, Building2, Layers, Zap, ShoppingCart, Briefcase, Loader2, Headphones, FileText, Upload, Home, Globe, Sparkles } from 'lucide-react';
+import { ArrowLeft, Activity, History, Shield, Rocket, Bot, BarChart3, Users, Palette, FileCode2, Eye, MessageSquare, Bell, MessagesSquare, Database, Trophy, Store, ClipboardCheck, Building2, Layers, Zap, ShoppingCart, Briefcase, Loader2, Headphones, FileText, Upload, Home, Globe, Sparkles, Construction } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
+import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { GlobalNavHeader } from '@/components/GlobalNavHeader';
@@ -136,6 +139,16 @@ const Admin = () => {
   
   // Navigation history
   const { canGoBack, canGoForward, goBack, goForward, push } = useNavigationHistory(initialSection);
+  const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+
+  const handleToggleMaintenance = async () => {
+    const ok = await toggleMaintenance();
+    if (ok) {
+      toast.success(isMaintenanceMode ? 'Modo mantenimiento desactivado' : 'Modo mantenimiento activado');
+    } else {
+      toast.error('Error al cambiar el modo mantenimiento');
+    }
+  };
 
   // Sync URL with active section - always prioritize URL
   // Solo hacer push cuando NO estamos navegando con back/forward
@@ -1907,6 +1920,27 @@ const Admin = () => {
                 }
                 rightSlot={
                   <div className="flex items-center gap-2">
+                    {/* Maintenance toggle */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={cn(
+                          "flex items-center gap-1.5 px-2 py-1.5 rounded-xl transition-colors cursor-pointer",
+                          isMaintenanceMode
+                            ? "bg-amber-500/15 border border-amber-500/30"
+                            : "bg-muted/50 border border-border/50"
+                        )}>
+                          <Construction className={cn("h-4 w-4", isMaintenanceMode ? "text-amber-400" : "text-muted-foreground")} />
+                          <Switch
+                            checked={isMaintenanceMode}
+                            onCheckedChange={handleToggleMaintenance}
+                            className="scale-75"
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isMaintenanceMode ? 'Desactivar modo mantenimiento' : 'Activar modo mantenimiento'}</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <AdminGlobalSearch />
                     <AdminPanelSwitcher />
                   </div>
