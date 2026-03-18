@@ -167,6 +167,28 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
               </TooltipContent>
             </Tooltip>
 
+            {/* Preview maintenance page */}
+            {isMaintenanceMode && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPreview(true)}
+                    className={cn(
+                      "h-9 w-9 rounded-xl border",
+                      "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30"
+                    )}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Previsualizar página de mantenimiento</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             <div className={cn("w-px h-6", isDark ? "bg-slate-700/50" : "bg-slate-300")} />
 
             <AdminGlobalSearch />
