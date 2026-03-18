@@ -187,7 +187,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
       if (statusFilter !== 'all' && emp.status !== statusFilter) return false;
       if (countryFilter !== 'all' && emp.country_code !== countryFilter) return false;
       if (entityFilter !== 'all' && emp.legal_entity_id !== entityFilter) return false;
-      if (!searchTerm) return true;
+      if (workCenterFilter !== 'all' && (emp as any).work_center_id !== workCenterFilter) return false;
 
       const term = searchTerm.toLowerCase();
       return (
