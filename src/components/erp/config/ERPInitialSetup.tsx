@@ -112,6 +112,8 @@ export function ERPInitialSetup({ onComplete }: ERPInitialSetupProps) {
             phone: form.phone || null,
             email: form.email || null,
             is_active: true,
+            entity_type: form.entity_type,
+            allows_multi_cnae: isMultiCnaeEntityType(form.entity_type),
           },
         ]);
 
