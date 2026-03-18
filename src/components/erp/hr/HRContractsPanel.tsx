@@ -27,6 +27,7 @@ import { HRSettlementDialog } from './dialogs';
 
 interface HRContractsPanelProps {
   companyId: string;
+  companyCNAE?: string;
 }
 
 interface Contract {
