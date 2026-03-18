@@ -31,6 +31,8 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
   const navigate = useNavigate();
   const isDark = theme === 'dark';
   const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+  const [showPreview, setShowPreview] = useState(false);
+  const LazyMaintenancePage = React.lazy(() => import('@/components/maintenance/MaintenancePage'));
 
   const handleToggleMaintenance = async () => {
     const ok = await toggleMaintenance();
