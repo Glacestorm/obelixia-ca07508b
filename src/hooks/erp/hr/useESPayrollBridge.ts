@@ -278,11 +278,35 @@ export function useESPayrollBridge(companyId?: string) {
         });
       };
 
-      addEarning('ES_SAL_BASE', 'Salario base', input.salarioBase, 'fixed', true, true, 10);
+      // ── 1a. Salary resolution: split salarioBase into convention base + mejora voluntaria ──
+      if (input.salaryResolution?.hasMejoraVoluntaria) {
+        const sr = input.salaryResolution;
+        addEarning('ES_SAL_BASE', 'Salario base (convenio)', sr.salarioBaseConvenio, 'fixed', true, true, 10,
+          'agreement_salary_table', 
+          { agreementCode: sr.agreementCode, professionalGroup: sr.professionalGroup, salarioPactado: input.salarioBase },
+          `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€`
+        );
+        if (sr.plusConvenioTabla > 0) {
+          addEarning('ES_COMP_CONVENIO', 'Plus convenio (tabla)', sr.plusConvenioTabla, 'fixed', true, true, 20,
+            'agreement_salary_table',
+            { agreementCode: sr.agreementCode },
+            `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€`
+          );
+        }
+        addEarning('ES_MEJORA_VOLUNTARIA', 'Mejora voluntaria', sr.mejoraVoluntaria, 'fixed', true, true, 15,
+          'salary_resolution',
+          { salarioPactado: input.salarioBase, totalConvenio: sr.salarioBaseConvenio + sr.plusConvenioTabla },
+          `Mejora vol. = Pactado (${r(input.salarioBase)}€) - Convenio (${r(sr.salarioBaseConvenio + sr.plusConvenioTabla)}€) = ${r(sr.mejoraVoluntaria)}€ [ET Art. 26.5]`
+        );
+      } else {
+        addEarning('ES_SAL_BASE', 'Salario base', input.salarioBase, 'fixed', true, true, 10);
+      }
       
-      // Complementos
+      // Complementos (skip ES_COMP_CONVENIO if already injected by salary resolution)
       if (input.complementos) {
         Object.entries(input.complementos).forEach(([key, val], idx) => {
+          // Skip plus convenio if already resolved from salary tables
+          if (key === 'ES_COMP_CONVENIO' && input.salaryResolution?.plusConvenioTabla) return;
           const def = ES_CONCEPT_CATALOG.find(c => c.code === key);
           if (def && val > 0) {
             addEarning(key, def.name, val, def.category, def.taxable, def.contributable, def.sort_order);
