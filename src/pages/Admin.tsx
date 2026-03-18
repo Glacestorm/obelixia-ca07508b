@@ -129,6 +129,8 @@ import {
 } from '@/components/admin/AdminSectionLoader';
 
 const MaintenancePreview = lazy(() => import('@/components/maintenance/MaintenancePage'));
+
+const Admin = () => {
   const { user, isAdmin, isSuperAdmin, isCommercialDirector, isOfficeDirector, isCommercialManager, isAuditor, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
