@@ -56,6 +56,7 @@ export function HRCollectiveAgreementSelect({
   onValueChange,
   companyId,
   companyCNAE,
+  filterByCNAE,
   required = false,
   showValidation = false,
   disabled = false,
