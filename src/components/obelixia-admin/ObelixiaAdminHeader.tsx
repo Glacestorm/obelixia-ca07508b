@@ -142,6 +142,30 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
 
           {/* Tools group */}
           <div className="flex items-center gap-1.5">
+            {/* Maintenance toggle */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn(
+                  "flex items-center gap-1.5 px-2 py-1.5 rounded-xl transition-colors",
+                  isMaintenanceMode
+                    ? "bg-amber-500/15 border border-amber-500/30"
+                    : isDark ? "bg-slate-800/30" : "bg-slate-100/80"
+                )}>
+                  <Construction className={cn("h-4 w-4", isMaintenanceMode ? "text-amber-400" : isDark ? "text-slate-500" : "text-slate-400")} />
+                  <Switch
+                    checked={isMaintenanceMode}
+                    onCheckedChange={handleToggleMaintenance}
+                    className="scale-75"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>{isMaintenanceMode ? 'Desactivar modo mantenimiento' : 'Activar modo mantenimiento'}</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className={cn("w-px h-6", isDark ? "bg-slate-700/50" : "bg-slate-300")} />
+
             <AdminGlobalSearch />
             <NewsNotificationSystem />
             <AdminPanelSwitcher />
