@@ -47,6 +47,15 @@ export interface ESPayrollInput {
   pensionCompensatoria?: number;
   cuotaSindical?: number;
   regularizacion?: number;
+  /** Salary resolution from agreement tables (optional, auto-populated when available) */
+  salaryResolution?: {
+    salarioBaseConvenio: number;
+    plusConvenioTabla: number;
+    mejoraVoluntaria: number;
+    hasMejoraVoluntaria: boolean;
+    agreementCode: string;
+    professionalGroup: string;
+  };
 }
 
 export interface ESPayrollCalculation {
