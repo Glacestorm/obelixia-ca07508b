@@ -356,8 +356,8 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
             <span>Empleados ({filteredEmployees.length})</span>
-            {(statusFilter !== 'all' || countryFilter !== 'all' || entityFilter !== 'all') && (
-              <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setCountryFilter('all'); setEntityFilter('all'); }}>
+            {(statusFilter !== 'all' || countryFilter !== 'all' || entityFilter !== 'all' || workCenterFilter !== 'all') && (
+              <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setCountryFilter('all'); setEntityFilter('all'); setWorkCenterFilter('all'); }}>
                 Limpiar filtros
               </Button>
             )}
