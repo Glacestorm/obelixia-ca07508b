@@ -306,12 +306,44 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       }
 
       if (employeeId) {
+        // Save module access
         await supabase.from('erp_hr_employee_module_access').delete().eq('employee_id', employeeId);
         const accessRecords = Object.entries(moduleAccess)
           .filter(([_, level]) => level !== 'none')
           .map(([code, level]) => ({ employee_id: employeeId, company_id: companyId, module_code: code, access_level: level }));
         if (accessRecords.length > 0) {
           await supabase.from('erp_hr_employee_module_access').insert(accessRecords);
+        }
+
+        // Save ES localization extension
+        if (formData.country_code === 'ES') {
+          const extensionPayload = {
+            company_id: companyId,
+            employee_id: employeeId,
+            country_code: 'ES',
+            social_security_number: esFields.naf || null,
+            extension_data: {
+              contribution_group: esFields.contribution_group || null,
+              contract_type_rd: esFields.contract_type_rd || null,
+              collective_agreement: esFields.collective_agreement || null,
+              autonomous_community: esFields.autonomous_community || null,
+              cno_code: esFields.cno_code || null,
+              irpf_percentage: esFields.irpf_percentage || null,
+            },
+          };
+
+          const { data: existing } = await supabase
+            .from('hr_employee_extensions')
+            .select('id')
+            .eq('employee_id', employeeId)
+            .eq('country_code', 'ES')
+            .maybeSingle();
+
+          if (existing) {
+            await supabase.from('hr_employee_extensions').update(extensionPayload).eq('id', existing.id);
+          } else {
+            await supabase.from('hr_employee_extensions').insert([extensionPayload]);
+          }
         }
       }
       onSave();
