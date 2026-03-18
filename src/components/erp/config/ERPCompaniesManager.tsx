@@ -45,6 +45,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { EntityTypeSelect } from '@/components/erp/shared/EntityTypeSelect';
+import { isMultiCnaeEntityType, getEntityTypeOption } from '@/types/erp/entityTypes';
 
 const initialForm: CreateCompanyForm = {
   name: '',
@@ -59,6 +61,7 @@ const initialForm: CreateCompanyForm = {
   phone: '',
   email: '',
   website: '',
+  entity_type: 'sociedad_limitada',
 };
 
 export function ERPCompaniesManager() {
