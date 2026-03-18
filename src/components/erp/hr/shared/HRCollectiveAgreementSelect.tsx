@@ -244,7 +244,7 @@ export function HRCollectiveAgreementSelect({
             />
             <CommandList>
               <CommandEmpty>
-                {loading ? 'Cargando convenios...' : 'No se encontraron convenios'}
+                {loading ? 'Cargando convenios...' : companyCNAE && shouldFilter ? `No se encontraron convenios para CNAE ${companyCNAE}` : 'No se encontraron convenios'}
               </CommandEmpty>
               
               {companyCNAE && (
