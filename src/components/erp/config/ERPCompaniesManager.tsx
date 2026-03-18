@@ -206,11 +206,11 @@ export function ERPCompaniesManager() {
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow>
+               <TableRow>
                   <TableHead>Nombre</TableHead>
+                  <TableHead>Tipo Entidad</TableHead>
                   <TableHead>CIF/NIF</TableHead>
                   <TableHead>País</TableHead>
-                  <TableHead>Moneda</TableHead>
                   <TableHead>Estado</TableHead>
                   {canWrite && <TableHead className="text-right">Acciones</TableHead>}
                 </TableRow>
