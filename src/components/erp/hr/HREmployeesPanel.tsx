@@ -309,20 +309,30 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
                   </SelectContent>
                 </Select>
               )}
-              {availableEntities.length > 1 && (
-                <Select value={entityFilter} onValueChange={setEntityFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Building2 className="h-3.5 w-3.5 mr-1" />
-                    <SelectValue placeholder="Entidad legal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas las entidades</SelectItem>
-                    {availableEntities.map(e => (
-                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={entityFilter} onValueChange={setEntityFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <Building2 className="h-3.5 w-3.5 mr-1" />
+                  <SelectValue placeholder="Entidad legal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las entidades</SelectItem>
+                  {availableEntities.map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={workCenterFilter} onValueChange={setWorkCenterFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <MapPin className="h-3.5 w-3.5 mr-1" />
+                  <SelectValue placeholder="Centro de trabajo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los centros</SelectItem>
+                  {availableWorkCenters.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex gap-2">
