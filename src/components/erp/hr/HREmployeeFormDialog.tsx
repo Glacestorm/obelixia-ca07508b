@@ -159,6 +159,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         reports_to: '',
       });
       loadModuleAccess(employee.id);
+      loadEsExtension(employee.id);
     } else {
       setFormData({
         first_name: '', last_name: '', email: '', phone: '',
@@ -167,6 +168,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         status: 'active', country_code: 'ES', base_salary: 0,
         legal_entity_id: '', work_center_id: '', reports_to: '',
       });
+      setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '' });
       const defaultAccess: Record<string, 'none'> = {};
       AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
       setModuleAccess(defaultAccess);
@@ -181,6 +183,31 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
+
+  const loadEsExtension = async (employeeId: string) => {
+    try {
+      const { data } = await supabase
+        .from('hr_employee_extensions')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .eq('country_code', 'ES')
+        .maybeSingle();
+      if (data) {
+        const ext = (data.extension_data || {}) as Record<string, string>;
+        setEsFields({
+          naf: data.social_security_number || '',
+          contribution_group: ext.contribution_group || '',
+          contract_type_rd: ext.contract_type_rd || '',
+          collective_agreement: ext.collective_agreement || '',
+          autonomous_community: ext.autonomous_community || '',
+          cno_code: ext.cno_code || '',
+          irpf_percentage: ext.irpf_percentage || '',
+        });
+      }
+    } catch (err) {
+      console.error('[ES Extension] load error:', err);
+    }
+  };
 
   // Load reference data
   useEffect(() => {
