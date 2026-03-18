@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ERPCompany, ERPCompanyGroup, CreateCompanyForm } from '@/types/erp';
 import { useERPContext } from './useERPContext';
 import { toast } from 'sonner';
+import { isMultiCnaeEntityType } from '@/types/erp/entityTypes';
 
 export function useERPCompanies() {
   const { currentCompany, hasPermission, refreshCompanies } = useERPContext();
@@ -78,6 +79,8 @@ export function useERPCompanies() {
           email: form.email,
           website: form.website,
           group_id: form.group_id,
+          entity_type: form.entity_type || 'sociedad_limitada',
+          allows_multi_cnae: form.entity_type ? isMultiCnaeEntityType(form.entity_type) : false,
         }])
         .select()
         .single();

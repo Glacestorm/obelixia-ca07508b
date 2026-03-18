@@ -21925,21 +21925,30 @@ export type Database = {
       erp_companies: {
         Row: {
           address: string | null
+          allows_multi_cnae: boolean | null
           city: string | null
+          cnae_codes: string[] | null
           code: string | null
           country: string | null
           created_at: string | null
           currency: string | null
           email: string | null
+          entity_type: Database["public"]["Enums"]["company_entity_type"] | null
+          fiscal_regime: string | null
           group_id: string | null
           id: string
+          incorporation_date: string | null
           is_active: boolean | null
           legal_name: string | null
           logo_url: string | null
           name: string
+          parent_company_id: string | null
           phone: string | null
           postal_code: string | null
+          registration_number: string | null
+          registration_registry: string | null
           settings: Json | null
+          share_capital: number | null
           tax_id: string | null
           timezone: string | null
           updated_at: string | null
@@ -21947,21 +21956,32 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          allows_multi_cnae?: boolean | null
           city?: string | null
+          cnae_codes?: string[] | null
           code?: string | null
           country?: string | null
           created_at?: string | null
           currency?: string | null
           email?: string | null
+          entity_type?:
+            | Database["public"]["Enums"]["company_entity_type"]
+            | null
+          fiscal_regime?: string | null
           group_id?: string | null
           id?: string
+          incorporation_date?: string | null
           is_active?: boolean | null
           legal_name?: string | null
           logo_url?: string | null
           name: string
+          parent_company_id?: string | null
           phone?: string | null
           postal_code?: string | null
+          registration_number?: string | null
+          registration_registry?: string | null
           settings?: Json | null
+          share_capital?: number | null
           tax_id?: string | null
           timezone?: string | null
           updated_at?: string | null
@@ -21969,21 +21989,32 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          allows_multi_cnae?: boolean | null
           city?: string | null
+          cnae_codes?: string[] | null
           code?: string | null
           country?: string | null
           created_at?: string | null
           currency?: string | null
           email?: string | null
+          entity_type?:
+            | Database["public"]["Enums"]["company_entity_type"]
+            | null
+          fiscal_regime?: string | null
           group_id?: string | null
           id?: string
+          incorporation_date?: string | null
           is_active?: boolean | null
           legal_name?: string | null
           logo_url?: string | null
           name?: string
+          parent_company_id?: string | null
           phone?: string | null
           postal_code?: string | null
+          registration_number?: string | null
+          registration_registry?: string | null
           settings?: Json | null
+          share_capital?: number | null
           tax_id?: string | null
           timezone?: string | null
           updated_at?: string | null
@@ -21995,6 +22026,57 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "erp_company_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_companies_parent_company_id_fkey"
+            columns: ["parent_company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_company_cnae_assignments: {
+        Row: {
+          cnae_code: string
+          cnae_description: string | null
+          company_id: string
+          created_at: string | null
+          effective_date: string | null
+          end_date: string | null
+          id: string
+          is_primary: boolean | null
+          notes: string | null
+        }
+        Insert: {
+          cnae_code: string
+          cnae_description?: string | null
+          company_id: string
+          created_at?: string | null
+          effective_date?: string | null
+          end_date?: string | null
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+        }
+        Update: {
+          cnae_code?: string
+          cnae_description?: string | null
+          company_id?: string
+          created_at?: string | null
+          effective_date?: string | null
+          end_date?: string | null
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_company_cnae_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
             referencedColumns: ["id"]
           },
         ]
@@ -23264,6 +23346,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_entity_type_rules: {
+        Row: {
+          allows_multi_cnae: boolean | null
+          applicable_jurisdictions: string[] | null
+          created_at: string | null
+          description: string | null
+          entity_type: Database["public"]["Enums"]["company_entity_type"]
+          governing_law: string | null
+          id: string
+          is_active: boolean | null
+          law_reference: string | null
+          liability_type: string | null
+          max_partners: number | null
+          min_partners: number | null
+          min_share_capital: number | null
+          requires_auditor: boolean | null
+          requires_board: boolean | null
+          rule_key: string
+          rule_value: Json
+          tax_regime: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          allows_multi_cnae?: boolean | null
+          applicable_jurisdictions?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          entity_type: Database["public"]["Enums"]["company_entity_type"]
+          governing_law?: string | null
+          id?: string
+          is_active?: boolean | null
+          law_reference?: string | null
+          liability_type?: string | null
+          max_partners?: number | null
+          min_partners?: number | null
+          min_share_capital?: number | null
+          requires_auditor?: boolean | null
+          requires_board?: boolean | null
+          rule_key: string
+          rule_value?: Json
+          tax_regime?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          allows_multi_cnae?: boolean | null
+          applicable_jurisdictions?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          entity_type?: Database["public"]["Enums"]["company_entity_type"]
+          governing_law?: string | null
+          id?: string
+          is_active?: boolean | null
+          law_reference?: string | null
+          liability_type?: string | null
+          max_partners?: number | null
+          min_partners?: number | null
+          min_share_capital?: number | null
+          requires_auditor?: boolean | null
+          requires_board?: boolean | null
+          rule_key?: string
+          rule_value?: Json
+          tax_regime?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       erp_esg_data_points: {
         Row: {
@@ -46762,6 +46910,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_legal_knowledge_base: {
+        Row: {
+          applicable_entity_types:
+            | Database["public"]["Enums"]["company_entity_type"][]
+            | null
+          applicable_jurisdictions: string[] | null
+          articles: string[] | null
+          boe_reference: string | null
+          category: string
+          content: string
+          created_at: string | null
+          effective_date: string | null
+          expiry_date: string | null
+          id: string
+          importance: string | null
+          is_active: boolean | null
+          law_code: string | null
+          law_name: string | null
+          metadata: Json | null
+          source_url: string | null
+          subcategory: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          applicable_entity_types?:
+            | Database["public"]["Enums"]["company_entity_type"][]
+            | null
+          applicable_jurisdictions?: string[] | null
+          articles?: string[] | null
+          boe_reference?: string | null
+          category: string
+          content: string
+          created_at?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          importance?: string | null
+          is_active?: boolean | null
+          law_code?: string | null
+          law_name?: string | null
+          metadata?: Json | null
+          source_url?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          applicable_entity_types?:
+            | Database["public"]["Enums"]["company_entity_type"][]
+            | null
+          applicable_jurisdictions?: string[] | null
+          articles?: string[] | null
+          boe_reference?: string | null
+          category?: string
+          content?: string
+          created_at?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          id?: string
+          importance?: string | null
+          is_active?: boolean | null
+          law_code?: string | null
+          law_name?: string | null
+          metadata?: Json | null
+          source_url?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       erp_legal_matters: {
         Row: {
@@ -83829,6 +84052,32 @@ export type Database = {
         | "biometric"
         | "security_question"
       auth_risk_level: "low" | "medium" | "high" | "critical"
+      company_entity_type:
+        | "autonomo"
+        | "sociedad_limitada"
+        | "sociedad_limitada_unipersonal"
+        | "sociedad_anonima"
+        | "sociedad_limitada_nueva_empresa"
+        | "sociedad_cooperativa"
+        | "sociedad_laboral"
+        | "sociedad_colectiva"
+        | "sociedad_comanditaria_simple"
+        | "sociedad_comanditaria_acciones"
+        | "comunidad_bienes"
+        | "sociedad_civil"
+        | "asociacion"
+        | "fundacion"
+        | "sociedad_profesional"
+        | "agrupacion_interes_economico"
+        | "sociedad_anonima_europea"
+        | "sociedad_anonima_deportiva"
+        | "entidad_religiosa"
+        | "trust"
+        | "holding"
+        | "joint_venture"
+        | "ute"
+        | "sucursal_extranjera"
+        | "oficina_representacion"
       equality_plan_status:
         | "draft"
         | "diagnosis"
@@ -84242,6 +84491,33 @@ export const Constants = {
         "security_question",
       ],
       auth_risk_level: ["low", "medium", "high", "critical"],
+      company_entity_type: [
+        "autonomo",
+        "sociedad_limitada",
+        "sociedad_limitada_unipersonal",
+        "sociedad_anonima",
+        "sociedad_limitada_nueva_empresa",
+        "sociedad_cooperativa",
+        "sociedad_laboral",
+        "sociedad_colectiva",
+        "sociedad_comanditaria_simple",
+        "sociedad_comanditaria_acciones",
+        "comunidad_bienes",
+        "sociedad_civil",
+        "asociacion",
+        "fundacion",
+        "sociedad_profesional",
+        "agrupacion_interes_economico",
+        "sociedad_anonima_europea",
+        "sociedad_anonima_deportiva",
+        "entidad_religiosa",
+        "trust",
+        "holding",
+        "joint_venture",
+        "ute",
+        "sucursal_extranjera",
+        "oficina_representacion",
+      ],
       equality_plan_status: [
         "draft",
         "diagnosis",

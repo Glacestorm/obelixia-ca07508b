@@ -29,6 +29,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { EntityTypeSelect } from '@/components/erp/shared/EntityTypeSelect';
+import { isMultiCnaeEntityType, getEntityTypeOption } from '@/types/erp/entityTypes';
+import type { CompanyEntityType } from '@/types/erp/entityTypes';
 
 interface ERPInitialSetupProps {
   onComplete: () => void;
@@ -46,6 +49,7 @@ interface CompanyForm {
   postal_code: string;
   phone: string;
   email: string;
+  entity_type: CompanyEntityType;
 }
 
 const initialForm: CompanyForm = {
@@ -60,6 +64,7 @@ const initialForm: CompanyForm = {
   postal_code: '',
   phone: '',
   email: '',
+  entity_type: 'sociedad_limitada',
 };
 
 export function ERPInitialSetup({ onComplete }: ERPInitialSetupProps) {
@@ -107,6 +112,8 @@ export function ERPInitialSetup({ onComplete }: ERPInitialSetupProps) {
             phone: form.phone || null,
             email: form.email || null,
             is_active: true,
+            entity_type: form.entity_type,
+            allows_multi_cnae: isMultiCnaeEntityType(form.entity_type),
           },
         ]);
 
@@ -263,6 +270,23 @@ export function ERPInitialSetup({ onComplete }: ERPInitialSetupProps) {
               </div>
 
               <div className="grid gap-4 max-w-2xl mx-auto">
+                {/* Entity Type */}
+                <div className="space-y-2">
+                  <Label>Tipo de entidad <span className="text-destructive">*</span></Label>
+                  <EntityTypeSelect
+                    value={form.entity_type}
+                    onValueChange={(v) => setForm({ ...form, entity_type: v })}
+                  />
+                  {form.entity_type && (
+                    <p className="text-xs text-muted-foreground">
+                      {getEntityTypeOption(form.entity_type)?.description}
+                      {isMultiCnaeEntityType(form.entity_type) && (
+                        <span className="ml-1 text-primary font-medium">• Permite múltiples códigos CNAE</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">

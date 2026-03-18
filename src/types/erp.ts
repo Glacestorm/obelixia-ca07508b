@@ -4,6 +4,7 @@
  */
 
 import { Json } from '@/integrations/supabase/types';
+import type { CompanyEntityType } from '@/types/erp/entityTypes';
 
 // ============ EMPRESAS Y GRUPOS ============
 
@@ -34,6 +35,14 @@ export interface ERPCompany {
   logo_url?: string | null;
   is_active: boolean;
   settings: Json;
+  entity_type?: CompanyEntityType;
+  allows_multi_cnae?: boolean;
+  cnae_codes?: string[];
+  registration_number?: string | null;
+  incorporation_date?: string | null;
+  fiscal_regime?: string;
+  share_capital?: number | null;
+  parent_company_id?: string | null;
   created_at: string;
   updated_at: string;
   // Relación
@@ -193,6 +202,7 @@ export interface CreateCompanyForm {
   email?: string;
   website?: string;
   group_id?: string;
+  entity_type?: CompanyEntityType;
 }
 
 export interface CreateFiscalYearForm {

@@ -45,6 +45,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { EntityTypeSelect } from '@/components/erp/shared/EntityTypeSelect';
+import { isMultiCnaeEntityType, getEntityTypeOption } from '@/types/erp/entityTypes';
 
 const initialForm: CreateCompanyForm = {
   name: '',
@@ -59,6 +61,7 @@ const initialForm: CreateCompanyForm = {
   phone: '',
   email: '',
   website: '',
+  entity_type: 'sociedad_limitada',
 };
 
 export function ERPCompaniesManager() {
@@ -108,6 +111,7 @@ export function ERPCompaniesManager() {
       email: company.email || '',
       website: company.website || '',
       group_id: company.group_id || undefined,
+      entity_type: (company as any).entity_type || 'sociedad_limitada',
     });
     setShowDialog(true);
   };
@@ -202,11 +206,11 @@ export function ERPCompaniesManager() {
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
-                <TableRow>
+               <TableRow>
                   <TableHead>Nombre</TableHead>
+                  <TableHead>Tipo Entidad</TableHead>
                   <TableHead>CIF/NIF</TableHead>
                   <TableHead>País</TableHead>
-                  <TableHead>Moneda</TableHead>
                   <TableHead>Estado</TableHead>
                   {canWrite && <TableHead className="text-right">Acciones</TableHead>}
                 </TableRow>
@@ -219,7 +223,9 @@ export function ERPCompaniesManager() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredCompanies.map((company) => (
+                  filteredCompanies.map((company) => {
+                    const entityOpt = getEntityTypeOption((company as any).entity_type || 'sociedad_limitada');
+                    return (
                     <TableRow key={company.id}>
                       <TableCell>
                         <div>
@@ -229,9 +235,18 @@ export function ERPCompaniesManager() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs">
+                            {entityOpt?.label || 'SL'}
+                          </Badge>
+                          {entityOpt?.multiCnae && (
+                            <Badge variant="secondary" className="text-[10px] px-1">Multi-CNAE</Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-mono text-sm">{company.tax_id || '-'}</TableCell>
                       <TableCell>{company.country}</TableCell>
-                      <TableCell>{company.currency}</TableCell>
                       <TableCell>
                         <Badge variant={company.is_active ? 'default' : 'secondary'}>
                           {company.is_active ? 'Activa' : 'Inactiva'}
@@ -255,7 +270,7 @@ export function ERPCompaniesManager() {
                         </TableCell>
                       )}
                     </TableRow>
-                  ))
+                  )})
                 )}
               </TableBody>
             </Table>
@@ -272,6 +287,23 @@ export function ERPCompaniesManager() {
             </DialogHeader>
             
             <div className="grid gap-4 py-4">
+              {/* Entity Type Selector */}
+              <div className="space-y-2">
+                <Label>Tipo de entidad <span className="text-destructive">*</span></Label>
+                <EntityTypeSelect
+                  value={form.entity_type}
+                  onValueChange={(v) => setForm({ ...form, entity_type: v })}
+                />
+                {form.entity_type && (
+                  <p className="text-xs text-muted-foreground">
+                    {getEntityTypeOption(form.entity_type!)?.description}
+                    {isMultiCnaeEntityType(form.entity_type!) && (
+                      <span className="ml-1 text-primary font-medium">• Permite múltiples códigos CNAE</span>
+                    )}
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre comercial *</Label>
