@@ -72,7 +72,7 @@ export function HRCollectiveAgreementSelect({
   // Cargar convenios de la base de datos
   useEffect(() => {
     loadAgreements();
-  }, [companyId]);
+  }, [companyId, companyCNAE]);
 
   // Cargar convenio seleccionado
   useEffect(() => {
