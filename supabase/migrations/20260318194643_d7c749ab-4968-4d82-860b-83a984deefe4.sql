@@ -1,0 +1,1 @@
+ALTER TABLE erp_hr_agreement_salary_tables ALTER COLUMN company_id DROP NOT NULL;
