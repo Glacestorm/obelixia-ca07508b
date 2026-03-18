@@ -1920,6 +1920,27 @@ const Admin = () => {
                 }
                 rightSlot={
                   <div className="flex items-center gap-2">
+                    {/* Maintenance toggle */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={cn(
+                          "flex items-center gap-1.5 px-2 py-1.5 rounded-xl transition-colors cursor-pointer",
+                          isMaintenanceMode
+                            ? "bg-amber-500/15 border border-amber-500/30"
+                            : "bg-muted/50 border border-border/50"
+                        )}>
+                          <Construction className={cn("h-4 w-4", isMaintenanceMode ? "text-amber-400" : "text-muted-foreground")} />
+                          <Switch
+                            checked={isMaintenanceMode}
+                            onCheckedChange={handleToggleMaintenance}
+                            className="scale-75"
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isMaintenanceMode ? 'Desactivar modo mantenimiento' : 'Activar modo mantenimiento'}</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <AdminGlobalSearch />
                     <AdminPanelSwitcher />
                   </div>
