@@ -223,6 +223,110 @@ export function ERPCompaniesManager() {
                     </TableCell>
                   </TableRow>
                 ) : (
+                  filteredCompanies.map((company) => {
+                    const entityOpt = getEntityTypeOption((company as any).entity_type || 'sociedad_limitada');
+                    return (
+                    <TableRow key={company.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{company.name}</p>
+                          {company.legal_name && (
+                            <p className="text-xs text-muted-foreground">{company.legal_name}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs">
+                            {entityOpt?.label || 'SL'}
+                          </Badge>
+                          {entityOpt?.multiCnae && (
+                            <Badge variant="secondary" className="text-[10px] px-1">Multi-CNAE</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{company.tax_id || '-'}</TableCell>
+                      <TableCell>{company.country}</TableCell>
+                      <TableCell>
+                        <Badge variant={company.is_active ? 'default' : 'secondary'}>
+                          {company.is_active ? 'Activa' : 'Inactiva'}
+                        </Badge>
+                      </TableCell>
+                      {canWrite && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(company)} title="Editar">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            {company.is_active && (
+                              <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(company, 'deactivate')} title="Desactivar">
+                                <Power className="h-4 w-4 text-yellow-500" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(company, 'permanent')} title="Eliminar permanentemente">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  )})
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Dialog Crear/Editar */}
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingCompany ? 'Editar Empresa' : 'Nueva Empresa'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              {/* Entity Type Selector */}
+              <div className="space-y-2">
+                <Label>Tipo de entidad <span className="text-destructive">*</span></Label>
+                <EntityTypeSelect
+                  value={form.entity_type}
+                  onValueChange={(v) => setForm({ ...form, entity_type: v })}
+                />
+                {form.entity_type && (
+                  <p className="text-xs text-muted-foreground">
+                    {getEntityTypeOption(form.entity_type!)?.description}
+                    {isMultiCnaeEntityType(form.entity_type!) && (
+                      <span className="ml-1 text-primary font-medium">• Permite múltiples códigos CNAE</span>
+                    )}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nombre comercial *</Label>
+                  <Input
+                    id="name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Mi Empresa S.L."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="legal_name">Razón social</Label>
+                  <Input
+                    id="legal_name"
+                    value={form.legal_name}
+                    onChange={(e) => setForm({ ...form, legal_name: e.target.value })}
+                    placeholder="Mi Empresa Sociedad Limitada"
+                  />
+                </div>
+              </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
                   filteredCompanies.map((company) => (
                     <TableRow key={company.id}>
                       <TableCell>
