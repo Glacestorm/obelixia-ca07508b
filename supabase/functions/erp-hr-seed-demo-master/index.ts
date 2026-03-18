@@ -425,6 +425,8 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
       let complements: Record<string, number> = {};
       let extraGross = 0;
 
+      let otherDeductions: Array<{ code: string; name: string; amount: number }> = [];
+
       // Scenario-specific
       if (p.scenario === 'overtime_bonus' && month >= 2) {
         complements = { horas_extra: 850, plus_productividad: 400 };
@@ -432,6 +434,9 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
       } else if (p.scenario === 'stock_options' && month === 1) {
         complements = { stock_options: 5000, plus_responsabilidad: 500 };
         extraGross = 5500;
+      } else if (p.scenario === 'flex_benefits') {
+        complements = { seguro_medico: 100 };
+        otherDeductions = [{ code: 'ES_ANTICIPO', name: 'Anticipo a descontar', amount: 500 }];
       } else if (p.scenario === 'reduced_hours') {
         // 30h/40h = 75% salary
         // Already reflected in base
@@ -440,7 +445,8 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
       const grossSalary = parseFloat((monthlySalary + extraGross).toFixed(2));
       const ssWorker = parseFloat((grossSalary * 0.0635).toFixed(2));
       const irpfAmount = parseFloat((grossSalary * irpfPct / 100).toFixed(2));
-      const totalDeductions = parseFloat((ssWorker + irpfAmount).toFixed(2));
+      const otherDeductionsTotal = otherDeductions.reduce((sum, d) => sum + d.amount, 0);
+      const totalDeductions = parseFloat((ssWorker + irpfAmount + otherDeductionsTotal).toFixed(2));
       const netSalary = parseFloat((grossSalary - totalDeductions).toFixed(2));
       const ssCompany = parseFloat((grossSalary * 0.305).toFixed(2));
       const totalCost = parseFloat((grossSalary + ssCompany).toFixed(2));
@@ -453,6 +459,7 @@ async function seedMasterPayrolls(supabase: any, companyId: string, empIdMap: Re
         payroll_type: 'mensual',
         base_salary: parseFloat(monthlySalary.toFixed(2)),
         complements: Object.keys(complements).length > 0 ? complements : null,
+        other_deductions: otherDeductions.length > 0 ? otherDeductions : null,
         gross_salary: grossSalary,
         ss_worker: ssWorker,
         irpf_amount: irpfAmount,
