@@ -194,6 +194,7 @@ export interface CreateCompanyForm {
   email?: string;
   website?: string;
   group_id?: string;
+  entity_type?: CompanyEntityType;
 }
 
 export interface CreateFiscalYearForm {
