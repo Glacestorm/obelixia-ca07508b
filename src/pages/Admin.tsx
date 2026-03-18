@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, Suspense, lazy } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -128,6 +128,8 @@ import {
   KnowledgeBase45Dashboard,
 } from '@/components/admin/AdminSectionLoader';
 
+const MaintenancePreview = lazy(() => import('@/components/maintenance/MaintenancePage'));
+
 const Admin = () => {
   const { user, isAdmin, isSuperAdmin, isCommercialDirector, isOfficeDirector, isCommercialManager, isAuditor, loading: authLoading } = useAuth();
   const { t } = useLanguage();
@@ -140,6 +142,7 @@ const Admin = () => {
   // Navigation history
   const { canGoBack, canGoForward, goBack, goForward, push } = useNavigationHistory(initialSection);
   const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+  const [showMaintenancePreview, setShowMaintenancePreview] = useState(false);
 
   const handleToggleMaintenance = async () => {
     const ok = await toggleMaintenance();
@@ -1868,6 +1871,7 @@ const Admin = () => {
   };
 
   return (
+    <>
     <div className="min-h-screen flex w-full bg-background">
       <main className={`flex-1 ${activeSection === 'map' ? 'flex flex-col overflow-hidden' : 'overflow-auto'}`}>
         {activeSection === 'map' ? (
@@ -1941,6 +1945,21 @@ const Admin = () => {
                         <p>{isMaintenanceMode ? 'Desactivar modo mantenimiento' : 'Activar modo mantenimiento'}</p>
                       </TooltipContent>
                     </Tooltip>
+                    {isMaintenanceMode && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowMaintenancePreview(true)}
+                            className="h-9 w-9 rounded-xl border bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Previsualizar página de mantenimiento</TooltipContent>
+                      </Tooltip>
+                    )}
                     <AdminGlobalSearch />
                     <AdminPanelSwitcher />
                   </div>
@@ -1955,6 +1974,22 @@ const Admin = () => {
         )}
       </main>
     </div>
+
+    {/* Fullscreen maintenance preview */}
+    {showMaintenancePreview && (
+      <div className="fixed inset-0 z-[9999]">
+        <Suspense fallback={null}>
+          <MaintenancePreview />
+        </Suspense>
+        <button
+          onClick={() => setShowMaintenancePreview(false)}
+          className="fixed top-6 right-6 z-[10000] px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+        >
+          ✕ Cerrar previsualización
+        </button>
+      </div>
+    )}
+  </>
   );
 };
 

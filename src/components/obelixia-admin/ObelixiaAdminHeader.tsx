@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Home, Sparkles, Shield, Construction } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Sparkles, Shield, Construction, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
 import { toast } from 'sonner';
+import { useState } from 'react';
 import type { ObelixiaTheme } from '@/hooks/useObelixiaAdminPreferences';
 
 interface ObelixiaAdminHeaderProps {
@@ -30,6 +31,8 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
   const navigate = useNavigate();
   const isDark = theme === 'dark';
   const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+  const [showPreview, setShowPreview] = useState(false);
+  const LazyMaintenancePage = React.lazy(() => import('@/components/maintenance/MaintenancePage'));
 
   const handleToggleMaintenance = async () => {
     const ok = await toggleMaintenance();
@@ -164,6 +167,28 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
               </TooltipContent>
             </Tooltip>
 
+            {/* Preview maintenance page */}
+            {isMaintenanceMode && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPreview(true)}
+                    className={cn(
+                      "h-9 w-9 rounded-xl border",
+                      "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30"
+                    )}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Previsualizar página de mantenimiento</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             <div className={cn("w-px h-6", isDark ? "bg-slate-700/50" : "bg-slate-300")} />
 
             <AdminGlobalSearch />
@@ -179,6 +204,21 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
           className={isDark ? "text-slate-400" : "text-slate-500"}
         />
       </div>
+
+      {/* Fullscreen maintenance preview overlay */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[9999]">
+          <React.Suspense fallback={null}>
+            <LazyMaintenancePage />
+          </React.Suspense>
+          <button
+            onClick={() => setShowPreview(false)}
+            className="fixed top-6 right-6 z-[10000] px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+          >
+            ✕ Cerrar previsualización
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 };
