@@ -254,7 +254,36 @@ Convenios existentes en el sistema (actualiza si hay nuevos datos): ${existingCo
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (!jsonMatch) return { updates: [] };
 
-    const updates = JSON.parse(jsonMatch[0]);
+    // Clean common JSON issues from AI responses
+    let jsonStr = jsonMatch[0]
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*\]/g, ']')
+      .replace(/[\x00-\x1F\x7F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : '')
+      .replace(/"\s*\n\s*"/g, '", "')
+      .replace(/\\'/g, "'");
+
+    let updates;
+    try {
+      updates = JSON.parse(jsonStr);
+    } catch (e1) {
+      // Try fixing unescaped quotes in values
+      try {
+        jsonStr = jsonStr.replace(/: "([^"]*?)(?<!\\)"([^,}\]]*?)"/g, ': "$1\\"$2"');
+        updates = JSON.parse(jsonStr);
+      } catch (e2) {
+        console.error(`[agreement-updater] JSON parse failed for sector ${sector}, attempting individual extraction`);
+        // Extract individual objects
+        const objMatches = [...content.matchAll(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g)];
+        updates = [];
+        for (const m of objMatches) {
+          try {
+            const obj = JSON.parse(m[0].replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']'));
+            if (obj.code && obj.name) updates.push(obj);
+          } catch { /* skip malformed */ }
+        }
+      }
+    }
+    
     console.log(`[agreement-updater] Found ${updates.length} updates for sector: ${sector}`);
     return { updates };
   } catch (err) {
