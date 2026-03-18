@@ -8,7 +8,6 @@ import { ERPCompany, ERPCompanyGroup, CreateCompanyForm } from '@/types/erp';
 import { useERPContext } from './useERPContext';
 import { toast } from 'sonner';
 import { isMultiCnaeEntityType } from '@/types/erp/entityTypes';
-import { toast } from 'sonner';
 
 export function useERPCompanies() {
   const { currentCompany, hasPermission, refreshCompanies } = useERPContext();
