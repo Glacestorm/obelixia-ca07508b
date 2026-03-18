@@ -188,6 +188,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
       if (countryFilter !== 'all' && emp.country_code !== countryFilter) return false;
       if (entityFilter !== 'all' && emp.legal_entity_id !== entityFilter) return false;
       if (workCenterFilter !== 'all' && (emp as any).work_center_id !== workCenterFilter) return false;
+      if (!searchTerm) return true;
 
       const term = searchTerm.toLowerCase();
       return (
@@ -197,7 +198,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
         emp.position?.toLowerCase().includes(term)
       );
     });
-  }, [employees, searchTerm, statusFilter, countryFilter, entityFilter]);
+  }, [employees, searchTerm, statusFilter, countryFilter, entityFilter, workCenterFilter]);
 
   const handleDeleteEmployee = async (employee: Employee) => {
     if (!confirm(`¿Eliminar a ${employee.first_name} ${employee.last_name}?`)) return;
