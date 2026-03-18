@@ -26070,6 +26070,75 @@ export type Database = {
           },
         ]
       }
+      erp_hr_agreement_salary_tables: {
+        Row: {
+          agreement_code: string
+          agreement_name: string
+          base_salary_annual: number | null
+          base_salary_monthly: number
+          company_id: string
+          created_at: string | null
+          effective_date: string
+          expiration_date: string | null
+          extra_pay_amount: number | null
+          id: string
+          is_active: boolean | null
+          level: string
+          metadata: Json | null
+          plus_convenio_monthly: number | null
+          professional_group: string
+          professional_group_description: string | null
+          source_reference: string | null
+          total_annual_compensation: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          agreement_code: string
+          agreement_name: string
+          base_salary_annual?: number | null
+          base_salary_monthly: number
+          company_id: string
+          created_at?: string | null
+          effective_date: string
+          expiration_date?: string | null
+          extra_pay_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          level?: string
+          metadata?: Json | null
+          plus_convenio_monthly?: number | null
+          professional_group: string
+          professional_group_description?: string | null
+          source_reference?: string | null
+          total_annual_compensation?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          agreement_code?: string
+          agreement_name?: string
+          base_salary_annual?: number | null
+          base_salary_monthly?: number
+          company_id?: string
+          created_at?: string | null
+          effective_date?: string
+          expiration_date?: string | null
+          extra_pay_amount?: number | null
+          id?: string
+          is_active?: boolean | null
+          level?: string
+          metadata?: Json | null
+          plus_convenio_monthly?: number | null
+          professional_group?: string
+          professional_group_description?: string | null
+          source_reference?: string | null
+          total_annual_compensation?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       erp_hr_ai_bias_audits: {
         Row: {
           approved_by: string | null
