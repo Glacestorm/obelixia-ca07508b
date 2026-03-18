@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_erp_hr_collective_agreements_code ON erp_hr_collective_agreements (code) WHERE is_system = true;
