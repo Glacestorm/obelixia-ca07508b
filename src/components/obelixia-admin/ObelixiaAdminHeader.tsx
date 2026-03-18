@@ -29,6 +29,16 @@ export const ObelixiaAdminHeader: React.FC<ObelixiaAdminHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const isDark = theme === 'dark';
+  const { isMaintenanceMode, toggle: toggleMaintenance } = useMaintenanceMode();
+
+  const handleToggleMaintenance = async () => {
+    const ok = await toggleMaintenance();
+    if (ok) {
+      toast.success(isMaintenanceMode ? 'Modo mantenimiento desactivado' : 'Modo mantenimiento activado');
+    } else {
+      toast.error('Error al cambiar el modo mantenimiento');
+    }
+  };
 
   const navButtonClass = cn(
     "h-9 w-9 rounded-xl transition-all hover:scale-105 border",
