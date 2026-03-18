@@ -360,7 +360,7 @@ function HRModuleInner() {
         {activeModule === 'time-clock' && <HRTimeClockPanel companyId={companyId} />}
         {activeModule === 'ss' && <HRSocialSecurityPanel companyId={companyId} />}
         {activeModule === 'vacations' && <HRVacationsPanel companyId={companyId} />}
-        {activeModule === 'contracts' && <HRContractsPanel companyId={companyId} />}
+        {activeModule === 'contracts' && <HRContractsPanel companyId={companyId} companyCNAE={companyCNAE} />}
         {activeModule === 'unions' && <HRUnionsPanel companyId={companyId} />}
         {activeModule === 'documents' && <HREmployeeDocumentsPanel companyId={companyId} />}
         {activeModule === 'departments' && <HRDepartmentsPanel companyId={companyId} />}
