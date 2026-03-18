@@ -87,12 +87,19 @@ export function HRCollectiveAgreementSelect({
     try {
       let query = supabase
         .from('erp_hr_collective_agreements')
-        .select('id, code, name, extra_payments, working_hours_week, vacation_days, effective_date, expiration_date, is_active')
+        .select('id, code, name, extra_payments, working_hours_week, vacation_days, effective_date, expiration_date, is_active, cnae_codes')
         .eq('is_active', true)
         .order('name');
 
       if (companyId) {
         query = query.or(`company_id.eq.${companyId},company_id.is.null,is_system.eq.true`);
+      }
+
+      // Filter by CNAE at DB level using the array overlap operator
+      if (companyCNAE) {
+        const cnaePrefix = companyCNAE.substring(0, 2);
+        // Use cs (contains) to match CNAE codes in the array — filter agreements whose cnae_codes array overlaps with the company CNAE
+        query = query.or(`cnae_codes.cs.{${companyCNAE}},cnae_codes.cs.{${cnaePrefix}},cnae_codes.is.null`);
       }
 
       const { data, error } = await query;
