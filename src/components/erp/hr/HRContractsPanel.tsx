@@ -472,6 +472,7 @@ export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelPro
         onOpenChange={setShowContractDialog}
         companyId={companyId}
         contractId={selectedContract?.id}
+        companyCNAE={companyCNAE}
         onSaved={handleContractSuccess}
       />
 
