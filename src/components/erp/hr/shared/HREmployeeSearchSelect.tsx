@@ -3,7 +3,7 @@
  * Permite buscar por nombre, NSS, número de empleado, teléfono, email, DNI
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ export interface EmployeeOption {
   first_name: string;
   last_name: string;
   employee_number?: string;
-  social_security_number?: string; // Número Seguridad Social
+  social_security_number?: string;
   phone?: string;
   email?: string;
   job_title?: string;
@@ -65,7 +65,13 @@ export function HREmployeeSearchSelect({
   const [loading, setLoading] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeOption | null>(null);
 
-  // Fetch employees
+  // Use refs for callback props to avoid infinite loops
+  const onEmployeesFetchedRef = useRef(onEmployeesFetched);
+  onEmployeesFetchedRef.current = onEmployeesFetched;
+  const excludeIdsRef = useRef(excludeIds);
+  excludeIdsRef.current = excludeIds;
+
+  // Fetch employees - only depends on companyId
   const fetchEmployees = useCallback(async () => {
     if (!companyId) return;
     
@@ -83,11 +89,12 @@ export function HREmployeeSearchSelect({
         return;
       }
 
-      const filtered = excludeIds.length > 0
-        ? (data || []).filter((e: any) => !excludeIds.includes(e.id))
+      const currentExcludeIds = excludeIdsRef.current;
+      const filtered = currentExcludeIds.length > 0
+        ? (data || []).filter((e: any) => !currentExcludeIds.includes(e.id))
         : (data || []);
       setEmployees(filtered as EmployeeOption[]);
-      onEmployeesFetched?.(filtered as EmployeeOption[]);
+      onEmployeesFetchedRef.current?.(filtered as EmployeeOption[]);
 
       if (value) {
         const selected = filtered.find((e: any) => e.id === value);
@@ -98,7 +105,7 @@ export function HREmployeeSearchSelect({
     } finally {
       setLoading(false);
     }
-  }, [companyId, excludeIds, value, onEmployeesFetched]);
+  }, [companyId, value]);
 
   useEffect(() => {
     fetchEmployees();
