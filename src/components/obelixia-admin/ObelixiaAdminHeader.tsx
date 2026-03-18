@@ -1,13 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Home, Sparkles, Shield } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Sparkles, Shield, Construction } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { AdminBreadcrumbs } from '@/components/admin/AdminBreadcrumbs';
 import { AdminPanelSwitcher } from '@/components/admin/AdminPanelSwitcher';
 import { AdminGlobalSearch } from '@/components/admin/AdminGlobalSearch';
 import NewsNotificationSystem from '@/components/admin/NewsNotificationSystem';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
+import { toast } from 'sonner';
 import type { ObelixiaTheme } from '@/hooks/useObelixiaAdminPreferences';
 
 interface ObelixiaAdminHeaderProps {
