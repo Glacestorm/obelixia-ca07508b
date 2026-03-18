@@ -53,6 +53,21 @@ export const routePreloaders = {
   chat: () => preloadRoute(() => import("./pages/Chat")),
 };
 
+// Maintenance guard — blocks non-admin users when maintenance is on
+const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
+  const { isMaintenanceMode, loading, canBypass } = useMaintenanceMode();
+
+  if (loading) return null;
+  if (isMaintenanceMode && !canBypass) {
+    return (
+      <Suspense fallback={null}>
+        <MaintenancePage />
+      </Suspense>
+    );
+  }
+  return <>{children}</>;
+};
+
 // Deferred components that load after initial render
 const DeferredComponents = () => {
   const [showDeferred, setShowDeferred] = useState(false);
