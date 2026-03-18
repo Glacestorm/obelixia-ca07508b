@@ -30,6 +30,8 @@ interface HRCollectiveAgreementSelectProps {
   onValueChange: (id: string, agreement: AgreementData | null) => void;
   companyId?: string;
   companyCNAE?: string;
+  /** If true, only show agreements matching the CNAE (strict filter). Default: true when companyCNAE is set */
+  filterByCNAE?: boolean;
   required?: boolean;
   showValidation?: boolean;
   disabled?: boolean;
@@ -54,6 +56,7 @@ export function HRCollectiveAgreementSelect({
   onValueChange,
   companyId,
   companyCNAE,
+  filterByCNAE,
   required = false,
   showValidation = false,
   disabled = false,
@@ -69,7 +72,7 @@ export function HRCollectiveAgreementSelect({
   // Cargar convenios de la base de datos
   useEffect(() => {
     loadAgreements();
-  }, [companyId]);
+  }, [companyId, companyCNAE]);
 
   // Cargar convenio seleccionado
   useEffect(() => {
@@ -84,12 +87,19 @@ export function HRCollectiveAgreementSelect({
     try {
       let query = supabase
         .from('erp_hr_collective_agreements')
-        .select('id, code, name, extra_payments, working_hours_week, vacation_days, effective_date, expiration_date, is_active')
+        .select('id, code, name, extra_payments, working_hours_week, vacation_days, effective_date, expiration_date, is_active, cnae_codes')
         .eq('is_active', true)
         .order('name');
 
       if (companyId) {
         query = query.or(`company_id.eq.${companyId},company_id.is.null,is_system.eq.true`);
+      }
+
+      // Filter by CNAE at DB level using the array overlap operator
+      if (companyCNAE) {
+        const cnaePrefix = companyCNAE.substring(0, 2);
+        // Use cs (contains) to match CNAE codes in the array — filter agreements whose cnae_codes array overlaps with the company CNAE
+        query = query.or(`cnae_codes.cs.{${companyCNAE}},cnae_codes.cs.{${cnaePrefix}},cnae_codes.is.null`);
       }
 
       const { data, error } = await query;
@@ -123,32 +133,42 @@ export function HRCollectiveAgreementSelect({
     }
   };
 
+  const shouldFilter = filterByCNAE !== undefined ? filterByCNAE : !!companyCNAE;
+
   // Combinar convenios de DB con catálogo local
   const allAgreements = useMemo(() => {
     const today = new Date();
     const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    // Convertir catálogo local a formato AgreementData
-    const localAgreements: AgreementData[] = SPANISH_COLLECTIVE_AGREEMENTS.map(a => ({
-      id: `local_${a.code}`,
-      code: a.code,
-      name: a.name,
-      extra_payments: a.extra_payments,
-      working_hours_week: a.working_hours_week,
-      vacation_days: a.vacation_days,
-      effective_date: a.effective_date,
-      expiration_date: a.expiration_date,
-      is_expiring_soon: a.expiration_date 
-        ? new Date(a.expiration_date) <= thirtyDaysFromNow 
-        : false
-    }));
+    // Convertir catálogo local a formato AgreementData (filtered by CNAE if set)
+    const localAgreements: AgreementData[] = SPANISH_COLLECTIVE_AGREEMENTS
+      .filter(a => {
+        if (companyCNAE && shouldFilter) {
+          const cnaePrefix = companyCNAE.substring(0, 2);
+          return a.cnae_codes?.some(c => c === companyCNAE || c === cnaePrefix || companyCNAE.startsWith(c)) ?? false;
+        }
+        return true;
+      })
+      .map(a => ({
+        id: `local_${a.code}`,
+        code: a.code,
+        name: a.name,
+        extra_payments: a.extra_payments,
+        working_hours_week: a.working_hours_week,
+        vacation_days: a.vacation_days,
+        effective_date: a.effective_date,
+        expiration_date: a.expiration_date,
+        is_expiring_soon: a.expiration_date 
+          ? new Date(a.expiration_date) <= thirtyDaysFromNow 
+          : false
+      }));
 
     // Priorizar DB sobre local (evitar duplicados por código)
     const dbCodes = new Set(dbAgreements.map(a => a.code));
     const uniqueLocalAgreements = localAgreements.filter(a => !dbCodes.has(a.code));
 
     return [...dbAgreements, ...uniqueLocalAgreements];
-  }, [dbAgreements]);
+  }, [dbAgreements, companyCNAE, shouldFilter]);
 
   // Filtrar por búsqueda y CNAE
   const filteredAgreements = useMemo(() => {
@@ -224,7 +244,7 @@ export function HRCollectiveAgreementSelect({
             />
             <CommandList>
               <CommandEmpty>
-                {loading ? 'Cargando convenios...' : 'No se encontraron convenios'}
+                {loading ? 'Cargando convenios...' : companyCNAE && shouldFilter ? `No se encontraron convenios para CNAE ${companyCNAE}` : 'No se encontraron convenios'}
               </CommandEmpty>
               
               {companyCNAE && (
@@ -278,7 +298,7 @@ export function HRCollectiveAgreementSelect({
                 </CommandGroup>
               )}
               
-              <CommandGroup heading="Todos los convenios">
+              <CommandGroup heading={companyCNAE && shouldFilter ? `Convenios aplicables (CNAE ${companyCNAE})` : 'Todos los convenios'}>
                 <ScrollArea className="h-[300px]">
                   {filteredAgreements.map(agreement => (
                     <CommandItem

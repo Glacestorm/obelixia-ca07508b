@@ -130,6 +130,24 @@ function HRModuleInner() {
   const { currentCompany } = useERPContext();
   const { isAdmin } = useAuth();
   const companyId = currentCompany?.id;
+  const [companyCNAE, setCompanyCNAE] = useState<string | undefined>();
+
+  // Fetch primary CNAE for the company
+  useEffect(() => {
+    if (!companyId) return;
+    // Try erp_hr_cnae_sector_profiles first, then company_cnaes
+    supabase
+      .from('erp_hr_cnae_sector_profiles')
+      .select('cnae_code')
+      .eq('company_id', companyId)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.cnae_code) {
+          setCompanyCNAE(data.cnae_code);
+        }
+      });
+  }, [companyId]);
   
   // Estados para dialogs
   const [showPayrollDialog, setShowPayrollDialog] = useState(false);
@@ -345,7 +363,7 @@ function HRModuleInner() {
         {activeModule === 'time-clock' && <HRTimeClockPanel companyId={companyId} />}
         {activeModule === 'ss' && <HRSocialSecurityPanel companyId={companyId} />}
         {activeModule === 'vacations' && <HRVacationsPanel companyId={companyId} />}
-        {activeModule === 'contracts' && <HRContractsPanel companyId={companyId} />}
+        {activeModule === 'contracts' && <HRContractsPanel companyId={companyId} companyCNAE={companyCNAE} />}
         {activeModule === 'unions' && <HRUnionsPanel companyId={companyId} />}
         {activeModule === 'documents' && <HREmployeeDocumentsPanel companyId={companyId} />}
         {activeModule === 'departments' && <HRDepartmentsPanel companyId={companyId} />}

@@ -27,6 +27,7 @@ import { HRSettlementDialog } from './dialogs';
 
 interface HRContractsPanelProps {
   companyId: string;
+  companyCNAE?: string;
 }
 
 interface Contract {
@@ -47,7 +48,7 @@ interface Contract {
   };
 }
 
-export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
+export function HRContractsPanel({ companyId, companyCNAE }: HRContractsPanelProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('contracts');
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -471,6 +472,7 @@ export function HRContractsPanel({ companyId }: HRContractsPanelProps) {
         onOpenChange={setShowContractDialog}
         companyId={companyId}
         contractId={selectedContract?.id}
+        companyCNAE={companyCNAE}
         onSaved={handleContractSuccess}
       />
 
