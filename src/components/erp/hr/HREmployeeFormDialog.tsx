@@ -567,7 +567,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                         </SelectTrigger>
                         <SelectContent>
                           {ACCESS_LEVELS.map(level => (
-                            <SelectItem key={level.value} value={level.value}>
+                            <SelectItem key={level.value} value={level.value} textValue={level.label}>
                               <div className="flex items-center gap-2">
                                 <level.icon className={cn("h-3 w-3", level.color)} />
                                 {level.label}
