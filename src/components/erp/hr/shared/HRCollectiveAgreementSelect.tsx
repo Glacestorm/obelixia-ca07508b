@@ -133,15 +133,16 @@ export function HRCollectiveAgreementSelect({
     }
   };
 
+  const shouldFilter = filterByCNAE !== undefined ? filterByCNAE : !!companyCNAE;
+
   // Combinar convenios de DB con catálogo local
   const allAgreements = useMemo(() => {
     const today = new Date();
     const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    // Convertir catálogo local a formato AgreementData
+    // Convertir catálogo local a formato AgreementData (filtered by CNAE if set)
     const localAgreements: AgreementData[] = SPANISH_COLLECTIVE_AGREEMENTS
       .filter(a => {
-        // If companyCNAE is set, filter local catalog too
         if (companyCNAE && shouldFilter) {
           const cnaePrefix = companyCNAE.substring(0, 2);
           return a.cnae_codes?.some(c => c === companyCNAE || c === cnaePrefix || companyCNAE.startsWith(c)) ?? false;
@@ -149,25 +150,25 @@ export function HRCollectiveAgreementSelect({
         return true;
       })
       .map(a => ({
-      id: `local_${a.code}`,
-      code: a.code,
-      name: a.name,
-      extra_payments: a.extra_payments,
-      working_hours_week: a.working_hours_week,
-      vacation_days: a.vacation_days,
-      effective_date: a.effective_date,
-      expiration_date: a.expiration_date,
-      is_expiring_soon: a.expiration_date 
-        ? new Date(a.expiration_date) <= thirtyDaysFromNow 
-        : false
-    }));
+        id: `local_${a.code}`,
+        code: a.code,
+        name: a.name,
+        extra_payments: a.extra_payments,
+        working_hours_week: a.working_hours_week,
+        vacation_days: a.vacation_days,
+        effective_date: a.effective_date,
+        expiration_date: a.expiration_date,
+        is_expiring_soon: a.expiration_date 
+          ? new Date(a.expiration_date) <= thirtyDaysFromNow 
+          : false
+      }));
 
     // Priorizar DB sobre local (evitar duplicados por código)
     const dbCodes = new Set(dbAgreements.map(a => a.code));
     const uniqueLocalAgreements = localAgreements.filter(a => !dbCodes.has(a.code));
 
     return [...dbAgreements, ...uniqueLocalAgreements];
-  }, [dbAgreements]);
+  }, [dbAgreements, companyCNAE, shouldFilter]);
 
   // Filtrar por búsqueda y CNAE
   const filteredAgreements = useMemo(() => {
