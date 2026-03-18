@@ -128,7 +128,7 @@ import {
   KnowledgeBase45Dashboard,
 } from '@/components/admin/AdminSectionLoader';
 
-const Admin = () => {
+const MaintenancePreview = lazy(() => import('@/components/maintenance/MaintenancePage'));
   const { user, isAdmin, isSuperAdmin, isCommercialDirector, isOfficeDirector, isCommercialManager, isAuditor, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
