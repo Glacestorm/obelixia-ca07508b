@@ -26076,7 +26076,7 @@ export type Database = {
           agreement_name: string
           base_salary_annual: number | null
           base_salary_monthly: number
-          company_id: string
+          company_id: string | null
           created_at: string | null
           effective_date: string
           expiration_date: string | null
@@ -26098,7 +26098,7 @@ export type Database = {
           agreement_name: string
           base_salary_annual?: number | null
           base_salary_monthly: number
-          company_id: string
+          company_id?: string | null
           created_at?: string | null
           effective_date: string
           expiration_date?: string | null
@@ -26120,7 +26120,7 @@ export type Database = {
           agreement_name?: string
           base_salary_annual?: number | null
           base_salary_monthly?: number
-          company_id?: string
+          company_id?: string | null
           created_at?: string | null
           effective_date?: string
           expiration_date?: string | null
