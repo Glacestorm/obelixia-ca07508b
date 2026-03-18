@@ -135,14 +135,17 @@ function HRModuleInner() {
   // Fetch primary CNAE for the company
   useEffect(() => {
     if (!companyId) return;
+    // Try erp_hr_cnae_sector_profiles first, then company_cnaes
     supabase
-      .from('company_cnaes')
+      .from('erp_hr_cnae_sector_profiles')
       .select('cnae_code')
       .eq('company_id', companyId)
-      .eq('is_primary', true)
+      .limit(1)
       .maybeSingle()
       .then(({ data }) => {
-        if (data?.cnae_code) setCompanyCNAE(data.cnae_code);
+        if (data?.cnae_code) {
+          setCompanyCNAE(data.cnae_code);
+        }
       });
   }, [companyId]);
   
