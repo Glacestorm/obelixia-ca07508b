@@ -122,6 +122,17 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     legal_entity_id: '', work_center_id: '', reports_to: '',
   });
 
+  // ES localization fields
+  const [esFields, setEsFields] = useState({
+    naf: '',
+    contribution_group: '',
+    contract_type_rd: '',
+    collective_agreement: '',
+    autonomous_community: '',
+    cno_code: '',
+    irpf_percentage: '',
+  });
+
   // Module access state
   const [moduleAccess, setModuleAccess] = useState<Record<string, 'none' | 'read' | 'write' | 'admin'>>({});
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
@@ -148,6 +159,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         reports_to: '',
       });
       loadModuleAccess(employee.id);
+      loadEsExtension(employee.id);
     } else {
       setFormData({
         first_name: '', last_name: '', email: '', phone: '',
@@ -156,6 +168,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         status: 'active', country_code: 'ES', base_salary: 0,
         legal_entity_id: '', work_center_id: '', reports_to: '',
       });
+      setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '' });
       const defaultAccess: Record<string, 'none'> = {};
       AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
       setModuleAccess(defaultAccess);
@@ -170,6 +183,31 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
+
+  const loadEsExtension = async (employeeId: string) => {
+    try {
+      const { data } = await supabase
+        .from('hr_employee_extensions')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .eq('country_code', 'ES')
+        .maybeSingle();
+      if (data) {
+        const ext = (data.extension_data || {}) as Record<string, string>;
+        setEsFields({
+          naf: data.social_security_number || '',
+          contribution_group: ext.contribution_group || '',
+          contract_type_rd: ext.contract_type_rd || '',
+          collective_agreement: ext.collective_agreement || '',
+          autonomous_community: ext.autonomous_community || '',
+          cno_code: ext.cno_code || '',
+          irpf_percentage: ext.irpf_percentage || '',
+        });
+      }
+    } catch (err) {
+      console.error('[ES Extension] load error:', err);
+    }
+  };
 
   // Load reference data
   useEffect(() => {
@@ -268,12 +306,44 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       }
 
       if (employeeId) {
+        // Save module access
         await supabase.from('erp_hr_employee_module_access').delete().eq('employee_id', employeeId);
         const accessRecords = Object.entries(moduleAccess)
           .filter(([_, level]) => level !== 'none')
           .map(([code, level]) => ({ employee_id: employeeId, company_id: companyId, module_code: code, access_level: level }));
         if (accessRecords.length > 0) {
           await supabase.from('erp_hr_employee_module_access').insert(accessRecords);
+        }
+
+        // Save ES localization extension
+        if (formData.country_code === 'ES') {
+          const extensionPayload = {
+            company_id: companyId,
+            employee_id: employeeId,
+            country_code: 'ES',
+            social_security_number: esFields.naf || null,
+            extension_data: {
+              contribution_group: esFields.contribution_group || null,
+              contract_type_rd: esFields.contract_type_rd || null,
+              collective_agreement: esFields.collective_agreement || null,
+              autonomous_community: esFields.autonomous_community || null,
+              cno_code: esFields.cno_code || null,
+              irpf_percentage: esFields.irpf_percentage || null,
+            },
+          };
+
+          const { data: existing } = await supabase
+            .from('hr_employee_extensions')
+            .select('id')
+            .eq('employee_id', employeeId)
+            .eq('country_code', 'ES')
+            .maybeSingle();
+
+          if (existing) {
+            await supabase.from('hr_employee_extensions').update(extensionPayload).eq('id', existing.id);
+          } else {
+            await supabase.from('hr_employee_extensions').insert([extensionPayload]);
+          }
         }
       }
       onSave();
@@ -524,18 +594,76 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">Campos específicos de la legislación laboral española:</p>
                     <div className="grid grid-cols-2 gap-3">
-                      {[
-                        'Nº Afiliación SS (NAF)', 'Grupo de cotización', 'Tipo contrato RD',
-                        'Convenio colectivo', 'Comunidad Autónoma', 'CNO (Código Nacional de Ocupación)',
-                      ].map(label => (
-                        <div key={label} className="p-3 rounded-lg border border-dashed">
-                          <Label className="text-xs text-muted-foreground">{label}</Label>
-                          <Input disabled placeholder="Plugin ES — Fase G2" className="mt-1 bg-muted/20" />
-                        </div>
-                      ))}
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Nº Afiliación SS (NAF)</Label>
+                        <Input value={esFields.naf} onChange={(e) => setEsFields(prev => ({ ...prev, naf: e.target.value }))} placeholder="28/12345678/90" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Grupo de cotización</Label>
+                        <Select value={esFields.contribution_group || '__none'} onValueChange={(v) => setEsFields(prev => ({ ...prev, contribution_group: v === '__none' ? '' : v }))}>
+                          <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                          <SelectContent portalContainer={selectPortalContainer} position="popper">
+                            <SelectItem value="__none">Sin asignar</SelectItem>
+                            <SelectItem value="1">1 - Ingenieros y Licenciados</SelectItem>
+                            <SelectItem value="2">2 - Ingenieros Técnicos / Peritos</SelectItem>
+                            <SelectItem value="3">3 - Jefes Administrativos y de Taller</SelectItem>
+                            <SelectItem value="4">4 - Ayudantes no Titulados</SelectItem>
+                            <SelectItem value="5">5 - Oficiales Administrativos</SelectItem>
+                            <SelectItem value="6">6 - Subalternos</SelectItem>
+                            <SelectItem value="7">7 - Auxiliares Administrativos</SelectItem>
+                            <SelectItem value="8">8 - Oficiales 1ª y 2ª</SelectItem>
+                            <SelectItem value="9">9 - Oficiales 3ª y Especialistas</SelectItem>
+                            <SelectItem value="10">10 - Peones</SelectItem>
+                            <SelectItem value="11">11 - Trabajadores menores 18 años</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Tipo contrato RD</Label>
+                        <Select value={esFields.contract_type_rd || '__none'} onValueChange={(v) => setEsFields(prev => ({ ...prev, contract_type_rd: v === '__none' ? '' : v }))}>
+                          <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                          <SelectContent portalContainer={selectPortalContainer} position="popper">
+                            <SelectItem value="__none">Sin asignar</SelectItem>
+                            <SelectItem value="100">100 - Indefinido ordinario</SelectItem>
+                            <SelectItem value="130">130 - Indefinido discontinuo</SelectItem>
+                            <SelectItem value="189">189 - Indefinido bonificado</SelectItem>
+                            <SelectItem value="401">401 - Temporal por circunstancias</SelectItem>
+                            <SelectItem value="402">402 - Temporal sustitución</SelectItem>
+                            <SelectItem value="410">410 - Temporal de interinidad</SelectItem>
+                            <SelectItem value="420">420 - Contrato de prácticas</SelectItem>
+                            <SelectItem value="421">421 - Contrato de formación</SelectItem>
+                            <SelectItem value="501">501 - De relevo</SelectItem>
+                            <SelectItem value="510">510 - Jubilación parcial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Convenio colectivo</Label>
+                        <Input value={esFields.collective_agreement} onChange={(e) => setEsFields(prev => ({ ...prev, collective_agreement: e.target.value }))} placeholder="Ej: Oficinas y despachos" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Comunidad Autónoma</Label>
+                        <Select value={esFields.autonomous_community || '__none'} onValueChange={(v) => setEsFields(prev => ({ ...prev, autonomous_community: v === '__none' ? '' : v }))}>
+                          <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                          <SelectContent portalContainer={selectPortalContainer} position="popper">
+                            <SelectItem value="__none">Sin asignar</SelectItem>
+                            {['Andalucía','Aragón','Asturias','Baleares','Canarias','Cantabria','Castilla-La Mancha','Castilla y León','Cataluña','Ceuta','Comunidad Valenciana','Extremadura','Galicia','La Rioja','Madrid','Melilla','Murcia','Navarra','País Vasco'].map(ca => (
+                              <SelectItem key={ca} value={ca}>{ca}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">CNO (Cód. Nacional de Ocupación)</Label>
+                        <Input value={esFields.cno_code} onChange={(e) => setEsFields(prev => ({ ...prev, cno_code: e.target.value }))} placeholder="Ej: 2611" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">% Retención IRPF</Label>
+                        <Input type="number" step="0.01" min="0" max="100" value={esFields.irpf_percentage} onChange={(e) => setEsFields(prev => ({ ...prev, irpf_percentage: e.target.value }))} placeholder="15.00" />
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground italic">
-                      Estos campos se habilitarán cuando se active el plugin de localización España (Fase G2).
+                      Estos datos se guardan en la extensión de localización del empleado (tabla hr_employee_extensions).
                     </p>
                   </div>
                 ) : (
