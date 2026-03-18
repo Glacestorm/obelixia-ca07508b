@@ -298,7 +298,7 @@ export function HRCollectiveAgreementSelect({
                 </CommandGroup>
               )}
               
-              <CommandGroup heading="Todos los convenios">
+              <CommandGroup heading={companyCNAE && shouldFilter ? `Convenios aplicables (CNAE ${companyCNAE})` : 'Todos los convenios'}>
                 <ScrollArea className="h-[300px]">
                   {filteredAgreements.map(agreement => (
                     <CommandItem
