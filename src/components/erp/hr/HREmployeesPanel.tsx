@@ -52,6 +52,7 @@ import {
   List,
   Globe,
   Building2,
+  MapPin,
   ClipboardList
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
