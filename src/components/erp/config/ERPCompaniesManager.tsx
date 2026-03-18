@@ -111,6 +111,7 @@ export function ERPCompaniesManager() {
       email: company.email || '',
       website: company.website || '',
       group_id: company.group_id || undefined,
+      entity_type: (company as any).entity_type || 'sociedad_limitada',
     });
     setShowDialog(true);
   };
