@@ -1,0 +1,1 @@
+UPDATE public.site_maintenance_settings SET setting_value = '{"enabled": false}'::jsonb, updated_at = now() WHERE setting_key = 'maintenance_mode';
