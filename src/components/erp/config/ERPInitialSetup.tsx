@@ -270,6 +270,23 @@ export function ERPInitialSetup({ onComplete }: ERPInitialSetupProps) {
               </div>
 
               <div className="grid gap-4 max-w-2xl mx-auto">
+                {/* Entity Type */}
+                <div className="space-y-2">
+                  <Label>Tipo de entidad <span className="text-destructive">*</span></Label>
+                  <EntityTypeSelect
+                    value={form.entity_type}
+                    onValueChange={(v) => setForm({ ...form, entity_type: v })}
+                  />
+                  {form.entity_type && (
+                    <p className="text-xs text-muted-foreground">
+                      {getEntityTypeOption(form.entity_type)?.description}
+                      {isMultiCnaeEntityType(form.entity_type) && (
+                        <span className="ml-1 text-primary font-medium">• Permite múltiples códigos CNAE</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">
