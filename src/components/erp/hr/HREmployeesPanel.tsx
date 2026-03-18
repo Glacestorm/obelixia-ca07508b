@@ -52,6 +52,7 @@ import {
   List,
   Globe,
   Building2,
+  MapPin,
   ClipboardList
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -125,6 +126,8 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
   // Available countries and entities for filters
   const [availableCountries, setAvailableCountries] = useState<string[]>([]);
   const [availableEntities, setAvailableEntities] = useState<Array<{ id: string; name: string }>>([]);
+  const [availableWorkCenters, setAvailableWorkCenters] = useState<Array<{ id: string; name: string }>>([]);
+  const [workCenterFilter, setWorkCenterFilter] = useState('all');
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -133,7 +136,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
         .from('erp_hr_employees')
         .select(`
           id, first_name, last_name, email, employee_number, job_title, department_id,
-          hire_date, status, phone, country_code, legal_entity_id, reports_to, base_salary,
+          hire_date, status, phone, country_code, legal_entity_id, work_center_id, reports_to, base_salary,
           erp_hr_departments!erp_hr_employees_department_id_fkey(name)
         `)
         .eq('company_id', companyId)
@@ -161,19 +164,19 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
     }
   }, [companyId]);
 
-  // Fetch legal entities for filter
+  // Fetch legal entities and work centers for filters
   useEffect(() => {
-    const fetchEntities = async () => {
+    const fetchFilters = async () => {
       try {
-        const { data } = await supabase
-          .from('erp_hr_legal_entities')
-          .select('id, name')
-          .eq('company_id', companyId)
-          .order('name');
-        if (data) setAvailableEntities(data as any);
+        const [entitiesRes, centersRes] = await Promise.all([
+          supabase.from('erp_hr_legal_entities').select('id, name').eq('company_id', companyId).order('name'),
+          supabase.from('erp_hr_work_centers').select('id, name').eq('company_id', companyId).order('name'),
+        ]);
+        if (entitiesRes.data) setAvailableEntities(entitiesRes.data as any);
+        if (centersRes.data) setAvailableWorkCenters(centersRes.data as any);
       } catch { /* ignore */ }
     };
-    fetchEntities();
+    fetchFilters();
   }, [companyId]);
 
   useEffect(() => {
@@ -185,6 +188,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
       if (statusFilter !== 'all' && emp.status !== statusFilter) return false;
       if (countryFilter !== 'all' && emp.country_code !== countryFilter) return false;
       if (entityFilter !== 'all' && emp.legal_entity_id !== entityFilter) return false;
+      if (workCenterFilter !== 'all' && (emp as any).work_center_id !== workCenterFilter) return false;
       if (!searchTerm) return true;
 
       const term = searchTerm.toLowerCase();
@@ -195,7 +199,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
         emp.position?.toLowerCase().includes(term)
       );
     });
-  }, [employees, searchTerm, statusFilter, countryFilter, entityFilter]);
+  }, [employees, searchTerm, statusFilter, countryFilter, entityFilter, workCenterFilter]);
 
   const handleDeleteEmployee = async (employee: Employee) => {
     if (!confirm(`¿Eliminar a ${employee.first_name} ${employee.last_name}?`)) return;
@@ -306,20 +310,30 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
                   </SelectContent>
                 </Select>
               )}
-              {availableEntities.length > 1 && (
-                <Select value={entityFilter} onValueChange={setEntityFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <Building2 className="h-3.5 w-3.5 mr-1" />
-                    <SelectValue placeholder="Entidad legal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas las entidades</SelectItem>
-                    {availableEntities.map(e => (
-                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={entityFilter} onValueChange={setEntityFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <Building2 className="h-3.5 w-3.5 mr-1" />
+                  <SelectValue placeholder="Entidad legal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las entidades</SelectItem>
+                  {availableEntities.map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={workCenterFilter} onValueChange={setWorkCenterFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <MapPin className="h-3.5 w-3.5 mr-1" />
+                  <SelectValue placeholder="Centro de trabajo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los centros</SelectItem>
+                  {availableWorkCenters.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex gap-2">
@@ -343,8 +357,8 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center justify-between">
             <span>Empleados ({filteredEmployees.length})</span>
-            {(statusFilter !== 'all' || countryFilter !== 'all' || entityFilter !== 'all') && (
-              <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setCountryFilter('all'); setEntityFilter('all'); }}>
+            {(statusFilter !== 'all' || countryFilter !== 'all' || entityFilter !== 'all' || workCenterFilter !== 'all') && (
+              <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('all'); setCountryFilter('all'); setEntityFilter('all'); setWorkCenterFilter('all'); }}>
                 Limpiar filtros
               </Button>
             )}
