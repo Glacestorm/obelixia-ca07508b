@@ -47,6 +47,15 @@ export interface ESPayrollInput {
   pensionCompensatoria?: number;
   cuotaSindical?: number;
   regularizacion?: number;
+  /** Salary resolution from agreement tables (optional, auto-populated when available) */
+  salaryResolution?: {
+    salarioBaseConvenio: number;
+    plusConvenioTabla: number;
+    mejoraVoluntaria: number;
+    hasMejoraVoluntaria: boolean;
+    agreementCode: string;
+    professionalGroup: string;
+  };
 }
 
 export interface ESPayrollCalculation {
@@ -113,6 +122,7 @@ const ES_CONCEPT_CATALOG: ESPayrollConceptDef[] = [
   // Devengos
   { code: 'ES_SAL_BASE', name: 'Salario base', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 10, legal_reference: 'ET Art. 26' },
   { code: 'ES_COMP_CONVENIO', name: 'Plus convenio', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 20 },
+  { code: 'ES_MEJORA_VOLUNTARIA', name: 'Mejora voluntaria', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 15, legal_reference: 'ET Art. 26.5 — Absorbible y compensable' },
   { code: 'ES_COMP_ANTIGUEDAD', name: 'Complemento antigüedad', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 21 },
   { code: 'ES_COMP_PUESTO', name: 'Complemento de puesto', line_type: 'earning', category: 'fixed', taxable: true, contributable: true, is_percentage: false, sort_order: 22 },
   { code: 'ES_COMP_NOCTURNIDAD', name: 'Plus nocturnidad', line_type: 'earning', category: 'variable', taxable: true, contributable: true, is_percentage: false, sort_order: 23 },
@@ -268,11 +278,35 @@ export function useESPayrollBridge(companyId?: string) {
         });
       };
 
-      addEarning('ES_SAL_BASE', 'Salario base', input.salarioBase, 'fixed', true, true, 10);
+      // ── 1a. Salary resolution: split salarioBase into convention base + mejora voluntaria ──
+      if (input.salaryResolution?.hasMejoraVoluntaria) {
+        const sr = input.salaryResolution;
+        addEarning('ES_SAL_BASE', 'Salario base (convenio)', sr.salarioBaseConvenio, 'fixed', true, true, 10,
+          'agreement_salary_table', 
+          { agreementCode: sr.agreementCode, professionalGroup: sr.professionalGroup, salarioPactado: input.salarioBase },
+          `Salario base convenio ${sr.agreementCode} grupo ${sr.professionalGroup} = ${r(sr.salarioBaseConvenio)}€`
+        );
+        if (sr.plusConvenioTabla > 0) {
+          addEarning('ES_COMP_CONVENIO', 'Plus convenio (tabla)', sr.plusConvenioTabla, 'fixed', true, true, 20,
+            'agreement_salary_table',
+            { agreementCode: sr.agreementCode },
+            `Plus convenio tabla = ${r(sr.plusConvenioTabla)}€`
+          );
+        }
+        addEarning('ES_MEJORA_VOLUNTARIA', 'Mejora voluntaria', sr.mejoraVoluntaria, 'fixed', true, true, 15,
+          'salary_resolution',
+          { salarioPactado: input.salarioBase, totalConvenio: sr.salarioBaseConvenio + sr.plusConvenioTabla },
+          `Mejora vol. = Pactado (${r(input.salarioBase)}€) - Convenio (${r(sr.salarioBaseConvenio + sr.plusConvenioTabla)}€) = ${r(sr.mejoraVoluntaria)}€ [ET Art. 26.5]`
+        );
+      } else {
+        addEarning('ES_SAL_BASE', 'Salario base', input.salarioBase, 'fixed', true, true, 10);
+      }
       
-      // Complementos
+      // Complementos (skip ES_COMP_CONVENIO if already injected by salary resolution)
       if (input.complementos) {
         Object.entries(input.complementos).forEach(([key, val], idx) => {
+          // Skip plus convenio if already resolved from salary tables
+          if (key === 'ES_COMP_CONVENIO' && input.salaryResolution?.plusConvenioTabla) return;
           const def = ES_CONCEPT_CATALOG.find(c => c.code === key);
           if (def && val > 0) {
             addEarning(key, def.name, val, def.category, def.taxable, def.contributable, def.sort_order);
@@ -739,6 +773,31 @@ export function useESPayrollBridge(companyId?: string) {
             continue;
           }
 
+          // ── Salary resolution from agreement tables ──
+          let salaryResolution: ESPayrollInput['salaryResolution'] = undefined;
+          const agreementCode = (laborData as any).convenio_colectivo_id || (contract as any)?.collective_agreement_id;
+          const professionalGroup = (laborData as any).categoria_profesional || (contract as any)?.professional_group;
+          
+          if (agreementCode && professionalGroup && companyId) {
+            try {
+              const { resolveSalaryFromAgreement, fetchAgreementSalaryTable } = await import('@/engines/erp/hr/agreementSalaryResolver');
+              const tableEntry = await fetchAgreementSalaryTable(companyId, agreementCode, professionalGroup, currentYear);
+              if (tableEntry) {
+                const resolution = resolveSalaryFromAgreement(salarioBase, tableEntry, agreementCode, professionalGroup, currentYear);
+                salaryResolution = {
+                  salarioBaseConvenio: resolution.salarioBaseConvenio,
+                  plusConvenioTabla: resolution.plusConvenioTabla,
+                  mejoraVoluntaria: resolution.mejoraVoluntaria,
+                  hasMejoraVoluntaria: resolution.hasMejoraVoluntaria,
+                  agreementCode,
+                  professionalGroup,
+                };
+              }
+            } catch (resolveErr) {
+              console.warn('[useESPayrollBridge] salary resolution skipped:', resolveErr);
+            }
+          }
+
           // Build flex remuneration from plan
           const flexPlan = (flexPlans || []).find((fp: any) => fp.employee_id === emp.id);
 
@@ -746,6 +805,7 @@ export function useESPayrollBridge(companyId?: string) {
             employeeId: emp.id,
             periodId,
             salarioBase,
+            salaryResolution,
             seguroMedico: flexPlan ? Number((flexPlan as any).seguro_medico_mensual || 0) : 0,
             ticketRestaurante: flexPlan ? Number((flexPlan as any).ticket_restaurante_mensual || 0) : 0,
             chequeGuarderia: flexPlan ? Number((flexPlan as any).cheque_guarderia_mensual || 0) : 0,

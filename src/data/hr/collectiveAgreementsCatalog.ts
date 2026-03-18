@@ -505,6 +505,17 @@ export const COMMON_SALARY_CONCEPTS: SalaryConcept[] = [
     frequency: 'monthly',
     description: 'Complemento hasta 100% durante baja IT'
   },
+  {
+    code: 'MEJORA_VOLUNTARIA',
+    name: 'Mejora Voluntaria',
+    type: 'earning',
+    is_mandatory: false,
+    calculation_type: 'fixed',
+    cotiza_ss: true,
+    tributa_irpf: true,
+    frequency: 'monthly',
+    description: 'Diferencia entre salario pactado y mínimo de convenio. Absorbible y compensable (ET Art. 26.5)'
+  },
 
   // DEDUCCIONES
   {
