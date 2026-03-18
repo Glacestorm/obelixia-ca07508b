@@ -1869,6 +1869,7 @@ const MaintenancePreview = lazy(() => import('@/components/maintenance/Maintenan
   };
 
   return (
+    <>
     <div className="min-h-screen flex w-full bg-background">
       <main className={`flex-1 ${activeSection === 'map' ? 'flex flex-col overflow-hidden' : 'overflow-auto'}`}>
         {activeSection === 'map' ? (
