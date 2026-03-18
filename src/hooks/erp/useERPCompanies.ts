@@ -80,6 +80,8 @@ export function useERPCompanies() {
           email: form.email,
           website: form.website,
           group_id: form.group_id,
+          entity_type: form.entity_type || 'sociedad_limitada',
+          allows_multi_cnae: form.entity_type ? isMultiCnaeEntityType(form.entity_type) : false,
         }])
         .select()
         .single();
