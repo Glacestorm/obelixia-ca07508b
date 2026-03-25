@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { LiveOperationsHub } from './LiveOperationsHub';
 import { AgentCatalogPanel } from './AgentCatalogPanel';
 import { ObservabilityPanel } from './ObservabilityPanel';
+import { AICostEconomicsPanel } from './AICostEconomicsPanel';
 import { useAICommandCenter } from '@/hooks/erp/ai-center/useAICommandCenter';
 
 // Future phase placeholders
@@ -66,7 +67,7 @@ export function AICommandCenterModule() {
         <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 rounded-xl">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = tab.phase <= 3;
+            const isActive = tab.phase <= 4;
             return (
               <TabsTrigger
                 key={tab.id}
@@ -103,8 +104,8 @@ export function AICommandCenterModule() {
         <TabsContent value="observability" className="mt-4">
           <ObservabilityPanel />
         </TabsContent>
-        <TabsContent value="costs">
-          <PlaceholderPanel phase="Fase 4" title="Economía y Presupuestos IA" />
+        <TabsContent value="costs" className="mt-4">
+          <AICostEconomicsPanel />
         </TabsContent>
         <TabsContent value="governance">
           <PlaceholderPanel phase="Fase 5" title="Gobernanza GDPR / EU AI Act" />
