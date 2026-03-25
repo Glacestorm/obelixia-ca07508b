@@ -1,11 +1,4 @@
 export { AuditCenterModule } from './AuditCenterModule';
 export { AuditNavigationMenu } from './AuditNavigationMenu';
 export { AuditDashboardHub } from './dashboard/AuditDashboardHub';
-export { InternalAuditPanel } from './internal/InternalAuditPanel';
-export { ExternalAuditPanel } from './external/ExternalAuditPanel';
-export { ComplianceMatrixPanel } from './compliance/ComplianceMatrixPanel';
-export { BlockchainTrailPanel } from './blockchain/BlockchainTrailPanel';
-export { ImprovementsTracker } from './improvements/ImprovementsTracker';
-export { AuditAgentsDashboard } from './agents/AuditAgentsDashboard';
-export { AuditSuperSupervisorPanel } from './agents/AuditSuperSupervisorPanel';
-export { AuditAgentChat } from './agents/AuditAgentChat';
+// Sub-panels are lazy-loaded by AuditCenterModule — do NOT re-export them statically
