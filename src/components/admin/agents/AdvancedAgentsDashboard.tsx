@@ -2524,6 +2524,31 @@ export function AdvancedAgentsDashboard() {
         supervisorStatus={supervisorStatus}
         toggleAutonomousMode={toggleAutonomousMode}
       />
+
+      {/* Sheet de Configuración del Supersupervisor ObelixIA */}
+      <Sheet open={ssConfigOpen} onOpenChange={setSSConfigOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary via-violet-600 to-indigo-700">
+                <Scale className="h-4 w-4 text-white" />
+              </div>
+              Configuración ObelixIA Supersupervisor
+            </SheetTitle>
+            <SheetDescription>
+              Coordinador transversal de todos los supervisores de dominio
+            </SheetDescription>
+          </SheetHeader>
+          <SuperSupervisorConfig
+            supervisorStatus={supervisorStatus}
+            domainCount={domainAgents.length}
+            onSave={() => {
+              toast.success('Configuración del Supersupervisor actualizada');
+              setSSConfigOpen(false);
+            }}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
