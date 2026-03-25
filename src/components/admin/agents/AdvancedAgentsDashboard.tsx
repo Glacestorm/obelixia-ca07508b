@@ -536,6 +536,8 @@ export function AdvancedAgentsDashboard() {
   const [dynamicModules, setDynamicModules] = useState<DynamicModule[]>([]);
   const [isAgentChatLoading, setIsAgentChatLoading] = useState(false);
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  const [configAgent, setConfigAgent] = useState<ModuleAgent | null>(null);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
 
   const {
     isLoading,
