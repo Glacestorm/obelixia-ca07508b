@@ -1360,7 +1360,16 @@ export function AdvancedAgentsDashboard() {
                       Orquestación multi-agente con inteligencia predictiva
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setSupervisorConfigOpen(true)}
+                      title="Configuración avanzada del supervisor"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
                     <Switch
                       checked={supervisorStatus?.autonomousMode || false}
                       onCheckedChange={(checked) => toggleAutonomousMode(checked, 45000)}
