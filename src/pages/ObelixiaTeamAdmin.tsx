@@ -534,10 +534,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
               <TabsContent value="ai-agents-specific" className="m-0">
                 <div className="text-center py-12">
                   <Bot className="h-16 w-16 mx-auto mb-4 text-purple-400" />
-                  <h3 className="text-xl font-semibold text-white mb-2">Agentes IA Específicos</h3>
-                  <p className="text-slate-400 mb-6">Agentes autónomos, copilot predictivo e interfaz de voz.</p>
-                  <a href="/admin/ai-agents" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors">
-                    Ir al módulo completo →
+                  <h3 className="text-xl font-semibold text-white mb-2">IA Center — Módulo Unificado</h3>
+                  <p className="text-slate-400 mb-6">Todos los agentes IA, gobernanza, orquestación y observabilidad en un solo lugar.</p>
+                  <a href="/obelixia-admin/erp" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 rounded-lg transition-colors">
+                    Ir al IA Center en ERP →
                   </a>
                 </div>
               </TabsContent>
