@@ -65,6 +65,7 @@ import { GaliaDashboard } from '@/components/verticals/galia';
 import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
 import { ElectricalConsultingModule } from './electrical';
 import { AICommandCenterModule } from './ai-center';
+import { AuditCenterModule } from './audit-center';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
@@ -491,9 +492,9 @@ function ERPModularDashboardContent() {
           <ERPSeriesManager />
         </TabsContent>
 
-        {/* Audit Tab */}
+        {/* Audit Tab — Centro de Auditoría Unificado */}
         <TabsContent value="audit">
-          <ERPAuditViewer />
+          <AuditCenterModule />
         </TabsContent>
 
         {/* Agents & Supervisor tabs removed — absorbed into IA Center */}
