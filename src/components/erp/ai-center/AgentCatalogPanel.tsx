@@ -203,6 +203,15 @@ export function AgentCatalogPanel({ agents, loading, onRefresh }: AgentCatalogPa
                 >
                   <List className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant={viewMode === 'hierarchy' ? 'default' : 'outline'}
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setViewMode('hierarchy')}
+                  title="Vista jerárquica por dominio"
+                >
+                  <Layers className="h-4 w-4" />
+                </Button>
                 <Button variant="outline" size="icon" className="h-9 w-9" onClick={onRefresh} disabled={loading}>
                   <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
                 </Button>
