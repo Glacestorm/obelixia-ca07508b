@@ -106,7 +106,7 @@ export function useOrchestration(agents: AgentRegistryItem[]) {
       const builtPipelines: Pipeline[] = [];
       let idx = 0;
 
-      taskGroups.forEach((records, taskType) => {
+      taskGroups.forEach((records, supervisorKey) => {
         // Identify unique agents in this task type
         const agentCodes = [...new Set(records.map(r => r.agent_code))];
         if (agentCodes.length === 0) return;
@@ -131,10 +131,10 @@ export function useOrchestration(agents: AgentRegistryItem[]) {
 
         builtPipelines.push({
           id: `pipeline-${idx++}`,
-          name: `Pipeline: ${taskType.replace(/_/g, ' ')}`,
-          description: `Flujo automático para tareas de tipo "${taskType}" con ${agentCodes.length} agente(s)`,
+          name: `Pipeline: ${supervisorKey.replace(/_/g, ' ')}`,
+          description: `Flujo automático supervisado por "${supervisorKey}" con ${agentCodes.length} agente(s)`,
           domain: agentMap.get(agentCodes[0])?.module_domain || 'general',
-          trigger: `event:${taskType}`,
+          trigger: `supervisor:${supervisorKey}`,
           steps,
           status: 'active',
           totalExecutions: records.length,
