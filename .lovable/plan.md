@@ -37,7 +37,7 @@ Basado en el documento PDF v2.0, se implementaron las 8 fases (0-7) de forma inc
 ## MEJORAS POST-IMPLEMENTACIÓN (PDF Verificación v1.0 — 25/03/2026)
 
 ### Bloque A ✅ — Mejoras de Navegación
-- **A1** ✅ Tabs agrupadas en 5 grupos: Operaciones, Analítica, Gobernanza, Comunicación (separadores visuales)
+- **A1** ✅ Tabs agrupadas en **5 grupos**: Operaciones, Agentes, Analítica, Economía, Gobernanza (separadores visuales)
 - **A2** ✅ URL params por tab (?tab=catalog) — deep linking + botón atrás funcional
 - **A3** ✅ Barra de búsqueda interna en AI Center — busca agentes, tareas de la cola
 - **A4** ✅ Badges con conteo en tabs urgentes (pendientes, errores, alertas)
@@ -52,8 +52,12 @@ Basado en el documento PDF v2.0, se implementaron las 8 fases (0-7) de forma inc
 - **C4** ✅ Exportación CSV de la cola de aprobaciones (botón Download en header)
 - **C5** ✅ Atajos de teclado en Live Hub: R=Refrescar, 1=Operaciones, 2=Dashboard Avanzado
 
-### Bloque D — Tests y Calidad
-- **D1** Pendiente — Suite E2E Playwright para 14 pestañas
-- **D2** Pendiente — Tests de regresión visual
-- **D3** Pendiente — Tests de contrato API
-- **D4** Pendiente — Tests de accesibilidad (axe-core)
+### Bloque D ✅ — Tests y Calidad
+- **D1** ✅ Suite E2E Playwright para 13 pestañas (e2e/ai-command-center.spec.ts)
+- **D2** ✅ Tests de regresión visual con screenshots (e2e/visual-regression.spec.ts)
+- **D3** ✅ Tests de contrato API para schema de agentes (src/__tests__/contracts/agentApi.test.ts)
+- **D4** ✅ Tests de accesibilidad — roles, keyboard nav, contraste (e2e/accessibility.spec.ts)
+
+### Limpieza ERP ✅
+- Tabs "Agentes IA" y "Supervisor" eliminadas del menú ERP (absorbidas en IA Center)
+- IA Center badge indicador correcto cuando estás dentro del módulo
