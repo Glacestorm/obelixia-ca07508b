@@ -496,15 +496,7 @@ function ERPModularDashboardContent() {
           <ERPAuditViewer />
         </TabsContent>
 
-        {/* Agents Tab */}
-        <TabsContent value="agents">
-          <ERPModuleAgentsPanel />
-        </TabsContent>
-
-        {/* Supervisor Dashboard Tab */}
-        <TabsContent value="supervisor">
-          <SupervisorAgentsDashboard />
-        </TabsContent>
+        {/* Agents & Supervisor tabs removed — absorbed into IA Center */}
 
         {/* Migration Tab */}
         <TabsContent value="migration">
