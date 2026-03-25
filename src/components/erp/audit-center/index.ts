@@ -1,4 +1,5 @@
 export { AuditCenterModule } from './AuditCenterModule';
+export { AuditNavigationMenu } from './AuditNavigationMenu';
 export { AuditDashboardHub } from './dashboard/AuditDashboardHub';
 export { InternalAuditPanel } from './internal/InternalAuditPanel';
 export { ExternalAuditPanel } from './external/ExternalAuditPanel';
