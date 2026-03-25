@@ -7,18 +7,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Zap,
-  BookOpen,
-  LineChart,
-  Map,
-  DollarSign,
-  ShieldCheck,
-  Bell,
   Bot,
-  Sparkles,
-  Mic,
-  Trophy,
-  GitBranch,
-  MessageSquare,
   Search,
   X,
 } from 'lucide-react';
