@@ -25,7 +25,8 @@ import {
   PiggyBank,
   Wallet,
   CreditCard,
-  Layers
+  Layers,
+  Shield
 } from 'lucide-react';
 import { ERPModulesGrid } from './ERPModulesGrid';
 
