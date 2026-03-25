@@ -36,7 +36,7 @@ const tabs = [
   { id: 'observability', label: 'Observabilidad', icon: LineChart, phase: 3 },
   { id: 'costs', label: 'Economía', icon: DollarSign, phase: 4 },
   { id: 'governance', label: 'Gobernanza', icon: ShieldCheck, phase: 5, active: true },
-  { id: 'orchestration', label: 'Orquestación', icon: Map, phase: 6 },
+  { id: 'orchestration', label: 'Orquestación', icon: Map, phase: 6, active: true },
   { id: 'notifications', label: 'Alertas', icon: Bell, phase: 7 },
 ] as const;
 

@@ -87,16 +87,16 @@ export function useOrchestration(agents: AgentRegistryItem[]) {
       // Fetch invocation chains to infer pipelines
       const { data: invocations } = await supabase
         .from('erp_ai_agent_invocations')
-        .select('agent_code, task_type, escalated_to, execution_time_ms, confidence_score, outcome_status, created_at')
+        .select('agent_code, escalated_to, execution_time_ms, confidence_score, outcome_status, created_at, supervisor_code')
         .order('created_at', { ascending: false })
         .limit(500);
 
       const inv = invocations || [];
 
-      // Group by task_type to form pipelines
+      // Group by supervisor_code to form pipelines (agents under the same supervisor = pipeline)
       const taskGroups = new Map<string, typeof inv>();
       inv.forEach(i => {
-        const key = i.task_type || 'general';
+        const key = i.supervisor_code || 'autonomous';
         if (!taskGroups.has(key)) taskGroups.set(key, []);
         taskGroups.get(key)!.push(i);
       });
