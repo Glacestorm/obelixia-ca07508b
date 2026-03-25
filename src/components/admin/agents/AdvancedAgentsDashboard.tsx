@@ -1394,6 +1394,477 @@ function SupervisorConfigSheet({
   );
 }
 
+// === CONFIGURACIÓN AVANZADA DEL SUPERSUPERVISOR OBELIXIA ===
+function SuperSupervisorConfig({
+  supervisorStatus,
+  domainCount,
+  onSave,
+}: {
+  supervisorStatus: SupervisorStatus | null;
+  domainCount: number;
+  onSave: () => void;
+}) {
+  const [crossDomainMode, setCrossDomainMode] = useState<'conservative' | 'balanced' | 'dynamic'>('conservative');
+  const [maxCrossDomainDepth, setMaxCrossDomainDepth] = useState(3);
+  const [parallelConsultations, setParallelConsultations] = useState(true);
+  const [maxParallelSupervisors, setMaxParallelSupervisors] = useState(3);
+  const [globalConfidence, setGlobalConfidence] = useState(80);
+  const [conflictPriority, setConflictPriority] = useState<'security' | 'efficiency' | 'compliance'>('security');
+  const [autoCalibrate, setAutoCalibrate] = useState(true);
+  const [calibrationFrequency, setCalibrationFrequency] = useState(24);
+  const [fewShotEnabled, setFewShotEnabled] = useState(true);
+  const [maxValidatedCases, setMaxValidatedCases] = useState(15);
+  const [seedExclusion, setSeedExclusion] = useState(true);
+  const [learningFromEscalations, setLearningFromEscalations] = useState(true);
+  const [globalBudgetTokens, setGlobalBudgetTokens] = useState(250000);
+  const [budgetDistribution, setBudgetDistribution] = useState<'equal' | 'weighted' | 'dynamic'>('weighted');
+  const [budgetAlert, setBudgetAlert] = useState(75);
+  const [hitlCritical, setHitlCritical] = useState(true);
+  const [hitlHighRisk, setHitlHighRisk] = useState(true);
+  const [hitlDiscrepancy, setHitlDiscrepancy] = useState(true);
+  const [discrepancyThreshold, setDiscrepancyThreshold] = useState(2);
+  const [regulatoryAutoProcess, setRegulatoryAutoProcess] = useState(true);
+  const [strongKeywordEscalate, setStrongKeywordEscalate] = useState(true);
+  const [weakKeywordConvergence, setWeakKeywordConvergence] = useState(true);
+  const [minDomainsForWeak, setMinDomainsForWeak] = useState(2);
+  const [auditRetention, setAuditRetention] = useState(730);
+  const [xaiMandatory, setXaiMandatory] = useState(true);
+  const [biasDetection, setBiasDetection] = useState(true);
+  const [piiProtection, setPiiProtection] = useState(true);
+  const [notifyConflicts, setNotifyConflicts] = useState(true);
+  const [notifyRegulatory, setNotifyRegulatory] = useState(true);
+  const [notifyBudget, setNotifyBudget] = useState(true);
+  const [notifyAnomaly, setNotifyAnomaly] = useState(true);
+  const [activeSection, setActiveSection] = useState('cross-domain');
+
+  const sections = [
+    { id: 'cross-domain', label: 'Cross-Domain', icon: Network },
+    { id: 'conflict', label: 'Conflictos', icon: GitBranch },
+    { id: 'learning', label: 'Aprendizaje', icon: Brain },
+    { id: 'budget', label: 'Presupuesto', icon: Calculator },
+    { id: 'hitl', label: 'HITL', icon: Eye },
+    { id: 'regulatory', label: 'Normativo', icon: Shield },
+    { id: 'governance', label: 'Gobernanza', icon: Scale },
+    { id: 'alerts', label: 'Alertas', icon: Activity },
+  ];
+
+  return (
+    <div className="mt-4 space-y-4">
+      {/* Status */}
+      <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/10 via-violet-500/10 to-transparent border">
+        <div className={cn(
+          "w-2.5 h-2.5 rounded-full",
+          supervisorStatus?.status === 'running' ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+        )} />
+        <div className="flex-1">
+          <p className="text-sm font-medium">ObelixIA Supersupervisor</p>
+          <p className="text-xs text-muted-foreground">{domainCount} dominios · Cross-domain coordination</p>
+        </div>
+      </div>
+
+      {/* Section tabs */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-1 pb-2">
+          {sections.map((s) => (
+            <Button
+              key={s.id}
+              variant={activeSection === s.id ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 text-xs shrink-0 gap-1"
+              onClick={() => setActiveSection(s.id)}
+            >
+              <s.icon className="h-3 w-3" />
+              {s.label}
+            </Button>
+          ))}
+        </div>
+      </ScrollArea>
+
+      <ScrollArea className="h-[420px] pr-2">
+        {/* === CROSS-DOMAIN === */}
+        {activeSection === 'cross-domain' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Modo de coordinación cross-domain</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'conservative' as const, label: 'Conservador', desc: 'Siempre la opción más segura', icon: Shield },
+                  { value: 'balanced' as const, label: 'Equilibrado', desc: 'Balance seguridad/eficiencia', icon: Scale },
+                  { value: 'dynamic' as const, label: 'Dinámico', desc: 'Adapta según contexto', icon: Sparkles },
+                ]).map((m) => (
+                  <div
+                    key={m.value}
+                    className={cn(
+                      "p-3 rounded-lg border cursor-pointer transition-all text-center",
+                      crossDomainMode === m.value ? "ring-2 ring-primary bg-primary/5 border-primary" : "hover:bg-muted/50"
+                    )}
+                    onClick={() => setCrossDomainMode(m.value)}
+                  >
+                    <m.icon className={cn("h-5 w-5 mx-auto mb-1", crossDomainMode === m.value ? "text-primary" : "text-muted-foreground")} />
+                    <p className="text-xs font-medium">{m.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{m.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Consultas paralelas a supervisores</Label>
+                <p className="text-xs text-muted-foreground">Consulta múltiples supervisores simultáneamente</p>
+              </div>
+              <Switch checked={parallelConsultations} onCheckedChange={setParallelConsultations} />
+            </div>
+
+            {parallelConsultations && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Máx. supervisores en paralelo</Label>
+                  <Badge variant="outline" className="text-xs">{maxParallelSupervisors}</Badge>
+                </div>
+                <Slider value={[maxParallelSupervisors]} onValueChange={([v]) => setMaxParallelSupervisors(v)} min={2} max={7} step={1} />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Profundidad máxima de escalado</Label>
+                <Badge variant="outline" className="text-xs">{maxCrossDomainDepth} niveles</Badge>
+              </div>
+              <Slider value={[maxCrossDomainDepth]} onValueChange={([v]) => setMaxCrossDomainDepth(v)} min={1} max={5} step={1} />
+              <p className="text-[10px] text-muted-foreground">
+                Cuántas veces se puede re-escalar entre dominios antes de forzar revisión humana
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Umbral global de confianza</Label>
+                <Badge variant="outline" className="text-xs">{globalConfidence}%</Badge>
+              </div>
+              <Slider value={[globalConfidence]} onValueChange={([v]) => setGlobalConfidence(v)} min={50} max={100} step={5} />
+            </div>
+          </div>
+        )}
+
+        {/* === CONFLICTOS === */}
+        {activeSection === 'conflict' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Prioridad al resolver conflictos</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'security' as const, label: 'Seguridad', desc: 'La recomendación más conservadora gana', icon: Shield, color: 'text-blue-500' },
+                  { value: 'compliance' as const, label: 'Cumplimiento', desc: 'La normativa siempre prevalece', icon: Scale, color: 'text-amber-500' },
+                  { value: 'efficiency' as const, label: 'Eficiencia', desc: 'Optimiza velocidad y coste', icon: Zap, color: 'text-emerald-500' },
+                ]).map((p) => (
+                  <div
+                    key={p.value}
+                    className={cn(
+                      "p-3 rounded-lg border cursor-pointer transition-all text-center",
+                      conflictPriority === p.value ? "ring-2 ring-primary bg-primary/5 border-primary" : "hover:bg-muted/50"
+                    )}
+                    onClick={() => setConflictPriority(p.value)}
+                  >
+                    <p.icon className={cn("h-5 w-5 mx-auto mb-1", p.color)} />
+                    <p className="text-xs font-medium">{p.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{p.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase">Matriz de conflictos activa</h4>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span>HR vs Legal (despidos, EREs): → Siempre Legal prevalece</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-orange-500" />
+                  <span>CRM vs Compliance (GDPR): → Siempre Compliance prevalece</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>Financial vs Legal (fiscal): → Ponderación 60/40</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>Discrepancia severidad &gt; {discrepancyThreshold} niveles: → HITL obligatorio</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Umbral de discrepancia para HITL</Label>
+                <Badge variant="outline" className="text-xs">{discrepancyThreshold} niveles</Badge>
+              </div>
+              <Slider value={[discrepancyThreshold]} onValueChange={([v]) => setDiscrepancyThreshold(v)} min={1} max={4} step={1} />
+              <p className="text-[10px] text-muted-foreground">
+                Si dos supervisores discrepan más de {discrepancyThreshold} niveles de severidad → revisión humana forzada
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* === APRENDIZAJE === */}
+        {activeSection === 'learning' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Few-shot con casos validados</Label>
+                <p className="text-xs text-muted-foreground">Inyecta contexto de erp_validated_cases en los prompts</p>
+              </div>
+              <Switch checked={fewShotEnabled} onCheckedChange={setFewShotEnabled} />
+            </div>
+
+            {fewShotEnabled && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Máx. casos de referencia</Label>
+                  <Badge variant="outline" className="text-xs">{maxValidatedCases}</Badge>
+                </div>
+                <Slider value={[maxValidatedCases]} onValueChange={([v]) => setMaxValidatedCases(v)} min={3} max={50} step={1} />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Excluir datos seed</Label>
+                <p className="text-xs text-muted-foreground">No usar datos de ejemplo iniciales para aprendizaje</p>
+              </div>
+              <Switch checked={seedExclusion} onCheckedChange={setSeedExclusion} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Aprender de escalados</Label>
+                <p className="text-xs text-muted-foreground">Cada escalado cross-domain alimenta el modelo</p>
+              </div>
+              <Switch checked={learningFromEscalations} onCheckedChange={setLearningFromEscalations} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Auto-calibrar sensibilidad de escalado</Label>
+                <p className="text-xs text-muted-foreground">Ajusta automáticamente los umbrales con la experiencia</p>
+              </div>
+              <Switch checked={autoCalibrate} onCheckedChange={setAutoCalibrate} />
+            </div>
+
+            {autoCalibrate && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Frecuencia de calibración</Label>
+                  <Badge variant="outline" className="text-xs">cada {calibrationFrequency}h</Badge>
+                </div>
+                <Slider value={[calibrationFrequency]} onValueChange={([v]) => setCalibrationFrequency(v)} min={1} max={168} step={1} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* === PRESUPUESTO === */}
+        {activeSection === 'budget' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Presupuesto global diario</Label>
+                <Badge variant="outline" className="text-xs">{(globalBudgetTokens / 1000).toFixed(0)}K tokens</Badge>
+              </div>
+              <Slider value={[globalBudgetTokens]} onValueChange={([v]) => setGlobalBudgetTokens(v)} min={50000} max={1000000} step={25000} />
+              <p className="text-[10px] text-muted-foreground">Tokens totales disponibles para TODOS los supervisores al día</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Distribución del presupuesto</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'equal' as const, label: 'Equitativa', desc: 'Igual para todos' },
+                  { value: 'weighted' as const, label: 'Ponderada', desc: 'Según actividad y prioridad' },
+                  { value: 'dynamic' as const, label: 'Dinámica', desc: 'Se ajusta en tiempo real' },
+                ]).map((d) => (
+                  <div
+                    key={d.value}
+                    className={cn(
+                      "p-2 rounded-lg border cursor-pointer transition-all text-center",
+                      budgetDistribution === d.value ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
+                    )}
+                    onClick={() => setBudgetDistribution(d.value)}
+                  >
+                    <p className="text-xs font-medium">{d.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{d.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Alerta de presupuesto</Label>
+                <Badge variant="outline" className="text-xs">{budgetAlert}%</Badge>
+              </div>
+              <Slider value={[budgetAlert]} onValueChange={([v]) => setBudgetAlert(v)} min={50} max={95} step={5} />
+            </div>
+          </div>
+        )}
+
+        {/* === HITL === */}
+        {activeSection === 'hitl' && (
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">Human-in-the-Loop: Cuándo requiere intervención humana el supersupervisor</p>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border border-red-500/20 bg-red-500/5">
+              <div>
+                <Label className="text-sm font-medium">🔴 Decisiones críticas</Label>
+                <p className="text-xs text-muted-foreground">Despidos, EREs, sanciones, datos PII</p>
+              </div>
+              <Switch checked={hitlCritical} onCheckedChange={setHitlCritical} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border border-orange-500/20 bg-orange-500/5">
+              <div>
+                <Label className="text-sm font-medium">🟠 Alto riesgo (EU AI Act)</Label>
+                <p className="text-xs text-muted-foreground">Agentes clasificados como "High Risk"</p>
+              </div>
+              <Switch checked={hitlHighRisk} onCheckedChange={setHitlHighRisk} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border border-violet-500/20 bg-violet-500/5">
+              <div>
+                <Label className="text-sm font-medium">🟣 Discrepancias entre supervisores</Label>
+                <p className="text-xs text-muted-foreground">Cuando dos dominios no están de acuerdo</p>
+              </div>
+              <Switch checked={hitlDiscrepancy} onCheckedChange={setHitlDiscrepancy} />
+            </div>
+          </div>
+        )}
+
+        {/* === NORMATIVO === */}
+        {activeSection === 'regulatory' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Procesamiento normativo automático</Label>
+                <p className="text-xs text-muted-foreground">Evalúa cambios regulatorios automáticamente</p>
+              </div>
+              <Switch checked={regulatoryAutoProcess} onCheckedChange={setRegulatoryAutoProcess} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Escalado por keywords fuertes</Label>
+                <p className="text-xs text-muted-foreground">ERE, RGPD, despidos, PRL → escalado inmediato</p>
+              </div>
+              <Switch checked={strongKeywordEscalate} onCheckedChange={setStrongKeywordEscalate} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Convergencia para keywords débiles</Label>
+                <p className="text-xs text-muted-foreground">Requiere impacto en múltiples dominios</p>
+              </div>
+              <Switch checked={weakKeywordConvergence} onCheckedChange={setWeakKeywordConvergence} />
+            </div>
+
+            {weakKeywordConvergence && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Mín. dominios para convergencia</Label>
+                  <Badge variant="outline" className="text-xs">{minDomainsForWeak}</Badge>
+                </div>
+                <Slider value={[minDomainsForWeak]} onValueChange={([v]) => setMinDomainsForWeak(v)} min={2} max={5} step={1} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* === GOBERNANZA === */}
+        {activeSection === 'governance' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">XAI obligatorio (GDPR Art. 22)</Label>
+                <p className="text-xs text-muted-foreground">Explicabilidad en todas las decisiones automatizadas</p>
+              </div>
+              <Switch checked={xaiMandatory} onCheckedChange={setXaiMandatory} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Detección de sesgo (Fairness Engine)</Label>
+                <p className="text-xs text-muted-foreground">Monitoriza equidad en decisiones de HR y Legal</p>
+              </div>
+              <Switch checked={biasDetection} onCheckedChange={setBiasDetection} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Protección PII</Label>
+                <p className="text-xs text-muted-foreground">Anonimización automática en tiempo real</p>
+              </div>
+              <Switch checked={piiProtection} onCheckedChange={setPiiProtection} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Retención de auditoría</Label>
+                <Badge variant="outline" className="text-xs">{auditRetention} días ({(auditRetention / 365).toFixed(1)} años)</Badge>
+              </div>
+              <Slider value={[auditRetention]} onValueChange={([v]) => setAuditRetention(v)} min={365} max={3650} step={30} />
+              <p className="text-[10px] text-muted-foreground">LOPDGDD/GDPR requiere mínimo 2 años para decisiones automatizadas</p>
+            </div>
+          </div>
+        )}
+
+        {/* === ALERTAS === */}
+        {activeSection === 'alerts' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Conflictos entre supervisores</Label>
+                <p className="text-xs text-muted-foreground">HR vs Legal, CRM vs Compliance, etc.</p>
+              </div>
+              <Switch checked={notifyConflicts} onCheckedChange={setNotifyConflicts} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Cambios normativos detectados</Label>
+                <p className="text-xs text-muted-foreground">Nuevas regulaciones que impactan la operación</p>
+              </div>
+              <Switch checked={notifyRegulatory} onCheckedChange={setNotifyRegulatory} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Límites de presupuesto</Label>
+                <p className="text-xs text-muted-foreground">Al alcanzar el umbral de alerta configurado</p>
+              </div>
+              <Switch checked={notifyBudget} onCheckedChange={setNotifyBudget} />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Anomalías del sistema</Label>
+                <p className="text-xs text-muted-foreground">Comportamientos inesperados, latencias altas, fallos</p>
+              </div>
+              <Switch checked={notifyAnomaly} onCheckedChange={setNotifyAnomaly} />
+            </div>
+          </div>
+        )}
+      </ScrollArea>
+
+      <Button onClick={onSave} className="w-full mt-4">
+        <Save className="h-4 w-4 mr-2" />
+        Guardar Configuración del Supersupervisor
+      </Button>
+    </div>
+  );
+}
+
 // === COMPONENTE PRINCIPAL ===
 export function AdvancedAgentsDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'supervisor' | 'supersupervisor' | 'agents' | 'insights' | 'registry'>('overview');
