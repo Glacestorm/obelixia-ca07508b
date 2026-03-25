@@ -64,6 +64,7 @@ import { LegalModule } from './legal';
 import { GaliaDashboard } from '@/components/verticals/galia';
 import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
 import { ElectricalConsultingModule } from './electrical';
+import { AICommandCenterModule } from './ai-center';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
@@ -467,6 +468,11 @@ function ERPModularDashboardContent() {
         {/* Electrical Consulting Tab */}
         <TabsContent value="electrical">
           <ElectricalConsultingModule />
+        </TabsContent>
+
+        {/* AI Command Center Tab */}
+        <TabsContent value="ai-center">
+          <AICommandCenterModule />
         </TabsContent>
 
         {/* Companies Tab */}
