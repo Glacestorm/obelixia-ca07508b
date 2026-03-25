@@ -337,7 +337,7 @@ export function OrchestrationPanel({ agents, loading: agentsLoading }: Orchestra
             </div>
           ) : pipelines.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground text-sm">
-              <Map className="h-8 w-8 mx-auto mb-2 opacity-40" />
+              <MapIcon className="h-8 w-8 mx-auto mb-2 opacity-40" />
               No hay pipelines detectados aún
             </div>
           ) : (
