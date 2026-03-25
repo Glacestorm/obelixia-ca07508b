@@ -298,10 +298,14 @@ export function OrchestrationPanel({ agents, loading: agentsLoading }: Orchestra
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="pipelines" className="text-xs gap-1">
             <GitBranch className="h-3.5 w-3.5" />
             Pipelines
+          </TabsTrigger>
+          <TabsTrigger value="workflows" className="text-xs gap-1">
+            <Zap className="h-3.5 w-3.5" />
+            Workflows
           </TabsTrigger>
           <TabsTrigger value="graph" className="text-xs gap-1">
             <Network className="h-3.5 w-3.5" />
