@@ -1827,6 +1827,233 @@ export function AdvancedAgentsDashboard() {
           </div>
         </TabsContent>
 
+        {/* === SUPERSUPERVISOR TAB === */}
+        <TabsContent value="supersupervisor" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Status Principal */}
+            <Card className="lg:col-span-2 border-primary/20 bg-gradient-to-br from-primary/5 via-violet-500/5 to-transparent">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-primary via-violet-600 to-indigo-700 shadow-lg">
+                      <Scale className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">ObelixIA Supersupervisor</CardTitle>
+                      <CardDescription>
+                        Coordinador transversal de supervisores · Resolución de conflictos cross-domain
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setSSConfigOpen(true)}
+                      title="Configuración avanzada del supersupervisor"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">
+                      🟢 Activo
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* KPIs del Supersupervisor */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-background border">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Supervisores</p>
+                    <p className="text-2xl font-bold mt-1">{domainAgents.length}</p>
+                    <p className="text-[10px] text-muted-foreground">dominios coordinados</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-background border">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Conflictos</p>
+                    <p className="text-2xl font-bold mt-1">{supervisorStatus?.conflictsResolved || 0}</p>
+                    <p className="text-[10px] text-muted-foreground">resueltos hoy</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-background border">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Health Global</p>
+                    <p className="text-2xl font-bold mt-1">{supervisorStatus?.systemHealth || 0}%</p>
+                    <Progress value={supervisorStatus?.systemHealth || 0} className="mt-1 h-1.5" />
+                  </div>
+                  <div className="p-3 rounded-lg bg-background border">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Aprendizaje</p>
+                    <p className="text-2xl font-bold mt-1">{supervisorStatus?.learningProgress || 0}%</p>
+                    <Progress value={supervisorStatus?.learningProgress || 0} className="mt-1 h-1.5" />
+                  </div>
+                </div>
+
+                {/* Protocolo de Escalado Cross-Domain */}
+                <Card className="border-dashed">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <GitBranch className="h-4 w-4 text-violet-500" />
+                      Protocolo de Escalado Cross-Domain
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        { from: 'HR-Supervisor', to: 'Legal-Supervisor', trigger: 'Despidos, EREs, permisos protegidos', risk: 'critical', color: 'bg-red-500' },
+                        { from: 'Legal-Supervisor', to: 'HR-Supervisor', trigger: 'Impacto laboral de normativa nueva', risk: 'high', color: 'bg-orange-500' },
+                        { from: 'CRM-Supervisor', to: 'Compliance-Supervisor', trigger: 'GDPR, datos sensibles de clientes', risk: 'high', color: 'bg-orange-500' },
+                        { from: 'Financial-Supervisor', to: 'Legal-Supervisor', trigger: 'Fiscalidad, auditorías, PSD2', risk: 'medium', color: 'bg-amber-500' },
+                        { from: 'Operations-Supervisor', to: 'HR-Supervisor', trigger: 'Cambios de turno, PRL, ERGOs', risk: 'medium', color: 'bg-amber-500' },
+                      ].map((route, i) => (
+                        <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30 text-xs">
+                          <div className={cn("w-2 h-2 rounded-full shrink-0", route.color)} />
+                          <Badge variant="outline" className="text-[10px] shrink-0">{route.from}</Badge>
+                          <ArrowUpRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <Badge variant="outline" className="text-[10px] shrink-0">{route.to}</Badge>
+                          <span className="text-muted-foreground flex-1 truncate">{route.trigger}</span>
+                          <Badge className={cn("text-[9px]", 
+                            route.risk === 'critical' ? 'bg-red-500/15 text-red-700' :
+                            route.risk === 'high' ? 'bg-orange-500/15 text-orange-700' :
+                            'bg-amber-500/15 text-amber-700'
+                          )}>
+                            {route.risk}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Acciones del Supersupervisor */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { label: 'Orquestar Global', action: 'global_orchestration', icon: Network },
+                    { label: 'Resolver Conflictos', action: 'cross_domain_conflict_resolution', icon: GitBranch },
+                    { label: 'Análisis Normativo', action: 'regulatory_impact_analysis', icon: Shield },
+                    { label: 'Calibrar Confianza', action: 'confidence_calibration', icon: Target },
+                    { label: 'Auditoría Cross', action: 'cross_domain_audit', icon: Eye },
+                    { label: 'Sync Supervisores', action: 'sync_supervisors', icon: RefreshCw },
+                    { label: 'Few-Shot Update', action: 'update_few_shot_cases', icon: Database },
+                    { label: 'Health Check', action: 'global_health_check', icon: Gauge },
+                  ].map((item) => (
+                    <Button
+                      key={item.action}
+                      variant="outline"
+                      size="sm"
+                      className="justify-start text-xs h-9"
+                      onClick={() => supervisorOrchestrate(`ObelixIA: ${item.action}`, 'high')}
+                      disabled={isLoading}
+                    >
+                      <item.icon className="h-3.5 w-3.5 mr-1.5" />
+                      {item.label}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Panel Lateral - Dominio supervisados */}
+            <div className="space-y-3">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Network className="h-4 w-4" />
+                    Supervisores de Dominio
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-2">
+                      {domainAgents.map((domain) => {
+                        const config = DOMAIN_CONFIG[domain.domain];
+                        const DomainIcon = DOMAIN_ICONS[domain.domain];
+                        const activeCount = domain.moduleAgents.filter(a => a.status === 'active' || a.status === 'analyzing').length;
+                        return (
+                          <div key={domain.id} className="p-3 rounded-lg border hover:bg-muted/30 transition-colors">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className={cn("p-1.5 rounded-lg bg-gradient-to-br text-white", config.color)}>
+                                <DomainIcon className="h-3.5 w-3.5" />
+                              </div>
+                              <span className="text-sm font-medium flex-1">{domain.name}</span>
+                              <div className={cn("w-2 h-2 rounded-full", getStatusColor(domain.status))} />
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1">
+                              <span>{activeCount}/{domain.moduleAgents.length} agentes</span>
+                              <span>{domain.status}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Reglas de Gobernanza */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Gobernanza IA
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-xs">
+                    {[
+                      { rule: 'GDPR Art. 22 - XAI', status: true, desc: 'Explicabilidad obligatoria' },
+                      { rule: 'EU AI Act - HITL', status: true, desc: 'Human-in-the-loop activo' },
+                      { rule: 'Audit Trail', status: true, desc: 'Logs inmutables 2 años' },
+                      { rule: 'Bias Detection', status: true, desc: 'Fairness Engine activo' },
+                      { rule: 'PII Protection', status: true, desc: 'Anonimización en tiempo real' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/30">
+                        <CheckCircle className="h-3 w-3 text-emerald-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium">{item.rule}</span>
+                          <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Mapa de Interacciones entre Dominios */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Share2 className="h-4 w-4" />
+                Mapa de Interacciones Cross-Domain (última hora)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                {domainAgents.map((domain) => {
+                  const config = DOMAIN_CONFIG[domain.domain];
+                  const DomainIcon = DOMAIN_ICONS[domain.domain];
+                  return (
+                    <div key={domain.id} className={cn(
+                      "p-3 rounded-lg border text-center transition-all hover:shadow-md",
+                      domain.status === 'active' ? "border-primary/30 bg-primary/5" : ""
+                    )}>
+                      <div className={cn("p-2 rounded-lg bg-gradient-to-br text-white mx-auto w-fit mb-2", config.color)}>
+                        <DomainIcon className="h-4 w-4" />
+                      </div>
+                      <p className="text-xs font-medium">{domain.name.split(' ').slice(0, 2).join(' ')}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {domain.moduleAgents.length} agentes
+                      </p>
+                      <div className="flex justify-center gap-1 mt-1">
+                        <div className={cn("w-1.5 h-1.5 rounded-full", domain.status === 'active' ? 'bg-emerald-500' : 'bg-muted-foreground/40')} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Supervisor Tab */}
         <TabsContent value="supervisor" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
