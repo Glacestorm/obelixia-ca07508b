@@ -927,6 +927,7 @@ export function AdvancedAgentsDashboard() {
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [configAgent, setConfigAgent] = useState<ModuleAgent | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [supervisorConfigOpen, setSupervisorConfigOpen] = useState(false);
 
   const {
     isLoading,
