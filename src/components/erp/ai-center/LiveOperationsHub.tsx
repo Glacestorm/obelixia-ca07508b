@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +62,32 @@ export function LiveOperationsHub({ kpis, queue, loading, onRefresh }: LiveOpera
   const redCount = queue.filter(q => q.semaphore === 'red').length;
   const yellowCount = queue.filter(q => q.semaphore === 'yellow').length;
   const greenCount = queue.filter(q => q.semaphore === 'green').length;
+
+  // C5: Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Only when not in input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      switch (e.key.toLowerCase()) {
+        case 'r':
+          e.preventDefault();
+          onRefresh();
+          break;
+        case '1':
+          e.preventDefault();
+          setHubTab('operations');
+          break;
+        case '2':
+          e.preventDefault();
+          setHubTab('advanced');
+          break;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onRefresh]);
 
   return (
     <div className="space-y-6">
