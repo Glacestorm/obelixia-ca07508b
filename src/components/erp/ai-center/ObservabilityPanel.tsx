@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import {
   RefreshCw,
@@ -19,12 +20,14 @@ import {
   Bot,
   GitBranch,
   Zap,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useObservabilityData, type InvocationRecord, type AgentPerformance, type EscalationEdge } from '@/hooks/erp/ai-center/useObservabilityData';
 import { SemaphoreIndicator } from './SemaphoreIndicator';
+import { ERPRealTimeMetrics } from '@/components/admin/agents/ERPRealTimeMetrics';
 
 /* ─── KPI Card ─── */
 function ObsKPI({ icon: Icon, label, value, subtitle, color = 'text-primary' }: {
@@ -240,6 +243,7 @@ export function ObservabilityPanel() {
   const { invocations, kpis, agentPerformance, escalationEdges, loading, fetchInvocations } = useObservabilityData();
   const [range, setRange] = useState('7d');
   const [agentFilter, setAgentFilter] = useState('all');
+  const [obsTab, setObsTab] = useState('trazabilidad');
 
   const agentCodes = Array.from(new Set(invocations.map(i => i.agent_code))).sort();
 
@@ -258,8 +262,8 @@ export function ObservabilityPanel() {
             <Eye className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-bold">Observabilidad y Trazabilidad</h2>
-            <p className="text-[11px] text-muted-foreground">Timeline de invocaciones, rendimiento y escalaciones</p>
+            <h2 className="text-base font-bold">Observabilidad y Métricas</h2>
+            <p className="text-[11px] text-muted-foreground">Trazabilidad, rendimiento en tiempo real y escalaciones</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -293,44 +297,61 @@ export function ObservabilityPanel() {
         </div>
       </div>
 
-      {/* KPIs */}
-      {kpis && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-          <ObsKPI icon={Activity} label="Invocaciones" value={kpis.totalInvocations} />
-          <ObsKPI icon={CheckCircle} label="Tasa Éxito" value={`${kpis.successRate}%`} color={kpis.successRate >= 90 ? 'text-emerald-500' : 'text-yellow-500'} />
-          <ObsKPI icon={TrendingUp} label="Confianza" value={`${kpis.avgConfidence}%`} color={kpis.avgConfidence >= 80 ? 'text-emerald-500' : 'text-yellow-500'} />
-          <ObsKPI icon={Gauge} label="Latencia Media" value={`${kpis.avgLatency}ms`} />
-          <ObsKPI icon={Gauge} label="P95 Latencia" value={`${kpis.p95Latency}ms`} color={kpis.p95Latency > 5000 ? 'text-red-500' : 'text-foreground'} />
-          <ObsKPI icon={AlertTriangle} label="Escalaciones" value={`${kpis.escalationRate}%`} color={kpis.escalationRate > 20 ? 'text-yellow-500' : 'text-foreground'} />
-          <ObsKPI icon={Zap} label="Autónomas" value={kpis.autonomousDecisions} subtitle="Sin revisión" />
-          <ObsKPI icon={Eye} label="Rev. Humana" value={kpis.humanReviews} subtitle="Escaladas" />
-        </div>
-      )}
+      {/* Sub-tabs: Trazabilidad | Métricas Real-Time */}
+      <Tabs value={obsTab} onValueChange={setObsTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="trazabilidad" className="text-xs gap-1">
+            <Activity className="h-3.5 w-3.5" />
+            Trazabilidad
+          </TabsTrigger>
+          <TabsTrigger value="realtime" className="text-xs gap-1">
+            <BarChart3 className="h-3.5 w-3.5" />
+            Métricas Real-Time
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Timeline */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                Timeline de Invocaciones
-                <Badge variant="secondary" className="text-[9px]">{invocations.length}</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <InvocationTimeline invocations={invocations} />
-            </CardContent>
-          </Card>
-        </div>
+        <TabsContent value="trazabilidad" className="mt-3 space-y-4">
+          {/* KPIs */}
+          {kpis && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+              <ObsKPI icon={Activity} label="Invocaciones" value={kpis.totalInvocations} />
+              <ObsKPI icon={CheckCircle} label="Tasa Éxito" value={`${kpis.successRate}%`} color={kpis.successRate >= 90 ? 'text-emerald-500' : 'text-yellow-500'} />
+              <ObsKPI icon={TrendingUp} label="Confianza" value={`${kpis.avgConfidence}%`} color={kpis.avgConfidence >= 80 ? 'text-emerald-500' : 'text-yellow-500'} />
+              <ObsKPI icon={Gauge} label="Latencia Media" value={`${kpis.avgLatency}ms`} />
+              <ObsKPI icon={Gauge} label="P95 Latencia" value={`${kpis.p95Latency}ms`} color={kpis.p95Latency > 5000 ? 'text-red-500' : 'text-foreground'} />
+              <ObsKPI icon={AlertTriangle} label="Escalaciones" value={`${kpis.escalationRate}%`} color={kpis.escalationRate > 20 ? 'text-yellow-500' : 'text-foreground'} />
+              <ObsKPI icon={Zap} label="Autónomas" value={kpis.autonomousDecisions} subtitle="Sin revisión" />
+              <ObsKPI icon={Eye} label="Rev. Humana" value={kpis.humanReviews} subtitle="Escaladas" />
+            </div>
+          )}
 
-        {/* Right sidebar */}
-        <div className="space-y-4">
-          <EscalationMap edges={escalationEdges} />
-          <AgentPerformanceTable data={agentPerformance} />
-        </div>
-      </div>
+          {/* Main grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Timeline de Invocaciones
+                    <Badge variant="secondary" className="text-[9px]">{invocations.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <InvocationTimeline invocations={invocations} />
+                </CardContent>
+              </Card>
+            </div>
+            <div className="space-y-4">
+              <EscalationMap edges={escalationEdges} />
+              <AgentPerformanceTable data={agentPerformance} />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="realtime" className="mt-3">
+          <ERPRealTimeMetrics />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
