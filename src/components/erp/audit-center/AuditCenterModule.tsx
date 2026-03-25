@@ -1,30 +1,58 @@
 /**
  * AuditCenterModule — Módulo principal del Centro de Auditoría
- * Consolida auditoría interna, externa, compliance, blockchain y agentes IA
+ * Módulo de primer nivel con mega-menú, siguiendo el patrón del AI Command Center
  */
-import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import {
-  LayoutDashboard, ShieldCheck, Globe, Scale, Link2, TrendingUp,
-  Bot, MessageSquare,
-} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ShieldCheck, Search, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useUnifiedAudit } from '@/hooks/erp/audit';
 import { useAuditAgents } from '@/hooks/erp/audit';
+import { AuditNavigationMenu } from './AuditNavigationMenu';
 import { AuditDashboardHub } from './dashboard/AuditDashboardHub';
-import { InternalAuditPanel } from './internal/InternalAuditPanel';
-import { ExternalAuditPanel } from './external/ExternalAuditPanel';
-import { ComplianceMatrixPanel } from './compliance/ComplianceMatrixPanel';
-import { BlockchainTrailPanel } from './blockchain/BlockchainTrailPanel';
-import { ImprovementsTracker } from './improvements/ImprovementsTracker';
-import { AuditAgentsDashboard } from './agents/AuditAgentsDashboard';
-import { AuditSuperSupervisorPanel } from './agents/AuditSuperSupervisorPanel';
-import { AuditAgentChat } from './agents/AuditAgentChat';
+
+// Lazy-loaded panels
+const InternalAuditPanel = lazy(() => import('./internal/InternalAuditPanel').then(m => ({ default: m.InternalAuditPanel })));
+const ExternalAuditPanel = lazy(() => import('./external/ExternalAuditPanel').then(m => ({ default: m.ExternalAuditPanel })));
+const ComplianceMatrixPanel = lazy(() => import('./compliance/ComplianceMatrixPanel').then(m => ({ default: m.ComplianceMatrixPanel })));
+const BlockchainTrailPanel = lazy(() => import('./blockchain/BlockchainTrailPanel').then(m => ({ default: m.BlockchainTrailPanel })));
+const ImprovementsTracker = lazy(() => import('./improvements/ImprovementsTracker').then(m => ({ default: m.ImprovementsTracker })));
+const AuditAgentsDashboard = lazy(() => import('./agents/AuditAgentsDashboard').then(m => ({ default: m.AuditAgentsDashboard })));
+const AuditSuperSupervisorPanel = lazy(() => import('./agents/AuditSuperSupervisorPanel').then(m => ({ default: m.AuditSuperSupervisorPanel })));
+const AuditAgentChat = lazy(() => import('./agents/AuditAgentChat').then(m => ({ default: m.AuditAgentChat })));
+
+function TabSkeleton() {
+  return (
+    <div className="space-y-4 p-4">
+      <Skeleton className="h-8 w-1/3" />
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  );
+}
+
+const VALID_TABS = new Set([
+  'dashboard', 'internal', 'external', 'compliance', 'blockchain',
+  'improvements', 'agents', 'activity', 'supersupervisor', 'chat',
+]);
 
 export function AuditCenterModule() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+
   const { kpis, startAutoRefresh, stopAutoRefresh } = useUnifiedAudit();
   const { fetchAuditAgents, stats } = useAuditAgents();
+
+  const rawTab = searchParams.get('tab') || 'dashboard';
+  const activeTab = VALID_TABS.has(rawTab) ? rawTab : 'dashboard';
+  const setActiveTab = useCallback((tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  }, [setSearchParams]);
 
   useEffect(() => {
     startAutoRefresh(90000);
@@ -32,71 +60,104 @@ export function AuditCenterModule() {
     return () => stopAutoRefresh();
   }, []);
 
+  const tabBadges: Record<string, number> = {
+    critical: kpis.criticalAlerts,
+    agents: stats.activeAgents,
+  };
+
+  const renderPanel = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <AuditDashboardHub />;
+      case 'internal':
+        return <Suspense fallback={<TabSkeleton />}><InternalAuditPanel /></Suspense>;
+      case 'external':
+        return <Suspense fallback={<TabSkeleton />}><ExternalAuditPanel /></Suspense>;
+      case 'compliance':
+        return <Suspense fallback={<TabSkeleton />}><ComplianceMatrixPanel /></Suspense>;
+      case 'blockchain':
+        return <Suspense fallback={<TabSkeleton />}><BlockchainTrailPanel /></Suspense>;
+      case 'improvements':
+        return <Suspense fallback={<TabSkeleton />}><ImprovementsTracker /></Suspense>;
+      case 'agents':
+      case 'activity':
+        return <Suspense fallback={<TabSkeleton />}><AuditAgentsDashboard /></Suspense>;
+      case 'supersupervisor':
+        return <Suspense fallback={<TabSkeleton />}><AuditSuperSupervisorPanel /></Suspense>;
+      case 'chat':
+        return <Suspense fallback={<TabSkeleton />}><AuditAgentChat /></Suspense>;
+      default:
+        return <AuditDashboardHub />;
+    }
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Centro de Auditoría</h2>
-          <p className="text-muted-foreground text-sm">
-            Auditoría unificada · Interna · Externa · Compliance · Agentes IA
-          </p>
+      {/* Module header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 shadow-lg shadow-emerald-500/20">
+            <ShieldCheck className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              Centro de Auditoría
+              <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[10px]">
+                UNIFIED
+              </Badge>
+              {kpis.criticalAlerts > 0 && (
+                <Badge variant="destructive" className="text-[10px] animate-pulse">
+                  {kpis.criticalAlerts} alertas críticas
+                </Badge>
+              )}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Auditoría unificada — Interna · Externa · Compliance · 11 Agentes IA · SuperSupervisor
+            </p>
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
-          <Badge variant={kpis.criticalAlerts > 0 ? 'destructive' : 'secondary'}>
-            {kpis.criticalAlerts} alertas críticas
+          <Badge variant="outline" className="text-xs">
+            {stats.activeAgents} agentes
           </Badge>
-          <Badge variant="outline" className="bg-primary/5">
-            {stats.activeAgents} agentes activos
-          </Badge>
+          <Button
+            variant={showSearch ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => { setShowSearch(!showSearch); if (showSearch) setGlobalSearch(''); }}
+          >
+            {showSearch ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-          <TabsTrigger value="dashboard" className="gap-1.5 text-xs">
-            <LayoutDashboard className="h-3.5 w-3.5" /> Resumen
-          </TabsTrigger>
-          <TabsTrigger value="internal" className="gap-1.5 text-xs">
-            <ShieldCheck className="h-3.5 w-3.5" /> Interna
-          </TabsTrigger>
-          <TabsTrigger value="external" className="gap-1.5 text-xs">
-            <Globe className="h-3.5 w-3.5" /> Externa
-          </TabsTrigger>
-          <TabsTrigger value="compliance" className="gap-1.5 text-xs">
-            <Scale className="h-3.5 w-3.5" /> Compliance
-          </TabsTrigger>
-          <TabsTrigger value="blockchain" className="gap-1.5 text-xs">
-            <Link2 className="h-3.5 w-3.5" /> Blockchain
-          </TabsTrigger>
-          <TabsTrigger value="improvements" className="gap-1.5 text-xs">
-            <TrendingUp className="h-3.5 w-3.5" /> Mejoras
-          </TabsTrigger>
-          <TabsTrigger value="agents" className="gap-1.5 text-xs">
-            <Bot className="h-3.5 w-3.5" /> Agentes IA
-            {stats.activeAgents > 0 && (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{stats.activeAgents}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="supersupervisor" className="gap-1.5 text-xs">
-            <Bot className="h-3.5 w-3.5 text-amber-500" /> SuperSupervisor
-          </TabsTrigger>
-          <TabsTrigger value="chat" className="gap-1.5 text-xs">
-            <MessageSquare className="h-3.5 w-3.5" /> Chat IA
-          </TabsTrigger>
-        </TabsList>
+      {/* Global search bar */}
+      {showSearch && (
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            autoFocus
+            placeholder="Buscar eventos, agentes, alertas..."
+            value={globalSearch}
+            onChange={e => setGlobalSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
 
-        <TabsContent value="dashboard"><AuditDashboardHub /></TabsContent>
-        <TabsContent value="internal"><InternalAuditPanel /></TabsContent>
-        <TabsContent value="external"><ExternalAuditPanel /></TabsContent>
-        <TabsContent value="compliance"><ComplianceMatrixPanel /></TabsContent>
-        <TabsContent value="blockchain"><BlockchainTrailPanel /></TabsContent>
-        <TabsContent value="improvements"><ImprovementsTracker /></TabsContent>
-        <TabsContent value="agents"><AuditAgentsDashboard /></TabsContent>
-        <TabsContent value="supersupervisor"><AuditSuperSupervisorPanel /></TabsContent>
-        <TabsContent value="chat"><AuditAgentChat /></TabsContent>
-      </Tabs>
+      {/* Mega-menu navigation */}
+      <AuditNavigationMenu
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        badges={tabBadges}
+      />
+
+      {/* Active panel content */}
+      <div className="mt-4">
+        {renderPanel()}
+      </div>
     </div>
   );
 }
+
+export default AuditCenterModule;
