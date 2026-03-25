@@ -170,7 +170,11 @@ export function ESEmployeeLaborDataForm({ companyId, employeeId }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">CNO (Ocupación)</Label>
-              <Input value={form.cno_code} onChange={e => setForm(p => ({ ...p, cno_code: e.target.value }))} placeholder="2611" className="h-8 text-sm" />
+              <HRCNOSelect
+                value={form.cno_code}
+                onValueChange={(code) => setForm(p => ({ ...p, cno_code: code }))}
+                required
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Categoría Profesional</Label>

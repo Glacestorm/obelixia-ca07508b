@@ -1,26 +1,16 @@
 /**
  * HRCNOSelect - Selector de Código Nacional de Ocupación
+ * Abre un diálogo a pantalla completa con buscador por nombre o código.
  * Obligatorio para Sistema RED, Contrat@, y afiliación TGSS
  * Desde 15/02/2022 - RD 504/2022
  */
 
 import { useState, useMemo, useCallback } from 'react';
-import { Check, ChevronsUpDown, Search, Briefcase, AlertCircle } from 'lucide-react';
+import { Check, Briefcase, AlertCircle, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CNO_CATALOG, searchCNO, getCNOByCode, type CNOCode } from '@/data/hr/cnoCatalog';
@@ -42,164 +32,187 @@ export function HRCNOSelect({
   disabled = false,
   required = false,
   showValidation = true,
-  className
+  className,
 }: HRCNOSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Obtener la ocupación seleccionada
-  const selectedCNO = useMemo(() => {
-    if (!value) return null;
-    return getCNOByCode(value);
-  }, [value]);
+  const selectedCNO = useMemo(() => (value ? getCNOByCode(value) : null), [value]);
 
-  // Filtrar resultados basados en búsqueda
   const filteredResults = useMemo(() => {
     if (searchQuery.length < 2) {
-      // Mostrar solo ocupaciones principales (nivel 4) más comunes
-      return CNO_CATALOG
-        .filter(cno => cno.groupLevel === 4)
-        .slice(0, 30);
+      return CNO_CATALOG.filter((c) => c.groupLevel === 4).slice(0, 50);
     }
-    return searchCNO(searchQuery, 50);
+    return searchCNO(searchQuery, 100);
   }, [searchQuery]);
 
-  // Agrupar por gran grupo
+  // Group by gran-grupo for the list
   const groupedResults = useMemo(() => {
     const groups: Record<string, CNOCode[]> = {};
-    
-    filteredResults.forEach(cno => {
+    filteredResults.forEach((cno) => {
       if (cno.groupLevel === 4) {
-        const groupCode = cno.parentCode || cno.code.charAt(0);
-        if (!groups[groupCode]) {
-          groups[groupCode] = [];
-        }
-        groups[groupCode].push(cno);
+        const gCode = cno.parentCode || cno.code.charAt(0);
+        if (!groups[gCode]) groups[gCode] = [];
+        groups[gCode].push(cno);
       }
     });
-    
     return groups;
   }, [filteredResults]);
 
-  const handleSelect = useCallback((cno: CNOCode) => {
-    onValueChange(cno.code, cno.description);
-    setOpen(false);
-    setSearchQuery('');
-  }, [onValueChange]);
-
-  const isValid = !required || (required && value);
+  const handleSelect = useCallback(
+    (cno: CNOCode) => {
+      onValueChange(cno.code, cno.description);
+      setOpen(false);
+      setSearchQuery('');
+    },
+    [onValueChange],
+  );
 
   return (
     <div className={cn('space-y-1', className)}>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            disabled={disabled}
-            className={cn(
-              'w-full justify-between font-normal',
-              !value && 'text-muted-foreground',
-              showValidation && required && !value && 'border-amber-500/50'
-            )}
-          >
-            <div className="flex items-center gap-2 truncate">
-              <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />
-              {selectedCNO ? (
-                <span className="truncate">
-                  <span className="font-mono text-primary">{selectedCNO.code}</span>
-                  {' - '}
-                  <span>{selectedCNO.description}</span>
-                </span>
-              ) : (
-                placeholder
-              )}
-            </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[500px] p-0" align="start">
-          <Command shouldFilter={false}>
-            <div className="flex items-center border-b px-3">
-              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <input
-                placeholder="Buscar por código o descripción..."
+      {/* Trigger button */}
+      <Button
+        type="button"
+        variant="outline"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        className={cn(
+          'w-full justify-between font-normal h-auto min-h-10 py-2',
+          !value && 'text-muted-foreground',
+          showValidation && required && !value && 'border-amber-500/50',
+        )}
+      >
+        <div className="flex items-center gap-2 truncate text-left">
+          <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />
+          {selectedCNO ? (
+            <span className="truncate">
+              <span className="font-mono text-primary">{selectedCNO.code}</span>
+              {' — '}
+              <span>{selectedCNO.description}</span>
+            </span>
+          ) : (
+            placeholder
+          )}
+        </div>
+      </Button>
+
+      {/* Full-screen dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Briefcase className="h-5 w-5 text-primary" />
+              Clasificación Nacional de Ocupaciones (CNO)
+            </DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              <AlertCircle className="inline h-3 w-3 mr-1" />
+              Obligatorio para Sistema RED, Contrat@ y TGSS — RD 504/2022
+            </p>
+          </DialogHeader>
+
+          {/* Search */}
+          <div className="px-6 py-3 border-b shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="Buscar por código o descripción (ej: 2611 o 'contable')..."
+                className="pl-9 pr-9"
               />
+              {searchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
-            <CommandList>
-              <CommandEmpty>
-                <div className="py-6 text-center text-sm">
-                  <p className="text-muted-foreground">No se encontraron ocupaciones.</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Prueba con otro término de búsqueda
-                  </p>
-                </div>
-              </CommandEmpty>
-              
-              <ScrollArea className="h-[300px]">
-                {Object.entries(groupedResults).map(([groupCode, items]) => {
-                  const groupInfo = CNO_CATALOG.find(c => c.code === groupCode);
-                  return (
-                    <CommandGroup 
-                      key={groupCode}
-                      heading={
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {groupCode}
-                          </Badge>
-                          <span className="text-xs truncate">
-                            {groupInfo?.description || `Grupo ${groupCode}`}
-                          </span>
-                        </div>
-                      }
-                    >
-                      {items.map((cno) => (
-                        <CommandItem
-                          key={cno.code}
-                          value={cno.code}
-                          onSelect={() => handleSelect(cno)}
-                          className="flex items-start gap-2 py-2"
-                        >
-                          <Check
-                            className={cn(
-                              'mt-0.5 h-4 w-4 shrink-0',
-                              value === cno.code ? 'opacity-100' : 'opacity-0'
-                            )}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-primary text-sm font-medium">
-                                {cno.code}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {cno.description}
-                            </p>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  );
-                })}
-              </ScrollArea>
-            </CommandList>
-          </Command>
-          
-          {/* Footer informativo */}
-          <div className="border-t p-2 bg-muted/30">
-            <p className="text-xs text-muted-foreground text-center">
-              <AlertCircle className="inline h-3 w-3 mr-1" />
-              CNO obligatorio para Sistema RED, Contrat@ y TGSS (RD 504/2022)
+            <p className="text-xs text-muted-foreground mt-1.5">
+              {filteredResults.length} ocupaciones encontradas
+              {searchQuery.length > 0 && searchQuery.length < 2 && ' — escribe al menos 2 caracteres'}
             </p>
           </div>
-        </PopoverContent>
-      </Popover>
 
-      {/* Validación visual */}
+          {/* Results */}
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="px-6 py-3 space-y-4">
+              {Object.keys(groupedResults).length === 0 ? (
+                <div className="py-12 text-center">
+                  <Search className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">No se encontraron ocupaciones.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Prueba con otro término de búsqueda</p>
+                </div>
+              ) : (
+                Object.entries(groupedResults).map(([groupCode, items]) => {
+                  const groupInfo = CNO_CATALOG.find((c) => c.code === groupCode);
+                  return (
+                    <div key={groupCode}>
+                      <div className="flex items-center gap-2 mb-2 sticky top-0 bg-background py-1 z-10">
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {groupCode}
+                        </Badge>
+                        <span className="text-xs font-medium text-muted-foreground truncate">
+                          {groupInfo?.description || `Grupo ${groupCode}`}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {items.map((cno) => {
+                          const isSelected = value === cno.code;
+                          return (
+                            <button
+                              key={cno.code}
+                              type="button"
+                              onClick={() => handleSelect(cno)}
+                              className={cn(
+                                'w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-left transition-colors',
+                                'hover:bg-accent/50',
+                                isSelected && 'bg-primary/10 ring-1 ring-primary/30',
+                              )}
+                            >
+                              <Check
+                                className={cn(
+                                  'h-4 w-4 shrink-0 text-primary',
+                                  isSelected ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              <span className="font-mono text-sm font-medium text-primary w-12 shrink-0">
+                                {cno.code}
+                              </span>
+                              <span className="text-sm flex-1 min-w-0 truncate">{cno.description}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="border-t px-6 py-3 flex items-center justify-between shrink-0 bg-muted/30">
+            {selectedCNO ? (
+              <p className="text-xs text-muted-foreground">
+                Seleccionado: <span className="font-mono font-medium text-primary">{selectedCNO.code}</span> — {selectedCNO.description}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Selecciona una ocupación de la lista</p>
+            )}
+            <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Validation */}
       {showValidation && required && !value && (
         <p className="text-xs text-amber-600 flex items-center gap-1">
           <AlertCircle className="h-3 w-3" />

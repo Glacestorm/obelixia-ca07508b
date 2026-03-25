@@ -655,7 +655,11 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">CNO (Cód. Nacional de Ocupación)</Label>
-                        <Input value={esFields.cno_code} onChange={(e) => setEsFields(prev => ({ ...prev, cno_code: e.target.value }))} placeholder="Ej: 2611" />
+                        <HRCNOSelect
+                          value={esFields.cno_code}
+                          onValueChange={(code) => setEsFields(prev => ({ ...prev, cno_code: code }))}
+                          required
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">% Retención IRPF</Label>
