@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,9 @@ import {
   Clock,
   Bot,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SemaphoreIndicator } from './SemaphoreIndicator';
 import { useApprovalActions } from '@/hooks/erp/ai-center/useApprovalActions';
