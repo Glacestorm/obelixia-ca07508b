@@ -536,6 +536,8 @@ export function AdvancedAgentsDashboard() {
   const [dynamicModules, setDynamicModules] = useState<DynamicModule[]>([]);
   const [isAgentChatLoading, setIsAgentChatLoading] = useState(false);
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
+  const [configAgent, setConfigAgent] = useState<ModuleAgent | null>(null);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
 
   const {
     isLoading,
@@ -859,7 +861,22 @@ export function AdvancedAgentsDashboard() {
                               >
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="font-medium text-sm">{agent.name}</span>
-                                  <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setConfigAgent(agent);
+                                        setConfigDialogOpen(true);
+                                      }}
+                                      title="Configurar agente"
+                                    >
+                                      <Settings className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                                  </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
                                   {agent.description}
@@ -867,7 +884,7 @@ export function AdvancedAgentsDashboard() {
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="text-muted-foreground">Health: {agent.healthScore}%</span>
                                   <Badge variant="outline" className="text-[10px]">
-                                    {agent.executionMode}
+                                    {agent.executionMode === 'autonomous' ? 'Autónomo' : agent.executionMode === 'supervised' ? 'Supervisado' : 'Manual'}
                                   </Badge>
                                 </div>
                               </div>
@@ -1099,7 +1116,22 @@ export function AdvancedAgentsDashboard() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{agent.name}</span>
-                          <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfigAgent(agent);
+                                setConfigDialogOpen(true);
+                              }}
+                              title="Configurar agente"
+                            >
+                              <Settings className="h-3.5 w-3.5" />
+                            </Button>
+                            <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground">{agent.domain}</p>
                       </div>
@@ -1332,6 +1364,42 @@ export function AdvancedAgentsDashboard() {
         Última sincronización: {lastRefresh ? formatDistanceToNow(lastRefresh, { locale: es, addSuffix: true }) : 'Nunca'} • 
         Arquitectura: Multi-Agent Hierarchical Orchestration v2.0
       </div>
+
+      {/* Dialog de Configuración de Agente */}
+      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Configurar: {configAgent?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {configAgent && (
+            <div className="space-y-4">
+              {/* Info del agente */}
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border">
+                <div className={cn("w-2.5 h-2.5 rounded-full", getStatusColor(configAgent.status))} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{configAgent.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{configAgent.description}</p>
+                </div>
+                <Badge variant="outline" className="text-xs shrink-0">
+                  {configAgent.domain}
+                </Badge>
+              </div>
+
+              <AgentConfigPanel
+                agent={configAgent}
+                onSave={(cfg) => {
+                  configureAgent(configAgent.id, cfg);
+                  setConfigDialogOpen(false);
+                  toast.success(`Configuración de ${configAgent.name} actualizada`);
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
