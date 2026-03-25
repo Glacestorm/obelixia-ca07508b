@@ -32,6 +32,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useOrchestration, type Pipeline, type SimulationScenario } from '@/hooks/erp/ai-center/useOrchestration';
 import type { AgentRegistryItem } from '@/hooks/erp/ai-center/useAICommandCenter';
+import { ERPAgentWorkflows } from '@/components/admin/agents/ERPAgentWorkflows';
 
 interface OrchestrationPanelProps {
   agents: AgentRegistryItem[];
