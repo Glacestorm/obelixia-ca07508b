@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LiveOperationsHub } from './LiveOperationsHub';
+import { AgentCatalogPanel } from './AgentCatalogPanel';
 import { useAICommandCenter } from '@/hooks/erp/ai-center/useAICommandCenter';
 
 // Future phase placeholders
@@ -64,7 +65,7 @@ export function AICommandCenterModule() {
         <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 rounded-xl">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = tab.phase <= 1;
+            const isActive = tab.phase <= 2;
             return (
               <TabsTrigger
                 key={tab.id}
@@ -94,9 +95,10 @@ export function AICommandCenterModule() {
           />
         </TabsContent>
 
-        <TabsContent value="catalog">
-          <PlaceholderPanel phase="Fase 2" title="Catálogo Unificado de Agentes" />
+        <TabsContent value="catalog" className="mt-4">
+          <AgentCatalogPanel agents={agents} loading={loading} onRefresh={refresh} />
         </TabsContent>
+
         <TabsContent value="observability">
           <PlaceholderPanel phase="Fase 3" title="Observabilidad y Trazabilidad" />
         </TabsContent>
