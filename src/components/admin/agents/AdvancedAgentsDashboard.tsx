@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1753,17 +1754,22 @@ export function AdvancedAgentsDashboard() {
         Arquitectura: Multi-Agent Hierarchical Orchestration v2.0
       </div>
 
-      {/* Dialog de Configuración de Agente */}
-      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Configurar: {configAgent?.name}
-            </DialogTitle>
-          </DialogHeader>
+      {/* Sheet de Configuración Avanzada de Agente */}
+      <Sheet open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-violet-600">
+                <Settings className="h-4 w-4 text-white" />
+              </div>
+              Configuración Avanzada
+            </SheetTitle>
+            <SheetDescription>
+              {configAgent?.name} · {configAgent?.domain?.toUpperCase()}
+            </SheetDescription>
+          </SheetHeader>
           {configAgent && (
-            <div className="space-y-4">
+            <div className="mt-4 space-y-4">
               {/* Info del agente */}
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border">
                 <div className={cn("w-2.5 h-2.5 rounded-full", getStatusColor(configAgent.status))} />
@@ -1772,7 +1778,10 @@ export function AdvancedAgentsDashboard() {
                   <p className="text-xs text-muted-foreground truncate">{configAgent.description}</p>
                 </div>
                 <Badge variant="outline" className="text-xs shrink-0">
-                  {configAgent.domain}
+                  {configAgent.executionMode === 'autonomous' ? '🤖 Autónomo' : configAgent.executionMode === 'supervised' ? '👁️ Supervisado' : '✋ Manual'}
+                </Badge>
+                <Badge variant="outline" className="text-xs shrink-0">
+                  Health: {configAgent.healthScore}%
                 </Badge>
               </div>
 
@@ -1786,8 +1795,8 @@ export function AdvancedAgentsDashboard() {
               />
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
