@@ -253,14 +253,7 @@ function ERPModularDashboardContent() {
               Auditoría
             </TabsTrigger>
           )}
-          <TabsTrigger value="agents" className="gap-2">
-            <Bot className="h-4 w-4" />
-            Agentes IA
-          </TabsTrigger>
-          <TabsTrigger value="supervisor" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Supervisor
-          </TabsTrigger>
+          {/* Agentes IA and Supervisor tabs removed — absorbed into IA Center module */}
           {hasPermission('admin.all') && (
             <TabsTrigger value="migration" className="gap-2">
               <ArrowRightLeft className="h-4 w-4" />
