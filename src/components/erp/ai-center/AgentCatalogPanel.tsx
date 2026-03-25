@@ -14,6 +14,7 @@ import {
   Eye,
   LayoutGrid,
   List,
+  Layers,
   RefreshCw,
   CheckCircle,
   PauseCircle,
@@ -62,7 +63,7 @@ export function AgentCatalogPanel({ agents, loading, onRefresh }: AgentCatalogPa
   const [filterDomain, setFilterDomain] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'hierarchy'>('grid');
   const [selectedAgent, setSelectedAgent] = useState<AgentRegistryItem | null>(null);
 
   const domains = useMemo(() => {
