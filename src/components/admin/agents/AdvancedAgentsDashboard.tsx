@@ -73,7 +73,7 @@ import {
   Scale
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG, MODULE_AGENT_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
-import type { ModuleAgentType, SupervisorInsight, InsightPriority, ExecutionMode } from '@/hooks/admin/agents/erpAgentTypes';
+import type { ModuleAgentType, SupervisorInsight, SupervisorStatus, InsightPriority, ExecutionMode } from '@/hooks/admin/agents/erpAgentTypes';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
