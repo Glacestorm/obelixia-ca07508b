@@ -248,12 +248,7 @@ function ERPModularDashboardContent() {
             <Hash className="h-4 w-4" />
             Series
           </TabsTrigger>
-          {hasPermission('admin.all') && (
-            <TabsTrigger value="audit" className="gap-2">
-              <History className="h-4 w-4" />
-              Auditoría
-            </TabsTrigger>
-          )}
+          {/* Auditoría tab removed — promoted to standalone module at /erp/audit-center */}
           {/* Agentes IA and Supervisor tabs removed — absorbed into IA Center module */}
           {hasPermission('admin.all') && (
             <TabsTrigger value="migration" className="gap-2">
@@ -492,10 +487,7 @@ function ERPModularDashboardContent() {
           <ERPSeriesManager />
         </TabsContent>
 
-        {/* Audit Tab — Centro de Auditoría Unificado */}
-        <TabsContent value="audit">
-          <AuditCenterModule />
-        </TabsContent>
+        {/* Audit tab removed — promoted to standalone module at /erp/audit-center */}
 
         {/* Agents & Supervisor tabs removed — absorbed into IA Center */}
 
