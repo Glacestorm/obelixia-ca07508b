@@ -5018,6 +5018,54 @@ export type Database = {
           },
         ]
       }
+      audit_center_sessions: {
+        Row: {
+          actions_taken: Json | null
+          created_at: string
+          ended_at: string | null
+          events_reviewed: number | null
+          findings: Json | null
+          id: string
+          module_reviewed: string | null
+          notes: string | null
+          reviewer_id: string
+          session_type: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actions_taken?: Json | null
+          created_at?: string
+          ended_at?: string | null
+          events_reviewed?: number | null
+          findings?: Json | null
+          id?: string
+          module_reviewed?: string | null
+          notes?: string | null
+          reviewer_id: string
+          session_type?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actions_taken?: Json | null
+          created_at?: string
+          ended_at?: string | null
+          events_reviewed?: number | null
+          findings?: Json | null
+          id?: string
+          module_reviewed?: string | null
+          notes?: string | null
+          reviewer_id?: string
+          session_type?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_evidence: {
         Row: {
           collected_at: string | null
@@ -5125,6 +5173,69 @@ export type Database = {
           table_name?: string
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      audit_regulatory_submissions: {
+        Row: {
+          ai_agent_code: string | null
+          ai_confidence: number | null
+          company_id: string | null
+          created_at: string
+          deadline: string | null
+          evidence_ids: string[] | null
+          human_approved_at: string | null
+          human_approved_by: string | null
+          id: string
+          metadata: Json | null
+          reference_code: string | null
+          regulator: string
+          response_content: Json | null
+          status: string
+          submission_type: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_agent_code?: string | null
+          ai_confidence?: number | null
+          company_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          evidence_ids?: string[] | null
+          human_approved_at?: string | null
+          human_approved_by?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_code?: string | null
+          regulator: string
+          response_content?: Json | null
+          status?: string
+          submission_type: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_agent_code?: string | null
+          ai_confidence?: number | null
+          company_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          evidence_ids?: string[] | null
+          human_approved_at?: string | null
+          human_approved_by?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_code?: string | null
+          regulator?: string
+          response_content?: Json | null
+          status?: string
+          submission_type?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
