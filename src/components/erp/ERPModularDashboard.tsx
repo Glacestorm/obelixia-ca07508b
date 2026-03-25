@@ -491,9 +491,9 @@ function ERPModularDashboardContent() {
           <ERPSeriesManager />
         </TabsContent>
 
-        {/* Audit Tab */}
+        {/* Audit Tab — Centro de Auditoría Unificado */}
         <TabsContent value="audit">
-          <ERPAuditViewer />
+          <AuditCenterModule />
         </TabsContent>
 
         {/* Agents & Supervisor tabs removed — absorbed into IA Center */}
