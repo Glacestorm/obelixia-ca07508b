@@ -1396,7 +1396,7 @@ function SupervisorConfigSheet({
 
 // === COMPONENTE PRINCIPAL ===
 export function AdvancedAgentsDashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'supervisor' | 'agents' | 'insights' | 'registry'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'supervisor' | 'supersupervisor' | 'agents' | 'insights' | 'registry'>('overview');
   const [selectedAgent, setSelectedAgent] = useState<ModuleAgent | null>(null);
   const [agentMessages, setAgentMessages] = useState<Record<string, AgentMessage[]>>({});
   const [dynamicModules, setDynamicModules] = useState<DynamicModule[]>([]);
@@ -1405,6 +1405,7 @@ export function AdvancedAgentsDashboard() {
   const [configAgent, setConfigAgent] = useState<ModuleAgent | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [supervisorConfigOpen, setSupervisorConfigOpen] = useState(false);
+  const [ssConfigOpen, setSSConfigOpen] = useState(false);
 
   const {
     isLoading,
@@ -1640,10 +1641,14 @@ export function AdvancedAgentsDashboard() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="gap-1">
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="supersupervisor" className="gap-1">
+            <Scale className="h-4 w-4" />
+            <span className="hidden sm:inline">ObelixIA</span>
           </TabsTrigger>
           <TabsTrigger value="supervisor" className="gap-1">
             <Brain className="h-4 w-4" />
