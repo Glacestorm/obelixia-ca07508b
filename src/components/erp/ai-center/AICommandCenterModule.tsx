@@ -23,6 +23,8 @@ const VoiceInterfacePanel = lazy(() => import('@/components/admin/ai-agents/Voic
 const ERPAgentLeaderboard = lazy(() => import('@/components/admin/agents/ERPAgentLeaderboard').then(m => ({ default: m.ERPAgentLeaderboard })));
 const ERPAutonomousDecisionHistory = lazy(() => import('@/components/admin/agents/ERPAutonomousDecisionHistory').then(m => ({ default: m.ERPAutonomousDecisionHistory })));
 const ERPAgentConversationHistory = lazy(() => import('@/components/admin/agents/ERPAgentConversationHistory').then(m => ({ default: m.ERPAgentConversationHistory })));
+const AdvancedAgentsDashboard = lazy(() => import('@/components/admin/agents/AdvancedAgentsDashboard').then(m => ({ default: m.AdvancedAgentsDashboard })));
+const ERPModuleAgentsPanel = lazy(() => import('@/components/admin/agents/ERPModuleAgentsPanel').then(m => ({ default: m.ERPModuleAgentsPanel })));
 
 function TabSkeleton() {
   return (
@@ -37,7 +39,7 @@ function TabSkeleton() {
 // All valid tab IDs for the module
 const VALID_TABS = new Set([
   'live', 'autonomous', 'copilot', 'voice',
-  'catalog', 'ranking', 'decisions',
+  'catalog', 'ranking', 'decisions', 'advanced-config', 'erp-agents',
   'observability', 'chat',
   'costs',
   'governance', 'orchestration', 'notifications',
@@ -108,6 +110,10 @@ export function AICommandCenterModule() {
         return <Suspense fallback={<TabSkeleton />}><OrchestrationPanel agents={agents} loading={loading} /></Suspense>;
       case 'decisions':
         return <Suspense fallback={<TabSkeleton />}><ERPAutonomousDecisionHistory /></Suspense>;
+      case 'advanced-config':
+        return <Suspense fallback={<TabSkeleton />}><AdvancedAgentsDashboard /></Suspense>;
+      case 'erp-agents':
+        return <Suspense fallback={<TabSkeleton />}><ERPModuleAgentsPanel /></Suspense>;
       case 'chat':
         return <Suspense fallback={<TabSkeleton />}><ERPAgentConversationHistory /></Suspense>;
       case 'notifications':
