@@ -1116,7 +1116,22 @@ export function AdvancedAgentsDashboard() {
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-sm">{agent.name}</span>
-                          <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                          <div className="flex items-center gap-1.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfigAgent(agent);
+                                setConfigDialogOpen(true);
+                              }}
+                              title="Configurar agente"
+                            >
+                              <Settings className="h-3.5 w-3.5" />
+                            </Button>
+                            <div className={cn("w-2 h-2 rounded-full", getStatusColor(agent.status))} />
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground">{agent.domain}</p>
                       </div>
