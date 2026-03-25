@@ -64,6 +64,7 @@ import { LegalModule } from './legal';
 import { GaliaDashboard } from '@/components/verticals/galia';
 import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
 import { ElectricalConsultingModule } from './electrical';
+import { AICommandCenterModule } from './ai-center';
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
@@ -93,7 +94,7 @@ function ERPModularDashboardContent() {
   }, [roleExperience.trackModuleUsage]);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
-  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'electrical', 'migration'];
+  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'electrical', 'ai-center', 'migration'];
   
   // Detectar si estamos dentro de un módulo específico
   const isInsideModule = moduleTabIds.includes(activeTab);
@@ -168,6 +169,7 @@ function ERPModularDashboardContent() {
     { id: 'galia', name: 'LEADER', icon: Landmark, permission: 'admin.all', color: 'bg-emerald-600' },
     { id: 'academia', name: 'Academia', icon: GraduationCap, permission: 'admin.all', color: 'bg-amber-500' },
     { id: 'electrical', name: 'C. Eléctrica', icon: Zap, permission: 'admin.all', color: 'bg-yellow-500' },
+    { id: 'ai-center', name: 'IA Center', icon: Bot, permission: 'admin.all', color: 'bg-violet-600' },
   ];
 
   const availableModules = modules.filter(m => canShowModule(m.id, m.permission));
@@ -215,6 +217,7 @@ function ERPModularDashboardContent() {
               {activeTab === 'galia' && <><Landmark className="h-4 w-4" /> LEADER</>}
               {activeTab === 'academia' && <><GraduationCap className="h-4 w-4" /> Academia</>}
               {activeTab === 'electrical' && <><Zap className="h-4 w-4" /> C. Eléctrica</>}
+              {activeTab === 'ai-center' && <><Bot className="h-4 w-4" /> IA Center</>}
               {activeTab === 'migration' && <><ArrowRightLeft className="h-4 w-4" /> Migración</>}
             </Badge>
           )}
@@ -465,6 +468,11 @@ function ERPModularDashboardContent() {
         {/* Electrical Consulting Tab */}
         <TabsContent value="electrical">
           <ElectricalConsultingModule />
+        </TabsContent>
+
+        {/* AI Command Center Tab */}
+        <TabsContent value="ai-center">
+          <AICommandCenterModule />
         </TabsContent>
 
         {/* Companies Tab */}
