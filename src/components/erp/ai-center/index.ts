@@ -4,6 +4,7 @@ export { ApprovalQueue } from './ApprovalQueue';
 export { AgentActivityFeed } from './AgentActivityFeed';
 export { AgentCatalogPanel } from './AgentCatalogPanel';
 export { ObservabilityPanel } from './ObservabilityPanel';
+export { AICostEconomicsPanel } from './AICostEconomicsPanel';
 export { SemaphoreIndicator } from './SemaphoreIndicator';
 export { calculatePriority, semaphoreFromScore } from './PriorityCalculator';
 export type { SemaphoreColor, PriorityInput, PriorityResult } from './PriorityCalculator';
