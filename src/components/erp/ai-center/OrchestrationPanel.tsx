@@ -356,6 +356,11 @@ export function OrchestrationPanel({ agents, loading: agentsLoading }: Orchestra
           )}
         </TabsContent>
 
+        {/* Workflows tab (absorbed from ERPAgentWorkflows) */}
+        <TabsContent value="workflows" className="mt-3">
+          <ERPAgentWorkflows />
+        </TabsContent>
+
         {/* Dependency graph tab */}
         <TabsContent value="graph" className="mt-3">
           <div className="mb-3">
