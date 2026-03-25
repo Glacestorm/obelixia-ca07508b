@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import {
   Zap, Bot, Sparkles, Mic, BookOpen, Trophy, GitBranch,
   LineChart, MessageSquare, DollarSign, ShieldCheck, Map, Bell,
-  ChevronDown, Activity, Brain, Eye, Gauge, Shield,
+  ChevronDown, Activity, Brain, Eye, Gauge, Shield, Layers, Network, Settings,
 } from 'lucide-react';
 
 // ─── Types ───
@@ -96,20 +96,29 @@ export function AINavigationMenu({ activeTab, onTabChange, badges = {} }: AINavi
       label: 'Agentes',
       icon: Bot,
       badge: badges.catalog || 0,
-      columns: 1,
-      width: 'w-[320px]',
-      headerTitle: 'Catálogo de Agentes',
-      headerDescription: 'Registro, ranking y decisiones autónomas',
+      columns: 2,
+      width: 'w-[520px]',
+      headerTitle: 'Agentes IA',
+      headerDescription: 'Catálogo, configuración avanzada, supervisores y módulos ERP',
       headerAccent: 'from-blue-500/20 via-cyan-500/10 to-transparent',
       subGroups: [
         {
-          title: 'Gestión',
+          title: 'Registro',
           icon: BookOpen,
           color: 'text-blue-500',
           items: [
             { id: 'catalog', label: 'Catálogo', icon: BookOpen, description: 'Registro unificado de agentes' },
             { id: 'ranking', label: 'Ranking', icon: Trophy, description: 'Leaderboard de rendimiento' },
             { id: 'decisions', label: 'Decisiones', icon: GitBranch, description: 'Historial de decisiones autónomas' },
+          ],
+        },
+        {
+          title: 'Configuración',
+          icon: Settings,
+          color: 'text-cyan-500',
+          items: [
+            { id: 'advanced-config', label: 'Centro Control', icon: Layers, description: 'Dashboard avanzado de supervisores y dominios' },
+            { id: 'erp-agents', label: 'Agentes ERP', icon: Network, description: 'Gestión completa por módulo ERP' },
           ],
         },
       ],
