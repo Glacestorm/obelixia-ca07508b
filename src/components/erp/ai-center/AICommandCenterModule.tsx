@@ -60,10 +60,18 @@ const tabGroups: TabGroup[] = [
     label: 'Operaciones',
     tabs: [
       { id: 'live', label: 'Live Hub', icon: Zap },
-      { id: 'catalog', label: 'Catálogo', icon: BookOpen },
       { id: 'autonomous', label: 'Autónomos', icon: Bot },
       { id: 'copilot', label: 'Copilot', icon: Sparkles },
       { id: 'voice', label: 'Voz', icon: Mic },
+    ],
+  },
+  {
+    id: 'agents',
+    label: 'Agentes',
+    tabs: [
+      { id: 'catalog', label: 'Catálogo', icon: BookOpen },
+      { id: 'ranking', label: 'Ranking', icon: Trophy },
+      { id: 'decisions', label: 'Decisiones', icon: GitBranch },
     ],
   },
   {
@@ -71,24 +79,22 @@ const tabGroups: TabGroup[] = [
     label: 'Analítica',
     tabs: [
       { id: 'observability', label: 'Observabilidad', icon: LineChart },
-      { id: 'ranking', label: 'Ranking', icon: Trophy },
-      { id: 'costs', label: 'Economía', icon: DollarSign },
+      { id: 'chat', label: 'Chat', icon: MessageSquare },
+    ],
+  },
+  {
+    id: 'economics',
+    label: 'Economía',
+    tabs: [
+      { id: 'costs', label: 'Costes', icon: DollarSign },
     ],
   },
   {
     id: 'gov',
     label: 'Gobernanza',
     tabs: [
-      { id: 'governance', label: 'Gobernanza', icon: ShieldCheck },
+      { id: 'governance', label: 'Cumplimiento', icon: ShieldCheck },
       { id: 'orchestration', label: 'Orquestación', icon: Map },
-      { id: 'decisions', label: 'Decisiones', icon: GitBranch },
-    ],
-  },
-  {
-    id: 'comm',
-    label: 'Comunicación',
-    tabs: [
-      { id: 'chat', label: 'Chat', icon: MessageSquare },
       { id: 'notifications', label: 'Alertas', icon: Bell },
     ],
   },
