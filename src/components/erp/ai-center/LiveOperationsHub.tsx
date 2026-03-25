@@ -58,6 +58,7 @@ function KPICard({ icon: Icon, label, value, subtitle, color = 'text-primary' }:
 }
 
 export function LiveOperationsHub({ kpis, queue, loading, onRefresh }: LiveOperationsHubProps) {
+  const [hubTab, setHubTab] = useState('operations');
   const redCount = queue.filter(q => q.semaphore === 'red').length;
   const yellowCount = queue.filter(q => q.semaphore === 'yellow').length;
   const greenCount = queue.filter(q => q.semaphore === 'green').length;
@@ -148,12 +149,31 @@ export function LiveOperationsHub({ kpis, queue, loading, onRefresh }: LiveOpera
         </Card>
       )}
 
-      {/* Main content: Queue + Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ApprovalQueue items={queue} onRefresh={onRefresh} />
-        <AgentActivityFeed />
-      </div>
-    </div>
+      {/* Sub-tabs: Operations | Advanced Dashboard */}
+      <Tabs value={hubTab} onValueChange={setHubTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="operations" className="text-xs gap-1">
+            <Zap className="h-3.5 w-3.5" />
+            Operaciones
+          </TabsTrigger>
+          <TabsTrigger value="advanced" className="text-xs gap-1">
+            <Brain className="h-3.5 w-3.5" />
+            Dashboard Avanzado
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="operations" className="mt-3">
+          {/* Main content: Queue + Feed */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ApprovalQueue items={queue} onRefresh={onRefresh} />
+            <AgentActivityFeed />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="mt-3">
+          <AdvancedAgentsDashboard />
+        </TabsContent>
+      </Tabs>
   );
 }
 
