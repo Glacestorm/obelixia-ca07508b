@@ -174,6 +174,7 @@ export function LiveOperationsHub({ kpis, queue, loading, onRefresh }: LiveOpera
           <AdvancedAgentsDashboard />
         </TabsContent>
       </Tabs>
+    </div>
   );
 }
 
