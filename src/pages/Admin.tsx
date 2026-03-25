@@ -1572,15 +1572,15 @@ const Admin = () => {
                 </Card>
                 <Card 
                   className="cursor-pointer hover:shadow-md transition-all border-2 border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-purple-500/10"
-                  onClick={() => navigate('/admin/ai-agents')}
+                  onClick={() => navigate('/obelixia-admin/erp')}
                 >
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className="h-9 w-9 rounded-lg bg-purple-500/20 flex items-center justify-center">
                       <Bot className="h-4 w-4 text-purple-500" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-sm text-purple-700 dark:text-purple-400">Agentes IA Específicos</h4>
-                      <p className="text-xs text-muted-foreground">Agentes autónomos y copilot</p>
+                      <h4 className="font-medium text-sm text-purple-700 dark:text-purple-400">IA Center</h4>
+                      <p className="text-xs text-muted-foreground">Centro de mando unificado de agentes IA</p>
                     </div>
                   </CardContent>
                 </Card>

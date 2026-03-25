@@ -32,6 +32,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useOrchestration, type Pipeline, type SimulationScenario } from '@/hooks/erp/ai-center/useOrchestration';
 import type { AgentRegistryItem } from '@/hooks/erp/ai-center/useAICommandCenter';
+import { ERPAgentWorkflows } from '@/components/admin/agents/ERPAgentWorkflows';
 
 interface OrchestrationPanelProps {
   agents: AgentRegistryItem[];
@@ -297,10 +298,14 @@ export function OrchestrationPanel({ agents, loading: agentsLoading }: Orchestra
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="pipelines" className="text-xs gap-1">
             <GitBranch className="h-3.5 w-3.5" />
             Pipelines
+          </TabsTrigger>
+          <TabsTrigger value="workflows" className="text-xs gap-1">
+            <Zap className="h-3.5 w-3.5" />
+            Workflows
           </TabsTrigger>
           <TabsTrigger value="graph" className="text-xs gap-1">
             <Network className="h-3.5 w-3.5" />
@@ -349,6 +354,11 @@ export function OrchestrationPanel({ agents, loading: agentsLoading }: Orchestra
               </div>
             </ScrollArea>
           )}
+        </TabsContent>
+
+        {/* Workflows tab (absorbed from ERPAgentWorkflows) */}
+        <TabsContent value="workflows" className="mt-3">
+          <ERPAgentWorkflows />
         </TabsContent>
 
         {/* Dependency graph tab */}

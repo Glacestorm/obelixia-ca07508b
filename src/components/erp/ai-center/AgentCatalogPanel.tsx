@@ -14,6 +14,7 @@ import {
   Eye,
   LayoutGrid,
   List,
+  Layers,
   RefreshCw,
   CheckCircle,
   PauseCircle,
@@ -62,7 +63,7 @@ export function AgentCatalogPanel({ agents, loading, onRefresh }: AgentCatalogPa
   const [filterDomain, setFilterDomain] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'hierarchy'>('grid');
   const [selectedAgent, setSelectedAgent] = useState<AgentRegistryItem | null>(null);
 
   const domains = useMemo(() => {
@@ -202,6 +203,15 @@ export function AgentCatalogPanel({ agents, loading, onRefresh }: AgentCatalogPa
                 >
                   <List className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant={viewMode === 'hierarchy' ? 'default' : 'outline'}
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setViewMode('hierarchy')}
+                  title="Vista jerárquica por dominio"
+                >
+                  <Layers className="h-4 w-4" />
+                </Button>
                 <Button variant="outline" size="icon" className="h-9 w-9" onClick={onRefresh} disabled={loading}>
                   <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
                 </Button>
@@ -271,7 +281,7 @@ export function AgentCatalogPanel({ agents, loading, onRefresh }: AgentCatalogPa
               );
             })}
           </div>
-        ) : (
+        ) : viewMode === 'list' ? (
           <Card>
             <CardContent className="p-0">
               <ScrollArea className="h-[500px]">
@@ -310,6 +320,109 @@ export function AgentCatalogPanel({ agents, loading, onRefresh }: AgentCatalogPa
               </ScrollArea>
             </CardContent>
           </Card>
+        ) : (
+          /* Hierarchy view - grouped by domain */
+          <div className="space-y-4">
+            {Object.entries(
+              filtered.reduce<Record<string, AgentRegistryItem[]>>((acc, agent) => {
+                const d = agent.module_domain || 'general';
+                if (!acc[d]) acc[d] = [];
+                acc[d].push(agent);
+                return acc;
+              }, {})
+            ).sort(([a], [b]) => a.localeCompare(b)).map(([domainKey, domainAgents]) => {
+              const domain = domainConfig[domainKey] || domainConfig.general;
+              const supervisors = domainAgents.filter(a => a.agent_type === 'supervisor');
+              const specialists = domainAgents.filter(a => a.agent_type === 'specialist');
+              const workers = domainAgents.filter(a => a.agent_type !== 'supervisor' && a.agent_type !== 'specialist');
+
+              return (
+                <Card key={domainKey}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Badge variant="outline" className={cn('text-xs', domain.color)}>
+                          {domain.label}
+                        </Badge>
+                        <span className="text-muted-foreground font-normal text-xs">
+                          {domainAgents.length} agentes
+                        </span>
+                      </CardTitle>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <span>{domainAgents.filter(a => a.status === 'active').length} activos</span>
+                        <span>·</span>
+                        <span>{domainAgents.filter(a => a.requires_human_review).length} HITL</span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    {/* Supervisors */}
+                    {supervisors.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5 flex items-center gap-1">
+                          <Shield className="h-3 w-3" /> Supervisores
+                        </p>
+                        <div className="grid gap-2">
+                          {supervisors.map(agent => {
+                            const status = statusConfig[agent.status] || statusConfig.inactive;
+                            const StatusIcon = status.icon;
+                            return (
+                              <div key={agent.id} className="flex items-center gap-2 p-2 rounded-lg border bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setSelectedAgent(agent)}>
+                                <Shield className="h-4 w-4 text-primary shrink-0" />
+                                <span className="text-sm font-medium flex-1 truncate">{agent.name}</span>
+                                <StatusIcon className={cn('h-3.5 w-3.5', status.color)} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {/* Specialists */}
+                    {specialists.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5 flex items-center gap-1">
+                          <Brain className="h-3 w-3" /> Especialistas
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                          {specialists.map(agent => {
+                            const status = statusConfig[agent.status] || statusConfig.inactive;
+                            const StatusIcon = status.icon;
+                            return (
+                              <div key={agent.id} className="flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setSelectedAgent(agent)}>
+                                <StatusIcon className={cn('h-3 w-3 shrink-0', status.color)} />
+                                <span className="text-xs truncate flex-1">{agent.name}</span>
+                                <span className="text-[9px] text-muted-foreground font-mono">{agent.code}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {/* Workers */}
+                    {workers.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5 flex items-center gap-1">
+                          <Cpu className="h-3 w-3" /> Workers / Asistentes
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                          {workers.map(agent => {
+                            const status = statusConfig[agent.status] || statusConfig.inactive;
+                            const StatusIcon = status.icon;
+                            return (
+                              <div key={agent.id} className="flex items-center gap-2 p-1.5 rounded border cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setSelectedAgent(agent)}>
+                                <StatusIcon className={cn('h-3 w-3 shrink-0', status.color)} />
+                                <span className="text-[11px] truncate">{agent.name}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </div>
 
