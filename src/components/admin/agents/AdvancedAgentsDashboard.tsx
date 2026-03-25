@@ -73,7 +73,7 @@ import {
   Scale
 } from 'lucide-react';
 import { useERPModuleAgents, type DomainAgent, type ModuleAgent, type AgentDomain, DOMAIN_CONFIG, MODULE_AGENT_CONFIG } from '@/hooks/admin/agents/useERPModuleAgents';
-import type { ModuleAgentType, SupervisorInsight, InsightPriority, ExecutionMode } from '@/hooks/admin/agents/erpAgentTypes';
+import type { ModuleAgentType, SupervisorInsight, SupervisorStatus, InsightPriority, ExecutionMode } from '@/hooks/admin/agents/erpAgentTypes';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -917,6 +917,483 @@ function RegisterModuleDialog({
   );
 }
 
+// === CONFIGURACIÓN AVANZADA DEL SUPERVISOR ===
+function SupervisorConfigSheet({ 
+  open, 
+  onOpenChange, 
+  supervisorStatus,
+  toggleAutonomousMode,
+}: { 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+  supervisorStatus: SupervisorStatus | null;
+  toggleAutonomousMode: (enabled: boolean, intervalMs: number) => void;
+}) {
+  const [autonomousMode, setAutonomousMode] = useState(supervisorStatus?.autonomousMode || false);
+  const [orchestrationInterval, setOrchestrationInterval] = useState(Math.round((supervisorStatus?.autonomousIntervalMs || 45000) / 1000));
+  const [maxConcurrentDomains, setMaxConcurrentDomains] = useState(7);
+  const [conflictResolution, setConflictResolution] = useState<'conservative' | 'balanced' | 'aggressive'>('conservative');
+  const [globalConfidenceThreshold, setGlobalConfidenceThreshold] = useState(75);
+  const [escalationPolicy, setEscalationPolicy] = useState<'auto' | 'manual' | 'hybrid'>('hybrid');
+  const [learningEnabled, setLearningEnabled] = useState(true);
+  const [learningRate, setLearningRate] = useState(70);
+  const [fewShotEnabled, setFewShotEnabled] = useState(true);
+  const [maxFewShotCases, setMaxFewShotCases] = useState(10);
+  const [parallelExecution, setParallelExecution] = useState(true);
+  const [maxParallelAgents, setMaxParallelAgents] = useState(5);
+  const [budgetLimitTokens, setBudgetLimitTokens] = useState(100000);
+  const [budgetAlertThreshold, setBudgetAlertThreshold] = useState(80);
+  const [humanReviewCritical, setHumanReviewCritical] = useState(true);
+  const [humanReviewHigh, setHumanReviewHigh] = useState(true);
+  const [humanReviewMedium, setHumanReviewMedium] = useState(false);
+  const [auditAllActions, setAuditAllActions] = useState(true);
+  const [retentionDays, setRetentionDays] = useState(730);
+  const [activeSection, setActiveSection] = useState('orchestration');
+  const [scheduleStart, setScheduleStart] = useState(0);
+  const [scheduleEnd, setScheduleEnd] = useState(24);
+  const [allowWeekends, setAllowWeekends] = useState(true);
+  const [notifyOnConflict, setNotifyOnConflict] = useState(true);
+  const [notifyOnEscalation, setNotifyOnEscalation] = useState(true);
+  const [notifyOnAnomaly, setNotifyOnAnomaly] = useState(true);
+
+  const sections = [
+    { id: 'orchestration', label: 'Orquestación', icon: Network },
+    { id: 'autonomy', label: 'Autonomía', icon: Zap },
+    { id: 'conflict', label: 'Conflictos', icon: GitBranch },
+    { id: 'learning', label: 'Aprendizaje', icon: Brain },
+    { id: 'budget', label: 'Presupuesto', icon: Calculator },
+    { id: 'review', label: 'Rev. Humana', icon: Eye },
+    { id: 'schedule', label: 'Horario', icon: Clock },
+    { id: 'audit', label: 'Auditoría', icon: Shield },
+    { id: 'alerts', label: 'Alertas', icon: Activity },
+  ];
+
+  const handleSave = () => {
+    toggleAutonomousMode(autonomousMode, orchestrationInterval * 1000);
+    toast.success('Configuración del supervisor actualizada');
+    onOpenChange(false);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-violet-600">
+              <Brain className="h-4 w-4 text-white" />
+            </div>
+            Configuración del Supervisor General
+          </SheetTitle>
+          <SheetDescription>
+            Orquestación multi-dominio · Health: {supervisorStatus?.systemHealth || 0}%
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="mt-4 space-y-4">
+          {/* Status banner */}
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border">
+            <div className={cn(
+              "w-2.5 h-2.5 rounded-full",
+              supervisorStatus?.status === 'running' ? 'bg-emerald-500' : 'bg-muted-foreground/40'
+            )} />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Supervisor General ObelixIA</p>
+              <p className="text-xs text-muted-foreground">
+                {supervisorStatus?.activeDomains || 0} dominios · {supervisorStatus?.activeAgents || 0} agentes · {supervisorStatus?.conflictsResolved || 0} conflictos resueltos
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {supervisorStatus?.status === 'running' ? '🟢 Activo' : '🔴 Inactivo'}
+            </Badge>
+          </div>
+
+          {/* Section tabs */}
+          <ScrollArea className="w-full">
+            <div className="flex gap-1 pb-2">
+              {sections.map((s) => (
+                <Button
+                  key={s.id}
+                  variant={activeSection === s.id ? 'default' : 'ghost'}
+                  size="sm"
+                  className="h-7 text-xs shrink-0 gap-1"
+                  onClick={() => setActiveSection(s.id)}
+                >
+                  <s.icon className="h-3 w-3" />
+                  {s.label}
+                </Button>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <ScrollArea className="h-[450px] pr-2">
+            {/* === ORQUESTACIÓN === */}
+            {activeSection === 'orchestration' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Máx. dominios concurrentes</Label>
+                    <Badge variant="outline" className="text-xs">{maxConcurrentDomains}</Badge>
+                  </div>
+                  <Slider value={[maxConcurrentDomains]} onValueChange={([v]) => setMaxConcurrentDomains(v)} min={1} max={10} step={1} />
+                  <p className="text-[10px] text-muted-foreground">Cuántos dominios puede coordinar simultáneamente</p>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Ejecución paralela</Label>
+                    <p className="text-xs text-muted-foreground">Permite ejecutar múltiples agentes a la vez</p>
+                  </div>
+                  <Switch checked={parallelExecution} onCheckedChange={setParallelExecution} />
+                </div>
+
+                {parallelExecution && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Máx. agentes paralelos</Label>
+                      <Badge variant="outline" className="text-xs">{maxParallelAgents}</Badge>
+                    </div>
+                    <Slider value={[maxParallelAgents]} onValueChange={([v]) => setMaxParallelAgents(v)} min={1} max={20} step={1} />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Umbral global de confianza</Label>
+                    <Badge variant="outline" className="text-xs">{globalConfidenceThreshold}%</Badge>
+                  </div>
+                  <Slider value={[globalConfidenceThreshold]} onValueChange={([v]) => setGlobalConfidenceThreshold(v)} min={10} max={100} step={5} />
+                  <p className="text-[10px] text-muted-foreground">Umbral mínimo para que el supervisor acepte resultados de los agentes</p>
+                </div>
+              </div>
+            )}
+
+            {/* === AUTONOMÍA === */}
+            {activeSection === 'autonomy' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Modo autónomo</Label>
+                    <p className="text-xs text-muted-foreground">El supervisor actúa sin intervención humana</p>
+                  </div>
+                  <Switch checked={autonomousMode} onCheckedChange={setAutonomousMode} />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Intervalo de orquestación</Label>
+                    <Badge variant="outline" className="text-xs">{orchestrationInterval}s</Badge>
+                  </div>
+                  <Slider value={[orchestrationInterval]} onValueChange={([v]) => setOrchestrationInterval(v)} min={10} max={300} step={5} />
+                  <p className="text-[10px] text-muted-foreground">Cada cuántos segundos ejecuta un ciclo de orquestación</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Política de escalado</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'auto' as const, label: 'Automático', desc: 'Escala sin intervención', icon: Zap },
+                      { value: 'hybrid' as const, label: 'Híbrido', desc: 'Auto + revisión crítica', icon: Eye },
+                      { value: 'manual' as const, label: 'Manual', desc: 'Siempre requiere aprobación', icon: UserCheck },
+                    ]).map((p) => (
+                      <div
+                        key={p.value}
+                        className={cn(
+                          "p-3 rounded-lg border cursor-pointer transition-all text-center",
+                          escalationPolicy === p.value ? "ring-2 ring-primary bg-primary/5 border-primary" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => setEscalationPolicy(p.value)}
+                      >
+                        <p.icon className={cn("h-5 w-5 mx-auto mb-1", escalationPolicy === p.value ? "text-primary" : "text-muted-foreground")} />
+                        <p className="text-xs font-medium">{p.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{p.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* === CONFLICTOS === */}
+            {activeSection === 'conflict' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Estrategia de resolución de conflictos</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'conservative' as const, label: 'Conservadora', desc: 'Prioriza seguridad', color: 'text-blue-500' },
+                      { value: 'balanced' as const, label: 'Equilibrada', desc: 'Balance riesgo/eficiencia', color: 'text-amber-500' },
+                      { value: 'aggressive' as const, label: 'Agresiva', desc: 'Prioriza eficiencia', color: 'text-red-500' },
+                    ]).map((s) => (
+                      <div
+                        key={s.value}
+                        className={cn(
+                          "p-3 rounded-lg border cursor-pointer transition-all text-center",
+                          conflictResolution === s.value ? "ring-2 ring-primary bg-primary/5 border-primary" : "hover:bg-muted/50"
+                        )}
+                        onClick={() => setConflictResolution(s.value)}
+                      >
+                        <GitBranch className={cn("h-5 w-5 mx-auto mb-1", s.color)} />
+                        <p className="text-xs font-medium">{s.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{s.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">Protocolo de conflictos</h4>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span>HR ↔ Legal: Prioriza recomendación más conservadora</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span>Discrepancia de riesgo &gt; 2 niveles: Revisión humana obligatoria</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      <span>Conflicto no resuelto: Escalar a super-supervisor</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* === APRENDIZAJE === */}
+            {activeSection === 'learning' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Aprendizaje continuo</Label>
+                    <p className="text-xs text-muted-foreground">Mejora con cada orquestación</p>
+                  </div>
+                  <Switch checked={learningEnabled} onCheckedChange={setLearningEnabled} />
+                </div>
+
+                {learningEnabled && (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Tasa de aprendizaje</Label>
+                        <Badge variant="outline" className="text-xs">{learningRate}%</Badge>
+                      </div>
+                      <Slider value={[learningRate]} onValueChange={([v]) => setLearningRate(v)} min={10} max={100} step={5} />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg border">
+                      <div>
+                        <Label className="text-sm font-medium">Few-shot learning</Label>
+                        <p className="text-xs text-muted-foreground">Usa casos validados (erp_validated_cases) como ejemplos</p>
+                      </div>
+                      <Switch checked={fewShotEnabled} onCheckedChange={setFewShotEnabled} />
+                    </div>
+
+                    {fewShotEnabled && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Máx. casos few-shot</Label>
+                          <Badge variant="outline" className="text-xs">{maxFewShotCases}</Badge>
+                        </div>
+                        <Slider value={[maxFewShotCases]} onValueChange={([v]) => setMaxFewShotCases(v)} min={1} max={50} step={1} />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* === PRESUPUESTO === */}
+            {activeSection === 'budget' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Límite diario de tokens</Label>
+                    <Badge variant="outline" className="text-xs">{(budgetLimitTokens / 1000).toFixed(0)}K</Badge>
+                  </div>
+                  <Slider value={[budgetLimitTokens]} onValueChange={([v]) => setBudgetLimitTokens(v)} min={10000} max={500000} step={10000} />
+                  <p className="text-[10px] text-muted-foreground">Tokens máximos de IA que puede consumir el supervisor al día</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Alerta de presupuesto</Label>
+                    <Badge variant="outline" className="text-xs">{budgetAlertThreshold}%</Badge>
+                  </div>
+                  <Slider value={[budgetAlertThreshold]} onValueChange={([v]) => setBudgetAlertThreshold(v)} min={50} max={95} step={5} />
+                  <p className="text-[10px] text-muted-foreground">Notificar cuando se alcance este % del presupuesto</p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground">
+                      Al alcanzar el límite, el supervisor pasará a modo manual hasta el siguiente día.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* === REVISIÓN HUMANA === */}
+            {activeSection === 'review' && (
+              <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">Define qué prioridades requieren aprobación humana antes de ejecutar</p>
+                
+                <div className="flex items-center justify-between p-3 rounded-lg border border-red-500/20 bg-red-500/5">
+                  <div>
+                    <Label className="text-sm font-medium">🔴 Prioridad Crítica</Label>
+                    <p className="text-xs text-muted-foreground">Despidos, sanciones, datos sensibles</p>
+                  </div>
+                  <Switch checked={humanReviewCritical} onCheckedChange={setHumanReviewCritical} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                  <div>
+                    <Label className="text-sm font-medium">🟠 Prioridad Alta</Label>
+                    <p className="text-xs text-muted-foreground">Contratos, cambios salariales, permisos especiales</p>
+                  </div>
+                  <Switch checked={humanReviewHigh} onCheckedChange={setHumanReviewHigh} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">🟡 Prioridad Media</Label>
+                    <p className="text-xs text-muted-foreground">Informes, análisis, recomendaciones</p>
+                  </div>
+                  <Switch checked={humanReviewMedium} onCheckedChange={setHumanReviewMedium} />
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <p className="text-xs text-muted-foreground">
+                    ℹ️ Las acciones de prioridad baja se ejecutan siempre sin revisión cuando el modo es autónomo.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* === HORARIO === */}
+            {activeSection === 'schedule' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Horario de operación del supervisor</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Inicio</Label>
+                      <Select value={String(scheduleStart)} onValueChange={(v) => setScheduleStart(Number(v))}>
+                        <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 25 }, (_, i) => (
+                            <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Fin</Label>
+                      <Select value={String(scheduleEnd)} onValueChange={(v) => setScheduleEnd(Number(v))}>
+                        <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 25 }, (_, i) => (
+                            <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Operar en fines de semana</Label>
+                    <p className="text-xs text-muted-foreground">Permite orquestación sábados y domingos</p>
+                  </div>
+                  <Switch checked={allowWeekends} onCheckedChange={setAllowWeekends} />
+                </div>
+              </div>
+            )}
+
+            {/* === AUDITORÍA === */}
+            {activeSection === 'audit' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Auditar todas las acciones</Label>
+                    <p className="text-xs text-muted-foreground">Registra cada decisión del supervisor (GDPR/EU AI Act)</p>
+                  </div>
+                  <Switch checked={auditAllActions} onCheckedChange={setAuditAllActions} />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Retención de logs</Label>
+                    <Badge variant="outline" className="text-xs">{retentionDays} días ({(retentionDays / 365).toFixed(1)} años)</Badge>
+                  </div>
+                  <Slider value={[retentionDays]} onValueChange={([v]) => setRetentionDays(v)} min={90} max={2555} step={30} />
+                  <p className="text-[10px] text-muted-foreground">GDPR/LOPDGDD requiere mínimo 2 años para decisiones automatizadas</p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">Datos auditados</h4>
+                  <div className="space-y-1.5 text-xs">
+                    {[
+                      'Decisiones de orquestación',
+                      'Escalados entre dominios',
+                      'Conflictos resueltos (valores old/new)',
+                      'Cambios de configuración',
+                      'Tokens consumidos por acción',
+                      'Intervenciones humanas',
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-emerald-500" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* === ALERTAS === */}
+            {activeSection === 'alerts' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Notificar conflictos entre dominios</Label>
+                    <p className="text-xs text-muted-foreground">HR vs Legal, CRM vs Compliance, etc.</p>
+                  </div>
+                  <Switch checked={notifyOnConflict} onCheckedChange={setNotifyOnConflict} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Notificar escalados</Label>
+                    <p className="text-xs text-muted-foreground">Cuando un agente escala al supervisor</p>
+                  </div>
+                  <Switch checked={notifyOnEscalation} onCheckedChange={setNotifyOnEscalation} />
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-sm font-medium">Notificar anomalías</Label>
+                    <p className="text-xs text-muted-foreground">Patrones inusuales detectados por el supervisor</p>
+                  </div>
+                  <Switch checked={notifyOnAnomaly} onCheckedChange={setNotifyOnAnomaly} />
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+
+          <Button onClick={handleSave} className="w-full mt-4">
+            <Save className="h-4 w-4 mr-2" />
+            Guardar Configuración del Supervisor
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 // === COMPONENTE PRINCIPAL ===
 export function AdvancedAgentsDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'supervisor' | 'agents' | 'insights' | 'registry'>('overview');
@@ -927,6 +1404,7 @@ export function AdvancedAgentsDashboard() {
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [configAgent, setConfigAgent] = useState<ModuleAgent | null>(null);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [supervisorConfigOpen, setSupervisorConfigOpen] = useState(false);
 
   const {
     isLoading,
@@ -1359,7 +1837,16 @@ export function AdvancedAgentsDashboard() {
                       Orquestación multi-agente con inteligencia predictiva
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setSupervisorConfigOpen(true)}
+                      title="Configuración avanzada del supervisor"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
                     <Switch
                       checked={supervisorStatus?.autonomousMode || false}
                       onCheckedChange={(checked) => toggleAutonomousMode(checked, 45000)}
@@ -1797,6 +2284,14 @@ export function AdvancedAgentsDashboard() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Sheet de Configuración Avanzada del Supervisor */}
+      <SupervisorConfigSheet
+        open={supervisorConfigOpen}
+        onOpenChange={setSupervisorConfigOpen}
+        supervisorStatus={supervisorStatus}
+        toggleAutonomousMode={toggleAutonomousMode}
+      />
     </div>
   );
 }
