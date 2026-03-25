@@ -3,11 +3,8 @@ export { LiveOperationsHub } from './LiveOperationsHub';
 export { ApprovalQueue } from './ApprovalQueue';
 export { AgentActivityFeed } from './AgentActivityFeed';
 export { AgentCatalogPanel } from './AgentCatalogPanel';
-export { ObservabilityPanel } from './ObservabilityPanel';
-export { AICostEconomicsPanel } from './AICostEconomicsPanel';
-export { AIGovernancePanel } from './AIGovernancePanel';
-export { OrchestrationPanel } from './OrchestrationPanel';
-export { AIAlertsPanel } from './AIAlertsPanel';
 export { SemaphoreIndicator } from './SemaphoreIndicator';
 export { calculatePriority, semaphoreFromScore } from './PriorityCalculator';
 export type { SemaphoreColor, PriorityInput, PriorityResult } from './PriorityCalculator';
+// ObservabilityPanel, AICostEconomicsPanel, AIGovernancePanel, OrchestrationPanel, AIAlertsPanel
+// are lazy-loaded by AICommandCenterModule — do NOT re-export them statically
