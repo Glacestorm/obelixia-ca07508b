@@ -42,7 +42,19 @@ const ERPAutonomousDecisionHistory = lazy(() => import('@/components/admin/agent
 const ERPAgentConversationHistory = lazy(() => import('@/components/admin/agents/ERPAgentConversationHistory').then(m => ({ default: m.ERPAgentConversationHistory })));
 
 // Tab group definitions (A1: 5 logical groups)
-const tabGroups = [
+interface TabDef {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+interface TabGroup {
+  id: string;
+  label: string;
+  tabs: TabDef[];
+}
+
+const tabGroups: TabGroup[] = [
   {
     id: 'ops',
     label: 'Operaciones',
@@ -80,7 +92,7 @@ const tabGroups = [
       { id: 'notifications', label: 'Alertas', icon: Bell },
     ],
   },
-] as const;
+];
 
 const allTabs = tabGroups.flatMap(g => g.tabs);
 
