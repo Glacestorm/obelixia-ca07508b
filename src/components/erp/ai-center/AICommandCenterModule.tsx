@@ -15,6 +15,7 @@ import { LiveOperationsHub } from './LiveOperationsHub';
 import { AgentCatalogPanel } from './AgentCatalogPanel';
 import { ObservabilityPanel } from './ObservabilityPanel';
 import { AICostEconomicsPanel } from './AICostEconomicsPanel';
+import { AIGovernancePanel } from './AIGovernancePanel';
 import { useAICommandCenter } from '@/hooks/erp/ai-center/useAICommandCenter';
 
 // Future phase placeholders
@@ -34,7 +35,7 @@ const tabs = [
   { id: 'catalog', label: 'Catálogo', icon: BookOpen, phase: 2 },
   { id: 'observability', label: 'Observabilidad', icon: LineChart, phase: 3 },
   { id: 'costs', label: 'Economía', icon: DollarSign, phase: 4 },
-  { id: 'governance', label: 'Gobernanza', icon: ShieldCheck, phase: 5 },
+  { id: 'governance', label: 'Gobernanza', icon: ShieldCheck, phase: 5, active: true },
   { id: 'orchestration', label: 'Orquestación', icon: Map, phase: 6 },
   { id: 'notifications', label: 'Alertas', icon: Bell, phase: 7 },
 ] as const;
@@ -67,7 +68,7 @@ export function AICommandCenterModule() {
         <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 rounded-xl">
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = tab.phase <= 4;
+            const isActive = tab.phase <= 4 || (tab as any).active;
             return (
               <TabsTrigger
                 key={tab.id}
@@ -107,8 +108,8 @@ export function AICommandCenterModule() {
         <TabsContent value="costs" className="mt-4">
           <AICostEconomicsPanel />
         </TabsContent>
-        <TabsContent value="governance">
-          <PlaceholderPanel phase="Fase 5" title="Gobernanza GDPR / EU AI Act" />
+        <TabsContent value="governance" className="mt-4">
+          <AIGovernancePanel agents={agents} loading={loading} />
         </TabsContent>
         <TabsContent value="orchestration">
           <PlaceholderPanel phase="Fase 6" title="Orquestación y Simulación" />
