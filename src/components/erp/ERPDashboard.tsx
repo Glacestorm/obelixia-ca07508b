@@ -448,7 +448,26 @@ export const ERPDashboard: React.FC<ERPDashboardProps> = ({
         </TabsContent>
 
         {/* Modules Tab */}
-        <TabsContent value="modules" className="mt-4">
+        <TabsContent value="modules" className="mt-4 space-y-4">
+          {/* AI Command Center Quick Access */}
+          <Card className="border-violet-500/30 bg-gradient-to-r from-violet-500/5 to-indigo-500/5 hover:shadow-md transition-shadow">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20">
+                  <Layers className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">AI Command Center</h3>
+                  <p className="text-xs text-muted-foreground">Centro de mando unificado para todos los agentes de IA</p>
+                </div>
+              </div>
+              <Button asChild size="sm" variant="outline" className="border-violet-500/30 hover:bg-violet-500/10">
+                <a href="/erp/ai-center" className="gap-1.5">
+                  Acceder <ArrowUpRight className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
           <ERPModulesGrid />
         </TabsContent>
       </Tabs>
