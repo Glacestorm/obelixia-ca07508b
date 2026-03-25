@@ -6,6 +6,7 @@ export { AgentCatalogPanel } from './AgentCatalogPanel';
 export { ObservabilityPanel } from './ObservabilityPanel';
 export { AICostEconomicsPanel } from './AICostEconomicsPanel';
 export { AIGovernancePanel } from './AIGovernancePanel';
+export { OrchestrationPanel } from './OrchestrationPanel';
 export { SemaphoreIndicator } from './SemaphoreIndicator';
 export { calculatePriority, semaphoreFromScore } from './PriorityCalculator';
 export type { SemaphoreColor, PriorityInput, PriorityResult } from './PriorityCalculator';

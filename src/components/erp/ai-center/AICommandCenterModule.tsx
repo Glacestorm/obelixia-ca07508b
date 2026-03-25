@@ -16,6 +16,7 @@ import { AgentCatalogPanel } from './AgentCatalogPanel';
 import { ObservabilityPanel } from './ObservabilityPanel';
 import { AICostEconomicsPanel } from './AICostEconomicsPanel';
 import { AIGovernancePanel } from './AIGovernancePanel';
+import { OrchestrationPanel } from './OrchestrationPanel';
 import { useAICommandCenter } from '@/hooks/erp/ai-center/useAICommandCenter';
 
 // Future phase placeholders
@@ -36,7 +37,7 @@ const tabs = [
   { id: 'observability', label: 'Observabilidad', icon: LineChart, phase: 3 },
   { id: 'costs', label: 'Economía', icon: DollarSign, phase: 4 },
   { id: 'governance', label: 'Gobernanza', icon: ShieldCheck, phase: 5, active: true },
-  { id: 'orchestration', label: 'Orquestación', icon: Map, phase: 6 },
+  { id: 'orchestration', label: 'Orquestación', icon: Map, phase: 6, active: true },
   { id: 'notifications', label: 'Alertas', icon: Bell, phase: 7 },
 ] as const;
 
@@ -111,8 +112,8 @@ export function AICommandCenterModule() {
         <TabsContent value="governance" className="mt-4">
           <AIGovernancePanel agents={agents} loading={loading} />
         </TabsContent>
-        <TabsContent value="orchestration">
-          <PlaceholderPanel phase="Fase 6" title="Orquestación y Simulación" />
+        <TabsContent value="orchestration" className="mt-4">
+          <OrchestrationPanel agents={agents} loading={loading} />
         </TabsContent>
         <TabsContent value="notifications">
           <PlaceholderPanel phase="Fase 7" title="Notificaciones y Alertas" />
