@@ -1807,6 +1807,14 @@ export function AdvancedAgentsDashboard() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Sheet de Configuración Avanzada del Supervisor */}
+      <SupervisorConfigSheet
+        open={supervisorConfigOpen}
+        onOpenChange={setSupervisorConfigOpen}
+        supervisorStatus={supervisorStatus}
+        toggleAutonomousMode={toggleAutonomousMode}
+      />
     </div>
   );
 }
