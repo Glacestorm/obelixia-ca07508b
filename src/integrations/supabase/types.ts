@@ -20488,6 +20488,118 @@ export type Database = {
         }
         Relationships: []
       }
+      erp_ai_approval_decisions: {
+        Row: {
+          created_at: string
+          decided_by: string | null
+          decision: string
+          id: string
+          metadata: Json | null
+          queue_item_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          decided_by?: string | null
+          decision: string
+          id?: string
+          metadata?: Json | null
+          queue_item_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          decided_by?: string | null
+          decision?: string
+          id?: string
+          metadata?: Json | null
+          queue_item_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_ai_approval_decisions_queue_item_id_fkey"
+            columns: ["queue_item_id"]
+            isOneToOne: false
+            referencedRelation: "erp_ai_approval_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_ai_approval_queue: {
+        Row: {
+          action_required: string | null
+          agent_code: string
+          company_id: string | null
+          confidence_score: number | null
+          cost_tokens: number | null
+          created_at: string
+          domain: string
+          estimated_completion: string | null
+          id: string
+          metadata: Json | null
+          payload_summary: string | null
+          priority: number
+          resolved_at: string | null
+          resolved_by: string | null
+          semaphore: string
+          started_at: string | null
+          status: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          action_required?: string | null
+          agent_code: string
+          company_id?: string | null
+          confidence_score?: number | null
+          cost_tokens?: number | null
+          created_at?: string
+          domain?: string
+          estimated_completion?: string | null
+          id?: string
+          metadata?: Json | null
+          payload_summary?: string | null
+          priority?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          semaphore?: string
+          started_at?: string | null
+          status?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Update: {
+          action_required?: string | null
+          agent_code?: string
+          company_id?: string | null
+          confidence_score?: number | null
+          cost_tokens?: number | null
+          created_at?: string
+          domain?: string
+          estimated_completion?: string | null
+          id?: string
+          metadata?: Json | null
+          payload_summary?: string | null
+          priority?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          semaphore?: string
+          started_at?: string | null
+          status?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_ai_approval_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "erp_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_audit_events: {
         Row: {
           action: string
