@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Save, UserCheck } from 'lucide-react';
 import { useESLocalization } from '@/hooks/erp/hr/useESLocalization';
+import { HRCNOSelect } from '@/components/erp/hr/shared/HRCNOSelect';
 
 interface Props {
   companyId: string;
