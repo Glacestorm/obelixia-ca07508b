@@ -1,30 +1,13 @@
-import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Zap,
-  BookOpen,
-  LineChart,
-  Map,
-  DollarSign,
-  ShieldCheck,
-  Bell,
-  Bot,
-  Sparkles,
-  Mic,
-  Trophy,
-  GitBranch,
-  MessageSquare,
-  Search,
-  X,
-} from 'lucide-react';
+import { Zap, Bot, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LiveOperationsHub } from './LiveOperationsHub';
 import { AgentCatalogPanel } from './AgentCatalogPanel';
+import { AINavigationMenu } from './AINavigationMenu';
 import { useAICommandCenter } from '@/hooks/erp/ai-center/useAICommandCenter';
 import { Button } from '@/components/ui/button';
 
@@ -41,67 +24,6 @@ const ERPAgentLeaderboard = lazy(() => import('@/components/admin/agents/ERPAgen
 const ERPAutonomousDecisionHistory = lazy(() => import('@/components/admin/agents/ERPAutonomousDecisionHistory').then(m => ({ default: m.ERPAutonomousDecisionHistory })));
 const ERPAgentConversationHistory = lazy(() => import('@/components/admin/agents/ERPAgentConversationHistory').then(m => ({ default: m.ERPAgentConversationHistory })));
 
-// Tab group definitions (A1: 5 logical groups)
-interface TabDef {
-  id: string;
-  label: string;
-  icon: React.ElementType;
-}
-
-interface TabGroup {
-  id: string;
-  label: string;
-  tabs: TabDef[];
-}
-
-const tabGroups: TabGroup[] = [
-  {
-    id: 'ops',
-    label: 'Operaciones',
-    tabs: [
-      { id: 'live', label: 'Live Hub', icon: Zap },
-      { id: 'autonomous', label: 'Autónomos', icon: Bot },
-      { id: 'copilot', label: 'Copilot', icon: Sparkles },
-      { id: 'voice', label: 'Voz', icon: Mic },
-    ],
-  },
-  {
-    id: 'agents',
-    label: 'Agentes',
-    tabs: [
-      { id: 'catalog', label: 'Catálogo', icon: BookOpen },
-      { id: 'ranking', label: 'Ranking', icon: Trophy },
-      { id: 'decisions', label: 'Decisiones', icon: GitBranch },
-    ],
-  },
-  {
-    id: 'analytics',
-    label: 'Analítica',
-    tabs: [
-      { id: 'observability', label: 'Observabilidad', icon: LineChart },
-      { id: 'chat', label: 'Chat', icon: MessageSquare },
-    ],
-  },
-  {
-    id: 'economics',
-    label: 'Economía',
-    tabs: [
-      { id: 'costs', label: 'Costes', icon: DollarSign },
-    ],
-  },
-  {
-    id: 'gov',
-    label: 'Gobernanza',
-    tabs: [
-      { id: 'governance', label: 'Cumplimiento', icon: ShieldCheck },
-      { id: 'orchestration', label: 'Orquestación', icon: Map },
-      { id: 'notifications', label: 'Alertas', icon: Bell },
-    ],
-  },
-];
-
-const allTabs = tabGroups.flatMap(g => g.tabs);
-
 function TabSkeleton() {
   return (
     <div className="space-y-4 p-4">
@@ -112,19 +34,29 @@ function TabSkeleton() {
   );
 }
 
+// All valid tab IDs for the module
+const VALID_TABS = new Set([
+  'live', 'autonomous', 'copilot', 'voice',
+  'catalog', 'ranking', 'decisions',
+  'observability', 'chat',
+  'costs',
+  'governance', 'orchestration', 'notifications',
+]);
+
 export function AICommandCenterModule() {
   const { agents, queue, kpis, loading, refresh } = useAICommandCenter();
   const [searchParams, setSearchParams] = useSearchParams();
   const [globalSearch, setGlobalSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  // A2: URL param sync for active tab
-  const activeTab = searchParams.get('tab') || 'live';
+  // URL param sync for active tab
+  const rawTab = searchParams.get('tab') || 'live';
+  const activeTab = VALID_TABS.has(rawTab) ? rawTab : 'live';
   const setActiveTab = useCallback((tab: string) => {
     setSearchParams({ tab }, { replace: true });
   }, [setSearchParams]);
 
-  // A4: Badge counts for urgent tabs
+  // Badge counts for urgent tabs
   const pendingApprovals = kpis?.pendingApprovals || 0;
   const errorAgents = kpis?.errorAgents || 0;
 
@@ -134,7 +66,7 @@ export function AICommandCenterModule() {
     notifications: pendingApprovals > 3 ? pendingApprovals : 0,
   }), [pendingApprovals, errorAgents]);
 
-  // A3: Global search results
+  // Global search results
   const searchResults = useMemo(() => {
     if (!globalSearch.trim()) return null;
     const q = globalSearch.toLowerCase();
@@ -151,18 +83,52 @@ export function AICommandCenterModule() {
     return { agents: matchedAgents, queue: matchedQueue };
   }, [globalSearch, agents, queue]);
 
+  // Render the active panel
+  const renderPanel = () => {
+    switch (activeTab) {
+      case 'live':
+        return <LiveOperationsHub kpis={kpis} queue={queue} loading={loading} onRefresh={refresh} />;
+      case 'catalog':
+        return <AgentCatalogPanel agents={agents} loading={loading} onRefresh={refresh} />;
+      case 'autonomous':
+        return <Suspense fallback={<TabSkeleton />}><AutonomousAgentsPanel /></Suspense>;
+      case 'copilot':
+        return <Suspense fallback={<TabSkeleton />}><PredictiveCopilotPanel /></Suspense>;
+      case 'voice':
+        return <Suspense fallback={<TabSkeleton />}><VoiceInterfacePanel /></Suspense>;
+      case 'observability':
+        return <Suspense fallback={<TabSkeleton />}><ObservabilityPanel /></Suspense>;
+      case 'ranking':
+        return <Suspense fallback={<TabSkeleton />}><ERPAgentLeaderboard /></Suspense>;
+      case 'costs':
+        return <Suspense fallback={<TabSkeleton />}><AICostEconomicsPanel /></Suspense>;
+      case 'governance':
+        return <Suspense fallback={<TabSkeleton />}><AIGovernancePanel agents={agents} loading={loading} /></Suspense>;
+      case 'orchestration':
+        return <Suspense fallback={<TabSkeleton />}><OrchestrationPanel agents={agents} loading={loading} /></Suspense>;
+      case 'decisions':
+        return <Suspense fallback={<TabSkeleton />}><ERPAutonomousDecisionHistory /></Suspense>;
+      case 'chat':
+        return <Suspense fallback={<TabSkeleton />}><ERPAgentConversationHistory /></Suspense>;
+      case 'notifications':
+        return <Suspense fallback={<TabSkeleton />}><AIAlertsPanel /></Suspense>;
+      default:
+        return <LiveOperationsHub kpis={kpis} queue={queue} loading={loading} onRefresh={refresh} />;
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Module header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/20">
-            <Zap className="h-6 w-6 text-white" />
+          <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-lg shadow-primary/20">
+            <Zap className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
               AI Command Center
-              <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/30 text-[10px]">
+              <Badge className="bg-primary/10 text-primary border-primary/30 text-[10px]">
                 UNIFIED
               </Badge>
             </h1>
@@ -172,7 +138,7 @@ export function AICommandCenterModule() {
           </div>
         </div>
 
-        {/* A3: Search toggle */}
+        {/* Search toggle */}
         <Button
           variant={showSearch ? 'default' : 'outline'}
           size="sm"
@@ -182,7 +148,7 @@ export function AICommandCenterModule() {
         </Button>
       </div>
 
-      {/* A3: Global search bar */}
+      {/* Global search bar */}
       {showSearch && (
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -220,7 +186,7 @@ export function AICommandCenterModule() {
                       className="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-sm flex items-center gap-2"
                       onClick={() => { setActiveTab('live'); setGlobalSearch(''); setShowSearch(false); }}
                     >
-                      <Zap className="h-3.5 w-3.5 text-yellow-500" />
+                      <Zap className="h-3.5 w-3.5 text-warning" />
                       <span className="truncate">{item.agent_code} — {item.task_type}</span>
                       <Badge variant="outline" className="text-[9px] ml-auto">{item.domain}</Badge>
                     </button>
@@ -237,131 +203,17 @@ export function AICommandCenterModule() {
         </div>
       )}
 
-      {/* Tabs with grouped navigation (A1) */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <ScrollArea className="w-full">
-          <TabsList className="inline-flex w-auto min-w-full bg-muted/50 p-1 rounded-xl gap-0.5">
-            {tabGroups.map((group, gi) => (
-              <div key={group.id} className="contents">
-                {gi > 0 && (
-                  <div className="w-px h-6 bg-border/50 mx-0.5 self-center shrink-0" />
-                )}
-                {group.tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const badgeCount = tabBadges[tab.id] || 0;
-                  return (
-                    <TabsTrigger
-                      key={tab.id}
-                      value={tab.id}
-                      className="flex items-center gap-1.5 text-xs whitespace-nowrap relative"
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {tab.label}
-                      {badgeCount > 0 && (
-                        <Badge
-                          variant="destructive"
-                          className="h-4 min-w-[16px] px-1 text-[9px] font-bold ml-0.5 animate-pulse"
-                        >
-                          {badgeCount}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  );
-                })}
-              </div>
-            ))}
-          </TabsList>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+      {/* Mega-menu navigation (same pattern as HR module) */}
+      <AINavigationMenu
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        badges={tabBadges}
+      />
 
-        {/* Group labels under tab bar */}
-        <div className="hidden md:flex items-center gap-0 text-[9px] text-muted-foreground/60 mt-0.5 px-1">
-          {tabGroups.map((group, gi) => (
-            <div key={group.id} className="flex items-center">
-              {gi > 0 && <div className="w-px h-3 bg-transparent mx-1" />}
-              <span style={{ width: `${group.tabs.length * 90}px` }} className="text-center truncate">
-                {group.label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Core Operations — eager load only Live Hub and Catalog */}
-        <TabsContent value="live" className="mt-4">
-          <LiveOperationsHub kpis={kpis} queue={queue} loading={loading} onRefresh={refresh} />
-        </TabsContent>
-
-        <TabsContent value="catalog" className="mt-4">
-          <AgentCatalogPanel agents={agents} loading={loading} onRefresh={refresh} />
-        </TabsContent>
-
-        {/* All other tabs — lazy loaded (B1) */}
-        <TabsContent value="autonomous" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <AutonomousAgentsPanel />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="copilot" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <PredictiveCopilotPanel />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="voice" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <VoiceInterfacePanel />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="observability" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <ObservabilityPanel />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="ranking" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <ERPAgentLeaderboard />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="costs" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <AICostEconomicsPanel />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="governance" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <AIGovernancePanel agents={agents} loading={loading} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="orchestration" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <OrchestrationPanel agents={agents} loading={loading} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="decisions" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <ERPAutonomousDecisionHistory />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="chat" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <ERPAgentConversationHistory />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="notifications" className="mt-4">
-          <Suspense fallback={<TabSkeleton />}>
-            <AIAlertsPanel />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      {/* Active panel content */}
+      <div className="mt-4">
+        {renderPanel()}
+      </div>
     </div>
   );
 }
