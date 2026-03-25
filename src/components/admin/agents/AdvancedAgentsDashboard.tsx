@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -336,72 +337,460 @@ function AgentDetailedMetrics({ agent }: { agent: ModuleAgent }) {
   );
 }
 
-// Componente de Configuración de Agente
+// Componente de Configuración Avanzada de Agente
 function AgentConfigPanel({ 
   agent, 
   onSave 
 }: { 
   agent: ModuleAgent; 
-  onSave: (config: { confidenceThreshold: number; executionMode: ExecutionMode; priority: number }) => void;
+  onSave: (config: Record<string, unknown>) => void;
 }) {
   const [threshold, setThreshold] = useState(agent.confidenceThreshold);
   const [mode, setMode] = useState<ExecutionMode>(agent.executionMode);
   const [priority, setPriority] = useState(agent.priority);
+  const [isActive, setIsActive] = useState(agent.status === 'active' || agent.status === 'analyzing');
+  const [maxActionsPerHour, setMaxActionsPerHour] = useState(50);
+  const [maxTokensPerAction, setMaxTokensPerAction] = useState(2000);
+  const [requiresHumanReview, setRequiresHumanReview] = useState(false);
+  const [autoEscalate, setAutoEscalate] = useState(true);
+  const [escalationThreshold, setEscalationThreshold] = useState(60);
+  const [learningEnabled, setLearningEnabled] = useState(true);
+  const [learningRate, setLearningRate] = useState(70);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [notifyOnError, setNotifyOnError] = useState(true);
+  const [notifyOnSuccess, setNotifyOnSuccess] = useState(false);
+  const [riskLevel, setRiskLevel] = useState<'minimal' | 'limited' | 'high'>('limited');
+  const [responseTimeout, setResponseTimeout] = useState(30);
+  const [retryAttempts, setRetryAttempts] = useState(3);
+  const [cooldownMinutes, setCooldownMinutes] = useState(5);
+  const [scheduledHours, setScheduledHours] = useState({ start: 0, end: 24 });
+  const [allowWeekends, setAllowWeekends] = useState(true);
+  const [logLevel, setLogLevel] = useState<'minimal' | 'standard' | 'verbose'>('standard');
+  const [activeSection, setActiveSection] = useState('execution');
+
+  const sections = [
+    { id: 'execution', label: 'Ejecución', icon: Play },
+    { id: 'thresholds', label: 'Umbrales', icon: Target },
+    { id: 'limits', label: 'Límites', icon: Shield },
+    { id: 'escalation', label: 'Escalado', icon: AlertTriangle },
+    { id: 'learning', label: 'Aprendizaje', icon: Brain },
+    { id: 'schedule', label: 'Horario', icon: Clock },
+    { id: 'notifications', label: 'Alertas', icon: Activity },
+    { id: 'advanced', label: 'Avanzado', icon: Cog },
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Umbral de Confianza: {threshold}%</Label>
-        <Slider
-          value={[threshold]}
-          onValueChange={([v]) => setThreshold(v)}
-          min={50}
-          max={100}
-          step={5}
-        />
-        <p className="text-xs text-muted-foreground">
-          El agente solo ejecutará acciones con confianza ≥ {threshold}%
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Modo de Ejecución</Label>
-        <div className="flex gap-2">
-          {(['autonomous', 'supervised', 'manual'] as ExecutionMode[]).map((m) => (
+      {/* Section tabs */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-1 pb-2">
+          {sections.map((s) => (
             <Button
-              key={m}
-              variant={mode === m ? 'default' : 'outline'}
+              key={s.id}
+              variant={activeSection === s.id ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setMode(m)}
-              className="flex-1"
+              className="h-7 text-xs shrink-0 gap-1"
+              onClick={() => setActiveSection(s.id)}
             >
-              {m === 'autonomous' ? 'Autónomo' : m === 'supervised' ? 'Supervisado' : 'Manual'}
+              <s.icon className="h-3 w-3" />
+              {s.label}
             </Button>
           ))}
         </div>
-      </div>
+      </ScrollArea>
 
-      <div className="space-y-2">
-        <Label>Prioridad: {priority}</Label>
-        <Slider
-          value={[priority]}
-          onValueChange={([v]) => setPriority(v)}
-          min={1}
-          max={5}
-          step={1}
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Baja</span>
-          <span>Alta</span>
-        </div>
-      </div>
+      <ScrollArea className="h-[400px] pr-2">
+        {/* === EJECUCIÓN === */}
+        {activeSection === 'execution' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Agente Activo</Label>
+                <p className="text-xs text-muted-foreground">Activar o desactivar este agente</p>
+              </div>
+              <Switch checked={isActive} onCheckedChange={setIsActive} />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Modo de Ejecución</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'autonomous' as ExecutionMode, label: 'Autónomo', desc: 'Actúa sin supervisión', icon: Zap },
+                  { value: 'supervised' as ExecutionMode, label: 'Supervisado', desc: 'Requiere aprobación', icon: Eye },
+                  { value: 'manual' as ExecutionMode, label: 'Manual', desc: 'Solo bajo petición', icon: UserCheck },
+                ]).map((m) => (
+                  <div
+                    key={m.value}
+                    className={cn(
+                      "p-3 rounded-lg border cursor-pointer transition-all text-center",
+                      mode === m.value ? "ring-2 ring-primary bg-primary/5 border-primary" : "hover:bg-muted/50"
+                    )}
+                    onClick={() => setMode(m.value)}
+                  >
+                    <m.icon className={cn("h-5 w-5 mx-auto mb-1", mode === m.value ? "text-primary" : "text-muted-foreground")} />
+                    <p className="text-xs font-medium">{m.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{m.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Prioridad: {priority}</Label>
+              <Slider value={[priority]} onValueChange={([v]) => setPriority(v)} min={1} max={5} step={1} />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>1 - Baja</span><span>3 - Normal</span><span>5 - Crítica</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Revisión Humana Obligatoria</Label>
+                <p className="text-xs text-muted-foreground">Todas las acciones requieren aprobación humana</p>
+              </div>
+              <Switch checked={requiresHumanReview} onCheckedChange={setRequiresHumanReview} />
+            </div>
+          </div>
+        )}
+
+        {/* === UMBRALES === */}
+        {activeSection === 'thresholds' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Umbral de Confianza</Label>
+                <Badge variant="outline" className="text-xs">{threshold}%</Badge>
+              </div>
+              <Slider value={[threshold]} onValueChange={([v]) => setThreshold(v)} min={10} max={100} step={5} />
+              <p className="text-[10px] text-muted-foreground">
+                Solo ejecutará acciones con confianza ≥ {threshold}%. Debajo se escalará al supervisor.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Umbral de Escalado</Label>
+                <Badge variant="outline" className="text-xs">{escalationThreshold}%</Badge>
+              </div>
+              <Slider value={[escalationThreshold]} onValueChange={([v]) => setEscalationThreshold(v)} min={10} max={100} step={5} />
+              <p className="text-[10px] text-muted-foreground">
+                Por debajo de {escalationThreshold}% se escala automáticamente al supervisor del dominio.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Nivel de Riesgo (EU AI Act)</Label>
+              <Select value={riskLevel} onValueChange={(v) => setRiskLevel(v as typeof riskLevel)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="minimal">
+                    <span className="flex items-center gap-2">🟢 Mínimo</span>
+                  </SelectItem>
+                  <SelectItem value="limited">
+                    <span className="flex items-center gap-2">🟡 Limitado</span>
+                  </SelectItem>
+                  <SelectItem value="high">
+                    <span className="flex items-center gap-2">🔴 Alto</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">
+                Clasificación según el EU AI Act. Nivel "Alto" activa auditorías obligatorias.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* === LÍMITES === */}
+        {activeSection === 'limits' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Máx. acciones/hora</Label>
+                <Badge variant="outline" className="text-xs">{maxActionsPerHour}</Badge>
+              </div>
+              <Slider value={[maxActionsPerHour]} onValueChange={([v]) => setMaxActionsPerHour(v)} min={1} max={200} step={5} />
+              <p className="text-[10px] text-muted-foreground">Limita cuántas acciones puede ejecutar el agente por hora</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Máx. tokens por acción</Label>
+                <Badge variant="outline" className="text-xs">{maxTokensPerAction}</Badge>
+              </div>
+              <Slider value={[maxTokensPerAction]} onValueChange={([v]) => setMaxTokensPerAction(v)} min={500} max={8000} step={250} />
+              <p className="text-[10px] text-muted-foreground">Tokens máximos de IA por cada acción individual</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Timeout de respuesta</Label>
+                <Badge variant="outline" className="text-xs">{responseTimeout}s</Badge>
+              </div>
+              <Slider value={[responseTimeout]} onValueChange={([v]) => setResponseTimeout(v)} min={5} max={120} step={5} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Reintentos en error</Label>
+                <Badge variant="outline" className="text-xs">{retryAttempts}</Badge>
+              </div>
+              <Slider value={[retryAttempts]} onValueChange={([v]) => setRetryAttempts(v)} min={0} max={10} step={1} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Cooldown entre acciones</Label>
+                <Badge variant="outline" className="text-xs">{cooldownMinutes} min</Badge>
+              </div>
+              <Slider value={[cooldownMinutes]} onValueChange={([v]) => setCooldownMinutes(v)} min={0} max={60} step={1} />
+            </div>
+          </div>
+        )}
+
+        {/* === ESCALADO === */}
+        {activeSection === 'escalation' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Auto-escalar al supervisor</Label>
+                <p className="text-xs text-muted-foreground">Escalar automáticamente cuando la confianza es baja</p>
+              </div>
+              <Switch checked={autoEscalate} onCheckedChange={setAutoEscalate} />
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/30 space-y-3">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase">Reglas de escalado</h4>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span>Confianza &lt; {escalationThreshold}% → Escalar al supervisor</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>Error consecutivo × {retryAttempts} → Pausar y notificar</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>Exceso de {maxActionsPerHour} acciones/hora → Rate limit</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg border bg-amber-500/5 border-amber-500/20">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-medium">Modo de emergencia</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Si el agente detecta anomalías críticas, se pausará automáticamente y notificará al supervisor general.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* === APRENDIZAJE === */}
+        {activeSection === 'learning' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Aprendizaje continuo</Label>
+                <p className="text-xs text-muted-foreground">El agente mejora con cada interacción</p>
+              </div>
+              <Switch checked={learningEnabled} onCheckedChange={setLearningEnabled} />
+            </div>
+
+            {learningEnabled && (
+              <>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Tasa de aprendizaje</Label>
+                    <Badge variant="outline" className="text-xs">{learningRate}%</Badge>
+                  </div>
+                  <Slider value={[learningRate]} onValueChange={([v]) => setLearningRate(v)} min={10} max={100} step={5} />
+                  <p className="text-[10px] text-muted-foreground">
+                    Cuánto peso dar a las experiencias recientes vs. conocimiento base
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase">Fuentes de aprendizaje</h4>
+                  <div className="space-y-1.5 text-xs">
+                    {['Feedback del usuario', 'Resultados de acciones', 'Patrones del dominio', 'Correcciones del supervisor'].map((source) => (
+                      <div key={source} className="flex items-center gap-2">
+                        <CheckCircle className="h-3 w-3 text-emerald-500" />
+                        <span>{source}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* === HORARIO === */}
+        {activeSection === 'schedule' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Horario de operación</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Inicio</Label>
+                  <Select value={String(scheduledHours.start)} onValueChange={(v) => setScheduledHours(h => ({ ...h, start: Number(v) }))}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 25 }, (_, i) => (
+                        <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Fin</Label>
+                  <Select value={String(scheduledHours.end)} onValueChange={(v) => setScheduledHours(h => ({ ...h, end: Number(v) }))}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 25 }, (_, i) => (
+                        <SelectItem key={i} value={String(i)}>{String(i).padStart(2, '0')}:00</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {scheduledHours.start === 0 && scheduledHours.end === 24 
+                  ? '24/7 - El agente opera sin restricción horaria'
+                  : `Activo de ${String(scheduledHours.start).padStart(2, '0')}:00 a ${String(scheduledHours.end).padStart(2, '0')}:00`
+                }
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Operar en fines de semana</Label>
+                <p className="text-xs text-muted-foreground">Permite ejecución sábados y domingos</p>
+              </div>
+              <Switch checked={allowWeekends} onCheckedChange={setAllowWeekends} />
+            </div>
+          </div>
+        )}
+
+        {/* === NOTIFICACIONES === */}
+        {activeSection === 'notifications' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border">
+              <div>
+                <Label className="text-sm font-medium">Notificaciones activas</Label>
+                <p className="text-xs text-muted-foreground">Recibir alertas de este agente</p>
+              </div>
+              <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+            </div>
+
+            {notificationsEnabled && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-xs">Notificar en errores</Label>
+                    <p className="text-[10px] text-muted-foreground">Alertar cuando falle una acción</p>
+                  </div>
+                  <Switch checked={notifyOnError} onCheckedChange={setNotifyOnError} />
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-lg border">
+                  <div>
+                    <Label className="text-xs">Notificar en éxitos</Label>
+                    <p className="text-[10px] text-muted-foreground">Alertar al completar acciones</p>
+                  </div>
+                  <Switch checked={notifyOnSuccess} onCheckedChange={setNotifyOnSuccess} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* === AVANZADO === */}
+        {activeSection === 'advanced' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Nivel de logging</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'minimal' as const, label: 'Mínimo', desc: 'Solo errores' },
+                  { value: 'standard' as const, label: 'Estándar', desc: 'Acciones + errores' },
+                  { value: 'verbose' as const, label: 'Detallado', desc: 'Todo el flujo' },
+                ]).map((l) => (
+                  <div
+                    key={l.value}
+                    className={cn(
+                      "p-2 rounded-lg border cursor-pointer transition-all text-center",
+                      logLevel === l.value ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
+                    )}
+                    onClick={() => setLogLevel(l.value)}
+                  >
+                    <p className="text-xs font-medium">{l.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{l.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase">Capacidades del agente</h4>
+              <div className="flex flex-wrap gap-1.5">
+                {agent.capabilities.map((cap, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-[10px]">
+                    {cap.replace(/_/g, ' ')}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/30 space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase">Info técnica</h4>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">ID</span><code className="bg-background px-1 rounded text-[10px]">{agent.id}</code></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Dominio</span><span>{agent.domain}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tipo</span><span>{agent.type}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Health</span><span>{agent.healthScore}%</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Última actividad</span><span>{agent.lastActivity}</span></div>
+              </div>
+            </div>
+          </div>
+        )}
+      </ScrollArea>
 
       <Button 
-        onClick={() => onSave({ confidenceThreshold: threshold, executionMode: mode, priority })}
+        onClick={() => onSave({ 
+          confidenceThreshold: threshold, 
+          executionMode: mode, 
+          priority,
+          isActive,
+          maxActionsPerHour,
+          maxTokensPerAction,
+          requiresHumanReview,
+          autoEscalate,
+          escalationThreshold,
+          learningEnabled,
+          learningRate,
+          notificationsEnabled,
+          notifyOnError,
+          notifyOnSuccess,
+          riskLevel,
+          responseTimeout,
+          retryAttempts,
+          cooldownMinutes,
+          scheduledHours,
+          allowWeekends,
+          logLevel,
+        })}
         className="w-full"
       >
         <Save className="h-4 w-4 mr-2" />
-        Guardar Configuración
+        Guardar Configuración Completa
       </Button>
     </div>
   );
@@ -1365,17 +1754,22 @@ export function AdvancedAgentsDashboard() {
         Arquitectura: Multi-Agent Hierarchical Orchestration v2.0
       </div>
 
-      {/* Dialog de Configuración de Agente */}
-      <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Configurar: {configAgent?.name}
-            </DialogTitle>
-          </DialogHeader>
+      {/* Sheet de Configuración Avanzada de Agente */}
+      <Sheet open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-violet-600">
+                <Settings className="h-4 w-4 text-white" />
+              </div>
+              Configuración Avanzada
+            </SheetTitle>
+            <SheetDescription>
+              {configAgent?.name} · {configAgent?.domain?.toUpperCase()}
+            </SheetDescription>
+          </SheetHeader>
           {configAgent && (
-            <div className="space-y-4">
+            <div className="mt-4 space-y-4">
               {/* Info del agente */}
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border">
                 <div className={cn("w-2.5 h-2.5 rounded-full", getStatusColor(configAgent.status))} />
@@ -1384,7 +1778,10 @@ export function AdvancedAgentsDashboard() {
                   <p className="text-xs text-muted-foreground truncate">{configAgent.description}</p>
                 </div>
                 <Badge variant="outline" className="text-xs shrink-0">
-                  {configAgent.domain}
+                  {configAgent.executionMode === 'autonomous' ? '🤖 Autónomo' : configAgent.executionMode === 'supervised' ? '👁️ Supervisado' : '✋ Manual'}
+                </Badge>
+                <Badge variant="outline" className="text-xs shrink-0">
+                  Health: {configAgent.healthScore}%
                 </Badge>
               </div>
 
@@ -1398,8 +1795,8 @@ export function AdvancedAgentsDashboard() {
               />
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
