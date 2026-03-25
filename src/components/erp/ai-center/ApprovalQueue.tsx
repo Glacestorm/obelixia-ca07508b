@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,9 @@ import {
   Clock,
   Bot,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { SemaphoreIndicator } from './SemaphoreIndicator';
 import { useApprovalActions } from '@/hooks/erp/ai-center/useApprovalActions';
@@ -40,6 +41,31 @@ export function ApprovalQueue({ items, onRefresh }: ApprovalQueueProps) {
   const [forceDialog, setForceDialog] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const { approve, reject, escalate, force } = useApprovalActions(onRefresh);
+
+  // C4: CSV export
+  const exportCSV = useCallback(() => {
+    const headers = ['ID', 'Agente', 'Dominio', 'Tipo', 'Estado', 'Prioridad', 'Confianza', 'Semáforo', 'Acción Requerida', 'Creado'];
+    const rows = items.map(item => [
+      item.id,
+      item.agent_code,
+      item.domain,
+      item.task_type,
+      item.status,
+      item.priority,
+      item.confidence_score ?? '',
+      item.semaphore,
+      (item.action_required || '').replace(/"/g, '""'),
+      format(new Date(item.created_at), 'yyyy-MM-dd HH:mm:ss'),
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `approval-queue-${format(new Date(), 'yyyyMMdd-HHmmss')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [items]);
 
   const handleReject = async () => {
     if (!rejectDialog || !rejectReason.trim()) return;
@@ -74,6 +100,9 @@ export function ApprovalQueue({ items, onRefresh }: ApprovalQueueProps) {
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
             Cola de Aprobaciones
             <Badge variant="secondary" className="ml-auto">{items.length}</Badge>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={exportCSV} title="Exportar CSV">
+              <Download className="h-3.5 w-3.5" />
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
