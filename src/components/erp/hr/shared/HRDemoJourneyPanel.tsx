@@ -62,8 +62,9 @@ const JOURNEY_STEPS: DemoJourneyStep[] = [
     id: 5, title: 'Permiso por nacimiento',
     description: 'Solicitud y gestión de permiso paternal/maternal',
     icon: Heart, profile: 'Ana Belén Torres',
-    moduleId: 'vacations', status: 'ready',
-    tables: ['erp_hr_leave_requests', 'erp_hr_leave_balances'],
+    moduleId: 'es-localization', status: 'ready',
+    tables: ['erp_hr_leave_requests', 'erp_hr_leave_balances', 'erp_hr_payroll_incidents'],
+    notes: 'Panel ESNacimientoINSSPanel — comunicación preparatoria INSS',
   },
   {
     id: 6, title: 'Desplazamiento temporal internacional',
@@ -85,7 +86,8 @@ const JOURNEY_STEPS: DemoJourneyStep[] = [
     description: 'Modificación contractual con impacto en nómina',
     icon: Clock, profile: 'Carmen Alonso Vega',
     moduleId: 'es-localization', status: 'ready',
-    tables: ['erp_hr_contracts', 'erp_hr_payroll_incidents'],
+    tables: ['erp_hr_contracts', 'erp_hr_payroll_incidents', 'erp_hr_employee_es_labor_data'],
+    notes: 'Nuevo panel ESGuardaLegalPanel — Art. 37.6 ET',
   },
   {
     id: 9, title: 'Informe de costes y nómina',

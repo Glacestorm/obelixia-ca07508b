@@ -85,7 +85,7 @@ export function ESNacimientoINSSPanel({ companyId, employeeId }: Props) {
       const tipoLabel = TIPOS_PERMISO.find(t => t.value === tipoPermiso)?.label ?? tipoPermiso;
 
       // 1) Create payroll incident
-      const { error: incErr } = await supabase
+      const { error: incErr } = await (supabase as any)
         .from('erp_hr_payroll_incidents')
         .insert({
           employee_id: selectedId,
@@ -100,7 +100,7 @@ export function ESNacimientoINSSPanel({ companyId, employeeId }: Props) {
       if (incErr) throw incErr;
 
       // 2) Update employee status to on_leave
-      const { error: empErr } = await supabase
+      const { error: empErr } = await (supabase as any)
         .from('erp_hr_employees')
         .update({ status: 'on_leave' })
         .eq('id', selectedId);

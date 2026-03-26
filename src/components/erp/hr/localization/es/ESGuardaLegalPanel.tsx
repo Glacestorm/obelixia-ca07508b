@@ -74,7 +74,7 @@ export function ESGuardaLegalPanel({ companyId, employeeId }: Props) {
     if (!selectedId) { setHistorial([]); return; }
     setLoadingHistorial(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('erp_hr_payroll_incidents')
         .select('id, description, created_at, status')
         .eq('employee_id', selectedId)
@@ -105,7 +105,7 @@ export function ESGuardaLegalPanel({ companyId, employeeId }: Props) {
     setSaving(true);
     try {
       // 1) Update coeficiente_parcialidad
-      const { error: updErr } = await supabase
+      const { error: updErr } = await (supabase as any)
         .from('erp_hr_employee_es_labor_data')
         .update({ coeficiente_parcialidad: coeficiente })
         .eq('employee_id', selectedId)
@@ -114,7 +114,7 @@ export function ESGuardaLegalPanel({ companyId, employeeId }: Props) {
 
       // 2) Create payroll incident
       const motivoLabel = MOTIVOS.find(m => m.value === motivo)?.label ?? motivo;
-      const { error: incErr } = await supabase
+      const { error: incErr } = await (supabase as any)
         .from('erp_hr_payroll_incidents')
         .insert({
           employee_id: selectedId,
@@ -140,7 +140,7 @@ export function ESGuardaLegalPanel({ companyId, employeeId }: Props) {
     if (!selectedId) return;
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('erp_hr_employee_es_labor_data')
         .update({ coeficiente_parcialidad: 1.0 })
         .eq('employee_id', selectedId)

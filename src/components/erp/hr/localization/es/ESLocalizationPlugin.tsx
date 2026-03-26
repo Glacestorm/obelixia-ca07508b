@@ -5,7 +5,7 @@
  */
 import { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Flag, Shield, Calculator, FileText, Calendar, BookOpen, Euro } from 'lucide-react';
+import { Flag, Shield, Calculator, FileText, Calendar, BookOpen, Euro, Clock, Heart } from 'lucide-react';
 import { ESEmployeeLaborDataForm } from './ESEmployeeLaborDataForm';
 import { ESSocialSecurityPanel } from './ESSocialSecurityPanel';
 import { ESIRPFPanel } from './ESIRPFPanel';
@@ -14,6 +14,8 @@ import { ESPermisosPanel } from './ESPermisosPanel';
 import { ESSettlementCalculator } from './ESSettlementCalculator';
 import { ESPayrollBridge } from './ESPayrollBridge';
 import { FiscalMonthlyExpedientTab } from './FiscalMonthlyExpedientTab';
+import { ESGuardaLegalPanel } from './ESGuardaLegalPanel';
+import { ESNacimientoINSSPanel } from './ESNacimientoINSSPanel';
 import { usePayrollEngine } from '@/hooks/erp/hr/usePayrollEngine';
 
 interface Props {
@@ -40,12 +42,14 @@ export function ESLocalizationPlugin({ companyId, employeeId, mvpMode = true }: 
       </div>
 
       <Tabs defaultValue="labor-data">
-        <TabsList className={`grid w-full ${showFull ? 'grid-cols-8' : 'grid-cols-5'}`}>
+        <TabsList className={`grid w-full ${showFull ? 'grid-cols-10' : 'grid-cols-7'}`}>
           <TabsTrigger value="labor-data" className="text-xs gap-1"><BookOpen className="h-3.5 w-3.5" /> Datos</TabsTrigger>
           <TabsTrigger value="ss" className="text-xs gap-1"><Shield className="h-3.5 w-3.5" /> Seg. Social</TabsTrigger>
           <TabsTrigger value="irpf" className="text-xs gap-1"><Calculator className="h-3.5 w-3.5" /> IRPF</TabsTrigger>
           <TabsTrigger value="payroll" className="text-xs gap-1"><Euro className="h-3.5 w-3.5" /> Nómina ES</TabsTrigger>
           <TabsTrigger value="fiscal" className="text-xs gap-1"><FileText className="h-3.5 w-3.5" /> Fiscal</TabsTrigger>
+          <TabsTrigger value="guarda-legal" className="text-xs gap-1"><Clock className="h-3.5 w-3.5" /> Guarda Legal</TabsTrigger>
+          <TabsTrigger value="nacimiento-inss" className="text-xs gap-1"><Heart className="h-3.5 w-3.5" /> Nacimiento INSS</TabsTrigger>
           {showFull && <TabsTrigger value="contracts" className="text-xs gap-1"><FileText className="h-3.5 w-3.5" /> Contratos</TabsTrigger>}
           {showFull && <TabsTrigger value="leaves" className="text-xs gap-1"><Calendar className="h-3.5 w-3.5" /> Permisos</TabsTrigger>}
           {showFull && <TabsTrigger value="settlement" className="text-xs gap-1"><Calculator className="h-3.5 w-3.5" /> Finiquito</TabsTrigger>}
@@ -65,6 +69,12 @@ export function ESLocalizationPlugin({ companyId, employeeId, mvpMode = true }: 
         </TabsContent>
         <TabsContent value="fiscal" className="mt-4">
           <FiscalMonthlyExpedientTab companyId={companyId} periods={periods} />
+        </TabsContent>
+        <TabsContent value="guarda-legal" className="mt-4">
+          <ESGuardaLegalPanel companyId={companyId} employeeId={employeeId} />
+        </TabsContent>
+        <TabsContent value="nacimiento-inss" className="mt-4">
+          <ESNacimientoINSSPanel companyId={companyId} employeeId={employeeId} />
         </TabsContent>
         {showFull && (
           <TabsContent value="contracts" className="mt-4">
