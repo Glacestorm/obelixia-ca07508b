@@ -62,6 +62,8 @@ export interface SSEmployeeContext {
   pagasExtrasProrrateadas: boolean; // P1B: true if pagas extras are paid monthly (prorated)
   salarioBaseAnual: number; // For prorrateo calculation
   epigrafAT?: string | null; // AT/EP tariff code (affects AT rate)
+  /** Ocupación SS: 'a' = oficina (AT/EP fijo 1.00%), 'b' = actividad propia (según CNAE) */
+  ocupacionSS?: 'a' | 'b' | null;
   /** P1B: Real period days (28-31) instead of fixed 30 */
   diasRealesPeriodo?: number;
 }
