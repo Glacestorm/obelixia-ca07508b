@@ -92,7 +92,7 @@ export function CRMModularDashboard() {
 
   return (
     <div className="space-y-6">
-      <ModuleNavigationButton module="crm" />
+      <ModuleNavigationButton targetModule="erp" />
 
       <div className="flex items-center justify-between">
         <CRMWorkspaceSelector />
@@ -100,7 +100,6 @@ export function CRMModularDashboard() {
           open={showCreateWorkspace}
           onOpenChange={setShowCreateWorkspace}
           onSuccess={() => { setShowCreateWorkspace(false); refreshWorkspaces(); }}
-          onCreateWorkspace={() => setShowCreateWorkspace(true)}
         />
       </div>
 
@@ -316,7 +315,7 @@ export function CRMModularDashboard() {
 
 function OmnichannelWrapper() {
   const { conversations, messages, currentConversation, selectConversation,
-          sendMessage, assignConversation, updateConversationStatus, addTag, isLoading } = useOmnichannelHub();
+          sendMessage, assignConversation, changeStatus, addTag, isLoading } = useOmnichannelHub();
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-64">
@@ -360,7 +359,7 @@ function OmnichannelWrapper() {
         onSelectConversation={(c: any) => selectConversation(c.id)}
         onSendMessage={(id: string, content: string) => sendMessage(id, content)}
         onAssign={(id: string, agentId: string) => assignConversation(id, agentId)}
-        onUpdateStatus={(id: string, status: string) => updateConversationStatus(id, status)}
+        onUpdateStatus={(id: string, status: string) => changeStatus(id, status as any)}
         onAddTag={(id: string, tag: string) => addTag(id, tag)}
       />
     </div>
@@ -376,7 +375,7 @@ function SentimentWrapper() {
       content: c.last_message_preview ?? '',
       sentiment: (c.sentiment ?? 'neutral') as any,
       sentimentScore: c.sentiment_score ?? 0,
-      emotions: [] as string[], keyPhrases: [] as string[], topics: [] as string[],
+      emotions: [] as { emotion: string; intensity: number }[], keyPhrases: [] as string[], topics: [] as string[],
       actionRequired: c.priority === 'urgent' || c.priority === 'high',
       analyzedAt: c.updated_at,
     })), [conversations]);
@@ -401,7 +400,7 @@ function SLAWrapper() {
 
   return (
     <MultichannelSLADashboard
-      policies={slaPolicies.map(p => ({
+      slaConfigs={slaPolicies.map(p => ({
         id: p.id, name: p.name, channel: p.channel as any,
         firstResponseMinutes: p.first_response_minutes,
         resolutionMinutes: p.resolution_minutes,
