@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useHRProcessDocRequirements, type EnrichedCompleteness } from './useHRProcessDocRequirements';
 import { computeContractDeadlines, type ContractDeadlineSummary } from '@/engines/erp/hr/contractDeadlineEngine';
 import { buildContrataPayload, type ContrataPayloadResult } from '@/components/erp/hr/shared/contrataPayloadBuilder';
-import { type HolidayCalendar, EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
+import { addBusinessDays, type HolidayCalendar, EMPTY_CALENDAR } from '@/engines/erp/hr/calendarHelpers';
 import { buildContractClosureSnapshot } from '@/components/erp/hr/shared/contractClosureEngine';
 import { evaluateContrataPreIntegrationReadiness, type ContrataPreIntegrationContext } from '@/components/erp/hr/shared/contrataPreIntegrationReadiness';
 import { useHRLedgerWriter } from './useHRLedgerWriter';
@@ -491,7 +491,6 @@ export function useHRContractProcess(companyId: string) {
     let internalDeadlineAt: string | null = null;
     if (contractData.contract_start_date) {
       const startDate = new Date(contractData.contract_start_date);
-      const { addBusinessDays } = await import('@/components/erp/hr/shared/calendarHelpers');
       const deadline = addBusinessDays(startDate, 10, holidays);
       internalDeadlineAt = deadline.toISOString();
     }
