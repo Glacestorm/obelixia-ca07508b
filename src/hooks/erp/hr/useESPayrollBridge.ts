@@ -355,8 +355,8 @@ export function useESPayrollBridge(companyId?: string) {
       const baseCotizacionCC = Math.max(ssBase.base_minima_mensual, Math.min(totalDevengosContribuibles, ssBase.base_maxima_mensual));
       const baseCotizacionAT = baseCotizacionCC + (input.horasExtraImporte || 0); // AT includes overtime on top
 
-      // ── 3. SS contributions ──
-      const isTemporary = laborData.tipo_contrato_rd ? ['402', '501', '502', '410'].includes(laborData.tipo_contrato_rd) : false;
+      // ── 3. SS contributions (contract type resolved via contractTypeEngine) ──
+      const isTemporary = isTemporaryForSS(laborData.tipo_contrato_rd);
       const ssResult = esLoc.calculateSSContributions(totalDevengosContribuibles, ssBase, isTemporary);
 
       // SS worker deductions (with trace)
