@@ -251,9 +251,14 @@ export function usePayrollLegalCalculation(companyId: string) {
         const ssInput = mapLinesToSSInput(payrollLines);
         const ssLimits = grupoCot ? ssBasesMap.get(grupoCot) ?? null : null;
         const pagasProrrateadas = laborData?.pagas_extras_prorrateadas ?? false;
+        // ── Resolve contract type from RD code (contractTypeEngine) ──
+        const tipoContratoRD = laborData?.tipo_contrato_rd ?? null;
+        const contractProfile = resolveContractType(tipoContratoRD);
+        const contractSummary = getContractLegalSummary(tipoContratoRD);
+
         const ssContext: SSEmployeeContext = {
           grupoCotizacion: grupoCot ?? 1,
-          isTemporaryContract: laborData?.contrato_inferior_anual ?? false,
+          isTemporaryContract: contractProfile.isTemporaryForSS,
           coeficienteParcialidad: laborData?.coeficiente_parcialidad ?? 1.0,
           pagasExtrasAnuales: 2,
           pagasExtrasProrrateadas: pagasProrrateadas,
