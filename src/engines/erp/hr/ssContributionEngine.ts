@@ -279,11 +279,11 @@ export function computeSSContributions(
   }
 
   // ── Resolve rates ──
-  const rates = limits ?? DEFAULT_SS_RATES_2025;
+  const rates = limits ?? DEFAULT_SS_RATES_2026;
   const topes = limits ? {
     base_minima_mensual: limits.base_minima_mensual,
     base_maxima_mensual: limits.base_maxima_mensual,
-  } : DEFAULT_SS_TOPES_2025;
+  } : DEFAULT_SS_TOPES_2025_REMOVED;
 
   // ── 1. Sum contributable salary amounts (excluding overtime) ──
   // P1B: Also track prorated amounts from lines and fiscal classification
@@ -401,26 +401,26 @@ export function computeSSContributions(
   // ── 7. Calculate contributions ──
   const isTemp = employee.isTemporaryContract;
   const tipoDesempleoEmp = isTemp
-    ? (rates as any).tipo_desempleo_empresa_td ?? DEFAULT_SS_RATES_2025.tipo_desempleo_empresa_td
-    : (rates as any).tipo_desempleo_empresa_gi ?? DEFAULT_SS_RATES_2025.tipo_desempleo_empresa_gi;
+    ? (rates as any).tipo_desempleo_empresa_td ?? DEFAULT_SS_RATES_2026.tipo_desempleo_empresa_td
+    : (rates as any).tipo_desempleo_empresa_gi ?? DEFAULT_SS_RATES_2026.tipo_desempleo_empresa_gi;
   const tipoDesempleoTrab = isTemp
-    ? (rates as any).tipo_desempleo_trabajador_td ?? DEFAULT_SS_RATES_2025.tipo_desempleo_trabajador_td
-    : (rates as any).tipo_desempleo_trabajador_gi ?? DEFAULT_SS_RATES_2025.tipo_desempleo_trabajador_gi;
+    ? (rates as any).tipo_desempleo_trabajador_td ?? DEFAULT_SS_RATES_2026.tipo_desempleo_trabajador_td
+    : (rates as any).tipo_desempleo_trabajador_gi ?? DEFAULT_SS_RATES_2026.tipo_desempleo_trabajador_gi;
 
-  const ccTrabajador = r2((baseCCFinal * ((rates as any).tipo_cc_trabajador ?? DEFAULT_SS_RATES_2025.tipo_cc_trabajador)) / 100);
+  const ccTrabajador = r2((baseCCFinal * ((rates as any).tipo_cc_trabajador ?? DEFAULT_SS_RATES_2026.tipo_cc_trabajador)) / 100);
   const desempleoTrabajador = r2((baseCCFinal * tipoDesempleoTrab) / 100);
-  const fpTrabajador = r2((baseCCFinal * ((rates as any).tipo_fp_trabajador ?? DEFAULT_SS_RATES_2025.tipo_fp_trabajador)) / 100);
+  const fpTrabajador = r2((baseCCFinal * ((rates as any).tipo_fp_trabajador ?? DEFAULT_SS_RATES_2026.tipo_fp_trabajador)) / 100);
 
   // P1B: MEI split — trabajador pays 0.08%, empresa pays 0.50% (total 0.58%)
-  const meiTrabajador = r2((baseCCFinal * MEI_SPLIT_2025.trabajador) / 100);
+  const meiTrabajador = r2((baseCCFinal * MEI_SPLIT_2026.trabajador) / 100);
   const totalTrabajador = r2(ccTrabajador + desempleoTrabajador + fpTrabajador + meiTrabajador);
 
-  const ccEmpresa = r2((baseCCFinal * ((rates as any).tipo_cc_empresa ?? DEFAULT_SS_RATES_2025.tipo_cc_empresa)) / 100);
+  const ccEmpresa = r2((baseCCFinal * ((rates as any).tipo_cc_empresa ?? DEFAULT_SS_RATES_2026.tipo_cc_empresa)) / 100);
   const desempleoEmpresa = r2((baseCCFinal * tipoDesempleoEmp) / 100);
-  const fogasa = r2((baseCCFinal * ((rates as any).tipo_fogasa ?? DEFAULT_SS_RATES_2025.tipo_fogasa)) / 100);
-  const fpEmpresa = r2((baseCCFinal * ((rates as any).tipo_fp_empresa ?? DEFAULT_SS_RATES_2025.tipo_fp_empresa)) / 100);
-  const meiEmpresa = r2((baseCCFinal * MEI_SPLIT_2025.empresa) / 100);
-  const tipoAT = (rates as any).tipo_at_empresa ?? DEFAULT_SS_RATES_2025.tipo_at_empresa;
+  const fogasa = r2((baseCCFinal * ((rates as any).tipo_fogasa ?? DEFAULT_SS_RATES_2026.tipo_fogasa)) / 100);
+  const fpEmpresa = r2((baseCCFinal * ((rates as any).tipo_fp_empresa ?? DEFAULT_SS_RATES_2026.tipo_fp_empresa)) / 100);
+  const meiEmpresa = r2((baseCCFinal * MEI_SPLIT_2026.empresa) / 100);
+  const tipoAT = (rates as any).tipo_at_empresa ?? DEFAULT_SS_RATES_2026.tipo_at_empresa;
   const atEmpresa = r2((baseATFinal * tipoAT) / 100);
   const totalEmpresa = r2(ccEmpresa + desempleoEmpresa + fogasa + fpEmpresa + meiEmpresa + atEmpresa);
 
