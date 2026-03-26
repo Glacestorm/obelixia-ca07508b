@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HRCNOSelect } from './shared/HRCNOSelect';
 import { HRCollectiveAgreementSelect } from './shared/HRCollectiveAgreementSelect';
+import { HRModelo145Section, EMPTY_MODELO145, type Modelo145Data } from './shared/HRModelo145Section';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -135,6 +136,9 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     irpf_percentage: '',
   });
 
+  // Modelo 145 data (IRPF withholding communication)
+  const [modelo145, setModelo145] = useState<Modelo145Data>({ ...EMPTY_MODELO145 });
+
   // Module access state
   const [moduleAccess, setModuleAccess] = useState<Record<string, 'none' | 'read' | 'write' | 'admin'>>({});
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
@@ -171,6 +175,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         legal_entity_id: '', work_center_id: '', reports_to: '',
       });
       setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '' });
+      setModelo145({ ...EMPTY_MODELO145 });
       const defaultAccess: Record<string, 'none'> = {};
       AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
       setModuleAccess(defaultAccess);
@@ -195,7 +200,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         .eq('country_code', 'ES')
         .maybeSingle();
       if (data) {
-        const ext = (data.extension_data || {}) as Record<string, string>;
+        const ext = (data.extension_data || {}) as Record<string, any>;
         setEsFields({
           naf: data.social_security_number || '',
           contribution_group: ext.contribution_group || '',
@@ -205,6 +210,12 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           cno_code: ext.cno_code || '',
           irpf_percentage: ext.irpf_percentage || '',
         });
+        // Load Modelo 145 data
+        if (ext.modelo145) {
+          setModelo145({ ...EMPTY_MODELO145, ...ext.modelo145 });
+        } else {
+          setModelo145({ ...EMPTY_MODELO145 });
+        }
       }
     } catch (err) {
       console.error('[ES Extension] load error:', err);
@@ -331,6 +342,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
               autonomous_community: esFields.autonomous_community || null,
               cno_code: esFields.cno_code || null,
               irpf_percentage: esFields.irpf_percentage || null,
+              modelo145: JSON.parse(JSON.stringify(modelo145)),
             },
           };
 
@@ -675,6 +687,15 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                     <p className="text-xs text-muted-foreground italic">
                       Estos datos se guardan en la extensión de localización del empleado (tabla hr_employee_extensions).
                     </p>
+
+                    <Separator className="my-4" />
+
+                    {/* Modelo 145 — Datos para cálculo de retenciones IRPF */}
+                    <HRModelo145Section
+                      data={modelo145}
+                      onChange={setModelo145}
+                      portalContainer={selectPortalContainer}
+                    />
                   </div>
                 ) : (
                   <div className="text-center py-6">
