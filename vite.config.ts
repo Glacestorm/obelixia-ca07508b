@@ -187,7 +187,8 @@ export default defineConfig(({ mode, command }) => {
       rollupOptions: {
         maxParallelFileOps: isProductionBuild ? 2 : 1,
         output: {
-          manualChunks: isProductionBuild ? ((id) => {
+          manualChunks: (id) => {
+            // Vendors — always split to reduce main chunk size
             if (id.includes('node_modules/react-dom')) return 'vendor-react-dom';
             if (id.includes('node_modules/react-router')) return 'vendor-router';
             if (id.includes('node_modules/react/') || id.includes('node_modules/scheduler')) return 'vendor-react';
@@ -199,63 +200,43 @@ export default defineConfig(({ mode, command }) => {
             if (id.includes('node_modules/maplibre-gl') || id.includes('node_modules/mapbox-gl')) return 'vendor-map';
             if (id.includes('node_modules/date-fns')) return 'vendor-date';
             if (id.includes('node_modules/lucide-react')) return 'vendor-icons';
-            if (id.includes('node_modules/zod')) return 'vendor-zod';
+            if (id.includes('node_modules')) return 'vendor-misc';
+
+            // App code — coarse splitting in dev, granular in prod
+            if (!isProductionBuild) {
+              if (id.includes('/components/galia/')) return 'app-galia';
+              if (id.includes('/verticals/galia/')) return 'app-galia-v';
+              if (id.includes('/components/erp/hr/')) return 'app-erp-hr';
+              if (id.includes('/components/erp/')) return 'app-erp';
+              if (id.includes('/components/academia/')) return 'app-academia';
+              if (id.includes('/components/admin/')) return 'app-admin';
+              return undefined;
+            }
+
+            // Production — granular splitting
             if (id.includes('/components/galia/phase4/')) return 'app-galia-p4';
             if (id.includes('/components/galia/phase5/')) return 'app-galia-p5';
             if (id.includes('/components/galia/phase6/')) return 'app-galia-p6';
             if (id.includes('/components/galia/phase7/')) return 'app-galia-p7';
             if (id.includes('/components/galia/phase8/')) return 'app-galia-p8';
             if (id.includes('/components/galia/phase9/')) return 'app-galia-p9';
-            if (id.includes('/components/galia/territorial-map/')) return 'app-galia-map';
-            if (id.includes('/components/galia/training/')) return 'app-galia-training';
-            if (id.includes('/components/galia/feedback/')) return 'app-galia-feedback';
-            if (id.includes('/components/galia/planning/')) return 'app-galia-planning';
-            if (id.includes('/components/galia/partners/')) return 'app-galia-partners';
-            if (id.includes('/components/galia/procurement/')) return 'app-galia-procurement';
-            if (id.includes('/components/galia/diffusion/')) return 'app-galia-diffusion';
             if (id.includes('/components/galia/')) return 'app-galia-misc';
-            if (id.includes('/verticals/galia/dashboard/')) return 'app-galia-dashboard';
-            if (id.includes('/verticals/galia/portal/')) return 'app-galia-portal';
-            if (id.includes('/verticals/galia/justificacion/')) return 'app-galia-justif';
-            if (id.includes('/verticals/galia/transparency/')) return 'app-galia-transp';
             if (id.includes('/verticals/galia/')) return 'app-galia-verticals';
             if (id.includes('/components/erp/accounting/')) return 'app-erp-accounting';
             if (id.includes('/components/erp/fiscal/')) return 'app-erp-fiscal';
             if (id.includes('/components/erp/sales/')) return 'app-erp-sales';
             if (id.includes('/components/erp/purchases/')) return 'app-erp-purchases';
             if (id.includes('/components/erp/trade/')) return 'app-erp-trade';
-            if (id.includes('/components/erp/hr/dialogs/')) return 'app-erp-hr-dialogs';
-            if (id.includes('/components/erp/hr/compliance/')) return 'app-erp-hr-compliance';
-            if (id.includes('/components/erp/hr/integration/')) return 'app-erp-hr-integration';
             if (id.includes('/components/erp/hr/')) return 'app-erp-hr';
             if (id.includes('/components/erp/logistics/')) return 'app-erp-logistics';
-            if (id.includes('/components/erp/maestros/')) return 'app-erp-maestros';
             if (id.includes('/components/erp/treasury/')) return 'app-erp-treasury';
             if (id.includes('/components/erp/inventory/')) return 'app-erp-inventory';
-            if (id.includes('/components/erp/banking/')) return 'app-erp-banking';
-            if (id.includes('/components/erp/advisor/')) return 'app-erp-advisor';
-            if (id.includes('/components/erp/legal/')) return 'app-erp-legal';
-            if (id.includes('/components/erp/esg/')) return 'app-erp-esg';
-            if (id.includes('/components/erp/config/')) return 'app-erp-config';
             if (id.includes('/components/erp/audit-center/')) return 'app-erp-audit-center';
-            if (id.includes('/components/erp/audit/')) return 'app-erp-audit';
             if (id.includes('/components/erp/ai-center/')) return 'app-erp-ai-center';
-            if (id.includes('/components/erp/shared/')) return 'app-erp-shared';
             if (id.includes('/components/erp/')) return 'app-erp-misc';
             if (id.includes('/components/admin/')) return 'app-admin';
-            if (id.includes('/components/academia/dashboard/')) return 'app-academia-dashboard';
-            if (id.includes('/components/academia/strategy/')) return 'app-academia-strategy';
-            if (id.includes('/components/academia/structure/')) return 'app-academia-structure';
-            if (id.includes('/components/academia/production/')) return 'app-academia-production';
-            if (id.includes('/components/academia/business/')) return 'app-academia-business';
-            if (id.includes('/components/academia/marketing/')) return 'app-academia-marketing';
-            if (id.includes('/components/academia/gamification/')) return 'app-academia-gamification';
-            if (id.includes('/components/academia/adaptive-quiz/')) return 'app-academia-quiz';
-            if (id.includes('/components/academia/learning-path/')) return 'app-academia-lpath';
-            if (id.includes('/components/academia/learning-player/')) return 'app-academia-player';
-            if (id.includes('/components/academia/')) return 'app-academia-misc';
-            if (id.includes('node_modules')) return 'vendor-misc';
-          }) : undefined,
+            if (id.includes('/components/academia/')) return 'app-academia';
+          },
           compact: isProductionBuild,
           generatedCode: {
             arrowFunctions: true,
@@ -265,10 +246,9 @@ export default defineConfig(({ mode, command }) => {
           chunkFileNames: 'chunks/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash][extname]',
         },
-        treeshake: isProductionBuild ? {
+        treeshake: {
           moduleSideEffects: false,
-          propertyReadSideEffects: false,
-        } : false,
+        },
       },
       minify: mode === 'production' ? 'esbuild' : false,
       sourcemap: false,
