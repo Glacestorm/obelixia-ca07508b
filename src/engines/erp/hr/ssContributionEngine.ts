@@ -92,6 +92,9 @@ export interface SSContributionBreakdown {
   atEmpresa: number;
   totalEmpresa: number;
 
+  // Cotización adicional de solidaridad 2026
+  solidaridad: SolidarityContribution | null;
+
   // P1B: Correct IRPF base (excluding exempt extrasalarial)
   baseIRPFCorregida: number;
   conceptosExentos: number;
@@ -128,14 +131,45 @@ export interface SSCalculationTrace {
 
 // ── Constants ──
 
-/** Default SS topes 2025 when no DB data is available (Grupo 1 — most conservative) */
-const DEFAULT_SS_TOPES_2025 = {
-  base_minima_mensual: 1547.40,
-  base_maxima_mensual: 4720.50,
+/**
+ * Bases mínimas por grupo de cotización 2026 (RDL 3/2026, BOE 04/02/2026)
+ * Base máxima: 5.101,20 €/mes para todos los grupos
+ * Grupos 1-7: cotización mensual | Grupos 8-11: cotización diaria
+ */
+export const SS_GROUP_BASES_2026: Record<number, {
+  base_minima_mensual: number;
+  base_maxima_mensual: number;
+  base_minima_diaria: number | null;
+  base_maxima_diaria: number | null;
+  cotizacion_tipo: 'mensual' | 'diaria';
+  descripcion: string;
+}> = {
+  1:  { base_minima_mensual: 1929.00,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ingenieros, Licenciados y Personal de alta dirección' },
+  2:  { base_minima_mensual: 1599.60,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ingenieros técnicos, Peritos y Ayudantes titulados' },
+  3:  { base_minima_mensual: 1391.70,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Jefes Administrativos y de Taller' },
+  4:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ayudantes no titulados' },
+  5:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Oficiales administrativos' },
+  6:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Subalternos' },
+  7:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Auxiliares administrativos' },
+  8:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Oficiales de primera y segunda' },
+  9:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Oficiales de tercera y especialistas' },
+  10: { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Peones' },
+  11: { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Trabajadores menores de 18 años' },
 };
 
-/** Default rates 2025 (Régimen General) */
-const DEFAULT_SS_RATES_2025 = {
+/** Default SS topes — resolved by grupo de cotización (2026) */
+function getDefaultTopesForGroup(grupo: number) {
+  const groupData = SS_GROUP_BASES_2026[grupo] ?? SS_GROUP_BASES_2026[1];
+  return {
+    base_minima_mensual: groupData.base_minima_mensual,
+    base_maxima_mensual: groupData.base_maxima_mensual,
+    base_minima_diaria: groupData.base_minima_diaria,
+    base_maxima_diaria: groupData.base_maxima_diaria,
+  };
+}
+
+/** Default rates 2026 (Régimen General) — RDL 3/2026 */
+const DEFAULT_SS_RATES_2026 = {
   tipo_cc_empresa: 23.60,
   tipo_cc_trabajador: 4.70,
   tipo_desempleo_empresa_gi: 5.50,
@@ -145,15 +179,73 @@ const DEFAULT_SS_RATES_2025 = {
   tipo_fogasa: 0.20,
   tipo_fp_empresa: 0.60,
   tipo_fp_trabajador: 0.10,
-  tipo_mei: 0.58,
+  tipo_mei: 0.90,
   tipo_at_empresa: 1.50,
 };
 
-/** P1B: MEI split 2025 — total 0.58%: empresa 0.50%, trabajador 0.08% (RD 322/2024) */
-const MEI_SPLIT_2025 = {
-  empresa: 0.50,
-  trabajador: 0.08,
+/** MEI split 2026 — total 0.90%: empresa 0.75%, trabajador 0.15% (RDL 3/2026) */
+const MEI_SPLIT_2026 = {
+  empresa: 0.75,
+  trabajador: 0.15,
 };
+
+/**
+ * Cotización adicional de solidaridad 2026 (RDL 3/2026)
+ * Aplica sobre retribución que exceda la base máxima mensual
+ */
+export interface SolidarityContribution {
+  tramo1Empresa: number;
+  tramo1Trabajador: number;
+  tramo2Empresa: number;
+  tramo2Trabajador: number;
+  tramo3Empresa: number;
+  tramo3Trabajador: number;
+  totalEmpresa: number;
+  totalTrabajador: number;
+}
+
+export function computeSolidarityContribution(remuneracionMensualTotal: number): SolidarityContribution {
+  const BASE_MAX = 5101.20;
+  const TRAMO1_TOPE = 5611.32;
+  const TRAMO2_TOPE = 7651.80;
+
+  const result: SolidarityContribution = {
+    tramo1Empresa: 0, tramo1Trabajador: 0,
+    tramo2Empresa: 0, tramo2Trabajador: 0,
+    tramo3Empresa: 0, tramo3Trabajador: 0,
+    totalEmpresa: 0, totalTrabajador: 0,
+  };
+
+  if (remuneracionMensualTotal <= BASE_MAX) return result;
+
+  // Tramo 1: 5.101,21 - 5.611,32 → 0.96% empresa, 0.19% trabajador
+  const baseTramo1 = Math.min(remuneracionMensualTotal, TRAMO1_TOPE) - BASE_MAX;
+  if (baseTramo1 > 0) {
+    result.tramo1Empresa = r2(baseTramo1 * 0.96 / 100);
+    result.tramo1Trabajador = r2(baseTramo1 * 0.19 / 100);
+  }
+
+  // Tramo 2: 5.611,33 - 7.651,80 → 1.04% empresa, 0.21% trabajador
+  if (remuneracionMensualTotal > TRAMO1_TOPE) {
+    const baseTramo2 = Math.min(remuneracionMensualTotal, TRAMO2_TOPE) - TRAMO1_TOPE;
+    if (baseTramo2 > 0) {
+      result.tramo2Empresa = r2(baseTramo2 * 1.04 / 100);
+      result.tramo2Trabajador = r2(baseTramo2 * 0.21 / 100);
+    }
+  }
+
+  // Tramo 3: > 7.651,80 → 1.22% empresa, 0.24% trabajador
+  if (remuneracionMensualTotal > TRAMO2_TOPE) {
+    const baseTramo3 = remuneracionMensualTotal - TRAMO2_TOPE;
+    result.tramo3Empresa = r2(baseTramo3 * 1.22 / 100);
+    result.tramo3Trabajador = r2(baseTramo3 * 0.24 / 100);
+  }
+
+  result.totalEmpresa = r2(result.tramo1Empresa + result.tramo2Empresa + result.tramo3Empresa);
+  result.totalTrabajador = r2(result.tramo1Trabajador + result.tramo2Trabajador + result.tramo3Trabajador);
+
+  return result;
+}
 
 // ── Core calculation ──
 
@@ -173,7 +265,7 @@ export function computeSSContributions(
 ): SSContributionBreakdown {
   const warnings: string[] = [];
   const traces: SSCalculationTrace[] = [];
-  const legalRefs: string[] = ['LGSS Art. 147', 'Orden ISM/2024 (bases y tipos)', 'RD 322/2024 (MEI)'];
+  const legalRefs: string[] = ['LGSS Art. 147', 'RDL 3/2026 (bases, tipos y solidaridad)', 'Orden PJC/178/2025 (normas cotización)'];
 
   // ── Data quality tracking ──
   const dataQuality: SSDataQuality = {
@@ -186,15 +278,19 @@ export function computeSSContributions(
   };
 
   if (!limits) {
-    warnings.push('Sin datos de bases SS en BD — usando topes y tipos por defecto 2025');
+    warnings.push(`Sin datos de bases SS en BD — usando topes y tipos por defecto 2026 para grupo ${employee.grupoCotizacion}`);
   }
 
   // ── Resolve rates ──
-  const rates = limits ?? DEFAULT_SS_RATES_2025;
+  const rates = limits ?? DEFAULT_SS_RATES_2026;
+  const defaultTopes = getDefaultTopesForGroup(employee.grupoCotizacion);
   const topes = limits ? {
     base_minima_mensual: limits.base_minima_mensual,
     base_maxima_mensual: limits.base_maxima_mensual,
-  } : DEFAULT_SS_TOPES_2025;
+  } : {
+    base_minima_mensual: defaultTopes.base_minima_mensual,
+    base_maxima_mensual: defaultTopes.base_maxima_mensual,
+  };
 
   // ── 1. Sum contributable salary amounts (excluding overtime) ──
   // P1B: Also track prorated amounts from lines and fiscal classification
@@ -312,26 +408,26 @@ export function computeSSContributions(
   // ── 7. Calculate contributions ──
   const isTemp = employee.isTemporaryContract;
   const tipoDesempleoEmp = isTemp
-    ? (rates as any).tipo_desempleo_empresa_td ?? DEFAULT_SS_RATES_2025.tipo_desempleo_empresa_td
-    : (rates as any).tipo_desempleo_empresa_gi ?? DEFAULT_SS_RATES_2025.tipo_desempleo_empresa_gi;
+    ? (rates as any).tipo_desempleo_empresa_td ?? DEFAULT_SS_RATES_2026.tipo_desempleo_empresa_td
+    : (rates as any).tipo_desempleo_empresa_gi ?? DEFAULT_SS_RATES_2026.tipo_desempleo_empresa_gi;
   const tipoDesempleoTrab = isTemp
-    ? (rates as any).tipo_desempleo_trabajador_td ?? DEFAULT_SS_RATES_2025.tipo_desempleo_trabajador_td
-    : (rates as any).tipo_desempleo_trabajador_gi ?? DEFAULT_SS_RATES_2025.tipo_desempleo_trabajador_gi;
+    ? (rates as any).tipo_desempleo_trabajador_td ?? DEFAULT_SS_RATES_2026.tipo_desempleo_trabajador_td
+    : (rates as any).tipo_desempleo_trabajador_gi ?? DEFAULT_SS_RATES_2026.tipo_desempleo_trabajador_gi;
 
-  const ccTrabajador = r2((baseCCFinal * ((rates as any).tipo_cc_trabajador ?? DEFAULT_SS_RATES_2025.tipo_cc_trabajador)) / 100);
+  const ccTrabajador = r2((baseCCFinal * ((rates as any).tipo_cc_trabajador ?? DEFAULT_SS_RATES_2026.tipo_cc_trabajador)) / 100);
   const desempleoTrabajador = r2((baseCCFinal * tipoDesempleoTrab) / 100);
-  const fpTrabajador = r2((baseCCFinal * ((rates as any).tipo_fp_trabajador ?? DEFAULT_SS_RATES_2025.tipo_fp_trabajador)) / 100);
+  const fpTrabajador = r2((baseCCFinal * ((rates as any).tipo_fp_trabajador ?? DEFAULT_SS_RATES_2026.tipo_fp_trabajador)) / 100);
 
   // P1B: MEI split — trabajador pays 0.08%, empresa pays 0.50% (total 0.58%)
-  const meiTrabajador = r2((baseCCFinal * MEI_SPLIT_2025.trabajador) / 100);
+  const meiTrabajador = r2((baseCCFinal * MEI_SPLIT_2026.trabajador) / 100);
   const totalTrabajador = r2(ccTrabajador + desempleoTrabajador + fpTrabajador + meiTrabajador);
 
-  const ccEmpresa = r2((baseCCFinal * ((rates as any).tipo_cc_empresa ?? DEFAULT_SS_RATES_2025.tipo_cc_empresa)) / 100);
+  const ccEmpresa = r2((baseCCFinal * ((rates as any).tipo_cc_empresa ?? DEFAULT_SS_RATES_2026.tipo_cc_empresa)) / 100);
   const desempleoEmpresa = r2((baseCCFinal * tipoDesempleoEmp) / 100);
-  const fogasa = r2((baseCCFinal * ((rates as any).tipo_fogasa ?? DEFAULT_SS_RATES_2025.tipo_fogasa)) / 100);
-  const fpEmpresa = r2((baseCCFinal * ((rates as any).tipo_fp_empresa ?? DEFAULT_SS_RATES_2025.tipo_fp_empresa)) / 100);
-  const meiEmpresa = r2((baseCCFinal * MEI_SPLIT_2025.empresa) / 100);
-  const tipoAT = (rates as any).tipo_at_empresa ?? DEFAULT_SS_RATES_2025.tipo_at_empresa;
+  const fogasa = r2((baseCCFinal * ((rates as any).tipo_fogasa ?? DEFAULT_SS_RATES_2026.tipo_fogasa)) / 100);
+  const fpEmpresa = r2((baseCCFinal * ((rates as any).tipo_fp_empresa ?? DEFAULT_SS_RATES_2026.tipo_fp_empresa)) / 100);
+  const meiEmpresa = r2((baseCCFinal * MEI_SPLIT_2026.empresa) / 100);
+  const tipoAT = (rates as any).tipo_at_empresa ?? DEFAULT_SS_RATES_2026.tipo_at_empresa;
   const atEmpresa = r2((baseATFinal * tipoAT) / 100);
   const totalEmpresa = r2(ccEmpresa + desempleoEmpresa + fogasa + fpEmpresa + meiEmpresa + atEmpresa);
 
@@ -356,6 +452,19 @@ export function computeSSContributions(
     result: baseIRPFCorregida,
   });
 
+  // ── 8. Cotización adicional de solidaridad (RDL 3/2026) ──
+  const remuneracionTotal = remuneracionMensual + prorrateoMensual + horasExtra;
+  const solidaridad = computeSolidarityContribution(remuneracionTotal);
+  const hasSolidaridad = solidaridad.totalEmpresa > 0 || solidaridad.totalTrabajador > 0;
+
+  if (hasSolidaridad) {
+    traces.push({
+      step: 'Cotización solidaridad (RDL 3/2026)',
+      formula: `Remuneración total ${r2(remuneracionTotal)}€ > base máx 5.101,20€ → Empresa: ${solidaridad.totalEmpresa}€, Trabajador: ${solidaridad.totalTrabajador}€`,
+      result: r2(solidaridad.totalEmpresa + solidaridad.totalTrabajador),
+    });
+  }
+
   return {
     baseCCMensualBruta: r2(baseCCBruta),
     prorrateoMensual: r2(prorrateoMensual),
@@ -366,14 +475,15 @@ export function computeSSContributions(
     desempleoTrabajador,
     fpTrabajador,
     meiTrabajador,
-    totalTrabajador,
+    totalTrabajador: r2(totalTrabajador + solidaridad.totalTrabajador),
     ccEmpresa,
     desempleoEmpresa,
     fogasa,
     fpEmpresa,
     meiEmpresa,
     atEmpresa,
-    totalEmpresa,
+    totalEmpresa: r2(totalEmpresa + solidaridad.totalEmpresa),
+    solidaridad: hasSolidaridad ? solidaridad : null,
     baseIRPFCorregida,
     conceptosExentos: r2(conceptosExentos),
     topeMinAplicado,
