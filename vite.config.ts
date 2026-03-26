@@ -295,7 +295,7 @@ export default defineConfig(({ mode, command }) => {
       },
     },
     css: {
-      devSourcemap: true,
+      devSourcemap: !isBuild,
       modules: {
         localsConvention: 'camelCase',
       },
