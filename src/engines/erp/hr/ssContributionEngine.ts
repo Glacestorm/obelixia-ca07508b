@@ -262,7 +262,7 @@ export function computeSSContributions(
 ): SSContributionBreakdown {
   const warnings: string[] = [];
   const traces: SSCalculationTrace[] = [];
-  const legalRefs: string[] = ['LGSS Art. 147', 'Orden ISM/2024 (bases y tipos)', 'RD 322/2024 (MEI)'];
+  const legalRefs: string[] = ['LGSS Art. 147', 'RDL 3/2026 (bases, tipos y solidaridad)', 'Orden PJC/178/2025 (normas cotización)'];
 
   // ── Data quality tracking ──
   const dataQuality: SSDataQuality = {
