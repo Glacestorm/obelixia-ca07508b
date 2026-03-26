@@ -234,9 +234,11 @@ export default defineConfig(({ mode, command }) => {
           chunkFileNames: 'chunks/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash][extname]',
         },
-        treeshake: {
-          moduleSideEffects: false,
-        },
+        treeshake: isProductionBuild
+          ? {
+              moduleSideEffects: false,
+            }
+          : false,
       },
       minify: mode === 'production' ? 'esbuild' : false,
       sourcemap: false,
