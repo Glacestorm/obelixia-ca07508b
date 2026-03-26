@@ -3,7 +3,7 @@
  * @version 2.1.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -51,26 +51,37 @@ import { ERPRolesManager } from './config/ERPRolesManager';
 import { ERPAuditViewer } from './audit/ERPAuditViewer';
 import { ERPInitialSetup } from './config/ERPInitialSetup';
 import { ERPUserAssignment } from './config/ERPUserAssignment';
-import { MaestrosLayout } from './maestros/MaestrosLayout';
-import { SalesModule } from './sales';
-import { PurchasesModule } from './purchases';
-import { InventoryModule } from './inventory';
-import { AccountingDashboard } from './accounting';
-import { TreasuryDashboard } from './treasury';
-import { TradeFinanceModule } from './trade';
-import { AdvisorAgentPanel } from './advisor';
-import { LogisticsModuleDashboard } from './logistics/LogisticsModuleDashboard';
-import { FiscalModule } from './fiscal';
-import { HRModule } from './hr/HRModule';
-import { LegalModule } from './legal';
-import { GaliaDashboard } from '@/components/verticals/galia';
-import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
-import { ElectricalConsultingModule } from './electrical';
-import { AICommandCenterModule } from './ai-center';
-import { AuditCenterModule } from './audit-center';
+import { Skeleton } from '@/components/ui/skeleton';
 
-import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
-import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
+const MaestrosLayout           = lazy(() => import('./maestros/MaestrosLayout').then(m=>({default:m.MaestrosLayout})));
+const SalesModule               = lazy(() => import('./sales').then(m=>({default:m.SalesModule})));
+const PurchasesModule           = lazy(() => import('./purchases').then(m=>({default:m.PurchasesModule})));
+const InventoryModule           = lazy(() => import('./inventory').then(m=>({default:m.InventoryModule})));
+const AccountingDashboard       = lazy(() => import('./accounting').then(m=>({default:m.AccountingDashboard})));
+const TreasuryDashboard         = lazy(() => import('./treasury').then(m=>({default:m.TreasuryDashboard})));
+const TradeFinanceModule        = lazy(() => import('./trade').then(m=>({default:m.TradeFinanceModule})));
+const AdvisorAgentPanel         = lazy(() => import('./advisor').then(m=>({default:m.AdvisorAgentPanel})));
+const LogisticsModuleDashboard  = lazy(() => import('./logistics/LogisticsModuleDashboard').then(m=>({default:m.LogisticsModuleDashboard})));
+const FiscalModule              = lazy(() => import('./fiscal').then(m=>({default:m.FiscalModule})));
+const HRModule                  = lazy(() => import('./hr/HRModule').then(m=>({default:m.HRModule})));
+const LegalModule               = lazy(() => import('./legal').then(m=>({default:m.LegalModule})));
+const GaliaDashboard            = lazy(() => import('@/components/verticals/galia').then(m=>({default:m.GaliaDashboard})));
+const AcademiaModuleDashboard   = lazy(() => import('@/components/academia/dashboard').then(m=>({default:m.AcademiaModuleDashboard})));
+const ElectricalConsultingModule= lazy(() => import('./electrical').then(m=>({default:m.ElectricalConsultingModule})));
+const AICommandCenterModule     = lazy(() => import('./ai-center').then(m=>({default:m.AICommandCenterModule})));
+const AuditCenterModule         = lazy(() => import('./audit-center').then(m=>({default:m.AuditCenterModule})));
+const ERPAuditViewer            = lazy(() => import('./audit/ERPAuditViewer').then(m=>({default:m.ERPAuditViewer})));
+const ERPMigrationDashboard     = lazy(() => import('@/components/admin/erp-migration').then(m=>({default:m.ERPMigrationDashboard})));
+
+function ModuleSkeleton() {
+  return (
+    <div className="space-y-4 p-6">
+      <Skeleton className="h-8 w-1/3" />
+      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  );
+}
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
