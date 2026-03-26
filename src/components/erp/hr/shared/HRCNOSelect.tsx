@@ -41,9 +41,9 @@ export function HRCNOSelect({
 
   const filteredResults = useMemo(() => {
     if (searchQuery.length < 2) {
-      return CNO_CATALOG.filter((c) => c.groupLevel === 4).slice(0, 50);
+      return CNO_CATALOG.filter((c) => c.groupLevel === 4);
     }
-    return searchCNO(searchQuery, 100);
+    return searchCNO(searchQuery, 999);
   }, [searchQuery]);
 
   // Group by gran-grupo for the list
