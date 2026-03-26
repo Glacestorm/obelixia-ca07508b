@@ -1,6 +1,5 @@
 /**
- * Dashboard Principal del CRM Modular
- * Conectado a datos reales via hooks
+ * CRMModularDashboard v3 — datos reales, sin mock, URL params activos
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -9,45 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  LayoutDashboard,
-  Kanban,
-  MessageSquare,
-  Heart,
-  Timer,
-  Zap,
-  Bot,
-  Users,
-  TrendingUp,
-  Target,
-  PhoneCall,
-  Mail,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  ArrowUpRight,
-  BarChart3,
-  UserCircle,
-  Building2,
-  Phone,
-  CalendarDays,
-  DollarSign,
-  PieChart,
-  Activity,
-  Settings,
-  Link2,
-  Wrench,
-  Brain,
-  Loader2,
-  Info
-} from 'lucide-react';
+import { Loader2, LayoutDashboard, Kanban, MessageSquare, Heart, Timer,
+  Zap, Bot, TrendingUp, Target, CheckCircle2, ArrowUpRight, BarChart3,
+  UserCircle, Settings, Link2, Wrench, Brain, Sparkles } from 'lucide-react';
 
-// CRM Module Components
-import { OmnichannelInbox, Conversation, Message } from '@/components/crm/omnichannel';
+import { OmnichannelInbox } from '@/components/crm/omnichannel';
 import { SentimentAnalysisDashboard } from '@/components/crm/sentiment';
 import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
-import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
+import { IntelligentLeadDistribution } from '@/components/crm/automation';
 import { CRMAgentsPanel } from '@/components/crm/agents';
 import { CRMWorkspaceSelector, CRMTeamsManager, CreateWorkspaceDialog } from '@/components/crm/config';
 import { ContactsManager } from '@/components/crm/contacts';
@@ -63,635 +32,406 @@ import { useCRMDeals } from '@/hooks/crm/useCRMDeals';
 import { useOmnichannelHub } from '@/hooks/crm/omnichannel/useOmnichannelHub';
 import { useSLAMetrics } from '@/hooks/crm/omnichannel/useSLAMetrics';
 import { cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
 
+// ---------- tipos mínimos que necesitan los wrappers ----------
+interface ConvForInbox {
+  id: string; contact: { id: string; name: string; phone?: string; email?: string };
+  channel: string; status: string; priority: string;
+  lastMessage?: { content: string; timestamp: string; isFromContact: boolean };
+  unreadCount: number;
+}
+
+// ---------- URL params ----------
 const VALID_TABS = new Set([
-  'overview','kanban','contacts','omnichannel','sentiment','sla',
-  'automation','reports','agents','integrations','config','supervisor','utilities'
+  'overview','kanban','contacts','omnichannel','sentiment',
+  'sla','automation','reports','agents','integrations','config','utilities'
 ]);
 
 export function CRMModularDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab') || 'overview';
+  const rawTab = searchParams.get('tab') ?? 'overview';
   const activeTab = VALID_TABS.has(rawTab) ? rawTab : 'overview';
-  const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
+  const setActiveTab = useCallback(
+    (tab: string) => setSearchParams({ tab }, { replace: true }),
+    [setSearchParams]
+  );
 
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
-  const { refreshWorkspaces } = useCRMContext();
+  const { refreshWorkspaces, currentWorkspace } = useCRMContext();
+
+  // --- KPIs reales del pipeline ---
   const { getPipelineStats } = useCRMDeals();
-  const { conversations: omniConversations } = useOmnichannelHub();
+  const pipelineStats = useMemo(() => getPipelineStats(), [getPipelineStats]);
 
-  const stats = useMemo(() => getPipelineStats(), [getPipelineStats]);
-
-  const totalDeals = stats.totalDeals;
-  const totalValue = stats.totalValue;
-  const wonDeals = stats.wonDeals;
-  const conversionRate = stats.conversionRate;
-
-  // Omnichannel quick stats
-  const openConvs = useMemo(() => omniConversations.filter(c => c.status === 'open').length, [omniConversations]);
-  const unassignedConvs = useMemo(() => omniConversations.filter(c => !c.assigned_agent_id && c.status === 'open').length, [omniConversations]);
-  const slaRiskConvs = useMemo(() => omniConversations.filter(c => c.sla_breached).length, [omniConversations]);
-
-  const sentimentStats = useMemo(() => {
-    const withSentiment = omniConversations.filter(c => c.sentiment);
-    const total = withSentiment.length || 1;
-    const positive = Math.round(withSentiment.filter(c => c.sentiment === 'positive').length / total * 100);
-    const negative = Math.round(withSentiment.filter(c => c.sentiment === 'negative').length / total * 100);
-    const neutral = 100 - positive - negative;
-    return { positive, neutral, negative };
-  }, [omniConversations]);
+  // --- datos reales de omnichannel para los quick stats ---
+  const { conversations: omniConvs } = useOmnichannelHub();
+  const openConvs      = useMemo(() => omniConvs.filter(c => c.status === 'open').length, [omniConvs]);
+  const unassignedConvs= useMemo(() => omniConvs.filter(c => !c.assigned_agent_id && c.status === 'open').length, [omniConvs]);
+  const slaBreached    = useMemo(() => omniConvs.filter(c => c.sla_breached).length, [omniConvs]);
+  const withSentiment  = useMemo(() => omniConvs.filter(c => c.sentiment), [omniConvs]);
+  const positivePct    = useMemo(() => withSentiment.length
+    ? Math.round(withSentiment.filter(c => c.sentiment === 'positive').length / withSentiment.length * 100)
+    : 0, [withSentiment]);
+  const negativePct    = useMemo(() => withSentiment.length
+    ? Math.round(withSentiment.filter(c => c.sentiment === 'negative').length / withSentiment.length * 100)
+    : 0, [withSentiment]);
+  const neutralPct     = useMemo(() => 100 - positivePct - negativePct, [positivePct, negativePct]);
 
   const modules = [
-    { id: 'kanban', name: 'Pipeline', icon: Kanban, color: 'bg-blue-500', installed: true },
-    { id: 'contacts', name: 'Contactos', icon: UserCircle, color: 'bg-indigo-500', installed: true },
-    { id: 'omnichannel', name: 'Inbox', icon: MessageSquare, color: 'bg-green-500', installed: true },
-    { id: 'sentiment', name: 'Sentimiento', icon: Heart, color: 'bg-pink-500', installed: true },
-    { id: 'sla', name: 'SLAs', icon: Timer, color: 'bg-amber-500', installed: true },
-    { id: 'automation', name: 'Automatización', icon: Zap, color: 'bg-purple-500', installed: true },
-    { id: 'reports', name: 'Reportes', icon: BarChart3, color: 'bg-orange-500', installed: true },
-    { id: 'agents', name: 'Agentes IA', icon: Bot, color: 'bg-cyan-500', installed: true },
-    { id: 'integrations', name: 'Integraciones', icon: Link2, color: 'bg-teal-500', installed: true },
-    { id: 'config', name: 'Configuración', icon: Settings, color: 'bg-slate-500', installed: true },
+    { id: 'kanban',       name: 'Pipeline',      icon: Kanban,        color: 'bg-blue-500'   },
+    { id: 'contacts',     name: 'Contactos',     icon: UserCircle,    color: 'bg-indigo-500' },
+    { id: 'omnichannel',  name: 'Inbox',         icon: MessageSquare, color: 'bg-green-500'  },
+    { id: 'sentiment',    name: 'Sentimiento',   icon: Heart,         color: 'bg-pink-500'   },
+    { id: 'sla',          name: 'SLAs',          icon: Timer,         color: 'bg-amber-500'  },
+    { id: 'automation',   name: 'Automatización',icon: Zap,           color: 'bg-purple-500' },
+    { id: 'reports',      name: 'Reportes',      icon: BarChart3,     color: 'bg-orange-500' },
+    { id: 'agents',       name: 'Agentes IA',    icon: Bot,           color: 'bg-cyan-500'   },
+    { id: 'integrations', name: 'Integraciones', icon: Link2,         color: 'bg-teal-500'   },
+    { id: 'config',       name: 'Config',        icon: Settings,      color: 'bg-slate-500'  },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Create Workspace Dialog */}
-      <CreateWorkspaceDialog 
-        open={showCreateWorkspace} 
-        onOpenChange={setShowCreateWorkspace}
-        onSuccess={refreshWorkspaces}
-      />
-      
-      {/* Header with Workspace Selector + Navigation to ERP */}
+      <ModuleNavigationButton targetModule="erp" />
+
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ModuleNavigationButton targetModule="erp" size="sm" />
-        </div>
-        <CRMWorkspaceSelector 
-          showCreateButton 
-          onCreateClick={() => setShowCreateWorkspace(true)}
+        <CRMWorkspaceSelector />
+        <CreateWorkspaceDialog
+          open={showCreateWorkspace}
+          onOpenChange={setShowCreateWorkspace}
+          onSuccess={() => { setShowCreateWorkspace(false); refreshWorkspaces(); }}
         />
       </div>
-      
-      {/* Main Tabs */}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
-          <TabsTrigger value="overview" className="gap-2">
-            <LayoutDashboard className="h-4 w-4" />
-            Resumen
-          </TabsTrigger>
-          <TabsTrigger value="kanban" className="gap-2">
-            <Kanban className="h-4 w-4" />
-            Pipeline
-          </TabsTrigger>
-          <TabsTrigger value="contacts" className="gap-2">
-            <UserCircle className="h-4 w-4" />
-            Contactos
-          </TabsTrigger>
-          <TabsTrigger value="omnichannel" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Inbox
-          </TabsTrigger>
-          <TabsTrigger value="sentiment" className="gap-2">
-            <Heart className="h-4 w-4" />
-            Sentimiento
-          </TabsTrigger>
-          <TabsTrigger value="sla" className="gap-2">
-            <Timer className="h-4 w-4" />
-            SLAs
-          </TabsTrigger>
-          <TabsTrigger value="automation" className="gap-2">
-            <Zap className="h-4 w-4" />
-            Automatización
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Reportes
-          </TabsTrigger>
-          <TabsTrigger value="agents" className="gap-2">
-            <Bot className="h-4 w-4" />
-            Agentes IA
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="gap-2">
-            <Link2 className="h-4 w-4" />
-            Integraciones
-          </TabsTrigger>
-          <TabsTrigger value="config" className="gap-2">
-            <Settings className="h-4 w-4" />
-            Config
-          </TabsTrigger>
-          <TabsTrigger value="supervisor" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            Supervisor
-          </TabsTrigger>
-          <TabsTrigger value="utilities" className="gap-2">
-            <Wrench className="h-4 w-4" />
-            Utilidades
-          </TabsTrigger>
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+          <TabsTrigger value="overview"><LayoutDashboard className="h-4 w-4 mr-1" />Resumen</TabsTrigger>
+          <TabsTrigger value="kanban"><Kanban className="h-4 w-4 mr-1" />Pipeline</TabsTrigger>
+          <TabsTrigger value="contacts"><UserCircle className="h-4 w-4 mr-1" />Contactos</TabsTrigger>
+          <TabsTrigger value="omnichannel"><MessageSquare className="h-4 w-4 mr-1" />Inbox</TabsTrigger>
+          <TabsTrigger value="sentiment"><Heart className="h-4 w-4 mr-1" />Sentimiento</TabsTrigger>
+          <TabsTrigger value="sla"><Timer className="h-4 w-4 mr-1" />SLAs</TabsTrigger>
+          <TabsTrigger value="automation"><Zap className="h-4 w-4 mr-1" />Automatización</TabsTrigger>
+          <TabsTrigger value="reports"><BarChart3 className="h-4 w-4 mr-1" />Reportes</TabsTrigger>
+          <TabsTrigger value="agents"><Bot className="h-4 w-4 mr-1" />Agentes IA</TabsTrigger>
+          <TabsTrigger value="integrations"><Link2 className="h-4 w-4 mr-1" />Integraciones</TabsTrigger>
+          <TabsTrigger value="config"><Settings className="h-4 w-4 mr-1" />Config</TabsTrigger>
+          <TabsTrigger value="utilities"><Wrench className="h-4 w-4 mr-1" />Utilidades</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* ─── OVERVIEW ─── */}
+        <TabsContent value="overview">
+          {!currentWorkspace ? (
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Oportunidades</p>
-                    <p className="text-2xl font-bold">{totalDeals}</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-blue-500/10">
-                    <Target className="h-5 w-5 text-blue-500" />
-                  </div>
-                </div>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Selecciona un workspace para ver el resumen.
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Valor Pipeline</p>
-                    <p className="text-2xl font-bold">${(totalValue / 1000).toFixed(0)}K</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-green-500/10">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Cerrados</p>
-                    <p className="text-2xl font-bold">{wonDeals}</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-emerald-500/10">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Conversión</p>
-                    <p className="text-2xl font-bold">{conversionRate.toFixed(0)}%</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-purple-500/10">
-                    <ArrowUpRight className="h-5 w-5 text-purple-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          ) : (
+            <>
+              {/* KPIs reales */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Oportunidades</p>
+                      <Target className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold mt-1">{pipelineStats.totalDeals}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Valor Pipeline</p>
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold mt-1">
+                      {pipelineStats.totalValue >= 1000
+                        ? `€${(pipelineStats.totalValue/1000).toFixed(0)}K`
+                        : `€${pipelineStats.totalValue.toFixed(0)}`}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Ganados</p>
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    </div>
+                    <p className="text-2xl font-bold mt-1">{pipelineStats.wonDeals}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Conversión</p>
+                      <ArrowUpRight className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold mt-1">
+                      {pipelineStats.totalDeals > 0
+                        ? `${Math.min(100, Math.round(pipelineStats.conversionRate))}%`
+                        : '—'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Modules Grid */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Módulos CRM</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {modules.map((module) => {
-                const Icon = module.icon;
-                return (
-                  <Card 
-                    key={module.id}
-                    className={cn(
-                      "cursor-pointer hover:shadow-md transition-shadow",
-                      module.installed && "ring-1 ring-green-500/30"
+              {/* Módulos grid */}
+              <Card className="mb-6">
+                <CardHeader><CardTitle className="text-base">Módulos CRM</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {modules.map(m => {
+                      const Icon = m.icon;
+                      return (
+                        <Button key={m.id} variant="outline" className="h-auto py-3 flex flex-col items-center gap-2" onClick={() => setActiveTab(m.id)}>
+                          <div className={cn('p-2 rounded-lg text-white', m.color)}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <span className="text-xs font-medium">{m.name}</span>
+                          <Badge variant="secondary" className="text-[10px]">Activo</Badge>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* IA Panels */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <CRMVoiceAssistant />
+                <PredictivePipelinePanel />
+                <RealtimeCollaborationPanel />
+              </div>
+
+              {/* Quick Stats reales */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2"><MessageSquare className="h-4 w-4" />Inbox Omnicanal</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Conversaciones abiertas</span>
+                      <Badge>{openConvs}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Sin asignar</span>
+                      <Badge variant={unassignedConvs > 0 ? 'destructive' : 'secondary'}>{unassignedConvs}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">SLA incumplido</span>
+                      <span className={cn('text-sm font-medium', slaBreached > 0 ? 'text-amber-600' : '')}>{slaBreached}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center gap-2"><Heart className="h-4 w-4" />Sentimiento General</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {withSentiment.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sin datos de sentimiento aún.</p>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Positivo</span>
+                          <Badge variant="outline">{positivePct}%</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Neutral</span>
+                          <Badge variant="outline">{neutralPct}%</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Negativo</span>
+                          <Badge variant={negativePct > 20 ? 'destructive' : 'outline'}>{negativePct}%</Badge>
+                        </div>
+                      </>
                     )}
-                    onClick={() => setActiveTab(module.id)}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <div className={cn("w-12 h-12 rounded-lg mx-auto mb-3 flex items-center justify-center", module.color)}>
-                        <Icon className="h-6 w-6 text-white" />
-                      </div>
-                      <p className="font-medium text-sm">{module.name}</p>
-                      <Badge variant="default" className="mt-2 text-xs bg-green-600 hover:bg-green-700">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Activo
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* AI Panels - 2026 Features */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <CRMVoiceAssistant />
-            </div>
-            <div className="lg:col-span-1">
-              <PredictivePipelinePanel />
-            </div>
-            <div className="lg:col-span-1">
-              <RealtimeCollaborationPanel />
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Inbox Omnicanal
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Conversaciones abiertas</span>
-                    <Badge variant="secondary">{openConvs}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Sin asignar</span>
-                    <Badge variant="destructive">{unassignedConvs}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">SLA en riesgo</span>
-                    <Badge variant="outline" className="text-amber-600">{slaRiskConvs}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Heart className="h-4 w-4" />
-                  Sentimiento General
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Positivo</span>
-                    <Badge className="bg-green-500">{sentimentStats.positive}%</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Neutral</span>
-                    <Badge variant="secondary">{sentimentStats.neutral}%</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Negativo</span>
-                    <Badge variant="destructive">{sentimentStats.negative}%</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </TabsContent>
 
-        {/* Kanban Tab - Deals Pipeline */}
-        <TabsContent value="kanban">
-          <DealsKanban />
-        </TabsContent>
+        <TabsContent value="kanban"><DealsKanban /></TabsContent>
+        <TabsContent value="contacts"><ContactsManager /></TabsContent>
+        <TabsContent value="omnichannel"><OmnichannelWrapper /></TabsContent>
+        <TabsContent value="sentiment"><SentimentWrapper /></TabsContent>
+        <TabsContent value="sla"><SLAWrapper /></TabsContent>
+        <TabsContent value="automation"><AutomationWrapper /></TabsContent>
+        <TabsContent value="reports"><CRMAnalyticsDashboard /></TabsContent>
+        <TabsContent value="agents"><CRMAgentsPanel /></TabsContent>
+        <TabsContent value="integrations"><IntegrationHubDashboard /></TabsContent>
 
-        {/* Contacts Tab */}
-        <TabsContent value="contacts">
-          <ContactsManager />
-        </TabsContent>
-
-        {/* Omnichannel Tab */}
-        <TabsContent value="omnichannel">
-          <OmnichannelInboxWrapper />
-        </TabsContent>
-
-        {/* Sentiment Tab */}
-        <TabsContent value="sentiment">
-          <SentimentTabContent />
-        </TabsContent>
-
-        {/* SLA Tab */}
-        <TabsContent value="sla">
-          <SLATabContent />
-        </TabsContent>
-
-        {/* Automation Tab */}
-        <TabsContent value="automation">
-          <AutomationTabContent />
-        </TabsContent>
-
-        {/* Reports Tab */}
-        <TabsContent value="reports">
-          <ReportsTabContent />
-        </TabsContent>
-
-        {/* Agents Tab */}
-        <TabsContent value="agents">
-          <CRMAgentsPanel />
-        </TabsContent>
-
-        {/* Config Tab */}
-        <TabsContent value="config" className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
+        <TabsContent value="config">
+          <div className="space-y-4">
             <CRMTeamsManager />
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Configuración del Workspace
-                </CardTitle>
-                <CardDescription>
-                  Ajustes generales del CRM
-                </CardDescription>
+                <CardTitle className="text-base">Config Workspace</CardTitle>
+                <CardDescription>Ajustes generales del CRM</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">Notificaciones</p>
-                    <p className="text-sm text-muted-foreground">Alertas de nuevos leads</p>
+              <CardContent className="space-y-3">
+                {[
+                  { label:'Notificaciones', sub:'Alertas de nuevos leads', val:'Activado' },
+                  { label:'Auto-asignación', sub:'Distribuir leads automáticamente', val:'Activado' },
+                  { label:'SLA por defecto', sub:'Tiempo de respuesta', val:'30 min' },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center justify-between py-2 border-b last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.sub}</p>
+                    </div>
+                    <Badge variant="secondary">{item.val}</Badge>
                   </div>
-                  <Badge variant="secondary">Activado</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">Auto-asignación</p>
-                    <p className="text-sm text-muted-foreground">Distribuir leads automáticamente</p>
-                  </div>
-                  <Badge variant="secondary">Activado</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">SLA por defecto</p>
-                    <p className="text-sm text-muted-foreground">Tiempo de respuesta: 30min</p>
-                  </div>
-                  <Badge>30 min</Badge>
-                </div>
+                ))}
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        {/* Integrations Hub Tab */}
-        <TabsContent value="integrations">
-          <IntegrationHubDashboard />
-        </TabsContent>
-
-        {/* Supervisor Dashboard Tab - Redirects to AI Command Center */}
-        <TabsContent value="supervisor">
-          <Card className="max-w-lg mx-auto mt-8">
-            <CardContent className="pt-6 text-center space-y-4">
-              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Info className="h-6 w-6 text-primary" />
+        <TabsContent value="utilities">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">IA Híbrida Universal</CardTitle>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold">Supervisor de Agentes IA</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  El supervisor centralizado ha sido trasladado al AI Command Center del ERP.
-                </p>
-              </div>
-              <Button onClick={() => window.location.href = '/obelixia-admin/erp?tab=ai-center'}>
-                Ir al AI Command Center
-              </Button>
+            </CardHeader>
+            <CardContent>
+              <AIUnifiedDashboard />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Utilities Tab - AI Hybrid */}
-        <TabsContent value="utilities">
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">Utilidades del Sistema</h2>
-            </div>
-            
-            <Tabs defaultValue="ai-hybrid" className="space-y-4">
-              <TabsList className="grid w-full max-w-md grid-cols-1">
-                <TabsTrigger value="ai-hybrid" className="gap-2">
-                  <Brain className="h-4 w-4" />
-                  IA Híbrida Universal
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="ai-hybrid">
-                <AIUnifiedDashboard />
-              </TabsContent>
-            </Tabs>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-// === Omnichannel Inbox Wrapper (datos reales) ===
-function OmnichannelInboxWrapper() {
-  const {
-    conversations,
-    messages,
-    currentConversation,
-    selectConversation,
-    sendMessage,
-    assignConversation,
-    changeStatus,
-    addTag,
-    isLoading
-  } = useOmnichannelHub();
+// ─── WRAPPERS CON DATOS REALES ──────────────────────────────────────────────
 
-  if (isLoading && conversations.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+function OmnichannelWrapper() {
+  const { conversations, messages, currentConversation, selectConversation,
+          sendMessage, assignConversation, changeStatus, addTag, isLoading } = useOmnichannelHub();
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  );
+
+  const mapped: ConvForInbox[] = conversations.map(c => ({
+    id: c.id,
+    contact: { id: c.contact_id ?? c.id, name: c.contact_name ?? 'Desconocido',
+               phone: c.contact_phone ?? undefined, email: c.contact_email ?? undefined },
+    channel: c.channel,
+    status: c.status,
+    priority: c.priority,
+    lastMessage: c.last_message_preview
+      ? { content: c.last_message_preview, timestamp: c.last_message_at ?? c.updated_at,
+          isFromContact: c.last_message_direction === 'inbound' }
+      : undefined,
+    unreadCount: c.unread_count ?? 0,
+  }));
+
+  const currentMapped = currentConversation ? {
+    id: currentConversation.id,
+    contact: { id: currentConversation.contact_id ?? currentConversation.id,
+               name: currentConversation.contact_name ?? 'Desconocido' },
+    channel: currentConversation.channel,
+    status: currentConversation.status,
+    priority: currentConversation.priority,
+    unreadCount: currentConversation.unread_count ?? 0,
+  } : undefined;
 
   return (
     <div className="h-[600px]">
-      <OmnichannelInbox 
-        conversations={conversations.map(c => ({
-          id: c.id,
-          contact: {
-            id: c.contact_id || c.id,
-            name: c.contact_name || 'Desconocido',
-            phone: c.contact_phone,
-            email: c.contact_email,
-          },
-          channel: c.channel as any,
-          status: c.status as any,
-          priority: c.priority as any,
-          lastMessage: c.last_message_preview ? {
-            content: c.last_message_preview,
-            timestamp: c.last_message_at || c.updated_at,
-            isFromContact: c.last_message_direction === 'inbound',
-          } : undefined,
-          unreadCount: c.unread_count || 0,
-        }))}
+      <OmnichannelInbox
+        conversations={mapped as any}
         messages={messages.map(m => ({
-          id: m.id,
-          conversationId: m.conversation_id,
-          content: m.content,
-          timestamp: m.created_at,
-          isFromContact: m.direction === 'inbound',
-          status: m.status as any,
-        }))}
-        currentConversation={currentConversation ? {
-          id: currentConversation.id,
-          contact: {
-            id: currentConversation.contact_id || currentConversation.id,
-            name: currentConversation.contact_name || 'Desconocido',
-          },
-          channel: currentConversation.channel as any,
-          status: currentConversation.status as any,
-          priority: currentConversation.priority as any,
-          unreadCount: currentConversation.unread_count || 0,
-        } : undefined}
-        onSelectConversation={(c) => {
-          const original = conversations.find(conv => conv.id === c.id);
-          if (original) selectConversation(original);
-        }}
-        onSendMessage={(id, content) => sendMessage(id, content)}
-        onAssign={(convId, agentId) => assignConversation(convId, agentId)}
-        onUpdateStatus={(id, status) => changeStatus(id, status as any)}
-        onAddTag={(id, tag) => addTag(id, tag)}
+          id: m.id, conversationId: m.conversation_id, content: m.content,
+          timestamp: m.created_at, isFromContact: m.direction === 'inbound', status: m.status as any,
+        })) as any}
+        currentConversation={currentMapped as any}
+        onSelectConversation={(c: any) => selectConversation(c.id)}
+        onSendMessage={(id: string, content: string) => sendMessage(id, content)}
+        onAssign={(id: string, agentId: string) => assignConversation(id, agentId)}
+        onUpdateStatus={(id: string, status: string) => changeStatus(id, status as any)}
+        onAddTag={(id: string, tag: string) => addTag(id, tag)}
       />
     </div>
   );
 }
 
-// === SLA Tab Content (datos reales) ===
-function SLATabContent() {
+function SentimentWrapper() {
+  const { conversations, isLoading } = useOmnichannelHub();
+
+  const sentimentData = useMemo(() =>
+    conversations.filter(c => c.sentiment).map(c => ({
+      id: c.id, sourceType: 'message' as const, sourceId: c.id,
+      content: c.last_message_preview ?? '',
+      sentiment: (c.sentiment ?? 'neutral') as any,
+      sentimentScore: c.sentiment_score ?? 0,
+      emotions: [] as { emotion: string; intensity: number }[], keyPhrases: [] as string[], topics: [] as string[],
+      actionRequired: c.priority === 'urgent' || c.priority === 'high',
+      analyzedAt: c.updated_at,
+    })), [conversations]);
+
+  const trends = useMemo(() =>
+    ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => ({
+      date: d,
+      positive: sentimentData.length ? Math.round(sentimentData.filter(s=>s.sentiment==='positive').length/sentimentData.length*100) : 0,
+      neutral:  sentimentData.length ? Math.round(sentimentData.filter(s=>s.sentiment==='neutral').length/sentimentData.length*100)  : 0,
+      negative: sentimentData.length ? Math.round(sentimentData.filter(s=>s.sentiment==='negative').length/sentimentData.length*100) : 0,
+      avgScore: 50,
+    })), [sentimentData]);
+
+  if (isLoading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  return <SentimentAnalysisDashboard sentimentData={sentimentData} trends={trends} />;
+}
+
+function SLAWrapper() {
   const { slaPolicies, agentMetrics, channelMetrics, globalMetrics, isLoading } = useSLAMetrics();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
   return (
-    <MultichannelSLADashboard 
+    <MultichannelSLADashboard
       slaConfigs={slaPolicies.map(p => ({
-        id: p.id,
-        name: p.name,
-        channel: p.channel as any,
+        id: p.id, name: p.name, channel: p.channel as any,
         firstResponseMinutes: p.first_response_minutes,
         resolutionMinutes: p.resolution_minutes,
         priority: p.priority as any,
       }))}
       agentMetrics={agentMetrics}
       channelMetrics={channelMetrics}
-      globalMetrics={globalMetrics || { totalOpen: 0, totalResolved: 0, avgWaitTime: 0, avgResponseTime: 0, slaCompliance: 0, csat: 0 }}
+      globalMetrics={globalMetrics ?? { totalOpen:0, totalResolved:0, avgWaitTime:0, avgResponseTime:0, slaCompliance:0, csat:0 }}
     />
   );
 }
 
-// === Sentiment Tab Content (datos reales) ===
-function SentimentTabContent() {
-  const { conversations, isLoading } = useOmnichannelHub();
-
-  const sentimentData = useMemo(() => 
-    conversations
-      .filter(c => c.sentiment)
-      .map(c => ({
-        id: c.id,
-        sourceType: 'message' as const,
-        sourceId: c.id,
-        content: c.last_message_preview || '',
-        sentiment: (c.sentiment || 'neutral') as 'positive' | 'neutral' | 'negative',
-        sentimentScore: c.sentiment_score || 0,
-        emotions: [] as { emotion: string; intensity: number }[],
-        keyPhrases: [] as string[],
-        topics: [] as string[],
-        actionRequired: c.priority === 'urgent' || c.priority === 'high',
-        analyzedAt: c.updated_at,
-      })),
-    [conversations]
-  );
-
-  const trends = useMemo(() => {
-    const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-    const total = Math.max(sentimentData.length, 1);
-    const positiveCount = sentimentData.filter(s => s.sentiment === 'positive').length;
-    const negativeCount = sentimentData.filter(s => s.sentiment === 'negative').length;
-    const neutralCount = total - positiveCount - negativeCount;
-    return days.map(d => ({
-      date: d,
-      positive: Math.round(positiveCount / total * 100),
-      neutral: Math.round(neutralCount / total * 100),
-      negative: Math.round(negativeCount / total * 100),
-      avgScore: 50,
-    }));
-  }, [sentimentData]);
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-  }
-
-  return <SentimentAnalysisDashboard sentimentData={sentimentData} trends={trends} />;
-}
-
-// === Automation Tab Content ===
-function AutomationTabContent() {
-  const [flows, setFlows] = useState<StageFlow[]>([
-    { id: '1', name: 'Bienvenida', fromStage: 'new', toStage: 'contacted', actions: [{ id: 'a1', type: 'whatsapp', config: {} }], conditions: [], isActive: true, executionCount: 145 },
-  ]);
+function AutomationWrapper() {
+  const [flows, setFlows] = useState<StageFlow[]>([]);
   const stages = [
-    { id: 'new', name: 'Nuevos', color: '#6366f1' },
-    { id: 'contacted', name: 'Contactados', color: '#f59e0b' },
-    { id: 'qualified', name: 'Calificados', color: '#10b981' },
+    { id:'lead', name:'Lead', color:'#6366f1' },
+    { id:'qualified', name:'Calificado', color:'#f59e0b' },
+    { id:'proposal', name:'Propuesta', color:'#8b5cf6' },
+    { id:'negotiation', name:'Negociación', color:'#f97316' },
+    { id:'won', name:'Ganado', color:'#10b981' },
+    { id:'lost', name:'Perdido', color:'#ef4444' },
   ];
-
   return (
-    <Tabs defaultValue="flows" className="space-y-4">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="flows" className="gap-2">
-          <Zap className="h-4 w-4" />
-          Flujos
-        </TabsTrigger>
-        <TabsTrigger value="distribution" className="gap-2">
-          <Users className="h-4 w-4" />
-          Distribución
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="flows">
-        <StageFlowAutomation
-          stages={stages}
-          flows={flows}
-          onCreateFlow={(f) => setFlows(prev => [...prev, { ...f, id: `f${Date.now()}`, executionCount: 0 }])}
-          onToggleFlow={(id, active) => setFlows(prev => prev.map(f => f.id === id ? { ...f, isActive: active } : f))}
-          onDeleteFlow={(id) => setFlows(prev => prev.filter(f => f.id !== id))}
-        />
-      </TabsContent>
-      <TabsContent value="distribution">
-        <LeadDistributionWrapper />
-      </TabsContent>
-    </Tabs>
-  );
-}
-
-function LeadDistributionWrapper() {
-  const [rules, setRules] = useState<DistributionRule[]>([
-    { id: 'r1', name: 'Balance', type: 'workload', weight: 40, isActive: true },
-  ]);
-  const agents: Agent[] = [
-    { id: 'a1', name: 'Juan Pérez', activeLeads: 12, maxCapacity: 20, specializations: ['E-commerce'], performanceScore: 92, avgResponseTime: 4, conversionRate: 28, isAvailable: true, currentWorkload: 60 },
-  ];
-  const stats: DistributionStats = { totalDistributed: 1247, avgAssignmentTime: 2.3, balanceScore: 87, performanceImpact: 12 };
-
-  return (
-    <IntelligentLeadDistribution
-      agents={agents}
-      rules={rules}
-      stats={stats}
-      onUpdateRule={(id, u) => setRules(prev => prev.map(r => r.id === id ? { ...r, ...u } : r))}
-      onUpdateAgentCapacity={() => {}}
-      onDistributeNow={() => {}}
+    <StageFlowAutomation
+      stages={stages}
+      flows={flows}
+      onCreateFlow={(f: any) => setFlows(prev => [...prev, { ...f, id:`f${Date.now()}`, executionCount:0 }])}
+      onToggleFlow={(id: string, active: boolean) => setFlows(prev => prev.map(f => f.id===id ? {...f, isActive:active} : f))}
+      onDeleteFlow={(id: string) => setFlows(prev => prev.filter(f => f.id !== id))}
     />
   );
-}
-
-// === Reports Tab ===
-function ReportsTabContent() {
-  return <CRMAnalyticsDashboard />;
 }
 
 export default CRMModularDashboard;
