@@ -1,25 +1,3 @@
-export { ERPDashboard } from './ERPDashboard';
-export { ERPModulesGrid } from './ERPModulesGrid';
+// Minimal barrel — only re-export what's consumed outside the erp/ tree.
+// Sub-modules should be imported directly (e.g., from './sales') to enable tree-shaking.
 export { ERPModularDashboard } from './ERPModularDashboard';
-export { ERPCompanySelector } from './config/ERPCompanySelector';
-export { ERPCompaniesManager } from './config/ERPCompaniesManager';
-export { ERPFiscalYearsManager } from './config/ERPFiscalYearsManager';
-export { ERPSeriesManager } from './config/ERPSeriesManager';
-export { ERPRolesManager } from './config/ERPRolesManager';
-export { ERPInitialSetup } from './config/ERPInitialSetup';
-export { ERPUserAssignment } from './config/ERPUserAssignment';
-export { ERPAuditViewer } from './audit/ERPAuditViewer';
-export { MaestrosLayout } from './maestros/MaestrosLayout';
-export * from './purchases';
-export * from './inventory';
-export * from './treasury';
-export * from './advisor';
-export * from './trade';
-export * from './shared';
-export * from './banking';
-export { LogisticsModuleDashboard } from './logistics/LogisticsModuleDashboard';
-export * from './fiscal';
-export { HRModule } from './hr/HRModule';
-export * from './legal';
-export * from './esg';
-export type { Transaction, Invoice, Employee, ERPMetrics } from './ERPDashboard';
