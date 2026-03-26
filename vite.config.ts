@@ -29,7 +29,7 @@ export default defineConfig(({ mode, command }) => {
         // SWC optimizations
         jsxImportSource: undefined,
       }), 
-      mode === "development" && componentTagger(),
+      !isBuild && mode === "development" && componentTagger(),
       // PWA only in production builds to reduce build-time memory in development mode
       mode === "production" && VitePWA({
         registerType: 'autoUpdate',
