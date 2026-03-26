@@ -37,7 +37,9 @@ import {
   Scale,
   Landmark,
   GraduationCap,
-  Activity
+  Activity,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { useERPContext, ERPProvider } from '@/hooks/erp/useERPContext';
 import { useHRActiveRoleExperience } from '@/hooks/admin/hr/useHRActiveRoleExperience';
@@ -65,6 +67,7 @@ import { GaliaDashboard } from '@/components/verticals/galia';
 import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
 import { ElectricalConsultingModule } from './electrical';
 import { AICommandCenterModule } from './ai-center';
+import { AuditCenterModule } from './audit-center';
 
 import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
@@ -95,7 +98,7 @@ function ERPModularDashboardContent() {
   }, [roleExperience.trackModuleUsage]);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
-  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'electrical', 'ai-center', 'migration'];
+  const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'electrical', 'ai-center', 'audit-center', 'migration'];
   
   // Detectar si estamos dentro de un módulo específico
   const isInsideModule = moduleTabIds.includes(activeTab);
@@ -171,6 +174,7 @@ function ERPModularDashboardContent() {
     { id: 'academia', name: 'Academia', icon: GraduationCap, permission: 'admin.all', color: 'bg-amber-500' },
     { id: 'electrical', name: 'C. Eléctrica', icon: Zap, permission: 'admin.all', color: 'bg-yellow-500' },
     { id: 'ai-center', name: 'IA Center', icon: Bot, permission: 'admin.all', color: 'bg-violet-600' },
+    { id: 'audit-center', name: 'Auditoría', icon: ShieldCheck, permission: 'admin.all', color: 'bg-emerald-600' },
   ];
 
   const availableModules = modules.filter(m => canShowModule(m.id, m.permission));
