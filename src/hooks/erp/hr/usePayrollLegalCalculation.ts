@@ -46,6 +46,10 @@ import {
   type LegalPreCloseCheck,
   type LegalPreCloseEmployee,
 } from '@/engines/erp/hr/payslipEngine';
+import {
+  resolveContractType,
+  getContractLegalSummary,
+} from '@/engines/erp/hr/contractTypeEngine';
 import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ── Types ──
@@ -247,9 +251,14 @@ export function usePayrollLegalCalculation(companyId: string) {
         const ssInput = mapLinesToSSInput(payrollLines);
         const ssLimits = grupoCot ? ssBasesMap.get(grupoCot) ?? null : null;
         const pagasProrrateadas = laborData?.pagas_extras_prorrateadas ?? false;
+        // ── Resolve contract type from RD code (contractTypeEngine) ──
+        const tipoContratoRD = laborData?.tipo_contrato_rd ?? null;
+        const contractProfile = resolveContractType(tipoContratoRD);
+        const contractSummary = getContractLegalSummary(tipoContratoRD);
+
         const ssContext: SSEmployeeContext = {
           grupoCotizacion: grupoCot ?? 1,
-          isTemporaryContract: laborData?.contrato_inferior_anual ?? false,
+          isTemporaryContract: contractProfile.isTemporaryForSS,
           coeficienteParcialidad: laborData?.coeficiente_parcialidad ?? 1.0,
           pagasExtrasAnuales: 2,
           pagasExtrasProrrateadas: pagasProrrateadas,
@@ -265,6 +274,9 @@ export function usePayrollLegalCalculation(companyId: string) {
         const salarioBrutoAnual = (emp.base_salary ?? record.gross_salary * 12) || record.gross_salary * 12;
         const ssWorkerAnual = ssResult.totalTrabajador * 12;
         const irpfInput = buildIRPFInputFromLaborData(laborData, salarioBrutoAnual, ssWorkerAnual);
+
+        // Override contratoInferiorAnual from contract type engine (takes precedence over manual flag)
+        irpfInput.contratoInferiorAnual = contractProfile.contratoInferiorAnual || irpfInput.contratoInferiorAnual;
 
         // P1B: Build regularization context
         let regularizationCtx: IRPFRegularizationContext | null = null;
@@ -285,6 +297,19 @@ export function usePayrollLegalCalculation(companyId: string) {
           irpfTramos.length > 0 ? irpfTramos : null,
           regularizationCtx,
         );
+
+        // ── Contract type legal references → inject into IRPF result ──
+        irpfResult = {
+          ...irpfResult,
+          warnings: [
+            ...irpfResult.warnings,
+            ...contractSummary.warnings,
+          ],
+          legalReferences: [
+            ...irpfResult.legalReferences,
+            ...contractSummary.legalReferences,
+          ],
+        };
 
         // ── Art. 88.5 RIRPF: Tipo voluntario solicitado por el empleado ──
         // El trabajador puede solicitar un tipo superior al calculado.

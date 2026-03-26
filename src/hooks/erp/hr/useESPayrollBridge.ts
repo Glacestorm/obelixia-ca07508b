@@ -7,6 +7,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useESLocalization, type ESEmployeeLaborData, type ESSSBase, type IRPFCalculationParams, type SSContributionResult, type IRPFResult } from './useESLocalization';
+import { isTemporaryForSS } from '@/engines/erp/hr/contractTypeEngine';
 
 // ── Types ──
 
@@ -354,8 +355,8 @@ export function useESPayrollBridge(companyId?: string) {
       const baseCotizacionCC = Math.max(ssBase.base_minima_mensual, Math.min(totalDevengosContribuibles, ssBase.base_maxima_mensual));
       const baseCotizacionAT = baseCotizacionCC + (input.horasExtraImporte || 0); // AT includes overtime on top
 
-      // ── 3. SS contributions ──
-      const isTemporary = laborData.tipo_contrato_rd ? ['402', '501', '502', '410'].includes(laborData.tipo_contrato_rd) : false;
+      // ── 3. SS contributions (contract type resolved via contractTypeEngine) ──
+      const isTemporary = isTemporaryForSS(laborData.tipo_contrato_rd);
       const ssResult = esLoc.calculateSSContributions(totalDevengosContribuibles, ssBase, isTemporary);
 
       // SS worker deductions (with trace)
