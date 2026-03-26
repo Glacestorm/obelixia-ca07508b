@@ -7,6 +7,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useESLocalization, type ESEmployeeLaborData, type ESSSBase, type IRPFCalculationParams, type SSContributionResult, type IRPFResult } from './useESLocalization';
+import { isTemporaryForSS } from '@/engines/erp/hr/contractTypeEngine';
 
 // ── Types ──
 
