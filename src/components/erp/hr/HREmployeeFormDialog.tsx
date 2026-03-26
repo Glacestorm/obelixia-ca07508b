@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { HRCNOSelect } from './shared/HRCNOSelect';
 import { HRCollectiveAgreementSelect } from './shared/HRCollectiveAgreementSelect';
 import { HRModelo145Section, EMPTY_MODELO145, type Modelo145Data } from './shared/HRModelo145Section';
+import { calculateIRPFRetention } from '@/lib/irpf/irpfRetentionCalculator';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
