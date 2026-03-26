@@ -14,7 +14,10 @@ import { HRCNOSelect } from './shared/HRCNOSelect';
 import { HRCollectiveAgreementSelect } from './shared/HRCollectiveAgreementSelect';
 import { HRModelo145Section, EMPTY_MODELO145, type Modelo145Data } from './shared/HRModelo145Section';
 import { calculateIRPFRetention } from '@/lib/irpf/irpfRetentionCalculator';
+import { useEmployeeLegalProfile } from '@/hooks/erp/hr/useEmployeeLegalProfile';
+import { resolveContractType } from '@/engines/erp/hr/contractTypeEngine';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -146,6 +149,38 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
   // IRPF manual override
   const [irpfManualOverride, setIrpfManualOverride] = useState(false);
+
+  // Unified Legal Profile
+  const { profile: legalProfile, compute: computeLegalProfile, persist: persistLegalProfile, isSaving: isSavingProfile } = useEmployeeLegalProfile(companyId);
+
+  // Reactive contract profile for cross-field info
+  const contractProfile = useMemo(() => resolveContractType(esFields.contract_type_rd), [esFields.contract_type_rd]);
+
+  // Compute legal profile reactively when relevant fields change
+  const computedProfile = useMemo(() => {
+    if (formData.country_code !== 'ES') return null;
+    return computeLegalProfile({
+      employeeId: employee?.id || null,
+      firstName: formData.first_name,
+      lastName: formData.last_name,
+      companyId,
+      baseSalary: Number(formData.base_salary) || 0,
+      contractTypeRD: esFields.contract_type_rd,
+      contributionGroup: esFields.contribution_group,
+      irpfPercentage: parseFloat(esFields.irpf_percentage) || 0,
+      irpfLegalRate: irpfCalculation?.retentionRate || 0,
+      comunidadAutonoma: esFields.autonomous_community,
+      empresaFiscalNIF: esFields.empresa_fiscal_nif,
+      empresaFiscalNombre: esFields.empresa_fiscal_nombre,
+      ccc: esFields.ccc,
+      naf: esFields.naf,
+      convenioColectivo: esFields.collective_agreement,
+      cnoCode: esFields.cno_code,
+      ocupacionSS: esFields.ocupacion_ss,
+      hireDate: formData.hire_date,
+      status: formData.status,
+    });
+  }, [formData, esFields, irpfCalculation, companyId, employee?.id, computeLegalProfile]);
 
   // Auto-calculate IRPF from salary + M145
   const irpfCalculation = useMemo(() => {
