@@ -136,6 +136,9 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     cno_code: '',
     irpf_percentage: '',
     ocupacion_ss: '' as '' | 'a' | 'b' | 'd' | 'f' | 'g' | 'h',
+    ccc: '',
+    empresa_fiscal_nif: '',
+    empresa_fiscal_nombre: '',
   });
 
   // Modelo 145 data (IRPF withholding communication)
@@ -200,7 +203,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         status: 'active', country_code: 'ES', base_salary: 0,
         legal_entity_id: '', work_center_id: '', reports_to: '',
       });
-      setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '', ocupacion_ss: '' as '' });
+      setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '', ocupacion_ss: '' as '', ccc: '', empresa_fiscal_nif: '', empresa_fiscal_nombre: '' });
       setModelo145({ ...EMPTY_MODELO145 });
       const defaultAccess: Record<string, 'none'> = {};
       AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
@@ -236,6 +239,9 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           cno_code: ext.cno_code || '',
           irpf_percentage: ext.irpf_percentage || '',
           ocupacion_ss: ext.ocupacion_ss || '',
+          ccc: ext.ccc || '',
+          empresa_fiscal_nif: ext.empresa_fiscal_nif || '',
+          empresa_fiscal_nombre: ext.empresa_fiscal_nombre || '',
         });
         // Load Modelo 145 data
         if (ext.modelo145) {
@@ -370,6 +376,9 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
               cno_code: esFields.cno_code || null,
               irpf_percentage: esFields.irpf_percentage || null,
               ocupacion_ss: esFields.ocupacion_ss || null,
+              ccc: esFields.ccc || null,
+              empresa_fiscal_nif: esFields.empresa_fiscal_nif || null,
+              empresa_fiscal_nombre: esFields.empresa_fiscal_nombre || null,
               modelo145: JSON.parse(JSON.stringify(modelo145)),
             },
           };
@@ -635,7 +644,29 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                 {formData.country_code === 'ES' ? (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">Campos específicos de la legislación laboral española:</p>
+
+                    {/* Empresa Fiscal (ET Art. 1.2, Art. 42-44; LGSS Art. 15) */}
+                    <div className="rounded-lg border p-3 space-y-2">
+                      <Label className="text-xs font-semibold">Empresa Fiscal (ET Art. 1.2 / RD 1065/2007)</Label>
+                      <p className="text-xs text-muted-foreground">Identificación fiscal del empleador real. Obligatorio en nómina (OM 27/12/1994 Art. 2).</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">NIF/CIF Empresa Fiscal</Label>
+                          <Input value={esFields.empresa_fiscal_nif} onChange={(e) => setEsFields(prev => ({ ...prev, empresa_fiscal_nif: e.target.value }))} placeholder="B12345678" className="h-8 text-sm" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Razón social Empresa Fiscal</Label>
+                          <Input value={esFields.empresa_fiscal_nombre} onChange={(e) => setEsFields(prev => ({ ...prev, empresa_fiscal_nombre: e.target.value }))} placeholder="Empresa S.L." className="h-8 text-sm" />
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">C.C.C. (Código Cuenta Cotización)</Label>
+                        <Input value={esFields.ccc} onChange={(e) => setEsFields(prev => ({ ...prev, ccc: e.target.value }))} placeholder="28/1234567/89" className="h-8 text-sm" />
+                        <p className="text-xs text-muted-foreground">LGSS Art. 15 / RD 84/1996 Art. 29. Identifica al empleador ante la TGSS.</p>
+                      </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Nº Afiliación SS (NAF)</Label>
                         <Input value={esFields.naf} onChange={(e) => setEsFields(prev => ({ ...prev, naf: e.target.value }))} placeholder="28/12345678/90" />
