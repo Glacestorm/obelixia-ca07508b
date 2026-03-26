@@ -200,7 +200,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         .eq('country_code', 'ES')
         .maybeSingle();
       if (data) {
-        const ext = (data.extension_data || {}) as Record<string, string>;
+        const ext = (data.extension_data || {}) as Record<string, any>;
         setEsFields({
           naf: data.social_security_number || '',
           contribution_group: ext.contribution_group || '',
@@ -210,6 +210,12 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           cno_code: ext.cno_code || '',
           irpf_percentage: ext.irpf_percentage || '',
         });
+        // Load Modelo 145 data
+        if (ext.modelo145) {
+          setModelo145({ ...EMPTY_MODELO145, ...ext.modelo145 });
+        } else {
+          setModelo145({ ...EMPTY_MODELO145 });
+        }
       }
     } catch (err) {
       console.error('[ES Extension] load error:', err);
