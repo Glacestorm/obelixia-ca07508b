@@ -82,6 +82,7 @@ function ModuleSkeleton() {
     </div>
   );
 }
+import { ERPModuleErrorBoundary } from './ERPModuleErrorBoundary';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -407,84 +408,116 @@ function ERPModularDashboardContent() {
 
         {/* Maestros Tab */}
         <TabsContent value="maestros">
-          <Suspense fallback={<ModuleSkeleton />}>
-            {currentCompany && <MaestrosLayout companyId={currentCompany.id} />}
-          </Suspense>
+          <ERPModuleErrorBoundary module="Maestros">
+            <Suspense fallback={<ModuleSkeleton />}>
+              {currentCompany && <MaestrosLayout companyId={currentCompany.id} />}
+            </Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Sales Tab */}
         <TabsContent value="sales">
-          <Suspense fallback={<ModuleSkeleton />}><SalesModule /></Suspense>
+          <ERPModuleErrorBoundary module="Ventas">
+            <Suspense fallback={<ModuleSkeleton />}><SalesModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Purchases Tab */}
         <TabsContent value="purchases">
-          <Suspense fallback={<ModuleSkeleton />}><PurchasesModule /></Suspense>
+          <ERPModuleErrorBoundary module="Compras">
+            <Suspense fallback={<ModuleSkeleton />}><PurchasesModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Inventory Tab */}
         <TabsContent value="inventory">
-          <Suspense fallback={<ModuleSkeleton />}><InventoryModule /></Suspense>
+          <ERPModuleErrorBoundary module="Almacén">
+            <Suspense fallback={<ModuleSkeleton />}><InventoryModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Accounting Tab */}
         <TabsContent value="accounting">
-          <Suspense fallback={<ModuleSkeleton />}><AccountingDashboard /></Suspense>
+          <ERPModuleErrorBoundary module="Contabilidad">
+            <Suspense fallback={<ModuleSkeleton />}><AccountingDashboard /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Treasury Tab */}
         <TabsContent value="treasury">
-          <Suspense fallback={<ModuleSkeleton />}><TreasuryDashboard /></Suspense>
+          <ERPModuleErrorBoundary module="Tesorería">
+            <Suspense fallback={<ModuleSkeleton />}><TreasuryDashboard /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Trade Finance Tab */}
         <TabsContent value="trade">
-          <Suspense fallback={<ModuleSkeleton />}><TradeFinanceModule /></Suspense>
+          <ERPModuleErrorBoundary module="Comercio">
+            <Suspense fallback={<ModuleSkeleton />}><TradeFinanceModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Logistics Tab */}
         <TabsContent value="logistics">
-          <Suspense fallback={<ModuleSkeleton />}><LogisticsModuleDashboard /></Suspense>
+          <ERPModuleErrorBoundary module="Logística">
+            <Suspense fallback={<ModuleSkeleton />}><LogisticsModuleDashboard /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Tax/Fiscal Tab */}
         <TabsContent value="tax">
-          <Suspense fallback={<ModuleSkeleton />}><FiscalModule /></Suspense>
+          <ERPModuleErrorBoundary module="Fiscal">
+            <Suspense fallback={<ModuleSkeleton />}><FiscalModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* HR Tab */}
         <TabsContent value="hr">
-          <Suspense fallback={<ModuleSkeleton />}><HRModule /></Suspense>
+          <ERPModuleErrorBoundary module="RRHH">
+            <Suspense fallback={<ModuleSkeleton />}><HRModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Legal Tab */}
         <TabsContent value="legal">
-          <Suspense fallback={<ModuleSkeleton />}><LegalModule /></Suspense>
+          <ERPModuleErrorBoundary module="Jurídico">
+            <Suspense fallback={<ModuleSkeleton />}><LegalModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* LEADER Tab */}
         <TabsContent value="galia">
-          <Suspense fallback={<ModuleSkeleton />}><GaliaDashboard /></Suspense>
+          <ERPModuleErrorBoundary module="LEADER">
+            <Suspense fallback={<ModuleSkeleton />}><GaliaDashboard /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Academia Tab */}
         <TabsContent value="academia">
-          <Suspense fallback={<ModuleSkeleton />}><AcademiaModuleDashboard /></Suspense>
+          <ERPModuleErrorBoundary module="Academia">
+            <Suspense fallback={<ModuleSkeleton />}><AcademiaModuleDashboard /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Electrical Consulting Tab */}
         <TabsContent value="electrical">
-          <Suspense fallback={<ModuleSkeleton />}><ElectricalConsultingModule /></Suspense>
+          <ERPModuleErrorBoundary module="C. Eléctrica">
+            <Suspense fallback={<ModuleSkeleton />}><ElectricalConsultingModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* AI Command Center Tab */}
         <TabsContent value="ai-center">
-          <Suspense fallback={<ModuleSkeleton />}><AICommandCenterModule /></Suspense>
+          <ERPModuleErrorBoundary module="IA Center">
+            <Suspense fallback={<ModuleSkeleton />}><AICommandCenterModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Audit Center Tab */}
         <TabsContent value="audit-center">
-          <Suspense fallback={<ModuleSkeleton />}><AuditCenterModule /></Suspense>
+          <ERPModuleErrorBoundary module="Auditoría">
+            <Suspense fallback={<ModuleSkeleton />}><AuditCenterModule /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
         {/* Companies Tab */}
@@ -512,7 +545,9 @@ function ERPModularDashboardContent() {
 
         {/* Migration Tab */}
         <TabsContent value="migration">
-          <Suspense fallback={<ModuleSkeleton />}><ERPMigrationDashboard /></Suspense>
+          <ERPModuleErrorBoundary module="Migración">
+            <Suspense fallback={<ModuleSkeleton />}><ERPMigrationDashboard /></Suspense>
+          </ERPModuleErrorBoundary>
         </TabsContent>
 
       </Tabs>
