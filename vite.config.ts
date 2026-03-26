@@ -6,7 +6,10 @@ import viteCompression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const isProductionBuild = mode === 'production';
+
+  return ({
   server: {
     host: "::",
     port: 8080,
