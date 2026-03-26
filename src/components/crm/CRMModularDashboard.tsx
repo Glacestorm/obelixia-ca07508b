@@ -1,9 +1,10 @@
 /**
  * Dashboard Principal del CRM Modular
- * Similar a ERPModularDashboard pero para el módulo CRM
+ * Conectado a datos reales via hooks
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -36,17 +37,17 @@ import {
   Settings,
   Link2,
   Wrench,
-  Brain
+  Brain,
+  Loader2,
+  Info
 } from 'lucide-react';
 
 // CRM Module Components
-import { EnhancedKanbanBoard, KanbanColumn, KanbanItem } from '@/components/crm';
 import { OmnichannelInbox, Conversation, Message } from '@/components/crm/omnichannel';
 import { SentimentAnalysisDashboard } from '@/components/crm/sentiment';
 import { MultichannelSLADashboard } from '@/components/crm/omnichannel';
 import { StageFlowAutomation, StageFlow } from '@/components/crm/automation';
 import { IntelligentLeadDistribution, Agent, DistributionRule, DistributionStats } from '@/components/crm/automation';
-import { SupervisorAgentsDashboard } from '@/components/admin/agents';
 import { CRMAgentsPanel } from '@/components/crm/agents';
 import { CRMWorkspaceSelector, CRMTeamsManager, CreateWorkspaceDialog } from '@/components/crm/config';
 import { ContactsManager } from '@/components/crm/contacts';
@@ -58,51 +59,48 @@ import { CRMAnalyticsDashboard } from '@/components/crm/analytics';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { AIUnifiedDashboard } from '@/components/admin/ai-hybrid';
 import { useCRMContext } from '@/hooks/crm/useCRMContext';
+import { useCRMDeals } from '@/hooks/crm/useCRMDeals';
+import { useOmnichannelHub } from '@/hooks/crm/omnichannel/useOmnichannelHub';
+import { useSLAMetrics } from '@/hooks/crm/omnichannel/useSLAMetrics';
 import { cn } from '@/lib/utils';
 import { Sparkles } from 'lucide-react';
 
-// Demo data (simplificado del original)
-const initialColumns: KanbanColumn[] = [
-  { id: 'nuevo', title: 'Nuevo', icon: <Clock className="h-4 w-4" />, color: 'text-blue-600', bgColor: 'bg-blue-50/50 dark:bg-blue-950/20', items: [
-    { id: '1', title: 'Acme Corp', subtitle: 'Interesados en módulo CRM', value: 45000, probability: 30, priority: 'high', dueDate: '2024-01-20' },
-    { id: '2', title: 'TechStart', subtitle: 'Demo solicitada', value: 12000, probability: 20, priority: 'medium', dueDate: '2024-01-25' },
-  ]},
-  { id: 'contactado', title: 'Contactado', icon: <PhoneCall className="h-4 w-4" />, color: 'text-amber-600', bgColor: 'bg-amber-50/50 dark:bg-amber-950/20', items: [
-    { id: '3', title: 'Global Industries', subtitle: 'Llamada programada', value: 85000, probability: 50, priority: 'urgent', dueDate: '2024-01-18', isVip: true },
-  ]},
-  { id: 'propuesta', title: 'Propuesta', icon: <Mail className="h-4 w-4" />, color: 'text-purple-600', bgColor: 'bg-purple-50/50 dark:bg-purple-950/20', items: [
-    { id: '4', title: 'Retail Plus', subtitle: 'Propuesta enviada', value: 35000, probability: 70, priority: 'high', dueDate: '2024-01-22' },
-  ]},
-  { id: 'cerrado', title: 'Cerrado', icon: <CheckCircle2 className="h-4 w-4" />, color: 'text-green-600', bgColor: 'bg-green-50/50 dark:bg-green-950/20', items: [
-    { id: '5', title: 'LogiTech', subtitle: '¡Ganado!', value: 48000, probability: 100 },
-  ]},
-];
+const VALID_TABS = new Set([
+  'overview','kanban','contacts','omnichannel','sentiment','sla',
+  'automation','reports','agents','integrations','config','supervisor','utilities'
+]);
 
 export function CRMModularDashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab') || 'overview';
+  const activeTab = VALID_TABS.has(rawTab) ? rawTab : 'overview';
+  const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
+
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
-  
   const { refreshWorkspaces } = useCRMContext();
+  const { getPipelineStats } = useCRMDeals();
+  const { conversations: omniConversations } = useOmnichannelHub();
 
-  const handleMoveItem = (itemId: string, fromColumn: string, toColumn: string) => {
-    setColumns(prev => {
-      const newColumns = [...prev];
-      const sourceCol = newColumns.find(c => c.id === fromColumn);
-      const destCol = newColumns.find(c => c.id === toColumn);
-      if (!sourceCol || !destCol) return prev;
-      const itemIndex = sourceCol.items.findIndex(i => i.id === itemId);
-      if (itemIndex === -1) return prev;
-      const [item] = sourceCol.items.splice(itemIndex, 1);
-      destCol.items.push(item);
-      return newColumns;
-    });
-  };
+  const stats = useMemo(() => getPipelineStats(), [getPipelineStats]);
 
-  // Métricas de resumen
-  const totalDeals = columns.reduce((acc, col) => acc + col.items.length, 0);
-  const totalValue = columns.reduce((acc, col) => acc + col.items.reduce((a, i) => a + (i.value || 0), 0), 0);
-  const wonDeals = columns.find(c => c.id === 'cerrado')?.items.length || 0;
+  const totalDeals = stats.totalDeals;
+  const totalValue = stats.totalValue;
+  const wonDeals = stats.wonDeals;
+  const conversionRate = stats.conversionRate;
+
+  // Omnichannel quick stats
+  const openConvs = useMemo(() => omniConversations.filter(c => c.status === 'open').length, [omniConversations]);
+  const unassignedConvs = useMemo(() => omniConversations.filter(c => !c.assigned_agent_id && c.status === 'open').length, [omniConversations]);
+  const slaRiskConvs = useMemo(() => omniConversations.filter(c => c.sla_breached).length, [omniConversations]);
+
+  const sentimentStats = useMemo(() => {
+    const withSentiment = omniConversations.filter(c => c.sentiment);
+    const total = withSentiment.length || 1;
+    const positive = Math.round(withSentiment.filter(c => c.sentiment === 'positive').length / total * 100);
+    const negative = Math.round(withSentiment.filter(c => c.sentiment === 'negative').length / total * 100);
+    const neutral = 100 - positive - negative;
+    return { positive, neutral, negative };
+  }, [omniConversations]);
 
   const modules = [
     { id: 'kanban', name: 'Pipeline', icon: Kanban, color: 'bg-blue-500', installed: true },
@@ -242,7 +240,7 @@ export function CRMModularDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Conversión</p>
-                    <p className="text-2xl font-bold">{totalDeals > 0 ? ((wonDeals / totalDeals) * 100).toFixed(0) : 0}%</p>
+                    <p className="text-2xl font-bold">{conversionRate.toFixed(0)}%</p>
                   </div>
                   <div className="p-2 rounded-lg bg-purple-500/10">
                     <ArrowUpRight className="h-5 w-5 text-purple-500" />
@@ -309,15 +307,15 @@ export function CRMModularDashboard() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Conversaciones abiertas</span>
-                    <Badge variant="secondary">12</Badge>
+                    <Badge variant="secondary">{openConvs}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Sin asignar</span>
-                    <Badge variant="destructive">3</Badge>
+                    <Badge variant="destructive">{unassignedConvs}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">SLA en riesgo</span>
-                    <Badge variant="outline" className="text-amber-600">2</Badge>
+                    <Badge variant="outline" className="text-amber-600">{slaRiskConvs}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -333,15 +331,15 @@ export function CRMModularDashboard() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Positivo</span>
-                    <Badge className="bg-green-500">72%</Badge>
+                    <Badge className="bg-green-500">{sentimentStats.positive}%</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Neutral</span>
-                    <Badge variant="secondary">18%</Badge>
+                    <Badge variant="secondary">{sentimentStats.neutral}%</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Negativo</span>
-                    <Badge variant="destructive">10%</Badge>
+                    <Badge variant="destructive">{sentimentStats.negative}%</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -384,7 +382,7 @@ export function CRMModularDashboard() {
           <ReportsTabContent />
         </TabsContent>
 
-        {/* Agents Tab - Using dedicated CRM Agents Panel */}
+        {/* Agents Tab */}
         <TabsContent value="agents">
           <CRMAgentsPanel />
         </TabsContent>
@@ -435,9 +433,24 @@ export function CRMModularDashboard() {
           <IntegrationHubDashboard />
         </TabsContent>
 
-        {/* Supervisor Dashboard Tab */}
+        {/* Supervisor Dashboard Tab - Redirects to AI Command Center */}
         <TabsContent value="supervisor">
-          <SupervisorAgentsDashboard />
+          <Card className="max-w-lg mx-auto mt-8">
+            <CardContent className="pt-6 text-center space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Info className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Supervisor de Agentes IA</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  El supervisor centralizado ha sido trasladado al AI Command Center del ERP.
+                </p>
+              </div>
+              <Button onClick={() => window.location.href = '/obelixia-admin/erp?tab=ai-center'}>
+                Ir al AI Command Center
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Utilities Tab - AI Hybrid */}
@@ -467,51 +480,156 @@ export function CRMModularDashboard() {
   );
 }
 
-// Wrapper components para datos demo
+// === Omnichannel Inbox Wrapper (datos reales) ===
 function OmnichannelInboxWrapper() {
-  const [currentConversation, setCurrentConversation] = useState<Conversation | undefined>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const {
+    conversations,
+    messages,
+    currentConversation,
+    selectConversation,
+    sendMessage,
+    assignConversation,
+    changeStatus,
+    addTag,
+    isLoading
+  } = useOmnichannelHub();
 
-  const demoConversations: Conversation[] = [
-    { id: '1', contact: { id: 'c1', name: 'María García', phone: '+34 612 345 678' }, channel: 'whatsapp', status: 'open', priority: 'high', lastMessage: { content: 'Hola, necesito ayuda', timestamp: new Date().toISOString(), isFromContact: true }, unreadCount: 2 },
-    { id: '2', contact: { id: 'c2', name: 'Carlos López' }, channel: 'instagram', status: 'open', priority: 'normal', lastMessage: { content: '¿Tienen stock?', timestamp: new Date().toISOString(), isFromContact: true }, unreadCount: 1 },
-  ];
+  if (isLoading && conversations.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-[600px]">
       <OmnichannelInbox 
-        conversations={demoConversations}
-        messages={messages}
-        currentConversation={currentConversation}
-        onSelectConversation={(c) => { setCurrentConversation(c); setMessages([]); }}
-        onSendMessage={(id, content) => setMessages(prev => [...prev, { id: `m${Date.now()}`, conversationId: id, content, timestamp: new Date().toISOString(), isFromContact: false, status: 'sent' }])}
-        onAssign={() => {}}
-        onUpdateStatus={() => {}}
-        onAddTag={() => {}}
+        conversations={conversations.map(c => ({
+          id: c.id,
+          contact: {
+            id: c.contact_id || c.id,
+            name: c.contact_name || 'Desconocido',
+            phone: c.contact_phone,
+            email: c.contact_email,
+          },
+          channel: c.channel as any,
+          status: c.status as any,
+          priority: c.priority as any,
+          lastMessage: c.last_message_preview ? {
+            content: c.last_message_preview,
+            timestamp: c.last_message_at || c.updated_at,
+            isFromContact: c.last_message_direction === 'inbound',
+          } : undefined,
+          unreadCount: c.unread_count || 0,
+        }))}
+        messages={messages.map(m => ({
+          id: m.id,
+          conversationId: m.conversation_id,
+          content: m.content,
+          timestamp: m.created_at,
+          isFromContact: m.direction === 'inbound',
+          status: m.status as any,
+        }))}
+        currentConversation={currentConversation ? {
+          id: currentConversation.id,
+          contact: {
+            id: currentConversation.contact_id || currentConversation.id,
+            name: currentConversation.contact_name || 'Desconocido',
+          },
+          channel: currentConversation.channel as any,
+          status: currentConversation.status as any,
+          priority: currentConversation.priority as any,
+          unreadCount: currentConversation.unread_count || 0,
+        } : undefined}
+        onSelectConversation={(c) => {
+          const original = conversations.find(conv => conv.id === c.id);
+          if (original) selectConversation(original);
+        }}
+        onSendMessage={(id, content) => sendMessage(id, content)}
+        onAssign={(convId, agentId) => assignConversation(convId, agentId)}
+        onUpdateStatus={(id, status) => changeStatus(id, status as any)}
+        onAddTag={(id, tag) => addTag(id, tag)}
       />
     </div>
   );
 }
 
-function SentimentTabContent() {
-  const demoData = [
-    { id: '1', sourceType: 'message' as const, sourceId: 'msg1', content: 'Excelente servicio', sentiment: 'positive' as const, sentimentScore: 0.85, emotions: [{ emotion: 'satisfacción', intensity: 0.9 }], keyPhrases: ['excelente'], topics: ['Servicio'], actionRequired: false, analyzedAt: new Date().toISOString() },
-  ];
-  const trends = [
-    { date: 'Lun', positive: 65, neutral: 25, negative: 10, avgScore: 45 },
-    { date: 'Mar', positive: 70, neutral: 20, negative: 10, avgScore: 55 },
-  ];
-  return <SentimentAnalysisDashboard sentimentData={demoData} trends={trends} />;
-}
-
+// === SLA Tab Content (datos reales) ===
 function SLATabContent() {
-  const configs = [{ id: '1', name: 'Estándar', channel: 'all' as const, firstResponseMinutes: 30, resolutionMinutes: 480, priority: 'normal' as const }];
-  const agents = [{ id: 'a1', name: 'Juan Pérez', activeConversations: 8, resolvedToday: 23, avgResponseTime: 4, avgResolutionTime: 45, slaCompliance: 94, csat: 4.7, channels: ['whatsapp'] }];
-  const channels = [{ channel: 'WhatsApp', totalConversations: 450, openConversations: 28, avgWaitTime: 2, avgResponseTime: 4, slaCompliance: 95, csat: 4.8 }];
-  const global = { totalOpen: 60, totalResolved: 87, avgWaitTime: 5, avgResponseTime: 8, slaCompliance: 89, csat: 4.5 };
-  return <MultichannelSLADashboard slaConfigs={configs} agentMetrics={agents} channelMetrics={channels} globalMetrics={global} />;
+  const { slaPolicies, agentMetrics, channelMetrics, globalMetrics, isLoading } = useSLAMetrics();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <MultichannelSLADashboard 
+      slaConfigs={slaPolicies.map(p => ({
+        id: p.id,
+        name: p.name,
+        channel: p.channel as any,
+        firstResponseMinutes: p.first_response_minutes,
+        resolutionMinutes: p.resolution_minutes,
+        priority: p.priority as any,
+      }))}
+      agentMetrics={agentMetrics}
+      channelMetrics={channelMetrics}
+      globalMetrics={globalMetrics || { totalOpen: 0, totalResolved: 0, avgWaitTime: 0, avgResponseTime: 0, slaCompliance: 0, csat: 0 }}
+    />
+  );
 }
 
+// === Sentiment Tab Content (datos reales) ===
+function SentimentTabContent() {
+  const { conversations, isLoading } = useOmnichannelHub();
+
+  const sentimentData = useMemo(() => 
+    conversations
+      .filter(c => c.sentiment)
+      .map(c => ({
+        id: c.id,
+        sourceType: 'message' as const,
+        sourceId: c.id,
+        content: c.last_message_preview || '',
+        sentiment: (c.sentiment || 'neutral') as 'positive' | 'neutral' | 'negative',
+        sentimentScore: c.sentiment_score || 0,
+        emotions: [] as { emotion: string; intensity: number }[],
+        keyPhrases: [] as string[],
+        topics: [] as string[],
+        actionRequired: c.priority === 'urgent' || c.priority === 'high',
+        analyzedAt: c.updated_at,
+      })),
+    [conversations]
+  );
+
+  const trends = useMemo(() => {
+    const days = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const total = Math.max(sentimentData.length, 1);
+    const positiveCount = sentimentData.filter(s => s.sentiment === 'positive').length;
+    const negativeCount = sentimentData.filter(s => s.sentiment === 'negative').length;
+    const neutralCount = total - positiveCount - negativeCount;
+    return days.map(d => ({
+      date: d,
+      positive: Math.round(positiveCount / total * 100),
+      neutral: Math.round(neutralCount / total * 100),
+      negative: Math.round(negativeCount / total * 100),
+      avgScore: 50,
+    }));
+  }, [sentimentData]);
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
+
+  return <SentimentAnalysisDashboard sentimentData={sentimentData} trends={trends} />;
+}
+
+// === Automation Tab Content ===
 function AutomationTabContent() {
   const [flows, setFlows] = useState<StageFlow[]>([
     { id: '1', name: 'Bienvenida', fromStage: 'new', toStage: 'contacted', actions: [{ id: 'a1', type: 'whatsapp', config: {} }], conditions: [], isActive: true, executionCount: 145 },
@@ -568,170 +686,6 @@ function LeadDistributionWrapper() {
       onUpdateAgentCapacity={() => {}}
       onDistributeNow={() => {}}
     />
-  );
-}
-
-// === Contacts Tab ===
-function ContactsTabContent() {
-  const contacts = [
-    { id: '1', name: 'María García', company: 'Acme Corp', email: 'maria@acme.com', phone: '+34 612 345 678', status: 'active', lastContact: '2024-01-15', deals: 2, value: 57000 },
-    { id: '2', name: 'Carlos López', company: 'TechStart', email: 'carlos@techstart.io', phone: '+34 623 456 789', status: 'lead', lastContact: '2024-01-18', deals: 1, value: 12000 },
-    { id: '3', name: 'Ana Martínez', company: 'Global Industries', email: 'ana@global.com', phone: '+34 634 567 890', status: 'active', lastContact: '2024-01-12', deals: 3, value: 125000 },
-    { id: '4', name: 'Pedro Sánchez', company: 'Retail Plus', email: 'pedro@retailplus.es', phone: '+34 645 678 901', status: 'inactive', lastContact: '2023-12-20', deals: 0, value: 0 },
-    { id: '5', name: 'Laura Fernández', company: 'LogiTech', email: 'laura@logitech.es', phone: '+34 656 789 012', status: 'active', lastContact: '2024-01-19', deals: 1, value: 48000 },
-  ];
-
-  const statusColors: Record<string, string> = {
-    active: 'bg-green-500',
-    lead: 'bg-blue-500',
-    inactive: 'bg-gray-400',
-  };
-
-  const statusLabels: Record<string, string> = {
-    active: 'Activo',
-    lead: 'Lead',
-    inactive: 'Inactivo',
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Gestión de Contactos</h3>
-          <p className="text-sm text-muted-foreground">Base de datos de clientes y prospectos</p>
-        </div>
-        <Button className="gap-2">
-          <UserCircle className="h-4 w-4" />
-          Nuevo Contacto
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Users className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{contacts.length}</p>
-                <p className="text-xs text-muted-foreground">Total Contactos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{contacts.filter(c => c.status === 'active').length}</p>
-                <p className="text-xs text-muted-foreground">Activos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <Target className="h-5 w-5 text-purple-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{contacts.reduce((acc, c) => acc + c.deals, 0)}</p>
-                <p className="text-xs text-muted-foreground">Deals Totales</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                <DollarSign className="h-5 w-5 text-emerald-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">${(contacts.reduce((acc, c) => acc + c.value, 0) / 1000).toFixed(0)}K</p>
-                <p className="text-xs text-muted-foreground">Valor Total</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Contacts Table */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Contacto</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Empresa</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Contacto</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Estado</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Deals</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Valor</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Último Contacto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map((contact) => (
-                  <tr key={contact.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-medium">{contact.name.charAt(0)}</span>
-                        </div>
-                        <span className="font-medium">{contact.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        {contact.company}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          {contact.email}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Phone className="h-3 w-3" />
-                          {contact.phone}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge className={cn("text-white", statusColors[contact.status])}>
-                        {statusLabels[contact.status]}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline">{contact.deals}</Badge>
-                    </td>
-                    <td className="py-3 px-4 font-medium">
-                      ${contact.value.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CalendarDays className="h-3 w-3" />
-                        {contact.lastContact}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
   );
 }
 
