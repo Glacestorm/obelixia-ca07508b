@@ -407,82 +407,84 @@ function ERPModularDashboardContent() {
 
         {/* Maestros Tab */}
         <TabsContent value="maestros">
-          {currentCompany && <MaestrosLayout companyId={currentCompany.id} />}
+          <Suspense fallback={<ModuleSkeleton />}>
+            {currentCompany && <MaestrosLayout companyId={currentCompany.id} />}
+          </Suspense>
         </TabsContent>
 
         {/* Sales Tab */}
         <TabsContent value="sales">
-          <SalesModule />
+          <Suspense fallback={<ModuleSkeleton />}><SalesModule /></Suspense>
         </TabsContent>
 
         {/* Purchases Tab */}
         <TabsContent value="purchases">
-          <PurchasesModule />
+          <Suspense fallback={<ModuleSkeleton />}><PurchasesModule /></Suspense>
         </TabsContent>
 
         {/* Inventory Tab */}
         <TabsContent value="inventory">
-          <InventoryModule />
+          <Suspense fallback={<ModuleSkeleton />}><InventoryModule /></Suspense>
         </TabsContent>
 
         {/* Accounting Tab */}
         <TabsContent value="accounting">
-          <AccountingDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><AccountingDashboard /></Suspense>
         </TabsContent>
 
         {/* Treasury Tab */}
         <TabsContent value="treasury">
-          <TreasuryDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><TreasuryDashboard /></Suspense>
         </TabsContent>
 
         {/* Trade Finance Tab */}
         <TabsContent value="trade">
-          <TradeFinanceModule />
+          <Suspense fallback={<ModuleSkeleton />}><TradeFinanceModule /></Suspense>
         </TabsContent>
 
         {/* Logistics Tab */}
         <TabsContent value="logistics">
-          <LogisticsModuleDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><LogisticsModuleDashboard /></Suspense>
         </TabsContent>
 
         {/* Tax/Fiscal Tab */}
         <TabsContent value="tax">
-          <FiscalModule />
+          <Suspense fallback={<ModuleSkeleton />}><FiscalModule /></Suspense>
         </TabsContent>
 
         {/* HR Tab */}
         <TabsContent value="hr">
-          <HRModule />
+          <Suspense fallback={<ModuleSkeleton />}><HRModule /></Suspense>
         </TabsContent>
 
         {/* Legal Tab */}
         <TabsContent value="legal">
-          <LegalModule />
+          <Suspense fallback={<ModuleSkeleton />}><LegalModule /></Suspense>
         </TabsContent>
 
-        {/* LEADER Tab - Gestión Ayudas LEADER IA */}
+        {/* LEADER Tab */}
         <TabsContent value="galia">
-          <GaliaDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><GaliaDashboard /></Suspense>
         </TabsContent>
 
         {/* Academia Tab */}
         <TabsContent value="academia">
-          <AcademiaModuleDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><AcademiaModuleDashboard /></Suspense>
         </TabsContent>
 
         {/* Electrical Consulting Tab */}
         <TabsContent value="electrical">
-          <ElectricalConsultingModule />
+          <Suspense fallback={<ModuleSkeleton />}><ElectricalConsultingModule /></Suspense>
         </TabsContent>
 
         {/* AI Command Center Tab */}
         <TabsContent value="ai-center">
-          <AICommandCenterModule />
+          <Suspense fallback={<ModuleSkeleton />}><AICommandCenterModule /></Suspense>
         </TabsContent>
 
         {/* Audit Center Tab */}
         <TabsContent value="audit-center">
-          <AuditCenterModule />
+          <Suspense fallback={<ModuleSkeleton />}><AuditCenterModule /></Suspense>
         </TabsContent>
 
         {/* Companies Tab */}
@@ -508,13 +510,9 @@ function ERPModularDashboardContent() {
           <ERPSeriesManager />
         </TabsContent>
 
-        {/* Audit tab removed — promoted to standalone module at /erp/audit-center */}
-
-        {/* Agents & Supervisor tabs removed — absorbed into IA Center */}
-
         {/* Migration Tab */}
         <TabsContent value="migration">
-          <ERPMigrationDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><ERPMigrationDashboard /></Suspense>
         </TabsContent>
 
       </Tabs>
