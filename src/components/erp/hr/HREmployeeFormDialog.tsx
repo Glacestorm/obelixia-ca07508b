@@ -203,7 +203,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         status: 'active', country_code: 'ES', base_salary: 0,
         legal_entity_id: '', work_center_id: '', reports_to: '',
       });
-      setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '', ocupacion_ss: '' as '' });
+      setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '', ocupacion_ss: '' as '', ccc: '', empresa_fiscal_nif: '', empresa_fiscal_nombre: '' });
       setModelo145({ ...EMPTY_MODELO145 });
       const defaultAccess: Record<string, 'none'> = {};
       AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
@@ -239,6 +239,9 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           cno_code: ext.cno_code || '',
           irpf_percentage: ext.irpf_percentage || '',
           ocupacion_ss: ext.ocupacion_ss || '',
+          ccc: ext.ccc || '',
+          empresa_fiscal_nif: ext.empresa_fiscal_nif || '',
+          empresa_fiscal_nombre: ext.empresa_fiscal_nombre || '',
         });
         // Load Modelo 145 data
         if (ext.modelo145) {
