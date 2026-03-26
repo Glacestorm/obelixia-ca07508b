@@ -62,6 +62,8 @@ export interface SSEmployeeContext {
   pagasExtrasProrrateadas: boolean; // P1B: true if pagas extras are paid monthly (prorated)
   salarioBaseAnual: number; // For prorrateo calculation
   epigrafAT?: string | null; // AT/EP tariff code (affects AT rate)
+  /** Ocupación SS: 'a' = oficina (AT/EP fijo 1.00%), 'b' = actividad propia (según CNAE) */
+  ocupacionSS?: 'a' | 'b' | null;
   /** P1B: Real period days (28-31) instead of fixed 30 */
   diasRealesPeriodo?: number;
 }
@@ -180,8 +182,38 @@ const DEFAULT_SS_RATES_2026 = {
   tipo_fp_empresa: 0.60,
   tipo_fp_trabajador: 0.10,
   tipo_mei: 0.90,
-  tipo_at_empresa: 1.50,
+  tipo_at_empresa: 1.50, // Default when no CNAE/occupation specified
 };
+
+/**
+ * AT/EP rate for Ocupación "a" — trabajos exclusivos de oficina
+ * DA 61ª LGSS / Cuadro II Orden ESS/1187/2015
+ * IT 0.65% + IMS 0.35% = 1.00% total (fijo, independiente del CNAE)
+ */
+const AT_EP_OCUPACION_A = {
+  it: 0.65,
+  ims: 0.35,
+  total: 1.00,
+};
+
+/**
+ * Resuelve el tipo AT/EP aplicable según ocupación SS y epígrafe CNAE.
+ * - Ocupación "a" (oficina): siempre 1.00% (DA 61ª LGSS, Cuadro II)
+ * - Ocupación "b" o sin ocupación: tipo del CNAE o default 1.50%
+ */
+export function resolveATRate(
+  ocupacionSS: 'a' | 'b' | null | undefined,
+  tipoATFromDB: number | null | undefined,
+  epigrafAT?: string | null,
+): { rate: number; source: string } {
+  if (ocupacionSS === 'a') {
+    return { rate: AT_EP_OCUPACION_A.total, source: 'Ocupación "a" oficina (DA 61ª LGSS)' };
+  }
+  if (tipoATFromDB != null && tipoATFromDB > 0) {
+    return { rate: tipoATFromDB, source: `Tipo AT/EP BD (epígrafe ${epigrafAT || 'N/A'})` };
+  }
+  return { rate: DEFAULT_SS_RATES_2026.tipo_at_empresa, source: 'Tipo AT/EP por defecto (1.50%)' };
+}
 
 /** MEI split 2026 — total 0.90%: empresa 0.75%, trabajador 0.15% (RDL 3/2026) */
 const MEI_SPLIT_2026 = {
@@ -427,9 +459,16 @@ export function computeSSContributions(
   const fogasa = r2((baseCCFinal * ((rates as any).tipo_fogasa ?? DEFAULT_SS_RATES_2026.tipo_fogasa)) / 100);
   const fpEmpresa = r2((baseCCFinal * ((rates as any).tipo_fp_empresa ?? DEFAULT_SS_RATES_2026.tipo_fp_empresa)) / 100);
   const meiEmpresa = r2((baseCCFinal * MEI_SPLIT_2026.empresa) / 100);
-  const tipoAT = (rates as any).tipo_at_empresa ?? DEFAULT_SS_RATES_2026.tipo_at_empresa;
+  const atResolved = resolveATRate(employee.ocupacionSS, (rates as any).tipo_at_empresa, employee.epigrafAT);
+  const tipoAT = atResolved.rate;
   const atEmpresa = r2((baseATFinal * tipoAT) / 100);
   const totalEmpresa = r2(ccEmpresa + desempleoEmpresa + fogasa + fpEmpresa + meiEmpresa + atEmpresa);
+
+  traces.push({
+    step: 'Tipo AT/EP aplicado',
+    formula: `${atResolved.source} → ${tipoAT}% sobre base AT ${baseATFinal}€ = ${atEmpresa}€`,
+    result: tipoAT,
+  });
 
   traces.push({
     step: 'Cotizaciones trabajador (incl. MEI)',

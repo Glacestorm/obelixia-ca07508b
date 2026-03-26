@@ -255,6 +255,7 @@ export function usePayrollLegalCalculation(companyId: string) {
           pagasExtrasProrrateadas: pagasProrrateadas,
           salarioBaseAnual: (emp.base_salary ?? record.gross_salary * 12) || record.gross_salary * 12,
           epigrafAT: laborData?.epigrafe_at ?? null,
+          ocupacionSS: (laborData as any)?.ocupacion_ss ?? null,
           diasRealesPeriodo: diasReales,
         };
 
