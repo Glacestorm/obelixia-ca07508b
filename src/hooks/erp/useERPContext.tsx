@@ -69,24 +69,33 @@ export function ERPProvider({ children }: ERPProviderProps) {
 
       if (ucError) throw ucError;
 
-      const companyList = (userCompanies || [])
-        .map((uc: any) => uc.company)
-        .filter((c: any) => c && c.is_active);
+      interface UCRow {
+        company: ERPCompany | null;
+        is_default: boolean;
+        role?: {
+          erp_role_permissions?: Array<{ permission?: { key: string } | null }> | null;
+        } | null;
+      }
+
+      const typedUCs = (userCompanies ?? []) as UCRow[];
+      const companyList = typedUCs
+        .map(uc => uc.company)
+        .filter((c): c is ERPCompany => c !== null && c.is_active);
 
       setCompanies(companyList);
 
       // Establecer empresa por defecto
-      const defaultUC = (userCompanies || []).find((uc: any) => uc.is_default);
-      const firstUC = (userCompanies || [])[0];
+      const defaultUC = typedUCs.find(uc => uc.is_default);
+      const firstUC = typedUCs[0];
       const selected = defaultUC || firstUC;
 
       if (selected?.company) {
         setCurrentCompanyState(selected.company);
         
         // Extraer permisos del rol
-        const permissions = selected.role?.erp_role_permissions?.map(
-          (rp: any) => rp.permission?.key
-        ).filter(Boolean) || [];
+        const permissions = (selected.role?.erp_role_permissions ?? [])
+          .map(rp => rp.permission?.key)
+          .filter((k): k is string => typeof k === 'string');
         
         setUserPermissions(permissions);
       }
@@ -125,9 +134,11 @@ export function ERPProvider({ children }: ERPProviderProps) {
         .eq('is_active', true)
         .single();
 
-      const permissions = (userCompany as any)?.role?.erp_role_permissions?.map(
-        (rp: any) => rp.permission?.key
-      ).filter(Boolean) || [];
+      type PermRow = { role?: { erp_role_permissions?: Array<{ permission?: { key: string } | null }> | null } | null };
+      const typedUserCompany = userCompany as PermRow | undefined;
+      const permissions = (typedUserCompany?.role?.erp_role_permissions ?? [])
+        .map(rp => rp.permission?.key)
+        .filter((k): k is string => typeof k === 'string');
       
       setUserPermissions(permissions);
     } catch (err) {
