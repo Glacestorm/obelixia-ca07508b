@@ -140,6 +140,30 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   // Modelo 145 data (IRPF withholding communication)
   const [modelo145, setModelo145] = useState<Modelo145Data>({ ...EMPTY_MODELO145 });
 
+  // IRPF manual override
+  const [irpfManualOverride, setIrpfManualOverride] = useState(false);
+
+  // Auto-calculate IRPF from salary + M145
+  const irpfCalculation = useMemo(() => {
+    if (formData.country_code !== 'ES' || !formData.base_salary) return null;
+    return calculateIRPFRetention({
+      grossAnnualSalary: Number(formData.base_salary) || 0,
+      socialSecurityEmployee: 0, // will estimate ~6.35%
+      numPayments: 14,
+      modelo145,
+    });
+  }, [formData.base_salary, formData.country_code, modelo145]);
+
+  // Sync calculated IRPF to field when not in manual override
+  useEffect(() => {
+    if (!irpfManualOverride && irpfCalculation) {
+      setEsFields(prev => ({
+        ...prev,
+        irpf_percentage: String(irpfCalculation.retentionRate),
+      }));
+    }
+  }, [irpfCalculation, irpfManualOverride]);
+
   // Module access state
   const [moduleAccess, setModuleAccess] = useState<Record<string, 'none' | 'read' | 'write' | 'admin'>>({});
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
