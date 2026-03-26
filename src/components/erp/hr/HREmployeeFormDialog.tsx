@@ -342,7 +342,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
               autonomous_community: esFields.autonomous_community || null,
               cno_code: esFields.cno_code || null,
               irpf_percentage: esFields.irpf_percentage || null,
-              modelo145: modelo145,
+              modelo145: JSON.parse(JSON.stringify(modelo145)),
             },
           };
 
