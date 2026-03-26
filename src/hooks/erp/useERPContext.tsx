@@ -70,9 +70,7 @@ export function ERPProvider({ children }: ERPProviderProps) {
       if (ucError) throw ucError;
 
       interface UCRow {
-        company: { id: string; name: string; legal_name: string | null;
-                   tax_id: string | null; country: string; currency: string;
-                   timezone: string; is_active: boolean } | null;
+        company: ERPCompany | null;
         is_default: boolean;
         role?: {
           erp_role_permissions?: Array<{ permission?: { key: string } | null }> | null;
@@ -82,7 +80,7 @@ export function ERPProvider({ children }: ERPProviderProps) {
       const typedUCs = (userCompanies ?? []) as UCRow[];
       const companyList = typedUCs
         .map(uc => uc.company)
-        .filter((c): c is NonNullable<UCRow['company']> => c !== null && c.is_active);
+        .filter((c): c is ERPCompany => c !== null && c.is_active);
 
       setCompanies(companyList);
 
