@@ -704,9 +704,70 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                           required
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">% Retención IRPF</Label>
-                        <Input type="number" step="0.01" min="0" max="100" value={esFields.irpf_percentage} onChange={(e) => setEsFields(prev => ({ ...prev, irpf_percentage: e.target.value }))} placeholder="15.00" />
+                      <div className="space-y-1.5 col-span-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">% Retención IRPF</Label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={irpfManualOverride}
+                              onChange={(e) => {
+                                setIrpfManualOverride(e.target.checked);
+                                if (!e.target.checked && irpfCalculation) {
+                                  setEsFields(prev => ({ ...prev, irpf_percentage: String(irpfCalculation.retentionRate) }));
+                                }
+                              }}
+                              className="rounded border-input"
+                            />
+                            <span className="text-xs text-muted-foreground">Manual</span>
+                          </label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            value={esFields.irpf_percentage}
+                            onChange={(e) => {
+                              setIrpfManualOverride(true);
+                              setEsFields(prev => ({ ...prev, irpf_percentage: e.target.value }));
+                            }}
+                            placeholder="15.00"
+                            className={cn("text-sm", !irpfManualOverride && "bg-muted/50")}
+                            readOnly={!irpfManualOverride}
+                          />
+                          <span className="text-sm font-medium text-muted-foreground">%</span>
+                        </div>
+                        {irpfCalculation && (
+                          <div className="text-xs text-muted-foreground space-y-0.5 mt-1 p-2 rounded bg-muted/30 border border-dashed">
+                            <p className="font-medium text-foreground">Desglose del cálculo (Art. 80-86 RIRPF):</p>
+                            <p>Bruto anual: {irpfCalculation.breakdown.grossSalary.toLocaleString('es-ES')}€</p>
+                            <p>− SS obrera estimada: {irpfCalculation.breakdown.ssDeduction.toLocaleString('es-ES')}€</p>
+                            <p>− Reducción rtos. trabajo: {irpfCalculation.breakdown.workIncomeReduction.toLocaleString('es-ES')}€</p>
+                            {irpfCalculation.breakdown.compensatoryPension > 0 && (
+                              <p>− Pensión compensatoria: {irpfCalculation.breakdown.compensatoryPension.toLocaleString('es-ES')}€</p>
+                            )}
+                            <p className="font-medium pt-1">Base retención: {irpfCalculation.taxableBase.toLocaleString('es-ES', { maximumFractionDigits: 2 })}€</p>
+                            <p>Mínimo personal y familiar: {irpfCalculation.personalFamilyMinimum.toLocaleString('es-ES')}€
+                              <span className="text-muted-foreground ml-1">
+                                (Contr: {irpfCalculation.breakdown.minContribuyente.toLocaleString('es-ES')}€
+                                {irpfCalculation.breakdown.minDescendientes > 0 && ` + Desc: ${irpfCalculation.breakdown.minDescendientes.toLocaleString('es-ES')}€`}
+                                {irpfCalculation.breakdown.minAscendientes > 0 && ` + Asc: ${irpfCalculation.breakdown.minAscendientes.toLocaleString('es-ES')}€`}
+                                {irpfCalculation.breakdown.minDiscapacidad > 0 && ` + Disc: ${irpfCalculation.breakdown.minDiscapacidad.toLocaleString('es-ES')}€`})
+                              </span>
+                            </p>
+                            <p className="font-medium pt-1 text-primary">Tipo retención: {irpfCalculation.retentionRate}% → {irpfCalculation.annualRetention.toLocaleString('es-ES')}€/año</p>
+                            {irpfManualOverride && (
+                              <p className="text-amber-600 dark:text-amber-400 font-medium">⚠ Tipo manual: difiere del calculado ({irpfCalculation.retentionRate}%)</p>
+                            )}
+                          </div>
+                        )}
+                        {!formData.base_salary && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400">
+                            Introduzca el salario bruto anual (pestaña Empleo) para calcular la retención automáticamente.
+                          </p>
+                        )}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground italic">
