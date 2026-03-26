@@ -891,6 +891,66 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                       onChange={setModelo145}
                       portalContainer={selectPortalContainer}
                     />
+
+                    <Separator className="my-4" />
+
+                    {/* Cross-field validations & Legal Profile Summary */}
+                    {computedProfile && (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-primary" /> Perfil Legal Unificado
+                        </h4>
+
+                        {/* Contract impact */}
+                        {esFields.contract_type_rd && (
+                          <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                            <p className="text-xs font-semibold">{contractProfile.name}</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                              <span>Desempleo SS: {computedProfile.ssRates.desempleo.tipo}</span>
+                              <span>({computedProfile.ssRates.desempleo.empresa}% emp + {computedProfile.ssRates.desempleo.trabajador}% trab)</span>
+                              <span>IRPF mín. 2%: {computedProfile.irpfMinimoAplicable ? 'Sí (Art. 86.2 RIRPF)' : 'No'}</span>
+                              <span>Indemn. fin: {contractProfile.indemnizacionFinContratoDiasAnyo} d/año</span>
+                              <span>Prueba máx: {contractProfile.periodoPruebaMaxMeses} meses</span>
+                              {contractProfile.duracionMaximaMeses && <span>Duración máx: {contractProfile.duracionMaximaMeses} meses</span>}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Cost summary */}
+                        <div className="p-3 rounded-lg border bg-muted/30 grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <p className="text-muted-foreground">Coste empresa/mes</p>
+                            <p className="font-semibold text-sm">{computedProfile.costeMensualEmpresa.toLocaleString('es-ES')}€</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Coste empresa/año</p>
+                            <p className="font-semibold text-sm">{computedProfile.costeAnualEmpresa.toLocaleString('es-ES')}€</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Neto est./mes</p>
+                            <p className="font-semibold text-sm">{computedProfile.netoEstimadoMensual.toLocaleString('es-ES')}€</p>
+                          </div>
+                        </div>
+
+                        {/* Cross-field validations */}
+                        {computedProfile.crossFieldValidations.length > 0 && (
+                          <div className="space-y-1.5">
+                            {computedProfile.crossFieldValidations.map((v, i) => (
+                              <Alert key={i} variant={v.status === 'error' ? 'destructive' : 'default'} className="py-2">
+                                <AlertDescription className="text-xs">
+                                  <span className="font-medium">{v.status === 'error' ? '❌' : '⚠'} {v.field}:</span> {v.message}
+                                  <span className="block text-muted-foreground mt-0.5">{v.legalRef}</span>
+                                </AlertDescription>
+                              </Alert>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground italic">
+                          Este perfil legal se comparte automáticamente con los agentes IA de RRHH, Contabilidad y Fiscal al guardar.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-6">
