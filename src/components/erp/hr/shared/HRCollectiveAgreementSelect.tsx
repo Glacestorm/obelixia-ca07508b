@@ -124,10 +124,14 @@ export function HRCollectiveAgreementSelect({
   const [loading, setLoading] = useState(false);
   const [selectedAgreement, setSelectedAgreement] = useState<AgreementData | null>(null);
 
-  // Load agreements from DB
+  // Load agreements from DB on mount and every time dialog opens
   useEffect(() => {
     loadAgreements();
   }, [companyId, companyCNAE]);
+
+  useEffect(() => {
+    if (open) loadAgreements();
+  }, [open]);
 
   // Sync selected agreement
   useEffect(() => {
