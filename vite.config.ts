@@ -187,8 +187,7 @@ export default defineConfig(({ mode, command }) => {
       rollupOptions: {
         maxParallelFileOps: isProductionBuild ? 2 : 1,
         output: {
-          manualChunks: (id) => {
-            // Vendors — always split to reduce main chunk size
+          manualChunks: isProductionBuild ? (id) => {
             if (id.includes('node_modules/react-dom')) return 'vendor-react-dom';
             if (id.includes('node_modules/react-router')) return 'vendor-router';
             if (id.includes('node_modules/react/') || id.includes('node_modules/scheduler')) return 'vendor-react';
@@ -201,17 +200,6 @@ export default defineConfig(({ mode, command }) => {
             if (id.includes('node_modules/date-fns')) return 'vendor-date';
             if (id.includes('node_modules/lucide-react')) return 'vendor-icons';
             if (id.includes('node_modules')) return 'vendor-misc';
-
-            // App code — coarse splitting in dev, granular in prod
-            if (!isProductionBuild) {
-              if (id.includes('/components/galia/')) return 'app-galia';
-              if (id.includes('/verticals/galia/')) return 'app-galia-v';
-              if (id.includes('/components/erp/hr/')) return 'app-erp-hr';
-              if (id.includes('/components/erp/')) return 'app-erp';
-              if (id.includes('/components/academia/')) return 'app-academia';
-              if (id.includes('/components/admin/')) return 'app-admin';
-              return undefined;
-            }
 
             // Production — granular splitting
             if (id.includes('/components/galia/phase4/')) return 'app-galia-p4';
@@ -236,7 +224,7 @@ export default defineConfig(({ mode, command }) => {
             if (id.includes('/components/erp/')) return 'app-erp-misc';
             if (id.includes('/components/admin/')) return 'app-admin';
             if (id.includes('/components/academia/')) return 'app-academia';
-          },
+          } : undefined,
           compact: isProductionBuild,
           generatedCode: {
             arrowFunctions: true,
