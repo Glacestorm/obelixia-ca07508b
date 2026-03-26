@@ -14,14 +14,18 @@ import { AuditAgentConfigSheet } from './AuditAgentConfigSheet';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-export function AuditAgentsDashboard() {
+interface AuditAgentsDashboardProps {
+  initialView?: 'hierarchy' | 'list' | 'activity';
+}
+
+export function AuditAgentsDashboard({ initialView = 'hierarchy' }: AuditAgentsDashboardProps) {
   const {
     agents, invocations, stats, isLoading,
     fetchAuditAgents, fetchInvocations,
     specialists, supervisors, superSupervisor,
     internalAgents, externalAgents, internalSupervisor, externalSupervisor,
   } = useAuditAgents();
-  const [view, setView] = useState<'hierarchy' | 'list' | 'activity'>('hierarchy');
+  const [view, setView] = useState<'hierarchy' | 'list' | 'activity'>(initialView);
 
   useEffect(() => { fetchAuditAgents(); fetchInvocations(); }, []);
 

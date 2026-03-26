@@ -80,8 +80,9 @@ export function AuditCenterModule() {
       case 'improvements':
         return <Suspense fallback={<TabSkeleton />}><ImprovementsTracker /></Suspense>;
       case 'agents':
+        return <Suspense fallback={<TabSkeleton />}><AuditAgentsDashboard initialView="hierarchy" /></Suspense>;
       case 'activity':
-        return <Suspense fallback={<TabSkeleton />}><AuditAgentsDashboard /></Suspense>;
+        return <Suspense fallback={<TabSkeleton />}><AuditAgentsDashboard initialView="activity" /></Suspense>;
       case 'supersupervisor':
         return <Suspense fallback={<TabSkeleton />}><AuditSuperSupervisorPanel /></Suspense>;
       case 'chat':
