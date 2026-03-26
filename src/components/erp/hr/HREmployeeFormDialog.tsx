@@ -14,7 +14,10 @@ import { HRCNOSelect } from './shared/HRCNOSelect';
 import { HRCollectiveAgreementSelect } from './shared/HRCollectiveAgreementSelect';
 import { HRModelo145Section, EMPTY_MODELO145, type Modelo145Data } from './shared/HRModelo145Section';
 import { calculateIRPFRetention } from '@/lib/irpf/irpfRetentionCalculator';
+import { useEmployeeLegalProfile } from '@/hooks/erp/hr/useEmployeeLegalProfile';
+import { resolveContractType } from '@/engines/erp/hr/contractTypeEngine';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -147,16 +150,48 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   // IRPF manual override
   const [irpfManualOverride, setIrpfManualOverride] = useState(false);
 
+  // Unified Legal Profile
+  const { compute: computeLegalProfile, persist: persistLegalProfile } = useEmployeeLegalProfile(companyId);
+
+  // Reactive contract profile for cross-field info
+  const contractProfile = useMemo(() => resolveContractType(esFields.contract_type_rd), [esFields.contract_type_rd]);
+
   // Auto-calculate IRPF from salary + M145
   const irpfCalculation = useMemo(() => {
     if (formData.country_code !== 'ES' || !formData.base_salary) return null;
     return calculateIRPFRetention({
       grossAnnualSalary: Number(formData.base_salary) || 0,
-      socialSecurityEmployee: 0, // will estimate ~6.35%
+      socialSecurityEmployee: 0,
       numPayments: 14,
       modelo145,
     });
   }, [formData.base_salary, formData.country_code, modelo145]);
+
+  // Compute legal profile reactively when relevant fields change
+  const computedProfile = useMemo(() => {
+    if (formData.country_code !== 'ES') return null;
+    return computeLegalProfile({
+      employeeId: employee?.id || null,
+      firstName: formData.first_name,
+      lastName: formData.last_name,
+      companyId,
+      baseSalary: Number(formData.base_salary) || 0,
+      contractTypeRD: esFields.contract_type_rd,
+      contributionGroup: esFields.contribution_group,
+      irpfPercentage: parseFloat(esFields.irpf_percentage) || 0,
+      irpfLegalRate: irpfCalculation?.retentionRate || 0,
+      comunidadAutonoma: esFields.autonomous_community,
+      empresaFiscalNIF: esFields.empresa_fiscal_nif,
+      empresaFiscalNombre: esFields.empresa_fiscal_nombre,
+      ccc: esFields.ccc,
+      naf: esFields.naf,
+      convenioColectivo: esFields.collective_agreement,
+      cnoCode: esFields.cno_code,
+      ocupacionSS: esFields.ocupacion_ss,
+      hireDate: formData.hire_date,
+      status: formData.status,
+    });
+  }, [formData, esFields, irpfCalculation, companyId, employee?.id, computeLegalProfile]);
 
   // Sync calculated IRPF to field when not in manual override
   useEffect(() => {
@@ -395,6 +430,11 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           } else {
             await supabase.from('hr_employee_extensions').insert([extensionPayload]);
           }
+        }
+
+        // Persist legal profile for AI agents (cross-module)
+        if (formData.country_code === 'ES' && computedProfile) {
+          persistLegalProfile(employeeId!, computedProfile);
         }
       }
       onSave();
@@ -851,6 +891,66 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                       onChange={setModelo145}
                       portalContainer={selectPortalContainer}
                     />
+
+                    <Separator className="my-4" />
+
+                    {/* Cross-field validations & Legal Profile Summary */}
+                    {computedProfile && (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-primary" /> Perfil Legal Unificado
+                        </h4>
+
+                        {/* Contract impact */}
+                        {esFields.contract_type_rd && (
+                          <div className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                            <p className="text-xs font-semibold">{contractProfile.name}</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                              <span>Desempleo SS: {computedProfile.ssRates.desempleo.tipo}</span>
+                              <span>({computedProfile.ssRates.desempleo.empresa}% emp + {computedProfile.ssRates.desempleo.trabajador}% trab)</span>
+                              <span>IRPF mín. 2%: {computedProfile.irpfMinimoAplicable ? 'Sí (Art. 86.2 RIRPF)' : 'No'}</span>
+                              <span>Indemn. fin: {contractProfile.indemnizacionFinContratoDiasAnyo} d/año</span>
+                              <span>Prueba máx: {contractProfile.periodoPruebaMaxMeses} meses</span>
+                              {contractProfile.duracionMaximaMeses && <span>Duración máx: {contractProfile.duracionMaximaMeses} meses</span>}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Cost summary */}
+                        <div className="p-3 rounded-lg border bg-muted/30 grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <p className="text-muted-foreground">Coste empresa/mes</p>
+                            <p className="font-semibold text-sm">{computedProfile.costeMensualEmpresa.toLocaleString('es-ES')}€</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Coste empresa/año</p>
+                            <p className="font-semibold text-sm">{computedProfile.costeAnualEmpresa.toLocaleString('es-ES')}€</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Neto est./mes</p>
+                            <p className="font-semibold text-sm">{computedProfile.netoEstimadoMensual.toLocaleString('es-ES')}€</p>
+                          </div>
+                        </div>
+
+                        {/* Cross-field validations */}
+                        {computedProfile.crossFieldValidations.length > 0 && (
+                          <div className="space-y-1.5">
+                            {computedProfile.crossFieldValidations.map((v, i) => (
+                              <Alert key={i} variant={v.status === 'error' ? 'destructive' : 'default'} className="py-2">
+                                <AlertDescription className="text-xs">
+                                  <span className="font-medium">{v.status === 'error' ? '❌' : '⚠'} {v.field}:</span> {v.message}
+                                  <span className="block text-muted-foreground mt-0.5">{v.legalRef}</span>
+                                </AlertDescription>
+                              </Alert>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="text-xs text-muted-foreground italic">
+                          Este perfil legal se comparte automáticamente con los agentes IA de RRHH, Contabilidad y Fiscal al guardar.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-6">

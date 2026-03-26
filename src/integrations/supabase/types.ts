@@ -23570,6 +23570,39 @@ export type Database = {
           },
         ]
       }
+      erp_employee_legal_profiles: {
+        Row: {
+          ai_context: string
+          company_id: string
+          computed_at: string
+          created_at: string
+          employee_id: string
+          id: string
+          profile_data: Json
+          updated_at: string
+        }
+        Insert: {
+          ai_context?: string
+          company_id: string
+          computed_at?: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          profile_data?: Json
+          updated_at?: string
+        }
+        Update: {
+          ai_context?: string
+          company_id?: string
+          computed_at?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          profile_data?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_entity_type_rules: {
         Row: {
           allows_multi_cnae: boolean | null
