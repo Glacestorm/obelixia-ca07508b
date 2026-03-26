@@ -48,7 +48,7 @@ import { ERPCompaniesManager } from './config/ERPCompaniesManager';
 import { ERPFiscalYearsManager } from './config/ERPFiscalYearsManager';
 import { ERPSeriesManager } from './config/ERPSeriesManager';
 import { ERPRolesManager } from './config/ERPRolesManager';
-import { ERPAuditViewer } from './audit/ERPAuditViewer';
+// ERPAuditViewer loaded lazily below
 import { ERPInitialSetup } from './config/ERPInitialSetup';
 import { ERPUserAssignment } from './config/ERPUserAssignment';
 import { Skeleton } from '@/components/ui/skeleton';
