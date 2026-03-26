@@ -46,6 +46,10 @@ import {
   type LegalPreCloseCheck,
   type LegalPreCloseEmployee,
 } from '@/engines/erp/hr/payslipEngine';
+import {
+  resolveContractType,
+  getContractLegalSummary,
+} from '@/engines/erp/hr/contractTypeEngine';
 import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ── Types ──
