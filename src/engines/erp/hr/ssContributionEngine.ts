@@ -62,8 +62,8 @@ export interface SSEmployeeContext {
   pagasExtrasProrrateadas: boolean; // P1B: true if pagas extras are paid monthly (prorated)
   salarioBaseAnual: number; // For prorrateo calculation
   epigrafAT?: string | null; // AT/EP tariff code (affects AT rate)
-  /** Ocupación SS: 'a' = oficina (AT/EP fijo 1.00%), 'b' = actividad propia (según CNAE) */
-  ocupacionSS?: 'a' | 'b' | null;
+  /** Ocupación SS (Cuadro II DA 61ª LGSS): 'a'=oficina, 'b'=representantes, 'd'=oficios construcción, 'f'=conductores, 'g'=limpieza, 'h'=seguridad */
+  ocupacionSS?: 'a' | 'b' | 'd' | 'f' | 'g' | 'h' | null;
   /** P1B: Real period days (28-31) instead of fixed 30 */
   diasRealesPeriodo?: number;
 }
@@ -186,33 +186,235 @@ const DEFAULT_SS_RATES_2026 = {
 };
 
 /**
- * AT/EP rate for Ocupación "a" — trabajos exclusivos de oficina
- * DA 61ª LGSS / Cuadro II Orden ESS/1187/2015
- * IT 0.65% + IMS 0.35% = 1.00% total (fijo, independiente del CNAE)
+ * Cuadro II — DA 61ª LGSS (RDL 16/2025, confirmado RDL 3/2026)
+ * Tipos AT/EP por clave de ocupación SS
+ * Se aplican INDEPENDIENTEMENTE del CNAE cuando el trabajador tiene una de estas claves.
  */
-const AT_EP_OCUPACION_A = {
-  it: 0.65,
-  ims: 0.35,
-  total: 1.00,
+const CUADRO_II_AT_EP: Record<string, { it: number; ims: number; total: number; descripcion: string }> = {
+  a: { it: 0.80, ims: 0.70, total: 1.50, descripcion: 'Personal en trabajos exclusivos de oficina' },
+  b: { it: 1.00, ims: 1.00, total: 2.00, descripcion: 'Representantes de comercio' },
+  d: { it: 3.35, ims: 3.35, total: 6.70, descripcion: 'Personal de oficios en instalaciones/reparaciones/construcción' },
+  f: { it: 3.35, ims: 3.35, total: 6.70, descripcion: 'Conductores vehículo >3,5 Tm' },
+  g: { it: 2.10, ims: 1.50, total: 3.60, descripcion: 'Personal de limpieza' },
+  h: { it: 1.40, ims: 2.20, total: 3.60, descripcion: 'Vigilantes, guardas jurados y personal de seguridad' },
 };
 
 /**
- * Resuelve el tipo AT/EP aplicable según ocupación SS y epígrafe CNAE.
- * - Ocupación "a" (oficina): siempre 1.00% (DA 61ª LGSS, Cuadro II)
- * - Ocupación "b" o sin ocupación: tipo del CNAE o default 1.50%
+ * Cuadro I — DA 61ª LGSS: Tarifa AT/EP por CNAE-2025 (extracto)
+ * Clave: código CNAE (puede ser 2, 3 o 4 dígitos). Resolución: match más específico primero.
+ */
+const CUADRO_I_CNAE_AT_EP: Record<string, { it: number; ims: number; total: number }> = {
+  '01':   { it: 1.50, ims: 1.10, total: 2.60 },
+  '0113': { it: 1.00, ims: 1.00, total: 2.00 },
+  '0119': { it: 1.00, ims: 1.00, total: 2.00 },
+  '0129': { it: 2.25, ims: 2.90, total: 5.15 },
+  '0130': { it: 1.15, ims: 1.10, total: 2.25 },
+  '014':  { it: 1.80, ims: 1.50, total: 3.30 },
+  '0147': { it: 1.25, ims: 1.15, total: 2.40 },
+  '015':  { it: 1.60, ims: 1.20, total: 2.80 },
+  '016':  { it: 1.60, ims: 1.20, total: 2.80 },
+  '0163': { it: 1.50, ims: 1.15, total: 2.65 },
+  '017':  { it: 1.80, ims: 1.50, total: 3.30 },
+  '02':   { it: 2.25, ims: 2.90, total: 5.15 },
+  '03':   { it: 3.05, ims: 3.35, total: 6.40 },
+  '0322': { it: 3.05, ims: 3.20, total: 6.25 },
+  '0330': { it: 2.25, ims: 2.90, total: 5.15 },
+  '05':   { it: 2.30, ims: 2.90, total: 5.20 },
+  '06':   { it: 2.30, ims: 2.90, total: 5.20 },
+  '07':   { it: 2.30, ims: 2.90, total: 5.20 },
+  '08':   { it: 2.30, ims: 2.90, total: 5.20 },
+  '0811': { it: 3.45, ims: 3.70, total: 7.15 },
+  '09':   { it: 2.30, ims: 2.90, total: 5.20 },
+  '10':   { it: 1.60, ims: 1.60, total: 3.20 },
+  '101':  { it: 2.00, ims: 1.90, total: 3.90 },
+  '102':  { it: 1.80, ims: 1.50, total: 3.30 },
+  '106':  { it: 1.70, ims: 1.60, total: 3.30 },
+  '107':  { it: 1.05, ims: 0.90, total: 1.95 },
+  '108':  { it: 1.05, ims: 0.90, total: 1.95 },
+  '11':   { it: 1.60, ims: 1.60, total: 3.20 },
+  '12':   { it: 1.00, ims: 0.80, total: 1.80 },
+  '13':   { it: 1.00, ims: 0.85, total: 1.85 },
+  '1391': { it: 0.80, ims: 0.70, total: 1.50 },
+  '14':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '1424': { it: 1.50, ims: 1.10, total: 2.60 },
+  '15':   { it: 1.50, ims: 1.10, total: 2.60 },
+  '16':   { it: 2.25, ims: 2.90, total: 5.15 },
+  '1624': { it: 2.10, ims: 2.00, total: 4.10 },
+  '1626': { it: 2.10, ims: 2.00, total: 4.10 },
+  '1627': { it: 2.20, ims: 2.70, total: 4.90 },
+  '1628': { it: 2.10, ims: 2.00, total: 4.10 },
+  '17':   { it: 1.00, ims: 1.05, total: 2.05 },
+  '171':  { it: 2.00, ims: 1.50, total: 3.50 },
+  '18':   { it: 1.00, ims: 1.00, total: 2.00 },
+  '19':   { it: 1.45, ims: 1.90, total: 3.35 },
+  '20':   { it: 1.60, ims: 1.40, total: 3.00 },
+  '204':  { it: 1.50, ims: 1.20, total: 2.70 },
+  '206':  { it: 1.50, ims: 1.20, total: 2.70 },
+  '21':   { it: 1.30, ims: 1.10, total: 2.40 },
+  '22':   { it: 1.75, ims: 1.25, total: 3.00 },
+  '23':   { it: 2.10, ims: 2.00, total: 4.10 },
+  '231':  { it: 1.60, ims: 1.50, total: 3.10 },
+  '232':  { it: 1.60, ims: 1.50, total: 3.10 },
+  '2331': { it: 1.60, ims: 1.50, total: 3.10 },
+  '234':  { it: 1.60, ims: 1.50, total: 3.10 },
+  '237':  { it: 2.75, ims: 3.35, total: 6.10 },
+  '24':   { it: 2.00, ims: 1.85, total: 3.85 },
+  '25':   { it: 2.00, ims: 1.85, total: 3.85 },
+  '26':   { it: 1.50, ims: 1.10, total: 2.60 },
+  '27':   { it: 1.60, ims: 1.20, total: 2.80 },
+  '279':  { it: 1.65, ims: 1.25, total: 2.90 },
+  '28':   { it: 2.00, ims: 1.85, total: 3.85 },
+  '29':   { it: 1.60, ims: 1.20, total: 2.80 },
+  '30':   { it: 2.00, ims: 1.85, total: 3.85 },
+  '3091': { it: 1.60, ims: 1.20, total: 2.80 },
+  '3092': { it: 1.60, ims: 1.20, total: 2.80 },
+  '31':   { it: 2.00, ims: 1.85, total: 3.85 },
+  '32':   { it: 1.60, ims: 1.20, total: 2.80 },
+  '321':  { it: 1.00, ims: 0.85, total: 1.85 },
+  '322':  { it: 1.00, ims: 0.85, total: 1.85 },
+  '33':   { it: 2.00, ims: 1.85, total: 3.85 },
+  '3313': { it: 1.50, ims: 1.10, total: 2.60 },
+  '3314': { it: 1.60, ims: 1.20, total: 2.80 },
+  '35':   { it: 1.80, ims: 1.50, total: 3.30 },
+  '36':   { it: 2.10, ims: 1.60, total: 3.70 },
+  '37':   { it: 2.10, ims: 1.60, total: 3.70 },
+  '38':   { it: 2.10, ims: 1.60, total: 3.70 },
+  '39':   { it: 2.10, ims: 1.60, total: 3.70 },
+  '41':   { it: 3.35, ims: 3.35, total: 6.70 },
+  '42':   { it: 3.35, ims: 3.35, total: 6.70 },
+  '43':   { it: 3.35, ims: 3.35, total: 6.70 },
+  '436':  { it: 1.00, ims: 1.05, total: 2.05 },
+  '46':   { it: 1.40, ims: 1.20, total: 2.60 },
+  '4618': { it: 1.00, ims: 1.05, total: 2.05 },
+  '4623': { it: 1.80, ims: 1.50, total: 3.30 },
+  '4624': { it: 1.80, ims: 1.50, total: 3.30 },
+  '4632': { it: 1.70, ims: 1.45, total: 3.15 },
+  '4671': { it: 1.00, ims: 1.05, total: 2.05 },
+  '4672': { it: 1.00, ims: 1.05, total: 2.05 },
+  '4673': { it: 1.70, ims: 1.20, total: 2.90 },
+  '4682': { it: 1.80, ims: 1.50, total: 3.30 },
+  '4683': { it: 1.80, ims: 1.50, total: 3.30 },
+  '4684': { it: 1.80, ims: 1.55, total: 3.35 },
+  '4687': { it: 1.80, ims: 1.55, total: 3.35 },
+  '4689': { it: 1.45, ims: 1.25, total: 2.70 },
+  '4690': { it: 1.80, ims: 1.55, total: 3.35 },
+  '47':   { it: 0.95, ims: 0.70, total: 1.65 },
+  '473':  { it: 1.00, ims: 0.85, total: 1.85 },
+  '4781': { it: 1.00, ims: 1.05, total: 2.05 },
+  '4782': { it: 1.00, ims: 1.05, total: 2.05 },
+  '4783': { it: 1.70, ims: 1.20, total: 2.90 },
+  '49':   { it: 1.80, ims: 1.50, total: 3.30 },
+  '494':  { it: 2.00, ims: 1.70, total: 3.70 },
+  '50':   { it: 2.00, ims: 1.85, total: 3.85 },
+  '51':   { it: 1.90, ims: 1.70, total: 3.60 },
+  '52':   { it: 1.80, ims: 1.50, total: 3.30 },
+  '5221': { it: 1.00, ims: 1.10, total: 2.10 },
+  '5232': { it: 1.00, ims: 0.85, total: 1.85 },
+  '53':   { it: 1.00, ims: 0.75, total: 1.75 },
+  '55':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '56':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '58':   { it: 0.65, ims: 1.00, total: 1.65 },
+  '59':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '60':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '6039': { it: 0.80, ims: 0.85, total: 1.65 },
+  '61':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '62':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '63':   { it: 0.65, ims: 1.00, total: 1.65 },
+  '64':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '65':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '66':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '68':   { it: 0.65, ims: 1.00, total: 1.65 },
+  '69':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '70':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '71':   { it: 0.65, ims: 1.00, total: 1.65 },
+  '72':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '73':   { it: 0.90, ims: 0.80, total: 1.70 },
+  '7330': { it: 0.80, ims: 0.70, total: 1.50 },
+  '74':   { it: 0.90, ims: 0.85, total: 1.75 },
+  '742':  { it: 0.80, ims: 0.70, total: 1.50 },
+  '77':   { it: 1.00, ims: 1.00, total: 2.00 },
+  '78':   { it: 1.55, ims: 1.20, total: 2.75 },
+  '781':  { it: 0.95, ims: 1.00, total: 1.95 },
+  '79':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '80':   { it: 1.40, ims: 2.20, total: 3.60 },
+  '81':   { it: 2.10, ims: 1.50, total: 3.60 },
+  '811':  { it: 1.00, ims: 0.85, total: 1.85 },
+  '82':   { it: 1.00, ims: 1.05, total: 2.05 },
+  '8220': { it: 0.80, ims: 0.70, total: 1.50 },
+  '8292': { it: 1.80, ims: 1.50, total: 3.30 },
+  '84':   { it: 0.65, ims: 1.00, total: 1.65 },
+  '842':  { it: 1.40, ims: 2.20, total: 3.60 },
+  '85':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '86':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '869':  { it: 0.95, ims: 0.80, total: 1.75 },
+  '87':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '88':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '90':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '91':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '914':  { it: 1.75, ims: 1.20, total: 2.95 },
+  '92':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '93':   { it: 1.70, ims: 1.30, total: 3.00 },
+  '94':   { it: 0.65, ims: 1.00, total: 1.65 },
+  '95':   { it: 1.50, ims: 1.10, total: 2.60 },
+  '9524': { it: 2.00, ims: 1.85, total: 3.85 },
+  '9531': { it: 2.45, ims: 2.00, total: 4.45 },
+  '9532': { it: 1.70, ims: 1.20, total: 2.90 },
+  '9540': { it: 1.00, ims: 1.05, total: 2.05 },
+  '96':   { it: 0.85, ims: 0.70, total: 1.55 },
+  '9621': { it: 0.80, ims: 0.70, total: 1.50 },
+  '9622': { it: 0.80, ims: 0.70, total: 1.50 },
+  '9630': { it: 1.80, ims: 1.50, total: 3.30 },
+  '9699': { it: 1.50, ims: 1.10, total: 2.60 },
+  '97':   { it: 0.80, ims: 0.70, total: 1.50 },
+  '99':   { it: 1.20, ims: 1.15, total: 2.35 },
+};
+
+/**
+ * Resuelve CNAE → tipo AT/EP usando match jerárquico (4 dígitos > 3 > 2)
+ */
+function resolveCNAERate(cnae: string): { it: number; ims: number; total: number } | null {
+  const cleaned = cnae.replace(/\./g, '').trim();
+  // Try exact match first (4 digits), then 3, then 2
+  if (CUADRO_I_CNAE_AT_EP[cleaned]) return CUADRO_I_CNAE_AT_EP[cleaned];
+  if (cleaned.length >= 3 && CUADRO_I_CNAE_AT_EP[cleaned.substring(0, 3)]) return CUADRO_I_CNAE_AT_EP[cleaned.substring(0, 3)];
+  if (cleaned.length >= 2 && CUADRO_I_CNAE_AT_EP[cleaned.substring(0, 2)]) return CUADRO_I_CNAE_AT_EP[cleaned.substring(0, 2)];
+  return null;
+}
+
+/**
+ * Resuelve el tipo AT/EP aplicable según:
+ * 1. Si hay ocupación SS (Cuadro II) → aplica tipo fijo de esa clave
+ * 2. Si NO hay ocupación (sin especificar) → aplica Cuadro I según CNAE de la empresa
+ * 3. Si tampoco hay CNAE → aplica tipo por defecto 1.50%
+ *
+ * DA 61ª LGSS (RDL 16/2025 confirmado RDL 3/2026)
  */
 export function resolveATRate(
-  ocupacionSS: 'a' | 'b' | null | undefined,
+  ocupacionSS: 'a' | 'b' | 'd' | 'f' | 'g' | 'h' | null | undefined,
   tipoATFromDB: number | null | undefined,
   epigrafAT?: string | null,
-): { rate: number; source: string } {
-  if (ocupacionSS === 'a') {
-    return { rate: AT_EP_OCUPACION_A.total, source: 'Ocupación "a" oficina (DA 61ª LGSS)' };
+): { rate: number; it: number; ims: number; source: string } {
+  // 1. Cuadro II: ocupación específica
+  if (ocupacionSS && CUADRO_II_AT_EP[ocupacionSS]) {
+    const c2 = CUADRO_II_AT_EP[ocupacionSS];
+    return { rate: c2.total, it: c2.it, ims: c2.ims, source: `Cuadro II clave "${ocupacionSS}" — ${c2.descripcion} (DA 61ª LGSS)` };
   }
+
+  // 2. Sin especificar → Cuadro I por CNAE
+  if (epigrafAT) {
+    const cnaeRate = resolveCNAERate(epigrafAT);
+    if (cnaeRate) {
+      return { rate: cnaeRate.total, it: cnaeRate.it, ims: cnaeRate.ims, source: `Cuadro I CNAE ${epigrafAT} (DA 61ª LGSS)` };
+    }
+  }
+
+  // 3. Tipo AT/EP de BD (legacy)
   if (tipoATFromDB != null && tipoATFromDB > 0) {
-    return { rate: tipoATFromDB, source: `Tipo AT/EP BD (epígrafe ${epigrafAT || 'N/A'})` };
+    return { rate: tipoATFromDB, it: tipoATFromDB * 0.53, ims: tipoATFromDB * 0.47, source: `Tipo AT/EP BD (epígrafe ${epigrafAT || 'N/A'})` };
   }
-  return { rate: DEFAULT_SS_RATES_2026.tipo_at_empresa, source: 'Tipo AT/EP por defecto (1.50%)' };
+
+  // 4. Default
+  return { rate: DEFAULT_SS_RATES_2026.tipo_at_empresa, it: 0.80, ims: 0.70, source: 'Tipo AT/EP por defecto 1,50% (sin CNAE ni ocupación configurados)' };
 }
 
 /** MEI split 2026 — total 0.90%: empresa 0.75%, trabajador 0.15% (RDL 3/2026) */
