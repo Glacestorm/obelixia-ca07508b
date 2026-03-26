@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { HRCNOSelect } from './shared/HRCNOSelect';
+import { HRCollectiveAgreementSelect } from './shared/HRCollectiveAgreementSelect';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -640,7 +641,11 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Convenio colectivo</Label>
-                        <Input value={esFields.collective_agreement} onChange={(e) => setEsFields(prev => ({ ...prev, collective_agreement: e.target.value }))} placeholder="Ej: Oficinas y despachos" />
+                        <HRCollectiveAgreementSelect
+                          value={esFields.collective_agreement}
+                          onValueChange={(id) => setEsFields(prev => ({ ...prev, collective_agreement: id }))}
+                          placeholder="Seleccionar convenio"
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs">Comunidad Autónoma</Label>
