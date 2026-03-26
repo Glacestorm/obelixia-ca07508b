@@ -128,14 +128,45 @@ export interface SSCalculationTrace {
 
 // ── Constants ──
 
-/** Default SS topes 2025 when no DB data is available (Grupo 1 — most conservative) */
-const DEFAULT_SS_TOPES_2025 = {
-  base_minima_mensual: 1547.40,
-  base_maxima_mensual: 4720.50,
+/**
+ * Bases mínimas por grupo de cotización 2026 (RDL 3/2026, BOE 04/02/2026)
+ * Base máxima: 5.101,20 €/mes para todos los grupos
+ * Grupos 1-7: cotización mensual | Grupos 8-11: cotización diaria
+ */
+export const SS_GROUP_BASES_2026: Record<number, {
+  base_minima_mensual: number;
+  base_maxima_mensual: number;
+  base_minima_diaria: number | null;
+  base_maxima_diaria: number | null;
+  cotizacion_tipo: 'mensual' | 'diaria';
+  descripcion: string;
+}> = {
+  1:  { base_minima_mensual: 1929.00,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ingenieros, Licenciados y Personal de alta dirección' },
+  2:  { base_minima_mensual: 1599.60,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ingenieros técnicos, Peritos y Ayudantes titulados' },
+  3:  { base_minima_mensual: 1391.70,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Jefes Administrativos y de Taller' },
+  4:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ayudantes no titulados' },
+  5:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Oficiales administrativos' },
+  6:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Subalternos' },
+  7:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Auxiliares administrativos' },
+  8:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Oficiales de primera y segunda' },
+  9:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Oficiales de tercera y especialistas' },
+  10: { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Peones' },
+  11: { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Trabajadores menores de 18 años' },
 };
 
-/** Default rates 2025 (Régimen General) */
-const DEFAULT_SS_RATES_2025 = {
+/** Default SS topes — resolved by grupo de cotización (2026) */
+function getDefaultTopesForGroup(grupo: number) {
+  const groupData = SS_GROUP_BASES_2026[grupo] ?? SS_GROUP_BASES_2026[1];
+  return {
+    base_minima_mensual: groupData.base_minima_mensual,
+    base_maxima_mensual: groupData.base_maxima_mensual,
+    base_minima_diaria: groupData.base_minima_diaria,
+    base_maxima_diaria: groupData.base_maxima_diaria,
+  };
+}
+
+/** Default rates 2026 (Régimen General) — RDL 3/2026 */
+const DEFAULT_SS_RATES_2026 = {
   tipo_cc_empresa: 23.60,
   tipo_cc_trabajador: 4.70,
   tipo_desempleo_empresa_gi: 5.50,
@@ -145,15 +176,73 @@ const DEFAULT_SS_RATES_2025 = {
   tipo_fogasa: 0.20,
   tipo_fp_empresa: 0.60,
   tipo_fp_trabajador: 0.10,
-  tipo_mei: 0.58,
+  tipo_mei: 0.90,
   tipo_at_empresa: 1.50,
 };
 
-/** P1B: MEI split 2025 — total 0.58%: empresa 0.50%, trabajador 0.08% (RD 322/2024) */
-const MEI_SPLIT_2025 = {
-  empresa: 0.50,
-  trabajador: 0.08,
+/** MEI split 2026 — total 0.90%: empresa 0.75%, trabajador 0.15% (RDL 3/2026) */
+const MEI_SPLIT_2026 = {
+  empresa: 0.75,
+  trabajador: 0.15,
 };
+
+/**
+ * Cotización adicional de solidaridad 2026 (RDL 3/2026)
+ * Aplica sobre retribución que exceda la base máxima mensual
+ */
+export interface SolidarityContribution {
+  tramo1Empresa: number;
+  tramo1Trabajador: number;
+  tramo2Empresa: number;
+  tramo2Trabajador: number;
+  tramo3Empresa: number;
+  tramo3Trabajador: number;
+  totalEmpresa: number;
+  totalTrabajador: number;
+}
+
+export function computeSolidarityContribution(remuneracionMensualTotal: number): SolidarityContribution {
+  const BASE_MAX = 5101.20;
+  const TRAMO1_TOPE = 5611.32;
+  const TRAMO2_TOPE = 7651.80;
+
+  const result: SolidarityContribution = {
+    tramo1Empresa: 0, tramo1Trabajador: 0,
+    tramo2Empresa: 0, tramo2Trabajador: 0,
+    tramo3Empresa: 0, tramo3Trabajador: 0,
+    totalEmpresa: 0, totalTrabajador: 0,
+  };
+
+  if (remuneracionMensualTotal <= BASE_MAX) return result;
+
+  // Tramo 1: 5.101,21 - 5.611,32 → 0.96% empresa, 0.19% trabajador
+  const baseTramo1 = Math.min(remuneracionMensualTotal, TRAMO1_TOPE) - BASE_MAX;
+  if (baseTramo1 > 0) {
+    result.tramo1Empresa = r2(baseTramo1 * 0.96 / 100);
+    result.tramo1Trabajador = r2(baseTramo1 * 0.19 / 100);
+  }
+
+  // Tramo 2: 5.611,33 - 7.651,80 → 1.04% empresa, 0.21% trabajador
+  if (remuneracionMensualTotal > TRAMO1_TOPE) {
+    const baseTramo2 = Math.min(remuneracionMensualTotal, TRAMO2_TOPE) - TRAMO1_TOPE;
+    if (baseTramo2 > 0) {
+      result.tramo2Empresa = r2(baseTramo2 * 1.04 / 100);
+      result.tramo2Trabajador = r2(baseTramo2 * 0.21 / 100);
+    }
+  }
+
+  // Tramo 3: > 7.651,80 → 1.22% empresa, 0.24% trabajador
+  if (remuneracionMensualTotal > TRAMO2_TOPE) {
+    const baseTramo3 = remuneracionMensualTotal - TRAMO2_TOPE;
+    result.tramo3Empresa = r2(baseTramo3 * 1.22 / 100);
+    result.tramo3Trabajador = r2(baseTramo3 * 0.24 / 100);
+  }
+
+  result.totalEmpresa = r2(result.tramo1Empresa + result.tramo2Empresa + result.tramo3Empresa);
+  result.totalTrabajador = r2(result.tramo1Trabajador + result.tramo2Trabajador + result.tramo3Trabajador);
+
+  return result;
+}
 
 // ── Core calculation ──
 
