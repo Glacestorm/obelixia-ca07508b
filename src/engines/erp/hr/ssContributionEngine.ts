@@ -452,6 +452,19 @@ export function computeSSContributions(
     result: baseIRPFCorregida,
   });
 
+  // ── 8. Cotización adicional de solidaridad (RDL 3/2026) ──
+  const remuneracionTotal = remuneracionMensual + prorrateoMensual + horasExtra;
+  const solidaridad = computeSolidarityContribution(remuneracionTotal);
+  const hasSolidaridad = solidaridad.totalEmpresa > 0 || solidaridad.totalTrabajador > 0;
+
+  if (hasSolidaridad) {
+    traces.push({
+      step: 'Cotización solidaridad (RDL 3/2026)',
+      formula: `Remuneración total ${r2(remuneracionTotal)}€ > base máx 5.101,20€ → Empresa: ${solidaridad.totalEmpresa}€, Trabajador: ${solidaridad.totalTrabajador}€`,
+      result: r2(solidaridad.totalEmpresa + solidaridad.totalTrabajador),
+    });
+  }
+
   return {
     baseCCMensualBruta: r2(baseCCBruta),
     prorrateoMensual: r2(prorrateoMensual),
@@ -462,14 +475,15 @@ export function computeSSContributions(
     desempleoTrabajador,
     fpTrabajador,
     meiTrabajador,
-    totalTrabajador,
+    totalTrabajador: r2(totalTrabajador + solidaridad.totalTrabajador),
     ccEmpresa,
     desempleoEmpresa,
     fogasa,
     fpEmpresa,
     meiEmpresa,
     atEmpresa,
-    totalEmpresa,
+    totalEmpresa: r2(totalEmpresa + solidaridad.totalEmpresa),
+    solidaridad: hasSolidaridad ? solidaridad : null,
     baseIRPFCorregida,
     conceptosExentos: r2(conceptosExentos),
     topeMinAplicado,
