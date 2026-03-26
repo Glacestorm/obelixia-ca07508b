@@ -151,10 +151,21 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   const [irpfManualOverride, setIrpfManualOverride] = useState(false);
 
   // Unified Legal Profile
-  const { profile: legalProfile, compute: computeLegalProfile, persist: persistLegalProfile, isSaving: isSavingProfile } = useEmployeeLegalProfile(companyId);
+  const { compute: computeLegalProfile, persist: persistLegalProfile } = useEmployeeLegalProfile(companyId);
 
   // Reactive contract profile for cross-field info
   const contractProfile = useMemo(() => resolveContractType(esFields.contract_type_rd), [esFields.contract_type_rd]);
+
+  // Auto-calculate IRPF from salary + M145
+  const irpfCalculation = useMemo(() => {
+    if (formData.country_code !== 'ES' || !formData.base_salary) return null;
+    return calculateIRPFRetention({
+      grossAnnualSalary: Number(formData.base_salary) || 0,
+      socialSecurityEmployee: 0,
+      numPayments: 14,
+      modelo145,
+    });
+  }, [formData.base_salary, formData.country_code, modelo145]);
 
   // Compute legal profile reactively when relevant fields change
   const computedProfile = useMemo(() => {
@@ -181,17 +192,6 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       status: formData.status,
     });
   }, [formData, esFields, irpfCalculation, companyId, employee?.id, computeLegalProfile]);
-
-  // Auto-calculate IRPF from salary + M145
-  const irpfCalculation = useMemo(() => {
-    if (formData.country_code !== 'ES' || !formData.base_salary) return null;
-    return calculateIRPFRetention({
-      grossAnnualSalary: Number(formData.base_salary) || 0,
-      socialSecurityEmployee: 0, // will estimate ~6.35%
-      numPayments: 14,
-      modelo145,
-    });
-  }, [formData.base_salary, formData.country_code, modelo145]);
 
   // Sync calculated IRPF to field when not in manual override
   useEffect(() => {
