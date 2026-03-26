@@ -135,7 +135,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     autonomous_community: '',
     cno_code: '',
     irpf_percentage: '',
-    ocupacion_ss: '' as '' | 'a' | 'b',
+    ocupacion_ss: '' as '' | 'a' | 'b' | 'd' | 'f' | 'g' | 'h',
   });
 
   // Modelo 145 data (IRPF withholding communication)
