@@ -235,6 +235,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
           autonomous_community: ext.autonomous_community || '',
           cno_code: ext.cno_code || '',
           irpf_percentage: ext.irpf_percentage || '',
+          ocupacion_ss: ext.ocupacion_ss || '',
         });
         // Load Modelo 145 data
         if (ext.modelo145) {
