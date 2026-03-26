@@ -369,6 +369,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
               autonomous_community: esFields.autonomous_community || null,
               cno_code: esFields.cno_code || null,
               irpf_percentage: esFields.irpf_percentage || null,
+              ocupacion_ss: esFields.ocupacion_ss || null,
               modelo145: JSON.parse(JSON.stringify(modelo145)),
             },
           };
@@ -705,6 +706,25 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                           onValueChange={(code) => setEsFields(prev => ({ ...prev, cno_code: code }))}
                           required
                         />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Ocupación SS (AT/EP)</Label>
+                        <Select
+                          value={esFields.ocupacion_ss || '__none'}
+                          onValueChange={(v) => setEsFields(prev => ({ ...prev, ocupacion_ss: (v === '__none' ? '' : v) as '' | 'a' | 'b' }))}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                          <SelectContent portalContainer={selectPortalContainer} position="popper">
+                            <SelectItem value="__none">— Sin especificar —</SelectItem>
+                            <SelectItem value="a">a — Trabajos exclusivos de oficina (AT 1,00%)</SelectItem>
+                            <SelectItem value="b">b — Funciones propias de la actividad (AT según CNAE)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {esFields.ocupacion_ss === 'a' && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            DA 61ª LGSS: IT 0,65% + IMS 0,35% = 1,00% fijo
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-1.5 col-span-2">
                         <div className="flex items-center justify-between">
