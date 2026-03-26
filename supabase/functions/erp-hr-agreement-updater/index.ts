@@ -51,7 +51,31 @@ serve(async (req) => {
     switch (action) {
       case 'daily_scan':
       case 'check_renewals': {
-        // Get existing agreements to check for updates
+        // 1) Deactivate expired agreements (expiration_date < today)
+        const today = new Date().toISOString().split('T')[0];
+        const { data: expiredAgreements, error: expErr } = await supabase
+          .from('erp_hr_collective_agreements')
+          .update({ is_active: false, updated_at: new Date().toISOString(), metadata: { deactivation_reason: 'expired', deactivated_at: new Date().toISOString() } })
+          .eq('is_active', true)
+          .lt('expiration_date', today)
+          .not('expiration_date', 'is', null)
+          .select('code, name');
+
+        if (expErr) {
+          console.error('[agreement-updater] Error deactivating expired agreements:', expErr);
+        } else if (expiredAgreements?.length) {
+          console.log(`[agreement-updater] Deactivated ${expiredAgreements.length} expired agreements:`, expiredAgreements.map(a => a.code));
+          // Also deactivate their salary tables
+          for (const exp of expiredAgreements) {
+            await supabase
+              .from('erp_hr_agreement_salary_tables')
+              .update({ is_active: false })
+              .eq('agreement_code', exp.code)
+              .eq('is_active', true);
+          }
+        }
+
+        // 2) Get existing active agreements to check for updates
         const { data: existingAgreements } = await supabase
           .from('erp_hr_collective_agreements')
           .select('code, name, effective_date, expiration_date, metadata')
