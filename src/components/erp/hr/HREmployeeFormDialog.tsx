@@ -431,6 +431,11 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
             await supabase.from('hr_employee_extensions').insert([extensionPayload]);
           }
         }
+
+        // Persist legal profile for AI agents (cross-module)
+        if (formData.country_code === 'ES' && computedProfile) {
+          persistLegalProfile(employeeId!, computedProfile);
+        }
       }
       onSave();
     } catch (error) {
