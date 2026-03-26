@@ -3,7 +3,7 @@
  * @version 2.1.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -48,29 +48,40 @@ import { ERPCompaniesManager } from './config/ERPCompaniesManager';
 import { ERPFiscalYearsManager } from './config/ERPFiscalYearsManager';
 import { ERPSeriesManager } from './config/ERPSeriesManager';
 import { ERPRolesManager } from './config/ERPRolesManager';
-import { ERPAuditViewer } from './audit/ERPAuditViewer';
+// ERPAuditViewer loaded lazily below
 import { ERPInitialSetup } from './config/ERPInitialSetup';
 import { ERPUserAssignment } from './config/ERPUserAssignment';
-import { MaestrosLayout } from './maestros/MaestrosLayout';
-import { SalesModule } from './sales';
-import { PurchasesModule } from './purchases';
-import { InventoryModule } from './inventory';
-import { AccountingDashboard } from './accounting';
-import { TreasuryDashboard } from './treasury';
-import { TradeFinanceModule } from './trade';
-import { AdvisorAgentPanel } from './advisor';
-import { LogisticsModuleDashboard } from './logistics/LogisticsModuleDashboard';
-import { FiscalModule } from './fiscal';
-import { HRModule } from './hr/HRModule';
-import { LegalModule } from './legal';
-import { GaliaDashboard } from '@/components/verticals/galia';
-import { AcademiaModuleDashboard } from '@/components/academia/dashboard';
-import { ElectricalConsultingModule } from './electrical';
-import { AICommandCenterModule } from './ai-center';
-import { AuditCenterModule } from './audit-center';
+import { Skeleton } from '@/components/ui/skeleton';
 
-import { ERPModuleAgentsPanel, SupervisorAgentsDashboard } from '@/components/admin/agents';
-import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
+const MaestrosLayout           = lazy(() => import('./maestros/MaestrosLayout').then(m=>({default:m.MaestrosLayout})));
+const SalesModule               = lazy(() => import('./sales').then(m=>({default:m.SalesModule})));
+const PurchasesModule           = lazy(() => import('./purchases').then(m=>({default:m.PurchasesModule})));
+const InventoryModule           = lazy(() => import('./inventory').then(m=>({default:m.InventoryModule})));
+const AccountingDashboard       = lazy(() => import('./accounting').then(m=>({default:m.AccountingDashboard})));
+const TreasuryDashboard         = lazy(() => import('./treasury').then(m=>({default:m.TreasuryDashboard})));
+const TradeFinanceModule        = lazy(() => import('./trade').then(m=>({default:m.TradeFinanceModule})));
+const AdvisorAgentPanel         = lazy(() => import('./advisor').then(m=>({default:m.AdvisorAgentPanel})));
+const LogisticsModuleDashboard  = lazy(() => import('./logistics/LogisticsModuleDashboard').then(m=>({default:m.LogisticsModuleDashboard})));
+const FiscalModule              = lazy(() => import('./fiscal').then(m=>({default:m.FiscalModule})));
+const HRModule                  = lazy(() => import('./hr/HRModule').then(m=>({default:m.HRModule})));
+const LegalModule               = lazy(() => import('./legal').then(m=>({default:m.LegalModule})));
+const GaliaDashboard            = lazy(() => import('@/components/verticals/galia').then(m=>({default:m.GaliaDashboard})));
+const AcademiaModuleDashboard   = lazy(() => import('@/components/academia/dashboard').then(m=>({default:m.AcademiaModuleDashboard})));
+const ElectricalConsultingModule= lazy(() => import('./electrical').then(m=>({default:m.ElectricalConsultingModule})));
+const AICommandCenterModule     = lazy(() => import('./ai-center').then(m=>({default:m.AICommandCenterModule})));
+const AuditCenterModule         = lazy(() => import('./audit-center').then(m=>({default:m.AuditCenterModule})));
+const ERPAuditViewer            = lazy(() => import('./audit/ERPAuditViewer').then(m=>({default:m.ERPAuditViewer})));
+const ERPMigrationDashboard     = lazy(() => import('@/components/admin/erp-migration').then(m=>({default:m.ERPMigrationDashboard})));
+
+function ModuleSkeleton() {
+  return (
+    <div className="space-y-4 p-6">
+      <Skeleton className="h-8 w-1/3" />
+      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-32 w-full" />
+    </div>
+  );
+}
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -396,82 +407,84 @@ function ERPModularDashboardContent() {
 
         {/* Maestros Tab */}
         <TabsContent value="maestros">
-          {currentCompany && <MaestrosLayout companyId={currentCompany.id} />}
+          <Suspense fallback={<ModuleSkeleton />}>
+            {currentCompany && <MaestrosLayout companyId={currentCompany.id} />}
+          </Suspense>
         </TabsContent>
 
         {/* Sales Tab */}
         <TabsContent value="sales">
-          <SalesModule />
+          <Suspense fallback={<ModuleSkeleton />}><SalesModule /></Suspense>
         </TabsContent>
 
         {/* Purchases Tab */}
         <TabsContent value="purchases">
-          <PurchasesModule />
+          <Suspense fallback={<ModuleSkeleton />}><PurchasesModule /></Suspense>
         </TabsContent>
 
         {/* Inventory Tab */}
         <TabsContent value="inventory">
-          <InventoryModule />
+          <Suspense fallback={<ModuleSkeleton />}><InventoryModule /></Suspense>
         </TabsContent>
 
         {/* Accounting Tab */}
         <TabsContent value="accounting">
-          <AccountingDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><AccountingDashboard /></Suspense>
         </TabsContent>
 
         {/* Treasury Tab */}
         <TabsContent value="treasury">
-          <TreasuryDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><TreasuryDashboard /></Suspense>
         </TabsContent>
 
         {/* Trade Finance Tab */}
         <TabsContent value="trade">
-          <TradeFinanceModule />
+          <Suspense fallback={<ModuleSkeleton />}><TradeFinanceModule /></Suspense>
         </TabsContent>
 
         {/* Logistics Tab */}
         <TabsContent value="logistics">
-          <LogisticsModuleDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><LogisticsModuleDashboard /></Suspense>
         </TabsContent>
 
         {/* Tax/Fiscal Tab */}
         <TabsContent value="tax">
-          <FiscalModule />
+          <Suspense fallback={<ModuleSkeleton />}><FiscalModule /></Suspense>
         </TabsContent>
 
         {/* HR Tab */}
         <TabsContent value="hr">
-          <HRModule />
+          <Suspense fallback={<ModuleSkeleton />}><HRModule /></Suspense>
         </TabsContent>
 
         {/* Legal Tab */}
         <TabsContent value="legal">
-          <LegalModule />
+          <Suspense fallback={<ModuleSkeleton />}><LegalModule /></Suspense>
         </TabsContent>
 
-        {/* LEADER Tab - Gestión Ayudas LEADER IA */}
+        {/* LEADER Tab */}
         <TabsContent value="galia">
-          <GaliaDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><GaliaDashboard /></Suspense>
         </TabsContent>
 
         {/* Academia Tab */}
         <TabsContent value="academia">
-          <AcademiaModuleDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><AcademiaModuleDashboard /></Suspense>
         </TabsContent>
 
         {/* Electrical Consulting Tab */}
         <TabsContent value="electrical">
-          <ElectricalConsultingModule />
+          <Suspense fallback={<ModuleSkeleton />}><ElectricalConsultingModule /></Suspense>
         </TabsContent>
 
         {/* AI Command Center Tab */}
         <TabsContent value="ai-center">
-          <AICommandCenterModule />
+          <Suspense fallback={<ModuleSkeleton />}><AICommandCenterModule /></Suspense>
         </TabsContent>
 
         {/* Audit Center Tab */}
         <TabsContent value="audit-center">
-          <AuditCenterModule />
+          <Suspense fallback={<ModuleSkeleton />}><AuditCenterModule /></Suspense>
         </TabsContent>
 
         {/* Companies Tab */}
@@ -497,13 +510,9 @@ function ERPModularDashboardContent() {
           <ERPSeriesManager />
         </TabsContent>
 
-        {/* Audit tab removed — promoted to standalone module at /erp/audit-center */}
-
-        {/* Agents & Supervisor tabs removed — absorbed into IA Center */}
-
         {/* Migration Tab */}
         <TabsContent value="migration">
-          <ERPMigrationDashboard />
+          <Suspense fallback={<ModuleSkeleton />}><ERPMigrationDashboard /></Suspense>
         </TabsContent>
 
       </Tabs>
