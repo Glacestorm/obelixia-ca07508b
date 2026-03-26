@@ -182,8 +182,38 @@ const DEFAULT_SS_RATES_2026 = {
   tipo_fp_empresa: 0.60,
   tipo_fp_trabajador: 0.10,
   tipo_mei: 0.90,
-  tipo_at_empresa: 1.50,
+  tipo_at_empresa: 1.50, // Default when no CNAE/occupation specified
 };
+
+/**
+ * AT/EP rate for Ocupación "a" — trabajos exclusivos de oficina
+ * DA 61ª LGSS / Cuadro II Orden ESS/1187/2015
+ * IT 0.65% + IMS 0.35% = 1.00% total (fijo, independiente del CNAE)
+ */
+const AT_EP_OCUPACION_A = {
+  it: 0.65,
+  ims: 0.35,
+  total: 1.00,
+};
+
+/**
+ * Resuelve el tipo AT/EP aplicable según ocupación SS y epígrafe CNAE.
+ * - Ocupación "a" (oficina): siempre 1.00% (DA 61ª LGSS, Cuadro II)
+ * - Ocupación "b" o sin ocupación: tipo del CNAE o default 1.50%
+ */
+export function resolveATRate(
+  ocupacionSS: 'a' | 'b' | null | undefined,
+  tipoATFromDB: number | null | undefined,
+  epigrafAT?: string | null,
+): { rate: number; source: string } {
+  if (ocupacionSS === 'a') {
+    return { rate: AT_EP_OCUPACION_A.total, source: 'Ocupación "a" oficina (DA 61ª LGSS)' };
+  }
+  if (tipoATFromDB != null && tipoATFromDB > 0) {
+    return { rate: tipoATFromDB, source: `Tipo AT/EP BD (epígrafe ${epigrafAT || 'N/A'})` };
+  }
+  return { rate: DEFAULT_SS_RATES_2026.tipo_at_empresa, source: 'Tipo AT/EP por defecto (1.50%)' };
+}
 
 /** MEI split 2026 — total 0.90%: empresa 0.75%, trabajador 0.15% (RDL 3/2026) */
 const MEI_SPLIT_2026 = {
