@@ -1,4 +1,3 @@
-import { logger } from "@/lib/logger";
 /**
  * HRRecruitmentPanel - Panel de Reclutamiento Inteligente
  * Sistema completo de gestión de ofertas y candidatos

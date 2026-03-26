@@ -1,4 +1,3 @@
-import { logger } from "@/lib/logger";
 /**
  * HROnboardingPanel - Fase 3: Proceso de Onboarding Adaptativo por CNAE
  * Gestión de incorporaciones con tareas adaptadas al sector económico

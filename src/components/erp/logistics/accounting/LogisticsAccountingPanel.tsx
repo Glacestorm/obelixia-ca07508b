@@ -1,4 +1,3 @@
-import { logger } from "@/lib/logger";
 /**
  * Panel de Contabilidad Logística
  * Gestión de reglas de asientos automáticos y generación manual
