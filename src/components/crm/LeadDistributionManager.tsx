@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /**
  * LeadDistributionManager - Gestión de reglas de distribución de leads
  * Configuración de reglas automáticas basadas en criterios

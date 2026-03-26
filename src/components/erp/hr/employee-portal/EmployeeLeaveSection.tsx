@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /**
  * EmployeeLeaveSection — "Mis vacaciones y permisos" del Portal del Empleado
  * V2-ES.9.10: Consulta de saldos, historial y solicitudes de ausencias

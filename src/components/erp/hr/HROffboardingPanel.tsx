@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /**
  * HROffboardingPanel - Panel de Gestión de Salidas (Offboarding)
  * Fase 5 - Sistema de desvinculación optimizado con análisis IA
