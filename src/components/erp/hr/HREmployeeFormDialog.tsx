@@ -136,6 +136,9 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     irpf_percentage: '',
   });
 
+  // Modelo 145 data (IRPF withholding communication)
+  const [modelo145, setModelo145] = useState<Modelo145Data>({ ...EMPTY_MODELO145 });
+
   // Module access state
   const [moduleAccess, setModuleAccess] = useState<Record<string, 'none' | 'read' | 'write' | 'admin'>>({});
   const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
