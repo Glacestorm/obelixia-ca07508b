@@ -135,7 +135,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     autonomous_community: '',
     cno_code: '',
     irpf_percentage: '',
-    ocupacion_ss: '' as '' | 'a' | 'b',
+    ocupacion_ss: '' as '' | 'a' | 'b' | 'd' | 'f' | 'g' | 'h',
   });
 
   // Modelo 145 data (IRPF withholding communication)
@@ -708,21 +708,30 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs">Ocupación SS (AT/EP)</Label>
+                        <Label className="text-xs">Ocupación SS (AT/EP) — Cuadro II</Label>
                         <Select
                           value={esFields.ocupacion_ss || '__none'}
-                          onValueChange={(v) => setEsFields(prev => ({ ...prev, ocupacion_ss: (v === '__none' ? '' : v) as '' | 'a' | 'b' }))}
+                          onValueChange={(v) => setEsFields(prev => ({ ...prev, ocupacion_ss: (v === '__none' ? '' : v) as '' | 'a' | 'b' | 'd' | 'f' | 'g' | 'h' }))}
                         >
                           <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                           <SelectContent portalContainer={selectPortalContainer} position="popper">
-                            <SelectItem value="__none">— Sin especificar —</SelectItem>
-                            <SelectItem value="a">a — Trabajos exclusivos de oficina (AT 1,00%)</SelectItem>
-                            <SelectItem value="b">b — Funciones propias de la actividad (AT según CNAE)</SelectItem>
+                            <SelectItem value="__none">— Sin especificar (aplica CNAE / Cuadro I) —</SelectItem>
+                            <SelectItem value="a">a — Trabajos exclusivos de oficina (AT 1,50%)</SelectItem>
+                            <SelectItem value="b">b — Representantes de comercio (AT 2,00%)</SelectItem>
+                            <SelectItem value="d">d — Oficios construcción/instalaciones (AT 6,70%)</SelectItem>
+                            <SelectItem value="f">f — Conductores vehículo &gt;3,5 Tm (AT 6,70%)</SelectItem>
+                            <SelectItem value="g">g — Personal de limpieza (AT 3,60%)</SelectItem>
+                            <SelectItem value="h">h — Vigilantes/guardas/seguridad (AT 3,60%)</SelectItem>
                           </SelectContent>
                         </Select>
                         {esFields.ocupacion_ss === 'a' && (
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            DA 61ª LGSS: IT 0,65% + IMS 0,35% = 1,00% fijo
+                            DA 61ª LGSS Cuadro II: IT 0,80% + IMS 0,70% = 1,50% fijo
+                          </p>
+                        )}
+                        {!esFields.ocupacion_ss && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Se aplicará el tipo AT/EP del CNAE de la empresa (Cuadro I, DA 61ª LGSS)
                           </p>
                         )}
                       </div>
