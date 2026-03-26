@@ -92,6 +92,9 @@ export interface SSContributionBreakdown {
   atEmpresa: number;
   totalEmpresa: number;
 
+  // Cotización adicional de solidaridad 2026
+  solidaridad: SolidarityContribution | null;
+
   // P1B: Correct IRPF base (excluding exempt extrasalarial)
   baseIRPFCorregida: number;
   conceptosExentos: number;
