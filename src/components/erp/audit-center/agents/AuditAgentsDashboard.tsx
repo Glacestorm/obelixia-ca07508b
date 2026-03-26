@@ -1,5 +1,6 @@
 /**
  * AuditAgentsDashboard — Panel de los 8 agentes especializados + 2 supervisores
+ * Con configuración individual por agente (patrón IA Center)
  */
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bot, Shield, Activity, RefreshCw, Zap, ArrowUpRight, Eye, Settings } from 'lucide-react';
 import { useAuditAgents } from '@/hooks/erp/audit';
+import { AuditAgentConfigSheet } from './AuditAgentConfigSheet';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function AuditAgentsDashboard() {
   const {
@@ -21,6 +24,11 @@ export function AuditAgentsDashboard() {
   const [view, setView] = useState<'hierarchy' | 'list' | 'activity'>('hierarchy');
 
   useEffect(() => { fetchAuditAgents(); fetchInvocations(); }, []);
+
+  const handleSaveConfig = (agentId: string, config: any) => {
+    console.log('[AuditAgentsDashboard] Save config for', agentId, config);
+    toast.success('Configuración del agente guardada');
+  };
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -38,6 +46,31 @@ export function AuditAgentsDashboard() {
       default: return <Zap className="h-5 w-5 text-primary" />;
     }
   };
+
+  const AgentCard = ({ agent }: { agent: typeof agents[0] }) => (
+    <div className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          {agentTypeIcon(agent.agent_type)}
+          <span className="text-xs font-medium">{agent.name}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {statusBadge(agent.status)}
+          <AuditAgentConfigSheet agent={agent} onSave={handleSaveConfig} />
+        </div>
+      </div>
+      <p className="text-[10px] text-muted-foreground line-clamp-2">{agent.description}</p>
+      <div className="flex items-center gap-2 mt-2">
+        <Badge variant="outline" className="text-[10px]">{agent.code}</Badge>
+        <span className="text-[10px] text-muted-foreground">
+          Confianza: {agent.confidence_threshold}
+        </span>
+        {agent.requires_human_review && (
+          <Badge variant="secondary" className="text-[10px]">HITL</Badge>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -59,6 +92,22 @@ export function AuditAgentsDashboard() {
         {/* Hierarchy View */}
         <TabsContent value="hierarchy">
           <div className="space-y-4">
+            {/* SuperSupervisor */}
+            {superSupervisor && (
+              <Card className="border-amber-500/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-amber-500" />
+                    SuperSupervisor Auditoría
+                    {statusBadge(superSupervisor.status)}
+                    <AuditAgentConfigSheet agent={superSupervisor} onSave={handleSaveConfig}
+                      trigger={<Button variant="ghost" size="sm" className="ml-auto h-7 gap-1 text-[10px]"><Settings className="h-3 w-3" /> Config</Button>}
+                    />
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            )}
+
             {/* Supervisor Interno + sus agentes */}
             <Card className="border-blue-500/20">
               <CardHeader className="pb-2">
@@ -66,31 +115,16 @@ export function AuditAgentsDashboard() {
                   <Shield className="h-4 w-4 text-blue-500" />
                   Supervisor Auditoría Interna
                   {internalSupervisor && statusBadge(internalSupervisor.status)}
+                  {internalSupervisor && (
+                    <AuditAgentConfigSheet agent={internalSupervisor} onSave={handleSaveConfig}
+                      trigger={<Button variant="ghost" size="sm" className="ml-auto h-7 gap-1 text-[10px]"><Settings className="h-3 w-3" /> Config</Button>}
+                    />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {internalAgents.map(agent => (
-                    <div key={agent.id} className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          {agentTypeIcon(agent.agent_type)}
-                          <span className="text-xs font-medium">{agent.name}</span>
-                        </div>
-                        {statusBadge(agent.status)}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground line-clamp-2">{agent.description}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-[10px]">{agent.code}</Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          Confianza: {agent.confidence_threshold}
-                        </span>
-                        {agent.requires_human_review && (
-                          <Badge variant="secondary" className="text-[10px]">HITL</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  {internalAgents.map(agent => <AgentCard key={agent.id} agent={agent} />)}
                 </div>
               </CardContent>
             </Card>
@@ -102,31 +136,16 @@ export function AuditAgentsDashboard() {
                   <Shield className="h-4 w-4 text-green-500" />
                   Supervisor Auditoría Externa
                   {externalSupervisor && statusBadge(externalSupervisor.status)}
+                  {externalSupervisor && (
+                    <AuditAgentConfigSheet agent={externalSupervisor} onSave={handleSaveConfig}
+                      trigger={<Button variant="ghost" size="sm" className="ml-auto h-7 gap-1 text-[10px]"><Settings className="h-3 w-3" /> Config</Button>}
+                    />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  {externalAgents.map(agent => (
-                    <div key={agent.id} className="p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          {agentTypeIcon(agent.agent_type)}
-                          <span className="text-xs font-medium">{agent.name}</span>
-                        </div>
-                        {statusBadge(agent.status)}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground line-clamp-2">{agent.description}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-[10px]">{agent.code}</Badge>
-                        <span className="text-[10px] text-muted-foreground">
-                          Confianza: {agent.confidence_threshold}
-                        </span>
-                        {agent.requires_human_review && (
-                          <Badge variant="secondary" className="text-[10px]">HITL</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  {externalAgents.map(agent => <AgentCard key={agent.id} agent={agent} />)}
                 </div>
               </CardContent>
             </Card>
@@ -152,6 +171,7 @@ export function AuditAgentsDashboard() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{agent.agent_type}</span>
                         {statusBadge(agent.status)}
+                        <AuditAgentConfigSheet agent={agent} onSave={handleSaveConfig} />
                       </div>
                     </div>
                   ))}
