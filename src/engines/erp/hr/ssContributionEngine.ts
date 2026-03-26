@@ -275,15 +275,19 @@ export function computeSSContributions(
   };
 
   if (!limits) {
-    warnings.push('Sin datos de bases SS en BD — usando topes y tipos por defecto 2025');
+    warnings.push(`Sin datos de bases SS en BD — usando topes y tipos por defecto 2026 para grupo ${employee.grupoCotizacion}`);
   }
 
   // ── Resolve rates ──
   const rates = limits ?? DEFAULT_SS_RATES_2026;
+  const defaultTopes = getDefaultTopesForGroup(employee.grupoCotizacion);
   const topes = limits ? {
     base_minima_mensual: limits.base_minima_mensual,
     base_maxima_mensual: limits.base_maxima_mensual,
-  } : DEFAULT_SS_TOPES_2025_REMOVED;
+  } : {
+    base_minima_mensual: defaultTopes.base_minima_mensual,
+    base_maxima_mensual: defaultTopes.base_maxima_mensual,
+  };
 
   // ── 1. Sum contributable salary amounts (excluding overtime) ──
   // P1B: Also track prorated amounts from lines and fiscal classification
