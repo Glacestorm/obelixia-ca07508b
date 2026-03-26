@@ -687,6 +687,15 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                     <p className="text-xs text-muted-foreground italic">
                       Estos datos se guardan en la extensión de localización del empleado (tabla hr_employee_extensions).
                     </p>
+
+                    <Separator className="my-4" />
+
+                    {/* Modelo 145 — Datos para cálculo de retenciones IRPF */}
+                    <HRModelo145Section
+                      data={modelo145}
+                      onChange={setModelo145}
+                      portalContainer={selectPortalContainer}
+                    />
                   </div>
                 ) : (
                   <div className="text-center py-6">
