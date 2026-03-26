@@ -459,9 +459,16 @@ export function computeSSContributions(
   const fogasa = r2((baseCCFinal * ((rates as any).tipo_fogasa ?? DEFAULT_SS_RATES_2026.tipo_fogasa)) / 100);
   const fpEmpresa = r2((baseCCFinal * ((rates as any).tipo_fp_empresa ?? DEFAULT_SS_RATES_2026.tipo_fp_empresa)) / 100);
   const meiEmpresa = r2((baseCCFinal * MEI_SPLIT_2026.empresa) / 100);
-  const tipoAT = (rates as any).tipo_at_empresa ?? DEFAULT_SS_RATES_2026.tipo_at_empresa;
+  const atResolved = resolveATRate(employee.ocupacionSS, (rates as any).tipo_at_empresa, employee.epigrafAT);
+  const tipoAT = atResolved.rate;
   const atEmpresa = r2((baseATFinal * tipoAT) / 100);
   const totalEmpresa = r2(ccEmpresa + desempleoEmpresa + fogasa + fpEmpresa + meiEmpresa + atEmpresa);
+
+  traces.push({
+    step: 'Tipo AT/EP aplicado',
+    formula: `${atResolved.source} → ${tipoAT}% sobre base AT ${baseATFinal}€ = ${atEmpresa}€`,
+    result: tipoAT,
+  });
 
   traces.push({
     step: 'Cotizaciones trabajador (incl. MEI)',
