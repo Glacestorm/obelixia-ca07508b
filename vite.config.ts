@@ -6,8 +6,9 @@ import viteCompression from "vite-plugin-compression";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const isProductionBuild = mode === 'production';
+  const isBuild = command === 'build';
 
   return {
     server: {
@@ -28,7 +29,7 @@ export default defineConfig(({ mode }) => {
         // SWC optimizations
         jsxImportSource: undefined,
       }), 
-      mode === "development" && componentTagger(),
+      !isBuild && mode === "development" && componentTagger(),
       // PWA only in production builds to reduce build-time memory in development mode
       mode === "production" && VitePWA({
         registerType: 'autoUpdate',
@@ -272,7 +273,7 @@ export default defineConfig(({ mode }) => {
       minify: mode === 'production' ? 'esbuild' : false,
       sourcemap: false,
       chunkSizeWarningLimit: 1000,
-      cssCodeSplit: true,
+      cssCodeSplit: isProductionBuild,
       target: 'esnext',
       assetsInlineLimit: 2048,
       modulePreload: {
@@ -294,7 +295,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     css: {
-      devSourcemap: true,
+      devSourcemap: !isBuild,
       modules: {
         localsConvention: 'camelCase',
       },
