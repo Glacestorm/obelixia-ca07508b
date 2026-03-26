@@ -273,7 +273,7 @@ export default defineConfig(({ mode, command }) => {
       minify: mode === 'production' ? 'esbuild' : false,
       sourcemap: false,
       chunkSizeWarningLimit: 1000,
-      cssCodeSplit: true,
+      cssCodeSplit: isProductionBuild,
       target: 'esnext',
       assetsInlineLimit: 2048,
       modulePreload: {
