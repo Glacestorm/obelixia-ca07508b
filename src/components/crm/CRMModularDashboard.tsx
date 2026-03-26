@@ -32,6 +32,7 @@ import { useCRMDeals } from '@/hooks/crm/useCRMDeals';
 import { useOmnichannelHub } from '@/hooks/crm/omnichannel/useOmnichannelHub';
 import { useSLAMetrics } from '@/hooks/crm/omnichannel/useSLAMetrics';
 import { cn } from '@/lib/utils';
+import { CRMModuleErrorBoundary } from './CRMModuleErrorBoundary';
 
 // ---------- tipos mínimos que necesitan los wrappers ----------
 interface ConvForInbox {
@@ -256,15 +257,15 @@ export function CRMModularDashboard() {
           )}
         </TabsContent>
 
-        <TabsContent value="kanban"><DealsKanban /></TabsContent>
-        <TabsContent value="contacts"><ContactsManager /></TabsContent>
-        <TabsContent value="omnichannel"><OmnichannelWrapper /></TabsContent>
-        <TabsContent value="sentiment"><SentimentWrapper /></TabsContent>
-        <TabsContent value="sla"><SLAWrapper /></TabsContent>
-        <TabsContent value="automation"><AutomationWrapper /></TabsContent>
-        <TabsContent value="reports"><CRMAnalyticsDashboard /></TabsContent>
-        <TabsContent value="agents"><CRMAgentsPanel /></TabsContent>
-        <TabsContent value="integrations"><IntegrationHubDashboard /></TabsContent>
+        <TabsContent value="kanban"><CRMModuleErrorBoundary module="Pipeline"><DealsKanban /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="contacts"><CRMModuleErrorBoundary module="Contactos"><ContactsManager /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="omnichannel"><CRMModuleErrorBoundary module="Inbox"><OmnichannelWrapper /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="sentiment"><CRMModuleErrorBoundary module="Sentimiento"><SentimentWrapper /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="sla"><CRMModuleErrorBoundary module="SLAs"><SLAWrapper /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="automation"><CRMModuleErrorBoundary module="Automatización"><AutomationWrapper /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="reports"><CRMModuleErrorBoundary module="Reportes"><CRMAnalyticsDashboard /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="agents"><CRMModuleErrorBoundary module="Agentes IA"><CRMAgentsPanel /></CRMModuleErrorBoundary></TabsContent>
+        <TabsContent value="integrations"><CRMModuleErrorBoundary module="Integraciones"><IntegrationHubDashboard /></CRMModuleErrorBoundary></TabsContent>
 
         <TabsContent value="config">
           <div className="space-y-4">
