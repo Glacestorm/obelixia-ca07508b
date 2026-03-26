@@ -196,7 +196,7 @@ export function BankReconciliation({ companyId }: BankReconciliationProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'reconciled' | 'pending'>('all');
   const [selectedLines, setSelectedLines] = useState<string[]>([]);
-  const [useDemoData, setUseDemoData] = useState(true); // Para alternar entre demo y real
+  const [useDemoData, setUseDemoData] = useState(false); // Carga datos reales por defecto
 
   // Fetch real data from Supabase
   const fetchLines = useCallback(async () => {
