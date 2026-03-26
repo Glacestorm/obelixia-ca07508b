@@ -253,7 +253,9 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/components/erp/legal/')) return 'app-erp-legal';
           if (id.includes('/components/erp/esg/')) return 'app-erp-esg';
           if (id.includes('/components/erp/config/')) return 'app-erp-config';
+          if (id.includes('/components/erp/audit-center/')) return 'app-erp-audit-center';
           if (id.includes('/components/erp/audit/')) return 'app-erp-audit';
+          if (id.includes('/components/erp/ai-center/')) return 'app-erp-ai-center';
           if (id.includes('/components/erp/shared/')) return 'app-erp-shared';
           if (id.includes('/components/erp/')) return 'app-erp-misc';
 
