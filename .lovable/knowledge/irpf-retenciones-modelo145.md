@@ -130,6 +130,27 @@
 
 ---
 
+## Tipo voluntario solicitado por el empleado (Art. 88.5 RIRPF)
+
+### Normativa
+- **Art. 88.5 RIRPF (RD 439/2007)**: Los contribuyentes podrán solicitar en cualquier momento de sus correspondientes pagadores la aplicación de tipos de retención **superiores** a los que resulten del cálculo legal.
+
+### Reglas
+1. **Solicitud por escrito**: La solicitud se realiza por escrito ante el pagador, con al menos 5 días de antelación a la confección de nóminas.
+2. **Vigencia mínima**: El tipo solicitado se aplica como mínimo hasta fin de año y se mantiene en ejercicios sucesivos salvo renuncia escrita o variación que determine un tipo superior.
+3. **Regla Max()**: En la nómina, **siempre se aplica el mayor** entre:
+   - El tipo legalmente calculado (Art. 80-86 RIRPF)
+   - El tipo voluntario solicitado por el empleado (Art. 88.5 RIRPF)
+4. **Nunca inferior**: No se puede solicitar un tipo inferior al legal. El tipo mínimo es siempre el calculado por ley.
+
+### Implementación en el sistema
+- Campo `irpf_percentage` en `hr_employee_extensions.extension_data`: almacena el tipo solicitado por el empleado
+- En `usePayrollLegalCalculation.ts`: después de `computeIRPF()`, se aplica `Math.max(tipoSolicitado, tipoCalculado)`
+- Si el solicitado > calculado, se genera warning con referencia legal Art. 88.5 RIRPF
+- La nómina muestra el tipo efectivo final con trazabilidad completa
+
+---
+
 ## Referencias legales descargables
 - Ley 35/2006: https://www.boe.es/buscar/act.php?id=BOE-A-2006-20764
 - RD 439/2007 (RIRPF): https://www.boe.es/buscar/act.php?id=BOE-A-2007-6820

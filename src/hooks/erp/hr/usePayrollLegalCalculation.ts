@@ -280,11 +280,43 @@ export function usePayrollLegalCalculation(companyId: string) {
           };
         }
 
-        const irpfResult = computeIRPF(
+        let irpfResult = computeIRPF(
           irpfInput,
           irpfTramos.length > 0 ? irpfTramos : null,
           regularizationCtx,
         );
+
+        // ── Art. 88.5 RIRPF: Tipo voluntario solicitado por el empleado ──
+        // El trabajador puede solicitar un tipo superior al calculado.
+        // Siempre se aplica el MAYOR entre el solicitado y el calculado legalmente.
+        const tipoSolicitado = parseFloat((laborData as any)?.irpf_percentage) || 0;
+        if (tipoSolicitado > 0 && tipoSolicitado > irpfResult.tipoEfectivo) {
+          const tipoLegalCalculado = irpfResult.tipoEfectivo;
+          const retencionMensualOverride = Math.round((record.gross_salary ?? 0) * tipoSolicitado / 100 * 100) / 100;
+          const retencionAnualOverride = Math.round(salarioBrutoAnual * tipoSolicitado / 100 * 100) / 100;
+          irpfResult = {
+            ...irpfResult,
+            tipoEfectivo: tipoSolicitado,
+            retencionMensual: retencionMensualOverride,
+            retencionAnual: retencionAnualOverride,
+            warnings: [
+              ...irpfResult.warnings,
+              `Art. 88.5 RIRPF: Tipo solicitado ${tipoSolicitado}% > calculado ${tipoLegalCalculado}% → se aplica el mayor`,
+            ],
+            legalReferences: [
+              ...irpfResult.legalReferences,
+              'RIRPF Art. 88.5 (Tipo voluntario superior solicitado por el trabajador)',
+            ],
+            calculations: [
+              ...irpfResult.calculations,
+              {
+                step: 'Art. 88.5 RIRPF — Tipo voluntario',
+                formula: `max(solicitado=${tipoSolicitado}%, calculado=${tipoLegalCalculado}%) = ${tipoSolicitado}%`,
+                result: tipoSolicitado,
+              },
+            ],
+          };
+        }
 
         // ── Build Payslip (P1B: with real days and CCC) ──
         const payslipLines: PayslipLineInput[] = payrollLines.map((l: any) => ({

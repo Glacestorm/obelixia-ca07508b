@@ -737,7 +737,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                       </div>
                       <div className="space-y-1.5 col-span-2">
                         <div className="flex items-center justify-between">
-                          <Label className="text-xs">% Retención IRPF</Label>
+                          <Label className="text-xs">% Retención IRPF solicitado por el empleado (Art. 88.5 RIRPF)</Label>
                           <label className="flex items-center gap-1.5 cursor-pointer">
                             <input
                               type="checkbox"
@@ -750,7 +750,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                               }}
                               className="rounded border-input"
                             />
-                            <span className="text-xs text-muted-foreground">Manual</span>
+                            <span className="text-xs text-muted-foreground">Tipo voluntario solicitado</span>
                           </label>
                         </div>
                         <div className="flex items-center gap-2">
@@ -788,9 +788,16 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                                 {irpfCalculation.breakdown.minDiscapacidad > 0 && ` + Disc: ${irpfCalculation.breakdown.minDiscapacidad.toLocaleString('es-ES')}€`})
                               </span>
                             </p>
-                            <p className="font-medium pt-1 text-primary">Tipo retención: {irpfCalculation.retentionRate}% → {irpfCalculation.annualRetention.toLocaleString('es-ES')}€/año</p>
-                            {irpfManualOverride && (
-                              <p className="text-amber-600 dark:text-amber-400 font-medium">⚠ Tipo manual: difiere del calculado ({irpfCalculation.retentionRate}%)</p>
+                            <p className="font-medium pt-1 text-primary">Tipo legal calculado: {irpfCalculation.retentionRate}% → {irpfCalculation.annualRetention.toLocaleString('es-ES')}€/año</p>
+                            {irpfManualOverride && parseFloat(esFields.irpf_percentage) > irpfCalculation.retentionRate && (
+                              <p className="text-blue-600 dark:text-blue-400 font-medium">
+                                ✓ Art. 88.5 RIRPF: Tipo solicitado {esFields.irpf_percentage}% &gt; calculado {irpfCalculation.retentionRate}% → se aplicará {esFields.irpf_percentage}% en nómina
+                              </p>
+                            )}
+                            {irpfManualOverride && parseFloat(esFields.irpf_percentage) > 0 && parseFloat(esFields.irpf_percentage) <= irpfCalculation.retentionRate && (
+                              <p className="text-amber-600 dark:text-amber-400 font-medium">
+                                ⚠ El tipo solicitado ({esFields.irpf_percentage}%) no supera el calculado ({irpfCalculation.retentionRate}%) → se aplicará el legal
+                              </p>
                             )}
                           </div>
                         )}
