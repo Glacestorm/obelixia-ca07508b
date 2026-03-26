@@ -469,6 +469,11 @@ function ERPModularDashboardContent() {
           <AICommandCenterModule />
         </TabsContent>
 
+        {/* Audit Center Tab */}
+        <TabsContent value="audit-center">
+          <AuditCenterModule />
+        </TabsContent>
+
         {/* Companies Tab */}
         <TabsContent value="companies">
           <ERPCompaniesManager />
