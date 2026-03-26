@@ -175,6 +175,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         legal_entity_id: '', work_center_id: '', reports_to: '',
       });
       setEsFields({ naf: '', contribution_group: '', contract_type_rd: '', collective_agreement: '', autonomous_community: '', cno_code: '', irpf_percentage: '' });
+      setModelo145({ ...EMPTY_MODELO145 });
       const defaultAccess: Record<string, 'none'> = {};
       AVAILABLE_MODULES.forEach(m => { defaultAccess[m.module_code] = 'none'; });
       setModuleAccess(defaultAccess);
