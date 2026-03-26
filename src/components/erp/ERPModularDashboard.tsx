@@ -74,7 +74,7 @@ import { ERPMigrationDashboard } from '@/components/admin/erp-migration';
 import { ModuleNavigationButton } from '@/components/shared/ModuleNavigationButton';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowRightLeft, Zap } from 'lucide-react';
+import { ArrowRightLeft } from 'lucide-react';
 
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
