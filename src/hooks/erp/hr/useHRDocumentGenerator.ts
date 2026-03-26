@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useHRDocGenerationRules, type DocGenerationRule } from './useHRDocGenerationRules';
 import { toast } from 'sonner';
+import { buildLedgerRow, LEDGER_EVENT_LABELS } from '@/engines/erp/hr/ledgerEngine';
 import { useHRLedgerWriter } from './useHRLedgerWriter';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -180,7 +181,6 @@ export function useHRDocumentGenerator() {
           // Ledger: document_generated (fire-and-forget, inline since no stable companyId at hook level)
           if (newDoc?.id) {
             try {
-              const { buildLedgerRow, LEDGER_EVENT_LABELS } = await import('@/engines/erp/hr/ledgerEngine');
               const row = await buildLedgerRow({
                 companyId: context.companyId,
                 eventType: 'document_generated',

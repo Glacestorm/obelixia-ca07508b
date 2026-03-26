@@ -183,35 +183,35 @@ export default defineConfig(({ mode }) => ({
   },
   // Core Web Vitals Optimizations - Vite 6 enhancements
   build: {
-    // MEMORY OPTIMIZATION: Limit parallel file operations
+    const isProductionBuild = mode === 'production';
+    // MEMORY OPTIMIZATION: keep development builds simple to avoid OOM
     rollupOptions: {
-      maxParallelFileOps: 2,
+      maxParallelFileOps: isProductionBuild ? 2 : 1,
       output: {
-        manualChunks: (id) => {
+        manualChunks: isProductionBuild ? ((id) => {
           // React core
           if (id.includes('node_modules/react-dom')) return 'vendor-react-dom';
           if (id.includes('node_modules/react-router')) return 'vendor-router';
           if (id.includes('node_modules/react/') || id.includes('node_modules/scheduler')) return 'vendor-react';
-          
+
           // Heavy UI libraries - split granularly
           if (id.includes('node_modules/@radix-ui')) return 'vendor-radix';
           if (id.includes('node_modules/framer-motion')) return 'vendor-motion';
           if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) return 'vendor-charts';
-          
+
           // Data/State
           if (id.includes('node_modules/@tanstack')) return 'vendor-query';
           if (id.includes('node_modules/@supabase')) return 'vendor-supabase';
-          
+
           // Map libraries
           if (id.includes('node_modules/maplibre-gl') || id.includes('node_modules/mapbox-gl')) return 'vendor-map';
-          
+
           // Utilities
           if (id.includes('node_modules/date-fns')) return 'vendor-date';
           if (id.includes('node_modules/lucide-react')) return 'vendor-icons';
           if (id.includes('node_modules/zod')) return 'vendor-zod';
-          
+
           // App code splitting by domain
-          // ===== GALIA phases (components/galia/) =====
           if (id.includes('/components/galia/phase4/')) return 'app-galia-p4';
           if (id.includes('/components/galia/phase5/')) return 'app-galia-p5';
           if (id.includes('/components/galia/phase6/')) return 'app-galia-p6';
@@ -227,14 +227,12 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/components/galia/diffusion/')) return 'app-galia-diffusion';
           if (id.includes('/components/galia/')) return 'app-galia-misc';
 
-          // ===== GALIA verticals (components/verticals/galia/) =====
           if (id.includes('/verticals/galia/dashboard/')) return 'app-galia-dashboard';
           if (id.includes('/verticals/galia/portal/')) return 'app-galia-portal';
           if (id.includes('/verticals/galia/justificacion/')) return 'app-galia-justif';
           if (id.includes('/verticals/galia/transparency/')) return 'app-galia-transp';
           if (id.includes('/verticals/galia/')) return 'app-galia-verticals';
 
-          // ===== ERP: granular per submodule =====
           if (id.includes('/components/erp/accounting/')) return 'app-erp-accounting';
           if (id.includes('/components/erp/fiscal/')) return 'app-erp-fiscal';
           if (id.includes('/components/erp/sales/')) return 'app-erp-sales';
@@ -259,10 +257,8 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/components/erp/shared/')) return 'app-erp-shared';
           if (id.includes('/components/erp/')) return 'app-erp-misc';
 
-          // ===== Admin =====
           if (id.includes('/components/admin/')) return 'app-admin';
 
-          // ===== Academia: split by subdirectory =====
           if (id.includes('/components/academia/dashboard/')) return 'app-academia-dashboard';
           if (id.includes('/components/academia/strategy/')) return 'app-academia-strategy';
           if (id.includes('/components/academia/structure/')) return 'app-academia-structure';
@@ -274,26 +270,22 @@ export default defineConfig(({ mode }) => ({
           if (id.includes('/components/academia/learning-path/')) return 'app-academia-lpath';
           if (id.includes('/components/academia/learning-player/')) return 'app-academia-player';
           if (id.includes('/components/academia/')) return 'app-academia-misc';
-          
-          // Remaining node_modules
+
           if (id.includes('node_modules')) return 'vendor-misc';
-        },
-        // Aggressive tree-shaking configuration
-        compact: true,
+        }) : undefined,
+        compact: isProductionBuild,
         generatedCode: {
           arrowFunctions: true,
           constBindings: true,
           objectShorthand: true,
         },
-        // Simplified chunk naming to reduce memory
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
       },
-      // Tree-shaking optimization - less aggressive to reduce memory
-      treeshake: {
+      treeshake: isProductionBuild ? {
         moduleSideEffects: false,
         propertyReadSideEffects: false,
-      },
+      } : false,
     },
     // Minify only in production to reduce memory in development builds
     minify: mode === 'production' ? 'esbuild' : false,
