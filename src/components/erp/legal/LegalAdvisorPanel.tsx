@@ -26,8 +26,10 @@ import {
   ThumbsUp,
   ThumbsDown,
   HelpCircle,
-  TrendingUp
+  TrendingUp,
+  ExternalLink
 } from 'lucide-react';
+import { linkifyLegalReferences, resolveLegalReference } from '@/utils/legalReferenceResolver';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -441,8 +443,19 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
                           )}
                         >
                           {message.role === 'assistant' ? (
-                            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                              <ReactMarkdown>{message.content}</ReactMarkdown>
+                            <div className="text-sm prose prose-sm dark:prose-invert max-w-none [&_a]:text-primary [&_a]:underline [&_a]:decoration-primary/30 [&_a:hover]:decoration-primary">
+                              <ReactMarkdown
+                                components={{
+                                  a: ({ href, children }) => (
+                                    <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5">
+                                      {children}
+                                      <ExternalLink className="h-3 w-3 inline-block flex-shrink-0" />
+                                    </a>
+                                  )
+                                }}
+                              >
+                                {linkifyLegalReferences(message.content)}
+                              </ReactMarkdown>
                             </div>
                           ) : (
                             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -454,10 +467,31 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
                                 <BookOpen className="h-3 w-3" />
                                 Base legal:
                               </p>
-                              <ul className="text-xs space-y-0.5">
-                                {message.references.map((ref, i) => (
-                                  <li key={i} className="text-muted-foreground">• {ref}</li>
-                                ))}
+                              <ul className="text-xs space-y-1">
+                                {message.references.map((ref, i) => {
+                                  const resolved = resolveLegalReference(ref);
+                                  return (
+                                    <li key={i}>
+                                      {resolved ? (
+                                        <a
+                                          href={resolved.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer group"
+                                        >
+                                          <span>•</span>
+                                          <span>{ref}</span>
+                                          <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 ml-1 opacity-60">
+                                            {resolved.source}
+                                          </Badge>
+                                        </a>
+                                      ) : (
+                                        <span className="text-muted-foreground">• {ref}</span>
+                                      )}
+                                    </li>
+                                  );
+                                })}
                               </ul>
                             </div>
                           )}
