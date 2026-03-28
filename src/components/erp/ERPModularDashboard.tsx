@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -90,10 +91,19 @@ import { ArrowRightLeft } from 'lucide-react';
 
 function ERPModularDashboardContent() {
   const { currentCompany, companies, userPermissions, isLoading, error, hasPermission, refreshCompanies } = useERPContext();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview');
   const [needsSetup, setNeedsSetup] = useState(false);
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
+
+  // Sync tab from URL params (e.g. deep links from legal procedures)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   // P9.5 — Role Experience Activation
   const roleExperience = useHRActiveRoleExperience(currentCompany?.id);
@@ -106,8 +116,9 @@ function ERPModularDashboardContent() {
   // Track module usage on tab change
   const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
     roleExperience.trackModuleUsage(tab);
-  }, [roleExperience.trackModuleUsage]);
+  }, [roleExperience.trackModuleUsage, setSearchParams]);
 
   // IDs de módulos que se ocultan cuando estamos dentro de uno
   const moduleTabIds = ['maestros', 'sales', 'purchases', 'inventory', 'accounting', 'treasury', 'trade', 'logistics', 'tax', 'hr', 'legal', 'galia', 'academia', 'electrical', 'ai-center', 'audit-center', 'migration'];
