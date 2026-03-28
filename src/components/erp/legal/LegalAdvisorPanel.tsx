@@ -583,12 +583,25 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
               </ScrollArea>
 
               {/* Input */}
-              <div className="p-4 border-t">
+              <div className="p-4 border-t space-y-2">
                 <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
+                  {sttSupported && (
+                    <Button
+                      type="button"
+                      variant={isListening ? 'destructive' : 'outline'}
+                      size="icon"
+                      onClick={isListening ? stopListening : startListening}
+                      disabled={isLoading}
+                      title={isListening ? 'Detener dictado' : 'Dictar por voz'}
+                      className={cn("flex-shrink-0", isListening && "animate-pulse")}
+                    >
+                      {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </Button>
+                  )}
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={`Consulta de ${getSpecialtyInfo(specialty).name} (${getJurisdictionInfo(jurisdiction).name})...`}
+                    placeholder={isListening ? 'Escuchando...' : `Consulta de ${getSpecialtyInfo(specialty).name} (${getJurisdictionInfo(jurisdiction).name})...`}
                     disabled={isLoading}
                     className="flex-1"
                   />
@@ -596,9 +609,22 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </form>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Las respuestas son orientativas. Consulte siempre con un profesional para casos específicos.
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Las respuestas son orientativas. Consulte siempre con un profesional para casos específicos.
+                  </p>
+                  {ttsSupported && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAutoSpeak(!autoSpeak)}
+                      className={cn("text-xs h-6 gap-1", autoSpeak && "text-primary")}
+                    >
+                      <Volume2 className="h-3 w-3" />
+                      {autoSpeak ? 'Voz activa' : 'Respuesta por voz'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </TabsContent>
 
