@@ -35,6 +35,7 @@ import {
   VolumeX
 } from 'lucide-react';
 import { linkifyLegalReferences, resolveLegalReference } from '@/utils/legalReferenceResolver';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
