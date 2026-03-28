@@ -4,6 +4,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useWebSpeech } from '@/hooks/useWebSpeech';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,11 @@ import {
   ThumbsDown,
   HelpCircle,
   TrendingUp,
-  ExternalLink
+  ExternalLink,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { linkifyLegalReferences, resolveLegalReference } from '@/utils/legalReferenceResolver';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,7 +91,24 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
   const [faqLoading, setFaqLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
+  const [autoSpeak, setAutoSpeak] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const {
+    isListening,
+    startListening,
+    stopListening,
+    sttSupported,
+    isSpeaking,
+    speak,
+    stopSpeaking,
+    ttsSupported,
+  } = useWebSpeech({
+    lang: jurisdiction === 'AD' ? 'ca-AD' : 'es-ES',
+    onResult: (text) => {
+      setInput(prev => prev ? prev + ' ' + text : text);
+    },
+  });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -164,6 +186,11 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Auto-speak response if enabled
+      if (autoSpeak && ttsSupported) {
+        speak(assistantMessage.content);
+      }
       
       // Refresh FAQ after a new question
       setTimeout(() => loadFAQ(), 2000);
@@ -507,6 +534,17 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
                                 Confianza: {Math.round(message.confidence * 100)}%
                               </div>
                               <div className="flex items-center gap-1">
+                                {ttsSupported && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6" 
+                                    onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                                    title={isSpeaking ? 'Detener lectura' : 'Leer en voz alta'}
+                                  >
+                                    {isSpeaking ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                                  </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopy(message.content)}>
                                   <Copy className="h-3 w-3" />
                                 </Button>
@@ -545,12 +583,25 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
               </ScrollArea>
 
               {/* Input */}
-              <div className="p-4 border-t">
+              <div className="p-4 border-t space-y-2">
                 <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
+                  {sttSupported && (
+                    <Button
+                      type="button"
+                      variant={isListening ? 'destructive' : 'outline'}
+                      size="icon"
+                      onClick={isListening ? stopListening : startListening}
+                      disabled={isLoading}
+                      title={isListening ? 'Detener dictado' : 'Dictar por voz'}
+                      className={cn("flex-shrink-0", isListening && "animate-pulse")}
+                    >
+                      {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </Button>
+                  )}
                   <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={`Consulta de ${getSpecialtyInfo(specialty).name} (${getJurisdictionInfo(jurisdiction).name})...`}
+                    placeholder={isListening ? 'Escuchando...' : `Consulta de ${getSpecialtyInfo(specialty).name} (${getJurisdictionInfo(jurisdiction).name})...`}
                     disabled={isLoading}
                     className="flex-1"
                   />
@@ -558,9 +609,22 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </form>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Las respuestas son orientativas. Consulte siempre con un profesional para casos específicos.
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Las respuestas son orientativas. Consulte siempre con un profesional para casos específicos.
+                  </p>
+                  {ttsSupported && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAutoSpeak(!autoSpeak)}
+                      className={cn("text-xs h-6 gap-1", autoSpeak && "text-primary")}
+                    >
+                      <Volume2 className="h-3 w-3" />
+                      {autoSpeak ? 'Voz activa' : 'Respuesta por voz'}
+                    </Button>
+                  )}
+                </div>
               </div>
             </TabsContent>
 
