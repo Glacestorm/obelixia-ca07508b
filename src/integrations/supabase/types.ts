@@ -62111,6 +62111,54 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_advisor_faq: {
+        Row: {
+          answer: string
+          asked_count: number | null
+          company_id: string | null
+          confidence: number | null
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          jurisdiction: string
+          legal_references: string[] | null
+          not_helpful_count: number | null
+          question: string
+          specialty: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer: string
+          asked_count?: number | null
+          company_id?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          jurisdiction?: string
+          legal_references?: string[] | null
+          not_helpful_count?: number | null
+          question: string
+          specialty?: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string
+          asked_count?: number | null
+          company_id?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          jurisdiction?: string
+          legal_references?: string[] | null
+          not_helpful_count?: number | null
+          question?: string
+          specialty?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       legal_agent_queries: {
         Row: {
           approved: boolean | null
