@@ -187,6 +187,11 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
 
       setMessages(prev => [...prev, assistantMessage]);
       
+      // Auto-speak response if enabled
+      if (autoSpeak && ttsSupported) {
+        speak(assistantMessage.content);
+      }
+      
       // Refresh FAQ after a new question
       setTimeout(() => loadFAQ(), 2000);
     } catch (error) {
