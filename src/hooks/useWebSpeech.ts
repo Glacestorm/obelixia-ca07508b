@@ -27,11 +27,27 @@ export function useWebSpeech(options: UseWebSpeechOptions = {}) {
   const [ttsSupported, setTtsSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const voicesReadyRef = useRef(false);
 
+  // Pre-load voices — they're async in most browsers
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     setSttSupported(!!SpeechRecognition);
-    setTtsSupported('speechSynthesis' in window);
+    const hasTts = 'speechSynthesis' in window;
+    setTtsSupported(hasTts);
+
+    if (hasTts) {
+      const loadVoices = () => {
+        const v = window.speechSynthesis.getVoices();
+        if (v.length > 0) {
+          voicesReadyRef.current = true;
+          console.log(`[TTS] ${v.length} voces cargadas`);
+        }
+      };
+      loadVoices();
+      window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+      return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+    }
   }, []);
 
   const startListening = useCallback(() => {
