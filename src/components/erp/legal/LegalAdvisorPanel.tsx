@@ -534,6 +534,17 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
                                 Confianza: {Math.round(message.confidence * 100)}%
                               </div>
                               <div className="flex items-center gap-1">
+                                {ttsSupported && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6" 
+                                    onClick={() => isSpeaking ? stopSpeaking() : speak(message.content)}
+                                    title={isSpeaking ? 'Detener lectura' : 'Leer en voz alta'}
+                                  >
+                                    {isSpeaking ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3" />}
+                                  </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopy(message.content)}>
                                   <Copy className="h-3 w-3" />
                                 </Button>
