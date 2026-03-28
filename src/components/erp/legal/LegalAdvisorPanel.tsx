@@ -91,7 +91,24 @@ export function LegalAdvisorPanel({ companyId }: LegalAdvisorPanelProps) {
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
   const [faqLoading, setFaqLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('chat');
+  const [autoSpeak, setAutoSpeak] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const {
+    isListening,
+    startListening,
+    stopListening,
+    sttSupported,
+    isSpeaking,
+    speak,
+    stopSpeaking,
+    ttsSupported,
+  } = useWebSpeech({
+    lang: jurisdiction === 'AD' ? 'ca-AD' : 'es-ES',
+    onResult: (text) => {
+      setInput(prev => prev ? prev + ' ' + text : text);
+    },
+  });
 
   useEffect(() => {
     if (scrollRef.current) {
