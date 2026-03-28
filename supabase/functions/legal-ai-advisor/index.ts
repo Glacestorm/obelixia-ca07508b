@@ -346,21 +346,70 @@ CONTEXTO ADICIONAL: ${JSON.stringify(context || {})}
 Evalúa la legalidad de esta acción considerando las jurisdicciones ${jurisdictions.join(', ')}.`;
         break;
 
-      case 'consult_legal':
-        systemPrompt = `${basePrompt}
+      case 'consult_legal': {
+        // Extract jurisdiction and specialty from context if present
+        const ctxJurisdiction = (context as any)?.jurisdiction || jurisdictions[0] || 'ES';
+        const ctxSpecialty = (context as any)?.specialty || legal_area || 'general';
+        const conversationHistory = (context as any)?.conversationHistory || [];
+        
+        // Select proper sub-agent based on specialty from context
+        if (ctxSpecialty && SUB_AGENT_PROMPTS[ctxSpecialty]) {
+          selectedSubAgent = ctxSpecialty;
+        }
 
-TAREA: Responder una consulta jurídica de forma clara y fundamentada.
+        const jurisdictionMap: Record<string, string> = {
+          'ES': 'España — Aplica exclusivamente legislación española: Estatuto de los Trabajadores, Código Civil, LIS, LIRPF, LGSS, LISOS, LOPD, Código Penal, Ley de Sociedades de Capital, etc. Cita artículos específicos.',
+          'AD': 'Andorra — Aplica exclusivamente legislación andorrana: Codi de Relacions Laborals, Llei 95/2010, APDA Llei 29/2021, etc. Cita artículos específicos.',
+          'EU': 'Unión Europea — Aplica normativa comunitaria: Directivas, Reglamentos, GDPR, etc. Cita artículos específicos.',
+          'INT': 'Internacional — Aplica tratados y convenciones internacionales relevantes.',
+        };
 
-FORMATO DE RESPUESTA:
-1. Respuesta directa y clara
-2. Base normativa aplicable
-3. Jurisprudencia relevante (si existe)
-4. Consideraciones prácticas
-5. Riesgos a tener en cuenta
-6. Recomendaciones`;
+        const specialtyMap: Record<string, string> = {
+          'labor': 'Derecho Laboral: contratos, despidos, indemnizaciones, SS, convenios, IRPF nómina, permisos, ERTEs, sanciones.',
+          'corporate': 'Derecho Mercantil: sociedades, actas, socios, administradores, M&A, insolvencia.',
+          'tax': 'Derecho Fiscal: IS, IRPF, IVA, tributos, inspecciones, planificación fiscal.',
+          'data_protection': 'Protección de Datos: RGPD/LOPD, DPIAs, brechas, transferencias, derechos.',
+          'banking': 'Derecho Bancario: MiFID, PSD2, AML, capital, compliance.',
+          'general': 'Derecho General: responde según el área que mejor se ajuste a la consulta.',
+        };
 
-        userPrompt = query || 'Consulta general sobre normativa aplicable';
+        systemPrompt = `${SUB_AGENT_PROMPTS[selectedSubAgent] || SUB_AGENT_PROMPTS.contract}
+
+JURISDICCIÓN ACTIVA: ${ctxJurisdiction} — ${jurisdictionMap[ctxJurisdiction] || jurisdictionMap['ES']}
+ESPECIALIDAD ACTIVA: ${ctxSpecialty} — ${specialtyMap[ctxSpecialty] || specialtyMap['general']}
+
+INSTRUCCIONES CRÍTICAS DE RESPUESTA:
+1. RESPONDE DIRECTAMENTE a la pregunta formulada. NO pidas más información ni hagas preguntas aclaratorias salvo que sea absolutamente imposible responder.
+2. Sé CONCISO y PRECISO. Estructura la respuesta así:
+   - **Respuesta directa** (1-3 párrafos máximo con la respuesta concreta)
+   - **Base legal** (artículos específicos aplicables)
+   - **Requisitos/Pasos** (si aplica, lista numerada breve)
+   - **Advertencias** (riesgos importantes en 1-2 líneas)
+3. Cita SIEMPRE artículos concretos de la legislación vigente (ej: "Art. 55 ET", "Art. 56.1 ET").
+4. NO respondas en formato genérico pidiendo que el usuario especifique más. Si la pregunta es clara, RESPONDE.
+5. Adapta la respuesta EXCLUSIVAMENTE a la jurisdicción seleccionada (${ctxJurisdiction}).
+6. Si la pregunta no corresponde a tu especialidad, responde igualmente lo mejor posible desde tu conocimiento.
+
+FORMATO DE RESPUESTA (JSON estricto):
+{
+  "advice": "Respuesta directa, concisa y específica a la pregunta. Usa markdown para estructurar.",
+  "response": "Misma respuesta (campo legacy)",
+  "references": ["Art. X Ley Y", "Art. Z Normativa W"],
+  "confidence": 0.0-1.0,
+  "risk_level": "low|medium|high",
+  "key_points": ["Punto clave 1", "Punto clave 2"]
+}`;
+
+        // Build user prompt with conversation history for context
+        let historyContext = '';
+        if (conversationHistory.length > 0) {
+          historyContext = '\n\nHISTORIAL DE CONVERSACIÓN:\n' + 
+            conversationHistory.map((m: any) => `${m.role === 'user' ? 'USUARIO' : 'ASESOR'}: ${m.content}`).join('\n') + '\n\n';
+        }
+
+        userPrompt = `${historyContext}CONSULTA DEL USUARIO: ${(context as any)?.query || query || 'Consulta general'}`;
         break;
+      }
 
       case 'analyze_contract':
         systemPrompt = `${basePrompt}
@@ -665,6 +714,49 @@ Tipo filtro: ${context?.type || 'all'}`;
       }
     } catch {
       result = { response: content, parseError: true };
+    }
+
+    // Save to FAQ if it's a direct user consultation
+    if (action === 'consult_legal' && !requesting_agent) {
+      try {
+        const ctxJurisdiction = (context as any)?.jurisdiction || jurisdictions[0] || 'ES';
+        const ctxSpecialty = (context as any)?.specialty || legal_area || 'general';
+        const userQuery = (context as any)?.query || query || '';
+        const answerText = result.advice || result.response || content;
+
+        // Check if similar question exists
+        const { data: existingFaq } = await supabase
+          .from('legal_advisor_faq')
+          .select('id, asked_count')
+          .eq('jurisdiction', ctxJurisdiction)
+          .eq('specialty', ctxSpecialty)
+          .ilike('question', `%${userQuery.substring(0, 50)}%`)
+          .limit(1);
+
+        if (existingFaq && existingFaq.length > 0) {
+          await supabase.from('legal_advisor_faq')
+            .update({ 
+              asked_count: (existingFaq[0].asked_count || 1) + 1,
+              answer: answerText,
+              legal_references: result.references || [],
+              confidence: result.confidence || 0.85,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingFaq[0].id);
+        } else {
+          await supabase.from('legal_advisor_faq').insert({
+            question: userQuery,
+            answer: answerText,
+            jurisdiction: ctxJurisdiction,
+            specialty: ctxSpecialty,
+            legal_references: result.references || [],
+            confidence: result.confidence || 0.85,
+            company_id: (context as any)?.companyId || null
+          });
+        }
+      } catch (faqError) {
+        console.error('[legal-ai-advisor] Error saving FAQ:', faqError);
+      }
     }
 
     // Registrar consulta si viene de otro agente
