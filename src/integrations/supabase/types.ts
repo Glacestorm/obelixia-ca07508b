@@ -47364,6 +47364,102 @@ export type Database = {
           },
         ]
       }
+      erp_legal_procedures: {
+        Row: {
+          ai_analysis: string | null
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          current_step: number | null
+          description: string | null
+          id: string
+          jurisdiction: string | null
+          legal_basis: string[] | null
+          metadata: Json | null
+          module_deep_link: string | null
+          priority: string
+          procedure_type: string
+          routed_to_agent: string | null
+          routed_to_module: string | null
+          routed_to_supervisor: string | null
+          routing_confidence: number | null
+          routing_reasoning: string | null
+          session_id: string
+          specialty: string | null
+          status: string
+          steps: Json | null
+          target_entity_id: string | null
+          target_entity_name: string | null
+          target_entity_type: string | null
+          title: string
+          total_steps: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          description?: string | null
+          id?: string
+          jurisdiction?: string | null
+          legal_basis?: string[] | null
+          metadata?: Json | null
+          module_deep_link?: string | null
+          priority?: string
+          procedure_type: string
+          routed_to_agent?: string | null
+          routed_to_module?: string | null
+          routed_to_supervisor?: string | null
+          routing_confidence?: number | null
+          routing_reasoning?: string | null
+          session_id: string
+          specialty?: string | null
+          status?: string
+          steps?: Json | null
+          target_entity_id?: string | null
+          target_entity_name?: string | null
+          target_entity_type?: string | null
+          title: string
+          total_steps?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          description?: string | null
+          id?: string
+          jurisdiction?: string | null
+          legal_basis?: string[] | null
+          metadata?: Json | null
+          module_deep_link?: string | null
+          priority?: string
+          procedure_type?: string
+          routed_to_agent?: string | null
+          routed_to_module?: string | null
+          routed_to_supervisor?: string | null
+          routing_confidence?: number | null
+          routing_reasoning?: string | null
+          session_id?: string
+          specialty?: string | null
+          status?: string
+          steps?: Json | null
+          target_entity_id?: string | null
+          target_entity_name?: string | null
+          target_entity_type?: string | null
+          title?: string
+          total_steps?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       erp_legal_spend_analytics: {
         Row: {
           ai_insights: Json | null

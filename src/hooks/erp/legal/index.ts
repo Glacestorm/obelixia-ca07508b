@@ -11,3 +11,9 @@ export type {
   SpendAnalytics,
   LegalContext
 } from './useLegalMatters';
+
+export { useLegalProcedures } from './useLegalProcedures';
+export type {
+  LegalProcedure,
+  IntentClassification
+} from './useLegalProcedures';
