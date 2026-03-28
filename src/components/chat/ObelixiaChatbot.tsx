@@ -370,7 +370,7 @@ export function ObelixiaChatbot() {
     <>
       {/* Floating Button */}
       <motion.div
-        className="fixed bottom-6 right-6 z-50 pointer-events-auto"
+        className="fixed bottom-6 left-6 z-50 pointer-events-auto"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
@@ -418,7 +418,7 @@ export function ObelixiaChatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)]"
+            className="fixed bottom-24 left-6 z-50 w-[380px] max-w-[calc(100vw-3rem)]"
           >
             <div className="bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
               {/* Header */}

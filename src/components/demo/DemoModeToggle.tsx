@@ -17,7 +17,7 @@ export function DemoModeToggle() {
   const { isDemoActive, isLoading, toggleDemoMode } = useDemoMode();
 
   return (
-    <div className="fixed bottom-24 right-6 z-40">
+    <div className="fixed bottom-20 left-6 z-40">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
