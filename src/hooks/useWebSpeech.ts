@@ -98,7 +98,10 @@ export function useWebSpeech(options: UseWebSpeechOptions = {}) {
   }, []);
 
   const speak = useCallback((text: string, voiceLang?: string) => {
-    if (!('speechSynthesis' in window)) return;
+    if (!('speechSynthesis' in window)) {
+      console.warn('[TTS] speechSynthesis no disponible');
+      return;
+    }
 
     // Cancel any ongoing speech
     window.speechSynthesis.cancel();
@@ -115,24 +118,78 @@ export function useWebSpeech(options: UseWebSpeechOptions = {}) {
       .replace(/\n/g, '. ')
       .trim();
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = voiceLang || lang;
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    if (!cleanText) {
+      console.warn('[TTS] No hay texto para leer');
+      return;
+    }
 
-    // Try to find a Spanish voice
-    const voices = window.speechSynthesis.getVoices();
-    const targetLang = voiceLang || lang;
-    const preferredVoice = voices.find(v => v.lang.startsWith(targetLang.split('-')[0]) && v.localService) 
-      || voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
-    if (preferredVoice) utterance.voice = preferredVoice;
+    const doSpeak = () => {
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = voiceLang || lang;
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      utterance.volume = 1;
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+      // Pick the best voice
+      const voices = window.speechSynthesis.getVoices();
+      const targetLang = voiceLang || lang;
+      const preferredVoice = voices.find(v => v.lang.startsWith(targetLang.split('-')[0]) && v.localService)
+        || voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        console.log(`[TTS] Usando voz: ${preferredVoice.name} (${preferredVoice.lang})`);
+      } else {
+        console.log(`[TTS] Sin voz específica, usando default. Voces disponibles: ${voices.length}`);
+      }
 
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
+      utterance.onstart = () => {
+        console.log('[TTS] Reproduciendo...');
+        setIsSpeaking(true);
+      };
+      utterance.onend = () => {
+        console.log('[TTS] Finalizado');
+        setIsSpeaking(false);
+      };
+      utterance.onerror = (e) => {
+        console.error('[TTS] Error:', e);
+        setIsSpeaking(false);
+      };
+
+      utteranceRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
+
+      // Chrome workaround: Chrome pauses speech after ~15s. Resume it periodically.
+      const resumeInterval = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          clearInterval(resumeInterval);
+          return;
+        }
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }, 10000);
+
+      utterance.onend = () => {
+        clearInterval(resumeInterval);
+        setIsSpeaking(false);
+      };
+    };
+
+    // If voices aren't loaded yet, wait briefly
+    if (window.speechSynthesis.getVoices().length === 0) {
+      console.log('[TTS] Esperando carga de voces...');
+      const onVoices = () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
+        doSpeak();
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoices);
+      // Safety timeout
+      setTimeout(() => {
+        window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
+        doSpeak();
+      }, 1000);
+    } else {
+      doSpeak();
+    }
   }, [lang]);
 
   const stopSpeaking = useCallback(() => {
