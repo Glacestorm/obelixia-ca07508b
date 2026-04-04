@@ -38,7 +38,7 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
     await createMutation.mutateAsync({
       company_id: companyId, employee_id: employeeId, concept_code: form.concept_code,
       concept_name: form.concept_name, nature: form.nature, priority: parseInt(form.priority) || 10,
-      valid_from: form.valid_from, valid_until: form.valid_until || null,
+      valid_from: form.valid_from, valid_to: form.valid_until || null,
       fixed_value: isFormula ? null : parseFloat(form.fixed_value) || 0,
       formula: isFormula ? form.formula : null,
       convention_definition: form.convention_definition || null,
@@ -49,7 +49,7 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
   };
 
   // Check overlapping concepts
-  const overlaps = concepts.filter((c, i) => concepts.some((d, j) => i !== j && c.concept_code === d.concept_code && c.valid_from <= (d.valid_until ?? '9999-12-31') && (c.valid_until ?? '9999-12-31') >= d.valid_from));
+  const overlaps = concepts.filter((c: any, i: number) => concepts.some((d: any, j: number) => i !== j && c.concept_code === d.concept_code && c.valid_from <= (d.valid_to ?? '9999-12-31') && (c.valid_to ?? '9999-12-31') >= d.valid_from));
 
   return (
     <Card>
@@ -110,7 +110,7 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
                 <TableCell><Badge variant="outline" className={NATURE_COLORS[c.nature] ?? ''}>{NATURE_LABELS[c.nature] ?? c.nature}</Badge></TableCell>
                 <TableCell className="text-xs">{c.formula ? <span className="font-mono">{c.formula}</span> : `${c.fixed_value ?? 0} €`}</TableCell>
                 <TableCell>{c.priority}</TableCell>
-                <TableCell className="text-xs">{c.valid_from}{c.valid_until ? ` → ${c.valid_until}` : ' → ∞'}</TableCell>
+                <TableCell className="text-xs">{c.valid_from}{c.valid_to ? ` → ${c.valid_to}` : ' → ∞'}</TableCell>
                 <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteMutation.mutate({ id: c.id, employee_id: employeeId })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
               </TableRow>
             ))}</TableBody>
