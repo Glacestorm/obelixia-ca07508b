@@ -112,9 +112,9 @@ export function HRFileGeneratorPanel({ companyId, onGenerated, className }: HRFi
 
       <CardContent className="space-y-4">
         {/* Disclaimer */}
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
-          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-800 dark:text-amber-300">
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <p className="text-xs text-destructive">
             Documento preparatorio interno — no constituye presentación oficial.
             Requiere validación antes de envío a organismos.
           </p>
