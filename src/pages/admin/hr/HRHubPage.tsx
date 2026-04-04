@@ -52,9 +52,9 @@ const modules: HRModuleCard[] = [
     description: 'Motor Art. 607-608 LEC, tramos de embargabilidad, simulador de impacto',
     icon: Gavel,
     route: '/obelixia-admin/hr/garnishments',
-    phase: 'Fase 2',
-    available: false,
-    badges: ['Art. 607 LEC'],
+    phase: 'Fase C',
+    available: true,
+    badges: ['Art. 607 LEC', 'Art. 608 LEC'],
   },
   {
     id: 'payroll',
