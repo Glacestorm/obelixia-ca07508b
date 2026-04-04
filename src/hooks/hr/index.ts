@@ -8,3 +8,4 @@ export { useHRSymbolicData } from './useHRSymbolicData';
 export { useHRGarnishments } from './useHRGarnishments';
 export { useHRContracts } from './useHRContracts';
 export { useHRLaborObservations } from './useHRLaborObservations';
+export { useHRMultiEmployment } from './useHRMultiEmployment';

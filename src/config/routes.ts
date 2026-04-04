@@ -155,6 +155,7 @@ const HRAuditPage = lazy(() => import('@/pages/admin/hr/HRAuditPage'));
 const HRITDashboardPage = lazy(() => import('@/pages/admin/hr/HRITDashboardPage'));
 const HRGarnishmentsPage = lazy(() => import('@/pages/admin/hr/HRGarnishmentsPage'));
 const HRContractsPage = lazy(() => import('@/pages/admin/hr/HRContractsPage'));
+const HRMultiEmploymentPage = lazy(() => import('@/pages/admin/hr/HRMultiEmploymentPage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
