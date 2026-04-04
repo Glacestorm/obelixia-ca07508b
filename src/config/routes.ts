@@ -148,6 +148,10 @@ const AILocalPage = lazy(() => import('@/pages/admin/AILocalPage'));
 const LicenseManagementPage = lazy(() => import('@/pages/admin/LicenseManagementPage'));
 const ObelixiaAccountingPage = lazy(() => import('@/pages/admin/ObelixiaAccountingPage'));
 const AIHybridPage = lazy(() => import('@/pages/admin/AIHybridPage'));
+
+// HR Domain
+const HRHubPage = lazy(() => import('@/pages/admin/hr/HRHubPage'));
+const HRAuditPage = lazy(() => import('@/pages/admin/hr/HRAuditPage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
