@@ -106,6 +106,16 @@ const modules: HRModuleCard[] = [
     available: false,
   },
   {
+    id: 'bridge',
+    title: 'Bridge Contabilidad',
+    description: 'Sincronización con contabilidad PGC 2007, tesorería y compliance legal',
+    icon: Building2,
+    route: '/obelixia-admin/hr/bridge',
+    phase: 'Fase H',
+    available: true,
+    badges: ['PGC 2007', 'Tesorería', 'Legal'],
+  },
+  {
     id: 'ai-agents',
     title: 'Agentes IA Nómina',
     description: 'Supervisor y 6 especialistas: cálculo, ficheros, IRPF, IT, embargos, bridge',
