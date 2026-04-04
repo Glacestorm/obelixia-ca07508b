@@ -20711,6 +20711,108 @@ export type Database = {
           },
         ]
       }
+      erp_audit_access_log: {
+        Row: {
+          access_type: string
+          accessed_record_id: string | null
+          accessed_table: string
+          company_id: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          justification: string | null
+          metadata: Json | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_type?: string
+          accessed_record_id?: string | null
+          accessed_table: string
+          company_id: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          justification?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_record_id?: string | null
+          accessed_table?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          justification?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      erp_audit_document_exports: {
+        Row: {
+          company_id: string
+          contents_summary: Json | null
+          created_at: string
+          expires_at: string | null
+          export_code: string
+          file_hash: string | null
+          file_size_bytes: number | null
+          file_url: string | null
+          id: string
+          iso_standards: string[] | null
+          metadata: Json | null
+          package_type: string
+          period_end: string | null
+          period_start: string | null
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          company_id: string
+          contents_summary?: Json | null
+          created_at?: string
+          expires_at?: string | null
+          export_code: string
+          file_hash?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          iso_standards?: string[] | null
+          metadata?: Json | null
+          package_type?: string
+          period_end?: string | null
+          period_start?: string | null
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          contents_summary?: Json | null
+          created_at?: string
+          expires_at?: string | null
+          export_code?: string
+          file_hash?: string | null
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          iso_standards?: string[] | null
+          metadata?: Json | null
+          package_type?: string
+          period_end?: string | null
+          period_start?: string | null
+          requested_by?: string
+          status?: string
+        }
+        Relationships: []
+      }
       erp_audit_events: {
         Row: {
           action: string
@@ -20763,6 +20865,254 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_audit_findings: {
+        Row: {
+          company_id: string
+          corrective_action: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          evidence_ids: string[] | null
+          finding_code: string
+          id: string
+          iso_clause: string | null
+          iso_standard: string
+          metadata: Json | null
+          preventive_action: string | null
+          responsible_user_id: string | null
+          root_cause: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          company_id: string
+          corrective_action?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          evidence_ids?: string[] | null
+          finding_code: string
+          id?: string
+          iso_clause?: string | null
+          iso_standard?: string
+          metadata?: Json | null
+          preventive_action?: string | null
+          responsible_user_id?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          corrective_action?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          evidence_ids?: string[] | null
+          finding_code?: string
+          id?: string
+          iso_clause?: string | null
+          iso_standard?: string
+          metadata?: Json | null
+          preventive_action?: string | null
+          responsible_user_id?: string | null
+          root_cause?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
+      erp_audit_iso_evidence: {
+        Row: {
+          clause_number: string
+          clause_title: string | null
+          company_id: string
+          compliance_status: string
+          created_at: string
+          document_hash: string | null
+          document_url: string | null
+          evidence_description: string | null
+          finding_id: string | null
+          id: string
+          iso_standard: string
+          metadata: Json | null
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          clause_number: string
+          clause_title?: string | null
+          company_id: string
+          compliance_status?: string
+          created_at?: string
+          document_hash?: string | null
+          document_url?: string | null
+          evidence_description?: string | null
+          finding_id?: string | null
+          id?: string
+          iso_standard: string
+          metadata?: Json | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          clause_number?: string
+          clause_title?: string | null
+          company_id?: string
+          compliance_status?: string
+          created_at?: string
+          document_hash?: string | null
+          document_url?: string | null
+          evidence_description?: string | null
+          finding_id?: string | null
+          id?: string
+          iso_standard?: string
+          metadata?: Json | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_audit_iso_evidence_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "erp_audit_findings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_audit_reports: {
+        Row: {
+          auditor_name: string | null
+          auditor_organization: string | null
+          company_id: string
+          conclusions: string | null
+          created_at: string
+          file_hash: string | null
+          file_url: string | null
+          findings_count: number | null
+          id: string
+          iso_standards: string[] | null
+          metadata: Json | null
+          period_end: string | null
+          period_start: string | null
+          report_code: string
+          report_type: string
+          scope: string | null
+          status: string
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          auditor_name?: string | null
+          auditor_organization?: string | null
+          company_id: string
+          conclusions?: string | null
+          created_at?: string
+          file_hash?: string | null
+          file_url?: string | null
+          findings_count?: number | null
+          id?: string
+          iso_standards?: string[] | null
+          metadata?: Json | null
+          period_end?: string | null
+          period_start?: string | null
+          report_code: string
+          report_type?: string
+          scope?: string | null
+          status?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          auditor_name?: string | null
+          auditor_organization?: string | null
+          company_id?: string
+          conclusions?: string | null
+          created_at?: string
+          file_hash?: string | null
+          file_url?: string | null
+          findings_count?: number | null
+          id?: string
+          iso_standards?: string[] | null
+          metadata?: Json | null
+          period_end?: string | null
+          period_start?: string | null
+          report_code?: string
+          report_type?: string
+          scope?: string | null
+          status?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      erp_audit_retention_policy: {
+        Row: {
+          action_on_expiry: string
+          category: string
+          company_id: string
+          created_at: string
+          document_type: string
+          id: string
+          is_active: boolean
+          legal_basis: string | null
+          metadata: Json | null
+          notes: string | null
+          retention_months: number
+          updated_at: string
+        }
+        Insert: {
+          action_on_expiry?: string
+          category?: string
+          company_id: string
+          created_at?: string
+          document_type: string
+          id?: string
+          is_active?: boolean
+          legal_basis?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          retention_months?: number
+          updated_at?: string
+        }
+        Update: {
+          action_on_expiry?: string
+          category?: string
+          company_id?: string
+          created_at?: string
+          document_type?: string
+          id?: string
+          is_active?: boolean
+          legal_basis?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          retention_months?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       erp_auto_accounting_config: {
         Row: {
@@ -34993,6 +35343,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_generated_files: {
+        Row: {
+          company_id: string
+          created_at: string
+          file_hash: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string | null
+          generated_by_agent: string | null
+          id: string
+          metadata: Json | null
+          payroll_run_id: string | null
+          period_month: number | null
+          period_year: number | null
+          records_count: number | null
+          rejection_reason: string | null
+          response_at: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          file_hash?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_type: string
+          file_url?: string | null
+          generated_by_agent?: string | null
+          id?: string
+          metadata?: Json | null
+          payroll_run_id?: string | null
+          period_month?: number | null
+          period_year?: number | null
+          records_count?: number | null
+          rejection_reason?: string | null
+          response_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          file_hash?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string | null
+          generated_by_agent?: string | null
+          id?: string
+          metadata?: Json | null
+          payroll_run_id?: string | null
+          period_month?: number | null
+          period_year?: number | null
+          records_count?: number | null
+          rejection_reason?: string | null
+          response_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       erp_hr_generated_reports: {
         Row: {

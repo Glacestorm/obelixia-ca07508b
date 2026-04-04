@@ -148,6 +148,10 @@ const AILocalPage = lazy(() => import('@/pages/admin/AILocalPage'));
 const LicenseManagementPage = lazy(() => import('@/pages/admin/LicenseManagementPage'));
 const ObelixiaAccountingPage = lazy(() => import('@/pages/admin/ObelixiaAccountingPage'));
 const AIHybridPage = lazy(() => import('@/pages/admin/AIHybridPage'));
+
+// HR Domain
+const HRHubPage = lazy(() => import('@/pages/admin/hr/HRHubPage'));
+const HRAuditPage = lazy(() => import('@/pages/admin/hr/HRAuditPage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
@@ -333,6 +337,9 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/erp/ai-center', component: AICommandCenterPage, layout: 'none', priority: 'high', meta: { title: 'AI Command Center', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/erp/audit-center', component: AuditCenterPage, layout: 'none', priority: 'high', meta: { title: 'Centro de Auditoría', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/academia', component: AcademiaModulePage, layout: 'none', priority: 'high', meta: { title: 'Academia - Plataforma Educativa', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  // HR Domain
+  { path: '/obelixia-admin/hr', component: HRHubPage, layout: 'none', priority: 'high', meta: { title: 'RRHH Hub', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/audit', component: HRAuditPage, layout: 'none', priority: 'high', meta: { title: 'Auditoría RRHH', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
