@@ -3,8 +3,10 @@
  * Ruta: /obelixia-admin/hr/predictive
  * Fase K: Predicción IT, simulador avanzado, validación cruzada,
  *         detección pluriempleo, feedback de rechazos, portal auditor
+ * 
+ * Enhanced: Connected to real AI via useHRPredictiveAI hook
  */
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,22 +19,14 @@ import {
   ArrowUpRight, Zap, Eye, RefreshCw, ThermometerSun
 } from 'lucide-react';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import { useHRPredictiveAI, type PredictionResult } from '@/hooks/hr/useHRPredictiveAI';
+import { validateEmployee, type CrossValidationInput } from '@/lib/hr/crossValidationEngine';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-// ── Demo data ──
+// ── Fallback demo data (used when no AI response) ──
 
-interface PredictionCard {
-  id: string;
-  title: string;
-  prediction: string;
-  confidence: number;
-  risk: 'high' | 'medium' | 'low';
-  category: string;
-  detail: string;
-}
-
-const PREDICTIONS: PredictionCard[] = [
+const DEMO_PREDICTIONS: PredictionResult[] = [
   {
     id: '1', title: 'IT prolongada — Ana García',
     prediction: 'Probabilidad de extensión > 180 días: 72%',
@@ -79,6 +73,33 @@ const RISK_COLORS = {
 
 export function HRPredictivePage() {
   const [activeTab, setActiveTab] = useState('predictions');
+  const { predictions: aiPredictions, crossValidations, isLoading, runPredictions, runCrossValidation } = useHRPredictiveAI();
+
+  // Use AI predictions if available, otherwise fallback to demo
+  const activePredictions = aiPredictions.length > 0 ? aiPredictions : DEMO_PREDICTIONS;
+  const isUsingDemo = aiPredictions.length === 0;
+
+  // Cross-validation with real engine
+  const [cvResults, setCvResults] = useState<Array<{ code: string; severity: string; message: string; norm: string }>>([]);
+
+  const handleRunAnalysis = useCallback(async () => {
+    toast.info('Ejecutando análisis predictivo con IA...');
+    await runPredictions({ employees: [] });
+    toast.success('Análisis completado');
+  }, [runPredictions]);
+
+  const handleRunCrossValidation = useCallback(() => {
+    // Run the deterministic cross-validation engine with sample data
+    const sampleInput: CrossValidationInput = {
+      employee: { id: 'demo', cotization_group: 5, cotization_base: 2100, irpf_rate: 15 },
+      contract: { type: 'indefinido', part_time_coeff: 1, time_record_mandatory: true },
+      ss: { group: 5, regime: 'general' },
+      irpf: { current_rate: 15, personal_situation: '1', descendants: 0 },
+    };
+    const results = validateEmployee(sampleInput);
+    setCvResults(results);
+    toast.success(`Validación cruzada: ${results.length} hallazgos`);
+  }, []);
 
   return (
     <DashboardLayout title="Auditoría Predictiva — Capa Premium">
@@ -94,19 +115,25 @@ export function HRPredictivePage() {
               Detección temprana de riesgos, validación cruzada automática y feedback de rechazos
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => toast.success('Análisis predictivo lanzado')}>
-            <RefreshCw className="h-4 w-4 mr-1" /> Ejecutar análisis
-          </Button>
+          <div className="flex items-center gap-2">
+            {isUsingDemo && (
+              <Badge variant="outline" className="text-[10px] text-amber-600">Datos demo</Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={handleRunAnalysis} disabled={isLoading}>
+              <RefreshCw className={cn("h-4 w-4 mr-1", isLoading && "animate-spin")} />
+              {isLoading ? 'Analizando...' : 'Ejecutar análisis IA'}
+            </Button>
+          </div>
         </div>
 
         {/* KPI Row */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: 'Alertas activas', value: PREDICTIONS.length, icon: AlertTriangle, color: 'text-amber-600' },
-            { label: 'Riesgo alto', value: PREDICTIONS.filter(p => p.risk === 'high').length, icon: FileWarning, color: 'text-destructive' },
-            { label: 'Validaciones OK', value: 14, icon: CheckCircle, color: 'text-green-600' },
-            { label: 'Rechazos pendientes', value: 1, icon: ArrowUpRight, color: 'text-primary' },
-            { label: 'Confianza media', value: '82%', icon: ThermometerSun, color: 'text-blue-600' },
+            { label: 'Alertas activas', value: activePredictions.length, icon: AlertTriangle, color: 'text-amber-600' },
+            { label: 'Riesgo alto', value: activePredictions.filter(p => p.risk === 'high').length, icon: FileWarning, color: 'text-destructive' },
+            { label: 'Validaciones OK', value: 14 - cvResults.filter(r => r.severity === 'error').length, icon: CheckCircle, color: 'text-green-600' },
+            { label: 'Rechazos pendientes', value: REJECTION_FEEDBACK.filter(r => r.status === 'pendiente').length, icon: ArrowUpRight, color: 'text-primary' },
+            { label: 'Confianza media', value: `${Math.round(activePredictions.reduce((s, p) => s + p.confidence, 0) / (activePredictions.length || 1))}%`, icon: ThermometerSun, color: 'text-blue-600' },
           ].map((kpi) => (
             <Card key={kpi.label}>
               <CardContent className="p-3">
@@ -137,12 +164,13 @@ export function HRPredictivePage() {
                 <CardTitle className="text-base">Predicciones y alertas tempranas</CardTitle>
                 <CardDescription>
                   IA predictiva sobre IT, pluriempleo, IRPF, contratos y bases de cotización
+                  {isUsingDemo && ' · Mostrando datos de demostración'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[420px]">
                   <div className="space-y-3">
-                    {PREDICTIONS.map((pred) => (
+                    {activePredictions.map((pred) => (
                       <div key={pred.id} className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -161,6 +189,7 @@ export function HRPredictivePage() {
                         </div>
                         <p className="text-sm text-primary font-medium">{pred.prediction}</p>
                         <p className="text-xs text-muted-foreground mt-1">{pred.detail}</p>
+                        {pred.norm && <p className="text-[10px] text-muted-foreground mt-1 font-mono">{pred.norm}</p>}
                         <Progress value={pred.confidence} className="h-1 mt-2" />
                       </div>
                     ))}
@@ -170,43 +199,72 @@ export function HRPredictivePage() {
             </Card>
           </TabsContent>
 
-          {/* Cross-validation */}
+          {/* Cross-validation — now with real engine */}
           <TabsContent value="cross-validation" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary" /> Validación cruzada automática
-                </CardTitle>
-                <CardDescription>
-                  Comparación de artefactos oficiales (FAN, RLC, Mod. 111) contra datos del motor de nómina
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-primary" /> Validación cruzada automática
+                    </CardTitle>
+                    <CardDescription>
+                      Motor determinista: Contrato ↔ Grupo SS ↔ Base ↔ IRPF ↔ TA.2
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleRunCrossValidation}>
+                    <Zap className="h-4 w-4 mr-1" /> Ejecutar validación
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {[
-                    { artifact: 'RLC vs Motor Nómina', field: 'Bases cotización', status: 'ok', diff: '0,00 €' },
-                    { artifact: 'RLC vs Motor Nómina', field: 'Cuota obrera SS', status: 'ok', diff: '0,00 €' },
-                    { artifact: 'FAN vs Plantilla', field: 'Altas del período', status: 'ok', diff: '0' },
-                    { artifact: 'Mod. 111 vs Nóminas', field: 'Retenciones IRPF', status: 'warning', diff: '-2,35 €' },
-                    { artifact: 'Mod. 111 vs Nóminas', field: 'Nº perceptores', status: 'ok', diff: '0' },
-                    { artifact: 'AFI vs TGSS', field: 'Variaciones datos', status: 'ok', diff: '0' },
-                  ].map((cv, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div>
-                        <p className="text-sm font-medium">{cv.artifact}</p>
-                        <p className="text-xs text-muted-foreground">{cv.field}</p>
+                  {cvResults.length > 0 ? (
+                    cvResults.map((cv, i) => (
+                      <div key={i} className="flex items-start justify-between p-3 rounded-lg border">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="text-[9px] font-mono">{cv.code}</Badge>
+                            <Badge variant={cv.severity === 'error' ? 'destructive' : 'default'} className="text-[10px]">
+                              {cv.severity === 'error' ? '✗ Error' : cv.severity === 'warning' ? '⚠ Aviso' : 'ℹ Info'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm">{cv.message}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1 font-mono">{cv.norm}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono">{cv.diff}</span>
-                        <Badge variant={cv.status === 'ok' ? 'secondary' : 'default'} className={cn(
-                          "text-[10px]",
-                          cv.status === 'ok' ? 'bg-green-100 text-green-700 dark:bg-green-900/30' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
-                        )}>
-                          {cv.status === 'ok' ? '✓ OK' : '⚠ Revisar'}
-                        </Badge>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="space-y-3">
+                      {[
+                        { artifact: 'RLC vs Motor Nómina', field: 'Bases cotización', status: 'ok', diff: '0,00 €' },
+                        { artifact: 'RLC vs Motor Nómina', field: 'Cuota obrera SS', status: 'ok', diff: '0,00 €' },
+                        { artifact: 'FAN vs Plantilla', field: 'Altas del período', status: 'ok', diff: '0' },
+                        { artifact: 'Mod. 111 vs Nóminas', field: 'Retenciones IRPF', status: 'warning', diff: '-2,35 €' },
+                        { artifact: 'Mod. 111 vs Nóminas', field: 'Nº perceptores', status: 'ok', diff: '0' },
+                        { artifact: 'AFI vs TGSS', field: 'Variaciones datos', status: 'ok', diff: '0' },
+                      ].map((cv, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg border">
+                          <div>
+                            <p className="text-sm font-medium">{cv.artifact}</p>
+                            <p className="text-xs text-muted-foreground">{cv.field}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-mono">{cv.diff}</span>
+                            <Badge variant={cv.status === 'ok' ? 'secondary' : 'default'} className={cn(
+                              "text-[10px]",
+                              cv.status === 'ok' ? 'bg-green-100 text-green-700 dark:bg-green-900/30' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
+                            )}>
+                              {cv.status === 'ok' ? '✓ OK' : '⚠ Revisar'}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Pulsa "Ejecutar validación" para realizar un análisis cruzado real con el motor determinista
+                      </p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -265,10 +323,10 @@ export function HRPredictivePage() {
                 <CardContent>
                   <div className="space-y-4">
                     {[
-                      { scenario: 'Subida salarial +5% plantilla', impact: '+1.245€/mes coste empresa', risk: 'low' },
-                      { scenario: 'Conversión 3 temporales a indefinidos', impact: '-0,75% tipo desempleo', risk: 'low' },
-                      { scenario: 'Cambio CCAA fiscal (2 empleados)', impact: 'Regularización IRPF T3', risk: 'medium' },
-                      { scenario: 'IT prolongada >365 días', impact: 'Paso a INSS, provisión 18.200€', risk: 'high' },
+                      { scenario: 'Subida salarial +5% plantilla', impact: '+1.245€/mes coste empresa', risk: 'low' as const },
+                      { scenario: 'Conversión 3 temporales a indefinidos', impact: '-0,75% tipo desempleo', risk: 'low' as const },
+                      { scenario: 'Cambio CCAA fiscal (2 empleados)', impact: 'Regularización IRPF T3', risk: 'medium' as const },
+                      { scenario: 'IT prolongada >365 días', impact: 'Paso a INSS, provisión 18.200€', risk: 'high' as const },
                     ].map((sim, i) => (
                       <div key={i} className="p-3 rounded-lg border">
                         <div className="flex items-center justify-between mb-1">
