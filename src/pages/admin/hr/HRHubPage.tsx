@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Users, Shield, Calculator, FileText,
-  Gavel, Building2, CreditCard, Brain,
+  Gavel, Building2, CreditCard, Brain, TrendingUp,
   ArrowRight, Lock
 } from 'lucide-react';
 import DashboardLayout from '@/layouts/DashboardLayout';
