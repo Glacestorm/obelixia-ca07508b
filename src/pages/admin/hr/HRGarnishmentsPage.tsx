@@ -3,10 +3,12 @@
  */
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { HRGarnishmentPanel } from '@/components/hr/garnishments';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 export function HRGarnishmentsPage() {
   return (
     <DashboardLayout title="Embargos Judiciales">
+      <HRErrorBoundary section="Embargos Judiciales">
       <div className="p-6 max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Embargos Judiciales</h1>
@@ -16,6 +18,8 @@ export function HRGarnishmentsPage() {
         </div>
         <HRGarnishmentPanel />
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }

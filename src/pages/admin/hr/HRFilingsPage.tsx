@@ -5,6 +5,7 @@
 import { useState, useCallback } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { HRFilingsPanel, HRFileGeneratorPanel } from '@/components/hr/filings';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 export function HRFilingsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -17,6 +18,7 @@ export function HRFilingsPage() {
 
   return (
     <DashboardLayout title="Ficheros TGSS/AEAT">
+      <HRErrorBoundary section="Ficheros TGSS/AEAT">
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Ficheros TGSS / AEAT</h1>
@@ -38,6 +40,8 @@ export function HRFilingsPage() {
           />
         </div>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }
