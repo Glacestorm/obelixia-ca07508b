@@ -33775,6 +33775,54 @@ export type Database = {
           },
         ]
       }
+      erp_hr_employee_symbolic_data: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          employee_id: string
+          id: string
+          metadata: Json | null
+          symbol_name: string
+          symbol_value: string
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+          value_type: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          employee_id: string
+          id?: string
+          metadata?: Json | null
+          symbol_name: string
+          symbol_value?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          value_type?: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          employee_id?: string
+          id?: string
+          metadata?: Json | null
+          symbol_name?: string
+          symbol_value?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          value_type?: string
+        }
+        Relationships: []
+      }
       erp_hr_employees: {
         Row: {
           address: Json | null
@@ -36526,6 +36574,270 @@ export type Database = {
             columns: ["job_opening_id"]
             isOneToOne: false
             referencedRelation: "erp_hr_job_openings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_it_bases: {
+        Row: {
+          base_daily_at: number | null
+          base_daily_ec: number | null
+          base_daily_extra_hours: number | null
+          base_fdi_at: number | null
+          base_fdi_ec: number | null
+          base_fdi_maternity: number | null
+          base_monthly: number | null
+          calculation_date: string
+          calculation_method: string | null
+          company_id: string
+          created_at: string
+          daily_subsidy: number | null
+          days_in_period: number | null
+          employer_complement: number | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          pct_subsidy: number | null
+          process_id: string
+          prorrata_extras: number | null
+          total_base_reguladora: number | null
+          updated_at: string
+        }
+        Insert: {
+          base_daily_at?: number | null
+          base_daily_ec?: number | null
+          base_daily_extra_hours?: number | null
+          base_fdi_at?: number | null
+          base_fdi_ec?: number | null
+          base_fdi_maternity?: number | null
+          base_monthly?: number | null
+          calculation_date: string
+          calculation_method?: string | null
+          company_id: string
+          created_at?: string
+          daily_subsidy?: number | null
+          days_in_period?: number | null
+          employer_complement?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          pct_subsidy?: number | null
+          process_id: string
+          prorrata_extras?: number | null
+          total_base_reguladora?: number | null
+          updated_at?: string
+        }
+        Update: {
+          base_daily_at?: number | null
+          base_daily_ec?: number | null
+          base_daily_extra_hours?: number | null
+          base_fdi_at?: number | null
+          base_fdi_ec?: number | null
+          base_fdi_maternity?: number | null
+          base_monthly?: number | null
+          calculation_date?: string
+          calculation_method?: string | null
+          company_id?: string
+          created_at?: string
+          daily_subsidy?: number | null
+          days_in_period?: number | null
+          employer_complement?: number | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          pct_subsidy?: number | null
+          process_id?: string
+          prorrata_extras?: number | null
+          total_base_reguladora?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_it_bases_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_it_processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_it_parts: {
+        Row: {
+          communication_date: string | null
+          company_id: string
+          created_at: string
+          effective_date: string | null
+          file_hash: string | null
+          file_url: string | null
+          id: string
+          issue_date: string
+          issuing_center: string | null
+          issuing_doctor: string | null
+          metadata: Json | null
+          next_review_date: string | null
+          observations: string | null
+          part_number: number | null
+          part_type: string
+          process_id: string
+          reception_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          communication_date?: string | null
+          company_id: string
+          created_at?: string
+          effective_date?: string | null
+          file_hash?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date: string
+          issuing_center?: string | null
+          issuing_doctor?: string | null
+          metadata?: Json | null
+          next_review_date?: string | null
+          observations?: string | null
+          part_number?: number | null
+          part_type?: string
+          process_id: string
+          reception_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          communication_date?: string | null
+          company_id?: string
+          created_at?: string
+          effective_date?: string | null
+          file_hash?: string | null
+          file_url?: string | null
+          id?: string
+          issue_date?: string
+          issuing_center?: string | null
+          issuing_doctor?: string | null
+          metadata?: Json | null
+          next_review_date?: string | null
+          observations?: string | null
+          part_number?: number | null
+          part_type?: string
+          process_id?: string
+          reception_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_it_parts_process_id_fkey"
+            columns: ["process_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_it_processes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_it_processes: {
+        Row: {
+          assistance_type: string | null
+          cno_code: string | null
+          company_id: string
+          complement_percentage: number | null
+          complement_scheme: string | null
+          created_at: string
+          diagnosis_code: string | null
+          diagnosis_description: string | null
+          direct_payment: boolean | null
+          employee_id: string
+          end_date: string | null
+          expected_end_date: string | null
+          has_relapse: boolean | null
+          id: string
+          issuing_entity: string | null
+          issuing_entity_type: string | null
+          metadata: Json | null
+          milestone_365_date: string | null
+          milestone_365_notified: boolean | null
+          milestone_545_date: string | null
+          milestone_545_notified: boolean | null
+          notes: string | null
+          partial_compatibility: boolean | null
+          partial_percentage: number | null
+          process_type: string
+          relapse_of_id: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          worker_situation: string | null
+        }
+        Insert: {
+          assistance_type?: string | null
+          cno_code?: string | null
+          company_id: string
+          complement_percentage?: number | null
+          complement_scheme?: string | null
+          created_at?: string
+          diagnosis_code?: string | null
+          diagnosis_description?: string | null
+          direct_payment?: boolean | null
+          employee_id: string
+          end_date?: string | null
+          expected_end_date?: string | null
+          has_relapse?: boolean | null
+          id?: string
+          issuing_entity?: string | null
+          issuing_entity_type?: string | null
+          metadata?: Json | null
+          milestone_365_date?: string | null
+          milestone_365_notified?: boolean | null
+          milestone_545_date?: string | null
+          milestone_545_notified?: boolean | null
+          notes?: string | null
+          partial_compatibility?: boolean | null
+          partial_percentage?: number | null
+          process_type?: string
+          relapse_of_id?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          worker_situation?: string | null
+        }
+        Update: {
+          assistance_type?: string | null
+          cno_code?: string | null
+          company_id?: string
+          complement_percentage?: number | null
+          complement_scheme?: string | null
+          created_at?: string
+          diagnosis_code?: string | null
+          diagnosis_description?: string | null
+          direct_payment?: boolean | null
+          employee_id?: string
+          end_date?: string | null
+          expected_end_date?: string | null
+          has_relapse?: boolean | null
+          id?: string
+          issuing_entity?: string | null
+          issuing_entity_type?: string | null
+          metadata?: Json | null
+          milestone_365_date?: string | null
+          milestone_365_notified?: boolean | null
+          milestone_545_date?: string | null
+          milestone_545_notified?: boolean | null
+          notes?: string | null
+          partial_compatibility?: boolean | null
+          partial_percentage?: number | null
+          process_type?: string
+          relapse_of_id?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          worker_situation?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_it_processes_relapse_of_id_fkey"
+            columns: ["relapse_of_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_it_processes"
             referencedColumns: ["id"]
           },
         ]
