@@ -72,8 +72,9 @@ const modules: HRModuleCard[] = [
     description: 'Cálculo completo de devengos, deducciones, bases y netos',
     icon: Calculator,
     route: '/obelixia-admin/hr/payroll',
-    phase: 'Fase 5',
-    available: false,
+    phase: 'Fase F',
+    available: true,
+    badges: ['SS 2026', 'IRPF'],
   },
   {
     id: 'files',

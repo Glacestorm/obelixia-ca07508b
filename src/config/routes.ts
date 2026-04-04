@@ -156,6 +156,7 @@ const HRITDashboardPage = lazy(() => import('@/pages/admin/hr/HRITDashboardPage'
 const HRGarnishmentsPage = lazy(() => import('@/pages/admin/hr/HRGarnishmentsPage'));
 const HRContractsPage = lazy(() => import('@/pages/admin/hr/HRContractsPage'));
 const HRMultiEmploymentPage = lazy(() => import('@/pages/admin/hr/HRMultiEmploymentPage'));
+const HRPayrollPage = lazy(() => import('@/pages/admin/hr/HRPayrollPage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
@@ -348,6 +349,7 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/hr/garnishments', component: HRGarnishmentsPage, layout: 'none', priority: 'high', meta: { title: 'Embargos Judiciales', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/contracts', component: HRContractsPage, layout: 'none', priority: 'high', meta: { title: 'Contratos Avanzados', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/multi-employment', component: HRMultiEmploymentPage, layout: 'none', priority: 'high', meta: { title: 'Pluriempleo', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/payroll', component: HRPayrollPage, layout: 'none', priority: 'high', meta: { title: 'Motor de Nómina', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
