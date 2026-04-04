@@ -343,6 +343,7 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/hr', component: HRHubPage, layout: 'none', priority: 'high', meta: { title: 'RRHH Hub', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/audit', component: HRAuditPage, layout: 'none', priority: 'high', meta: { title: 'Auditoría RRHH', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/it', component: HRITDashboardPage, layout: 'none', priority: 'high', meta: { title: 'Incapacidad Temporal', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/garnishments', component: HRGarnishmentsPage, layout: 'none', priority: 'high', meta: { title: 'Embargos Judiciales', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
