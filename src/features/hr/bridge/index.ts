@@ -1,2 +1,2 @@
-export { useHRBridge } from './useHRBridge';
-export type { BridgeLogRow, BridgeApprovalRow } from './useHRBridge';
+export { generateFullBridge, generateAccountingEntries, generateTreasuryOrders, generateLegalSnapshot } from './bridgeEngine';
+export type { PayrollSummaryInput, AccountingEntry, TreasuryOrder, LegalSnapshot, BridgeResult } from './bridgeEngine';
