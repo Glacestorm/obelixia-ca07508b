@@ -70,6 +70,26 @@ export function GarnishmentSimulator() {
                 max={10}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Otros ingresos — pluripercepción (€)</Label>
+              <Input
+                type="number"
+                value={otherIncomes}
+                onChange={(e) => setOtherIncomes(Number(e.target.value))}
+                min={0}
+                step={50}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Embargable al 100% (€)</Label>
+              <Input
+                type="number"
+                value={embargableAt100}
+                onChange={(e) => setEmbargableAt100(Number(e.target.value))}
+                min={0}
+                step={50}
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-6">
