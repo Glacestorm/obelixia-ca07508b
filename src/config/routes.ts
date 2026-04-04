@@ -162,6 +162,7 @@ const HRBridgePage = lazy(() => import('@/pages/admin/hr/HRBridgePage'));
 const HRIRPFPage = lazy(() => import('@/pages/admin/hr/HRIRPFPage'));
 const HRBankAccountsPage = lazy(() => import('@/pages/admin/hr/HRBankAccountsPage'));
 const HRGovernancePage = lazy(() => import('@/pages/admin/hr/HRGovernancePage'));
+const HRPredictivePage = lazy(() => import('@/pages/admin/hr/HRPredictivePage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
@@ -360,6 +361,7 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/hr/irpf', component: HRIRPFPage, layout: 'none', priority: 'high', meta: { title: 'Motor IRPF', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/bank-accounts', component: HRBankAccountsPage, layout: 'none', priority: 'high', meta: { title: 'Cuentas Bancarias', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/governance', component: HRGovernancePage, layout: 'none', priority: 'high', meta: { title: 'Supervisor Nómina', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/predictive', component: HRPredictivePage, layout: 'none', priority: 'high', meta: { title: 'Auditoría Predictiva', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Users, Shield, Calculator, FileText,
-  Gavel, Building2, CreditCard, Brain,
+  Gavel, Building2, CreditCard, Brain, TrendingUp,
   ArrowRight, Lock
 } from 'lucide-react';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -145,6 +145,16 @@ const modules: HRModuleCard[] = [
     phase: 'Fase 8',
     available: true,
     badges: ['9 agentes'],
+  },
+  {
+    id: 'predictive',
+    title: 'Auditoría Predictiva',
+    description: 'Predicción IT, validación cruzada, detección pluriempleo, feedback rechazos',
+    icon: TrendingUp,
+    route: '/obelixia-admin/hr/predictive',
+    phase: 'Fase K',
+    available: true,
+    badges: ['IA Predictiva', 'Premium'],
   },
 ];
 
