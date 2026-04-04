@@ -31291,25 +31291,39 @@ export type Database = {
           contract_code: string | null
           contract_template_id: string | null
           contract_type: string
+          conversion_from_contract_id: string | null
           country_code: string | null
           created_at: string | null
           created_by: string | null
           document_url: string | null
           employee_id: string | null
           end_date: string | null
+          extension_count: number | null
+          extension_date: string | null
           id: string
           is_active: boolean | null
+          maternity_reincorporation_date: string | null
+          maternity_reserve_until: string | null
           notes: string | null
+          part_time_coefficient: number | null
+          part_time_days_week: Json | null
           probation_end_date: string | null
           professional_group: string | null
           signed_at: string | null
           signed_by_company: boolean | null
           signed_by_employee: boolean | null
+          ss_bonus_code: string | null
+          ss_bonus_end: string | null
+          ss_bonus_percentage: number | null
+          ss_bonus_start: string | null
           start_date: string
+          status: string | null
+          ta2_movement_code: string | null
           termination_date: string | null
           termination_reason: string | null
           termination_type: string | null
           updated_at: string | null
+          weekly_hours_distribution: Json | null
           workday_type: string | null
           working_hours: number | null
         }
@@ -31325,25 +31339,39 @@ export type Database = {
           contract_code?: string | null
           contract_template_id?: string | null
           contract_type: string
+          conversion_from_contract_id?: string | null
           country_code?: string | null
           created_at?: string | null
           created_by?: string | null
           document_url?: string | null
           employee_id?: string | null
           end_date?: string | null
+          extension_count?: number | null
+          extension_date?: string | null
           id?: string
           is_active?: boolean | null
+          maternity_reincorporation_date?: string | null
+          maternity_reserve_until?: string | null
           notes?: string | null
+          part_time_coefficient?: number | null
+          part_time_days_week?: Json | null
           probation_end_date?: string | null
           professional_group?: string | null
           signed_at?: string | null
           signed_by_company?: boolean | null
           signed_by_employee?: boolean | null
+          ss_bonus_code?: string | null
+          ss_bonus_end?: string | null
+          ss_bonus_percentage?: number | null
+          ss_bonus_start?: string | null
           start_date: string
+          status?: string | null
+          ta2_movement_code?: string | null
           termination_date?: string | null
           termination_reason?: string | null
           termination_type?: string | null
           updated_at?: string | null
+          weekly_hours_distribution?: Json | null
           workday_type?: string | null
           working_hours?: number | null
         }
@@ -31359,25 +31387,39 @@ export type Database = {
           contract_code?: string | null
           contract_template_id?: string | null
           contract_type?: string
+          conversion_from_contract_id?: string | null
           country_code?: string | null
           created_at?: string | null
           created_by?: string | null
           document_url?: string | null
           employee_id?: string | null
           end_date?: string | null
+          extension_count?: number | null
+          extension_date?: string | null
           id?: string
           is_active?: boolean | null
+          maternity_reincorporation_date?: string | null
+          maternity_reserve_until?: string | null
           notes?: string | null
+          part_time_coefficient?: number | null
+          part_time_days_week?: Json | null
           probation_end_date?: string | null
           professional_group?: string | null
           signed_at?: string | null
           signed_by_company?: boolean | null
           signed_by_employee?: boolean | null
+          ss_bonus_code?: string | null
+          ss_bonus_end?: string | null
+          ss_bonus_percentage?: number | null
+          ss_bonus_start?: string | null
           start_date?: string
+          status?: string | null
+          ta2_movement_code?: string | null
           termination_date?: string | null
           termination_reason?: string | null
           termination_type?: string | null
           updated_at?: string | null
+          weekly_hours_distribution?: Json | null
           workday_type?: string | null
           working_hours?: number | null
         }
@@ -37559,6 +37601,68 @@ export type Database = {
           vs_benchmark_percentage?: number | null
         }
         Relationships: []
+      }
+      erp_hr_labor_observations: {
+        Row: {
+          company_id: string | null
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          effective_date: string | null
+          employee_id: string
+          id: string
+          observation_data: Json | null
+          observation_type: string
+          resolution_date: string | null
+          resolution_notes: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          employee_id: string
+          id?: string
+          observation_data?: Json | null
+          observation_type: string
+          resolution_date?: string | null
+          resolution_notes?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          employee_id?: string
+          id?: string
+          observation_data?: Json | null
+          observation_type?: string
+          resolution_date?: string | null
+          resolution_notes?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_labor_observations_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       erp_hr_leave_balances: {
         Row: {
