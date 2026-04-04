@@ -337,6 +337,9 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/erp/ai-center', component: AICommandCenterPage, layout: 'none', priority: 'high', meta: { title: 'AI Command Center', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/erp/audit-center', component: AuditCenterPage, layout: 'none', priority: 'high', meta: { title: 'Centro de Auditoría', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/academia', component: AcademiaModulePage, layout: 'none', priority: 'high', meta: { title: 'Academia - Plataforma Educativa', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  // HR Domain
+  { path: '/obelixia-admin/hr', component: HRHubPage, layout: 'none', priority: 'high', meta: { title: 'RRHH Hub', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/audit', component: HRAuditPage, layout: 'none', priority: 'high', meta: { title: 'Auditoría RRHH', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
