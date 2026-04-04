@@ -9,12 +9,12 @@
 // CONSTANTS
 // ============================================
 
-/** SMI mensual 2026 (14 pagas) */
-export const SMI_MENSUAL_2026 = 1221.00;
-/** SMI mensual 2026 (12 pagas, prorrateado) — Art. 607.3 LEC */
-export const SMI_2026_12_PAGAS = 1424.50;
-/** SMI con prorrateo (12 pagas) */
-export const SMI_PRORRATEADO_2026 = 1224.50 * 14 / 12; // ~1424.17
+/** SMI 2026 — RD 87/2025, de 11 de febrero. 1.184€/mes × 14 pagas = 16.576€/año */
+export const SMI_MENSUAL_2026 = 1184.00;
+/** SMI 2026 en 12 pagas prorrateadas: 16.576 / 12 = 1.381,33€/mes (STS 1340/2022) */
+export const SMI_2026_12_PAGAS = 1381.33;
+/** SMI mensual × 14/12 para conversión a 12 pagas prorrateadas */
+export const SMI_PRORRATEADO_2026 = 1184.00 * 14 / 12; // = 1.381,33€
 
 /**
  * Tramos de embargabilidad — Art. 607.1 LEC
