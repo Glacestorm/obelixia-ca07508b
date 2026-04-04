@@ -1,63 +1,63 @@
 
+# Plan de Continuación — Prioridades 3 y 4
 
-# AI Command Center — Implementacion por Fases
-
-Basado en el documento PDF v2.0, se implementaron las 8 fases (0-7) de forma incremental.
-
----
-
-## CONSOLIDACIÓN COMPLETADA — Módulo Unificado "IA Center"
-
-### Fase 1 ✅ — Reestructuración de Tabs (13 pestañas unificadas)
-- Live Hub, Catálogo, Autónomos, Copilot, Voz
-- Observabilidad, Ranking, Economía
-- Gobernanza, Orquestación, Decisiones, Chat, Alertas
-
-### Fase 2 ✅ — Fusión del Catálogo de Agentes
-- Vista jerárquica por dominio (Supervisor → Especialistas → Workers)
-- 3 modos de vista: Grid, Lista, Jerarquía
-
-### Fase 3 ✅ — Fusión de Observabilidad y Métricas
-- Sub-tabs: Trazabilidad + Métricas Real-Time (ERPRealTimeMetrics)
-
-### Fase 4 ✅ — Fusión de Orquestación y Workflows
-- Sub-tabs: Pipelines, Workflows, Dependencias, Simulación
-
-### Fase 5 ✅ — Integración AdvancedAgentsDashboard en LiveHub
-- Sub-tabs: Operaciones + Dashboard Avanzado
-
-### Fase 6 ✅ — Redirección y Limpieza
-- Admin.tsx → redirige a /obelixia-admin/erp
-- ObelixiaTeamAdmin → redirige a IA Center en ERP
-- AdminGlobalSearch → redirige a /obelixia-admin/erp
-- Componentes originales preservados (no eliminados) para compatibilidad
+## ✅ Ya completado (Prioridades 1 y 2)
+- 4 Edge Functions: `payroll-it-engine`, `payroll-calculation-engine`, `payroll-irpf-engine`, `payroll-supervisor`
+- Tabla `erp_audit_nomina_cycles`
+- Componentes `PayslipTextManager`, `HREmployeeConceptsSection`, `HRLaborDocumentsPanel`
+- Hooks de conexión backend (6 hooks)
+- Engines: `crossValidationEngine`, `laborDocumentEngine`
 
 ---
 
-## MEJORAS POST-IMPLEMENTACIÓN (PDF Verificación v1.0 — 25/03/2026)
+## 📋 Prioridad 3 — Enriquecer engines existentes
 
-### Bloque A ✅ — Mejoras de Navegación
-- **A1** ✅ Tabs agrupadas en **5 grupos**: Operaciones, Agentes, Analítica, Economía, Gobernanza (separadores visuales)
-- **A2** ✅ URL params por tab (?tab=catalog) — deep linking + botón atrás funcional
-- **A3** ✅ Barra de búsqueda interna en AI Center — busca agentes, tareas de la cola
-- **A4** ✅ Badges con conteo en tabs urgentes (pendientes, errores, alertas)
+### Fase 3A: Validaciones legales bloqueantes en payroll engine
+- Validación SMI bloqueante (ET Art. 27): bruto mensual ≥ SMI 2026
+- Verificación horas extras >80h/año (ET Art. 35)
+- Corrección automática base mínima por grupo SS
+- Fichero: `src/lib/hr/payroll/validators/payslip-validator.ts`
 
-### Bloque B ✅ — Mejoras de Rendimiento
-- **B1** ✅ React.lazy() + Suspense para las 11 tabs no visibles inicialmente
-- **B2** Pendiente — Split AgentCatalogPanel en sub-componentes
-- **B3** Pendiente — Virtualización con react-window para 500+ agentes
-- **B4** Pendiente — React Query para cachear estado entre tabs
+### Fase 3B: Hitos IT 365/545 en it-engine
+- Alertas automáticas al alcanzar 365 días de IT (revisión obligatoria INSS)
+- Alerta 545 días (extinción automática prestación)
+- Cálculo base reguladora por tipo contingencia (EC/AT/ANL/MAT) con fórmulas LGSS Arts. 169-170
+- Ficheros: `src/lib/hr/it-engine.ts` o engine existente
 
-### Bloque C ✅ — Mejoras Funcionales
-- **C4** ✅ Exportación CSV de la cola de aprobaciones (botón Download en header)
-- **C5** ✅ Atajos de teclado en Live Hub: R=Refrescar, 1=Operaciones, 2=Dashboard Avanzado
+### Fase 3C: Registro de 9 agentes IA
+- INSERT en `erp_ai_agents_registry` de los agentes definidos en el Plan Maestro:
+  - PAYROLL-SUP-001, PAY-AGT-001 a 006, AGT-GDPR-001, AGT-AUDIT-001
+- Cada uno con `knowledge_base` JSON legal correspondiente
 
-### Bloque D ✅ — Tests y Calidad
-- **D1** ✅ Suite E2E Playwright para 13 pestañas (e2e/ai-command-center.spec.ts)
-- **D2** ✅ Tests de regresión visual con screenshots (e2e/visual-regression.spec.ts)
-- **D3** ✅ Tests de contrato API para schema de agentes (src/__tests__/contracts/agentApi.test.ts)
-- **D4** ✅ Tests de accesibilidad — roles, keyboard nav, contraste (e2e/accessibility.spec.ts)
+---
 
-### Limpieza ERP ✅
-- Tabs "Agentes IA" y "Supervisor" eliminadas del menú ERP (absorbidas en IA Center)
-- IA Center badge indicador correcto cuando estás dentro del módulo
+## 📋 Prioridad 4 — Funcionalidades avanzadas
+
+### Fase 4A: Motor predictivo IT con IA real
+- Reemplazar mocks en `HRPredictivePage.tsx` con llamadas a IA
+- Predicción duración IT por CIE-10 + CNO
+- Edge function o invocación directa a Lovable AI
+
+### Fase 4B: Validación cruzada real en HRPredictivePage
+- Conectar `crossValidationEngine` con datos reales de empleados
+- Validación contrato ↔ grupo SS ↔ base ↔ IRPF ↔ TA.2
+- Detección automática pluriempleo por cruce NAF
+
+### Fase 4C: Generación de documentos laborales
+- Carta de despido (ET Art. 49)
+- Finiquito calculado completo
+- Certificado de empresa para desempleo (RD 625/1985)
+- Parte DELTA (accidentes de trabajo)
+- Informe para ITSS
+
+### Fase 4D: Dashboard 12 KPIs de cumplimiento normativo
+- Panel con 12 KPIs legales en tiempo real definidos en el Plan Maestro
+- Integración en `HRAuditDashboard` o panel dedicado
+
+### Fase 4E: Portal auditor externo (opcional)
+- Rol `auditor_externo` con acceso read-only filtrado
+- Vista específica con datos anonimizados según necesidad
+
+---
+
+**Orden de ejecución:** 3A → 3B → 3C → 4A → 4B → 4C → 4D → 4E
