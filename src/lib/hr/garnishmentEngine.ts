@@ -93,6 +93,10 @@ export interface GarnishmentResult {
   art608Applied: boolean;
   /** Reducción por cargas familiares aplicada */
   cargasReduction: number;
+  /** Embargado al 100% (indemnizaciones) */
+  embargableAt100Amount: number;
+  /** Indica si se aplicó pluripercepción */
+  pluripercepcionApplied: boolean;
 }
 
 // ============================================
