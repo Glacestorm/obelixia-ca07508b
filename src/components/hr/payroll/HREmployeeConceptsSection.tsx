@@ -38,7 +38,7 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
     await createMutation.mutateAsync({
       company_id: companyId, employee_id: employeeId, concept_code: form.concept_code,
       concept_name: form.concept_name, nature: form.nature, priority: parseInt(form.priority) || 10,
-      valid_from: form.valid_from, valid_until: form.valid_until || null,
+      valid_from: form.valid_from, valid_to: form.valid_until || null,
       fixed_value: isFormula ? null : parseFloat(form.fixed_value) || 0,
       formula: isFormula ? form.formula : null,
       convention_definition: form.convention_definition || null,
