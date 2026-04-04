@@ -91,8 +91,9 @@ const modules: HRModuleCard[] = [
     description: 'Distribución de bases entre empleadores, cotización solidaridad 2026',
     icon: Building2,
     route: '/obelixia-admin/hr/multi-employment',
-    phase: 'Fase 4',
-    available: false,
+    phase: 'Fase E',
+    available: true,
+    badges: ['Solidaridad 2026', 'Orden PJC/297'],
   },
   {
     id: 'irpf',

@@ -347,6 +347,7 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/hr/it', component: HRITDashboardPage, layout: 'none', priority: 'high', meta: { title: 'Incapacidad Temporal', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/garnishments', component: HRGarnishmentsPage, layout: 'none', priority: 'high', meta: { title: 'Embargos Judiciales', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/contracts', component: HRContractsPage, layout: 'none', priority: 'high', meta: { title: 'Contratos Avanzados', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/multi-employment', component: HRMultiEmploymentPage, layout: 'none', priority: 'high', meta: { title: 'Pluriempleo', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
