@@ -18,6 +18,8 @@ export function GarnishmentSimulator() {
   const [hasExtraPay, setHasExtraPay] = useState(false);
   const [isArt608, setIsArt608] = useState(false);
   const [cargas, setCargas] = useState(0);
+  const [otherIncomes, setOtherIncomes] = useState(0);
+  const [embargableAt100, setEmbargableAt100] = useState(0);
 
   const result: GarnishmentResult = useMemo(() =>
     calculateGarnishment({
@@ -26,8 +28,10 @@ export function GarnishmentSimulator() {
       isArt608Alimentos: isArt608,
       cargasFamiliares: cargas,
       conceptosEmbargables100: false,
+      otherIncomes: otherIncomes || undefined,
+      embargableAt100: embargableAt100 || undefined,
     }),
-    [netSalary, hasExtraPay, isArt608, cargas]
+    [netSalary, hasExtraPay, isArt608, cargas, otherIncomes, embargableAt100]
   );
 
   const garnishmentPct = netSalary > 0
