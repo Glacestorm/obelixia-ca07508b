@@ -59619,6 +59619,54 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_employee_bank_accounts: {
+        Row: {
+          account_alias: string | null
+          bank_name: string | null
+          company_id: string
+          created_at: string
+          currency: string
+          employee_id: string
+          iban: string
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          notes: string | null
+          swift_bic: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_alias?: string | null
+          bank_name?: string | null
+          company_id: string
+          created_at?: string
+          currency?: string
+          employee_id: string
+          iban: string
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          notes?: string | null
+          swift_bic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_alias?: string | null
+          bank_name?: string | null
+          company_id?: string
+          created_at?: string
+          currency?: string
+          employee_id?: string
+          iban?: string
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          notes?: string | null
+          swift_bic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hr_employee_extensions: {
         Row: {
           company_id: string
