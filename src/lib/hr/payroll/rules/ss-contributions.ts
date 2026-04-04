@@ -32,10 +32,20 @@ export const SS_RATES_2026 = {
 
 /** Bases mínimas por grupo de cotización 2026 */
 export const SS_GROUP_MIN_BASES_2026: Record<number, number> = {
-  1: 1847.40,  2: 1531.50,  3: 1332.90,
-  4: 1221.00,  5: 1221.00,  6: 1221.00,
-  7: 1221.00,  8: 1221.00,  9: 1221.00,
-  10: 1221.00, 11: 1221.00,
+  // Fuente: Orden PJC/297/2026 — Bases mínimas por grupo de cotización
+  1: 1847.40,  // Ingenieros y Licenciados, personal de alta dirección
+  2: 1531.50,  // Ingenieros Técnicos, Peritos y Ayudantes Titulados
+  3: 1332.90,  // Jefes Administrativos y de Taller
+  4: 1381.33,  // Ayudantes no titulados (SMI 2026 × 7/6)
+  5: 1381.33,  // Oficiales Administrativos (SMI 2026 × 7/6)
+  6: 1381.33,  // Subalternos (SMI 2026 × 7/6)
+  7: 1381.33,  // Auxiliares Administrativos (SMI 2026 × 7/6)
+  8: 1381.33,  // Oficiales de 1ª y 2ª (SMI 2026 × 7/6)
+  9: 1381.33,  // Oficiales de 3ª y Especialistas (SMI 2026 × 7/6)
+  10: 1381.33, // Peones (SMI 2026 × 7/6)
+  11: 1381.33, // Trabajadores menores de 18 años (SMI 2026 × 7/6)
+  // Cálculo grupos 4-11: SMI mensual 2026 (1.184€) × 7/6 = 1.381,33€
+  // Norma: LGSS Art. 147.2 — «cuantía del SMI vigente, incrementada en un sexto»
 };
 
 // ============================================
