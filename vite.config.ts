@@ -14,14 +14,20 @@ export default defineConfig(({ mode, command }) => {
     server: {
       host: "::",
       port: 8080,
-      // Vite 6: Improved HMR
       hmr: {
         overlay: true,
       },
-      // HTTP/3 preparation headers
       headers: {
         'Alt-Svc': 'h3=":443"; ma=86400',
         'Link': '</src/main.tsx>; rel=preload; as=script',
+      },
+      warmup: {
+        clientFiles: [
+          './src/App.tsx',
+          './src/components/routing/AppRoutes.tsx',
+          './src/components/erp/ERPModularDashboard.tsx',
+          './src/layouts/DashboardLayout.tsx',
+        ],
       },
     },
     plugins: [
