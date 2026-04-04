@@ -33316,6 +33316,81 @@ export type Database = {
           },
         ]
       }
+      erp_hr_employee_custom_concepts: {
+        Row: {
+          algorithm: Json | null
+          calculation_type: string
+          company_id: string | null
+          concept_code: string
+          concept_name: string
+          concept_type: string
+          created_at: string
+          created_by: string | null
+          embargable: boolean | null
+          employee_id: string
+          formula: string | null
+          id: string
+          irpf_computable: boolean | null
+          is_active: boolean | null
+          nature: string
+          notes: string | null
+          priority: number | null
+          ss_computable: boolean | null
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+          value: number | null
+        }
+        Insert: {
+          algorithm?: Json | null
+          calculation_type?: string
+          company_id?: string | null
+          concept_code: string
+          concept_name: string
+          concept_type?: string
+          created_at?: string
+          created_by?: string | null
+          embargable?: boolean | null
+          employee_id: string
+          formula?: string | null
+          id?: string
+          irpf_computable?: boolean | null
+          is_active?: boolean | null
+          nature?: string
+          notes?: string | null
+          priority?: number | null
+          ss_computable?: boolean | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          value?: number | null
+        }
+        Update: {
+          algorithm?: Json | null
+          calculation_type?: string
+          company_id?: string | null
+          concept_code?: string
+          concept_name?: string
+          concept_type?: string
+          created_at?: string
+          created_by?: string | null
+          embargable?: boolean | null
+          employee_id?: string
+          formula?: string | null
+          id?: string
+          irpf_computable?: boolean | null
+          is_active?: boolean | null
+          nature?: string
+          notes?: string | null
+          priority?: number | null
+          ss_computable?: boolean | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+          value?: number | null
+        }
+        Relationships: []
+      }
       erp_hr_employee_documents: {
         Row: {
           ai_confidence: number | null
@@ -40748,6 +40823,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      erp_hr_payslip_texts: {
+        Row: {
+          company_id: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          position: string
+          text_code: string
+          title: string
+          updated_at: string
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          position?: string
+          text_code: string
+          title: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          position?: string
+          text_code?: string
+          title?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: []
       }
       erp_hr_performance_evaluations: {
         Row: {
