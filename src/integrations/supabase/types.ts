@@ -35301,6 +35301,152 @@ export type Database = {
           },
         ]
       }
+      erp_hr_garnishment_calculations: {
+        Row: {
+          accumulated_total: number
+          art608_override: boolean | null
+          calculated_at: string
+          calculation_details: Json | null
+          created_at: string
+          employee_id: string
+          garnishment_id: string
+          has_extra_pay: boolean | null
+          id: string
+          inembargable_limit: number
+          net_salary: number
+          period_month: number
+          period_year: number
+          remaining_after: number
+          smi_reference: number
+          total_garnished: number
+          tranches_applied: Json
+        }
+        Insert: {
+          accumulated_total?: number
+          art608_override?: boolean | null
+          calculated_at?: string
+          calculation_details?: Json | null
+          created_at?: string
+          employee_id: string
+          garnishment_id: string
+          has_extra_pay?: boolean | null
+          id?: string
+          inembargable_limit: number
+          net_salary: number
+          period_month: number
+          period_year: number
+          remaining_after?: number
+          smi_reference: number
+          total_garnished?: number
+          tranches_applied?: Json
+        }
+        Update: {
+          accumulated_total?: number
+          art608_override?: boolean | null
+          calculated_at?: string
+          calculation_details?: Json | null
+          created_at?: string
+          employee_id?: string
+          garnishment_id?: string
+          has_extra_pay?: boolean | null
+          id?: string
+          inembargable_limit?: number
+          net_salary?: number
+          period_month?: number
+          period_year?: number
+          remaining_after?: number
+          smi_reference?: number
+          total_garnished?: number
+          tranches_applied?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_garnishment_calculations_garnishment_id_fkey"
+            columns: ["garnishment_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_garnishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_garnishments: {
+        Row: {
+          accumulated_paid: number | null
+          art608_alimentos: boolean | null
+          beneficiary_id_number: string | null
+          beneficiary_name: string | null
+          cargas_familiares: number | null
+          conceptos_embargables_100pct: boolean | null
+          court_name: string | null
+          court_type: string | null
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          end_date: string | null
+          garnishment_type: string
+          id: string
+          monthly_cap: number | null
+          notes: string | null
+          priority_order: number
+          procedure_number: string
+          remaining_amount: number | null
+          start_date: string
+          status: string
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          accumulated_paid?: number | null
+          art608_alimentos?: boolean | null
+          beneficiary_id_number?: string | null
+          beneficiary_name?: string | null
+          cargas_familiares?: number | null
+          conceptos_embargables_100pct?: boolean | null
+          court_name?: string | null
+          court_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          end_date?: string | null
+          garnishment_type?: string
+          id?: string
+          monthly_cap?: number | null
+          notes?: string | null
+          priority_order?: number
+          procedure_number: string
+          remaining_amount?: number | null
+          start_date: string
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accumulated_paid?: number | null
+          art608_alimentos?: boolean | null
+          beneficiary_id_number?: string | null
+          beneficiary_name?: string | null
+          cargas_familiares?: number | null
+          conceptos_embargables_100pct?: boolean | null
+          court_name?: string | null
+          court_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          end_date?: string | null
+          garnishment_type?: string
+          id?: string
+          monthly_cap?: number | null
+          notes?: string | null
+          priority_order?: number
+          procedure_number?: string
+          remaining_amount?: number | null
+          start_date?: string
+          status?: string
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_generated_documents: {
         Row: {
           company_id: string
