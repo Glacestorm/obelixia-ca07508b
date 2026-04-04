@@ -18,6 +18,7 @@ import {
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 interface BankAccount {
   id: string;
@@ -119,6 +120,7 @@ export function HRBankAccountsPage() {
 
   return (
     <DashboardLayout title="Cuentas Bancarias de Empleados">
+      <HRErrorBoundary section="Cuentas Bancarias">
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -265,6 +267,8 @@ export function HRBankAccountsPage() {
           </CardContent>
         </Card>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }

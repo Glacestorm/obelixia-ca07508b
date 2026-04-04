@@ -13,6 +13,7 @@ import {
   ArrowRight, Lock
 } from 'lucide-react';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 interface HRModuleCard {
   id: string;
@@ -163,6 +164,7 @@ export function HRHubPage() {
 
   return (
     <DashboardLayout title="RRHH — Hub de Módulos">
+      <HRErrorBoundary section="Hub RRHH">
       <div className="space-y-6 p-6">
         {/* Header */}
         <div>
@@ -221,6 +223,8 @@ export function HRHubPage() {
           ))}
         </div>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }

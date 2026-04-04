@@ -23,6 +23,7 @@ import { useHRPredictiveAI, type PredictionResult } from '@/hooks/hr/useHRPredic
 import { validateEmployee, type CrossValidationInput } from '@/lib/hr/crossValidationEngine';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 // ── Fallback demo data (used when no AI response) ──
 
@@ -103,6 +104,7 @@ export function HRPredictivePage() {
 
   return (
     <DashboardLayout title="Auditoría Predictiva — Capa Premium">
+      <HRErrorBoundary section="Auditoría Predictiva">
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -429,6 +431,8 @@ export function HRPredictivePage() {
           </TabsContent>
         </Tabs>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }

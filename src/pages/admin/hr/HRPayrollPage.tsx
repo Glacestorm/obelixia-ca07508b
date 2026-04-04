@@ -3,10 +3,12 @@
  */
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { PayrollSimulatorPanel, HRCustomConceptsPanel } from '@/components/hr/payroll';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 export function HRPayrollPage() {
   return (
     <DashboardLayout title="Motor de Nómina">
+      <HRErrorBoundary section="Motor de Nómina">
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Motor de Nómina</h1>
@@ -19,6 +21,8 @@ export function HRPayrollPage() {
           <HRCustomConceptsPanel />
         </div>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }

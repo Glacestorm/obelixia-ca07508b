@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 // ── Types ──
 
@@ -100,6 +101,7 @@ export function HRGovernancePage() {
 
   return (
     <DashboardLayout title="Supervisor de Nómina — Gobernanza">
+      <HRErrorBoundary section="Gobernanza y Supervisión">
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -377,6 +379,8 @@ export function HRGovernancePage() {
           </TabsContent>
         </Tabs>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }

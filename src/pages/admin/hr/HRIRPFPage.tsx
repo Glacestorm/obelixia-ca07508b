@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { toast } from 'sonner';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 // Simulated IRPF summary for demo
 interface IRPFEmployeeSummary {
@@ -43,6 +44,7 @@ export function HRIRPFPage() {
 
   return (
     <DashboardLayout title="Motor IRPF — Retenciones y Modelos Fiscales">
+      <HRErrorBoundary section="Motor IRPF">
       <div className="space-y-6 p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -290,6 +292,8 @@ export function HRIRPFPage() {
           </TabsContent>
         </Tabs>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }

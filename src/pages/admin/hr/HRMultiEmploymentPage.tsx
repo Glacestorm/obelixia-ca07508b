@@ -3,10 +3,12 @@
  */
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { HRMultiEmploymentPanel, SolidaritySimulator, BaseDistributionPanel } from '@/components/hr/multi-employment';
+import { HRErrorBoundary } from '@/components/hr/HRErrorBoundary';
 
 export function HRMultiEmploymentPage() {
   return (
     <DashboardLayout title="Pluriempleo / Pluriactividad">
+      <HRErrorBoundary section="Pluriempleo">
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Pluriempleo y Pluriactividad</h1>
@@ -22,6 +24,8 @@ export function HRMultiEmploymentPage() {
           <SolidaritySimulator />
         </div>
       </div>
+      </HRErrorBoundary>
+
     </DashboardLayout>
   );
 }
