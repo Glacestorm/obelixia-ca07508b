@@ -49,7 +49,7 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
   };
 
   // Check overlapping concepts
-  const overlaps = concepts.filter((c, i) => concepts.some((d, j) => i !== j && c.concept_code === d.concept_code && c.valid_from <= (d.valid_until ?? '9999-12-31') && (c.valid_until ?? '9999-12-31') >= d.valid_from));
+  const overlaps = concepts.filter((c: any, i: number) => concepts.some((d: any, j: number) => i !== j && c.concept_code === d.concept_code && c.valid_from <= (d.valid_to ?? '9999-12-31') && (c.valid_to ?? '9999-12-31') >= d.valid_from));
 
   return (
     <Card>
