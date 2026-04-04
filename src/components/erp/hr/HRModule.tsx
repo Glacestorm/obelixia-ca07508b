@@ -2,7 +2,7 @@
  * Módulo de Recursos Humanos - HRModule
  * Gestión integral: nóminas, vacaciones, contratos, finiquitos, departamentos
  * Base de conocimiento laboral + Agente IA + Noticias RRHH
- * 
+ * @updated 2026-04-04
  * FASE A: Nueva navegación agrupada en 5 categorías
  * FASE 9: Métricas dinámicas desde Supabase
  */
