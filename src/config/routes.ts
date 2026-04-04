@@ -153,6 +153,7 @@ const AIHybridPage = lazy(() => import('@/pages/admin/AIHybridPage'));
 const HRHubPage = lazy(() => import('@/pages/admin/hr/HRHubPage'));
 const HRAuditPage = lazy(() => import('@/pages/admin/hr/HRAuditPage'));
 const HRITDashboardPage = lazy(() => import('@/pages/admin/hr/HRITDashboardPage'));
+const HRGarnishmentsPage = lazy(() => import('@/pages/admin/hr/HRGarnishmentsPage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
