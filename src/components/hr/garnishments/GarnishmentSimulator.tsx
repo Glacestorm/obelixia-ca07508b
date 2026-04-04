@@ -18,6 +18,8 @@ export function GarnishmentSimulator() {
   const [hasExtraPay, setHasExtraPay] = useState(false);
   const [isArt608, setIsArt608] = useState(false);
   const [cargas, setCargas] = useState(0);
+  const [otherIncomes, setOtherIncomes] = useState(0);
+  const [embargableAt100, setEmbargableAt100] = useState(0);
 
   const result: GarnishmentResult = useMemo(() =>
     calculateGarnishment({
@@ -26,8 +28,10 @@ export function GarnishmentSimulator() {
       isArt608Alimentos: isArt608,
       cargasFamiliares: cargas,
       conceptosEmbargables100: false,
+      otherIncomes: otherIncomes || undefined,
+      embargableAt100: embargableAt100 || undefined,
     }),
-    [netSalary, hasExtraPay, isArt608, cargas]
+    [netSalary, hasExtraPay, isArt608, cargas, otherIncomes, embargableAt100]
   );
 
   const garnishmentPct = netSalary > 0
@@ -64,6 +68,26 @@ export function GarnishmentSimulator() {
                 onChange={(e) => setCargas(Number(e.target.value))}
                 min={0}
                 max={10}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Otros ingresos — pluripercepción (€)</Label>
+              <Input
+                type="number"
+                value={otherIncomes}
+                onChange={(e) => setOtherIncomes(Number(e.target.value))}
+                min={0}
+                step={50}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Embargable al 100% (€)</Label>
+              <Input
+                type="number"
+                value={embargableAt100}
+                onChange={(e) => setEmbargableAt100(Number(e.target.value))}
+                min={0}
+                step={50}
               />
             </div>
           </div>
