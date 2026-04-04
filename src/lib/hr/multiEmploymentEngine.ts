@@ -42,27 +42,27 @@ export const SOLIDARITY_BRACKETS_2026: SolidarityBracket[] = [
     fromMultiplier: 1.0,
     toMultiplier: 1.1,
     rate: 1.15,
-    employerRate: 0.92,
-    employeeRate: 0.23,
-    label: 'Tramo 1: Base máx. → +10%',
+    employerRate: 0.96,   // Orden PJC/297/2026: 0,96% a cargo de la empresa
+    employeeRate: 0.19,   // Orden PJC/297/2026: 0,19% a cargo del trabajador
+    label: 'Tramo 1: Base máx. → +10% (1,15%)',
   },
   {
     bracket: 2,
     fromMultiplier: 1.1,
     toMultiplier: 1.5,
     rate: 1.25,
-    employerRate: 1.00,
-    employeeRate: 0.25,
-    label: 'Tramo 2: +10% → +50%',
+    employerRate: 1.04,   // Orden PJC/297/2026: 1,04% a cargo de la empresa
+    employeeRate: 0.21,   // Orden PJC/297/2026: 0,21% a cargo del trabajador
+    label: 'Tramo 2: +10% → +50% (1,25%)',
   },
   {
     bracket: 3,
     fromMultiplier: 1.5,
     toMultiplier: null,
     rate: 1.35,
-    employerRate: 1.08,
-    employeeRate: 0.27,
-    label: 'Tramo 3: >+50%',
+    employerRate: 1.13,   // RDL 3/2026: proporción 83,7% empresa (1,35 × 0,837 ≈ 1,13)
+    employeeRate: 0.22,   // RDL 3/2026: proporción 16,3% trabajador (1,35 × 0,163 ≈ 0,22)
+    label: 'Tramo 3: >+50% (1,35%)',
   },
 ];
 
