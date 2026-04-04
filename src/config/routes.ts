@@ -158,6 +158,7 @@ const HRContractsPage = lazy(() => import('@/pages/admin/hr/HRContractsPage'));
 const HRMultiEmploymentPage = lazy(() => import('@/pages/admin/hr/HRMultiEmploymentPage'));
 const HRPayrollPage = lazy(() => import('@/pages/admin/hr/HRPayrollPage'));
 const HRFilingsPage = lazy(() => import('@/pages/admin/hr/HRFilingsPage'));
+const HRBridgePage = lazy(() => import('@/pages/admin/hr/HRBridgePage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
@@ -352,6 +353,7 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/hr/multi-employment', component: HRMultiEmploymentPage, layout: 'none', priority: 'high', meta: { title: 'Pluriempleo', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/payroll', component: HRPayrollPage, layout: 'none', priority: 'high', meta: { title: 'Motor de Nómina', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/files', component: HRFilingsPage, layout: 'none', priority: 'high', meta: { title: 'Ficheros TGSS/AEAT', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/bridge', component: HRBridgePage, layout: 'none', priority: 'high', meta: { title: 'Bridge Contabilidad', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 

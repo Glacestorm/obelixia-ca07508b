@@ -28451,6 +28451,146 @@ export type Database = {
           },
         ]
       }
+      erp_hr_bridge_approvals: {
+        Row: {
+          approval_type: string
+          approved_by: string | null
+          bridge_log_id: string
+          comments: string | null
+          company_id: string
+          created_at: string
+          decided_at: string | null
+          id: string
+          requested_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_type?: string
+          approved_by?: string | null
+          bridge_log_id: string
+          comments?: string | null
+          company_id: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          requested_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_type?: string
+          approved_by?: string | null
+          bridge_log_id?: string
+          comments?: string | null
+          company_id?: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          requested_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_hr_bridge_approvals_bridge_log_id_fkey"
+            columns: ["bridge_log_id"]
+            isOneToOne: false
+            referencedRelation: "erp_hr_bridge_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_hr_bridge_logs: {
+        Row: {
+          approved_by: string | null
+          bridge_type: string
+          company_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          payload_snapshot: Json | null
+          processed_at: string | null
+          retry_count: number
+          source_module: string
+          source_record_id: string | null
+          status: string
+          target_module: string
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          bridge_type?: string
+          company_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload_snapshot?: Json | null
+          processed_at?: string | null
+          retry_count?: number
+          source_module?: string
+          source_record_id?: string | null
+          status?: string
+          target_module?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          bridge_type?: string
+          company_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload_snapshot?: Json | null
+          processed_at?: string | null
+          retry_count?: number
+          source_module?: string
+          source_record_id?: string | null
+          status?: string
+          target_module?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      erp_hr_bridge_mappings: {
+        Row: {
+          company_id: string
+          created_at: string
+          hr_code: string
+          hr_label: string | null
+          id: string
+          is_active: boolean
+          mapping_type: string
+          target_code: string
+          target_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          hr_code: string
+          hr_label?: string | null
+          id?: string
+          is_active?: boolean
+          mapping_type?: string
+          target_code: string
+          target_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          hr_code?: string
+          hr_label?: string | null
+          id?: string
+          is_active?: boolean
+          mapping_type?: string
+          target_code?: string
+          target_label?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_burnout_alerts: {
         Row: {
           acknowledged_at: string | null

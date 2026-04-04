@@ -10,3 +10,4 @@ export { useHRContracts } from './useHRContracts';
 export { useHRLaborObservations } from './useHRLaborObservations';
 export { useHRMultiEmployment } from './useHRMultiEmployment';
 export { useHRCustomConcepts } from './useHRCustomConcepts';
+export { useHRBridge } from './useHRBridge';
