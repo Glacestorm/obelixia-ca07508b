@@ -152,6 +152,7 @@ const AIHybridPage = lazy(() => import('@/pages/admin/AIHybridPage'));
 // HR Domain
 const HRHubPage = lazy(() => import('@/pages/admin/hr/HRHubPage'));
 const HRAuditPage = lazy(() => import('@/pages/admin/hr/HRAuditPage'));
+const HRITDashboardPage = lazy(() => import('@/pages/admin/hr/HRITDashboardPage'));
 // Settings
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
