@@ -6,14 +6,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SMI_2026 = 1221.00;
+const SMI_2026 = 1184.00; // SMI 2026 — RD 87/2025, de 11 de febrero. Sin subida publicada para 2026.
 const SS_BASE_MAX = 5101.20;
 const SS_GROUP_MIN: Record<number, number> = {
-  1: 1929.00, 2: 1599.60, 3: 1391.70,
-  4: 1381.20, 5: 1381.20, 6: 1381.20,
-  7: 1381.20, 8: 1381.20, 9: 1381.20,
-  10: 1381.20, 11: 1381.20,
+  1: 1847.40,  // Ingenieros y Licenciados
+  2: 1531.50,  // Ingenieros Técnicos y Peritos
+  3: 1332.90,  // Jefes Administrativos y de Taller
+  4: 1381.33,  // Ayudantes no titulados
+  5: 1381.33,  // Oficiales Administrativos
+  6: 1381.33,  // Subalternos
+  7: 1381.33,  // Auxiliares Administrativos
+  8: 1381.33,  // Oficiales de 1ª y 2ª
+  9: 1381.33,  // Oficiales de 3ª y Especialistas
+  10: 1381.33, // Peones
+  11: 1381.33, // Trabajadores menores de 18 años
 };
+// Fuente: SMI 2026 (1.184€ × 7/6 = 1.381,33€) · LGSS Art. 147
 const SS_EMPLOYEE_RATES = { cc: 4.70, fp: 0.10, mei: 0.15, desempleo_indef: 1.55, desempleo_temp: 1.60 };
 const SS_EMPLOYER_RATES = { cc: 23.60, fp: 0.60, mei: 0.75, desempleo_indef: 5.50, desempleo_temp: 6.70, fogasa: 0.20, atep: 1.50 };
 
