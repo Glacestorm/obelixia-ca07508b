@@ -21000,6 +21000,86 @@ export type Database = {
           },
         ]
       }
+      erp_audit_nomina_cycles: {
+        Row: {
+          accounted_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          calculated_at: string | null
+          calculated_by: string | null
+          company_id: string
+          created_at: string | null
+          cycle_hash: string | null
+          deviations: Json | null
+          employee_count: number | null
+          filed_at: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          period_month: number
+          period_year: number
+          status: string | null
+          total_gross: number | null
+          total_irpf: number | null
+          total_net: number | null
+          total_ss_company: number | null
+        }
+        Insert: {
+          accounted_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          calculated_at?: string | null
+          calculated_by?: string | null
+          company_id: string
+          created_at?: string | null
+          cycle_hash?: string | null
+          deviations?: Json | null
+          employee_count?: number | null
+          filed_at?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          period_month: number
+          period_year: number
+          status?: string | null
+          total_gross?: number | null
+          total_irpf?: number | null
+          total_net?: number | null
+          total_ss_company?: number | null
+        }
+        Update: {
+          accounted_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          calculated_at?: string | null
+          calculated_by?: string | null
+          company_id?: string
+          created_at?: string | null
+          cycle_hash?: string | null
+          deviations?: Json | null
+          employee_count?: number | null
+          filed_at?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          period_month?: number
+          period_year?: number
+          status?: string | null
+          total_gross?: number | null
+          total_irpf?: number | null
+          total_net?: number | null
+          total_ss_company?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_audit_nomina_cycles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       erp_audit_reports: {
         Row: {
           auditor_name: string | null
