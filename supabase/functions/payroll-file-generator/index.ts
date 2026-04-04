@@ -5,12 +5,9 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
 // ── File format specs (simplified structural generators) ─────────────
 
@@ -178,8 +175,8 @@ const GENERATORS: Record<string, (input: FileGeneratorInput) => GeneratedFileRes
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: getSecureCorsHeaders(req) });
   }
 
   try {
@@ -187,7 +184,7 @@ Deno.serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
@@ -202,7 +199,7 @@ Deno.serve(async (req) => {
     if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
     const userId = claimsData.claims.sub;
@@ -214,7 +211,7 @@ Deno.serve(async (req) => {
       if (!company_id || !file_type || !period_month || !period_year) {
         return new Response(
           JSON.stringify({ error: "Missing required fields: company_id, file_type, period_month, period_year" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -222,7 +219,7 @@ Deno.serve(async (req) => {
       if (!generator) {
         return new Response(
           JSON.stringify({ error: `Unsupported file_type: ${file_type}. Supported: ${Object.keys(GENERATORS).join(", ")}` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -249,7 +246,7 @@ Deno.serve(async (req) => {
         console.error("[payroll-file-generator] insert error:", insertError);
         return new Response(
           JSON.stringify({ error: "Failed to persist file record", detail: insertError.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 500, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -258,7 +255,7 @@ Deno.serve(async (req) => {
           success: true,
           file: { ...record, content: result.content, mime_type: result.mime_type },
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -278,19 +275,19 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       return new Response(JSON.stringify({ success: true, files: data }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
     return new Response(
       JSON.stringify({ error: `Unknown action: ${action}` }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error("[payroll-file-generator] Error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });

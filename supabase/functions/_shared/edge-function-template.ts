@@ -331,3 +331,24 @@ export async function secureAICall(options: AICallOptions): Promise<{
     };
   }
 }
+
+// ==========================================
+// SECURE CORS
+// ==========================================
+
+/** Genera corsHeaders seguros restringiendo el origen al dominio de la app */
+export function getSecureCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') ?? '';
+  // Lista de orígenes permitidos (añadir el dominio de producción cuando esté disponible)
+  const ALLOWED_ORIGINS = [
+    'https://obelixia.lovable.app',
+    'https://app.obelixia.com',
+    Deno.env.get('ALLOWED_ORIGIN') ?? '',
+  ].filter(Boolean);
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] ?? '*';
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}

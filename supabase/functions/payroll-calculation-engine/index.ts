@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
 const SMI_2026 = 1184.00; // SMI 2026 — RD 87/2025, de 11 de febrero. Sin subida publicada para 2026.
 const SS_BASE_MAX = 5101.20;
@@ -102,7 +100,7 @@ function calculatePayrollForEmployee(emp: any): { result: any; legalValidations:
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -138,7 +136,7 @@ serve(async (req) => {
 
       if (hasErrors && !overrides?.forcedNet) {
         return new Response(JSON.stringify({ success: false, legalValidations, preview: result }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
         });
       }
 
@@ -172,7 +170,7 @@ serve(async (req) => {
       });
 
       return new Response(JSON.stringify({ success: true, result, legalValidations }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
@@ -192,7 +190,7 @@ serve(async (req) => {
       const { result, legalValidations } = calculatePayrollForEmployee(emp);
 
       return new Response(JSON.stringify({ success: true, legalValidations, previewResult: result }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
@@ -222,7 +220,7 @@ serve(async (req) => {
         warnings: totalWarnings,
         validations_by_employee: validationsByEmployee,
       }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
@@ -230,7 +228,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
 });

@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
 const VALID_TRANSITIONS: Record<string, string> = {
   'draft': 'calculated',
@@ -16,7 +14,7 @@ const VALID_TRANSITIONS: Record<string, string> = {
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -69,7 +67,7 @@ serve(async (req) => {
         success: true,
         cycle_id: cycle.id,
         status: 'draft',
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     // ─── ADVANCE STATUS ─────────────────────────────────────
@@ -109,7 +107,7 @@ serve(async (req) => {
           return new Response(JSON.stringify({
             success: false,
             blocked_by: 'No filing documents generated for this period',
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
         }
       }
 
@@ -139,7 +137,7 @@ serve(async (req) => {
         success: true,
         cycle_id,
         new_status: newStatus,
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     // ─── GET CYCLE STATUS ───────────────────────────────────
@@ -164,7 +162,7 @@ serve(async (req) => {
         success: true,
         cycle,
         transitions_history: events ?? [],
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     // ─── GET KPIs ───────────────────────────────────────────
@@ -237,7 +235,7 @@ serve(async (req) => {
           it_processes_overdue_communication: itOverdue ?? 0,
           garnishments_lec_compliant: totalGarnishments ? 100 : 100,
         },
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     // ─── ESCALATE TO LEGAL ──────────────────────────────────
@@ -264,14 +262,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         escalation_id: finding.id,
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     throw new Error(`Unknown action: ${action}`);
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
 });

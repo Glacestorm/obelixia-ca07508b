@@ -5,16 +5,13 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: getSecureCorsHeaders(req) });
   }
 
   try {
@@ -22,7 +19,7 @@ Deno.serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
@@ -37,7 +34,7 @@ Deno.serve(async (req) => {
     if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
     const userId = claimsData.claims.sub;
@@ -48,7 +45,7 @@ Deno.serve(async (req) => {
     if (!company_id) {
       return new Response(
         JSON.stringify({ error: "company_id required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -121,7 +118,7 @@ Deno.serve(async (req) => {
           status: bridge_type === "legal" ? "pending_approval" : "synced",
           disclaimer: "Sincronización preparatoria interna",
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -146,19 +143,19 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, logs: data, summary }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
       JSON.stringify({ error: `Unknown action: ${action}` }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error("[bridge] Error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });
