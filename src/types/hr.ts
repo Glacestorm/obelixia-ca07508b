@@ -201,3 +201,129 @@ export const ISO_STANDARDS = [
   { code: 'ISO_27001', label: 'ISO 27001:2022', description: 'Seguridad de la Información' },
   { code: 'ISO_45001', label: 'ISO 45001:2018', description: 'Seguridad y Salud en el Trabajo' },
 ] as const;
+
+// ============================================
+// IT PROCESS TYPES (Fase B)
+// ============================================
+export type ITProcessType = 'EC' | 'AT' | 'ANL' | 'MAT' | 'PAT' | 'RE';
+export type ITProcessStatus = 'active' | 'closed' | 'extended' | 'relapsed';
+export type ITPartType = 'baja' | 'alta' | 'confirmacion' | 'alta_propuesta';
+export type ITPartStatus = 'received' | 'processed' | 'communicated' | 'rejected';
+
+export const IT_PROCESS_TYPE_LABELS: Record<ITProcessType, string> = {
+  EC: 'Enfermedad Común',
+  AT: 'Accidente de Trabajo',
+  ANL: 'Accidente No Laboral',
+  MAT: 'Maternidad',
+  PAT: 'Paternidad',
+  RE: 'Riesgo durante el Embarazo',
+};
+
+export interface HRITProcess {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  process_type: ITProcessType;
+  start_date: string;
+  end_date: string | null;
+  expected_end_date: string | null;
+  issuing_entity: string | null;
+  issuing_entity_type: string | null;
+  diagnosis_code: string | null;
+  diagnosis_description: string | null;
+  cno_code: string | null;
+  worker_situation: string;
+  assistance_type: string;
+  has_relapse: boolean;
+  relapse_of_id: string | null;
+  direct_payment: boolean;
+  partial_compatibility: boolean;
+  partial_percentage: number | null;
+  milestone_365_date: string | null;
+  milestone_545_date: string | null;
+  milestone_365_notified: boolean;
+  milestone_545_notified: boolean;
+  complement_scheme: string;
+  complement_percentage: number;
+  status: ITProcessStatus;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HRITPart {
+  id: string;
+  company_id: string;
+  process_id: string;
+  part_type: ITPartType;
+  part_number: number;
+  issue_date: string;
+  reception_date: string | null;
+  communication_date: string | null;
+  effective_date: string | null;
+  next_review_date: string | null;
+  issuing_doctor: string | null;
+  issuing_center: string | null;
+  observations: string | null;
+  file_url: string | null;
+  file_hash: string | null;
+  status: ITPartStatus;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HRITBase {
+  id: string;
+  company_id: string;
+  process_id: string;
+  calculation_date: string;
+  base_monthly: number;
+  base_daily_ec: number;
+  base_daily_at: number;
+  base_daily_extra_hours: number;
+  base_fdi_ec: number;
+  base_fdi_at: number;
+  base_fdi_maternity: number;
+  days_in_period: number;
+  prorrata_extras: number;
+  total_base_reguladora: number;
+  pct_subsidy: number;
+  daily_subsidy: number;
+  employer_complement: number;
+  calculation_method: string;
+  notes: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SymbolicValueType = 'boolean' | 'numeric' | 'text' | 'date' | 'percentage';
+
+export interface HREmployeeSymbolicData {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  symbol_name: string;
+  symbol_value: string;
+  value_type: SymbolicValueType;
+  valid_from: string | null;
+  valid_to: string | null;
+  description: string | null;
+  category: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export const STANDARD_SYMBOLS = [
+  { name: 'ANTIGUEDAD_U', label: 'Antigüedad', type: 'boolean' as const, category: 'payroll' },
+  { name: 'COBRA_EXTRAS_U', label: 'Cobra pagas extra', type: 'boolean' as const, category: 'payroll' },
+  { name: 'COMPL3IT_U', label: 'Complementa IT 3 días', type: 'boolean' as const, category: 'it' },
+  { name: 'COMP_IT_BRUTO_U', label: 'Complemento IT sobre bruto', type: 'boolean' as const, category: 'it' },
+  { name: 'EXTRA_COMPL_U', label: 'Extra complementaria', type: 'boolean' as const, category: 'payroll' },
+  { name: 'GUARDA_LEGAL_U', label: 'Guarda legal', type: 'boolean' as const, category: 'contract' },
+  { name: 'PROR_EXTRA_U', label: 'Prorrateo extra', type: 'boolean' as const, category: 'payroll' },
+  { name: 'BASES_JUB_100', label: 'Bases jubilación 100%', type: 'boolean' as const, category: 'ss' },
+] as const;
