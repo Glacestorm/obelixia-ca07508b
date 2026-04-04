@@ -1,63 +1,79 @@
 
-# Plan de Continuación — Prioridades 3 y 4
 
-## ✅ Ya completado (Prioridades 1 y 2)
-- 4 Edge Functions: `payroll-it-engine`, `payroll-calculation-engine`, `payroll-irpf-engine`, `payroll-supervisor`
-- Tabla `erp_audit_nomina_cycles`
-- Componentes `PayslipTextManager`, `HREmployeeConceptsSection`, `HRLaborDocumentsPanel`
-- Hooks de conexión backend (6 hooks)
-- Engines: `crossValidationEngine`, `laborDocumentEngine`
+# Auditoría: 15 Prompts del Plan de Gaps RRHH — Estado Actual
+
+## Resumen Ejecutivo
+
+De los 15 prompts del documento, **13 estan implementados** (algunos con diferencias menores respecto a la especificacion exacta) y **2 tienen gaps significativos**.
 
 ---
 
-## 📋 Prioridad 3 — Enriquecer engines existentes
+## Estado por Prompt
 
-### Fase 3A: Validaciones legales bloqueantes en payroll engine
-- Validación SMI bloqueante (ET Art. 27): bruto mensual ≥ SMI 2026
-- Verificación horas extras >80h/año (ET Art. 35)
-- Corrección automática base mínima por grupo SS
-- Fichero: `src/lib/hr/payroll/validators/payslip-validator.ts`
+### FASE 1 — Edge Functions (P01-P04): COMPLETADA
 
-### Fase 3B: Hitos IT 365/545 en it-engine
-- Alertas automáticas al alcanzar 365 días de IT (revisión obligatoria INSS)
-- Alerta 545 días (extinción automática prestación)
-- Cálculo base reguladora por tipo contingencia (EC/AT/ANL/MAT) con fórmulas LGSS Arts. 169-170
-- Ficheros: `src/lib/hr/it-engine.ts` o engine existente
+| Prompt | Estado | Evidencia |
+|--------|--------|-----------|
+| P01 — payroll-it-engine | **Implementado** | `supabase/functions/payroll-it-engine/index.ts` existe |
+| P02 — payroll-calculation-engine | **Implementado** | `supabase/functions/payroll-calculation-engine/index.ts` existe |
+| P03 — payroll-irpf-engine | **Implementado** | `supabase/functions/payroll-irpf-engine/index.ts` existe |
+| P04 — payroll-supervisor + tabla ciclos | **Implementado** | `supabase/functions/payroll-supervisor/index.ts` + tabla `erp_audit_nomina_cycles` creada |
 
-### Fase 3C: Registro de 9 agentes IA
-- INSERT en `erp_ai_agents_registry` de los agentes definidos en el Plan Maestro:
-  - PAYROLL-SUP-001, PAY-AGT-001 a 006, AGT-GDPR-001, AGT-AUDIT-001
-- Cada uno con `knowledge_base` JSON legal correspondiente
+### FASE 2 — Componentes UI + KPIs (P05-P07): COMPLETADA
 
----
+| Prompt | Estado | Evidencia |
+|--------|--------|-----------|
+| P05 — HREmployeeConceptsSection + tabla | **Implementado** | `src/components/hr/payroll/HREmployeeConceptsSection.tsx` + hook + tabla `erp_hr_employee_custom_concepts` |
+| P06 — PayslipTextManager + tabla | **Implementado** | `src/components/hr/payroll/PayslipTextManager.tsx` + hook + tabla `erp_hr_payslip_texts` |
+| P07 — Dashboard 12 KPIs compliance | **Implementado** | `src/components/hr/compliance/HRComplianceKPIsDashboard.tsx` con 12 KPIs y queries reales a Supabase |
 
-## 📋 Prioridad 4 — Funcionalidades avanzadas
+### FASE 3 — Logica Legal Profunda (P08-P10): COMPLETADA CON 1 GAP
 
-### Fase 4A: Motor predictivo IT con IA real
-- Reemplazar mocks en `HRPredictivePage.tsx` con llamadas a IA
-- Predicción duración IT por CIE-10 + CNO
-- Edge function o invocación directa a Lovable AI
+| Prompt | Estado | Detalle |
+|--------|--------|---------|
+| P08 — it-engine: formulas LGSS + hitos | **Implementado** | `calculateBaseReguladoraByType`, `calculateMilestones` con 9 hitos detallados, `getProcessAlerts` con alertas 365/545 |
+| P09 — garnishmentEngine: pagas extras + pluripercepcion | **GAP PARCIAL** | Pagas extras (hasExtraPay → doble SMI) ya implementado. **FALTA**: campo `otherIncomes` para pluripercepcion (art. 607.3 parrafo 2), campo `embargableAt100` para indemnizaciones embargables sin limite, constantes `SMI_2026_12_PAGAS` |
+| P10 — 9 agentes en AI Registry | **Implementado** | Los 9 agentes verificados en BD: PAYROLL-SUP-001, PAY-AGT-001 a 006, AGT-GDPR-001, AGT-AUDIT-001 |
 
-### Fase 4B: Validación cruzada real en HRPredictivePage
-- Conectar `crossValidationEngine` con datos reales de empleados
-- Validación contrato ↔ grupo SS ↔ base ↔ IRPF ↔ TA.2
-- Detección automática pluriempleo por cruce NAF
+### FASE 4 — Conexion Edge Functions a UI (P11-P13): COMPLETADA
 
-### Fase 4C: Generación de documentos laborales
-- Carta de despido (ET Art. 49)
-- Finiquito calculado completo
-- Certificado de empresa para desempleo (RD 625/1985)
-- Parte DELTA (accidentes de trabajo)
-- Informe para ITSS
+| Prompt | Estado | Evidencia |
+|--------|--------|-----------|
+| P11 — useITEngineActions | **Implementado** | `src/hooks/hr/useITEngineActions.ts` con 4 mutations |
+| P12 — usePayrollSupervisor | **Implementado** | `src/hooks/hr/usePayrollSupervisor.ts` con queries y mutations |
+| P13 — usePayrollValidation | **Implementado** | `src/hooks/hr/usePayrollValidation.ts` |
 
-### Fase 4D: Dashboard 12 KPIs de cumplimiento normativo
-- Panel con 12 KPIs legales en tiempo real definidos en el Plan Maestro
-- Integración en `HRAuditDashboard` o panel dedicado
+### FASE 5 — Funcionalidades Avanzadas (P14-P15): COMPLETADA CON 1 GAP
 
-### Fase 4E: Portal auditor externo (opcional)
-- Rol `auditor_externo` con acceso read-only filtrado
-- Vista específica con datos anonimizados según necesidad
+| Prompt | Estado | Detalle |
+|--------|--------|---------|
+| P14 — crossValidationEngine + HRPredictivePage | **Implementado** | `src/lib/hr/crossValidationEngine.ts` con 6 reglas, `useCrossValidation.ts`, `useHRPredictiveAI.ts` |
+| P15 — laborDocumentEngine + HRLaborDocumentsPanel | **PARCIAL** | Engine (344 lineas) y panel existen. **FALTA**: Portal auditor externo (boton "Preparar paquete para auditor externo" con Dialog de seleccion periodo + checkboxes + INSERT en `erp_audit_document_exports`) |
 
 ---
 
-**Orden de ejecución:** 3A → 3B → 3C → 4A → 4B → 4C → 4D → 4E
+## Gaps Pendientes de Implementacion
+
+### Gap 1: garnishmentEngine — Pluripercepcion y Embargables al 100% (P09)
+- Anadir campo `otherIncomes?: number` al tipo `GarnishmentInput`
+- Logica: `const totalIncome = input.netSalary + (input.otherIncomes ?? 0)` y aplicar tramos sobre totalIncome
+- Anadir campo `embargableAt100?: number` para indemnizaciones sin limite LEC
+- Anadir constantes `SMI_2026_14_PAGAS = 1221` y `SMI_2026_12_PAGAS = 1381.33`
+- Verificacion cap absoluto con `otherGarnishmentsThisMonth`
+
+### Gap 2: Portal Auditor Externo (P15 — PASO 4)
+- Boton "Preparar paquete para auditor externo" en pagina de auditoria
+- Dialog con: selector periodo (desde/hasta), checkboxes (nominas, IT, embargos, contratos, ficheros TGSS, modelos fiscales)
+- INSERT en `erp_audit_document_exports` con `status='generating'`, `tipo='external_audit'`
+- Lista de paquetes anteriores con estados (generating/ready/delivered)
+- Nota legal: LGSS Art. 21 (4 anos) y LGT Art. 66 (4 anos)
+
+---
+
+## Plan de Implementacion
+
+1. **Enriquecer garnishmentEngine.ts** — Anadir los 3 campos faltantes (otherIncomes, embargableAt100, otherGarnishmentsThisMonth) y la logica de pluripercepcion + cap absoluto. Solo aditivo.
+2. **Crear Portal Auditor Externo** — Anadir seccion en HRAuditPage con Dialog de exportacion, gestion de paquetes, y trazabilidad.
+
+Ambos cambios son estrictamente aditivos y no modifican ningun componente existente.
+
