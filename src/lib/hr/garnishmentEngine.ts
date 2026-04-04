@@ -11,7 +11,8 @@
 
 /** SMI mensual 2026 (14 pagas) */
 export const SMI_MENSUAL_2026 = 1221.00;
-
+/** SMI mensual 2026 (12 pagas, prorrateado) — Art. 607.3 LEC */
+export const SMI_2026_12_PAGAS = 1424.50;
 /** SMI con prorrateo (12 pagas) */
 export const SMI_PRORRATEADO_2026 = 1224.50 * 14 / 12; // ~1424.17
 
