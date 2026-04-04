@@ -58,6 +58,12 @@ export interface GarnishmentInput {
   conceptosEmbargables100: boolean;
   /** SMI de referencia (override para testing) */
   smiReference?: number;
+  /** Otros ingresos del trabajador — pluripercepción Art. 607.3 párrafo 2 LEC */
+  otherIncomes?: number;
+  /** Importe de conceptos embargables al 100% (indemnizaciones, dietas exceso) */
+  embargableAt100?: number;
+  /** Total ya embargado en este mes por otros embargos previos */
+  otherGarnishmentsThisMonth?: number;
 }
 
 export interface TrancheResult {
