@@ -39084,6 +39084,93 @@ export type Database = {
           },
         ]
       }
+      erp_hr_multi_employment: {
+        Row: {
+          authorization_date: string | null
+          authorization_number: string | null
+          base_distribution_other: number | null
+          base_distribution_own: number | null
+          calculation_details: Json | null
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          id: string
+          multi_type: string
+          notes: string | null
+          other_employer_activity: string | null
+          other_employer_ccc: string | null
+          other_employer_name: string | null
+          other_weekly_hours: number | null
+          own_weekly_hours: number | null
+          reimbursement_amount: number | null
+          reimbursement_right: boolean | null
+          solidarity_amount: number | null
+          solidarity_bracket: number | null
+          solidarity_rate: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          authorization_date?: string | null
+          authorization_number?: string | null
+          base_distribution_other?: number | null
+          base_distribution_own?: number | null
+          calculation_details?: Json | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_from: string
+          effective_to?: string | null
+          employee_id: string
+          id?: string
+          multi_type?: string
+          notes?: string | null
+          other_employer_activity?: string | null
+          other_employer_ccc?: string | null
+          other_employer_name?: string | null
+          other_weekly_hours?: number | null
+          own_weekly_hours?: number | null
+          reimbursement_amount?: number | null
+          reimbursement_right?: boolean | null
+          solidarity_amount?: number | null
+          solidarity_bracket?: number | null
+          solidarity_rate?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          authorization_date?: string | null
+          authorization_number?: string | null
+          base_distribution_other?: number | null
+          base_distribution_own?: number | null
+          calculation_details?: Json | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          employee_id?: string
+          id?: string
+          multi_type?: string
+          notes?: string | null
+          other_employer_activity?: string | null
+          other_employer_ccc?: string | null
+          other_employer_name?: string | null
+          other_weekly_hours?: number | null
+          own_weekly_hours?: number | null
+          reimbursement_amount?: number | null
+          reimbursement_right?: boolean | null
+          solidarity_amount?: number | null
+          solidarity_bracket?: number | null
+          solidarity_rate?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       erp_hr_obligation_deadlines: {
         Row: {
           ai_reminded: boolean | null
