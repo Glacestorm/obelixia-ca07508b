@@ -127,6 +127,16 @@ const modules: HRModuleCard[] = [
     badges: ['PGC 2007', 'Tesorería', 'Legal'],
   },
   {
+    id: 'governance',
+    title: 'Supervisor & Gobernanza',
+    description: 'Centro de mando del supervisor de nómina, observabilidad y escalaciones',
+    icon: Shield,
+    route: '/obelixia-admin/hr/governance',
+    phase: 'Fase J',
+    available: true,
+    badges: ['HITL', 'EU AI Act', 'Observabilidad'],
+  },
+  {
     id: 'ai-agents',
     title: 'Agentes IA Nómina',
     description: 'Supervisor y 6 especialistas: cálculo, ficheros, IRPF, IT, embargos, bridge',
