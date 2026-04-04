@@ -7,3 +7,4 @@ export { HRGarnishmentPanel, GarnishmentSimulator } from './garnishments';
 export { HRContractsAdvancedPanel, HRLaborObservationsPanel } from './contracts';
 export { HRMultiEmploymentPanel, SolidaritySimulator, BaseDistributionPanel } from './multi-employment';
 export { PayrollSimulatorPanel, HRCustomConceptsPanel } from './payroll';
+export { HRFilingsPanel, HRFileGeneratorPanel } from './filings';
