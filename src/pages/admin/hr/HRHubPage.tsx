@@ -57,6 +57,16 @@ const modules: HRModuleCard[] = [
     badges: ['Art. 607 LEC', 'Art. 608 LEC'],
   },
   {
+    id: 'contracts',
+    title: 'Contratos Avanzados',
+    description: 'Prórrogas, bonificaciones TGSS, parcialidad, conversiones y observaciones laborales',
+    icon: FileText,
+    route: '/obelixia-admin/hr/contracts',
+    phase: 'Fase D',
+    available: true,
+    badges: ['TA.2', 'Bonificaciones'],
+  },
+  {
     id: 'payroll',
     title: 'Motor de Nómina',
     description: 'Cálculo completo de devengos, deducciones, bases y netos',
