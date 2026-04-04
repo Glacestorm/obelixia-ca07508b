@@ -120,21 +120,25 @@ function getCargasReduction(cargas: number): number {
  */
 export function calculateGarnishment(input: GarnishmentInput): GarnishmentResult {
   const smi = input.smiReference ?? SMI_MENSUAL_2026;
-  const { netSalary, hasExtraPay, isArt608Alimentos, cargasFamiliares, conceptosEmbargables100 } = input;
+  const { netSalary, hasExtraPay, isArt608Alimentos, cargasFamiliares } = input;
+  const otherIncomes = input.otherIncomes ?? 0;
+  const embargableAt100 = input.embargableAt100 ?? 0;
+  const otherGarnishmentsThisMonth = input.otherGarnishmentsThisMonth ?? 0;
+
+  // Pluripercepción Art. 607.3 párrafo 2: sumar todos los ingresos
+  const totalIncome = netSalary + otherIncomes;
+  const pluripercepcionApplied = otherIncomes > 0;
 
   // Art. 607.4: en meses con paga extra, duplicar el inembargable
   const inembargableLimit = hasExtraPay ? smi * 2 : smi;
 
   // Art. 608: para alimentos, el juez puede embargar por debajo del SMI
   if (isArt608Alimentos) {
-    // En caso de alimentos, se embarga el % que determine el juez.
-    // Aquí devolvemos el cálculo normal pero marcando que art. 608 aplica,
-    // ya que el % concreto lo fija el auto judicial.
-    const totalGarnished = Math.max(netSalary * 0.5, 0); // 50% como referencia judicial común
+    const totalGarnished = Math.max(netSalary * 0.5, 0) + embargableAt100;
     return {
       netSalary,
       smiReference: smi,
-      inembargableLimit: 0, // No hay mínimo inembargable en art. 608
+      inembargableLimit: 0,
       tranches: [{
         label: 'Art. 608 — Alimentos (50% referencia)',
         rangeFrom: 0,
@@ -142,19 +146,21 @@ export function calculateGarnishment(input: GarnishmentInput): GarnishmentResult
         baseAmount: netSalary,
         percentage: 50,
         adjustedPercentage: 50,
-        garnished: totalGarnished,
+        garnished: Math.max(netSalary * 0.5, 0),
       }],
-      totalGarnished,
-      netAfterGarnishment: netSalary - totalGarnished,
+      totalGarnished: Math.round(totalGarnished * 100) / 100,
+      netAfterGarnishment: Math.round((netSalary - totalGarnished) * 100) / 100,
       art608Applied: true,
       cargasReduction: 0,
+      embargableAt100Amount: embargableAt100,
+      pluripercepcionApplied,
     };
   }
 
   // Reducción por cargas familiares
   const cargasReduction = getCargasReduction(cargasFamiliares);
 
-  // Calcular tramos
+  // Calcular tramos sobre totalIncome (pluripercepción)
   const tranches: TrancheResult[] = [];
   let totalGarnished = 0;
 
@@ -164,19 +170,18 @@ export function calculateGarnishment(input: GarnishmentInput): GarnishmentResult
       ? Infinity
       : tranche.toSMI * smi * (hasExtraPay ? 2 : 1);
 
-    if (netSalary <= rangeFrom) break;
+    if (totalIncome <= rangeFrom) break;
 
-    const effectiveTop = Math.min(netSalary, rangeTo);
+    const effectiveTop = Math.min(totalIncome, rangeTo);
     const baseAmount = effectiveTop - rangeFrom;
 
-    // Aplicar reducción por cargas
     const adjustedPercentage = Math.max(tranche.percentage - cargasReduction, 0);
     const garnished = (baseAmount * adjustedPercentage) / 100;
 
     tranches.push({
       label: tranche.label,
       rangeFrom,
-      rangeTo: rangeTo === Infinity ? netSalary : rangeTo,
+      rangeTo: rangeTo === Infinity ? totalIncome : rangeTo,
       baseAmount: Math.round(baseAmount * 100) / 100,
       percentage: tranche.percentage,
       adjustedPercentage,
@@ -186,7 +191,16 @@ export function calculateGarnishment(input: GarnishmentInput): GarnishmentResult
     totalGarnished += garnished;
   }
 
+  // Sumar conceptos embargables al 100% (indemnizaciones, dietas exceso)
+  totalGarnished += embargableAt100;
   totalGarnished = Math.round(totalGarnished * 100) / 100;
+
+  // Cap: no embargar más de lo que le queda al trabajador tras otros embargos
+  if (otherGarnishmentsThisMonth > 0) {
+    const maxEmbargable = Math.max(netSalary - inembargableLimit - otherGarnishmentsThisMonth, 0);
+    totalGarnished = Math.min(totalGarnished, maxEmbargable + embargableAt100);
+    totalGarnished = Math.round(totalGarnished * 100) / 100;
+  }
 
   return {
     netSalary,
@@ -197,6 +211,8 @@ export function calculateGarnishment(input: GarnishmentInput): GarnishmentResult
     netAfterGarnishment: Math.round((netSalary - totalGarnished) * 100) / 100,
     art608Applied: false,
     cargasReduction,
+    embargableAt100Amount: embargableAt100,
+    pluripercepcionApplied,
   };
 }
 
