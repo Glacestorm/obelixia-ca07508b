@@ -146,6 +146,16 @@ const modules: HRModuleCard[] = [
     available: true,
     badges: ['9 agentes'],
   },
+  {
+    id: 'predictive',
+    title: 'Auditoría Predictiva',
+    description: 'Predicción IT, validación cruzada, detección pluriempleo, feedback rechazos',
+    icon: TrendingUp,
+    route: '/obelixia-admin/hr/predictive',
+    phase: 'Fase K',
+    available: true,
+    badges: ['IA Predictiva', 'Premium'],
+  },
 ];
 
 export function HRHubPage() {
