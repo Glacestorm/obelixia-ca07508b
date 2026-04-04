@@ -64,7 +64,7 @@ export function HRLaborDocumentsPanel({ employeeId }: HRLaborDocumentsPanelProps
             <div className="flex justify-between"><span>Pagas extras proporcionales</span><span className="font-medium">{result.extraProportional.toFixed(2)} €</span></div>
             <div className="flex justify-between"><span>Indemnización ({result.indemnizationDays} días/año)</span><span className="font-medium">{result.severance.toFixed(2)} €</span></div>
             <Separator />
-            <div className="flex justify-between text-base font-bold text-emerald-600"><span>TOTAL FINIQUITO</span><span>{result.total.toFixed(2)} €</span></div>
+            <div className="flex justify-between text-base font-bold text-emerald-600"><span>TOTAL FINIQUITO</span><span>{result.totalBruto.toFixed(2)} €</span></div>
             <p className="text-xs text-muted-foreground">Base legal: {result.legalNote}</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => copyToClipboard(`Finiquito: ${result.total.toFixed(2)}€ (Vac: ${result.vacationAmount.toFixed(2)}€ + Extras: ${result.extraProportional.toFixed(2)}€ + Indemn: ${result.severance.toFixed(2)}€)`)}>
