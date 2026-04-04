@@ -356,6 +356,8 @@ export const adminRoutes: RouteConfig[] = [
   { path: '/obelixia-admin/hr/payroll', component: HRPayrollPage, layout: 'none', priority: 'high', meta: { title: 'Motor de Nómina', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/files', component: HRFilingsPage, layout: 'none', priority: 'high', meta: { title: 'Ficheros TGSS/AEAT', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin/hr/bridge', component: HRBridgePage, layout: 'none', priority: 'high', meta: { title: 'Bridge Contabilidad', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/irpf', component: HRIRPFPage, layout: 'none', priority: 'high', meta: { title: 'Motor IRPF', requiresAuth: true, roles: ['admin', 'superadmin'] } },
+  { path: '/obelixia-admin/hr/bank-accounts', component: HRBankAccountsPage, layout: 'none', priority: 'high', meta: { title: 'Cuentas Bancarias', requiresAuth: true, roles: ['admin', 'superadmin'] } },
   { path: '/obelixia-admin', component: ObelixiaTeamAdmin, layout: 'none', priority: 'medium', delay: 50, meta: { title: 'Obelixia Admin', requiresAuth: true, roles: ['superadmin'] } },
 ];
 
