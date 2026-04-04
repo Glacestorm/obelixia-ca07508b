@@ -82,8 +82,8 @@ const modules: HRModuleCard[] = [
     description: 'Generación y tramitación de FAN, FDI, AFI, modelos fiscales',
     icon: FileText,
     route: '/obelixia-admin/hr/files',
-    phase: 'Fase 6',
-    available: false,
+    phase: 'Fase G',
+    available: true,
     badges: ['SILTRA', 'RED'],
   },
   {
