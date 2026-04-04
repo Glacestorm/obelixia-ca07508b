@@ -110,7 +110,7 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
                 <TableCell><Badge variant="outline" className={NATURE_COLORS[c.nature] ?? ''}>{NATURE_LABELS[c.nature] ?? c.nature}</Badge></TableCell>
                 <TableCell className="text-xs">{c.formula ? <span className="font-mono">{c.formula}</span> : `${c.fixed_value ?? 0} €`}</TableCell>
                 <TableCell>{c.priority}</TableCell>
-                <TableCell className="text-xs">{c.valid_from}{c.valid_until ? ` → ${c.valid_until}` : ' → ∞'}</TableCell>
+                <TableCell className="text-xs">{c.valid_from}{c.valid_to ? ` → ${c.valid_to}` : ' → ∞'}</TableCell>
                 <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteMutation.mutate({ id: c.id, employee_id: employeeId })}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></TableCell>
               </TableRow>
             ))}</TableBody>
