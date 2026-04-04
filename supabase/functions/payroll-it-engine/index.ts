@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
 function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr);
@@ -30,7 +28,7 @@ function calcNextConfirmation(processClass: string, emissionDate: string, partCo
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -86,7 +84,7 @@ serve(async (req) => {
         process_id: proc.id,
         process_class: processClass,
         milestones: { d365: m365, d545: m545 },
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     // ─── ADD PART ────────────────────────────────────────────
@@ -141,7 +139,7 @@ serve(async (req) => {
         part_id: part.id,
         next_confirmation_date: nextConf,
         complementary_report_required: compReport,
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     // ─── CALCULATE BASE ─────────────────────────────────────
@@ -210,7 +208,7 @@ serve(async (req) => {
         base_reguladora: baseReguladora,
         base_daily: baseDaily,
         calculation_method: calcMethod,
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }), { headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } });
     }
 
     // ─── CHECK MILESTONES ───────────────────────────────────
@@ -236,7 +234,7 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ success: true, alerts, total: alerts.length }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
@@ -244,7 +242,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
 });
