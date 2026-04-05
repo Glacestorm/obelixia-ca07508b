@@ -8,7 +8,7 @@ import {
   Leaf, Globe, Bot, Building2, HeartPulse, Headphones, Brain, Boxes, Cpu,
   Gauge, Bell, MonitorCheck, Zap, Users, TrendingUp, ShieldCheck, 
   AlertTriangle, LineChart, Key, Workflow, BarChart3, Target, Package,
-  Network, Layers3
+  Network, Layers3, UserCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
