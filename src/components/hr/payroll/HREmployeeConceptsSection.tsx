@@ -36,6 +36,16 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
   const [form, setForm] = useState({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', calculation_algorithm: '' });
   const [convDef, setConvDef] = useState({ alg_g: '', alg: '', c: '', a: '', i: '', h: '', cp: '' });
 
+  const serializeConvDef = () => {
+    const d = convDef;
+    return JSON.stringify({
+      alg_g: d.alg_g || null, alg: d.alg || null,
+      c: d.c ? Number(d.c) : null, a: d.a || null,
+      i: d.i ? Number(d.i) : null, h: d.h ? Number(d.h) : null,
+      cp: d.cp ? Number(d.cp) : null,
+    });
+  };
+
   const handleCreate = async () => {
     if (!form.concept_code || !form.concept_name) { toast.error('Código y nombre requeridos'); return; }
     await createMutation.mutateAsync({
@@ -44,11 +54,12 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
       valid_from: form.valid_from, valid_to: form.valid_until || null,
       fixed_value: isFormula ? null : parseFloat(form.fixed_value) || 0,
       formula: isFormula ? form.formula : null,
-      convention_definition: form.convention_definition || null,
+      convention_definition: serializeConvDef(),
       calculation_algorithm: form.calculation_algorithm || null,
     });
     setOpen(false);
-    setForm({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', convention_definition: '', calculation_algorithm: '' });
+    setForm({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', calculation_algorithm: '' });
+    setConvDef({ alg_g: '', alg: '', c: '', a: '', i: '', h: '', cp: '' });
   };
 
   // Check overlapping concepts
