@@ -50,8 +50,8 @@ export function useHRAuditFindings(companyId: string | undefined) {
         supabase.from('erp_hr_generated_files').select('status').eq('company_id', companyId),
       ]);
 
-      const allFindings = (findingsRes.data || []) as any[];
-      const allFiles = (filesRes.data || []) as any[];
+      const allFindings = findingsRes.data || [];
+      const allFiles = filesRes.data || [];
 
       setKPIs({
         totalFindings: allFindings.length,
@@ -61,7 +61,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
           ? Math.round((allFindings.filter(f => f.status === 'closed' || f.status === 'verified').length / allFindings.length) * 100)
           : 100,
         totalReports: (reportsRes.data || []).length,
-        pendingExports: ((exportsRes.data || []) as any[]).filter(e => e.status === 'pending' || e.status === 'generating').length,
+        pendingExports: (exportsRes.data || []).filter(e => e.status === 'pending' || e.status === 'generating').length,
         generatedFiles: allFiles.length,
         pendingFiles: allFiles.filter(f => f.status === 'generated' || f.status === 'validated').length,
         rejectedFiles: allFiles.filter(f => f.status === 'rejected').length,
@@ -76,7 +76,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
     try {
       const { data, error } = await supabase
         .from('erp_audit_findings')
-        .insert([{ ...finding, company_id: companyId } as any])
+        .insert([{ ...finding, company_id: companyId }])
         .select()
         .single();
       if (error) throw error;
@@ -93,7 +93,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
     try {
       const { error } = await supabase
         .from('erp_audit_findings')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id);
       if (error) throw error;
       toast.success('Hallazgo actualizado');

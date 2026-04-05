@@ -15,7 +15,7 @@ export function useCurrentCycle(companyId: string, year: number, month: number) 
     queryKey: ['payroll-cycle', companyId, year, month],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('erp_audit_nomina_cycles' as any)
+        .from('erp_audit_nomina_cycles')
         .select('*')
         .eq('company_id', companyId)
         .eq('period_year', year)
@@ -34,7 +34,7 @@ export function useCycleHistory(companyId: string) {
     queryKey: ['payroll-cycles-history', companyId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('erp_audit_nomina_cycles' as any)
+        .from('erp_audit_nomina_cycles')
         .select('*')
         .eq('company_id', companyId)
         .order('period_year', { ascending: false })
