@@ -46,6 +46,7 @@ function formatIBAN(iban: string): string {
 }
 
 export function HRBankAccountsPage() {
+  const { currentCompany } = useERPContext();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [showNew, setShowNew] = useState(false);
