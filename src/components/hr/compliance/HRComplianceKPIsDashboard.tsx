@@ -14,7 +14,7 @@ import {
   Users, Euro, Calendar, Scale
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useERPContext } from '@/hooks/erp/useERPContext';
+import { useOptionalERPContext } from '@/hooks/erp/useERPContext';
 import { cn } from '@/lib/utils';
 
 interface ComplianceKPI {
