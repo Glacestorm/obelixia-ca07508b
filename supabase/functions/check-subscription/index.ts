@@ -24,12 +24,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
-
   try {
     logStep("Function started");
 
@@ -41,22 +35,17 @@ serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) throw new Error("No authorization header provided");
     logStep("Authorization header found");
 
-    const token = authHeader.replace("Bearer ", "");
-    
-    // Use user-context client for auth validation
+    // User-context client: pass the auth header so getUser works
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       { global: { headers: { Authorization: authHeader } } }
     );
-    
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) throw new Error(`Authentication error: ${claimsError?.message || 'Invalid token'}`);
-    
-    const userId = claimsData.claims.sub;
-    const userEmail = claimsData.claims.email as string;
-    if (!userEmail) throw new Error("User email not available in token");
-    logStep("User authenticated", { userId, email: userEmail });
+
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) throw new Error(`Authentication error: ${userError?.message || 'User not found'}`);
+    if (!user.email) throw new Error("User email not available");
+    logStep("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
