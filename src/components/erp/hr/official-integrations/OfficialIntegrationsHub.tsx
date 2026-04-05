@@ -153,6 +153,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
           <TabsTrigger value="submissions" className="text-xs">Envíos</TabsTrigger>
           <TabsTrigger value="adapters" className="text-xs">Conectores</TabsTrigger>
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
+          <TabsTrigger value="ficheros-tgss" className="text-xs">Ficheros TGSS</TabsTrigger>
           <TabsTrigger value="export" className="text-xs">Exportación</TabsTrigger>
         </TabsList>
 
