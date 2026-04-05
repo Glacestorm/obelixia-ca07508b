@@ -50,7 +50,7 @@ export function useHRLaborObservations(filters?: { employeeId?: string; contract
     mutationFn: async (input: Partial<HRLaborObservation>) => {
       const { data, error } = await supabase
         .from('erp_hr_labor_observations')
-        .insert([input] as any)
+        .insert([input])
         .select()
         .single();
       if (error) throw error;
@@ -67,7 +67,7 @@ export function useHRLaborObservations(filters?: { employeeId?: string; contract
     mutationFn: async ({ id, ...updates }: Partial<HRLaborObservation> & { id: string }) => {
       const { error } = await supabase
         .from('erp_hr_labor_observations')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id);
       if (error) throw error;
     },

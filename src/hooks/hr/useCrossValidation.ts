@@ -13,7 +13,7 @@ export function useCrossValidation(employeeId: string) {
         .single();
       if (!emp) return [];
       
-      const e = emp as any;
+      const e = emp as Record<string, any>; // Tipado mínimo seguro
       return validateEmployee({
         employee: { id: e.id, cotization_group: e.cotization_group ?? 7, cotization_base: e.base_salary ?? 2000, irpf_rate: e.irpf_rate ?? 15 },
         contract: { type: e.contract_type ?? 'indefinido', part_time_coeff: e.part_time_coefficient ?? 1 },
