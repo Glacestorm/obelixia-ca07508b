@@ -85,8 +85,8 @@ export function HRGovernancePage() {
         activeAgents: active.length,
         pendingReviews: supervised.length,
         avgConfidence: Math.round(avgConf),
-        escalations24h: Math.floor(Math.random() * 3), // Demo
-        successRate: 94 + Math.floor(Math.random() * 5), // Demo
+        escalations24h: 0, // TODO: conectar a erp_audit_findings
+        successRate: 0, // TODO: conectar a métricas reales
       });
     } catch (err) {
       console.error('[HRGovernance] fetch error:', err);
