@@ -364,7 +364,7 @@ export { default as useKBSchemaDefault } from './useKBSchema';
 export { default as useKBOptimisticMutationDefault } from './useKBOptimisticMutation';
 export { default as useKBOfflineDefault } from './useKBOffline';
 export { default as useKBPerformanceDefault } from './useKBPerformance';
-export { default as useKBTestingDefault } from './useKBTesting';
+// useKBTesting intentionally excluded from runtime barrel — import directly in tests
 export { default as useKBDevToolsDefault } from './useKBDevTools';
 export { default as useKBMiddlewareDefault } from './useKBMiddleware';
 export { default as useKBFeatureFlagsDefault } from './useKBFeatureFlags';
