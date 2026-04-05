@@ -33,7 +33,18 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
   const deleteMutation = useDeleteCustomConcept();
   const [open, setOpen] = useState(false);
   const [isFormula, setIsFormula] = useState(false);
-  const [form, setForm] = useState({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', convention_definition: '', calculation_algorithm: '' });
+  const [form, setForm] = useState({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', calculation_algorithm: '' });
+  const [convDef, setConvDef] = useState({ alg_g: '', alg: '', c: '', a: '', i: '', h: '', cp: '' });
+
+  const serializeConvDef = () => {
+    const d = convDef;
+    return JSON.stringify({
+      alg_g: d.alg_g || null, alg: d.alg || null,
+      c: d.c ? Number(d.c) : null, a: d.a || null,
+      i: d.i ? Number(d.i) : null, h: d.h ? Number(d.h) : null,
+      cp: d.cp ? Number(d.cp) : null,
+    });
+  };
 
   const handleCreate = async () => {
     if (!form.concept_code || !form.concept_name) { toast.error('Código y nombre requeridos'); return; }
@@ -43,11 +54,12 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
       valid_from: form.valid_from, valid_to: form.valid_until || null,
       fixed_value: isFormula ? null : parseFloat(form.fixed_value) || 0,
       formula: isFormula ? form.formula : null,
-      convention_definition: form.convention_definition || null,
+      convention_definition: serializeConvDef(),
       calculation_algorithm: form.calculation_algorithm || null,
     });
     setOpen(false);
-    setForm({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', convention_definition: '', calculation_algorithm: '' });
+    setForm({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', calculation_algorithm: '' });
+    setConvDef({ alg_g: '', alg: '', c: '', a: '', i: '', h: '', cp: '' });
   };
 
   // Check overlapping concepts
@@ -88,7 +100,18 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
                 <div><Label>Desde</Label><Input type="date" value={form.valid_from} onChange={e => setForm(f => ({ ...f, valid_from: e.target.value }))} /></div>
                 <div><Label>Hasta</Label><Input type="date" value={form.valid_until} onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))} /></div>
               </div>
-              <div><Label>Definición convenio</Label><Textarea value={form.convention_definition} onChange={e => setForm(f => ({ ...f, convention_definition: e.target.value }))} rows={2} /></div>
+              <div>
+                <Label className="mb-1 block">Definición convenio</Label>
+                <div className="grid grid-cols-7 gap-2">
+                  <div><Label className="text-[10px] text-muted-foreground">Alg.g</Label><Input value={convDef.alg_g} onChange={e => setConvDef(f => ({ ...f, alg_g: e.target.value }))} placeholder="Alg. global" title="Algoritmo global que afecta a este concepto" /></div>
+                  <div><Label className="text-[10px] text-muted-foreground">Alg</Label><Input value={convDef.alg} onChange={e => setConvDef(f => ({ ...f, alg: e.target.value }))} placeholder="Algoritmo" title="Algoritmo específico del concepto" /></div>
+                  <div><Label className="text-[10px] text-muted-foreground">C</Label><Input type="number" value={convDef.c} onChange={e => setConvDef(f => ({ ...f, c: e.target.value }))} placeholder="Cant." /></div>
+                  <div><Label className="text-[10px] text-muted-foreground">A</Label><Input value={convDef.a} onChange={e => setConvDef(f => ({ ...f, a: e.target.value }))} placeholder="Antig." /></div>
+                  <div><Label className="text-[10px] text-muted-foreground">I</Label><Input type="number" step={0.01} value={convDef.i} onChange={e => setConvDef(f => ({ ...f, i: e.target.value }))} placeholder="€" /></div>
+                  <div><Label className="text-[10px] text-muted-foreground">H</Label><Input type="number" value={convDef.h} onChange={e => setConvDef(f => ({ ...f, h: e.target.value }))} placeholder="Horas" /></div>
+                  <div><Label className="text-[10px] text-muted-foreground">Cp</Label><Input type="number" step={0.01} value={convDef.cp} onChange={e => setConvDef(f => ({ ...f, cp: e.target.value }))} placeholder="%" title="C.perc./ret. %" /></div>
+                </div>
+              </div>
               <Button onClick={handleCreate} disabled={createMutation.isPending} className="w-full">{createMutation.isPending ? 'Guardando...' : 'Guardar concepto'}</Button>
             </div>
           </DialogContent>
