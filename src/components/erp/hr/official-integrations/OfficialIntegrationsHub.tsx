@@ -40,6 +40,8 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
   const [activeTab, setActiveTab] = useState('readiness');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [filingsRefreshKey, setFilingsRefreshKey] = useState(0);
+  const handleFileGenerated = useCallback(() => setFilingsRefreshKey(k => k + 1), []);
 
   const hub = useOfficialIntegrationsHub(companyId);
   const { pendingCount, approvals, fetchApprovals } = usePreRealApproval(companyId);
