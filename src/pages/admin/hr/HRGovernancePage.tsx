@@ -89,7 +89,7 @@ export function HRGovernancePage() {
         successRate: 0, // TODO: conectar a métricas reales
       });
     } catch (err) {
-      console.error('[HRGovernance] fetch error:', err);
+      if (import.meta.env.DEV) console.error('[HRGovernance]', err);
     } finally {
       setLoading(false);
     }
