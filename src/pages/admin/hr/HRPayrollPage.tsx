@@ -15,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BookOpen, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useERPContext } from '@/contexts/ERPContext';
+import { useERPContext } from '@/hooks/erp/useERPContext';
 import { STANDARD_SYMBOLS } from '@/types/hr';
 import { toast } from 'sonner';
 
