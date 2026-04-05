@@ -107,6 +107,7 @@ const categories: NavCategory[] = [
     icon: Shield,
     color: 'slate',
     items: [
+      { id: 'user-approval', label: 'Aprobación Usuarios', icon: UserCheck },
       { id: 'api', label: 'API', icon: Code },
       { id: 'security', label: 'Seguridad', icon: Shield },
       { id: 'ai-local', label: 'IA Local', icon: Cpu },
