@@ -143,6 +143,14 @@ export function HRBankAccountsPage() {
               </DialogHeader>
               <div className="space-y-4 mt-2">
                 <div>
+                  <Label>ID Empleado *</Label>
+                  <Input
+                    placeholder="UUID del empleado"
+                    value={newEmployeeId}
+                    onChange={(e) => setNewEmployeeId(e.target.value)}
+                  />
+                </div>
+                <div>
                   <Label>IBAN *</Label>
                   <Input
                     placeholder="ES00 0000 0000 0000 0000 0000"
