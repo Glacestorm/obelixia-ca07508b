@@ -49,6 +49,7 @@ export function HREmployeeSymbolicDataSection({ employeeId }: HREmployeeSymbolic
     it: 'Incapacidad Temporal',
     contract: 'Contrato',
     ss: 'Seguridad Social',
+    communications: 'Comunicaciones',
   };
 
   // Group by category
