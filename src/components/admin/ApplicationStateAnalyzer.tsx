@@ -4217,7 +4217,13 @@ ${'═'.repeat(100)}
 
   // Helper function to get real source code
   const getRealSourceCode = (): Record<string, string> => {
-    // Using simple string concatenation to avoid template literal issues
+    // Stripped embedded source code to fix OOM build errors (RegExp heap exhaustion)
+    return {
+      'src/App.tsx': '/* Source code stripped for build performance — use direct file reads */',
+      'src/hooks/useAuth.tsx': '/* Source code stripped for build performance */',
+      'src/pages/Home.tsx': '/* Source code stripped for build performance */',
+    };
+    /* ORIGINAL CODE REMOVED — 250 lines of embedded source strings caused OOM during Rollup build.
     const appTsx = [
       'import { Suspense, lazy, useTransition, startTransition } from "react";',
       'import { Toaster } from "@/components/ui/toaster";',
@@ -4460,11 +4466,7 @@ ${'═'.repeat(100)}
       "export default Home;"
     ].join('\n');
 
-    return {
-      'src/App.tsx': appTsx,
-      'src/hooks/useAuth.tsx': useAuthTsx,
-      'src/pages/Home.tsx': homeTsx,
-    };
+    */
   };
 
   // Helper to get file index
