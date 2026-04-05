@@ -36,16 +36,15 @@ export const SS_GROUP_MIN_BASES_2026: Record<number, number> = {
   1: 1847.40,  // Ingenieros y Licenciados, personal de alta dirección
   2: 1531.50,  // Ingenieros Técnicos, Peritos y Ayudantes Titulados
   3: 1332.90,  // Jefes Administrativos y de Taller
-  4: 1381.33,  // Ayudantes no titulados (SMI 2026 × 7/6)
-  5: 1381.33,  // Oficiales Administrativos (SMI 2026 × 7/6)
-  6: 1381.33,  // Subalternos (SMI 2026 × 7/6)
-  7: 1381.33,  // Auxiliares Administrativos (SMI 2026 × 7/6)
-  8: 1381.33,  // Oficiales de 1ª y 2ª (SMI 2026 × 7/6)
-  9: 1381.33,  // Oficiales de 3ª y Especialistas (SMI 2026 × 7/6)
-  10: 1381.33, // Peones (SMI 2026 × 7/6)
-  11: 1381.33, // Trabajadores menores de 18 años (SMI 2026 × 7/6)
-  // Cálculo grupos 4-11: SMI mensual 2026 (1.184€) × 7/6 = 1.381,33€
-  // Norma: LGSS Art. 147.2 — «cuantía del SMI vigente, incrementada en un sexto»
+  4: 1381.20,  // Ayudantes no titulados
+  5: 1381.20,  // Oficiales Administrativos
+  6: 1381.20,  // Subalternos
+  7: 1381.20,  // Auxiliares Administrativos
+  8: 1381.20,  // Oficiales de 1ª y 2ª
+  9: 1381.20,  // Oficiales de 3ª y Especialistas
+  10: 1381.20, // Peones
+  11: 1381.20, // Trabajadores menores de 18 años
+  // Fuente: Orden PJC/297/2026 — Base mínima grupos 4-11: 1.381,20 €/mes
 };
 
 // ============================================
