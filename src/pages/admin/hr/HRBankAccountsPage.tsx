@@ -4,6 +4,7 @@
  * Bounded context separado del banking ERP general
  */
 import { useState, useEffect, useCallback } from 'react';
+import { useERPContext } from '@/hooks/erp/useERPContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ function formatIBAN(iban: string): string {
 }
 
 export function HRBankAccountsPage() {
+  const { currentCompany } = useERPContext();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -53,7 +55,7 @@ export function HRBankAccountsPage() {
   const [newBankName, setNewBankName] = useState('');
   const [newSwift, setNewSwift] = useState('');
   const [newPrimary, setNewPrimary] = useState(false);
-
+  const [newEmployeeId, setNewEmployeeId] = useState('');
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
     try {
@@ -84,19 +86,19 @@ export function HRBankAccountsPage() {
       const { error } = await supabase
         .from('hr_employee_bank_accounts')
         .insert({
-          employee_id: crypto.randomUUID(),
-          company_id: crypto.randomUUID(),
+          employee_id: newEmployeeId,
+          company_id: currentCompany?.id ?? '',
           iban: clean,
           swift_bic: newSwift || null,
           bank_name: newBankName || null,
           account_alias: newAlias || null,
           is_primary: newPrimary,
-        } as any);
+        });
 
       if (error) throw error;
       toast.success('Cuenta bancaria añadida');
       setShowNew(false);
-      setNewIban(''); setNewAlias(''); setNewBankName(''); setNewSwift(''); setNewPrimary(false);
+      setNewIban(''); setNewAlias(''); setNewBankName(''); setNewSwift(''); setNewPrimary(false); setNewEmployeeId('');
       fetchAccounts();
     } catch (err) {
       console.error('[HRBankAccounts] create error:', err);
@@ -141,6 +143,14 @@ export function HRBankAccountsPage() {
               </DialogHeader>
               <div className="space-y-4 mt-2">
                 <div>
+                  <Label>ID Empleado *</Label>
+                  <Input
+                    placeholder="UUID del empleado"
+                    value={newEmployeeId}
+                    onChange={(e) => setNewEmployeeId(e.target.value)}
+                  />
+                </div>
+                <div>
                   <Label>IBAN *</Label>
                   <Input
                     placeholder="ES00 0000 0000 0000 0000 0000"
@@ -183,7 +193,7 @@ export function HRBankAccountsPage() {
                   <Switch checked={newPrimary} onCheckedChange={setNewPrimary} />
                   <Label>Cuenta principal para domiciliación</Label>
                 </div>
-                <Button className="w-full" onClick={handleCreate} disabled={!newIban}>
+                <Button className="w-full" onClick={handleCreate} disabled={!newIban || !newEmployeeId}>
                   Guardar cuenta
                 </Button>
               </div>

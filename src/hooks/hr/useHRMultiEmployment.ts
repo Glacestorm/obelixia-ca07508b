@@ -27,7 +27,7 @@ export interface HRMultiEmployment {
   effective_from: string;
   effective_to: string | null;
   status: string;
-  calculation_details: Record<string, unknown>;
+  calculation_details: Record<string, any>;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -56,10 +56,10 @@ export function useHRMultiEmployment(filters?: { employeeId?: string; status?: s
   });
 
   const createMutation = useMutation({
-    mutationFn: async (input: Partial<HRMultiEmployment>) => {
+    mutationFn: async (input: Omit<HRMultiEmployment, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('erp_hr_multi_employment')
-        .insert([input as any])
+        .insert([input])
         .select()
         .single();
       if (error) throw error;
@@ -76,7 +76,7 @@ export function useHRMultiEmployment(filters?: { employeeId?: string; status?: s
     mutationFn: async ({ id, ...updates }: Partial<HRMultiEmployment> & { id: string }) => {
       const { error } = await supabase
         .from('erp_hr_multi_employment')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id);
       if (error) throw error;
     },

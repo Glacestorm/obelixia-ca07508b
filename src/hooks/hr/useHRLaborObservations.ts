@@ -13,7 +13,7 @@ export interface HRLaborObservation {
   observation_type: string;
   title: string;
   description: string | null;
-  observation_data: Record<string, unknown>;
+  observation_data: Record<string, any>;
   effective_date: string | null;
   resolution_date: string | null;
   resolution_notes: string | null;
@@ -47,10 +47,10 @@ export function useHRLaborObservations(filters?: { employeeId?: string; contract
   });
 
   const createMutation = useMutation({
-    mutationFn: async (input: Partial<HRLaborObservation>) => {
+    mutationFn: async (input: Omit<HRLaborObservation, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('erp_hr_labor_observations')
-        .insert([input as any])
+        .insert([input])
         .select()
         .single();
       if (error) throw error;
@@ -67,7 +67,7 @@ export function useHRLaborObservations(filters?: { employeeId?: string; contract
     mutationFn: async ({ id, ...updates }: Partial<HRLaborObservation> & { id: string }) => {
       const { error } = await supabase
         .from('erp_hr_labor_observations')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id);
       if (error) throw error;
     },

@@ -16,7 +16,7 @@ export interface HRCustomConcept {
   calculation_type: string;
   value: number | null;
   formula: string | null;
-  algorithm: Record<string, unknown>;
+  algorithm: Record<string, any>;
   priority: number;
   ss_computable: boolean;
   irpf_computable: boolean;
@@ -52,10 +52,10 @@ export function useHRCustomConcepts(filters?: { employeeId?: string; active?: bo
   });
 
   const createMutation = useMutation({
-    mutationFn: async (input: Partial<HRCustomConcept>) => {
+    mutationFn: async (input: Omit<HRCustomConcept, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('erp_hr_employee_custom_concepts')
-        .insert([input as any])
+        .insert([input])
         .select()
         .single();
       if (error) throw error;

@@ -31,7 +31,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
 
       const { data, error } = await query;
       if (error) throw error;
-      setFindings((data || []) as unknown as HRAuditFinding[]);
+      setFindings((data || []) as HRAuditFinding[]);
     } catch (err) {
       if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
       toast.error('Error cargando hallazgos de auditoría');
@@ -71,12 +71,12 @@ export function useHRAuditFindings(companyId: string | undefined) {
     }
   }, [companyId]);
 
-  const createFinding = useCallback(async (finding: Partial<HRAuditFinding>) => {
+  const createFinding = useCallback(async (finding: Omit<HRAuditFinding, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {
     if (!companyId) return null;
     try {
       const { data, error } = await supabase
         .from('erp_audit_findings')
-        .insert([{ ...finding, company_id: companyId } as any])
+        .insert([{ ...finding, company_id: companyId }])
         .select()
         .single();
       if (error) throw error;
@@ -89,11 +89,11 @@ export function useHRAuditFindings(companyId: string | undefined) {
     }
   }, [companyId, fetchFindings]);
 
-  const updateFinding = useCallback(async (id: string, updates: Partial<HRAuditFinding>) => {
+  const updateFinding = useCallback(async (id: string, updates: Partial<Omit<HRAuditFinding, 'id' | 'company_id' | 'created_at' | 'updated_at'>>) => {
     try {
       const { error } = await supabase
         .from('erp_audit_findings')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id);
       if (error) throw error;
       toast.success('Hallazgo actualizado');

@@ -27,7 +27,7 @@ export interface HRAuditFinding {
   verified_at: string | null;
   verified_by: string | null;
   evidence_ids: string[];
-  metadata: Record<string, unknown>;
+  metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
