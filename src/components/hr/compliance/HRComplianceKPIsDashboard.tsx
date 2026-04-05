@@ -45,7 +45,8 @@ const STATUS_CONFIG = {
 };
 
 export function HRComplianceKPIsDashboard() {
-  const { currentCompany } = useERPContext();
+  const erpContext = useOptionalERPContext();
+  const currentCompany = erpContext?.currentCompany ?? null;
   const [kpis, setKpis] = useState<ComplianceKPI[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
