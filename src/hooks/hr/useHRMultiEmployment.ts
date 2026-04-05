@@ -59,7 +59,7 @@ export function useHRMultiEmployment(filters?: { employeeId?: string; status?: s
     mutationFn: async (input: Partial<HRMultiEmployment>) => {
       const { data, error } = await supabase
         .from('erp_hr_multi_employment')
-        .insert([input])
+        .insert([input as any])
         .select()
         .single();
       if (error) throw error;
@@ -76,7 +76,7 @@ export function useHRMultiEmployment(filters?: { employeeId?: string; status?: s
     mutationFn: async ({ id, ...updates }: Partial<HRMultiEmployment> & { id: string }) => {
       const { error } = await supabase
         .from('erp_hr_multi_employment')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id);
       if (error) throw error;
     },

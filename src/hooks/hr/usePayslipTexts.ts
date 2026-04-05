@@ -9,11 +9,7 @@ export function usePayslipTexts(employeeId?: string) {
       const query = supabase.from('erp_hr_payslip_texts').select('*').order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) throw error;
-      const items = data ?? [];
-      if (employeeId) {
-        return items.filter(t => t.employee_id === employeeId || t.applies_to_all === true);
-      }
-      return items.filter(t => t.applies_to_all === true);
+      return data ?? [];
     },
   });
 }
