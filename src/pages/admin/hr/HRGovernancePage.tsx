@@ -263,6 +263,10 @@ export function HRGovernancePage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Líneas de Supervisión */}
+            <SupervisionLinesCard agents={agents} />
+
           </TabsContent>
 
           {/* Observability Tab */}
