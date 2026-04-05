@@ -13,6 +13,7 @@ const Admin = lazy(() => import('@/pages/Admin'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Map3D = lazy(() => import('@/pages/Map3D'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
+const PendingApprovalPage = lazy(() => import('@/pages/PendingApprovalPage'));
 const ObelixiaTeamAdmin = lazy(() => import('@/pages/ObelixiaTeamAdmin'));
 const Chat = lazy(() => import('@/pages/Chat'));
 
