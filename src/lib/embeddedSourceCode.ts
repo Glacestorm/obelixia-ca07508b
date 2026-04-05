@@ -1,11 +1,10 @@
 /**
- * Embedded Source Code - Contains actual source code from the project
- * This file is auto-generated with real code from the codebase
- * Version: 8.0.0
+ * Embedded Source Code - Stripped to fix OOM build errors
+ * The embedded strings were causing RegExp heap exhaustion during Rollup bundling.
+ * Version: 9.0.0 (lightweight)
  */
 
-// Core Application Files
-export const APP_TSX = `import { Suspense, lazy, useTransition, startTransition } from "react";
+export const APP_TSX = '/* stripped for build performance */';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
