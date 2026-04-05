@@ -223,8 +223,8 @@ export function HRGovernancePage() {
                 <CardContent>
                   <div className="space-y-4">
                     {['Cálculo nómina', 'Generación ficheros', 'IRPF regularización', 'Bridge contabilidad'].map((op) => {
-                      const latency = 200 + Math.floor(Math.random() * 800);
-                      const success = 90 + Math.floor(Math.random() * 10);
+                      const latency = 0; // TODO: conectar a telemetría real
+                      const success = 0; // TODO: conectar a telemetría real
                       return (
                         <div key={op} className="space-y-1">
                           <div className="flex justify-between text-sm">
