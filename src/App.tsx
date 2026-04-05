@@ -129,9 +129,11 @@ const App = () => (
                       
                       {/* Routes — guarded by maintenance mode */}
                       <MaintenanceGuard>
-                        <StreamingBoundary priority="high" fallback={<PageStreamingSkeleton />}>
-                          <AppRoutes />
-                        </StreamingBoundary>
+                        <ApprovalGuard>
+                          <StreamingBoundary priority="high" fallback={<PageStreamingSkeleton />}>
+                            <AppRoutes />
+                          </StreamingBoundary>
+                        </ApprovalGuard>
                       </MaintenanceGuard>
                       
                       {/* Deferred non-critical components */}
