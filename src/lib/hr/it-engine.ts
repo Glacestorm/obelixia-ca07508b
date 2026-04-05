@@ -43,6 +43,32 @@ const SUBSIDY_RULES: Record<ITProcessType, SubsidyRule[]> = {
   RE: [
     { fromDay: 1, toDay: 365, percentage: 100, payer: 'ss' },
   ],
+  ERE_TOTAL: [
+    { fromDay: 1, toDay: 365, percentage: 0, payer: 'employer' },
+  ],
+  ERE_PARCIAL: [
+    { fromDay: 1, toDay: 365, percentage: 0, payer: 'employer' },
+  ],
+  PAGO_DIRECTO: [
+    { fromDay: 1, toDay: 365, percentage: 75, payer: 'ss' },
+  ],
+  PATERNIDAD_TP: [
+    { fromDay: 1, toDay: 365, percentage: 100, payer: 'ss' },
+  ],
+  F_NORETRIB: [
+    { fromDay: 1, toDay: 365, percentage: 0, payer: 'employer' },
+  ],
+  F_HUELGA: [
+    { fromDay: 1, toDay: 365, percentage: 0, payer: 'employer' },
+  ],
+  F_SUSPENSION: [
+    { fromDay: 1, toDay: 365, percentage: 0, payer: 'employer' },
+  ],
+  HOSPITAL: [
+    { fromDay: 1, toDay: 3, percentage: 0, payer: 'employer' },
+    { fromDay: 4, toDay: 15, percentage: 60, payer: 'employer' },
+    { fromDay: 16, toDay: 365, percentage: 75, payer: 'ss' },
+  ],
 };
 
 /**
