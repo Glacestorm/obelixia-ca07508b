@@ -345,10 +345,15 @@ export function getSecureCorsHeaders(req: Request): Record<string, string> {
     'https://app.obelixia.com',
     Deno.env.get('ALLOWED_ORIGIN') ?? '',
   ].filter(Boolean);
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] ?? '*';
+  // Also allow Lovable preview domains (*.lovableproject.com, *.lovable.app)
+  const isLovablePreview = /^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)
+    || /^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin);
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) || isLovablePreview
+    ? origin
+    : ALLOWED_ORIGINS[0] ?? '*';
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }
