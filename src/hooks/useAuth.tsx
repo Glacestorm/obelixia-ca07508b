@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchUserRole]);
+  }, [fetchUserRole, fetchUserApproval]);
 
   const signIn = async (email: string, password: string) => {
     try {
