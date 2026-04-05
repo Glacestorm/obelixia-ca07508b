@@ -21,6 +21,8 @@ import { useERPContext } from '@/hooks/erp/useERPContext';
 import { getProcessAlerts, calculateMilestones } from '@/lib/hr/it-engine';
 import { IT_PROCESS_TYPE_LABELS } from '@/types/hr';
 import type { HRITProcess, ITProcessType } from '@/types/hr';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
