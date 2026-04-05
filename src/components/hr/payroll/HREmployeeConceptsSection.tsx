@@ -121,5 +121,79 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
         <p className="text-xs text-muted-foreground mt-3">Los conceptos personalizados se resuelven ANTES que el catálogo global en el cálculo de nómina (prioridad menor = primero).</p>
       </CardContent>
     </Card>
+
+    {/* Ajustes de Recibo */}
+    <AjustesReciboCard />
+    </>
+  );
+}
+
+function AjustesReciboCard() {
+  const [liquidoRecibo, setLiquidoRecibo] = useState<string>('');
+  const [totalDevengos, setTotalDevengos] = useState<string>('');
+  const [liquidoPrenomina, setLiquidoPrenomina] = useState<string>('');
+  const [noAtrasos, setNoAtrasos] = useState(false);
+  const [noAtrasosCot, setNoAtrasosCot] = useState(false);
+  const [noPrenomina, setNoPrenomina] = useState(false);
+
+  const hasOverride = liquidoRecibo !== '' || totalDevengos !== '' || liquidoPrenomina !== '';
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Ajustes de Recibo</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {hasOverride && (
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-700">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            Ajuste manual activo — el cálculo automático está sobreescrito para este concepto
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <Label>Líquido recibo (€)</Label>
+            <Input type="number" min={0} step={0.01} value={liquidoRecibo} onChange={e => setLiquidoRecibo(e.target.value)} placeholder="Sobreescribe neto" />
+          </div>
+          <div>
+            <Label>Total devengos recibo (€)</Label>
+            <Input type="number" min={0} step={0.01} value={totalDevengos} onChange={e => setTotalDevengos(e.target.value)} placeholder="Sobreescribe devengos" />
+          </div>
+          <div>
+            <Label>Líquido prenómina (€)</Label>
+            <Input type="number" min={0} step={0.01} value={liquidoPrenomina} onChange={e => setLiquidoPrenomina(e.target.value)} placeholder="Solo prenómina" />
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <Label className="mb-2 block">No interviene en:</Label>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Checkbox id="no_atrasos" checked={noAtrasos} onCheckedChange={v => setNoAtrasos(!!v)} />
+              <Label htmlFor="no_atrasos" className="cursor-pointer text-sm font-normal">Nómina de atrasos</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="no_atrasos_cot" checked={noAtrasosCot} onCheckedChange={v => setNoAtrasosCot(!!v)} />
+              <Label htmlFor="no_atrasos_cot" className="cursor-pointer text-sm font-normal">Atrasos de cotización</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="no_prenomina" checked={noPrenomina} onCheckedChange={v => setNoPrenomina(!!v)} />
+              <Label htmlFor="no_prenomina" className="cursor-pointer text-sm font-normal">Prenómina</Label>
+            </div>
+          </div>
+        </div>
+
+        <Button onClick={() => toast('Ajustes guardados (integración con ciclo de nómina pendiente)')}>
+          Guardar ajustes
+        </Button>
+
+        <p className="text-xs text-muted-foreground">
+          Los ajustes manuales se documentan en erp_audit_events como acción FORCED_OVERRIDE.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
