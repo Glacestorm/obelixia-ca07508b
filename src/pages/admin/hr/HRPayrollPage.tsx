@@ -45,11 +45,11 @@ function SymbolicValuesCard() {
     (async () => {
       const { data } = await supabase
         .from('erp_hr_employees')
-        .select('id, full_name')
+        .select('id, first_name, last_name')
         .eq('company_id', currentCompany.id)
         .eq('status', 'active')
-        .order('full_name');
-      setEmployees((data || []) as SimpleEmployee[]);
+        .order('first_name');
+      setEmployees((data || []).map((e: any) => ({ id: e.id, full_name: `${e.first_name} ${e.last_name}` })));
     })();
   }, [currentCompany?.id]);
 
