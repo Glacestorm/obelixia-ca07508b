@@ -14,8 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import {
   RefreshCw, Plus, AlertTriangle, Clock, CheckCircle,
-  FileText, Calculator, Activity, XCircle, ChevronRight,
+  FileText, Calculator, Activity, XCircle, ChevronRight, CalendarIcon,
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 import { useHRITProcesses } from '@/hooks/hr/useHRITProcesses';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { getProcessAlerts, calculateMilestones } from '@/lib/hr/it-engine';
@@ -443,6 +446,51 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
     pnr_at_base: (process as any).pnr_at_base ?? 0,
   });
 
+  // Bases sub-tab state
+  const [basesSubTab, setBasesSubTab] = useState('del_mes');
+  const [basesDirectasForm, setBasesDirectasForm] = useState({
+    base_enfermedad: (process as any).base_enfermedad ?? 0,
+    base_accidente: (process as any).base_accidente ?? 0,
+    base_maternidad: (process as any).base_maternidad ?? 0,
+    base_hextras: (process as any).base_hextras ?? 0,
+  });
+  const [basesFdiForm, setBasesFdiForm] = useState({
+    fdi_cc_base: (process as any).fdi_cc_base ?? 0,
+    fdi_at_base: (process as any).fdi_at_base ?? 0,
+    fdi_compatible_tp: (process as any).fdi_compatible_tp ?? false,
+    fdi_pct_base_reg: (process as any).fdi_pct_base_reg ?? 0,
+    fdi_recaida: (process as any).fdi_recaida ?? false,
+    fdi_pct_liquido: (process as any).fdi_pct_liquido ?? 0,
+    fdi_esquema_complemento: (process as any).fdi_esquema_complemento ?? '',
+    fdi_no_complementa: (process as any).fdi_no_complementa ?? false,
+    fdi_ruptura_recibo: (process as any).fdi_ruptura_recibo ?? false,
+    fdi_atrasos_cotizacion: (process as any).fdi_atrasos_cotizacion ?? false,
+    fdi_tipo_liquidacion: (process as any).fdi_tipo_liquidacion ?? '',
+  });
+
+  // Otros datos form state
+  const [otrosDatosForm, setOtrosDatosForm] = useState({
+    tipo_asistencia: (process as any).tipo_asistencia ?? '',
+    mat_motivo: (process as any).mat_motivo ?? '',
+    mat_empleado_publico: (process as any).mat_empleado_publico ?? '',
+    emp_pub_permiso_desde: (process as any).emp_pub_permiso_desde ?? '',
+    emp_pub_permiso_hasta: (process as any).emp_pub_permiso_hasta ?? '',
+    emp_pub_otra_norma: (process as any).emp_pub_otra_norma ?? '',
+    siguiente_revision_medica: (process as any).siguiente_revision_medica ? new Date((process as any).siguiente_revision_medica) : undefined as Date | undefined,
+  });
+
+  // Partes conf dialog
+  const [showConfPartDialog, setShowConfPartDialog] = useState(false);
+  const [confPartForm, setConfPartForm] = useState({
+    issue_date: new Date().toISOString().split('T')[0],
+    part_number: parts.length + 1,
+    has_change: false,
+    entity: '',
+    insurer_name: '',
+    change_date: '',
+    last_by_transfer: false,
+  });
+
   return (
     <div className="space-y-4">
       {/* Process info card */}
@@ -536,52 +584,134 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
           <TabsTrigger value="otros" className="text-xs">Otros</TabsTrigger>
         </TabsList>
 
-        {/* Tab: Bases I.T. */}
+        {/* Tab: Bases I.T. — 3 sub-tabs */}
         <TabsContent value="bases" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Bases Reguladoras</CardTitle>
+                <CardTitle className="text-sm">Bases I.T.</CardTitle>
                 <Calculator className="h-4 w-4 text-muted-foreground" />
               </div>
             </CardHeader>
             <CardContent>
-              {bases.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Sin bases calculadas</p>
-              ) : (
-                <div className="space-y-2">
-                  {bases.map((base: any) => (
-                    <div key={base.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
-                      <span className="text-muted-foreground">{base.calculation_date}</span>
-                      <span className="flex-1 font-medium">Base: {base.total_base_reguladora}€</span>
-                      <span className="text-muted-foreground">{base.pct_subsidy}% → {base.daily_subsidy}€/día</span>
-                      {base.employer_complement > 0 && (
-                        <Badge variant="secondary" className="text-xs">+{base.employer_complement}€ compl.</Badge>
-                      )}
+              <Tabs value={basesSubTab} onValueChange={setBasesSubTab}>
+                <TabsList className="grid w-full grid-cols-3 mb-3">
+                  <TabsTrigger value="del_mes" className="text-xs">Del mes</TabsTrigger>
+                  <TabsTrigger value="bases_directas" className="text-xs">Bases directas</TabsTrigger>
+                  <TabsTrigger value="bases_fdi" className="text-xs">Bases mes FDI</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="del_mes" className="mt-2">
+                  {bases.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">Sin bases calculadas</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {bases.map((base: any) => (
+                        <div key={base.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
+                          <span className="text-muted-foreground">{base.calculation_date}</span>
+                          <span className="flex-1 font-medium">Base: {base.total_base_reguladora}€</span>
+                          <span className="text-muted-foreground">{base.pct_subsidy}% → {base.daily_subsidy}€/día</span>
+                          {base.employer_complement > 0 && (
+                            <Badge variant="secondary" className="text-xs">+{base.employer_complement}€ compl.</Badge>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
+                </TabsContent>
+
+                <TabsContent value="bases_directas" className="mt-2 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Enfermedad / Común (€)</Label>
+                      <Input type="number" min={0} step={0.01} value={basesDirectasForm.base_enfermedad} onChange={e => setBasesDirectasForm(f => ({ ...f, base_enfermedad: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <Label>Accidente / Profesional (€)</Label>
+                      <Input type="number" min={0} step={0.01} value={basesDirectasForm.base_accidente} onChange={e => setBasesDirectasForm(f => ({ ...f, base_accidente: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <Label>Maternidad (€)</Label>
+                      <Input type="number" min={0} step={0.01} value={basesDirectasForm.base_maternidad} onChange={e => setBasesDirectasForm(f => ({ ...f, base_maternidad: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <Label>Horas extras (€)</Label>
+                      <Input type="number" min={0} step={0.01} value={basesDirectasForm.base_hextras} onChange={e => setBasesDirectasForm(f => ({ ...f, base_hextras: Number(e.target.value) }))} />
+                    </div>
+                  </div>
+                  <Button onClick={() => onUpdateProcess(process.id, basesDirectasForm)}>Guardar bases directas</Button>
+                </TabsContent>
+
+                <TabsContent value="bases_fdi" className="mt-2 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Base FDI Contingencias Comunes (€)</Label>
+                      <Input type="number" min={0} step={0.01} value={basesFdiForm.fdi_cc_base} onChange={e => setBasesFdiForm(f => ({ ...f, fdi_cc_base: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <Label>Base FDI A.T. y E.P. (€)</Label>
+                      <Input type="number" min={0} step={0.01} value={basesFdiForm.fdi_at_base} onChange={e => setBasesFdiForm(f => ({ ...f, fdi_at_base: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <Label>% de Base reguladora</Label>
+                      <Input type="number" min={0} max={100} value={basesFdiForm.fdi_pct_base_reg} onChange={e => setBasesFdiForm(f => ({ ...f, fdi_pct_base_reg: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <Label>% líquido de referencia</Label>
+                      <Input type="number" min={0} max={100} value={basesFdiForm.fdi_pct_liquido} onChange={e => setBasesFdiForm(f => ({ ...f, fdi_pct_liquido: Number(e.target.value) }))} />
+                    </div>
+                    <div>
+                      <Label>Esquema de complemento IT</Label>
+                      <Select value={basesFdiForm.fdi_esquema_complemento} onValueChange={v => setBasesFdiForm(f => ({ ...f, fdi_esquema_complemento: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="convenio">Convenio</SelectItem>
+                          <SelectItem value="empresa">Empresa</SelectItem>
+                          <SelectItem value="ninguno">Ninguno</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Tipo liquidación</Label>
+                      <Input value={basesFdiForm.fdi_tipo_liquidacion} onChange={e => setBasesFdiForm(f => ({ ...f, fdi_tipo_liquidacion: e.target.value }))} placeholder="Ej: L00, L13..." />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="fdi_compat_tp" checked={basesFdiForm.fdi_compatible_tp} onCheckedChange={v => setBasesFdiForm(f => ({ ...f, fdi_compatible_tp: !!v }))} />
+                      <Label htmlFor="fdi_compat_tp" className="cursor-pointer">Compatible con jornada a tiempo parcial</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="fdi_recaida" checked={basesFdiForm.fdi_recaida} onCheckedChange={v => setBasesFdiForm(f => ({ ...f, fdi_recaida: !!v }))} />
+                      <Label htmlFor="fdi_recaida" className="cursor-pointer">Recaída del proceso</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="fdi_no_compl" checked={basesFdiForm.fdi_no_complementa} onCheckedChange={v => setBasesFdiForm(f => ({ ...f, fdi_no_complementa: !!v }))} />
+                      <Label htmlFor="fdi_no_compl" className="cursor-pointer">Este proceso no complementa la IT</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="fdi_ruptura" checked={basesFdiForm.fdi_ruptura_recibo} onCheckedChange={v => setBasesFdiForm(f => ({ ...f, fdi_ruptura_recibo: !!v }))} />
+                      <Label htmlFor="fdi_ruptura" className="cursor-pointer">Ruptura de recibo</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="fdi_atrasos" checked={basesFdiForm.fdi_atrasos_cotizacion} onCheckedChange={v => setBasesFdiForm(f => ({ ...f, fdi_atrasos_cotizacion: !!v }))} />
+                      <Label htmlFor="fdi_atrasos" className="cursor-pointer">Atrasos cotización</Label>
+                    </div>
+                  </div>
+                  <Button onClick={() => onUpdateProcess(process.id, basesFdiForm)}>Guardar datos FDI</Button>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab: Partes Baja/Alta */}
+        {/* Tab: Partes Baja/Alta (unchanged) */}
         <TabsContent value="partes_baja" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Partes de Baja y Alta</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onCreatePart({
-                    process_id: process.id,
-                    part_type: 'baja',
-                    issue_date: new Date().toISOString().split('T')[0],
-                    part_number: parts.length + 1,
-                  })}
-                >
+                <Button variant="outline" size="sm" onClick={() => onCreatePart({ process_id: process.id, part_type: 'baja', issue_date: new Date().toISOString().split('T')[0], part_number: parts.length + 1 })}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Añadir parte
                 </Button>
               </div>
@@ -605,52 +735,123 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
           </Card>
         </TabsContent>
 
-        {/* Tab: Partes Confirmación */}
+        {/* Tab: Partes Confirmación — tabla 7 columnas */}
         <TabsContent value="partes_conf" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Partes de Confirmación (RD 625/2014)</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onCreatePart({
-                    process_id: process.id,
-                    part_type: 'confirmacion',
-                    issue_date: new Date().toISOString().split('T')[0],
-                    part_number: parts.length + 1,
-                  })}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Añadir parte
-                </Button>
+                <Dialog open={showConfPartDialog} onOpenChange={setShowConfPartDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Registrar parte de confirmación
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Nuevo Parte de Confirmación</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-2">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>Fecha</Label>
+                          <Input type="date" value={confPartForm.issue_date} onChange={e => setConfPartForm(f => ({ ...f, issue_date: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label>Nº Parte</Label>
+                          <Input type="number" value={confPartForm.part_number} onChange={e => setConfPartForm(f => ({ ...f, part_number: Number(e.target.value) }))} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Entidad</Label>
+                        <Input value={confPartForm.entity} onChange={e => setConfPartForm(f => ({ ...f, entity: e.target.value }))} placeholder="INSS, Mutua..." />
+                      </div>
+                      <div>
+                        <Label>Denominación aseguradora</Label>
+                        <Input value={confPartForm.insurer_name} onChange={e => setConfPartForm(f => ({ ...f, insurer_name: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>Fecha cambio</Label>
+                        <Input type="date" value={confPartForm.change_date} onChange={e => setConfPartForm(f => ({ ...f, change_date: e.target.value }))} />
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Checkbox id="conf_change" checked={confPartForm.has_change} onCheckedChange={v => setConfPartForm(f => ({ ...f, has_change: !!v }))} />
+                          <Label htmlFor="conf_change" className="cursor-pointer">Cambio</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox id="conf_transfer" checked={confPartForm.last_by_transfer} onCheckedChange={v => setConfPartForm(f => ({ ...f, last_by_transfer: !!v }))} />
+                          <Label htmlFor="conf_transfer" className="cursor-pointer">Último por traslado</Label>
+                        </div>
+                      </div>
+                      <Button className="w-full" onClick={async () => {
+                        await onCreatePart({
+                          process_id: process.id,
+                          part_type: 'confirmacion',
+                          issue_date: confPartForm.issue_date,
+                          part_number: confPartForm.part_number,
+                          metadata: {
+                            has_change: confPartForm.has_change,
+                            entity: confPartForm.entity,
+                            insurer_name: confPartForm.insurer_name,
+                            change_date: confPartForm.change_date,
+                            last_by_transfer: confPartForm.last_by_transfer,
+                          },
+                        });
+                        setShowConfPartDialog(false);
+                      }}>Registrar parte</Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
               {parts.filter((p: any) => p.part_type === 'confirmacion').length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">Sin partes de confirmación</p>
+                <p className="text-sm text-muted-foreground text-center py-6">No hay partes de confirmación registrados</p>
               ) : (
-                <div className="space-y-2">
-                  {parts.filter((p: any) => p.part_type === 'confirmacion').map((part: any) => (
-                    <div key={part.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
-                      <Badge variant="outline" className="text-xs capitalize">{part.part_type}</Badge>
-                      <span className="text-muted-foreground">#{part.part_number}</span>
-                      <span className="flex-1">{part.issue_date}</span>
-                      <Badge variant="outline" className="text-xs">{part.status}</Badge>
-                    </div>
-                  ))}
-                </div>
+                <ScrollArea className="w-full">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="p-2 font-medium text-muted-foreground">Fecha</th>
+                        <th className="p-2 font-medium text-muted-foreground">Nº Parte</th>
+                        <th className="p-2 font-medium text-muted-foreground">Cambio</th>
+                        <th className="p-2 font-medium text-muted-foreground">Entidad</th>
+                        <th className="p-2 font-medium text-muted-foreground">Denom. aseguradora</th>
+                        <th className="p-2 font-medium text-muted-foreground">Fecha cambio</th>
+                        <th className="p-2 font-medium text-muted-foreground">Último por traslado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parts.filter((p: any) => p.part_type === 'confirmacion').map((part: any) => {
+                        const meta = part.metadata ?? {};
+                        return (
+                          <tr key={part.id} className="border-b hover:bg-muted/50">
+                            <td className="p-2">{part.issue_date}</td>
+                            <td className="p-2">{part.part_number}</td>
+                            <td className="p-2">{meta.has_change ? 'S' : 'N'}</td>
+                            <td className="p-2">{meta.entity || '—'}</td>
+                            <td className="p-2">{meta.insurer_name || '—'}</td>
+                            <td className="p-2">{meta.change_date || '—'}</td>
+                            <td className="p-2">{meta.last_by_transfer ? 'S' : 'N'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </ScrollArea>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tab: Otros datos I.T. */}
+        {/* Tab: Otros datos I.T. — ampliado */}
         <TabsContent value="otros_datos" className="mt-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Datos Clínicos e Hitos</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground">Diagnóstico</p>
@@ -669,7 +870,9 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
                   <p className="font-medium">{process.complement_scheme} ({process.complement_percentage}%)</p>
                 </div>
               </div>
-              <Separator className="my-4" />
+
+              <Separator />
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground">Hito 365 días</p>
@@ -684,20 +887,108 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
                   <p className="font-medium">{milestones.daysElapsed}</p>
                 </div>
               </div>
+
               {process.notes && (
                 <>
-                  <Separator className="my-4" />
+                  <Separator />
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Notas</p>
                     <p className="text-sm">{process.notes}</p>
                   </div>
                 </>
               )}
+
+              <Separator />
+
+              {/* Campos adicionales */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Tipo asistencia</Label>
+                  <Select value={otrosDatosForm.tipo_asistencia} onValueChange={v => setOtrosDatosForm(f => ({ ...f, tipo_asistencia: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="urgencia">Urgencia</SelectItem>
+                      <SelectItem value="domicilio">Domicilio</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Siguiente revisión médica</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !otrosDatosForm.siguiente_revision_medica && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {otrosDatosForm.siguiente_revision_medica ? format(otrosDatosForm.siguiente_revision_medica, 'dd/MM/yyyy') : 'Seleccionar fecha'}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={otrosDatosForm.siguiente_revision_medica} onSelect={d => setOtrosDatosForm(f => ({ ...f, siguiente_revision_medica: d }))} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-sm font-medium mb-2">Maternidad / Paternidad</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Motivo</Label>
+                    <Select value={otrosDatosForm.mat_motivo} onValueChange={v => setOtrosDatosForm(f => ({ ...f, mat_motivo: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nacimiento">Nacimiento</SelectItem>
+                        <SelectItem value="adopcion">Adopción</SelectItem>
+                        <SelectItem value="acogimiento">Acogimiento</SelectItem>
+                        <SelectItem value="riesgo_embarazo">Riesgo embarazo</SelectItem>
+                        <SelectItem value="riesgo_lactancia">Riesgo lactancia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Empleado público</Label>
+                    <Select value={otrosDatosForm.mat_empleado_publico} onValueChange={v => setOtrosDatosForm(f => ({ ...f, mat_empleado_publico: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No</SelectItem>
+                        <SelectItem value="si_funcionario">Sí - Funcionario</SelectItem>
+                        <SelectItem value="si_laboral">Sí - Laboral</SelectItem>
+                        <SelectItem value="si_estatutario">Sí - Estatutario</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-sm font-medium mb-2">Empleado público</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Permiso cargo emp. pública (desde)</Label>
+                    <Input type="date" value={otrosDatosForm.emp_pub_permiso_desde} onChange={e => setOtrosDatosForm(f => ({ ...f, emp_pub_permiso_desde: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Permiso cargo emp. pública (hasta)</Label>
+                    <Input type="date" value={otrosDatosForm.emp_pub_permiso_hasta} onChange={e => setOtrosDatosForm(f => ({ ...f, emp_pub_permiso_hasta: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Otra norma EBEP</Label>
+                    <Input value={otrosDatosForm.emp_pub_otra_norma} onChange={e => setOtrosDatosForm(f => ({ ...f, emp_pub_otra_norma: e.target.value }))} placeholder="Art. / Disposición..." />
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={() => onUpdateProcess(process.id, {
+                ...otrosDatosForm,
+                siguiente_revision_medica: otrosDatosForm.siguiente_revision_medica?.toISOString().split('T')[0] ?? null,
+              })}>Guardar otros datos</Button>
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Tab: Exp. Regul. Empleo (solo ERE) */}
         {isERE && (
           <TabsContent value="ere" className="mt-4">
             <Card>
