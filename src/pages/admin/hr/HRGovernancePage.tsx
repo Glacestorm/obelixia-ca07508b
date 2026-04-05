@@ -248,14 +248,14 @@ export function HRGovernancePage() {
                 <CardContent>
                   <div className="space-y-3">
                     {agents.slice(0, 5).map((agent) => {
-                      const invocations = Math.floor(Math.random() * 50);
+                      const invocations = 0; // TODO: conectar a telemetría real
                       return (
                         <div key={agent.id} className="flex items-center justify-between text-sm">
                           <span className="truncate max-w-[200px]">{agent.name}</span>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs">{invocations} calls</span>
-                            <Badge variant={invocations > 30 ? 'default' : 'secondary'} className="text-[10px]">
-                              {invocations > 30 ? 'Alto' : 'Normal'}
+                            <Badge variant="secondary" className="text-[10px]">
+                              Sin datos
                             </Badge>
                           </div>
                         </div>
