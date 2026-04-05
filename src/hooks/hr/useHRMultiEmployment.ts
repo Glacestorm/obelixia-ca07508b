@@ -56,7 +56,7 @@ export function useHRMultiEmployment(filters?: { employeeId?: string; status?: s
   });
 
   const createMutation = useMutation({
-    mutationFn: async (input: Partial<HRMultiEmployment>) => {
+    mutationFn: async (input: Omit<HRMultiEmployment, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('erp_hr_multi_employment')
         .insert([input])

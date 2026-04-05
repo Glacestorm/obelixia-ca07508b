@@ -53,7 +53,7 @@ export function useHRGarnishments(filters?: { status?: string; employeeId?: stri
   });
 
   const createMutation = useMutation({
-    mutationFn: async (input: Partial<HRGarnishment>) => {
+    mutationFn: async (input: Omit<HRGarnishment, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('erp_hr_garnishments')
         .insert([input])

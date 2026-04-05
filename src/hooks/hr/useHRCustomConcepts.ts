@@ -52,7 +52,7 @@ export function useHRCustomConcepts(filters?: { employeeId?: string; active?: bo
   });
 
   const createMutation = useMutation({
-    mutationFn: async (input: Partial<HRCustomConcept>) => {
+    mutationFn: async (input: Omit<HRCustomConcept, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('erp_hr_employee_custom_concepts')
         .insert([input])

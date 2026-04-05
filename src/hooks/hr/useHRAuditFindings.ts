@@ -89,7 +89,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
     }
   }, [companyId, fetchFindings]);
 
-  const updateFinding = useCallback(async (id: string, updates: Partial<HRAuditFinding>) => {
+  const updateFinding = useCallback(async (id: string, updates: Partial<Omit<HRAuditFinding, 'id' | 'company_id' | 'created_at' | 'updated_at'>>) => {
     try {
       const { error } = await supabase
         .from('erp_audit_findings')

@@ -47,7 +47,7 @@ export function useHRLaborObservations(filters?: { employeeId?: string; contract
   });
 
   const createMutation = useMutation({
-    mutationFn: async (input: Partial<HRLaborObservation>) => {
+    mutationFn: async (input: Omit<HRLaborObservation, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('erp_hr_labor_observations')
         .insert([input])
