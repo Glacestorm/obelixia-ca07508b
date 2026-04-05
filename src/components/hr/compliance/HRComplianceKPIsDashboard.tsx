@@ -14,7 +14,7 @@ import {
   Users, Euro, Calendar, Scale
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useERPContext } from '@/hooks/erp/useERPContext';
+import { useOptionalERPContext } from '@/hooks/erp/useERPContext';
 import { cn } from '@/lib/utils';
 
 interface ComplianceKPI {
@@ -45,7 +45,8 @@ const STATUS_CONFIG = {
 };
 
 export function HRComplianceKPIsDashboard() {
-  const { currentCompany } = useERPContext();
+  const erpContext = useOptionalERPContext();
+  const currentCompany = erpContext?.currentCompany ?? null;
   const [kpis, setKpis] = useState<ComplianceKPI[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);

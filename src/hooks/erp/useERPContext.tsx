@@ -189,4 +189,12 @@ export function useERPContext(): ERPContextType {
   return context;
 }
 
+/**
+ * Hook seguro que no lanza error si no hay ERPProvider.
+ * Devuelve null cuando se usa fuera del contexto ERP.
+ */
+export function useOptionalERPContext(): ERPContextType | null {
+  return useContext(ERPContext);
+}
+
 export default useERPContext;
