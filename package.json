@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "node --max-old-space-size=8192 ./node_modules/vite/bin/vite.js build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck:hr": "tsc --project tsconfig.hr-strict.json --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

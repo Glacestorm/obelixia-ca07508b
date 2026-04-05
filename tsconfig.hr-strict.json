@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": false,
+    "strict": true,
+    "noEmit": true,
+    "types": ["vite/client", "vitest/globals"]
+  },
+  "include": [
+    "src/lib/hr/**/*.ts",
+    "src/hooks/hr/**/*.ts",
+    "src/types/hr.ts",
+    "src/__tests__/hr/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/components",
+    "src/pages",
+    "src/contexts",
+    "src/hooks/erp",
+    "src/hooks/crm",
+    "src/integrations"
+  ]
+}
