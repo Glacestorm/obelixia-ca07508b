@@ -93,7 +93,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
     try {
       const { error } = await supabase
         .from('erp_audit_findings')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id);
       if (error) throw error;
       toast.success('Hallazgo actualizado');

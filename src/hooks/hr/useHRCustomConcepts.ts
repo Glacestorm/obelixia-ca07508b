@@ -55,7 +55,7 @@ export function useHRCustomConcepts(filters?: { employeeId?: string; active?: bo
     mutationFn: async (input: Partial<HRCustomConcept>) => {
       const { data, error } = await supabase
         .from('erp_hr_employee_custom_concepts')
-        .insert([input as any])
+        .insert([input])
         .select()
         .single();
       if (error) throw error;
