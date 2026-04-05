@@ -54,6 +54,7 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
   const overlaps = concepts.filter((c: any, i: number) => concepts.some((d: any, j: number) => i !== j && c.concept_code === d.concept_code && c.valid_from <= (d.valid_to ?? '9999-12-31') && (c.valid_to ?? '9999-12-31') >= d.valid_from));
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-base">Devengos Personalizados</CardTitle>
