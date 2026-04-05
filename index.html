@@ -295,8 +295,21 @@
     <!-- Preload critical resources for LCP -->
     <link rel="preload" href="/src/main.tsx" as="script" crossorigin>
     
-    <!-- Service Worker: disabled in dev/preview to prevent stale module caching -->
-    <!-- SW is only registered via VitePWA plugin in production builds -->
+    <!-- Eagerly unregister any stale Service Worker before modules load -->
+    <script>
+      (function() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.unregister(); });
+          });
+        }
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            keys.forEach(function(k) { caches.delete(k); });
+          });
+        }
+      })();
+    </script>
   </head>
 
   <body>
