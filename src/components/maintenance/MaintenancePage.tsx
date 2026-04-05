@@ -36,7 +36,7 @@ export default function MaintenancePage() {
         .select('role')
         .eq('user_id', data.user.id);
 
-      const isAdmin = roles?.some(r => r.role === 'admin' || r.role === 'super_admin');
+      const isAdmin = roles?.some(r => r.role === 'superadmin' || r.role === 'admin' || r.role === 'auditor');
 
       if (!isAdmin) {
         await supabase.auth.signOut();
