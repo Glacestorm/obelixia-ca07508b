@@ -64,7 +64,7 @@ const TradeFinanceModule        = lazy(() => import('./trade').then(m=>({default
 const AdvisorAgentPanel         = lazy(() => import('./advisor').then(m=>({default:m.AdvisorAgentPanel})));
 const LogisticsModuleDashboard  = lazy(() => import('./logistics/LogisticsModuleDashboard').then(m=>({default:m.LogisticsModuleDashboard})));
 const FiscalModule              = lazy(() => import('./fiscal').then(m=>({default:m.FiscalModule})));
-const HRModule                  = lazy(() => import('./hr/HRModule').then(m=>({default:m.HRModule})));
+const HRModule                  = lazy(() => import('./hr/HRModule').then(m=>({default:m.HRModule})).catch(() => new Promise(r => setTimeout(r, 1500)).then(() => import('./hr/HRModule').then(m=>({default:m.HRModule})))));
 const LegalModule               = lazy(() => import('./legal').then(m=>({default:m.LegalModule})));
 const GaliaDashboard            = lazy(() => import('@/components/verticals/galia').then(m=>({default:m.GaliaDashboard})));
 const AcademiaModuleDashboard   = lazy(() => import('@/components/academia/dashboard').then(m=>({default:m.AcademiaModuleDashboard})));
