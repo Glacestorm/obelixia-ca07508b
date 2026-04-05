@@ -23,7 +23,7 @@ export function useHRSymbolicData(companyId: string | undefined) {
       if (error) throw error;
       setSymbols((data || []) as unknown as HREmployeeSymbolicData[]);
     } catch (err) {
-      console.error('[useHRSymbolicData] fetch error:', err);
+      if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
       toast.error('Error cargando datos simbólicos');
     } finally {
       setIsLoading(false);

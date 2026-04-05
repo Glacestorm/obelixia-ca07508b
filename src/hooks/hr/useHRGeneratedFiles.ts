@@ -34,7 +34,7 @@ export function useHRGeneratedFiles(companyId: string | undefined) {
       if (error) throw error;
       setFiles((data || []) as unknown as HRGeneratedFile[]);
     } catch (err) {
-      console.error('[useHRGeneratedFiles] fetch error:', err);
+      if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
       toast.error('Error cargando ficheros generados');
     } finally {
       setIsLoading(false);

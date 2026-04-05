@@ -54,7 +54,7 @@ export function useHRBridge(companyId: string | undefined) {
       if (error) throw error;
       setLogs((data || []) as unknown as BridgeLogRow[]);
     } catch (err) {
-      console.error('[useHRBridge] fetchLogs error:', err);
+      if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
       toast.error('Error cargando registros bridge');
     } finally {
       setIsLoading(false);
@@ -74,7 +74,7 @@ export function useHRBridge(companyId: string | undefined) {
       if (error) throw error;
       setApprovals((data || []) as unknown as BridgeApprovalRow[]);
     } catch (err) {
-      console.error('[useHRBridge] fetchApprovals error:', err);
+      if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
     }
   }, [companyId]);
 
@@ -100,7 +100,7 @@ export function useHRBridge(companyId: string | undefined) {
       throw new Error(data?.error || 'Error desconocido');
     } catch (err) {
       toast.error('Error al sincronizar');
-      console.error('[useHRBridge] triggerSync error:', err);
+      if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
       return null;
     }
   }, [companyId, fetchLogs]);
