@@ -334,4 +334,5 @@ export const STANDARD_SYMBOLS = [
   { name: 'GUARDA_LEGAL_U', label: 'Guarda legal', type: 'boolean' as const, category: 'contract' },
   { name: 'PROR_EXTRA_U', label: 'Prorrateo extra', type: 'boolean' as const, category: 'payroll' },
   { name: 'BASES_JUB_100', label: 'Bases jubilación 100%', type: 'boolean' as const, category: 'ss' },
+  { name: 'R_CORREO_U', label: 'Desea recibir comunicaciones', type: 'boolean' as const, category: 'communications' },
 ] as const;

@@ -33,7 +33,8 @@ export function HREmployeeConceptsSection({ employeeId, companyId }: HREmployeeC
   const deleteMutation = useDeleteCustomConcept();
   const [open, setOpen] = useState(false);
   const [isFormula, setIsFormula] = useState(false);
-  const [form, setForm] = useState({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', convention_definition: '', calculation_algorithm: '' });
+  const [form, setForm] = useState({ concept_code: '', concept_name: '', nature: 'salary', fixed_value: '', formula: '', priority: '10', valid_from: new Date().toISOString().split('T')[0], valid_until: '', calculation_algorithm: '' });
+  const [convDef, setConvDef] = useState({ alg_g: '', alg: '', c: '', a: '', i: '', h: '', cp: '' });
 
   const handleCreate = async () => {
     if (!form.concept_code || !form.concept_name) { toast.error('Código y nombre requeridos'); return; }
