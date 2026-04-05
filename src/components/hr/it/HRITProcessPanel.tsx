@@ -419,6 +419,29 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
 }) {
   const milestones = calculateMilestones(process.start_date);
   const alerts = getProcessAlerts(process);
+  const [detailTab, setDetailTab] = useState('bases');
+  const isERE = process.process_type === 'ERE_TOTAL' || process.process_type === 'ERE_PARCIAL';
+
+  // ERE form state
+  const [ereForm, setEreForm] = useState({
+    ere_number: (process as any).ere_number ?? '',
+    ere_resume_previous: (process as any).ere_resume_previous ?? false,
+    ere_suspension_pct: (process as any).ere_suspension_pct ?? 0,
+    ere_cc_base: (process as any).ere_cc_base ?? 0,
+    ere_at_base: (process as any).ere_at_base ?? 0,
+    ere_cc_base_1: (process as any).ere_cc_base_1 ?? 0,
+    ere_cc_base_2: (process as any).ere_cc_base_2 ?? 0,
+    ere_at_base_1: (process as any).ere_at_base_1 ?? 0,
+    ere_at_base_2: (process as any).ere_at_base_2 ?? 0,
+    ere_no_unemployment: (process as any).ere_no_unemployment ?? false,
+  });
+
+  // Otros form state
+  const [otrosForm, setOtrosForm] = useState({
+    strike_work_pct: (process as any).strike_work_pct ?? 0,
+    pnr_cc_base: (process as any).pnr_cc_base ?? 0,
+    pnr_at_base: (process as any).pnr_at_base ?? 0,
+  });
 
   return (
     <div className="space-y-4">
@@ -502,70 +525,373 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
         </div>
       )}
 
-      {/* Parts */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Partes (RD 625/2014)</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onCreatePart({
-                process_id: process.id,
-                part_type: 'confirmacion',
-                issue_date: new Date().toISOString().split('T')[0],
-                part_number: parts.length + 1,
-              })}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" /> Añadir parte
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {parts.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Sin partes registrados</p>
-          ) : (
-            <div className="space-y-2">
-              {parts.map((part: any) => (
-                <div key={part.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
-                  <Badge variant="outline" className="text-xs capitalize">{part.part_type}</Badge>
-                  <span className="text-muted-foreground">#{part.part_number}</span>
-                  <span className="flex-1">{part.issue_date}</span>
-                  <Badge variant="outline" className="text-xs">{part.status}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Sub-tabs */}
+      <Tabs value={detailTab} onValueChange={setDetailTab}>
+        <TabsList className={cn("grid w-full", isERE ? "grid-cols-6" : "grid-cols-5")}>
+          <TabsTrigger value="bases" className="text-xs">Bases I.T.</TabsTrigger>
+          <TabsTrigger value="partes_baja" className="text-xs">Partes Baja/Alta</TabsTrigger>
+          <TabsTrigger value="partes_conf" className="text-xs">Partes Confirmación</TabsTrigger>
+          <TabsTrigger value="otros_datos" className="text-xs">Otros datos I.T.</TabsTrigger>
+          {isERE && <TabsTrigger value="ere" className="text-xs">Exp. Regul. Empleo</TabsTrigger>}
+          <TabsTrigger value="otros" className="text-xs">Otros</TabsTrigger>
+        </TabsList>
 
-      {/* Bases */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Bases Reguladoras</CardTitle>
-            <Calculator className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {bases.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Sin bases calculadas</p>
-          ) : (
-            <div className="space-y-2">
-              {bases.map((base: any) => (
-                <div key={base.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
-                  <span className="text-muted-foreground">{base.calculation_date}</span>
-                  <span className="flex-1 font-medium">Base: {base.total_base_reguladora}€</span>
-                  <span className="text-muted-foreground">{base.pct_subsidy}% → {base.daily_subsidy}€/día</span>
-                  {base.employer_complement > 0 && (
-                    <Badge variant="secondary" className="text-xs">+{base.employer_complement}€ compl.</Badge>
-                  )}
+        {/* Tab: Bases I.T. */}
+        <TabsContent value="bases" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Bases Reguladoras</CardTitle>
+                <Calculator className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {bases.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Sin bases calculadas</p>
+              ) : (
+                <div className="space-y-2">
+                  {bases.map((base: any) => (
+                    <div key={base.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
+                      <span className="text-muted-foreground">{base.calculation_date}</span>
+                      <span className="flex-1 font-medium">Base: {base.total_base_reguladora}€</span>
+                      <span className="text-muted-foreground">{base.pct_subsidy}% → {base.daily_subsidy}€/día</span>
+                      {base.employer_complement > 0 && (
+                        <Badge variant="secondary" className="text-xs">+{base.employer_complement}€ compl.</Badge>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Partes Baja/Alta */}
+        <TabsContent value="partes_baja" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Partes de Baja y Alta</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onCreatePart({
+                    process_id: process.id,
+                    part_type: 'baja',
+                    issue_date: new Date().toISOString().split('T')[0],
+                    part_number: parts.length + 1,
+                  })}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Añadir parte
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {parts.filter((p: any) => p.part_type === 'baja' || p.part_type === 'alta').length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Sin partes de baja/alta registrados</p>
+              ) : (
+                <div className="space-y-2">
+                  {parts.filter((p: any) => p.part_type === 'baja' || p.part_type === 'alta').map((part: any) => (
+                    <div key={part.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
+                      <Badge variant="outline" className="text-xs capitalize">{part.part_type}</Badge>
+                      <span className="text-muted-foreground">#{part.part_number}</span>
+                      <span className="flex-1">{part.issue_date}</span>
+                      <Badge variant="outline" className="text-xs">{part.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Partes Confirmación */}
+        <TabsContent value="partes_conf" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Partes de Confirmación (RD 625/2014)</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onCreatePart({
+                    process_id: process.id,
+                    part_type: 'confirmacion',
+                    issue_date: new Date().toISOString().split('T')[0],
+                    part_number: parts.length + 1,
+                  })}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Añadir parte
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {parts.filter((p: any) => p.part_type === 'confirmacion').length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Sin partes de confirmación</p>
+              ) : (
+                <div className="space-y-2">
+                  {parts.filter((p: any) => p.part_type === 'confirmacion').map((part: any) => (
+                    <div key={part.id} className="flex items-center gap-3 p-2.5 rounded-lg border text-sm">
+                      <Badge variant="outline" className="text-xs capitalize">{part.part_type}</Badge>
+                      <span className="text-muted-foreground">#{part.part_number}</span>
+                      <span className="flex-1">{part.issue_date}</span>
+                      <Badge variant="outline" className="text-xs">{part.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Otros datos I.T. */}
+        <TabsContent value="otros_datos" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Datos Clínicos e Hitos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Diagnóstico</p>
+                  <p className="font-medium">{process.diagnosis_description || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Entidad emisora</p>
+                  <p className="font-medium">{process.issuing_entity || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Pago directo</p>
+                  <p className="font-medium">{process.direct_payment ? 'Sí' : 'No'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Esquema complemento</p>
+                  <p className="font-medium">{process.complement_scheme} ({process.complement_percentage}%)</p>
+                </div>
+              </div>
+              <Separator className="my-4" />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Hito 365 días</p>
+                  <p className={cn("font-medium", milestones.isPast365 && "text-orange-500")}>{milestones.milestone365}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Hito 545 días</p>
+                  <p className={cn("font-medium", milestones.isPast545 && "text-red-500")}>{milestones.milestone545}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Días transcurridos</p>
+                  <p className="font-medium">{milestones.daysElapsed}</p>
+                </div>
+              </div>
+              {process.notes && (
+                <>
+                  <Separator className="my-4" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Notas</p>
+                    <p className="text-sm">{process.notes}</p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Exp. Regul. Empleo (solo ERE) */}
+        {isERE && (
+          <TabsContent value="ere" className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Expediente de Regulación de Empleo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Número de ERE</Label>
+                    <Input
+                      value={ereForm.ere_number}
+                      onChange={e => setEreForm(f => ({ ...f, ere_number: e.target.value }))}
+                      placeholder="Ej: ERE/2026/001"
+                    />
+                  </div>
+                  <div>
+                    <Label>% jornada en suspensión parcial</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={ereForm.ere_suspension_pct}
+                      onChange={e => setEreForm(f => ({ ...f, ere_suspension_pct: Number(e.target.value) }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="ere_resume"
+                    checked={ereForm.ere_resume_previous}
+                    onCheckedChange={v => setEreForm(f => ({ ...f, ere_resume_previous: !!v }))}
+                  />
+                  <Label htmlFor="ere_resume" className="cursor-pointer">Reanudación del anterior</Label>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <p className="text-sm font-medium mb-2">Bases diarias directas</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Contingencias comunes (€)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={ereForm.ere_cc_base}
+                        onChange={e => setEreForm(f => ({ ...f, ere_cc_base: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>A.T. y E.P. (€)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={ereForm.ere_at_base}
+                        onChange={e => setEreForm(f => ({ ...f, ere_at_base: Number(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <p className="text-sm font-medium mb-2">Bases diarias directas 1-2 (ERE con 2 periodos)</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Contingencias comunes 1 (€)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={ereForm.ere_cc_base_1}
+                        onChange={e => setEreForm(f => ({ ...f, ere_cc_base_1: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Contingencias comunes 2 (€)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={ereForm.ere_cc_base_2}
+                        onChange={e => setEreForm(f => ({ ...f, ere_cc_base_2: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>A.T. y E.P. 1 (€)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={ereForm.ere_at_base_1}
+                        onChange={e => setEreForm(f => ({ ...f, ere_at_base_1: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>A.T. y E.P. 2 (€)</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={ereForm.ere_at_base_2}
+                        onChange={e => setEreForm(f => ({ ...f, ere_at_base_2: Number(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="ere_no_unemp"
+                    checked={ereForm.ere_no_unemployment}
+                    onCheckedChange={v => setEreForm(f => ({ ...f, ere_no_unemployment: !!v }))}
+                  />
+                  <Label htmlFor="ere_no_unemp" className="cursor-pointer">No cobra prestación por desempleo</Label>
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={() => onUpdateProcess(process.id, ereForm)}
+                >
+                  Guardar datos ERE
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Tab: Otros */}
+        <TabsContent value="otros" className="mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Otros datos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-2">Huelga</p>
+                <div className="max-w-xs">
+                  <Label>% de jornada trabajada (0-100)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={otrosForm.strike_work_pct}
+                    onChange={e => setOtrosForm(f => ({ ...f, strike_work_pct: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-sm font-medium mb-2">Permiso no retribuido para funcionarios</p>
+                <div className="grid grid-cols-2 gap-4 max-w-lg">
+                  <div>
+                    <Label>Contingencias comunes (€)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={otrosForm.pnr_cc_base}
+                      onChange={e => setOtrosForm(f => ({ ...f, pnr_cc_base: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>A.T. y E.P. (€)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={otrosForm.pnr_at_base}
+                      onChange={e => setOtrosForm(f => ({ ...f, pnr_at_base: Number(e.target.value) }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => {/* TODO: conectar cálculo de bases */}}>
+                  Calcular bases
+                </Button>
+                <Button onClick={() => onUpdateProcess(process.id, otrosForm)}>
+                  Guardar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
