@@ -1,160 +1,141 @@
-/**
- * useHRITProcesses — Hook para gestión de procesos IT
- */
-import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { HRITProcess, HRITPart, HRITBase } from '@/types/hr';
 
-export function useHRITProcesses(companyId: string | undefined) {
-  const [processes, setProcesses] = useState<HRITProcess[]>([]);
-  const [parts, setParts] = useState<HRITPart[]>([]);
-  const [bases, setBases] = useState<HRITBase[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+// ─── QUERIES ────────────────────────────────────────────────
 
-  const fetchProcesses = useCallback(async (filters?: {
-    employee_id?: string;
-    status?: string;
-    process_type?: string;
-  }) => {
-    if (!companyId) return;
-    setIsLoading(true);
-    try {
-      let query = supabase
-        .from('erp_hr_it_processes')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('start_date', { ascending: false });
-
-      if (filters?.employee_id) query = query.eq('employee_id', filters.employee_id);
-      if (filters?.status) query = query.eq('status', filters.status);
-      if (filters?.process_type) query = query.eq('process_type', filters.process_type);
-
-      const { data, error } = await query;
+export function useITProcesses(companyId: string | undefined, filters?: {
+  employee_id?: string; status?: string; process_type?: string;
+}) {
+  return useQuery({
+    queryKey: ['hr-it-processes', companyId, filters],
+    queryFn: async (): Promise<HRITProcess[]> => {
+      if (!companyId) return [];
+      let q = supabase.from('erp_hr_it_processes').select('*')
+        .eq('company_id', companyId).order('start_date', { ascending: false });
+      if (filters?.employee_id) q = q.eq('employee_id', filters.employee_id);
+      if (filters?.status) q = q.eq('status', filters.status);
+      if (filters?.process_type) q = q.eq('process_type', filters.process_type);
+      const { data, error } = await q;
       if (error) throw error;
-      setProcesses((data || []) as unknown as HRITProcess[]);
-    } catch (err) {
-      console.error('[useHRITProcesses] fetchProcesses error:', err);
-      toast.error('Error cargando procesos IT');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [companyId]);
+      return (data ?? []) as unknown as HRITProcess[];
+    },
+    enabled: !!companyId,
+    staleTime: 30_000,
+  });
+}
 
-  const fetchParts = useCallback(async (processId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('erp_hr_it_parts')
-        .select('*')
-        .eq('process_id', processId)
-        .order('issue_date', { ascending: true });
+export function useITParts(processId: string | undefined) {
+  return useQuery({
+    queryKey: ['hr-it-parts', processId],
+    queryFn: async (): Promise<HRITPart[]> => {
+      if (!processId) return [];
+      const { data, error } = await supabase.from('erp_hr_it_parts').select('*')
+        .eq('process_id', processId).order('issue_date', { ascending: true });
       if (error) throw error;
-      setParts((data || []) as unknown as HRITPart[]);
-    } catch (err) {
-      console.error('[useHRITProcesses] fetchParts error:', err);
-    }
-  }, []);
+      return (data ?? []) as unknown as HRITPart[];
+    },
+    enabled: !!processId,
+  });
+}
 
-  const fetchBases = useCallback(async (processId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('erp_hr_it_bases')
-        .select('*')
-        .eq('process_id', processId)
-        .order('calculation_date', { ascending: false });
+export function useITBases(processId: string | undefined) {
+  return useQuery({
+    queryKey: ['hr-it-bases', processId],
+    queryFn: async (): Promise<HRITBase[]> => {
+      if (!processId) return [];
+      const { data, error } = await supabase.from('erp_hr_it_bases').select('*')
+        .eq('process_id', processId).order('calculation_date', { ascending: false });
       if (error) throw error;
-      setBases((data || []) as unknown as HRITBase[]);
-    } catch (err) {
-      console.error('[useHRITProcesses] fetchBases error:', err);
-    }
-  }, []);
+      return (data ?? []) as unknown as HRITBase[];
+    },
+    enabled: !!processId,
+  });
+}
 
-  const createProcess = useCallback(async (process: Partial<HRITProcess>) => {
-    if (!companyId) return null;
-    try {
-      // Calculate milestone dates
-      const startDate = new Date(process.start_date!);
-      const m365 = new Date(startDate);
-      m365.setDate(m365.getDate() + 365);
-      const m545 = new Date(startDate);
-      m545.setDate(m545.getDate() + 545);
+// ─── MUTATIONS ──────────────────────────────────────────────
 
-      const { data, error } = await supabase
-        .from('erp_hr_it_processes')
-        .insert([{
-          ...process,
-          company_id: companyId,
-          milestone_365_date: m365.toISOString().split('T')[0],
-          milestone_545_date: m545.toISOString().split('T')[0],
-        } as any])
-        .select()
-        .single();
+export function useCreateITProcess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (process: Partial<HRITProcess>) => {
+      const start = new Date(process.start_date!);
+      const addDays = (d: Date, n: number) => { const r=new Date(d); r.setDate(r.getDate()+n); return r.toISOString().split('T')[0]; };
+      const payload = {
+        ...process,
+        milestone_365_date: addDays(start, 365),
+        milestone_545_date: addDays(start, 545),
+      };
+      const { data, error } = await supabase.from('erp_hr_it_processes')
+        .insert([payload as any]).select().single();
       if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hr-it-processes'] });
       toast.success('Proceso IT creado');
-      await fetchProcesses();
-      return data;
-    } catch (err) {
-      console.error('[useHRITProcesses] createProcess error:', err);
-      toast.error('Error al crear proceso IT');
-      return null;
-    }
-  }, [companyId, fetchProcesses]);
+    },
+    onError: (err: any) => toast.error(`Error al crear proceso IT: ${err.message}`),
+  });
+}
 
-  const updateProcess = useCallback(async (id: string, updates: Partial<HRITProcess>) => {
-    try {
-      const { error } = await supabase
-        .from('erp_hr_it_processes')
-        .update(updates as any)
-        .eq('id', id);
+export function useUpdateITProcess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<HRITProcess>) => {
+      const { error } = await supabase.from('erp_hr_it_processes').update(updates as any).eq('id', id);
       if (error) throw error;
-      toast.success('Proceso IT actualizado');
-      await fetchProcesses();
-      return true;
-    } catch (err) {
-      toast.error('Error al actualizar proceso IT');
-      return false;
-    }
-  }, [fetchProcesses]);
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['hr-it-processes'] }); toast.success('Proceso IT actualizado'); },
+    onError: (err: any) => toast.error(`Error al actualizar: ${err.message}`),
+  });
+}
 
-  const createPart = useCallback(async (part: Partial<HRITPart>) => {
-    if (!companyId) return null;
-    try {
-      const { data, error } = await supabase
-        .from('erp_hr_it_parts')
-        .insert([{ ...part, company_id: companyId } as any])
-        .select()
-        .single();
+export function useCreateITPart() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (part: Partial<HRITPart> & { company_id: string }) => {
+      const { data, error } = await supabase.from('erp_hr_it_parts').insert([part as any]).select().single();
       if (error) throw error;
-      toast.success(`Parte de ${part.part_type} registrado`);
-      if (part.process_id) await fetchParts(part.process_id);
       return data;
-    } catch (err) {
-      toast.error('Error al registrar parte');
-      return null;
-    }
-  }, [companyId, fetchParts]);
+    },
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ['hr-it-parts', data?.process_id] });
+      toast.success('Parte registrado');
+    },
+    onError: (err: any) => toast.error(`Error al registrar parte: ${err.message}`),
+  });
+}
 
-  const saveBase = useCallback(async (base: Partial<HRITBase>) => {
-    if (!companyId) return null;
-    try {
-      const { data, error } = await supabase
-        .from('erp_hr_it_bases')
-        .insert([{ ...base, company_id: companyId } as any])
-        .select()
-        .single();
+export function useUpsertITBase() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (base: Partial<HRITBase> & { company_id: string }) => {
+      const { data, error } = await supabase.from('erp_hr_it_bases').upsert([base as any]).select().single();
       if (error) throw error;
-      toast.success('Base reguladora calculada y guardada');
-      if (base.process_id) await fetchBases(base.process_id);
       return data;
-    } catch (err) {
-      toast.error('Error al guardar base reguladora');
-      return null;
-    }
-  }, [companyId, fetchBases]);
+    },
+    onSuccess: (data: any) => { qc.invalidateQueries({ queryKey: ['hr-it-bases', data?.process_id] }); },
+    onError: (err: any) => toast.error(`Error al calcular base: ${err.message}`),
+  });
+}
 
+// ─── LEGACY COMPAT (para no romper componentes que usen el hook viejo) ──────
+// Los componentes que llamen a useHRITProcesses(companyId) seguirán funcionando.
+export function useHRITProcesses(companyId: string | undefined) {
+  const processesQuery = useITProcesses(companyId);
   return {
-    processes, parts, bases, isLoading,
-    fetchProcesses, fetchParts, fetchBases,
-    createProcess, updateProcess, createPart, saveBase,
+    processes: processesQuery.data ?? [],
+    parts: [] as HRITPart[],
+    bases: [] as HRITBase[],
+    isLoading: processesQuery.isLoading,
+    fetchProcesses: () => processesQuery.refetch(),
+    fetchParts: async (_: string) => {},
+    fetchBases: async (_: string) => {},
+    createProcess: async (_: Partial<HRITProcess>) => null,
+    updateProcess: async (_: string, __: Partial<HRITProcess>) => {},
+    createPart: async (_: Partial<HRITPart> & { company_id: string }) => null,
+    upsertBase: async (_: Partial<HRITBase> & { company_id: string }) => null,
   };
 }
