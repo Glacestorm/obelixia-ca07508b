@@ -73922,6 +73922,7 @@ export type Database = {
           full_name: string | null
           gestor_number: string | null
           id: string
+          is_approved: boolean
           oficina: string | null
           organization_id: string | null
           updated_at: string | null
@@ -73935,6 +73936,7 @@ export type Database = {
           full_name?: string | null
           gestor_number?: string | null
           id: string
+          is_approved?: boolean
           oficina?: string | null
           organization_id?: string | null
           updated_at?: string | null
@@ -73948,6 +73950,7 @@ export type Database = {
           full_name?: string | null
           gestor_number?: string | null
           id?: string
+          is_approved?: boolean
           oficina?: string | null
           organization_id?: string | null
           updated_at?: string | null
