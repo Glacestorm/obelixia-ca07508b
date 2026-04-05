@@ -67,7 +67,7 @@ export function HRBankAccountsPage() {
       if (error) throw error;
       setAccounts((data as BankAccount[]) || []);
     } catch (err) {
-      console.error('[HRBankAccounts] fetch error:', err);
+      if (import.meta.env.DEV) console.error('[HRBankAccounts]', err);
     } finally {
       setLoading(false);
     }
