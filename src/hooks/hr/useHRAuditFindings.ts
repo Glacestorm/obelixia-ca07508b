@@ -71,7 +71,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
     }
   }, [companyId]);
 
-  const createFinding = useCallback(async (finding: Partial<HRAuditFinding>) => {
+  const createFinding = useCallback(async (finding: Omit<HRAuditFinding, 'id' | 'company_id' | 'created_at' | 'updated_at'>) => {
     if (!companyId) return null;
     try {
       const { data, error } = await supabase
