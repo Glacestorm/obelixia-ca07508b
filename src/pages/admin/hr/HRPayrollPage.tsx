@@ -15,7 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BookOpen, Pencil, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { useERPContext } from '@/hooks/erp/useERPContext';
+import { useOptionalERPContext } from '@/hooks/erp/useERPContext';
 import { STANDARD_SYMBOLS } from '@/types/hr';
 import { toast } from 'sonner';
 
@@ -31,7 +31,8 @@ interface SymbolicRow {
 }
 
 function SymbolicValuesCard() {
-  const { currentCompany } = useERPContext();
+  const erpContext = useOptionalERPContext();
+  const currentCompany = erpContext?.currentCompany ?? null;
   const [employees, setEmployees] = useState<SimpleEmployee[]>([]);
   const [selectedEmpId, setSelectedEmpId] = useState('');
   const [symbolicData, setSymbolicData] = useState<SymbolicRow[]>([]);
@@ -116,6 +117,29 @@ function SymbolicValuesCard() {
     const found = symbolicData.find(s => s.symbol_name === name);
     return found?.symbol_value ?? '';
   };
+
+  if (!currentCompany?.id) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <BookOpen className="h-4 w-4 text-primary" />
+            </div>
+            Valores simbólicos del ciclo
+          </CardTitle>
+          <CardDescription>
+            Este bloque necesita una empresa activa del entorno ERP para cargar empleados y valores simbólicos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+            No hay empresa activa disponible en esta vista.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
