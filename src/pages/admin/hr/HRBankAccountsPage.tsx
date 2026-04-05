@@ -193,7 +193,7 @@ export function HRBankAccountsPage() {
                   <Switch checked={newPrimary} onCheckedChange={setNewPrimary} />
                   <Label>Cuenta principal para domiciliación</Label>
                 </div>
-                <Button className="w-full" onClick={handleCreate} disabled={!newIban}>
+                <Button className="w-full" onClick={handleCreate} disabled={!newIban || !newEmployeeId}>
                   Guardar cuenta
                 </Button>
               </div>
