@@ -412,4 +412,94 @@ export function HRGovernancePage() {
   );
 }
 
+/* ─── Líneas de Supervisión Card ─── */
+function SupervisionLinesCard({ agents }: { agents: AgentStatus[] }) {
+  const [filter, setFilter] = useState<'current' | 'all'>('current');
+  const [supervisorOnly, setSupervisorOnly] = useState(false);
+
+  const filtered = agents.filter(a => {
+    if (filter === 'current' && a.status !== 'active') return false;
+    if (supervisorOnly && a.agent_type !== 'supervisor') return false;
+    return true;
+  });
+
+  return (
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Users className="h-4 w-4 text-primary" />
+          Líneas de Supervisión
+        </CardTitle>
+        <CardDescription>
+          Funciones y supervisores activos en el dominio RRHH/Nómina
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex rounded-lg border overflow-hidden">
+            <Button
+              variant={filter === 'current' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none text-xs h-8"
+              onClick={() => setFilter('current')}
+            >
+              Solo actuales
+            </Button>
+            <Button
+              variant={filter === 'all' ? 'default' : 'ghost'}
+              size="sm"
+              className="rounded-none text-xs h-8"
+              onClick={() => setFilter('all')}
+            >
+              En toda la relación
+            </Button>
+          </div>
+          <Button
+            variant={supervisorOnly ? 'default' : 'outline'}
+            size="sm"
+            className="text-xs h-8"
+            onClick={() => setSupervisorOnly(!supervisorOnly)}
+          >
+            <Eye className="h-3 w-3 mr-1" />
+            Ver supervisores
+          </Button>
+        </div>
+
+        {filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            No hay agentes que coincidan con el filtro
+          </p>
+        ) : (
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50 border-b">
+                  <th className="text-left p-2 text-xs font-medium text-muted-foreground">Función</th>
+                  <th className="text-left p-2 text-xs font-medium text-muted-foreground">Denominación</th>
+                  <th className="text-left p-2 text-xs font-medium text-muted-foreground">Desde</th>
+                  <th className="text-left p-2 text-xs font-medium text-muted-foreground">Hasta</th>
+                  <th className="text-left p-2 text-xs font-medium text-muted-foreground">Línea</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(agent => (
+                  <tr key={agent.id} className="border-b last:border-0 hover:bg-muted/30">
+                    <td className="p-2 font-mono text-xs">{agent.code}</td>
+                    <td className="p-2">{agent.name}</td>
+                    <td className="p-2 text-muted-foreground">—</td>
+                    <td className="p-2 text-muted-foreground">—</td>
+                    <td className="p-2">
+                      <Badge variant="outline" className="text-[10px]">{agent.module_domain}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default HRGovernancePage;
