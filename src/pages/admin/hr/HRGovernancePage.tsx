@@ -280,38 +280,7 @@ export function HRGovernancePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { type: 'irpf', desc: 'Cambio de situación familiar mid-year — empleado Carlos Martín', severity: 'medium', time: '2h ago' },
-                    { type: 'payroll', desc: 'Regularización SS por cambio de grupo cotización retroactivo', severity: 'high', time: '4h ago' },
-                    { type: 'compliance', desc: 'Discrepancia entre base declarada y base calculada T1', severity: 'low', time: '1d ago' },
-                  ].map((esc, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "p-2 rounded-lg",
-                          esc.severity === 'high' ? 'bg-destructive/10 text-destructive' :
-                          esc.severity === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
-                          'bg-muted text-muted-foreground'
-                        )}>
-                          <AlertTriangle className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm">{esc.desc}</p>
-                          <p className="text-xs text-muted-foreground">{esc.type} · {esc.time}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => toast.info('Detalle de escalación')}>
-                          Ver detalle
-                        </Button>
-                        <Button size="sm" onClick={() => toast.success('Escalación resuelta')}>
-                          Resolver
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <EscalationsContent />
               </CardContent>
             </Card>
           </TabsContent>
