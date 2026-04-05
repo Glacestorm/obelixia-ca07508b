@@ -33,7 +33,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
       if (error) throw error;
       setFindings((data || []) as unknown as HRAuditFinding[]);
     } catch (err) {
-      console.error('[useHRAuditFindings] fetch error:', err);
+      if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
       toast.error('Error cargando hallazgos de auditoría');
     } finally {
       setIsLoading(false);
@@ -67,7 +67,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
         rejectedFiles: allFiles.filter(f => f.status === 'rejected').length,
       });
     } catch (err) {
-      console.error('[useHRAuditFindings] fetchKPIs error:', err);
+      if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
     }
   }, [companyId]);
 
