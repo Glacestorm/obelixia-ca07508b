@@ -20,6 +20,7 @@ import { GeoLanguageDetector } from "@/components/GeoLanguageDetector";
 import { WelcomeLanguageModal } from "@/components/WelcomeLanguageModal";
 import { TranslationLoadingIndicator } from "@/components/TranslationLoadingIndicator";
 import { AppRoutes } from "@/components/routing";
+import { ApprovalGuard } from "@/components/routing/ApprovalGuard";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 
 const MaintenancePage = lazy(() => import("@/components/maintenance/MaintenancePage"));
