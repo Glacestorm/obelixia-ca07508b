@@ -4,7 +4,7 @@
  * V2-RRHH-P4C: + P4 Artifacts tab + Monthly Package tab
  * V2-RRHH-PINST-B1: + Cadena Institucional tab + Pipeline 190 tab
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useOfficialIntegrationsHub } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
@@ -33,12 +33,15 @@ import { MonthlyPackageTab } from '@/components/erp/hr/official/MonthlyPackageTa
 import { InstitutionalSubmissionPanel } from '@/components/erp/hr/official/InstitutionalSubmissionPanel';
 import { Modelo190PipelinePanel } from '@/components/erp/hr/official/Modelo190PipelinePanel';
 import { useInstitutionalSubmission } from '@/hooks/erp/hr/useInstitutionalSubmission';
+import { HRFilingsPanel, HRFileGeneratorPanel } from '@/components/hr/filings';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
   const [activeTab, setActiveTab] = useState('readiness');
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [filingsRefreshKey, setFilingsRefreshKey] = useState(0);
+  const handleFileGenerated = useCallback(() => setFilingsRefreshKey(k => k + 1), []);
 
   const hub = useOfficialIntegrationsHub(companyId);
   const { pendingCount, approvals, fetchApprovals } = usePreRealApproval(companyId);
@@ -150,6 +153,7 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
           <TabsTrigger value="submissions" className="text-xs">Envíos</TabsTrigger>
           <TabsTrigger value="adapters" className="text-xs">Conectores</TabsTrigger>
           <TabsTrigger value="receipts" className="text-xs">Acuses</TabsTrigger>
+          <TabsTrigger value="ficheros-tgss" className="text-xs">Ficheros TGSS</TabsTrigger>
           <TabsTrigger value="export" className="text-xs">Exportación</TabsTrigger>
         </TabsList>
 
@@ -210,6 +214,20 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         </TabsContent>
         <TabsContent value="export">
           <ExportHubPanel companyId={companyId} adapters={hub.adapters} />
+        </TabsContent>
+        <TabsContent value="ficheros-tgss">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <HRFileGeneratorPanel
+              companyId={companyId}
+              onGenerated={handleFileGenerated}
+              className="xl:col-span-1"
+            />
+            <HRFilingsPanel
+              key={filingsRefreshKey}
+              companyId={companyId}
+              className="xl:col-span-2"
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
