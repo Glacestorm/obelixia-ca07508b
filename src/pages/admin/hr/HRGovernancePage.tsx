@@ -99,6 +99,60 @@ export function HRGovernancePage() {
 
   const getStatusConfig = (status: string) => STATUS_CONFIG[status] || STATUS_CONFIG.disabled;
 
+  // ── Escalations from real data ──
+  const [escalations, setEscalations] = useState<Array<{id: string; title: string; severity: string; created_at: string; status: string}>>([]);
+
+  const fetchEscalations = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('erp_audit_findings')
+        .select('id, title, severity, created_at, status')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setEscalations(data ?? []);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[HRGovernance] escalations', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchEscalations(); }, [fetchEscalations]);
+
+  const EscalationsContent = useCallback(() => {
+    if (escalations.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <CheckCircle className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Sin escalaciones pendientes</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-3">
+        {escalations.map((esc) => (
+          <div key={esc.id} className="flex items-center justify-between p-4 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-lg",
+                esc.severity === 'critical' ? 'bg-destructive/10 text-destructive' :
+                esc.severity === 'major' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                'bg-muted text-muted-foreground'
+              )}>
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm">{esc.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {esc.severity} · {formatDistanceToNow(new Date(esc.created_at), { locale: es, addSuffix: true })}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, [escalations]);
+
   return (
     <DashboardLayout title="Supervisor de Nómina — Gobernanza">
       <HRErrorBoundary section="Gobernanza y Supervisión">
