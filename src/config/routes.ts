@@ -189,6 +189,8 @@ export interface RouteConfig {
 // RUTAS PÚBLICAS (Store, Landing, Marketing)
 // ============================================
 export const publicRoutes: RouteConfig[] = [
+  // Pending approval
+  { path: '/pending-approval', component: PendingApprovalPage, layout: 'none', priority: 'high', meta: { title: 'Compte Pendent' } },
   // Store - Usando layout 'public' unificado con StoreNavbar
   { path: '/store', component: StoreLanding, layout: 'public', priority: 'high', meta: { title: 'Store' } },
   { path: '/store/modules', component: StoreModules, layout: 'public', priority: 'high', meta: { title: 'Módulos' } },
