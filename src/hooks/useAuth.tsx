@@ -43,11 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [isApproved, setIsApproved] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Prevent duplicate role fetches
   const fetchingRoleRef = useRef<string | null>(null);
   const roleCache = useRef<Map<string, AppRole>>(new Map());
+  const approvalCache = useRef<Map<string, boolean>>(new Map());
 
   const fetchUserRole = useCallback(async (userId: string) => {
     // Prevent duplicate fetches for same user
