@@ -51,6 +51,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const roleCache = useRef<Map<string, AppRole>>(new Map());
   const approvalCache = useRef<Map<string, boolean>>(new Map());
 
+  const fetchUserApproval = useCallback(async (userId: string) => {
+    const cached = approvalCache.current.get(userId);
+    if (cached !== undefined) {
+      setIsApproved(cached);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      const approved = data?.is_approved ?? false;
+      approvalCache.current.set(userId, approved);
+      setIsApproved(approved);
+    } catch (error) {
+      console.error('Error fetching approval status:', error);
+      setIsApproved(false);
+    }
+  }, []);
+
   const fetchUserRole = useCallback(async (userId: string) => {
     // Prevent duplicate fetches for same user
     if (fetchingRoleRef.current === userId) return;
