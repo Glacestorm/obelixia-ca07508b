@@ -76,7 +76,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
     try {
       const { data, error } = await supabase
         .from('erp_audit_findings')
-        .insert([{ ...finding, company_id: companyId } as any])
+        .insert([{ ...finding, company_id: companyId }])
         .select()
         .single();
       if (error) throw error;
