@@ -86,14 +86,14 @@ export function HRBankAccountsPage() {
       const { error } = await supabase
         .from('hr_employee_bank_accounts')
         .insert({
-          employee_id: crypto.randomUUID(),
-          company_id: crypto.randomUUID(),
+          employee_id: newEmployeeId,
+          company_id: currentCompany?.id ?? '',
           iban: clean,
           swift_bic: newSwift || null,
           bank_name: newBankName || null,
           account_alias: newAlias || null,
           is_primary: newPrimary,
-        } as any);
+        });
 
       if (error) throw error;
       toast.success('Cuenta bancaria añadida');
