@@ -4,6 +4,7 @@
  * Bounded context separado del banking ERP general
  */
 import { useState, useEffect, useCallback } from 'react';
+import { useERPContext } from '@/hooks/erp/useERPContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
