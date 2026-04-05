@@ -248,39 +248,9 @@ export type {
   UseKBComponentPerfReturn,
 } from './useKBPerformance';
 
-// Testing Utilities (KB 4.5)
-export {
-  createMockQuery,
-  createMockMutation,
-  createMockStore,
-  waitForKBState,
-  flushPromises,
-  createDeferred,
-  createNetworkSimulator,
-  createKBTestContext,
-  recordCall,
-  assertKBState,
-  assertCallCount,
-  assertLastCallArgs,
-  useRenderCounter,
-  useValueTracker,
-  useExecutionTimer,
-  createStateSnapshot,
-  compareSnapshots,
-  createKBTestWrapper,
-} from './useKBTesting';
-
-export type {
-  MockQueryOptions,
-  MockMutationOptions,
-  MockStoreOptions,
-  TestWrapperOptions,
-  KBTestContext,
-  CallHistoryEntry,
-  MockQueryReturn,
-  MockMutationReturn,
-  MockStoreReturn,
-} from './useKBTesting';
+// Testing utilities are intentionally NOT re-exported from this runtime barrel.
+// Import them directly from their source modules inside tests to avoid loading
+// test-only code in preview/runtime module graphs.
 
 // DevTools & Debugging (KB 4.5)
 export {
@@ -509,26 +479,8 @@ export type {
   I18nConfig,
 } from './useKBi18n';
 
-// Testing Mocks (KB 4.5)
-export {
-  mockStore,
-  MockTimer,
-  MockNetwork,
-  createMockQuery as createAdvancedMockQuery,
-  createMockMutation as createAdvancedMockMutation,
-  createMockStream,
-  waitFor,
-  waitForCondition,
-  createSpyFn,
-  createMockProvider,
-} from './useKBTestingMocks';
-
-export type {
-  MockConfig,
-  MockStore as MockStoreType,
-  MockTimeline,
-  MockAssertion,
-} from './useKBTestingMocks';
+// Testing mocks are intentionally NOT re-exported from this runtime barrel.
+// Import them directly from './useKBTestingMocks' in test-only code.
 
 // ============================================================================
 // PHASE 14: Advanced Patterns
