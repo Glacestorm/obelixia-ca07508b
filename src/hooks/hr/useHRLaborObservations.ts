@@ -13,7 +13,7 @@ export interface HRLaborObservation {
   observation_type: string;
   title: string;
   description: string | null;
-  observation_data: Record<string, unknown>;
+  observation_data: Record<string, any>;
   effective_date: string | null;
   resolution_date: string | null;
   resolution_notes: string | null;

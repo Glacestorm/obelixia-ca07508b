@@ -27,7 +27,7 @@ export interface HRMultiEmployment {
   effective_from: string;
   effective_to: string | null;
   status: string;
-  calculation_details: Record<string, unknown>;
+  calculation_details: Record<string, any>;
   notes: string | null;
   created_at: string;
   updated_at: string;

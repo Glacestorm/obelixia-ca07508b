@@ -16,7 +16,7 @@ export interface HRCustomConcept {
   calculation_type: string;
   value: number | null;
   formula: string | null;
-  algorithm: Record<string, unknown>;
+  algorithm: Record<string, any>;
   priority: number;
   ss_computable: boolean;
   irpf_computable: boolean;
