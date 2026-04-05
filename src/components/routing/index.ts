@@ -3,3 +3,4 @@
  */
 
 export { AppRoutes } from './AppRoutes';
+export { ApprovalGuard } from './ApprovalGuard';
