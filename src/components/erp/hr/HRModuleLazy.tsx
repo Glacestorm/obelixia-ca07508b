@@ -25,28 +25,38 @@ function lazyPanel(
   factory: () => Promise<any>,
   exportName?: string,
 ): React.FC<any> {
+  const resolve = (mod: any) => {
+    if (exportName && exportName in mod) {
+      return { default: mod[exportName] };
+    }
+    return mod;
+  };
+
+  // Fallback component shown when chunk fails to load after retry
+  const FailedPlaceholder: ComponentType<any> = () => (
+    <div className="flex flex-col items-center justify-center min-h-[200px] p-4 text-center">
+      <p className="text-sm text-muted-foreground">No se pudo cargar este panel.</p>
+      <button
+        onClick={() => window.location.reload()}
+        className="mt-2 text-xs text-primary underline"
+      >
+        Recargar página
+      </button>
+    </div>
+  );
+
   const LazyComp = lazy(() =>
     factory()
-      .then((mod: any) => {
-        if (exportName && exportName in mod) {
-          return { default: mod[exportName] };
-        }
-        return mod;
-      })
-      .catch(
-        () =>
-          new Promise<{ default: ComponentType<any> }>((resolve) =>
-            setTimeout(
-              () =>
-                factory().then((mod: any) => {
-                  if (exportName && exportName in mod) {
-                    return resolve({ default: mod[exportName] });
-                  }
-                  return resolve(mod);
-                }),
-              1500,
-            ),
-          ),
+      .then(resolve)
+      .catch(() =>
+        new Promise<{ default: ComponentType<any> }>((res) =>
+          setTimeout(() => {
+            factory()
+              .then(resolve)
+              .then(res)
+              .catch(() => res({ default: FailedPlaceholder }));
+          }, 1500),
+        ),
       ),
   );
 
