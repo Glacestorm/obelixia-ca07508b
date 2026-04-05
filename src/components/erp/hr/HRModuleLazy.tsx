@@ -20,28 +20,29 @@ function PanelSkeleton() {
  * Creates a lazy component with automatic retry on chunk failure
  * and a built-in Suspense boundary.
  */
-function lazyPanel<P extends Record<string, unknown>>(
-  factory: () => Promise<{ default: ComponentType<P> } | { [key: string]: ComponentType<P> }>,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyPanel(
+  factory: () => Promise<any>,
   exportName?: string,
-): React.FC<P> {
+): React.FC<any> {
   const LazyComp = lazy(() =>
     factory()
-      .then((mod) => {
+      .then((mod: any) => {
         if (exportName && exportName in mod) {
-          return { default: (mod as Record<string, ComponentType<P>>)[exportName] };
+          return { default: mod[exportName] };
         }
-        return mod as { default: ComponentType<P> };
+        return mod;
       })
       .catch(
         () =>
-          new Promise<{ default: ComponentType<P> }>((resolve) =>
+          new Promise<{ default: ComponentType<any> }>((resolve) =>
             setTimeout(
               () =>
-                factory().then((mod) => {
+                factory().then((mod: any) => {
                   if (exportName && exportName in mod) {
-                    return resolve({ default: (mod as Record<string, ComponentType<P>>)[exportName] });
+                    return resolve({ default: mod[exportName] });
                   }
-                  return resolve(mod as { default: ComponentType<P> });
+                  return resolve(mod);
                 }),
               1500,
             ),
@@ -49,7 +50,7 @@ function lazyPanel<P extends Record<string, unknown>>(
       ),
   );
 
-  const Wrapper: React.FC<P> = (props) => (
+  const Wrapper: React.FC<any> = (props) => (
     <Suspense fallback={<PanelSkeleton />}>
       <LazyComp {...props} />
     </Suspense>
