@@ -85,11 +85,11 @@ export function HRGovernancePage() {
         activeAgents: active.length,
         pendingReviews: supervised.length,
         avgConfidence: Math.round(avgConf),
-        escalations24h: Math.floor(Math.random() * 3), // Demo
-        successRate: 94 + Math.floor(Math.random() * 5), // Demo
+        escalations24h: 0, // TODO: conectar a erp_audit_findings
+        successRate: 0, // TODO: conectar a métricas reales
       });
     } catch (err) {
-      console.error('[HRGovernance] fetch error:', err);
+      if (import.meta.env.DEV) console.error('[HRGovernance]', err);
     } finally {
       setLoading(false);
     }
@@ -98,6 +98,60 @@ export function HRGovernancePage() {
   useEffect(() => { fetchAgents(); }, [fetchAgents]);
 
   const getStatusConfig = (status: string) => STATUS_CONFIG[status] || STATUS_CONFIG.disabled;
+
+  // ── Escalations from real data ──
+  const [escalations, setEscalations] = useState<Array<{id: string; title: string; severity: string; created_at: string; status: string}>>([]);
+
+  const fetchEscalations = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('erp_audit_findings')
+        .select('id, title, severity, created_at, status')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setEscalations(data ?? []);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[HRGovernance] escalations', err);
+    }
+  }, []);
+
+  useEffect(() => { fetchEscalations(); }, [fetchEscalations]);
+
+  const EscalationsContent = useCallback(() => {
+    if (escalations.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <CheckCircle className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Sin escalaciones pendientes</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-3">
+        {escalations.map((esc) => (
+          <div key={esc.id} className="flex items-center justify-between p-4 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "p-2 rounded-lg",
+                esc.severity === 'critical' ? 'bg-destructive/10 text-destructive' :
+                esc.severity === 'major' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                'bg-muted text-muted-foreground'
+              )}>
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm">{esc.title}</p>
+                <p className="text-xs text-muted-foreground">
+                  {esc.severity} · {formatDistanceToNow(new Date(esc.created_at), { locale: es, addSuffix: true })}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }, [escalations]);
 
   return (
     <DashboardLayout title="Supervisor de Nómina — Gobernanza">
@@ -223,8 +277,8 @@ export function HRGovernancePage() {
                 <CardContent>
                   <div className="space-y-4">
                     {['Cálculo nómina', 'Generación ficheros', 'IRPF regularización', 'Bridge contabilidad'].map((op) => {
-                      const latency = 200 + Math.floor(Math.random() * 800);
-                      const success = 90 + Math.floor(Math.random() * 10);
+                      const latency = 0; // TODO: conectar a telemetría real
+                      const success = 0; // TODO: conectar a telemetría real
                       return (
                         <div key={op} className="space-y-1">
                           <div className="flex justify-between text-sm">
@@ -248,14 +302,14 @@ export function HRGovernancePage() {
                 <CardContent>
                   <div className="space-y-3">
                     {agents.slice(0, 5).map((agent) => {
-                      const invocations = Math.floor(Math.random() * 50);
+                      const invocations = 0; // TODO: conectar a telemetría real
                       return (
                         <div key={agent.id} className="flex items-center justify-between text-sm">
                           <span className="truncate max-w-[200px]">{agent.name}</span>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-xs">{invocations} calls</span>
-                            <Badge variant={invocations > 30 ? 'default' : 'secondary'} className="text-[10px]">
-                              {invocations > 30 ? 'Alto' : 'Normal'}
+                            <Badge variant="secondary" className="text-[10px]">
+                              Sin datos
                             </Badge>
                           </div>
                         </div>
@@ -280,38 +334,7 @@ export function HRGovernancePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { type: 'irpf', desc: 'Cambio de situación familiar mid-year — empleado Carlos Martín', severity: 'medium', time: '2h ago' },
-                    { type: 'payroll', desc: 'Regularización SS por cambio de grupo cotización retroactivo', severity: 'high', time: '4h ago' },
-                    { type: 'compliance', desc: 'Discrepancia entre base declarada y base calculada T1', severity: 'low', time: '1d ago' },
-                  ].map((esc, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "p-2 rounded-lg",
-                          esc.severity === 'high' ? 'bg-destructive/10 text-destructive' :
-                          esc.severity === 'medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
-                          'bg-muted text-muted-foreground'
-                        )}>
-                          <AlertTriangle className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm">{esc.desc}</p>
-                          <p className="text-xs text-muted-foreground">{esc.type} · {esc.time}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => toast.info('Detalle de escalación')}>
-                          Ver detalle
-                        </Button>
-                        <Button size="sm" onClick={() => toast.success('Escalación resuelta')}>
-                          Resolver
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <EscalationsContent />
               </CardContent>
             </Card>
           </TabsContent>

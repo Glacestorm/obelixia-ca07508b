@@ -67,7 +67,7 @@ export function HRBankAccountsPage() {
       if (error) throw error;
       setAccounts((data as BankAccount[]) || []);
     } catch (err) {
-      console.error('[HRBankAccounts] fetch error:', err);
+      if (import.meta.env.DEV) console.error('[HRBankAccounts]', err);
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export function HRBankAccountsPage() {
       setNewIban(''); setNewAlias(''); setNewBankName(''); setNewSwift(''); setNewPrimary(false); setNewEmployeeId('');
       fetchAccounts();
     } catch (err) {
-      console.error('[HRBankAccounts] create error:', err);
+      if (import.meta.env.DEV) console.error('[HRBankAccounts]', err);
       toast.error('Error al crear cuenta');
     }
   };
