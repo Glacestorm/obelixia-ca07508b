@@ -125,17 +125,23 @@ export function useUpsertITBase() {
 // Los componentes que llamen a useHRITProcesses(companyId) seguirán funcionando.
 export function useHRITProcesses(companyId: string | undefined) {
   const processesQuery = useITProcesses(companyId);
+  const createMutation = useCreateITProcess();
+  const updateMutation = useUpdateITProcess();
+  const partMutation = useCreateITPart();
+  const baseMutation = useUpsertITBase();
+
   return {
     processes: processesQuery.data ?? [],
     parts: [] as HRITPart[],
     bases: [] as HRITBase[],
     isLoading: processesQuery.isLoading,
-    fetchProcesses: () => processesQuery.refetch(),
+    fetchProcesses: (filters?: { employee_id?: string; status?: string; process_type?: string }) => processesQuery.refetch(),
     fetchParts: async (_: string) => {},
     fetchBases: async (_: string) => {},
-    createProcess: async (_: Partial<HRITProcess>) => null,
-    updateProcess: async (_: string, __: Partial<HRITProcess>) => {},
-    createPart: async (_: Partial<HRITPart> & { company_id: string }) => null,
-    upsertBase: async (_: Partial<HRITBase> & { company_id: string }) => null,
+    createProcess: async (p: Partial<HRITProcess>) => { const r = await createMutation.mutateAsync({ ...p, company_id: companyId } as any); return r ?? null; },
+    updateProcess: async (id: string, updates: Partial<HRITProcess>): Promise<boolean> => { try { await updateMutation.mutateAsync({ id, ...updates }); return true; } catch { return false; } },
+    createPart: async (part: Partial<HRITPart>) => { const r = await partMutation.mutateAsync({ ...part, company_id: companyId! } as any); return r ?? null; },
+    upsertBase: async (base: Partial<HRITBase>) => { const r = await baseMutation.mutateAsync({ ...base, company_id: companyId! } as any); return r ?? null; },
+    saveBase: async (base: Partial<HRITBase>) => { const r = await baseMutation.mutateAsync({ ...base, company_id: companyId! } as any); return r ?? null; },
   };
 }
