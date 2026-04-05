@@ -56,7 +56,7 @@ export function useHRGarnishments(filters?: { status?: string; employeeId?: stri
     mutationFn: async (input: Partial<HRGarnishment>) => {
       const { data, error } = await supabase
         .from('erp_hr_garnishments')
-        .insert([input])
+        .insert([input as any])
         .select()
         .single();
       if (error) throw error;
