@@ -13,8 +13,11 @@
 export const SMI_MENSUAL_2026 = 1184.00;
 /** SMI 2026 en 12 pagas prorrateadas: 16.576 / 12 = 1.381,33€/mes (STS 1340/2022) */
 export const SMI_2026_12_PAGAS = 1381.33;
-/** SMI mensual × 14/12 para conversión a 12 pagas prorrateadas */
-export const SMI_PRORRATEADO_2026 = 1184.00 * 14 / 12; // = 1.381,33€
+/** SMI mensual en cómputo de 12 pagas (conversión anual ÷ 12)
+ *  Siempre derivado de SMI_MENSUAL_2026 para garantizar consistencia.
+ *  Norma: STS (Sala 3ª) 1340/2022, de 20 oct. — SMI anual incluye pagas extras
+ */
+export const SMI_PRORRATEADO_2026 = (SMI_MENSUAL_2026 * 14) / 12;
 
 /**
  * Tramos de embargabilidad — Art. 607.1 LEC
