@@ -31,7 +31,7 @@ export function useHRAuditFindings(companyId: string | undefined) {
 
       const { data, error } = await query;
       if (error) throw error;
-      setFindings((data || []) as unknown as HRAuditFinding[]);
+      setFindings((data || []) as HRAuditFinding[]);
     } catch (err) {
       if (import.meta.env.DEV) { console.error('[HR] Error:', err); }
       toast.error('Error cargando hallazgos de auditoría');
