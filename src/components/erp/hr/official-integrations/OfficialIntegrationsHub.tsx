@@ -215,6 +215,20 @@ export function OfficialIntegrationsHub({ companyId }: Props) {
         <TabsContent value="export">
           <ExportHubPanel companyId={companyId} adapters={hub.adapters} />
         </TabsContent>
+        <TabsContent value="ficheros-tgss">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <HRFileGeneratorPanel
+              companyId={companyId}
+              onGenerated={handleFileGenerated}
+              className="xl:col-span-1"
+            />
+            <HRFilingsPanel
+              key={filingsRefreshKey}
+              companyId={companyId}
+              className="xl:col-span-2"
+            />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
