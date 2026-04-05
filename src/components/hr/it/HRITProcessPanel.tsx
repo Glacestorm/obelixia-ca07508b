@@ -14,8 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import {
   RefreshCw, Plus, AlertTriangle, Clock, CheckCircle,
-  FileText, Calculator, Activity, XCircle, ChevronRight,
+  FileText, Calculator, Activity, XCircle, ChevronRight, CalendarIcon,
 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 import { useHRITProcesses } from '@/hooks/hr/useHRITProcesses';
 import { useERPContext } from '@/hooks/erp/useERPContext';
 import { getProcessAlerts, calculateMilestones } from '@/lib/hr/it-engine';
