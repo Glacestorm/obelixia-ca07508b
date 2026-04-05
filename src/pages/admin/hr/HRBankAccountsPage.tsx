@@ -98,7 +98,7 @@ export function HRBankAccountsPage() {
       if (error) throw error;
       toast.success('Cuenta bancaria añadida');
       setShowNew(false);
-      setNewIban(''); setNewAlias(''); setNewBankName(''); setNewSwift(''); setNewPrimary(false);
+      setNewIban(''); setNewAlias(''); setNewBankName(''); setNewSwift(''); setNewPrimary(false); setNewEmployeeId('');
       fetchAccounts();
     } catch (err) {
       console.error('[HRBankAccounts] create error:', err);
