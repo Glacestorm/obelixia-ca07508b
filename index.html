@@ -295,20 +295,8 @@
     <!-- Preload critical resources for LCP -->
     <link rel="preload" href="/src/main.tsx" as="script" crossorigin>
     
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(function(registration) {
-              console.log('[App] ServiceWorker registered:', registration.scope);
-            })
-            .catch(function(error) {
-              console.log('[App] ServiceWorker registration failed:', error);
-            });
-        });
-      }
-    </script>
+    <!-- Service Worker: disabled in dev/preview to prevent stale module caching -->
+    <!-- SW is only registered via VitePWA plugin in production builds -->
   </head>
 
   <body>
