@@ -205,7 +205,7 @@ export const ISO_STANDARDS = [
 // ============================================
 // IT PROCESS TYPES (Fase B)
 // ============================================
-export type ITProcessType = 'EC' | 'AT' | 'ANL' | 'MAT' | 'PAT' | 'RE';
+export type ITProcessType = 'EC' | 'AT' | 'ANL' | 'MAT' | 'PAT' | 'RE' | 'ERE_TOTAL' | 'ERE_PARCIAL' | 'PAGO_DIRECTO' | 'PATERNIDAD_TP' | 'F_NORETRIB' | 'F_HUELGA' | 'F_SUSPENSION' | 'HOSPITAL';
 export type ITProcessStatus = 'active' | 'closed' | 'extended' | 'relapsed';
 export type ITPartType = 'baja' | 'alta' | 'confirmacion' | 'alta_propuesta';
 export type ITPartStatus = 'received' | 'processed' | 'communicated' | 'rejected';
@@ -217,6 +217,14 @@ export const IT_PROCESS_TYPE_LABELS: Record<ITProcessType, string> = {
   MAT: 'Maternidad',
   PAT: 'Paternidad',
   RE: 'Riesgo durante el Embarazo',
+  ERE_TOTAL: 'ERE Total (Suspensión total)',
+  ERE_PARCIAL: 'ERE Parcial (Suspensión parcial)',
+  PAGO_DIRECTO: 'Pago Directo (INSS/Mutua)',
+  PATERNIDAD_TP: 'Paternidad Tiempo Parcial',
+  F_NORETRIB: 'Permiso No Retribuido (PNR)',
+  F_HUELGA: 'Días de Huelga',
+  F_SUSPENSION: 'Suspensión de Contrato',
+  HOSPITAL: 'Hospitalización',
 };
 
 export interface HRITProcess {
