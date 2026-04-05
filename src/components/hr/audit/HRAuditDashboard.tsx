@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useHRAuditFindings } from '@/hooks/hr/useHRAuditFindings';
 import { useHRGeneratedFiles } from '@/hooks/hr/useHRGeneratedFiles';
-import { useERPContext } from '@/hooks/erp/useERPContext';
+import { useOptionalERPContext } from '@/hooks/erp/useERPContext';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -37,7 +37,8 @@ const fileStatusConfig: Record<string, { label: string; color: string }> = {
 };
 
 export function HRAuditDashboard() {
-  const { currentCompany } = useERPContext();
+  const erpContext = useOptionalERPContext();
+  const currentCompany = erpContext?.currentCompany ?? null;
   const companyId = currentCompany?.id;
   const { findings, kpis, isLoading: loadingFindings, fetchFindings, fetchKPIs } = useHRAuditFindings(companyId);
   const { files, isLoading: loadingFiles, fetchFiles } = useHRGeneratedFiles(companyId);
@@ -56,6 +57,20 @@ export function HRAuditDashboard() {
     fetchKPIs();
     fetchFiles();
   };
+
+  if (!companyId) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Shield className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
+          <p className="text-sm font-medium text-foreground">No hay empresa activa</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Esta vista necesita una empresa seleccionada para cargar los hallazgos y los ficheros de auditoría.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
