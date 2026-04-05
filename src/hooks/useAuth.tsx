@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   userRole: AppRole | null;
   loading: boolean;
+  isApproved: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -42,11 +43,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [isApproved, setIsApproved] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Prevent duplicate role fetches
   const fetchingRoleRef = useRef<string | null>(null);
   const roleCache = useRef<Map<string, AppRole>>(new Map());
+  const approvalCache = useRef<Map<string, boolean>>(new Map());
+
+  const fetchUserApproval = useCallback(async (userId: string) => {
+    const cached = approvalCache.current.get(userId);
+    if (cached !== undefined) {
+      setIsApproved(cached);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      const approved = data?.is_approved ?? false;
+      approvalCache.current.set(userId, approved);
+      setIsApproved(approved);
+    } catch (error) {
+      console.error('Error fetching approval status:', error);
+      setIsApproved(false);
+    }
+  }, []);
 
   const fetchUserRole = useCallback(async (userId: string) => {
     // Prevent duplicate fetches for same user
@@ -107,8 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (session?.user) {
           fetchUserRole(session.user.id);
+          fetchUserApproval(session.user.id);
         } else {
           setUserRole(null);
+          setIsApproved(false);
         }
         
         setLoading(false);
@@ -124,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.user) {
         fetchUserRole(session.user.id);
+        fetchUserApproval(session.user.id);
       }
       setLoading(false);
     });
@@ -132,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchUserRole]);
+  }, [fetchUserRole, fetchUserApproval]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -210,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       userRole,
       loading,
+      isApproved,
       signIn,
       signUp,
       signOut,

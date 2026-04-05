@@ -34,6 +34,7 @@ import { TranslationsDashboard } from '@/components/admin/translations/Translati
 // EnterpriseTrends2026Dashboard - lazy loaded to avoid chunking conflicts
 const EnterpriseTrends2026Dashboard = lazy(() => import('@/components/admin/verticals/EnterpriseTrends2026Dashboard').then(m => ({ default: m.EnterpriseTrends2026Dashboard })));
 import AcademiaAdminPage from '@/pages/admin/AcademiaAdminPage';
+import { UserApprovalPanel } from '@/components/admin/UserApprovalPanel';
 import DemoRequestsPage from '@/pages/admin/DemoRequestsPage';
 import { 
   ModuleDashboardPanel, 
@@ -326,6 +327,10 @@ const ObelixiaTeamAdmin: React.FC = () => {
           {/* Content Area */}
           <ObelixiaContentArea activeTab={activeTab} theme={theme} viewMode={viewMode}>
             <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsContent value="user-approval" className="m-0">
+                <UserApprovalPanel />
+              </TabsContent>
+
               <TabsContent value="quotes" className="m-0">
                 <QuoteManager />
               </TabsContent>
