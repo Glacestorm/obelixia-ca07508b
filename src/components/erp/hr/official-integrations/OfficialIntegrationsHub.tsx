@@ -4,7 +4,7 @@
  * V2-RRHH-P4C: + P4 Artifacts tab + Monthly Package tab
  * V2-RRHH-PINST-B1: + Cadena Institucional tab + Pipeline 190 tab
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useOfficialIntegrationsHub } from '@/hooks/erp/hr/useOfficialIntegrationsHub';
