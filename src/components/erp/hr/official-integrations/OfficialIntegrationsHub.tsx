@@ -33,6 +33,7 @@ import { MonthlyPackageTab } from '@/components/erp/hr/official/MonthlyPackageTa
 import { InstitutionalSubmissionPanel } from '@/components/erp/hr/official/InstitutionalSubmissionPanel';
 import { Modelo190PipelinePanel } from '@/components/erp/hr/official/Modelo190PipelinePanel';
 import { useInstitutionalSubmission } from '@/hooks/erp/hr/useInstitutionalSubmission';
+import { HRFilingsPanel, HRFileGeneratorPanel } from '@/components/hr/filings';
 interface Props { companyId: string; }
 
 export function OfficialIntegrationsHub({ companyId }: Props) {
