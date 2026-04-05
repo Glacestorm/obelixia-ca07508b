@@ -34,6 +34,7 @@ import { TranslationsDashboard } from '@/components/admin/translations/Translati
 // EnterpriseTrends2026Dashboard - lazy loaded to avoid chunking conflicts
 const EnterpriseTrends2026Dashboard = lazy(() => import('@/components/admin/verticals/EnterpriseTrends2026Dashboard').then(m => ({ default: m.EnterpriseTrends2026Dashboard })));
 import AcademiaAdminPage from '@/pages/admin/AcademiaAdminPage';
+import { UserApprovalPanel } from '@/components/admin/UserApprovalPanel';
 import DemoRequestsPage from '@/pages/admin/DemoRequestsPage';
 import { 
   ModuleDashboardPanel, 
