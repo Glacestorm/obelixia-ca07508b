@@ -55,7 +55,7 @@ export function HRBankAccountsPage() {
   const [newBankName, setNewBankName] = useState('');
   const [newSwift, setNewSwift] = useState('');
   const [newPrimary, setNewPrimary] = useState(false);
-
+  const [newEmployeeId, setNewEmployeeId] = useState('');
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
     try {
