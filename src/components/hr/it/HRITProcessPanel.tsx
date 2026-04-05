@@ -446,6 +446,51 @@ function ProcessDetailView({ process, parts, bases, onCreatePart, onUpdateProces
     pnr_at_base: (process as any).pnr_at_base ?? 0,
   });
 
+  // Bases sub-tab state
+  const [basesSubTab, setBasesSubTab] = useState('del_mes');
+  const [basesDirectasForm, setBasesDirectasForm] = useState({
+    base_enfermedad: (process as any).base_enfermedad ?? 0,
+    base_accidente: (process as any).base_accidente ?? 0,
+    base_maternidad: (process as any).base_maternidad ?? 0,
+    base_hextras: (process as any).base_hextras ?? 0,
+  });
+  const [basesFdiForm, setBasesFdiForm] = useState({
+    fdi_cc_base: (process as any).fdi_cc_base ?? 0,
+    fdi_at_base: (process as any).fdi_at_base ?? 0,
+    fdi_compatible_tp: (process as any).fdi_compatible_tp ?? false,
+    fdi_pct_base_reg: (process as any).fdi_pct_base_reg ?? 0,
+    fdi_recaida: (process as any).fdi_recaida ?? false,
+    fdi_pct_liquido: (process as any).fdi_pct_liquido ?? 0,
+    fdi_esquema_complemento: (process as any).fdi_esquema_complemento ?? '',
+    fdi_no_complementa: (process as any).fdi_no_complementa ?? false,
+    fdi_ruptura_recibo: (process as any).fdi_ruptura_recibo ?? false,
+    fdi_atrasos_cotizacion: (process as any).fdi_atrasos_cotizacion ?? false,
+    fdi_tipo_liquidacion: (process as any).fdi_tipo_liquidacion ?? '',
+  });
+
+  // Otros datos form state
+  const [otrosDatosForm, setOtrosDatosForm] = useState({
+    tipo_asistencia: (process as any).tipo_asistencia ?? '',
+    mat_motivo: (process as any).mat_motivo ?? '',
+    mat_empleado_publico: (process as any).mat_empleado_publico ?? '',
+    emp_pub_permiso_desde: (process as any).emp_pub_permiso_desde ?? '',
+    emp_pub_permiso_hasta: (process as any).emp_pub_permiso_hasta ?? '',
+    emp_pub_otra_norma: (process as any).emp_pub_otra_norma ?? '',
+    siguiente_revision_medica: (process as any).siguiente_revision_medica ? new Date((process as any).siguiente_revision_medica) : undefined as Date | undefined,
+  });
+
+  // Partes conf dialog
+  const [showConfPartDialog, setShowConfPartDialog] = useState(false);
+  const [confPartForm, setConfPartForm] = useState({
+    issue_date: new Date().toISOString().split('T')[0],
+    part_number: parts.length + 1,
+    has_change: false,
+    entity: '',
+    insurer_name: '',
+    change_date: '',
+    last_by_transfer: false,
+  });
+
   return (
     <div className="space-y-4">
       {/* Process info card */}
