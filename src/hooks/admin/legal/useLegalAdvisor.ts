@@ -23,7 +23,7 @@ export interface LegalAdvice {
   legal_basis: string[];
   recommendations: string[];
   warnings: string[];
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_level: LegalRiskLevel;
   jurisdiction_applied: string;
   confidence_score: number;
 }
