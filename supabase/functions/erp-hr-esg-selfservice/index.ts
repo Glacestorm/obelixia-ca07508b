@@ -10,6 +10,12 @@ interface FunctionRequest {
 
 serve(async (req) => {
   const corsHeaders = getSecureCorsHeaders(req);
+  function jsonResponse(data: Record<string, unknown>, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
