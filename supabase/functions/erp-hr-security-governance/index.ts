@@ -401,13 +401,13 @@ FORMATO JSON estricto:
 
   } catch (error) {
     console.error('[erp-hr-security-governance] Error:', error);
-    return json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ success: false, error: 'Internal server error' }, 500);
+  }
+
+  function json(data: unknown, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
