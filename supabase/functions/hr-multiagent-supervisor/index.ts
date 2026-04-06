@@ -63,14 +63,21 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Auth
+    // Auth — S2.1: mandatory
     const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const userId = user.id;
 
     const input: SupervisorRequest = await req.json();
     const { action, company_id, query, context, session_id } = input;
@@ -78,6 +85,20 @@ serve(async (req) => {
     if (!company_id) {
       return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // S2.1: Tenant isolation
+    const { data: membership } = await supabase
+      .from('erp_user_companies')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('company_id', company_id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
