@@ -12,3 +12,7 @@ export type {
   LegalValidationResult,
   LegalValidationIssue,
 } from './types';
+
+// Knowledge — Reference Resolver
+export { resolveLegalReference, linkifyLegalReferences } from './knowledge/referenceResolver';
+export type { LegalLinkResult } from './knowledge/referenceResolver';
