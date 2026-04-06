@@ -1,96 +1,110 @@
 
 
-# Plan: F1 — Crear `src/shared/legal/types.ts`
+# Plan: F2 — Migración Incremental de Imports hacia Shared Legal Core
 
-## Análisis de tipos existentes
+## Objetivo
 
-Tras inspección exhaustiva, hay **3 categorías claras** de tipos repetidos across the codebase:
+Hacer que los 3 hooks principales del módulo legal (`useLegalValidationGateway`, `useLegalValidationGatewayEnhanced`, `useCrossModuleOrchestrator`) y `useLegalAdvisor` consuman tipos desde `src/shared/legal/` en lugar de definirlos inline. Mantener re-exports en ubicaciones originales para zero-breaking-change.
 
-### Tipos que se repiten idénticamente (candidatos a Shared Core)
+## Estrategia
 
-| Tipo | Repetido en | Veces |
-|---|---|---|
-| `RiskLevel = 'low' \| 'medium' \| 'high' \| 'critical'` | 12+ hooks (legal, HR, support, compliance, churn) | 12 |
-| `ModuleType = 'hr' \| 'fiscal' \| 'treasury' \| ...` | `useLegalValidationGateway`, `Enhanced`, barrel exports | 3 |
-| `ValidationStatus` (pending/approved/rejected/blocked) | `useSettlements`, `Gateway`, `GatewayEnhanced` | 3 (variantes) |
-| `LegalContext` (entityId, jurisdictions, etc.) | `useLegalAdvisor`, `useLegalMatters` | 2 (distintas) |
-| `LegalJurisdiction` (code, name, country) | `useLegalAdvisor` | 1 pero universal |
-
-### Tipos que deben quedarse en su módulo (NO shared)
-- `LegalCommunication`, `LegalContract`, `LegalClause` → HR-specific
-- `LegalTemplate` (HR) → HR document generation
-- `SmartContract`, `CLMContract` → Legal UI workflows
-- `LegalEntity`, `IPAsset`, `Dispute` → Legal Entity Management UI
-- `LegalValidation`, `LegalValidationContext` → AI Hybrid specific
-
-### Tipos ambiguos (re-export en F2+)
-- `LegalProcedure` → Workflow, no core
-- `ComplianceReport` → Could be shared later
-- `RiskAssessment` → 2 variantes (legal vs generic)
+Cada hook migrado sigue este patrón:
+1. Importar tipo canónico desde `@/shared/legal`
+2. Eliminar la definición inline del tipo duplicado
+3. Re-exportar el tipo canónico con el alias original para mantener compatibilidad de barrel exports
 
 ## Acciones
 
-### Acción 1: Crear directorio y tipos base
+### Acción 1: Migrar `useLegalValidationGateway.ts`
 
-**Archivo**: `src/shared/legal/types.ts`
+**Tipos a migrar:**
+- `ValidationRiskLevel` → importar `LegalRiskLevel`, re-exportar como `ValidationRiskLevel`
+- `ModuleType` → importar `LegalModuleType`, re-exportar como `ModuleType`
 
-Contenido:
-- `LegalRiskLevel` — tipo unión reutilizable (actualmente repetido 12+ veces como inline literal)
-- `LegalValidationStatus` — máquina de estados canónica (superset de las 3 variantes existentes)
-- `LegalModuleType` — enum de módulos ERP que interactúan con legal
-- `LegalJurisdiction` — jurisdicción base reutilizable
-- `LegalReference` — referencia a artículo/ley (base legal citations)
-- `LegalContext` — contexto mínimo compartido (entityId, entityType, jurisdictions)
-- `LegalValidationResult` — resultado de validación genérico
+`ValidationStatus` en este hook incluye `'auto_approved'` que NO está en el shared core, por lo que se queda local (o se añade al superset).
 
-Cada tipo llevará JSDoc con ownership (`@shared-legal-core`) y referencia a los consumidores actuales.
+```typescript
+import type { LegalRiskLevel, LegalModuleType } from '@/shared/legal';
+export type ValidationRiskLevel = LegalRiskLevel;
+export type ModuleType = LegalModuleType; // nota: shared tiene más valores, superset compatible
+```
 
-### Acción 2: Crear barrel export
+### Acción 2: Migrar `useLegalValidationGatewayEnhanced.ts`
 
-**Archivo**: `src/shared/legal/index.ts`
+**Tipos a migrar:**
+- `RiskLevel` → `LegalRiskLevel`
+- `ModuleType` → `LegalModuleType`
 
-Simple re-export de `types.ts` para facilitar imports futuros.
+```typescript
+import type { LegalRiskLevel, LegalModuleType } from '@/shared/legal';
+export type RiskLevel = LegalRiskLevel;
+export type ModuleType = LegalModuleType;
+```
 
-### Acción 3: NO se modifican consumidores existentes
+### Acción 3: Migrar `useCrossModuleOrchestrator.ts`
 
-En F1 los tipos son **additive-only**. Los hooks existentes siguen usando sus propios tipos inline. La migración de imports se hará en F2+ de forma incremental con re-exports.
+**Tipos a migrar:**
+- `ModuleType` → `LegalModuleType`
 
-## Ownership de tipos
+```typescript
+import type { LegalModuleType } from '@/shared/legal';
+export type ModuleType = LegalModuleType;
+```
 
-| Tipo en `shared/legal/types.ts` | Ownership | Consumidores futuros |
-|---|---|---|
-| `LegalRiskLevel` | Shared Core | Todos los módulos con risk_level |
-| `LegalValidationStatus` | Shared Core | Settlements, Payroll, Offboarding, Gateway |
-| `LegalModuleType` | Shared Core | Gateway, Orchestrator, Procedures |
-| `LegalJurisdiction` | Shared Core | Advisor, Gateway, Procedures |
-| `LegalReference` | Shared Core | Knowledge, Advisor, bridgeEngine |
-| `LegalContext` | Shared Core | Advisor, Matters, Agent context |
-| `LegalValidationResult` | Shared Core | Gateway, AI validator, HR compliance |
+### Acción 4: Migrar `useLegalAdvisor.ts`
 
-## Garantía de no ruptura
+**Tipos a migrar (parcial):**
+- `risk_level: 'low' | 'medium' | 'high' | 'critical'` en `LegalAdvice`, `ValidationResult`, `RiskAssessment` → reemplazar inline literal por `LegalRiskLevel`
 
-- **Zero imports modificados** — ningún archivo existente cambia
-- **Zero re-exports** en F1 — solo se crean tipos nuevos
-- **Zero edge functions tocadas**
-- **Zero tablas modificadas**
-- Los tipos existentes en hooks seguirán funcionando tal cual
+`LegalJurisdiction` en Advisor tiene campos extra (`id`, `legal_system`, `is_active`) que no están en `LegalJurisdictionInfo`, así que se queda local. `LegalContext` del Advisor tiene `urgency` y campos opcionales distintos, también se queda local.
 
-## Notas para F2
+```typescript
+import type { LegalRiskLevel } from '@/shared/legal';
+// Usar LegalRiskLevel en lugar de inline 'low' | 'medium' | 'high' | 'critical'
+```
 
-F2 debería:
-1. Migrar `legalReferenceResolver.ts` a `src/shared/legal/knowledge/`
-2. Hacer que `useLegalAdvisor` re-exporte `LegalJurisdiction` desde shared
-3. Hacer que `useLegalValidationGateway` re-exporte `ValidationRiskLevel` y `ModuleType` desde shared
-4. Cada migración: cambiar la fuente, añadir re-export en ubicación original
+### Acción 5: Ampliar `LegalValidationStatus` en shared core
 
-## Archivos a crear
+Añadir `'auto_approved'` y `'escalated'` al superset canónico para cubrir las variantes de Gateway y Enhanced:
 
-| Archivo | Acción |
+```typescript
+export type LegalValidationStatus =
+  | 'pending' | 'pending_validation' | 'pending_approval'
+  | 'review_required' | 'approved' | 'auto_approved'
+  | 'validated' | 'rejected' | 'blocked' | 'escalated';
+```
+
+### Acción 6: Verificar build
+
+`npx tsc --noEmit` para confirmar cero errores.
+
+## Archivos modificados
+
+| Archivo | Cambio |
 |---|---|
-| `src/shared/legal/types.ts` | Crear (~120 líneas) |
-| `src/shared/legal/index.ts` | Crear (~5 líneas) |
+| `src/shared/legal/types.ts` | Añadir `auto_approved`, `escalated`, `pending_approval` a `LegalValidationStatus` |
+| `src/hooks/admin/legal/useLegalValidationGateway.ts` | Import + re-export `ValidationRiskLevel`, `ModuleType` |
+| `src/hooks/admin/legal/useLegalValidationGatewayEnhanced.ts` | Import + re-export `RiskLevel`, `ModuleType` |
+| `src/hooks/admin/legal/useCrossModuleOrchestrator.ts` | Import + re-export `ModuleType` |
+| `src/hooks/admin/legal/useLegalAdvisor.ts` | Import `LegalRiskLevel`, usar en interfaces inline |
 
 ## Archivos que NO se tocan
 
-Todo lo existente permanece intacto.
+- Edge functions
+- Tablas / migraciones
+- Barrel exports (`src/hooks/admin/legal/index.ts`) — los re-exports en hooks mantienen nombres existentes
+- Hooks fuera del módulo legal (HR, support, security) — se migrarán en F3+
+
+## Garantía de no ruptura
+
+- Todos los tipos re-exportados mantienen su nombre original
+- Barrel exports en `index.ts` siguen funcionando sin cambios
+- Componentes que importan desde barrels no se tocan
+- Build verificado con TypeScript
+
+## Notas para F3
+
+- Migrar hooks HR que usan `'low' | 'medium' | 'high' | 'critical'` inline
+- Migrar `usePredictiveLegalAnalytics` risk levels
+- Evaluar si `LegalJurisdiction` del Advisor debe extender `LegalJurisdictionInfo`
 
