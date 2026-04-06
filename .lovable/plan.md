@@ -1,52 +1,96 @@
 
 
-# Plan: Fase 0 Continuación — Reducir ApplicationStateAnalyzer a ~1,200 líneas
+# Plan: F1 — Crear `src/shared/legal/types.ts`
 
-## Estado actual
+## Análisis de tipos existentes
 
-El archivo ya se redujo de 4,663 a **2,660 líneas** tras extraer ComplianceTab, AIAnalysisTab y SystemExportTab. Los `.repeat()` problemáticos fueron eliminados. Sin embargo, 2,660 líneas sigue siendo excesivo y contribuye a presión de memoria con los 6,968 módulos del proyecto.
+Tras inspección exhaustiva, hay **3 categorías claras** de tipos repetidos across the codebase:
 
-## Secciones restantes por extraer
+### Tipos que se repiten idénticamente (candidatos a Shared Core)
 
-| Sección | Líneas | Contenido |
+| Tipo | Repetido en | Veces |
 |---|---|---|
-| `generatePDF()` | 580-1476 (~900 ln) | Generación de PDF de informe de estado |
-| `generateSalesPDF()` | 1477-1897 (~420 ln) | Generación de PDF comercial/ventas |
-| Static lists (components, hooks, functions) | 315-491 (~175 ln) | Arrays hardcoded para análisis |
+| `RiskLevel = 'low' \| 'medium' \| 'high' \| 'critical'` | 12+ hooks (legal, HR, support, compliance, churn) | 12 |
+| `ModuleType = 'hr' \| 'fiscal' \| 'treasury' \| ...` | `useLegalValidationGateway`, `Enhanced`, barrel exports | 3 |
+| `ValidationStatus` (pending/approved/rejected/blocked) | `useSettlements`, `Gateway`, `GatewayEnhanced` | 3 (variantes) |
+| `LegalContext` (entityId, jurisdictions, etc.) | `useLegalAdvisor`, `useLegalMatters` | 2 (distintas) |
+| `LegalJurisdiction` (code, name, country) | `useLegalAdvisor` | 1 pero universal |
+
+### Tipos que deben quedarse en su módulo (NO shared)
+- `LegalCommunication`, `LegalContract`, `LegalClause` → HR-specific
+- `LegalTemplate` (HR) → HR document generation
+- `SmartContract`, `CLMContract` → Legal UI workflows
+- `LegalEntity`, `IPAsset`, `Dispute` → Legal Entity Management UI
+- `LegalValidation`, `LegalValidationContext` → AI Hybrid specific
+
+### Tipos ambiguos (re-export en F2+)
+- `LegalProcedure` → Workflow, no core
+- `ComplianceReport` → Could be shared later
+- `RiskAssessment` → 2 variantes (legal vs generic)
 
 ## Acciones
 
-### Acción 1: Extraer generadores PDF
-Crear `src/components/admin/analyzer/pdfGenerators.ts` con las funciones `generatePDF` y `generateSalesPDF`. Estas son funciones async puras que solo necesan recibir `codebaseAnalysis`, `improvementsAnalysis` y `aiAnalysis` como parámetros. No dependen de estado React interno.
+### Acción 1: Crear directorio y tipos base
 
-- Nuevo archivo: `src/components/admin/analyzer/pdfGenerators.ts` (~1,320 líneas)
-- Impacto: Reduce ApplicationStateAnalyzer en ~1,320 líneas
+**Archivo**: `src/shared/legal/types.ts`
 
-### Acción 2: Extraer listas estáticas de inventario
-Crear `src/components/admin/analyzer/projectInventory.ts` con `componentsList`, `hooksList`, `edgeFunctions`, `pagesList` y `securityFeatures`.
+Contenido:
+- `LegalRiskLevel` — tipo unión reutilizable (actualmente repetido 12+ veces como inline literal)
+- `LegalValidationStatus` — máquina de estados canónica (superset de las 3 variantes existentes)
+- `LegalModuleType` — enum de módulos ERP que interactúan con legal
+- `LegalJurisdiction` — jurisdicción base reutilizable
+- `LegalReference` — referencia a artículo/ley (base legal citations)
+- `LegalContext` — contexto mínimo compartido (entityId, entityType, jurisdictions)
+- `LegalValidationResult` — resultado de validación genérico
 
-- Nuevo archivo: `src/components/admin/analyzer/projectInventory.ts` (~180 líneas)
-- Impacto: Reduce ~175 líneas adicionales
+Cada tipo llevará JSDoc con ownership (`@shared-legal-core`) y referencia a los consumidores actuales.
 
-### Acción 3: Extraer ImprovementsTab
-La TabsContent "improvements" (líneas ~2000-2620, ~620 líneas) es renderizado puro con datos de `improvementsAnalysis`. Extraer a `src/components/admin/analyzer/ImprovementsTab.tsx`.
+### Acción 2: Crear barrel export
 
-- Nuevo archivo: `src/components/admin/analyzer/ImprovementsTab.tsx` (~630 líneas)
-- Impacto: Reduce ~620 líneas del render
+**Archivo**: `src/shared/legal/index.ts`
 
-## Resultado esperado
+Simple re-export de `types.ts` para facilitar imports futuros.
 
-| Archivo | Líneas |
+### Acción 3: NO se modifican consumidores existentes
+
+En F1 los tipos son **additive-only**. Los hooks existentes siguen usando sus propios tipos inline. La migración de imports se hará en F2+ de forma incremental con re-exports.
+
+## Ownership de tipos
+
+| Tipo en `shared/legal/types.ts` | Ownership | Consumidores futuros |
+|---|---|---|
+| `LegalRiskLevel` | Shared Core | Todos los módulos con risk_level |
+| `LegalValidationStatus` | Shared Core | Settlements, Payroll, Offboarding, Gateway |
+| `LegalModuleType` | Shared Core | Gateway, Orchestrator, Procedures |
+| `LegalJurisdiction` | Shared Core | Advisor, Gateway, Procedures |
+| `LegalReference` | Shared Core | Knowledge, Advisor, bridgeEngine |
+| `LegalContext` | Shared Core | Advisor, Matters, Agent context |
+| `LegalValidationResult` | Shared Core | Gateway, AI validator, HR compliance |
+
+## Garantía de no ruptura
+
+- **Zero imports modificados** — ningún archivo existente cambia
+- **Zero re-exports** en F1 — solo se crean tipos nuevos
+- **Zero edge functions tocadas**
+- **Zero tablas modificadas**
+- Los tipos existentes en hooks seguirán funcionando tal cual
+
+## Notas para F2
+
+F2 debería:
+1. Migrar `legalReferenceResolver.ts` a `src/shared/legal/knowledge/`
+2. Hacer que `useLegalAdvisor` re-exporte `LegalJurisdiction` desde shared
+3. Hacer que `useLegalValidationGateway` re-exporte `ValidationRiskLevel` y `ModuleType` desde shared
+4. Cada migración: cambiar la fuente, añadir re-export en ubicación original
+
+## Archivos a crear
+
+| Archivo | Acción |
 |---|---|
-| ApplicationStateAnalyzer.tsx (principal) | ~550 |
-| pdfGenerators.ts | ~1,320 |
-| projectInventory.ts | ~180 |
-| ImprovementsTab.tsx | ~630 |
-| (existentes: SystemExportTab, ComplianceTab, AIAnalysisTab) | sin cambio |
+| `src/shared/legal/types.ts` | Crear (~120 líneas) |
+| `src/shared/legal/index.ts` | Crear (~5 líneas) |
 
-## Verificación
+## Archivos que NO se tocan
 
-- `npx tsc --noEmit` para confirmar compilación limpia
-- Sin cambios funcionales — solo reorganización de código
-- Re-exports y imports mantienen compatibilidad total
+Todo lo existente permanece intacto.
 
