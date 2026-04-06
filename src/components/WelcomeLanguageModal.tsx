@@ -402,14 +402,14 @@ export function WelcomeLanguageModal({
           )}
         </div>
 
-        <div className="relative flex gap-3 p-6 pt-2">
-          <Button variant="ghost" onClick={handleSkip} className="flex-1">
+        <div className="relative flex gap-3 p-4 sm:p-6 pt-2 flex-shrink-0">
+          <Button variant="ghost" onClick={handleSkip} className="flex-1 text-sm sm:text-base">
             {skipText}
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={!selectedLanguage}
-            className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm sm:text-base"
           >
             <Sparkles className="w-4 h-4" />
             {confirmText}
