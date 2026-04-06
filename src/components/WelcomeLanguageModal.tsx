@@ -147,9 +147,8 @@ export function WelcomeLanguageModal({
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [rememberChoice, setRememberChoice] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedRegions, setExpandedRegions] = useState<Set<RegionKey>>(
-    new Set(['spain', 'europe'])
-  );
+  // All regions collapsed by default for better mobile UX
+  const [expandedRegions, setExpandedRegions] = useState<Set<RegionKey>>(new Set());
   const { language, setLanguage, refreshTranslations } = useLanguage();
   const { clearCache: clearDynamicCache } = useDynamicTranslation();
 
@@ -172,20 +171,21 @@ export function WelcomeLanguageModal({
     }
   }, [mode]);
 
-  // Pre-seleccionar idioma actual en modo selector
+  // Pre-select current language and expand its region when opening
   useEffect(() => {
-    if (mode === 'selector' && isOpen && !selectedLanguage) {
+    if (isOpen) {
       setSelectedLanguage(language);
-    }
-  }, [mode, isOpen, language, selectedLanguage]);
-
-  // Reset al cerrar
-  useEffect(() => {
-    if (!isOpen) {
+      // Find which region the current language belongs to and expand it
+      const currentLang = ALL_LANGUAGES.find(l => l.code === language);
+      if (currentLang) {
+        setExpandedRegions(new Set([currentLang.regionGroup]));
+      }
+    } else {
       setSearchQuery('');
       setSelectedLanguage(null);
+      setExpandedRegions(new Set());
     }
-  }, [isOpen]);
+  }, [isOpen, language]);
 
   const filteredLanguages = useMemo(() => {
     if (!searchQuery.trim()) return ALL_LANGUAGES;
