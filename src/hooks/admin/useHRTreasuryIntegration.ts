@@ -504,6 +504,26 @@ export function useHRTreasuryIntegration() {
     }
   }, [createPayrollPayment]);
 
+  // === GET PAYMENT URGENCIES (F9 — Shared Legal Core) ===
+  const getPaymentUrgencies = useCallback(async (
+    companyId: string
+  ): Promise<TreasuryIntegrationWithUrgency[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_treasury_integration')
+        .select('*')
+        .eq('company_id', companyId)
+        .in('status', ['pending', 'scheduled'])
+        .order('due_date', { ascending: true });
+
+      if (error) throw error;
+      return enrichWithUrgency((data || []) as TreasuryIntegration[]);
+    } catch (err) {
+      console.error('[useHRTreasuryIntegration] getPaymentUrgencies error:', err);
+      return [];
+    }
+  }, []);
+
   return {
     // Estado
     isLoading,
