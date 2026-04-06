@@ -206,6 +206,23 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, company_id, file_type, period_month, period_year, employees } = body;
 
+    // S2.1: Tenant isolation
+    if (company_id) {
+      const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const { data: membership } = await adminClient
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     if (action === "generate") {
       if (!company_id || !file_type || !period_month || !period_year) {
         return new Response(
@@ -285,7 +302,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("[payroll-file-generator] Error:", err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }

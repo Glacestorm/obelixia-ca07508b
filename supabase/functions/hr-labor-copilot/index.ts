@@ -55,23 +55,31 @@ async function validateUserAccess(
   }
 
   if (companyIds.length > 0) {
-    // Verify the user has access to at least some of these companies
-    const { data: assignments, error: assignErr } = await supabase
-      .from('erp_hr_advisory_assignments')
+    // S2.1: Tenant isolation — verify membership in erp_user_companies
+    const { data: membership } = await supabase
+      .from('erp_user_companies')
       .select('company_id')
-      .eq('advisor_id', user.id)
+      .eq('user_id', user.id)
       .eq('is_active', true)
       .in('company_id', companyIds.slice(0, 50))
       .limit(50);
 
-    if (assignErr) {
-      console.warn('[hr-labor-copilot] Assignment check error:', assignErr.message);
-      // Don't block — could be a table not existing yet
-    } else if (assignments && assignments.length === 0 && companyIds.length > 0) {
-      // User has no assignments for any of the companies — suspicious
-      console.warn(`[hr-labor-copilot] User ${user.id} has no assignments for provided companies`);
-      // We still allow the request but strip company details from context
-      return { valid: true, userId: user.id, error: 'no_assignments' };
+    if (!membership || membership.length === 0) {
+      // Fallback: check advisory assignments
+      const { data: assignments, error: assignErr } = await supabase
+        .from('erp_hr_advisory_assignments')
+        .select('company_id')
+        .eq('advisor_id', user.id)
+        .eq('is_active', true)
+        .in('company_id', companyIds.slice(0, 50))
+        .limit(50);
+
+      if (assignErr) {
+        console.warn('[hr-labor-copilot] Assignment check error:', assignErr.message);
+      } else if (!assignments || assignments.length === 0) {
+        console.warn(`[hr-labor-copilot] User ${user.id} has no membership or assignments for provided companies`);
+        return { valid: true, userId: user.id, error: 'no_assignments' };
+      }
     }
   }
 
@@ -263,7 +271,7 @@ IMPORTANTE:
     console.error('[hr-labor-copilot] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Internal server error',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

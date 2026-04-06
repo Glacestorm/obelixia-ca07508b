@@ -115,6 +115,22 @@ serve(async (req) => {
 
     const { action, company_id, params } = await req.json();
 
+    // S2.1: Tenant isolation
+    if (company_id) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Rate limit expensive generation actions
     if (action === 'generate_regulatory_report') {
       const burstResult = checkBurstLimit(company_id || user.id, { burstPerMinute: 5, perDay: 30, functionName: 'hr-regulatory-reporting' });
@@ -551,15 +567,15 @@ FORMATO DE RESPUESTA (JSON estricto):
     }
   } catch (error) {
     console.error('[hr-regulatory-reporting] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
 
-function jsonResponse(data: unknown) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
+  function jsonResponse(data: unknown) {
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});

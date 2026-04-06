@@ -18,6 +18,24 @@ serve(async (req) => {
     if (authError || !user) throw new Error('Unauthorized');
 
     const { action, params } = await req.json();
+
+    // S2.1: Tenant isolation
+    const targetCompanyId = params?.company_id;
+    if (targetCompanyId) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('company_id', targetCompanyId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     let result: any;
 
     switch (action) {
@@ -576,7 +594,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('[erp-hr-workflow-engine] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

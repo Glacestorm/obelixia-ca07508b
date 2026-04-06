@@ -32,6 +32,22 @@ serve(async (req) => {
 
     const { action, company_id, report_id, data } = await req.json() as WhistleblowerRequest;
 
+    // S2.1: Tenant isolation — skip for anonymous submit_report
+    if (action !== 'submit_report' && userId && company_id) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     console.log(`[erp-hr-whistleblower-agent] Action: ${action}, Company: ${company_id}`);
 
     switch (action) {
@@ -330,7 +346,7 @@ Canal: ${report.submission_channel}`
     console.error('[erp-hr-whistleblower-agent] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Internal server error',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

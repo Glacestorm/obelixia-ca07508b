@@ -50,6 +50,23 @@ serve(async (req) => {
 
     const { action, employeeId, terminationId, terminationType, terminationDate, companyId, context } = await req.json() as OffboardingRequest;
 
+    // S2.1: Tenant isolation
+    if (companyId) {
+      const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const { data: membership } = await adminClient
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', claims.user.id)
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     console.log(`[erp-hr-offboarding-agent] Action: ${action}, Employee: ${employeeId}`);
 
     let systemPrompt = '';
@@ -462,7 +479,7 @@ Riesgos identificados: ${JSON.stringify(context?.risks || [])}`;
     console.error('[erp-hr-offboarding-agent] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
