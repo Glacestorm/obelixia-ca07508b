@@ -228,6 +228,7 @@ export default defineConfig(({ mode, command }) => {
             if (id.includes('/components/erp/audit-center/')) return 'app-erp-audit-center';
             if (id.includes('/components/erp/ai-center/')) return 'app-erp-ai-center';
             if (id.includes('/components/erp/')) return 'app-erp-misc';
+            if (id.includes('/components/admin/analyzer/')) return 'app-admin-analyzer';
             if (id.includes('/components/admin/')) return 'app-admin';
             if (id.includes('/components/academia/')) return 'app-academia';
           } : undefined,
