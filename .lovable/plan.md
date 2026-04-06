@@ -1,115 +1,173 @@
 
 
-# Plan: F3 — Validation State Machine Compartida
+# Plan: F4 — Obligation Engine en Shared Legal Core
 
 ## Objetivo
 
-Crear `src/shared/legal/compliance/validationStateMachine.ts` con una state machine tipada que centralice la semántica de validación legal dispersa en Settlements, Payroll Recalculation y Offboarding, sin alterar comportamiento actual.
+Extraer tipos e interfaces de obligaciones, plazos y sanciones desde `useHRLegalCompliance` hacia `src/shared/legal/compliance/obligationEngine.ts`, creando funciones puras de dominio (cálculo de plazos, evaluación de riesgo sancionador) que hoy no existen como lógica centralizada. El hook HR sigue funcionando sin cambios en su interfaz pública.
 
-## Análisis de estados actuales
+## Análisis del hook actual
 
-### Tabla `erp_hr_settlements`
-- `legal_validation_status`: `null` → `'pending'` → `'approved'` | `'rejected'`
-- `status` (settlement): `'draft'` → `'calculated'` → `'pending_legal_validation'` → `'pending_hr_approval'` → `'approved'` → `'paid'` | `'rejected'` | `'cancelled'`
+`useHRLegalCompliance` (763 líneas) es fundamentalmente una capa de acceso a datos (CRUD Supabase) con helpers UI. No contiene lógica pura de negocio — toda la inteligencia está en la edge function `erp-hr-compliance-monitor` o en RPCs.
 
-### Tabla `erp_hr_payroll_recalculations`
-- `legal_validation_status`: `null` | `'pending'` → `'approved'`
-- `status`: `'pending'` → `'ai_validated'` → `'legal_reviewed'` → `'legal_validated'` → `'approved'` | `'rejected'`
+### Clasificación de interfaces
 
-### Tabla `erp_hr_terminations` (Offboarding)
-- `legal_review_required`: `boolean`
-- `legal_review_status`: `null` | `'pending'` → `'approved'`
+| Interfaz | Destino | Razón |
+|---|---|---|
+| `AdminObligation` | **Shared** → `ObligationRule` | Estructura genérica de obligación legal, reutilizable por Fiscal/Treasury |
+| `ObligationDeadline` | **Shared** → `ObligationDeadline` | Plazo de cumplimiento genérico |
+| `SanctionRisk` | **Shared** → `SanctionRule` | Tipificación de infracción, no HR-specific |
+| `UpcomingDeadline` | **Shared** → `ComputedDeadline` | Resultado de cálculo de proximidad |
+| `LegalCommunication` | **HR** | Comunicaciones laborales específicas |
+| `CommunicationTemplate` | **HR** | Templates HR |
+| `ComplianceChecklist` | **HR** | Checklists HR |
+| `SanctionAlert` | **HR** | Alertas con company_id, agents HR/Legal |
+| `RiskAssessment` | **HR** | Dashboard summary HR |
 
-### Patrón común extraído
-Todos siguen: `null/pending → approved | rejected`, con variantes menores. La state machine debe modelar este flujo base más las transiciones específicas.
+### Consumidores detectados (5 componentes)
+
+Todos importan desde `@/hooks/admin/useHRLegalCompliance`:
+- `HRLegalComplianceDashboard.tsx`
+- `HRObligationsPanel.tsx` (importa `ObligationDeadline`)
+- `HRCommunicationsPanel.tsx` (importa `LegalCommunication`)
+- `HRSanctionRisksPanel.tsx`
+- `HRComplianceChecklistPanel.tsx`
 
 ## Acciones
 
-### Acción 1: Crear `src/shared/legal/compliance/validationStateMachine.ts`
+### Accion 1: Crear `src/shared/legal/compliance/obligationEngine.ts`
 
-Define:
+Tipos reutilizables extraídos + funciones puras nuevas:
 
 ```typescript
-// Estados canónicos de validación legal
-export type LegalValidationState = 
-  | 'not_required' | 'pending' | 'in_review' 
-  | 'approved' | 'rejected' | 'escalated';
+/** @shared-legal-core — Regla de obligación legal */
+export interface ObligationRule {
+  id: string;
+  jurisdiction: string;
+  organism: string;
+  modelCode?: string;
+  name: string;
+  type: string;           // 'declaracion', 'cotizacion', 'informativa', etc.
+  periodicity: string;    // 'mensual', 'trimestral', 'anual'
+  deadlineDay?: number;
+  deadlineMonth?: number;
+  deadlineDescription?: string;
+  legalReference?: string;
+  sanctionType?: string;
+  sanctionMin?: number;
+  sanctionMax?: number;
+  isActive: boolean;
+}
 
-// Eventos que disparan transiciones
-export type LegalValidationEvent = 
-  | 'REQUEST_REVIEW' | 'START_REVIEW' | 'APPROVE' 
-  | 'REJECT' | 'ESCALATE' | 'RESET';
+/** @shared-legal-core — Plazo de cumplimiento */
+export interface ObligationDeadlineInfo {
+  obligationId: string;
+  periodStart?: string;
+  periodEnd?: string;
+  deadlineDate: string;
+  status: string;
+  completedAt?: string;
+  notes?: string;
+}
 
-// Mapa de transiciones válidas
-const TRANSITIONS: Record<LegalValidationState, Partial<Record<LegalValidationEvent, LegalValidationState>>>
+/** @shared-legal-core — Regla de sanción */
+export interface SanctionRule { ... }
 
-// Funciones puras:
-// - transition(current, event) → next | null
-// - canTransition(current, event) → boolean
-// - getAvailableEvents(current) → LegalValidationEvent[]
-// - mapLegacyStatus(raw: string | null) → LegalValidationState
-// - toLegacyStatus(state: LegalValidationState) → string | null
+/** @shared-legal-core — Plazo calculado con urgencia */
+export interface ComputedDeadline { ... }
+
+// === FUNCIONES PURAS ===
+
+/** Calcula días restantes y nivel de urgencia */
+export function computeDeadlineUrgency(deadlineDate: string, referenceDate?: Date): ComputedDeadline
+
+/** Evalúa riesgo sancionador basado en clasificación e importe */
+export function evaluateSanctionRisk(rule: SanctionRule, classification: string): { min: number; max: number; severity: LegalRiskLevel }
+
+/** Filtra obligaciones por jurisdicción y tipo */
+export function filterObligationsByScope(rules: ObligationRule[], jurisdiction?: string, type?: string): ObligationRule[]
+
+/** Ordena deadlines por urgencia (más próximos primero) */
+export function sortDeadlinesByUrgency(deadlines: ComputedDeadline[]): ComputedDeadline[]
 ```
 
-Incluye `mapLegacyStatus` para traducir valores existentes en DB (`null`, `'pending'`, `'approved'`, `'rejected'`) al estado canónico, y `toLegacyStatus` para el camino inverso. Esto garantiza compatibilidad con las tablas actuales sin migraciones.
+### Accion 2: Crear `src/shared/legal/compliance/complianceRules.ts`
 
-### Acción 2: Crear test `src/__tests__/shared/legal/validationStateMachine.test.ts`
+Constantes de dominio reutilizables:
 
-Tests unitarios cubriendo:
-- Todas las transiciones válidas
-- Transiciones inválidas retornan `null`
-- `mapLegacyStatus` mapea correctamente todos los valores existentes en DB
-- `toLegacyStatus` round-trip consistency
-- `getAvailableEvents` retorna eventos correctos por estado
-- Edge cases: `null`, `undefined`, strings vacíos
+```typescript
+/** Niveles de alerta por días restantes */
+export const ALERT_THRESHOLDS = {
+  critical: 3,
+  urgent: 7,
+  alert: 15,
+  prealert: 30,
+} as const;
 
-### Acción 3: Actualizar barrel `src/shared/legal/index.ts`
+/** Mapeo de clasificación LISOS → severity */
+export const CLASSIFICATION_SEVERITY: Record<string, LegalRiskLevel> = {
+  leve: 'low',
+  grave: 'high',
+  muy_grave: 'critical',
+};
+```
 
-Añadir re-exports de la state machine.
+### Accion 3: Adaptar `useHRLegalCompliance.ts`
 
-### Acción 4: Verificar build
+- Importar tipos shared y crear type aliases para backward compatibility:
+  ```typescript
+  import type { ObligationRule, ObligationDeadlineInfo, SanctionRule } from '@/shared/legal';
+  /** @migrated-to-shared — Re-export for backward compatibility */
+  export type AdminObligation = ObligationRule & { /* HR-specific DB fields */ };
+  ```
+- Importar `computeDeadlineUrgency` y `ALERT_THRESHOLDS` para uso interno donde aplique
+- **No cambiar** la interfaz pública del hook (return object idéntico)
+- **No cambiar** las funciones de fetch/CRUD (siguen usando tablas HR directamente)
 
-`npx tsc --noEmit` + `npx vitest run` para los tests.
+### Accion 4: Actualizar barrel `src/shared/legal/index.ts`
+
+Añadir exports del obligation engine y compliance rules.
+
+### Accion 5: Verificar build
+
+`npx tsc --noEmit` para confirmar cero errores.
 
 ## Archivos
 
 | Archivo | Acción |
 |---|---|
-| `src/shared/legal/compliance/validationStateMachine.ts` | Crear |
-| `src/__tests__/shared/legal/validationStateMachine.test.ts` | Crear |
+| `src/shared/legal/compliance/obligationEngine.ts` | Crear |
+| `src/shared/legal/compliance/complianceRules.ts` | Crear |
+| `src/hooks/admin/useHRLegalCompliance.ts` | Modificar (imports + type aliases, sin cambio de interfaz pública) |
 | `src/shared/legal/index.ts` | Añadir exports |
 
 ## Archivos que NO se tocan
 
-- **Hooks HR** (`useSettlements`, `usePayrollRecalculation`) — No se integran en esta fase. La state machine queda disponible para consumo futuro.
-- **Componentes UI** — Sin cambios.
-- **Edge functions** — Sin cambios.
-- **Tablas/migraciones** — Sin cambios.
-- `obligationEngine`, `employeeLegalProfileEngine` — Fuera de alcance.
+- Los 5 componentes HR consumers — siguen importando desde el hook
+- Edge functions (`erp-hr-compliance-monitor`)
+- Tablas / migraciones
+- `employeeLegalProfileEngine`, topes SS/IRPF
+- `validationStateMachine.ts` (ya completado en F3)
 
-## Decisión: NO integrar consumidores en F3
+## Ownership
 
-La regla 5 del usuario exige tests antes de integrar. La integración en hooks HR se hará en F4, donde `useSettlements.submitLegalValidation` y `usePayrollRecalculation` usarán `transition()` para validar cambios de estado antes de escribir en DB. En F3 solo se crea la state machine + tests.
+- `src/shared/legal/compliance/obligationEngine.ts` → **Shared Legal Core**
+- `src/shared/legal/compliance/complianceRules.ts` → **Shared Legal Core**
+- `useHRLegalCompliance.ts` → **HR Module** (consumidor del engine)
+- Componentes `HR*Panel.tsx` → **HR UI** (sin cambios)
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| Valores legacy no mapeados | `mapLegacyStatus` tiene fallback a `'pending'` para valores desconocidos |
-| State machine no cubre variantes futuras | Diseño extensible: añadir estados/eventos no rompe el contrato |
-| Drift entre DB values y state machine | Round-trip test `toLegacyStatus(mapLegacyStatus(x)) === x` lo detecta |
+| Type aliases rompen imports de consumidores | Re-exports mantienen nombres originales (`AdminObligation`, `ObligationDeadline`, `SanctionRisk`) |
+| Campos DB (`is_active`, `deadline_day`) vs camelCase en shared | Shared usa camelCase; el hook mapea internamente al recibir de Supabase (ya lo hace con `as` casts) |
+| Funciones puras no usadas aún por el hook | Son additive; disponibles para F5 y otros módulos (Fiscal/Treasury) |
 
-## Garantía de compatibilidad
+## Notas para F5
 
-- Zero cambios en archivos existentes (salvo barrel export).
-- Funciones puras sin side effects.
-- Legacy mapping bidireccional testado.
-- No se altera ningún flujo de escritura a DB.
-
-## Notas para F4
-
-- Integrar `transition()` en `useSettlements.submitLegalValidation` como guard antes del `.update()`
-- Integrar en `usePayrollRecalculation` para validar cambio de `legal_validation_status`
-- Evaluar si `HROffboardingPanel` debe usar la state machine para `legal_review_status`
-- Considerar feature flag `LEGAL_SM_ENABLED` para rollback seguro
+- Integrar `computeDeadlineUrgency` en `fetchUpcomingDeadlines` para enriquecer datos client-side
+- Evaluar si `useLegalCompliance` (módulo Jurídico) debe consumir `ObligationRule` en lugar de su propio `ComplianceCheck`
+- Migrar `employeeLegalProfileEngine` como siguiente paso del Shared Legal Core
+- Considerar si `SanctionAlert` (HR) debería tener una versión shared para alertas cross-module
 
