@@ -386,9 +386,11 @@ export function WelcomeLanguageModal({
               </div>
             )}
           </ScrollArea>
+        </div>
 
+        <div className="relative flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-2 space-y-3">
           {mode === 'welcome' && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+            <div className="flex items-center gap-2 pt-2 border-t border-border/50">
               <Checkbox
                 id="remember"
                 checked={rememberChoice}
@@ -400,20 +402,20 @@ export function WelcomeLanguageModal({
               </label>
             </div>
           )}
-        </div>
 
-        <div className="relative flex gap-3 p-4 sm:p-6 pt-2 flex-shrink-0">
-          <Button variant="ghost" onClick={handleSkip} className="flex-1 text-sm sm:text-base">
-            {skipText}
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!selectedLanguage}
-            className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm sm:text-base"
-          >
-            <Sparkles className="w-4 h-4" />
-            {confirmText}
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="ghost" onClick={handleSkip} className="flex-1 text-sm sm:text-base">
+              {skipText}
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!selectedLanguage}
+              className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm sm:text-base"
+            >
+              <Sparkles className="w-4 h-4" />
+              {confirmText}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
