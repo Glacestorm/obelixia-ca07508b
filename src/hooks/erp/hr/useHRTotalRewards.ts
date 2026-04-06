@@ -460,6 +460,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'analyze_compensation',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params: { analysisType }
           }
