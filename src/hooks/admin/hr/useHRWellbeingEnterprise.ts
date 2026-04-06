@@ -103,7 +103,7 @@ export interface WellbeingStats {
 }
 
 // === HOOK ===
-export function useHRWellbeingEnterprise() {
+export function useHRWellbeingEnterprise(companyId?: string) {
   const [assessments, setAssessments] = useState<WellbeingAssessment[]>([]);
   const [surveys, setSurveys] = useState<WellbeingSurvey[]>([]);
   const [programs, setPrograms] = useState<WellnessProgram[]>([]);
@@ -115,13 +115,14 @@ export function useHRWellbeingEnterprise() {
 
   const invoke = useCallback(async (action: string, params?: any) => {
     const { data, error } = await supabase.functions.invoke('erp-hr-wellbeing-enterprise', {
-      body: { action, params }
+      body: { action, params: { ...params, company_id: companyId } }
     });
     if (error) throw error;
     return data;
-  }, []);
+  }, [companyId]);
 
   const fetchAll = useCallback(async () => {
+    if (!companyId) return;
     setLoading(true);
     try {
       const [a, s, p, b, k] = await Promise.all([
@@ -141,7 +142,7 @@ export function useHRWellbeingEnterprise() {
     } finally {
       setLoading(false);
     }
-  }, [invoke]);
+  }, [invoke, companyId]);
 
   const runAIAnalysis = useCallback(async () => {
     setAiLoading(true);
@@ -184,7 +185,11 @@ export function useHRWellbeingEnterprise() {
   const seedDemo = useCallback(async () => {
     setLoading(true);
     try {
-      await invoke('seed_demo');
+      // seed_demo doesn't need company_id, uses direct invoke
+      const { data, error } = await supabase.functions.invoke('erp-hr-wellbeing-enterprise', {
+        body: { action: 'seed_demo', params: {} }
+      });
+      if (error) throw error;
       toast.success('Datos demo generados');
       await fetchAll();
     } catch (err) {
@@ -192,7 +197,7 @@ export function useHRWellbeingEnterprise() {
     } finally {
       setLoading(false);
     }
-  }, [invoke, fetchAll]);
+  }, [fetchAll]);
 
   // Stats
   const stats: WellbeingStats = {
