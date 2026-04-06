@@ -9,6 +9,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { usePayrollComplianceValidation } from './usePayrollComplianceValidation';
+import { 
+  mapLegacyStatus, 
+  toLegacyStatus, 
+  tryTransition,
+  type LegalValidationState,
+  type LegalValidationEvent 
+} from '@/shared/legal';
+
+/** Settlements treat null as 'pending' (implicitly awaiting legal review) */
+function getSettlementLegalState(status: string | null | undefined): LegalValidationState {
+  if (!status) return 'pending';
+  return mapLegacyStatus(status);
+}
 
 // === INTERFACES ===
 export interface Settlement {
