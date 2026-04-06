@@ -1,111 +1,108 @@
 
 
-# Plan: F9 — Treasury Deadlines via Shared Legal Core
+# Plan: F10 — Cleanup SS Engine Duplication
 
-## Integration Point
+## Critical Discovery: Data Discrepancy
 
-**File**: `src/hooks/admin/useHRTreasuryIntegration.ts`
+Before addressing duplication, there is a **data mismatch** between the two sources that must be resolved:
 
-This hook is the central Treasury integration layer. It already has:
-- `getTreasurySummary` (lines 400-433): manually computes overdue/upcoming using raw date string comparisons (`i.due_date < today`)
-- `getOverdueItems` (lines 436-455): simple DB query
-- `getUpcomingPayments` (lines 458-479): simple DB query
+| Group | Shared Core (`ssRules2026.ts`) | Engine (`ssContributionEngine.ts`) | Knowledge Doc |
+|-------|------|--------|------------|
+| 1 | 1,847.40 | **1,929.00** | **1,929.00** |
+| 2 | 1,531.50 | **1,599.60** | **1,599.60** |
+| 3 | 1,332.90 | **1,391.70** | **1,391.70** |
 
-The manual overdue/upcoming logic in `getTreasurySummary` is the ideal replacement target — it duplicates urgency classification that `computeDeadlineUrgency` already provides with richer granularity (critical/urgent/alert/prealert/normal/overdue).
+The knowledge doc (`ss-cotizacion-grupos-bases-2026.md`) and the engine agree. The shared core has **stale values** (likely from 2025 or an earlier draft). This must be fixed first — otherwise replacing the engine's data with shared core would introduce incorrect bases.
+
+## Strategy
+
+**Step 1: Fix shared core data** — Update `SS_GROUP_BASES_2026` and `SS_GROUP_MIN_BASES_MENSUAL_2026` in `src/shared/legal/rules/ssRules2026.ts` to match the knowledge doc (G1=1929.00, G2=1599.60, G3=1391.70).
+
+**Step 2: Structural adapter** — The engine's local `SS_GROUP_BASES_2026` has a different shape than the shared core:
+- Engine: `{ base_minima_mensual, base_maxima_mensual, base_minima_diaria, base_maxima_diaria, cotizacion_tipo, descripcion }`
+- Shared: `{ minMensual, maxMensual, label, isDailyBase }`
+
+Create a derived constant that maps from shared core shape to engine shape, keeping the same keys so all internal consumers work unchanged.
+
+**Step 3: Tests** — Extend the existing `ssContributionSharedCore.test.ts` to verify group base equivalence (G1=1929.00, G8 daily=46.04).
 
 ## Changes
 
-### Action 1: Add urgency enrichment utility to `useHRTreasuryIntegration.ts`
+### File 1: `src/shared/legal/rules/ssRules2026.ts`
 
-Import `computeDeadlineUrgency` and its `ComputedDeadline` type from the shared core. Add a pure function that enriches `TreasuryIntegration[]` items with computed urgency:
+Fix group bases to match RDL 3/2026 (knowledge doc):
 
-```typescript
-import { computeDeadlineUrgency, type ComputedDeadline } from '@/shared/legal/compliance/obligationEngine';
-
-export interface TreasuryIntegrationWithUrgency extends TreasuryIntegration {
-  urgency: ComputedDeadline;
-}
-
-function enrichWithUrgency(
-  items: TreasuryIntegration[],
-  referenceDate?: Date
-): TreasuryIntegrationWithUrgency[] {
-  return items
-    .filter(i => i.status === 'pending' || i.status === 'scheduled')
-    .map(i => ({
-      ...i,
-      urgency: computeDeadlineUrgency(i.due_date, referenceDate),
-    }));
-}
+```
+Group 1: minMensual 1847.40 → 1929.00
+Group 2: minMensual 1531.50 → 1599.60
+Group 3: minMensual 1332.90 → 1391.70
 ```
 
-### Action 2: Add `getPaymentUrgencies` function to the hook
-
-A new exported function that fetches pending/scheduled integrations and returns them enriched with shared core urgency levels:
-
-```typescript
-const getPaymentUrgencies = useCallback(async (
-  companyId: string
-): Promise<TreasuryIntegrationWithUrgency[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('erp_hr_treasury_integration')
-      .select('*')
-      .eq('company_id', companyId)
-      .in('status', ['pending', 'scheduled'])
-      .order('due_date', { ascending: true });
-
-    if (error) throw error;
-    return enrichWithUrgency((data || []) as TreasuryIntegration[]);
-  } catch (err) {
-    console.error('[useHRTreasuryIntegration] getPaymentUrgencies error:', err);
-    return [];
-  }
-}, []);
+Same fix in `SS_GROUP_MIN_BASES_MENSUAL_2026`:
+```
+1: 1847.40 → 1929.00
+2: 1531.50 → 1599.60
+3: 1332.90 → 1391.70
 ```
 
-This is **additive** — existing `getTreasurySummary`, `getOverdueItems`, and `getUpcomingPayments` remain untouched. The new function provides richer urgency data for consumers that want it, without breaking anything.
+### File 2: `src/engines/erp/hr/ssContributionEngine.ts`
 
-### Action 3: Tests
+Replace the hardcoded `SS_GROUP_BASES_2026` (lines 143-162) with a derived constant:
 
-Create `src/__tests__/hooks/useTreasuryDeadlineUrgency.test.ts`:
+```typescript
+import {
+  SS_CONTRIBUTION_RATES_2026,
+  SS_GROUP_BASES_2026 as SS_GROUP_BASES_SHARED,
+  SS_BASE_MAX_MENSUAL_2026,
+  SS_BASE_MAX_DIARIA_2026,
+} from '@/shared/legal/rules/ssRules2026';
 
-Tests verify the `enrichWithUrgency` logic (pure function) plus round-trip with `computeDeadlineUrgency`:
+/** Group bases derived from Shared Legal Core — mapped to engine shape */
+export const SS_GROUP_BASES_2026: Record<number, { ... }> =
+  Object.fromEntries(
+    Object.entries(SS_GROUP_BASES_SHARED).map(([k, v]) => [
+      Number(k),
+      {
+        base_minima_mensual: v.isDailyBase ? (v.minMensual * 30) : v.minMensual,
+        base_maxima_mensual: SS_BASE_MAX_MENSUAL_2026,
+        base_minima_diaria: v.isDailyBase ? v.minMensual : null,
+        base_maxima_diaria: v.isDailyBase ? SS_BASE_MAX_DIARIA_2026 : null,
+        cotizacion_tipo: v.isDailyBase ? 'diaria' : 'mensual',
+        descripcion: v.label,
+      },
+    ])
+  );
+```
 
-1. Overdue payment → urgency = `'overdue'`, negative `daysRemaining`
-2. Payment due in 2 days → urgency = `'critical'`
-3. Payment due in 5 days → urgency = `'urgent'`
-4. Payment due in 10 days → urgency = `'alert'`
-5. Payment due in 60 days → urgency = `'normal'`
-6. Paid/cancelled items filtered out (only pending/scheduled enriched)
+This preserves the exact same keys and types. `getDefaultTopesForGroup` and all internal consumers work unchanged.
 
-## Files
+### File 3: `src/__tests__/engines/ssContributionSharedCore.test.ts`
 
-| File | Action |
-|---|---|
-| `src/hooks/admin/useHRTreasuryIntegration.ts` | Add import, `enrichWithUrgency`, `getPaymentUrgencies`, export new interface |
-| `src/__tests__/hooks/useTreasuryDeadlineUrgency.test.ts` | Create (6 tests) |
+Add tests for group base equivalence:
+- G1 base mínima mensual = 1929.00
+- G8 base mínima diaria = 46.04
+- G1 base máxima = 5101.20
+- All groups 4-11 min mensual = 1381.20
 
 ## Files NOT touched
 
-- `TreasuryDashboard.tsx` — no UI changes
-- `useERPTreasury.ts` — different hook (stats only, no due dates)
-- `PayablesManager.tsx` / `ReceivablesManager.tsx` — UI consumers, out of scope
-- Edge functions — rule #4
-- Tables — rule from context
+- `employeeLegalProfileEngine.ts` — already consumes shared via alias
+- `payrollConceptCatalog.ts` — deferred (static metadata)
+- Edge functions, tables — rules #4, #5
 
 ## Compatibility
 
 | Aspect | Guarantee |
 |---|---|
-| Existing functions | `getTreasurySummary`, `getOverdueItems`, `getUpcomingPayments` unchanged |
-| Return types | `TreasuryIntegration` unchanged; new `TreasuryIntegrationWithUrgency` extends it |
-| UI consumers | No existing consumer broken; new `getPaymentUrgencies` is opt-in |
+| Engine shape | Identical keys and types via adapter |
+| Computed values | Same numbers (after shared core fix) |
+| External consumers | Only import types from engine, not the constant |
+| `ss-contributions.ts` | Uses `SS_GROUP_MIN_BASES_MENSUAL_2026` from shared — also fixed |
 
-## Risk
+## Risks
 
 | Risk | Level | Mitigation |
 |---|---|---|
-| New function unused by UI | None | Additive API — UI adoption is next phase |
-| `computeDeadlineUrgency` thresholds differ from Treasury expectations | Low | Thresholds (3/7/15/30 days) are reasonable for payment urgency; same used across HR compliance |
+| Shared core values were wrong for G1-3 | **Fixed** | Updated to match knowledge doc and RDL 3/2026 |
+| Adapter mapping for daily groups | Low | `base_minima_mensual` for G8-11 = `minMensual × 30` = 1381.20, same as current |
 
