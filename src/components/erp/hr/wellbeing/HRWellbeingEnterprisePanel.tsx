@@ -25,7 +25,7 @@ export function HRWellbeingEnterprisePanel({ companyId }: Props) {
     assessments, surveys, programs, burnoutAlerts, kpis,
     aiAnalysis, stats, loading, aiLoading,
     fetchAll, runAIAnalysis, acknowledgeAlert, resolveAlert, seedDemo,
-  } = useHRWellbeingEnterprise();
+  } = useHRWellbeingEnterprise(companyId);
 
   const riskColor = (level: string) => {
     const map: Record<string, string> = { critical: 'text-red-600', high: 'text-orange-500', medium: 'text-yellow-500', low: 'text-green-500', none: 'text-muted-foreground' };
