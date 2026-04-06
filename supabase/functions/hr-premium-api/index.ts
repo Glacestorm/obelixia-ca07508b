@@ -36,6 +36,25 @@ serve(async (req) => {
     const { action, params } = await req.json() as APIRequest;
     const companyId = params?.company_id as string;
 
+    // === MEMBERSHIP CHECK ===
+    if (companyId) {
+      const { data: membership, error: membershipError } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (membershipError || !membership) {
+        console.warn(`[hr-premium-api] Membership denied: user=${userId}, company=${companyId}`);
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
     console.log(`[hr-premium-api] Action: ${action}, User: ${userId}`);
 
     let result: Record<string, unknown> = {};
@@ -354,7 +373,7 @@ serve(async (req) => {
     console.error('[hr-premium-api] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
