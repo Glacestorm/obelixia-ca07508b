@@ -462,7 +462,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     console.error('[erp-hr-talent-skills-agent] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
