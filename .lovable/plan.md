@@ -1,92 +1,65 @@
 
 
-# Plan: S1.3 — Hardening Top-10 HR Edge Functions
+# Plan: S1.4 — CORS Restriction for HR Edge Functions
 
-## Functions Selected (by criticality and invocation count)
+## Current State
 
-| # | Function | Lines | Auth? | Data sensitivity |
-|---|----------|-------|-------|-----------------|
-| 1 | `payroll-calculation-engine` | 234 | No | Salaries, SS bases, IRPF |
-| 2 | `payroll-supervisor` | 275 | No | Payroll cycle lifecycle |
-| 3 | `payroll-it-engine` | 248 | Partial (reads header, no getUser) | IT processes |
-| 4 | `payroll-file-generator` | 292 | Yes (already has getUser) | TGSS/AEAT files |
-| 5 | `erp-hr-strategic-planning` | 407 | No | Workforce plans, scenarios |
-| 6 | `erp-hr-copilot-twin` | ~220 | No | Copilot sessions, KPIs |
-| 7 | `erp-hr-autonomous-copilot` | ~410 | No | Autonomous actions |
-| 8 | `erp-hr-compliance-monitor` | ~300 | No | Compliance alerts |
-| 9 | `erp-hr-clm-agent` | ~370 | No | Contract lifecycle |
-| 10 | `erp-hr-premium-intelligence` | ~450 | No | Premium analytics |
+- **14 functions** already use `getSecureCorsHeaders(req)` (the S1.3 batch + `payroll-cross-module-bridge`, `payroll-file-generator`, `payroll-irpf-engine`)
+- **44 functions** still use hardcoded `'Access-Control-Allow-Origin': '*'`
+- Total HR functions: **58**
 
-`payroll-file-generator` already has auth — will be skipped. Replaced by `erp-hr-security-governance` (~380 lines, no auth, security audit data).
+## Allowlist (already configured in `getSecureCorsHeaders`)
 
-## Uniform Pattern (identical for all 10 functions)
+| Origin | Purpose |
+|--------|---------|
+| `https://obelixia.lovable.app` | Published app |
+| `https://app.obelixia.com` | Production domain |
+| `ALLOWED_ORIGIN` env var | Custom override |
+| `*.lovable.app` (regex) | Preview/sandbox domains |
+| `*.lovableproject.com` (regex) | Legacy preview domains |
 
-Each function gets the same ~25-line auth block inserted immediately after entering the `try` block, before any body parsing or business logic:
+**Missing**: `http://localhost:*` for local development. Will add a regex match for `http://localhost:\d+` to the helper.
 
+## Changes
+
+### 1. Update `getSecureCorsHeaders` in `_shared/edge-function-template.ts`
+
+Add localhost support:
 ```typescript
-// --- AUTH GATE ---
-const authHeader = req.headers.get('Authorization');
-if (!authHeader?.startsWith('Bearer ')) {
-  return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-    status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-  });
-}
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  global: { headers: { Authorization: authHeader } }
-});
-const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-if (authError || !authUser) {
-  return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
-    status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-  });
-}
-
-// --- COMPANY ACCESS VALIDATION ---
-// (inserted after company_id is extracted from body)
-if (effectiveCompanyId) {
-  const { data: membership } = await supabase
-    .from('erp_user_companies')
-    .select('id')
-    .eq('user_id', authUser.id)
-    .eq('company_id', effectiveCompanyId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (!membership) {
-    return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
-}
+const isLocalhost = /^http:\/\/localhost(:\d+)?$/.test(origin);
 ```
+Add to the condition so local dev is never blocked.
 
-## Additional fixes per function
+### 2. Migrate 44 remaining HR functions
 
-1. **Error sanitization**: Replace `error: error.message` / `error: error instanceof Error ? error.message : 'Unknown error'` with `error: 'Internal server error'` in the global catch block (keep `console.error` for server logs).
+For each function, the change is mechanical:
+1. Add import: `import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';`
+2. Remove the hardcoded `const corsHeaders = { ... }` block
+3. Add `const corsHeaders = getSecureCorsHeaders(req);` as the first line inside `serve(async (req) => {`
+4. For the OPTIONS handler: ensure it uses the same dynamic `corsHeaders`
 
-2. **`payroll-it-engine`** (special case): Already reads `authHeader` but never validates it — will replace the incomplete auth with the full pattern.
+No business logic, API contracts, or response shapes change.
 
-3. **CORS migration** (3 functions): `erp-hr-strategic-planning`, `erp-hr-copilot-twin`, and others still use hardcoded `corsHeaders` with `'*'`. Will migrate to `getSecureCorsHeaders(req)` from `_shared/edge-function-template.ts` where not already using it.
+### 3. Functions to migrate (44)
 
-## What stays unchanged
+**erp-hr-* (32):** `accounting-bridge`, `agreement-updater`, `ai-agent`, `analytics-agent`, `analytics-intelligence`, `compensation-suite`, `compliance-enterprise`, `contingent-workforce`, `credentials-agent`, `enterprise-admin`, `esg-selfservice`, `executive-analytics`, `industry-templates`, `innovation-discovery`, `offboarding-agent`, `onboarding-agent`, `payroll-recalculation`, `people-analytics-ai`, `performance-agent`, `recruitment-agent`, `regulatory-watch`, `seed-demo-data`, `seed-demo-master`, `smart-contracts`, `talent-intelligence`, `talent-skills-agent`, `total-rewards`, `training-agent`, `wellbeing-agent`, `wellbeing-enterprise`, `whistleblower-agent`, `workflow-engine`
 
-- All business logic (switch cases, DB queries, AI prompts)
-- API contracts (request/response shapes)
-- Service role client for DB queries (still needed)
-- Functions outside the top-10 list
-- `erp-hr-ai-agent` (already hardened in S1.2)
-- `payroll-file-generator` (already has auth)
+**hr-* (10):** `analytics-bi`, `board-pack`, `compliance-automation`, `country-registry`, `enterprise-integrations`, `labor-copilot`, `multiagent-supervisor`, `orchestration-engine`, `premium-api`, `regulatory-reporting`, `reporting-engine`, `workforce-simulation`
 
-## Compatibility
+### What stays unchanged
 
-All callers use `supabase.functions.invoke()` which automatically sends the JWT. No client-side changes needed. Authenticated users with company membership see zero behavioral change.
+- All non-HR functions (keep wildcard CORS)
+- All business logic in every function
+- The 14 functions already using `getSecureCorsHeaders`
+- API contracts and response shapes
 
-## Implementation order
+### Implementation approach
 
-Batch 1 (payroll core): `payroll-calculation-engine`, `payroll-supervisor`, `payroll-it-engine`
-Batch 2 (HR agents): `erp-hr-strategic-planning`, `erp-hr-copilot-twin`, `erp-hr-autonomous-copilot`
-Batch 3 (compliance/intel): `erp-hr-compliance-monitor`, `erp-hr-clm-agent`, `erp-hr-premium-intelligence`, `erp-hr-security-governance`
+Process in batches of ~10 functions per edit pass. Each is a simple find-and-replace pattern. Deploy all at once after migration.
 
-Deploy and test after each batch.
+## Verification
+
+- Test from preview domain (should work)
+- Test from localhost (should work with new regex)
+- Test from unauthorized origin (should be rejected or get fallback origin)
 
