@@ -55,9 +55,9 @@ export const SS_GROUP_BASES_2026: Record<number, SSGroupBase> = {
  * Grupos 8-11 devuelven la base mínima MENSUAL (min diaria × 30).
  */
 export const SS_GROUP_MIN_BASES_MENSUAL_2026: Record<number, number> = {
-  1: 1847.40,
-  2: 1531.50,
-  3: 1332.90,
+  1: 1929.00,
+  2: 1599.60,
+  3: 1391.70,
   4: 1381.20,
   5: 1381.20,
   6: 1381.20,
