@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface TalentRequest {
@@ -20,6 +21,28 @@ serve(async (req) => {
   }
 
   try {
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
@@ -28,6 +51,20 @@ serve(async (req) => {
     const { action, company_id, employee_id, department_id, position_id, skills_data, opportunity_data, career_data } = await req.json() as TalentRequest;
 
     console.log(`[erp-hr-talent-skills-agent] Action: ${action}, Employee: ${employee_id}`);
+
+    // Tenant isolation
+    if (company_id) {
+      const adminClient = createClient(supabaseUrl, serviceKey);
+      const { data: membership } = await adminClient
+        .from('erp_user_companies').select('id')
+        .eq('user_id', userId).eq('company_id', company_id)
+        .eq('is_active', true).maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     let systemPrompt = '';
     let userPrompt = '';
@@ -425,7 +462,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     console.error('[erp-hr-talent-skills-agent] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
