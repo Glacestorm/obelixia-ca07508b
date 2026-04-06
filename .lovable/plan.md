@@ -1,153 +1,87 @@
 
 
-# Plan: F7 — Integrar State Machine en Payroll Recalculation
+# Plan: F8 — Fiscal Shared Legal Core Adoption
 
-## Puntos de integración identificados
+## Analysis Summary
 
-**Archivo**: `src/hooks/admin/usePayrollRecalculation.ts`
+After thorough exploration, the **Fiscal module itself** (Modelo 111/190 builders in `aeatArtifactEngine.ts`, `fiscalMonthlyExpedientEngine.ts`) does NOT hardcode SS/IRPF rates — it receives computed data as inputs from the payroll pipeline. The real hardcodes feeding fiscal processes live in two HR engines:
 
-Hay **2 funciones** que modifican `legal_validation_status`:
+1. **`ssContributionEngine.ts`** — `DEFAULT_SS_RATES_2026` (line 173-186): all 11 rates hardcoded, correct values but not sourced from shared core
+2. **`payrollConceptCatalog.ts`** — `default_percentage` values (4.70, 1.55, 0.10, 23.60, 5.50, 0.20, etc.) hardcoded inline in concept definitions
 
-1. **`requestLegalValidation`** (líneas 272-305): Llama a edge function y luego escribe localmente `legal_validation_status: 'validated'`, `status: 'legal_validated'`. No valida estado previo.
+The `regulatoryCalendarEngine.ts` has its own deadline urgency system but serves a different purpose (UI calendar with business days) than `computeDeadlineUrgency` (compliance alerts), so unifying those is out of scope for this phase.
 
-2. **`approveRecalculation`** (líneas 308-347): Escribe `hr_approval_status: 'approved'|'rejected'` y `status: 'approved'|'rejected'`. No toca `legal_validation_status` directamente pero cambia el status general.
+## Scope Decision
 
-El punto de integración principal es **`requestLegalValidation`**, que es el análogo a `submitLegalValidation` de Settlements.
+**In scope (clear benefit, low risk):**
+- Replace `DEFAULT_SS_RATES_2026` in `ssContributionEngine.ts` with shared core import
 
-## Diferencia clave vs Settlements
+**Out of scope (risk > benefit for F8):**
+- `payrollConceptCatalog.ts` — The `default_percentage` values are metadata defaults in a concept catalog array, not runtime calculation rates. They're used as fallback display values. Replacing them with dynamic imports would change the catalog's nature from static metadata to dynamic. Defer to a future phase.
+- `regulatoryCalendarEngine.ts` — Its `DeadlineUrgency` type has different semantics (`ok`, `upcoming`, `insufficient`, `not_applicable`) vs the shared SM urgency. Different domain, different purpose. No benefit in unifying now.
 
-En Settlements, la validación legal es una decisión humana (approve/reject). En Payroll Recalculation, `requestLegalValidation` invoca una edge function que retorna un resultado — el hook luego actualiza el estado local. El edge function no se toca (regla #6), así que la guarda se aplica **antes** de llamar a la edge function y **al actualizar el estado local** tras la respuesta.
+## Changes
 
-Además, el valor legacy aquí es `'validated'` (no `'approved'`), que `mapLegacyStatus` ya mapea a `'approved'`.
+### File 1: `src/engines/erp/hr/ssContributionEngine.ts`
 
-## Cambio mínimo
-
-### Acción 1: Añadir import y helper en `usePayrollRecalculation.ts`
-
+**Add import:**
 ```typescript
-import {
-  mapLegacyStatus,
-  toLegacyStatus,
-  tryTransition,
-  type LegalValidationState,
-  type LegalValidationEvent,
-} from '@/shared/legal';
-
-/** Recalculations treat null/pending as 'pending' (awaiting legal validation) */
-function getRecalcLegalState(status: string | null | undefined): LegalValidationState {
-  if (!status || status === 'pending') return 'pending';
-  return mapLegacyStatus(status);
-}
+import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
 ```
 
-### Acción 2: Añadir guarda en `requestLegalValidation`
-
-Antes de invocar la edge function, verificar que la transición es válida:
-
+**Replace hardcoded `DEFAULT_SS_RATES_2026` (lines 173-186) with:**
 ```typescript
-const requestLegalValidation = useCallback(async (recalculationId: string) => {
-  // 1. Get current state
-  const current = results.find(r => r.id === recalculationId);
-  const currentState = getRecalcLegalState(current?.legal_validation_status);
-
-  // 2. Validate transition (request_legal_validation = START_REVIEW → APPROVE flow)
-  // The edge function performs the review, so we check START_REVIEW first
-  const reviewResult = tryTransition(currentState, 'START_REVIEW');
-  if (!reviewResult.success && currentState !== 'in_review') {
-    // If we can't start review and we're not already in review, block
-    const approveResult = tryTransition(currentState, 'APPROVE');
-    if (!approveResult.success) {
-      toast.error(`Validación legal no permitida desde estado '${currentState}'`);
-      console.warn('[usePayrollRecalculation] Invalid legal transition:', { currentState, recalculationId });
-      return null;
-    }
-  }
-
-  try {
-    const { data, error: fnError } = await supabase.functions.invoke(
-      'erp-hr-payroll-recalculation',
-      { body: { action: 'request_legal_validation', recalculation_id: recalculationId } }
-    );
-
-    if (fnError) throw fnError;
-
-    if (data?.success) {
-      toast.success('Validación jurídica completada');
-
-      // 3. Transition to approved via state machine
-      const finalState = getRecalcLegalState(current?.legal_validation_status);
-      const approveResult = tryTransition(
-        finalState === 'pending' ? 'pending' : 'in_review',
-        'APPROVE'
-      );
-      const newLegalStatus = approveResult.success
-        ? (toLegacyStatus(approveResult.to!) ?? 'approved')
-        : 'validated'; // Fallback to legacy value if SM fails
-
-      setResults(prev => prev.map(r =>
-        r.id === recalculationId
-          ? { ...r, legal_validation_status: newLegalStatus, status: 'legal_validated' }
-          : r
-      ));
-
-      return data.legal_validation;
-    }
-    return null;
-  } catch (err) {
-    console.error('[usePayrollRecalculation] requestLegalValidation error:', err);
-    toast.error('Error en la validación jurídica');
-    return null;
-  }
-}, [results]);
+/** Default rates 2026 (Régimen General) — derived from Shared Legal Core */
+const DEFAULT_SS_RATES_2026 = {
+  tipo_cc_empresa: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa,
+  tipo_cc_trabajador: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.trabajador,
+  tipo_desempleo_empresa_gi: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa,
+  tipo_desempleo_trabajador_gi: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.trabajador,
+  tipo_desempleo_empresa_td: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.empresa,
+  tipo_desempleo_trabajador_td: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.trabajador,
+  tipo_fogasa: SS_CONTRIBUTION_RATES_2026.fogasa.empresa,
+  tipo_fp_empresa: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa,
+  tipo_fp_trabajador: SS_CONTRIBUTION_RATES_2026.formacionProfesional.trabajador,
+  tipo_mei: SS_CONTRIBUTION_RATES_2026.mei.total,
+  tipo_at_empresa: SS_CONTRIBUTION_RATES_2026.atepReferencia.empresa,
+};
 ```
 
-Key design decisions:
-- **Pre-guard**: Blocks calling the edge function if the recalculation is already approved/rejected (prevents re-validation)
-- **Post-update**: Uses `toLegacyStatus` for the new state, with fallback to `'validated'` if SM fails
-- **`results` added to deps**: Same pattern as Settlements with `settlements`
-- **No edge function changes**: All guards are client-side
+Same keys, same types, same values — only the source changes. All consumers of `DEFAULT_SS_RATES_2026` within the file continue working without modification.
 
-### Acción 3: Tests
+### File 2: `src/__tests__/engines/ssContributionSharedCore.test.ts` (create)
 
-Create `src/__tests__/hooks/usePayrollRecalcLegalTransition.test.ts`:
+Minimal test verifying that `DEFAULT_SS_RATES_2026` derived values match expected canonical values (MEI=0.90, CC empresa=23.60, etc.). Ensures the shared core link doesn't silently break.
 
-```typescript
-// Tests:
-// 1. pending → APPROVE → approved ✓
-// 2. null/undefined → treated as pending → APPROVE → approved ✓  
-// 3. 'validated' (legacy) → maps to approved → APPROVE blocked ✓
-// 4. approved → APPROVE blocked (no re-validation) ✓
-// 5. rejected → needs RESET first → APPROVE blocked ✓
-// 6. Round-trip: toLegacyStatus after transition preserves DB values ✓
-```
+## Files
 
-## Archivos
-
-| Archivo | Acción |
+| File | Action |
 |---|---|
-| `src/hooks/admin/usePayrollRecalculation.ts` | Modificar (import shared + guard en requestLegalValidation) |
-| `src/__tests__/hooks/usePayrollRecalcLegalTransition.test.ts` | Crear (6 tests) |
+| `src/engines/erp/hr/ssContributionEngine.ts` | Import shared + replace hardcode |
+| `src/__tests__/engines/ssContributionSharedCore.test.ts` | Create (5-6 value verification tests) |
 
-## Archivos que NO se tocan
+## Files NOT touched
 
-- `HRPayrollRecalculationPanel.tsx` — sigue leyendo `legal_validation_status` sin cambios
-- `usePayrollRuns.ts` — tiene su propio `updateRecalculation` pero no toca legal_validation_status
-- Edge functions — fuera de alcance
-- Tablas — sin cambios
+- `aeatArtifactEngine.ts` — no hardcoded rates, receives data as input
+- `fiscalMonthlyExpedientEngine.ts` — same, pure builder
+- `regulatoryCalendarEngine.ts` — different urgency semantics, out of scope
+- `payrollConceptCatalog.ts` — static metadata, deferred
+- Edge functions — rule #5
+- Tables — rule #1
 
-## Compatibilidad
+## Compatibility
 
-| Aspecto | Garantía |
+The object `DEFAULT_SS_RATES_2026` retains identical keys and number types. All internal consumers (`getSSGroupLimitsForEngine`, `computeSSContributions`, etc.) are unaffected.
+
+## Pending for future phases
+
+| Item | Reason to defer |
 |---|---|
-| `legal_validation_status` en DB | Sin cambios. Edge function sigue escribiendo lo que escribía |
-| Estado local `'validated'` | `mapLegacyStatus('validated')` = `'approved'` — ya mapeado |
-| Panel UI | Lee `legal_validation_status` directamente, sin ruptura |
-| `approveRecalculation` | No toca `legal_validation_status`, no necesita guarda SM |
+| `payrollConceptCatalog.ts` default_percentage | Static metadata, needs design decision on whether to make dynamic |
+| `regulatoryCalendarEngine.ts` urgency unification | Different semantic domains (calendar vs compliance) |
+| Fiscal AI Agent panel consuming `ObligationRule` | Agent uses AI prompts, not structured rules — needs separate integration design |
 
-## Riesgos residuales
+## Risk
 
-| Riesgo | Nivel | Mitigación |
-|---|---|---|
-| Edge function escribe `'validated'` en DB pero SM produce `'approved'` vía `toLegacyStatus` | Bajo | El estado local usa el valor SM; al re-fetch desde DB, `'validated'` mapea a `'approved'` igualmente |
-| `results` en deps de `useCallback` | Bajo | Mismo patrón validado en F6 Settlements |
+Minimal. Same pattern proven in F5 (HRSocialSecurityBridge) and validated by HR payroll `ss-contributions.ts` which already consumes from shared core successfully.
 
