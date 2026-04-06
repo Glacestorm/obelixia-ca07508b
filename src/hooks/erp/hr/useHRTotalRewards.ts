@@ -534,6 +534,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'benchmark_salary',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params
           }
