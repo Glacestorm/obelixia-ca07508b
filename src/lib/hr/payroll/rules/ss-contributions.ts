@@ -16,10 +16,12 @@ import {
 // RE-EXPORTS for backward compatibility
 // ============================================
 
-/** @deprecated Import from '@/shared/legal/rules/ssRules2026' → SS_BASE_MAX_MENSUAL_2026 */
+/** @deprecated Import from '@/shared/legal/rules/ssRules2026' → SS_BASE_MAX_MENSUAL_2026.
+ *  F11: Kept temporarily — consumed by ssContributions.test.ts. Remove once test is migrated. */
 export const SS_BASE_MAX_2026 = SS_BASE_MAX_MENSUAL_2026;
 
-/** @deprecated Import from '@/shared/legal/rules/ssRules2026' → SS_GROUP_MIN_BASES_MENSUAL_2026 */
+/** @deprecated Import from '@/shared/legal/rules/ssRules2026' → SS_GROUP_MIN_BASES_MENSUAL_2026.
+ *  F11: Kept temporarily — consumed by ssContributions.test.ts. Remove once test is migrated. */
 export const SS_GROUP_MIN_BASES_2026 = SS_GROUP_MIN_BASES_MENSUAL_2026;
 
 /** Mapped rates for this module's English-key convention */
