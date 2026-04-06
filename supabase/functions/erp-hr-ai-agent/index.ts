@@ -56,12 +56,33 @@ serve(async (req) => {
   }
 
   try {
+    // --- AUTH VALIDATION ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    // --- END AUTH VALIDATION ---
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -73,6 +94,25 @@ serve(async (req) => {
     
     // Support both company_id and companyId
     const effectiveCompanyId = company_id || companyId;
+
+    // --- COMPANY ACCESS VALIDATION ---
+    if (effectiveCompanyId) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .eq('company_id', effectiveCompanyId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!membership) {
+        console.warn(`[erp-hr-ai-agent] Forbidden: user ${authUser.id} not member of company ${effectiveCompanyId}`);
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+    // --- END COMPANY ACCESS VALIDATION ---
 
     console.log(`[erp-hr-ai-agent] Processing action: ${action}`);
 
@@ -1276,7 +1316,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     console.error('[erp-hr-ai-agent] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
