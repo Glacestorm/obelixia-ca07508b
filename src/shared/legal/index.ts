@@ -11,14 +11,6 @@ export type {
   LegalContext,
   LegalValidationResult,
   LegalValidationIssue,
-  LegalRiskLevel,
-  LegalValidationStatus,
-  LegalModuleType,
-  LegalJurisdictionInfo,
-  LegalReference,
-  LegalContext,
-  LegalValidationResult,
-  LegalValidationIssue,
 } from './types';
 
 // Knowledge — Reference Resolver
