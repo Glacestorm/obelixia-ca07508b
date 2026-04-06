@@ -22,6 +22,23 @@ serve(async (req) => {
 
     const { action, params } = await req.json();
 
+    // S2.1: Tenant isolation — verify user belongs to target company
+    const targetCompanyId = params?.company_id;
+    if (targetCompanyId) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('company_id', targetCompanyId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     let result: any;
 
     switch (action) {
