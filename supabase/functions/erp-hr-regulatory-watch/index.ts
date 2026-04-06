@@ -5,11 +5,7 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface WatchRequest {
   action: 'check_updates' | 'analyze_document' | 'get_cno_changes' | 'search_boe';
@@ -27,6 +23,7 @@ const JURISDICTION_SOURCES: Record<string, { name: string; official: string; url
 };
 
 serve(async (req) => {
+  const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkBurstLimit, rateLimitResponse } from "../_shared/rate-limiter.ts";
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
-
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 const REGULATORY_TEMPLATES = [
   {
     template_key: 'reg_equality_plan',
@@ -100,6 +96,7 @@ const REGULATORY_TEMPLATES = [
 ];
 
 serve(async (req) => {
+  const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

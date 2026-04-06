@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.84.0";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface FunctionRequest {
   action: string;
@@ -13,6 +9,13 @@ interface FunctionRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = getSecureCorsHeaders(req);
+  function jsonResponse(data: Record<string, unknown>, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -379,13 +382,4 @@ FORMATO JSON:
   }
 });
 
-function jsonResponse(data: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-      'Content-Type': 'application/json',
-    },
-  });
-}
+// jsonResponse is no longer used — all responses use corsHeaders from getSecureCorsHeaders(req) above

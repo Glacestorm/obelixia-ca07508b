@@ -10,11 +10,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 // ============ TIPOS ============
 
@@ -331,6 +327,7 @@ function calculateRiskLevel(issues: ComplianceIssue[]): 'high' | 'medium' | 'low
 // ============ MAIN HANDLER ============
 
 serve(async (req) => {
+  const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }

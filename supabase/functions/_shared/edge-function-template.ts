@@ -348,7 +348,8 @@ export function getSecureCorsHeaders(req: Request): Record<string, string> {
   // Also allow Lovable preview domains (*.lovableproject.com, *.lovable.app)
   const isLovablePreview = /^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)
     || /^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin);
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) || isLovablePreview
+  const isLocalhost = /^http:\/\/localhost(:\d+)?$/.test(origin);
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) || isLovablePreview || isLocalhost
     ? origin
     : ALLOWED_ORIGINS[0] ?? '*';
   return {
