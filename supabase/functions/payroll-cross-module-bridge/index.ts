@@ -64,12 +64,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (false) { // original company_id guard moved above
-      return new Response(
-        JSON.stringify({ error: "company_id required" }),
-        { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
-      );
-    }
+
 
     if (action === "sync") {
       // Determine target module
