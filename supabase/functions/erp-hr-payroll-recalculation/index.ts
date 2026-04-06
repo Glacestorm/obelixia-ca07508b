@@ -360,6 +360,23 @@ serve(async (req) => {
     const request: RecalculationRequest = await req.json();
     const { action, company_id, period } = request;
 
+    // S2.1: Tenant isolation
+    if (company_id) {
+      const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const { data: membership } = await adminClient
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     console.log(`[erp-hr-payroll-recalculation] Action: ${action}, Company: ${company_id}, Period: ${period}`);
 
     // ============ ACTIONS ============
