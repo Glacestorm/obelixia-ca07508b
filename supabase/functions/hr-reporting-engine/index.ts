@@ -30,6 +30,22 @@ serve(async (req) => {
 
     const { action, company_id, params } = await req.json();
 
+    // S2.1: Tenant isolation
+    if (company_id) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Rate limit expensive operations
     if (action === 'generate_report') {
       const burstResult = checkBurstLimit(company_id || user.id, RATE_LIMIT_CONFIG);
