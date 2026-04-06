@@ -84,6 +84,7 @@ export interface ObligationDeadline {
   obligation?: AdminObligation;
 }
 
+/** @migrated-to-shared SharedSanctionRule — HR DB shape (snake_case) */
 export interface SanctionRisk {
   id: string;
   jurisdiction: string;
