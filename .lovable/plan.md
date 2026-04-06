@@ -1,110 +1,73 @@
 
 
-# Plan: F2 — Migración Incremental de Imports hacia Shared Legal Core
+# Plan: F2 — Mover legalReferenceResolver al Shared Legal Core
 
 ## Objetivo
 
-Hacer que los 3 hooks principales del módulo legal (`useLegalValidationGateway`, `useLegalValidationGatewayEnhanced`, `useCrossModuleOrchestrator`) y `useLegalAdvisor` consuman tipos desde `src/shared/legal/` en lugar de definirlos inline. Mantener re-exports en ubicaciones originales para zero-breaking-change.
+Reubicar `src/utils/legalReferenceResolver.ts` a `src/shared/legal/knowledge/referenceResolver.ts` y mantener re-export en la ubicación original para zero breaking changes.
 
-## Estrategia
+## Consumidores detectados
 
-Cada hook migrado sigue este patrón:
-1. Importar tipo canónico desde `@/shared/legal`
-2. Eliminar la definición inline del tipo duplicado
-3. Re-exportar el tipo canónico con el alias original para mantener compatibilidad de barrel exports
+| Archivo | Imports |
+|---|---|
+| `src/components/erp/legal/LegalAdvisorPanel.tsx` | `linkifyLegalReferences`, `resolveLegalReference` |
+
+Único consumidor. El re-export en `src/utils/legalReferenceResolver.ts` cubrirá este import sin modificar el componente.
 
 ## Acciones
 
-### Acción 1: Migrar `useLegalValidationGateway.ts`
+### Acción 1: Crear `src/shared/legal/knowledge/referenceResolver.ts`
 
-**Tipos a migrar:**
-- `ValidationRiskLevel` → importar `LegalRiskLevel`, re-exportar como `ValidationRiskLevel`
-- `ModuleType` → importar `LegalModuleType`, re-exportar como `ModuleType`
+Copiar el contenido íntegro de `src/utils/legalReferenceResolver.ts` sin modificar lógica. Añadir JSDoc `@shared-legal-core` ownership header.
 
-`ValidationStatus` en este hook incluye `'auto_approved'` que NO está en el shared core, por lo que se queda local (o se añade al superset).
+### Acción 2: Convertir `src/utils/legalReferenceResolver.ts` en re-export
 
-```typescript
-import type { LegalRiskLevel, LegalModuleType } from '@/shared/legal';
-export type ValidationRiskLevel = LegalRiskLevel;
-export type ModuleType = LegalModuleType; // nota: shared tiene más valores, superset compatible
-```
-
-### Acción 2: Migrar `useLegalValidationGatewayEnhanced.ts`
-
-**Tipos a migrar:**
-- `RiskLevel` → `LegalRiskLevel`
-- `ModuleType` → `LegalModuleType`
+Reemplazar el contenido del archivo original con re-exports:
 
 ```typescript
-import type { LegalRiskLevel, LegalModuleType } from '@/shared/legal';
-export type RiskLevel = LegalRiskLevel;
-export type ModuleType = LegalModuleType;
+/**
+ * @deprecated Import from '@/shared/legal/knowledge/referenceResolver' instead.
+ * Re-export mantenido para compatibilidad — no borrar hasta F3+ migración de consumidores.
+ */
+export { resolveLegalReference, linkifyLegalReferences } from '@/shared/legal/knowledge/referenceResolver';
+export type { LegalLinkResult } from '@/shared/legal/knowledge/referenceResolver';
 ```
 
-### Acción 3: Migrar `useCrossModuleOrchestrator.ts`
+### Acción 3: Actualizar barrel export `src/shared/legal/index.ts`
 
-**Tipos a migrar:**
-- `ModuleType` → `LegalModuleType`
+Añadir re-exports del resolver:
 
 ```typescript
-import type { LegalModuleType } from '@/shared/legal';
-export type ModuleType = LegalModuleType;
+export { resolveLegalReference, linkifyLegalReferences } from './knowledge/referenceResolver';
+export type { LegalLinkResult } from './knowledge/referenceResolver';
 ```
 
-### Acción 4: Migrar `useLegalAdvisor.ts`
-
-**Tipos a migrar (parcial):**
-- `risk_level: 'low' | 'medium' | 'high' | 'critical'` en `LegalAdvice`, `ValidationResult`, `RiskAssessment` → reemplazar inline literal por `LegalRiskLevel`
-
-`LegalJurisdiction` en Advisor tiene campos extra (`id`, `legal_system`, `is_active`) que no están en `LegalJurisdictionInfo`, así que se queda local. `LegalContext` del Advisor tiene `urgency` y campos opcionales distintos, también se queda local.
-
-```typescript
-import type { LegalRiskLevel } from '@/shared/legal';
-// Usar LegalRiskLevel en lugar de inline 'low' | 'medium' | 'high' | 'critical'
-```
-
-### Acción 5: Ampliar `LegalValidationStatus` en shared core
-
-Añadir `'auto_approved'` y `'escalated'` al superset canónico para cubrir las variantes de Gateway y Enhanced:
-
-```typescript
-export type LegalValidationStatus =
-  | 'pending' | 'pending_validation' | 'pending_approval'
-  | 'review_required' | 'approved' | 'auto_approved'
-  | 'validated' | 'rejected' | 'blocked' | 'escalated';
-```
-
-### Acción 6: Verificar build
+### Acción 4: Verificar build
 
 `npx tsc --noEmit` para confirmar cero errores.
 
-## Archivos modificados
+## Archivos
 
-| Archivo | Cambio |
+| Archivo | Acción |
 |---|---|
-| `src/shared/legal/types.ts` | Añadir `auto_approved`, `escalated`, `pending_approval` a `LegalValidationStatus` |
-| `src/hooks/admin/legal/useLegalValidationGateway.ts` | Import + re-export `ValidationRiskLevel`, `ModuleType` |
-| `src/hooks/admin/legal/useLegalValidationGatewayEnhanced.ts` | Import + re-export `RiskLevel`, `ModuleType` |
-| `src/hooks/admin/legal/useCrossModuleOrchestrator.ts` | Import + re-export `ModuleType` |
-| `src/hooks/admin/legal/useLegalAdvisor.ts` | Import `LegalRiskLevel`, usar en interfaces inline |
+| `src/shared/legal/knowledge/referenceResolver.ts` | Crear (contenido migrado + ownership header) |
+| `src/utils/legalReferenceResolver.ts` | Reemplazar con re-exports |
+| `src/shared/legal/index.ts` | Añadir exports del resolver |
 
 ## Archivos que NO se tocan
 
-- Edge functions
-- Tablas / migraciones
-- Barrel exports (`src/hooks/admin/legal/index.ts`) — los re-exports en hooks mantienen nombres existentes
-- Hooks fuera del módulo legal (HR, support, security) — se migrarán en F3+
+- `LegalAdvisorPanel.tsx` — sigue importando desde `@/utils/legalReferenceResolver` (funciona via re-export)
+- Edge functions, tablas, hooks, state machine
 
-## Garantía de no ruptura
+## Ownership
 
-- Todos los tipos re-exportados mantienen su nombre original
-- Barrel exports en `index.ts` siguen funcionando sin cambios
-- Componentes que importan desde barrels no se tocan
-- Build verificado con TypeScript
+- `src/shared/legal/knowledge/referenceResolver.ts` → **Shared Legal Core**
+- `src/utils/legalReferenceResolver.ts` → **Deprecated re-export shim**
+- `LegalAdvisorPanel.tsx` → **Consumidor** (migrar import directo en F3)
 
 ## Notas para F3
 
-- Migrar hooks HR que usan `'low' | 'medium' | 'high' | 'critical'` inline
-- Migrar `usePredictiveLegalAnalytics` risk levels
-- Evaluar si `LegalJurisdiction` del Advisor debe extender `LegalJurisdictionInfo`
+- Migrar `LegalAdvisorPanel.tsx` para importar directamente desde `@/shared/legal`
+- Evaluar si `LegalLinkResult` debe integrarse con `LegalReference` del shared core
+- Considerar mover diccionarios de leyes (SPANISH_LAWS, EU_REGULATIONS, ANDORRAN_LAWS) a un archivo de datos separado en `knowledge/`
 
