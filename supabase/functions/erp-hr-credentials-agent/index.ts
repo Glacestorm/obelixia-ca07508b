@@ -319,7 +319,7 @@ Incluye todas las operaciones registradas en blockchain.`;
     console.error('[erp-hr-credentials-agent] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
