@@ -49,6 +49,28 @@ Deno.serve(async (req) => {
       );
     }
 
+    // S2.1: Tenant isolation
+    const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: membership } = await adminClient
+      .from('erp_user_companies')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('company_id', company_id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (false) { // original company_id guard moved above
+      return new Response(
+        JSON.stringify({ error: "company_id required" }),
+        { status: 400, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (action === "sync") {
       // Determine target module
       const targetMap: Record<string, string> = {
