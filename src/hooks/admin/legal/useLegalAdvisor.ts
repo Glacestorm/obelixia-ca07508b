@@ -75,7 +75,7 @@ export interface LegalPrecedent {
 
 export interface RiskAssessment {
   scenario_summary: string;
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_level: LegalRiskLevel;
   risk_score: number;
   risk_factors: Array<{ factor: string; impact: string; probability: string }>;
   mitigation_strategies: string[];
