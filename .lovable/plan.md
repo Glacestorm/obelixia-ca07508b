@@ -1,56 +1,84 @@
 
 
-# Plan SP4: Hardening erp-hr-total-rewards
+# Plan SP5: Hardening erp-hr-wellbeing-enterprise
 
-## Estrategia
+## Schema Review
 
-**Query indirecta**: `employee_id` → `erp_hr_employees.company_id` → `erp_user_companies` membership check.
+| Tabla | `entity_id` | `employee_id` | `company_id` |
+|-------|-------------|---------------|--------------|
+| erp_hr_wellbeing_assessments | ✅ uuid | ✅ uuid | ❌ |
+| erp_hr_wellbeing_surveys | ✅ uuid | ❌ | ❌ |
+| erp_hr_wellness_programs | ✅ uuid | ❌ | ❌ |
+| erp_hr_burnout_alerts | ✅ uuid | ✅ uuid | ❌ |
+| erp_hr_wellbeing_kpis | ✅ uuid | ❌ | ❌ |
+| erp_hr_wellbeing_survey_responses | ❌ | ❌ | ❌ |
+| erp_hr_wellness_enrollments | ❌ | ✅ uuid | ❌ |
 
-**Punto de integración**: Entre línea 30 (parseo del body) y línea 32 (log de action). Solo las acciones que reciben `employee_id` (`analyze_compensation`, `forecast_total_package`) pasan por membership check. Las acciones sin `employee_id` (`compare_market`, `generate_recommendations`) solo requieren auth gate.
+**Hallazgo clave**: Todas las tablas principales usan `entity_id` que referencia `erp_hr_legal_entities`, la cual tiene `company_id`. No hay FK formal pero el campo existe en todas las tablas relevantes.
 
-## Cambios exactos
+**Cadena de tenant isolation**: `entity_id` → `erp_hr_legal_entities.company_id` → `erp_user_companies` membership check.
 
-### 1. Auth gate (después de crear el supabase client, línea 28)
+El frontend pasa `companyId` al componente `HRWellbeingEnterprisePanel`, pero la función actual **no recibe ni filtra por entity_id/company_id** — todas las queries son globales sin filtro de tenant. Esto confirma el riesgo cross-tenant.
+
+## Estrategia Elegida
+
+### 1. Auth gate (después de crear el service-role client, línea 14)
 
 ```
-1. Extraer Authorization header → Bearer token
-2. Crear anon client con auth header
-3. getClaims(token) → si error → 401
-4. Extraer userId = claims.sub
+1. Extraer Authorization header → Bearer token → 401 si ausente
+2. getClaims(token) → 401 si inválido
+3. Extraer userId = claims.sub
 ```
 
-### 2. Membership check condicional (después de parsear body, línea 30)
+### 2. Company-based membership check (después de parsear body, línea 16)
 
-Solo cuando `employee_id` está presente:
+Dado que el frontend tiene `companyId` disponible, la función recibirá `params.company_id` del frontend.
 
-```sql
-SELECT company_id FROM erp_hr_employees WHERE id = :employee_id
+```
+1. Requerir params.company_id en todas las acciones (excepto seed_demo que requiere admin role check)
+2. Verificar membership: erp_user_companies WHERE user_id = userId AND company_id = params.company_id AND is_active = true
+3. Si no hay membership → 403
+4. Resolver entity_ids: SELECT id FROM erp_hr_legal_entities WHERE company_id = params.company_id
+5. Aplicar filtro .in('entity_id', entityIds) a todas las queries de lectura
+6. Validar entity_id en inserts/updates contra entityIds permitidos
 ```
 
-Luego:
+### 3. Seed action → admin role check (como SP3)
 
-```sql
-SELECT id FROM erp_user_companies WHERE user_id = :userId AND company_id = :companyId AND is_active = true
-```
+La acción `seed_demo` es administrativa. Se aplica admin role check via `user_roles` (roles `admin`/`superadmin`) en vez de membership check.
 
-Si no hay resultado → 403 Forbidden.
+### 4. Error sanitization (línea 363)
 
-### 3. Error sanitization (líneas 271-279)
+Reemplazar `error.message` por `"Internal server error"`.
 
-Reemplazar `error.message` por `"Internal server error"` en la respuesta. Mantener `console.error` interno.
+### 5. Helper `json` (línea 367-372)
 
-## Riesgo de ruptura
+Se mantiene, pero necesita acceso a `corsHeaders` — ya lo tiene por closure. Sin cambios.
 
-**Bajo**: El frontend ya envía auth headers via `supabase.functions.invoke()`. Las acciones sin `employee_id` siguen funcionando solo con auth. Las acciones con `employee_id` añaden una validación que el usuario legítimo ya satisface por pertenecer a la empresa del empleado.
+## Cambios en el Frontend
 
-## Resumen
+Modificar `useHRWellbeingEnterprise.ts` para incluir `company_id` en el body de cada invocación. El hook ya recibe `companyId` como parámetro o puede obtenerlo del contexto.
+
+## Resumen de Cambios
 
 | Aspecto | Detalle |
 |---------|---------|
 | Auth gate | JWT via getClaims |
-| Tenant isolation | employee → company → erp_user_companies |
-| Membership check | Solo cuando employee_id presente |
-| Service role | Se mantiene para queries internas |
+| Tenant isolation | company_id → erp_hr_legal_entities → entity_ids → filtro queries |
+| Seed action | Admin role check (admin/superadmin) |
 | Error sanitization | Catch devuelve "Internal server error" |
-| Contrato API | Sin cambios |
+| Frontend | Añadir company_id a params en invoke |
+| Contrato API | Añade company_id requerido en params (cambio aditivo) |
+| Service role | Se mantiene para operaciones internas |
+
+## Riesgos
+
+- **Bajo**: El frontend ya tiene `companyId` disponible. Añadir `company_id` a params es un cambio aditivo.
+- **Medio**: Si no existen `erp_hr_legal_entities` para un `company_id`, las queries devolverán arrays vacíos (comportamiento correcto, no error).
+- **Residual**: `erp_hr_wellbeing_survey_responses` y `erp_hr_wellness_enrollments` no tienen `entity_id`. Se filtran indirectamente via join con sus tablas padre (survey_id → surveys filtrados, program_id → programs filtrados).
+
+## Archivos a modificar
+
+1. `supabase/functions/erp-hr-wellbeing-enterprise/index.ts` — auth gate, membership, entity filtering, error sanitization
+2. `src/hooks/admin/hr/useHRWellbeingEnterprise.ts` — añadir company_id a params
 
