@@ -270,23 +270,23 @@ export function WelcomeLanguageModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
+      <DialogContent className="sm:max-w-[600px] max-h-[90dvh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 flex flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)] pointer-events-none" />
 
-        <DialogHeader className="relative p-6 pb-2 text-center">
+        <DialogHeader className="relative p-4 sm:p-6 pb-2 text-center flex-shrink-0">
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30"
+            className="mx-auto mb-2 sm:mb-4 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30"
           >
-            <Globe className="w-8 h-8 text-white" />
+            <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </motion.div>
 
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-base mt-2">
+          <DialogDescription className="text-sm sm:text-base mt-1 sm:mt-2">
             {mode === 'welcome' 
               ? `Selecciona tu idioma preferido (${ALL_LANGUAGES.length} idiomas disponibles)`
               : `${ALL_LANGUAGES.length} idiomas disponibles`
@@ -294,8 +294,7 @@ export function WelcomeLanguageModal({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Search Bar */}
-        <div className="relative px-6 pb-2">
+        <div className="relative px-4 sm:px-6 pb-2 flex-shrink-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -307,8 +306,8 @@ export function WelcomeLanguageModal({
           </div>
         </div>
 
-        <div className="relative px-6 py-2">
-          <ScrollArea className="h-[400px] pr-4">
+        <div className="relative px-4 sm:px-6 py-2 flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full max-h-[50dvh] sm:max-h-[400px] pr-4">
             {isSearching ? (
               // Flat list when searching
               <div className="space-y-1">
@@ -367,7 +366,7 @@ export function WelcomeLanguageModal({
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 p-2 bg-background/50">
+                            <div className="grid grid-cols-3 gap-1.5 p-2 bg-background/50">
                               {languages.map((lang) => (
                                 <LanguageButton
                                   key={lang.code}
@@ -403,14 +402,14 @@ export function WelcomeLanguageModal({
           )}
         </div>
 
-        <div className="relative flex gap-3 p-6 pt-2">
-          <Button variant="ghost" onClick={handleSkip} className="flex-1">
+        <div className="relative flex gap-3 p-4 sm:p-6 pt-2 flex-shrink-0">
+          <Button variant="ghost" onClick={handleSkip} className="flex-1 text-sm sm:text-base">
             {skipText}
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={!selectedLanguage}
-            className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+            className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm sm:text-base"
           >
             <Sparkles className="w-4 h-4" />
             {confirmText}
