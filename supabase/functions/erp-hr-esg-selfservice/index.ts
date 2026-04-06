@@ -21,10 +21,30 @@ serve(async (req) => {
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const supabase = createClient(supabaseUrl, serviceKey);
 
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
@@ -33,6 +53,17 @@ serve(async (req) => {
     if (!companyId || companyId === 'demo-company-id') {
       return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Tenant isolation
+    const { data: membership } = await supabase
+      .from('erp_user_companies').select('id')
+      .eq('user_id', userId).eq('company_id', companyId)
+      .eq('is_active', true).maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
