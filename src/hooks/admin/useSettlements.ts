@@ -9,6 +9,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { usePayrollComplianceValidation } from './usePayrollComplianceValidation';
+import { 
+  mapLegacyStatus, 
+  toLegacyStatus, 
+  tryTransition,
+  type LegalValidationState,
+  type LegalValidationEvent 
+} from '@/shared/legal';
+
+/** Settlements treat null as 'pending' (implicitly awaiting legal review) */
+function getSettlementLegalState(status: string | null | undefined): LegalValidationState {
+  if (!status) return 'pending';
+  return mapLegacyStatus(status);
+}
 
 // === INTERFACES ===
 export interface Settlement {
@@ -411,12 +424,26 @@ export function useSettlements(companyId: string) {
   ): Promise<boolean> => {
     if (!user?.id) return false;
 
+    // 1. Get current state from local data
+    const current = settlements.find(s => s.id === settlementId);
+    const currentState = getSettlementLegalState(current?.legal_validation_status as string | null);
+
+    // 2. Validate transition via shared state machine
+    const event: LegalValidationEvent = approved ? 'APPROVE' : 'REJECT';
+    const result = tryTransition(currentState, event);
+
+    if (!result.success) {
+      toast.error(`Transición no permitida: ${result.reason}`);
+      console.warn('[useSettlements] Invalid transition:', result);
+      return false;
+    }
+
     setIsLoading(true);
     try {
       const { error: updateError } = await supabase
         .from('erp_hr_settlements')
         .update({
-          legal_validation_status: approved ? 'approved' : 'rejected',
+          legal_validation_status: toLegacyStatus(result.to!) ?? 'pending',
           legal_validation_at: new Date().toISOString(),
           legal_validated_by: user.id,
           legal_validation_notes: notes,
@@ -437,7 +464,7 @@ export function useSettlements(companyId: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, loadSettlements]);
+  }, [user?.id, loadSettlements, settlements]);
 
   // === HR APPROVAL ===
   const submitHRApproval = useCallback(async (
