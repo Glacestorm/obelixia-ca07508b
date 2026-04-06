@@ -27,9 +27,62 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // === AUTH GATE ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || supabaseKey;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = authUser.id;
+
     const { action, employee_id, fiscal_year, job_level, job_family, location } = await req.json() as TotalRewardsRequest;
 
-    console.log(`[erp-hr-total-rewards] Processing action: ${action}`);
+    // === MEMBERSHIP CHECK (when employee_id present) ===
+    if (employee_id) {
+      const { data: empData, error: empError } = await supabase
+        .from('erp_hr_employees')
+        .select('company_id')
+        .eq('id', employee_id)
+        .maybeSingle();
+
+      if (empError || !empData?.company_id) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', empData.company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!membership) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    console.log(`[erp-hr-total-rewards] Processing action: ${action}, user: ${userId}`);
 
     let systemPrompt = '';
     let userPrompt = '';
