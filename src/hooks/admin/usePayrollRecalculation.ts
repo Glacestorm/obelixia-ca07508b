@@ -282,6 +282,21 @@ export function usePayrollRecalculation() {
 
   // === REQUEST LEGAL VALIDATION ===
   const requestLegalValidation = useCallback(async (recalculationId: string) => {
+    // 1. Get current state from local data
+    const current = results.find(r => r.id === recalculationId);
+    const currentState = getRecalcLegalState(current?.legal_validation_status);
+
+    // 2. Pre-guard: validate transition is allowed
+    const reviewResult = tryTransition(currentState, 'START_REVIEW');
+    if (!reviewResult.success && currentState !== 'in_review') {
+      const approveResult = tryTransition(currentState, 'APPROVE');
+      if (!approveResult.success) {
+        toast.error(`Validación legal no permitida desde estado '${currentState}'`);
+        console.warn('[usePayrollRecalculation] Invalid legal transition:', { currentState, recalculationId });
+        return null;
+      }
+    }
+
     try {
       const { data, error: fnError } = await supabase.functions.invoke(
         'erp-hr-payroll-recalculation',
@@ -297,14 +312,20 @@ export function usePayrollRecalculation() {
 
       if (data?.success) {
         toast.success('Validación jurídica completada');
-        
-        // Update local state
-        setResults(prev => prev.map(r => 
-          r.id === recalculationId 
-            ? { ...r, legal_validation_status: 'validated', status: 'legal_validated' }
+
+        // 3. Post-update: transition to approved via state machine
+        const stateForApproval = currentState === 'pending' ? 'pending' : 'in_review';
+        const approveResult = tryTransition(stateForApproval, 'APPROVE');
+        const newLegalStatus = approveResult.success
+          ? (toLegacyStatus(approveResult.to!) ?? 'approved')
+          : 'validated'; // Fallback to legacy value if SM fails
+
+        setResults(prev => prev.map(r =>
+          r.id === recalculationId
+            ? { ...r, legal_validation_status: newLegalStatus, status: 'legal_validated' }
             : r
         ));
-        
+
         return data.legal_validation;
       }
 
@@ -314,7 +335,7 @@ export function usePayrollRecalculation() {
       toast.error('Error en la validación jurídica');
       return null;
     }
-  }, []);
+  }, [results]);
 
   // === APPROVE/REJECT RECALCULATION ===
   const approveRecalculation = useCallback(async (
