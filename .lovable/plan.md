@@ -1,65 +1,98 @@
 
 
-# Plan: Quick Wins Seguridad Inicial (S1.1 + S1.5)
+# Plan: S1.2 — Hardening erp-hr-ai-agent
 
-## Task 1: Leaked Password Protection
+## Problem
 
-Use the Cloud Auth configuration to enable HIBP (Have I Been Pwned) password checking. This prevents users from signing up or changing passwords to known-compromised passwords.
+The function (1285 lines) accepts any request with a valid anon key. It never checks who the caller is or whether they belong to the company whose data they're requesting. The service role key bypasses all RLS.
 
-**Action**: Configure auth settings to enable leaked password protection.
+## Changes (single file only)
 
-## Task 2: Fix SECURITY DEFINER Views
+**File: `supabase/functions/erp-hr-ai-agent/index.ts`**
 
-### Views identified
+### 1. Auth gate (after line 68, before body parsing)
 
-| View | Tables accessed | Current risk |
-|---|---|---|
-| `erp_account_balances_view` | `erp_chart_accounts`, `erp_journal_entry_lines`, `erp_journal_entries` | Bypasses RLS — any user sees all companies' financial data |
-| `v_erp_trade_api_connections_compat` | `erp_bank_connections`, `erp_banking_providers` | Bypasses RLS — any user sees all bank connections |
+Add ~20 lines immediately after entering the try block:
 
-### Key findings
+```typescript
+// --- AUTH VALIDATION ---
+const authHeader = req.headers.get('Authorization');
+if (!authHeader?.startsWith('Bearer ')) {
+  return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+    status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
 
-- **Neither view is queried in application code** (only in auto-generated `types.ts` foreign key references)
-- Underlying tables have RLS enabled with policies that restrict by `auth.uid()` or `company_id`
-- SECURITY DEFINER bypasses those policies entirely — this is the vulnerability
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  global: { headers: { Authorization: authHeader } }
+});
 
-### Fix
-
-One migration that recreates both views with `security_invoker = true`:
-
-```sql
--- View 1: erp_account_balances_view
-CREATE OR REPLACE VIEW public.erp_account_balances_view
-WITH (security_invoker = true)
-AS
-  <same SELECT as current>;
-
--- View 2: v_erp_trade_api_connections_compat  
-CREATE OR REPLACE VIEW public.v_erp_trade_api_connections_compat
-WITH (security_invoker = true)
-AS
-  <same SELECT as current>;
+const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
+if (authError || !authUser) {
+  return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
+    status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
 ```
 
-This makes queries through these views respect the RLS policies of the calling user instead of the view creator.
+### 2. Company membership check (after effectiveCompanyId is set)
 
-### Safety
+```typescript
+// --- COMPANY ACCESS VALIDATION ---
+if (effectiveCompanyId) {
+  const { data: membership } = await supabase
+    .from('erp_user_companies')
+    .select('id')
+    .eq('user_id', authUser.id)
+    .eq('company_id', effectiveCompanyId)
+    .maybeSingle();
 
-- Zero app code queries these views directly — no UI breakage possible
-- The underlying RLS policies already exist and work correctly
-- `security_invoker = true` is the Postgres 15+ standard recommendation
+  if (!membership) {
+    return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+```
 
-## Files
+This uses the existing `erp_user_companies` table (already used elsewhere in the codebase for company-user mapping). The check uses the service role client so RLS doesn't interfere with the validation itself.
 
-| Target | Action |
-|---|---|
-| Auth config | Enable HIBP leaked password check |
-| Migration | `CREATE OR REPLACE VIEW ... WITH (security_invoker = true)` for both views |
+### 3. Sanitize error output (line 1279)
 
-## Not touched
+Replace raw error exposure:
 
-- Edge functions
-- RLS policies
-- Business logic
-- Any other tables or views
+```typescript
+// Before:
+error: error instanceof Error ? error.message : 'Unknown error'
+
+// After:
+error: 'Internal server error'
+```
+
+Keep `console.error` for server-side logging (already there at line 1276).
+
+### 4. Audit log enrichment
+
+Add `authUser.id` to the existing `logAction` calls where `user_id` context is available, so audit trail includes the verified identity. This is a minor addition to the existing `context` objects — no new logging infrastructure.
+
+## What stays unchanged
+
+- All business logic (switch cases, AI prompts, calculations)
+- Service role client for DB queries (needed to bypass RLS for cross-table aggregations)
+- CORS headers (separate hardening task S1.4)
+- All other edge functions
+- All client-side callers (`supabase.functions.invoke` already sends auth header automatically)
+
+## Compatibility
+
+All 22 files that call this function use `supabase.functions.invoke`, which automatically includes the user's JWT. No caller changes needed — if the user is logged in, requests work exactly as before. If not logged in, they were never supposed to access HR data.
+
+## Verification
+
+After deployment, test with `curl_edge_functions` to confirm:
+- Request without auth → 401
+- Request with valid auth but wrong company → 403
+- Request with valid auth and correct company → 200 (existing behavior)
 
