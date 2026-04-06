@@ -187,6 +187,7 @@ Proporciona un análisis completo del paquete de compensación total, incluyendo
       const { data: benchmarks } = await supabase
         .from('erp_hr_salary_bands')
         .select('*')
+        .eq('company_id', companyId)
         .eq('level', job_level || 'mid')
         .eq('job_family', job_family || 'engineering');
 
