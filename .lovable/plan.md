@@ -1,173 +1,144 @@
 
 
-# Plan: F4 — Obligation Engine en Shared Legal Core
+# Plan: F5 — Extraer Reglas Legales Reutilizables al Shared Legal Core
 
 ## Objetivo
 
-Extraer tipos e interfaces de obligaciones, plazos y sanciones desde `useHRLegalCompliance` hacia `src/shared/legal/compliance/obligationEngine.ts`, creando funciones puras de dominio (cálculo de plazos, evaluación de riesgo sancionador) que hoy no existen como lógica centralizada. El hook HR sigue funcionando sin cambios en su interfaz pública.
+Centralizar las constantes legales reutilizables (topes SS, tipos cotización, reglas IRPF) que hoy están duplicadas entre `employeeLegalProfileEngine` y `ss-contributions.ts`, creando un single source of truth en el Shared Legal Core. El engine y el payroll rules pasan a ser consumidores.
 
-## Análisis del hook actual
+## Análisis de duplicación actual
 
-`useHRLegalCompliance` (763 líneas) es fundamentalmente una capa de acceso a datos (CRUD Supabase) con helpers UI. No contiene lógica pura de negocio — toda la inteligencia está en la edge function `erp-hr-compliance-monitor` o en RPCs.
+Hay **duplicación real** de constantes entre dos archivos:
 
-### Clasificación de interfaces
+| Constante | `employeeLegalProfileEngine.ts` | `ss-contributions.ts` | Diferencias |
+|---|---|---|---|
+| SS Group Bases | `SS_GROUP_BASES_2026` (con label + max) | `SS_GROUP_MIN_BASES_2026` (solo min) | Estructura diferente, valores iguales |
+| SS Base Max | Embebido en `SS_GROUP_BASES_2026[*].maxMensual` | `SS_BASE_MAX_2026 = 5101.20` | Mismo valor |
+| SS Rates | `SS_RATES_2026` (español keys) | `SS_RATES_2026` (english keys) | Mismos valores, keys diferentes |
 
-| Interfaz | Destino | Razón |
-|---|---|---|
-| `AdminObligation` | **Shared** → `ObligationRule` | Estructura genérica de obligación legal, reutilizable por Fiscal/Treasury |
-| `ObligationDeadline` | **Shared** → `ObligationDeadline` | Plazo de cumplimiento genérico |
-| `SanctionRisk` | **Shared** → `SanctionRule` | Tipificación de infracción, no HR-specific |
-| `UpcomingDeadline` | **Shared** → `ComputedDeadline` | Resultado de cálculo de proximidad |
-| `LegalCommunication` | **HR** | Comunicaciones laborales específicas |
-| `CommunicationTemplate` | **HR** | Templates HR |
-| `ComplianceChecklist` | **HR** | Checklists HR |
-| `SanctionAlert` | **HR** | Alertas con company_id, agents HR/Legal |
-| `RiskAssessment` | **HR** | Dashboard summary HR |
+Además, `contractTypeEngine.ts` contiene el catálogo de contratos RD — este NO se mueve (es HR-specific, no reutilizable por Fiscal/Treasury).
 
-### Consumidores detectados (5 componentes)
+## Reglas a extraer
 
-Todos importan desde `@/hooks/admin/useHRLegalCompliance`:
-- `HRLegalComplianceDashboard.tsx`
-- `HRObligationsPanel.tsx` (importa `ObligationDeadline`)
-- `HRCommunicationsPanel.tsx` (importa `LegalCommunication`)
-- `HRSanctionRisksPanel.tsx`
-- `HRComplianceChecklistPanel.tsx`
+### 1. Topes SS por grupo de cotización (LGSS Art. 148 / RDL 3/2026)
+- Bases mínimas y máximas por grupo 1-11
+- Base máxima general
+- Labels de grupo
+
+### 2. Tipos de cotización SS (RDL 3/2026)
+- CC, desempleo (indefinido/temporal), FP, FOGASA, MEI
+- Con desglose empresa/trabajador/total
+
+### 3. Reglas IRPF reutilizables
+- Tipo mínimo 2% contrato < 1 año (RIRPF Art. 86.2)
+- Regla Art. 88.5 (tipo voluntario ≥ legal)
+
+Estas son constantes normativas puras, sin lógica de negocio HR.
 
 ## Acciones
 
-### Accion 1: Crear `src/shared/legal/compliance/obligationEngine.ts`
+### Accion 1: Crear `src/shared/legal/rules/ssRules2026.ts`
 
-Tipos reutilizables extraídos + funciones puras nuevas:
-
-```typescript
-/** @shared-legal-core — Regla de obligación legal */
-export interface ObligationRule {
-  id: string;
-  jurisdiction: string;
-  organism: string;
-  modelCode?: string;
-  name: string;
-  type: string;           // 'declaracion', 'cotizacion', 'informativa', etc.
-  periodicity: string;    // 'mensual', 'trimestral', 'anual'
-  deadlineDay?: number;
-  deadlineMonth?: number;
-  deadlineDescription?: string;
-  legalReference?: string;
-  sanctionType?: string;
-  sanctionMin?: number;
-  sanctionMax?: number;
-  isActive: boolean;
-}
-
-/** @shared-legal-core — Plazo de cumplimiento */
-export interface ObligationDeadlineInfo {
-  obligationId: string;
-  periodStart?: string;
-  periodEnd?: string;
-  deadlineDate: string;
-  status: string;
-  completedAt?: string;
-  notes?: string;
-}
-
-/** @shared-legal-core — Regla de sanción */
-export interface SanctionRule { ... }
-
-/** @shared-legal-core — Plazo calculado con urgencia */
-export interface ComputedDeadline { ... }
-
-// === FUNCIONES PURAS ===
-
-/** Calcula días restantes y nivel de urgencia */
-export function computeDeadlineUrgency(deadlineDate: string, referenceDate?: Date): ComputedDeadline
-
-/** Evalúa riesgo sancionador basado en clasificación e importe */
-export function evaluateSanctionRisk(rule: SanctionRule, classification: string): { min: number; max: number; severity: LegalRiskLevel }
-
-/** Filtra obligaciones por jurisdicción y tipo */
-export function filterObligationsByScope(rules: ObligationRule[], jurisdiction?: string, type?: string): ObligationRule[]
-
-/** Ordena deadlines por urgencia (más próximos primero) */
-export function sortDeadlinesByUrgency(deadlines: ComputedDeadline[]): ComputedDeadline[]
-```
-
-### Accion 2: Crear `src/shared/legal/compliance/complianceRules.ts`
-
-Constantes de dominio reutilizables:
+Constantes canónicas de SS 2026:
 
 ```typescript
-/** Niveles de alerta por días restantes */
-export const ALERT_THRESHOLDS = {
-  critical: 3,
-  urgent: 7,
-  alert: 15,
-  prealert: 30,
-} as const;
+/** Topes de bases de cotización por grupo (LGSS Art. 148, RDL 3/2026) */
+export const SS_GROUP_BASES_2026: Record<number, {
+  minMensual: number;
+  maxMensual: number;
+  label: string;
+  isDailyBase: boolean;
+}>
 
-/** Mapeo de clasificación LISOS → severity */
-export const CLASSIFICATION_SEVERITY: Record<string, LegalRiskLevel> = {
-  leve: 'low',
-  grave: 'high',
-  muy_grave: 'critical',
-};
+/** Base máxima general 2026 */
+export const SS_BASE_MAX_2026 = 5101.20;
+
+/** Tipos de cotización SS 2026 (RDL 3/2026) */
+export const SS_CONTRIBUTION_RATES_2026: {
+  contingenciasComunes: { empresa: number; trabajador: number; total: number };
+  desempleoIndefinido: ...;
+  desempleoTemporal: ...;
+  formacionProfesional: ...;
+  fogasa: ...;
+  mei: ...;
+}
 ```
 
-### Accion 3: Adaptar `useHRLegalCompliance.ts`
+### Accion 2: Crear `src/shared/legal/rules/irpfRules.ts`
 
-- Importar tipos shared y crear type aliases para backward compatibility:
-  ```typescript
-  import type { ObligationRule, ObligationDeadlineInfo, SanctionRule } from '@/shared/legal';
-  /** @migrated-to-shared — Re-export for backward compatibility */
-  export type AdminObligation = ObligationRule & { /* HR-specific DB fields */ };
-  ```
-- Importar `computeDeadlineUrgency` y `ALERT_THRESHOLDS` para uso interno donde aplique
-- **No cambiar** la interfaz pública del hook (return object idéntico)
-- **No cambiar** las funciones de fetch/CRUD (siguen usando tablas HR directamente)
+Constantes IRPF reutilizables:
 
-### Accion 4: Actualizar barrel `src/shared/legal/index.ts`
+```typescript
+/** Tipo mínimo IRPF contrato < 1 año (RIRPF Art. 86.2) */
+export const IRPF_MINIMUM_RATE_SHORT_CONTRACT = 2;
 
-Añadir exports del obligation engine y compliance rules.
+/** Aplica regla Art. 88.5: tipo efectivo = max(legal, solicitado) */
+export function computeEffectiveIRPF(legalRate: number, requestedRate: number): number
+```
 
-### Accion 5: Verificar build
+### Accion 3: Adaptar `employeeLegalProfileEngine.ts`
 
-`npx tsc --noEmit` para confirmar cero errores.
+- Eliminar `SS_GROUP_BASES_2026` y `SS_RATES_2026` locales
+- Importar desde `@/shared/legal/rules/ssRules2026`
+- Adaptar acceso (el shared usa keys numéricas vs strings actuales — mapear internamente)
+- Importar `IRPF_MINIMUM_RATE_SHORT_CONTRACT` donde hoy hay `2` hardcoded
+
+### Accion 4: Adaptar `ss-contributions.ts`
+
+- Eliminar `SS_BASE_MAX_2026`, `SS_GROUP_MIN_BASES_2026`, `SS_RATES_2026` locales
+- Importar desde `@/shared/legal/rules/ssRules2026`
+- Mantener la interfaz pública idéntica (`calculateSSContributions`, `SSInput`, `SSResult`)
+
+### Accion 5: Actualizar barrel `src/shared/legal/index.ts`
+
+Añadir exports de las rules.
+
+### Accion 6: Actualizar tests existentes
+
+Los tests en `ssContributions.test.ts` deben seguir pasando sin cambios (importan desde `ss-contributions.ts` que re-exportará o usará los shared values). Verificar que los 3 test suites (SS, IT, Garnishment) siguen verdes.
+
+### Accion 7: Verificar build
+
+`npx tsc --noEmit` + `npx vitest run` para confirmar cero regresiones.
 
 ## Archivos
 
 | Archivo | Acción |
 |---|---|
-| `src/shared/legal/compliance/obligationEngine.ts` | Crear |
-| `src/shared/legal/compliance/complianceRules.ts` | Crear |
-| `src/hooks/admin/useHRLegalCompliance.ts` | Modificar (imports + type aliases, sin cambio de interfaz pública) |
+| `src/shared/legal/rules/ssRules2026.ts` | Crear |
+| `src/shared/legal/rules/irpfRules.ts` | Crear |
+| `src/engines/erp/hr/employeeLegalProfileEngine.ts` | Modificar (eliminar constantes locales, importar shared) |
+| `src/lib/hr/payroll/rules/ss-contributions.ts` | Modificar (eliminar constantes locales, importar shared) |
 | `src/shared/legal/index.ts` | Añadir exports |
 
 ## Archivos que NO se tocan
 
-- Los 5 componentes HR consumers — siguen importando desde el hook
-- Edge functions (`erp-hr-compliance-monitor`)
-- Tablas / migraciones
-- `employeeLegalProfileEngine`, topes SS/IRPF
-- `validationStateMachine.ts` (ya completado en F3)
+- `contractTypeEngine.ts` — catálogo HR-specific, no reutilizable
+- `useEmployeeLegalProfile.ts` — hook de persistencia, sin cambios
+- `useAgentEmployeeContext.ts` — consumidor AI, sin cambios
+- Edge functions — fuera de alcance
+- Tablas / migraciones — sin cambios
+- Tests existentes — deben pasar sin modificación (misma interfaz pública)
 
 ## Ownership
 
-- `src/shared/legal/compliance/obligationEngine.ts` → **Shared Legal Core**
-- `src/shared/legal/compliance/complianceRules.ts` → **Shared Legal Core**
-- `useHRLegalCompliance.ts` → **HR Module** (consumidor del engine)
-- Componentes `HR*Panel.tsx` → **HR UI** (sin cambios)
+- `src/shared/legal/rules/ssRules2026.ts` → **Shared Legal Core**
+- `src/shared/legal/rules/irpfRules.ts` → **Shared Legal Core**
+- `employeeLegalProfileEngine.ts` → **HR Engine** (consumidor)
+- `ss-contributions.ts` → **HR Payroll** (consumidor)
+- `contractTypeEngine.ts` → **HR Engine** (no se mueve)
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| Type aliases rompen imports de consumidores | Re-exports mantienen nombres originales (`AdminObligation`, `ObligationDeadline`, `SanctionRisk`) |
-| Campos DB (`is_active`, `deadline_day`) vs camelCase en shared | Shared usa camelCase; el hook mapea internamente al recibir de Supabase (ya lo hace con `as` casts) |
-| Funciones puras no usadas aún por el hook | Son additive; disponibles para F5 y otros módulos (Fiscal/Treasury) |
+| Keys string (`'1'`) vs numeric (`1`) en SS_GROUP_BASES | Shared usa numeric (correcto); engine adapta con `parseInt` o `String()` — cambio aislado |
+| Tests rompen por cambio de import source | Los tests importan desde `ss-contributions.ts` que sigue exportando los mismos symbols |
+| Engine pierde exports que alguien importa directamente | `SS_GROUP_BASES_2026` y `SS_RATES_2026` se re-exportan desde el engine para backward compat |
 
-## Notas para F5
+## Notas para F6
 
-- Integrar `computeDeadlineUrgency` en `fetchUpcomingDeadlines` para enriquecer datos client-side
-- Evaluar si `useLegalCompliance` (módulo Jurídico) debe consumir `ObligationRule` en lugar de su propio `ComplianceCheck`
-- Migrar `employeeLegalProfileEngine` como siguiente paso del Shared Legal Core
-- Considerar si `SanctionAlert` (HR) debería tener una versión shared para alertas cross-module
+- Evaluar si `contractTypeEngine` debería migrar parcialmente (catálogo de indemnizaciones es cross-module para Legal/Fiscal)
+- Considerar versionado de reglas (2026 → 2027) con pattern `ssRules{YEAR}.ts`
+- Integrar reglas shared en edge function `erp-hr-compliance-monitor` cuando se refactorice
 
