@@ -524,8 +524,35 @@ export function useHRTreasuryIntegration() {
     // Consultas
     getTreasurySummary,
     getOverdueItems,
-    getUpcomingPayments
+    getUpcomingPayments,
+    getPaymentUrgencies,
   };
+}
+
+// === SHARED LEGAL CORE — Urgency Enrichment (F9) ===
+
+/**
+ * @shared-legal-core — Treasury item enriched with computed deadline urgency.
+ * Uses `computeDeadlineUrgency` from the Shared Legal Core obligation engine.
+ */
+export interface TreasuryIntegrationWithUrgency extends TreasuryIntegration {
+  urgency: ComputedDeadline;
+}
+
+/**
+ * Pure function: enriches pending/scheduled treasury items with shared core urgency.
+ * Exported for testing; not a hook dependency.
+ */
+export function enrichWithUrgency(
+  items: TreasuryIntegration[],
+  referenceDate?: Date
+): TreasuryIntegrationWithUrgency[] {
+  return items
+    .filter(i => i.status === 'pending' || i.status === 'scheduled')
+    .map(i => ({
+      ...i,
+      urgency: computeDeadlineUrgency(i.due_date, referenceDate),
+    }));
 }
 
 export default useHRTreasuryIntegration;
