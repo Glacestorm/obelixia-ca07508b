@@ -55,7 +55,7 @@ serve(async (req) => {
       // ========== SKILL GRAPH ==========
       case 'list_skills': {
         const { company_id } = params;
-        const { data, error } = await supabase.from('erp_hr_skill_graph')
+        const { data, error } = await adminClient.from('erp_hr_skill_graph')
           .select('*').eq('company_id', company_id).eq('is_active', true)
           .order('category').order('name');
         if (error) throw error;
@@ -64,7 +64,7 @@ serve(async (req) => {
       }
 
       case 'upsert_skill': {
-        const { data, error } = await supabase.from('erp_hr_skill_graph')
+        const { data, error } = await adminClient.from('erp_hr_skill_graph')
           .upsert(params.skill).select().single();
         if (error) throw error;
         result = data;
@@ -85,7 +85,7 @@ serve(async (req) => {
       // ========== CAREER PATHS ==========
       case 'list_career_paths': {
         const { company_id } = params;
-        const { data, error } = await supabase.from('erp_hr_career_paths')
+        const { data, error } = await adminClient.from('erp_hr_career_paths')
           .select('*').eq('company_id', company_id).eq('is_active', true).order('from_role');
         if (error) throw error;
         result = data;
@@ -93,7 +93,7 @@ serve(async (req) => {
       }
 
       case 'upsert_career_path': {
-        const { data, error } = await supabase.from('erp_hr_career_paths')
+        const { data, error } = await adminClient.from('erp_hr_career_paths')
           .upsert(params.path).select().single();
         if (error) throw error;
         result = data;
@@ -103,7 +103,7 @@ serve(async (req) => {
       // ========== TALENT POOLS ==========
       case 'list_talent_pools': {
         const { company_id } = params;
-        const { data, error } = await supabase.from('erp_hr_talent_pools')
+        const { data, error } = await adminClient.from('erp_hr_talent_pools')
           .select('*').eq('company_id', company_id).eq('is_active', true).order('name');
         if (error) throw error;
         result = data;
@@ -111,7 +111,7 @@ serve(async (req) => {
       }
 
       case 'upsert_talent_pool': {
-        const { data, error } = await supabase.from('erp_hr_talent_pools')
+        const { data, error } = await adminClient.from('erp_hr_talent_pools')
           .upsert(params.pool).select().single();
         if (error) throw error;
         result = data;
@@ -121,7 +121,7 @@ serve(async (req) => {
       // ========== MENTORING ==========
       case 'list_mentoring': {
         const { company_id } = params;
-        const { data, error } = await supabase.from('erp_hr_mentoring_matches')
+        const { data, error } = await adminClient.from('erp_hr_mentoring_matches')
           .select('*').eq('company_id', company_id).order('created_at', { ascending: false });
         if (error) throw error;
         result = data;
@@ -146,9 +146,9 @@ serve(async (req) => {
         if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
         const [empRes, skillRes, succRes] = await Promise.all([
-          supabase.from('erp_hr_employees').select('id, first_name, last_name, department, position_title, base_salary, hire_date, status').eq('company_id', company_id).eq('status', 'active'),
-          supabase.from('erp_hr_skill_graph').select('*').eq('company_id', company_id).eq('is_active', true),
-          supabase.from('erp_hr_succession_positions').select('*').eq('company_id', company_id),
+          adminClient.from('erp_hr_employees').select('id, first_name, last_name, department, position_title, base_salary, hire_date, status').eq('company_id', company_id).eq('status', 'active'),
+          adminClient.from('erp_hr_skill_graph').select('*').eq('company_id', company_id).eq('is_active', true),
+          adminClient.from('erp_hr_succession_positions').select('*').eq('company_id', company_id),
         ]);
 
         const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -202,7 +202,7 @@ RESPONDE SOLO EN JSON:
         const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
         if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-        const { data: employees } = await supabase.from('erp_hr_employees')
+        const { data: employees } = await adminClient.from('erp_hr_employees')
           .select('id, first_name, last_name, department, position_title, hire_date')
           .eq('company_id', company_id).eq('status', 'active');
 
@@ -241,11 +241,11 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
       case 'get_talent_stats': {
         const { company_id } = params;
         const [skillsRes, poolsRes, pathsRes, mentoringRes, gigsRes] = await Promise.all([
-          supabase.from('erp_hr_skill_graph').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          supabase.from('erp_hr_talent_pools').select('*').eq('company_id', company_id).eq('is_active', true),
-          supabase.from('erp_hr_career_paths').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
-          supabase.from('erp_hr_mentoring_matches').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
-          supabase.from('erp_hr_gig_assignments').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'open'),
+          adminClient.from('erp_hr_skill_graph').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          adminClient.from('erp_hr_talent_pools').select('*').eq('company_id', company_id).eq('is_active', true),
+          adminClient.from('erp_hr_career_paths').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('is_active', true),
+          adminClient.from('erp_hr_mentoring_matches').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'active'),
+          adminClient.from('erp_hr_gig_assignments').select('id', { count: 'exact', head: true }).eq('company_id', company_id).eq('status', 'open'),
         ]);
 
         result = {
@@ -277,7 +277,7 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
           { company_id, name: 'Contabilidad IFRS', category: 'finance', skill_type: 'hard', is_core: false, market_demand: 'medium', icon: 'Calculator' },
           { company_id, name: 'Gestión del Cambio', category: 'management', skill_type: 'soft', is_core: true, market_demand: 'high', icon: 'RefreshCw' },
         ];
-        await supabase.from('erp_hr_skill_graph').insert(skills);
+        await adminClient.from('erp_hr_skill_graph').insert(skills);
 
         // Seed career paths
         const paths = [
@@ -287,7 +287,7 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
           { company_id, name: 'Técnico → Lead', from_role: 'Técnico', to_role: 'Tech Lead', path_type: 'vertical', avg_time_months: 30, typical_salary_increase_percent: 20, required_experience_years: 3, department: 'IT' },
           { company_id, name: 'Finanzas → Operaciones', from_role: 'Analista Financiero', to_role: 'Controller Operaciones', path_type: 'lateral', avg_time_months: 18, typical_salary_increase_percent: 10 },
         ];
-        await supabase.from('erp_hr_career_paths').insert(paths);
+        await adminClient.from('erp_hr_career_paths').insert(paths);
 
         // Seed talent pools
         const pools = [
@@ -296,7 +296,7 @@ RESPONDE SOLO JSON: { "matches": [{"mentor_name": "str", "mentee_name": "str", "
           { company_id, name: 'Future Leaders', pool_type: 'future_leaders', description: 'Pipeline de liderazgo a 2-3 años', member_count: 0, review_frequency: 'semi_annual' },
           { company_id, name: 'Critical Skills', pool_type: 'critical_skills', description: 'Poseedores de competencias críticas escasas', member_count: 0, review_frequency: 'quarterly' },
         ];
-        await supabase.from('erp_hr_talent_pools').insert(pools);
+        await adminClient.from('erp_hr_talent_pools').insert(pools);
 
         result = { seeded: true };
         break;
