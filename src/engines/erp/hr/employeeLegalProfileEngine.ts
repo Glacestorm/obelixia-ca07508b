@@ -27,32 +27,45 @@ import {
   type ContractTypeLegalProfile,
 } from './contractTypeEngine';
 
-// ── SS Group Bases 2026 (RDL 3/2026) ──
+// ── Shared Legal Core imports ──
+import {
+  SS_GROUP_BASES_2026 as SS_GROUP_BASES_SHARED,
+  SS_CONTRIBUTION_RATES_2026,
+  type SSGroupBase,
+} from '@/shared/legal/rules/ssRules2026';
+import {
+  IRPF_MINIMUM_RATE_SHORT_CONTRACT,
+  computeEffectiveIRPF,
+} from '@/shared/legal/rules/irpfRules';
 
-export const SS_GROUP_BASES_2026: Record<string, { minMensual: number; maxMensual: number; label: string }> = {
-  '1':  { minMensual: 1847.40, maxMensual: 5101.20, label: 'Ingenieros y Licenciados' },
-  '2':  { minMensual: 1531.50, maxMensual: 5101.20, label: 'Ingenieros Técnicos / Peritos' },
-  '3':  { minMensual: 1332.90, maxMensual: 5101.20, label: 'Jefes Administrativos y de Taller' },
-  '4':  { minMensual: 1321.20, maxMensual: 5101.20, label: 'Ayudantes no Titulados' },
-  '5':  { minMensual: 1321.20, maxMensual: 5101.20, label: 'Oficiales Administrativos' },
-  '6':  { minMensual: 1321.20, maxMensual: 5101.20, label: 'Subalternos' },
-  '7':  { minMensual: 1321.20, maxMensual: 5101.20, label: 'Auxiliares Administrativos' },
-  '8':  { minMensual: 44.04,   maxMensual: 170.04,  label: 'Oficiales 1ª y 2ª (diaria)' },
-  '9':  { minMensual: 44.04,   maxMensual: 170.04,  label: 'Oficiales 3ª y Especialistas (diaria)' },
-  '10': { minMensual: 44.04,   maxMensual: 170.04,  label: 'Peones (diaria)' },
-  '11': { minMensual: 44.04,   maxMensual: 170.04,  label: 'Menores de 18 años (diaria)' },
-};
+// ── Re-exports for backward compatibility ──
+// @migrated-to-shared — Consumers importing from this file keep working.
 
-// ── SS Contribution Rates 2026 ──
+/** @deprecated Import from '@/shared/legal/rules/ssRules2026' instead */
+export const SS_GROUP_BASES_2026: Record<string, { minMensual: number; maxMensual: number; label: string }> = 
+  Object.fromEntries(
+    Object.entries(SS_GROUP_BASES_SHARED).map(([k, v]) => [
+      k,
+      { minMensual: v.minMensual, maxMensual: v.maxMensual, label: v.label },
+    ])
+  );
 
+/** @deprecated Import from '@/shared/legal/rules/ssRules2026' instead */
 export const SS_RATES_2026 = {
-  contingenciasComunes: { empresa: 23.60, trabajador: 4.70, total: 28.30 },
-  desempleoIndefinido: { empresa: 5.50, trabajador: 1.55, total: 7.05 },
-  desempleoTemporal:   { empresa: 6.70, trabajador: 1.60, total: 8.30 },
-  formacionProfesional: { empresa: 0.60, trabajador: 0.10, total: 0.70 },
-  fogasa: { empresa: 0.20, trabajador: 0, total: 0.20 },
-  mei: { empresa: 0.75, trabajador: 0.15, total: 0.90 },
+  contingenciasComunes: { empresa: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.trabajador, total: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.total },
+  desempleoIndefinido: { empresa: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.trabajador, total: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.total },
+  desempleoTemporal: { empresa: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.trabajador, total: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.total },
+  formacionProfesional: { empresa: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.formacionProfesional.trabajador, total: SS_CONTRIBUTION_RATES_2026.formacionProfesional.total },
+  fogasa: { empresa: SS_CONTRIBUTION_RATES_2026.fogasa.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.fogasa.trabajador, total: SS_CONTRIBUTION_RATES_2026.fogasa.total },
+  mei: { empresa: SS_CONTRIBUTION_RATES_2026.mei.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.mei.trabajador, total: SS_CONTRIBUTION_RATES_2026.mei.total },
 };
+
+// ── Internal helper: resolve group base from shared ──
+
+function resolveGroupBase(grupo: string): SSGroupBase {
+  const num = parseInt(grupo, 10);
+  return SS_GROUP_BASES_SHARED[num] || SS_GROUP_BASES_SHARED[7];
+}
 
 // ── Types ──
 
@@ -69,7 +82,7 @@ export interface EmployeeLegalProfile {
   // SS
   grupoCotizacion: string;
   grupoLabel: string;
-  baseCotizacionMensual: number; // Salario bruto mensual ajustado a topes
+  baseCotizacionMensual: number;
   baseMinima: number;
   baseMaxima: number;
   isDailyBase: boolean;
@@ -87,8 +100,8 @@ export interface EmployeeLegalProfile {
   // IRPF
   irpfTipoLegalEstimado: number;
   irpfTipoSolicitado: number;
-  irpfTipoEfectivo: number; // max(legal, solicitado) per Art. 88.5
-  irpfMinimoAplicable: boolean; // 2% contract < 1 year
+  irpfTipoEfectivo: number;
+  irpfMinimoAplicable: boolean;
   comunidadAutonoma: string;
 
   // Empresa Fiscal
@@ -153,20 +166,19 @@ export function computeEmployeeLegalProfile(input: EmployeeLegalProfileInput): E
   legalRefs.push(...contractSummary.legalReferences);
   warnings.push(...contractSummary.warnings);
 
-  // 2. SS group bases
-  const grupo = input.contributionGroup || '7'; // default auxiliar
-  const groupBases = SS_GROUP_BASES_2026[grupo] || SS_GROUP_BASES_2026['7'];
-  const isDailyBase = parseInt(grupo) >= 8;
+  // 2. SS group bases (from shared)
+  const grupo = input.contributionGroup || '7';
+  const groupBases = resolveGroupBase(grupo);
+  const isDailyBase = groupBases.isDailyBase;
 
   // 3. Base cotización: salary clamped to group limits
   const salarioMensual = input.baseSalary / (isDailyBase ? 365 : 12);
   let baseCot = salarioMensual;
 
   if (isDailyBase) {
-    // For daily groups, compare daily salary
     const salarioDiario = input.baseSalary / 365;
     baseCot = Math.max(groupBases.minMensual, Math.min(salarioDiario, groupBases.maxMensual));
-    baseCot = baseCot * 30; // Monthly equivalent for rate calculation
+    baseCot = baseCot * 30;
   } else {
     baseCot = Math.max(groupBases.minMensual, Math.min(salarioMensual, groupBases.maxMensual));
   }
@@ -182,19 +194,20 @@ export function computeEmployeeLegalProfile(input: EmployeeLegalProfileInput): E
     });
   }
 
-  // 4. SS rates
+  // 4. SS rates (from shared)
+  const rates = SS_CONTRIBUTION_RATES_2026;
   const desempleo = contractProfile.isTemporaryForSS
-    ? SS_RATES_2026.desempleoTemporal
-    : SS_RATES_2026.desempleoIndefinido;
+    ? rates.desempleoTemporal
+    : rates.desempleoIndefinido;
 
   const ssRates = {
-    contingenciasComunes: { empresa: SS_RATES_2026.contingenciasComunes.empresa, trabajador: SS_RATES_2026.contingenciasComunes.trabajador },
+    contingenciasComunes: { empresa: rates.contingenciasComunes.empresa, trabajador: rates.contingenciasComunes.trabajador },
     desempleo: { empresa: desempleo.empresa, trabajador: desempleo.trabajador, tipo: contractProfile.isTemporaryForSS ? 'temporal' : 'indefinido' },
-    formacion: { empresa: SS_RATES_2026.formacionProfesional.empresa, trabajador: SS_RATES_2026.formacionProfesional.trabajador },
-    fogasa: { empresa: SS_RATES_2026.fogasa.empresa },
-    mei: { empresa: SS_RATES_2026.mei.empresa, trabajador: SS_RATES_2026.mei.trabajador },
-    totalEmpresa: SS_RATES_2026.contingenciasComunes.empresa + desempleo.empresa + SS_RATES_2026.formacionProfesional.empresa + SS_RATES_2026.fogasa.empresa + SS_RATES_2026.mei.empresa,
-    totalTrabajador: SS_RATES_2026.contingenciasComunes.trabajador + desempleo.trabajador + SS_RATES_2026.formacionProfesional.trabajador + SS_RATES_2026.mei.trabajador,
+    formacion: { empresa: rates.formacionProfesional.empresa, trabajador: rates.formacionProfesional.trabajador },
+    fogasa: { empresa: rates.fogasa.empresa },
+    mei: { empresa: rates.mei.empresa, trabajador: rates.mei.trabajador },
+    totalEmpresa: rates.contingenciasComunes.empresa + desempleo.empresa + rates.formacionProfesional.empresa + rates.fogasa.empresa + rates.mei.empresa,
+    totalTrabajador: rates.contingenciasComunes.trabajador + desempleo.trabajador + rates.formacionProfesional.trabajador + rates.mei.trabajador,
     totalCoste: 0,
   };
   ssRates.totalCoste = ssRates.totalEmpresa + ssRates.totalTrabajador;
@@ -203,16 +216,16 @@ export function computeEmployeeLegalProfile(input: EmployeeLegalProfileInput): E
     legalRefs.push('LGSS DA 7ª — Tipo desempleo contratos temporales: 8,30% (6,70% + 1,60%)');
   }
 
-  // 5. IRPF
+  // 5. IRPF (using shared rules)
   const irpfMinimo2 = contractSummary.irpfMinimo2Pct;
   let irpfLegal = input.irpfLegalRate || 0;
-  if (irpfMinimo2 && irpfLegal < 2) {
-    irpfLegal = 2;
-    legalRefs.push('RIRPF Art. 86.2 — Tipo mínimo 2% contrato duración determinada < 1 año');
+  if (irpfMinimo2 && irpfLegal < IRPF_MINIMUM_RATE_SHORT_CONTRACT) {
+    irpfLegal = IRPF_MINIMUM_RATE_SHORT_CONTRACT;
+    legalRefs.push(`RIRPF Art. 86.2 — Tipo mínimo ${IRPF_MINIMUM_RATE_SHORT_CONTRACT}% contrato duración determinada < 1 año`);
   }
 
   const irpfSolicitado = input.irpfPercentage || 0;
-  const irpfEfectivo = Math.max(irpfLegal, irpfSolicitado);
+  const irpfEfectivo = computeEffectiveIRPF(irpfLegal, irpfSolicitado);
 
   if (irpfSolicitado > 0 && irpfSolicitado > irpfLegal) {
     legalRefs.push(`RIRPF Art. 88.5 — Tipo voluntario ${irpfSolicitado}% > legal ${irpfLegal}%`);

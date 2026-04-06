@@ -3,48 +3,34 @@
  * RDL 3/2026 · LGSS Art. 147
  * 
  * Motor determinista puro.
+ * Constantes importadas desde Shared Legal Core (single source of truth).
  */
 
+import {
+  SS_BASE_MAX_MENSUAL_2026,
+  SS_GROUP_MIN_BASES_MENSUAL_2026,
+  SS_CONTRIBUTION_RATES_2026,
+} from '@/shared/legal/rules/ssRules2026';
+
 // ============================================
-// CONSTANTS 2026
+// RE-EXPORTS for backward compatibility
 // ============================================
 
-/** Base máxima mensual 2026 */
-export const SS_BASE_MAX_2026 = 5101.20;
+/** @deprecated Import from '@/shared/legal/rules/ssRules2026' → SS_BASE_MAX_MENSUAL_2026 */
+export const SS_BASE_MAX_2026 = SS_BASE_MAX_MENSUAL_2026;
 
-/** Tipos de cotización empresa/trabajador 2026 */
+/** @deprecated Import from '@/shared/legal/rules/ssRules2026' → SS_GROUP_MIN_BASES_MENSUAL_2026 */
+export const SS_GROUP_MIN_BASES_2026 = SS_GROUP_MIN_BASES_MENSUAL_2026;
+
+/** Mapped rates for this module's English-key convention */
 export const SS_RATES_2026 = {
-  // Contingencias comunes
-  cc: { employer: 23.60, employee: 4.70, total: 28.30 },
-  // Desempleo - indefinido
-  unemployment_indefinite: { employer: 5.50, employee: 1.55, total: 7.05 },
-  // Desempleo - temporal
-  unemployment_temporary: { employer: 6.70, employee: 1.60, total: 8.30 },
-  // FOGASA
-  fogasa: { employer: 0.20, employee: 0, total: 0.20 },
-  // Formación profesional
-  fp: { employer: 0.60, employee: 0.10, total: 0.70 },
-  // MEI (Mecanismo de Equidad Intergeneracional)
-  mei: { employer: 0.75, employee: 0.15, total: 0.90 },
-  // AT/EP (media — depende del CNAE, aquí usamos 1.5% referencia)
-  atep: { employer: 1.50, employee: 0, total: 1.50 },
-};
-
-/** Bases mínimas por grupo de cotización 2026 */
-export const SS_GROUP_MIN_BASES_2026: Record<number, number> = {
-  // Fuente: Orden PJC/297/2026 — Bases mínimas por grupo de cotización
-  1: 1847.40,  // Ingenieros y Licenciados, personal de alta dirección
-  2: 1531.50,  // Ingenieros Técnicos, Peritos y Ayudantes Titulados
-  3: 1332.90,  // Jefes Administrativos y de Taller
-  4: 1381.20,  // Ayudantes no titulados
-  5: 1381.20,  // Oficiales Administrativos
-  6: 1381.20,  // Subalternos
-  7: 1381.20,  // Auxiliares Administrativos
-  8: 1381.20,  // Oficiales de 1ª y 2ª
-  9: 1381.20,  // Oficiales de 3ª y Especialistas
-  10: 1381.20, // Peones
-  11: 1381.20, // Trabajadores menores de 18 años
-  // Fuente: Orden PJC/297/2026 — Base mínima grupos 4-11: 1.381,20 €/mes
+  cc: { employer: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa, employee: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.trabajador, total: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.total },
+  unemployment_indefinite: { employer: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa, employee: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.trabajador, total: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.total },
+  unemployment_temporary: { employer: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.empresa, employee: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.trabajador, total: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.total },
+  fogasa: { employer: SS_CONTRIBUTION_RATES_2026.fogasa.empresa, employee: SS_CONTRIBUTION_RATES_2026.fogasa.trabajador, total: SS_CONTRIBUTION_RATES_2026.fogasa.total },
+  fp: { employer: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa, employee: SS_CONTRIBUTION_RATES_2026.formacionProfesional.trabajador, total: SS_CONTRIBUTION_RATES_2026.formacionProfesional.total },
+  mei: { employer: SS_CONTRIBUTION_RATES_2026.mei.empresa, employee: SS_CONTRIBUTION_RATES_2026.mei.trabajador, total: SS_CONTRIBUTION_RATES_2026.mei.total },
+  atep: { employer: SS_CONTRIBUTION_RATES_2026.atepReferencia.empresa, employee: SS_CONTRIBUTION_RATES_2026.atepReferencia.trabajador, total: SS_CONTRIBUTION_RATES_2026.atepReferencia.total },
 };
 
 // ============================================
