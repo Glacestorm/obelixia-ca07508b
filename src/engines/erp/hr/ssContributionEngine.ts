@@ -14,7 +14,12 @@
  * NOTA: Clasificación operativa interna — no constituye asesoramiento jurídico
  */
 
-import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
+import {
+  SS_CONTRIBUTION_RATES_2026,
+  SS_GROUP_BASES_2026 as SS_GROUP_BASES_SHARED,
+  SS_BASE_MAX_MENSUAL_2026,
+  SS_BASE_MAX_DIARIA_2026,
+} from '@/shared/legal/rules/ssRules2026';
 
 // ── SS Group Limits (from hr_es_ss_bases table) ──
 
@@ -137,8 +142,8 @@ export interface SSCalculationTrace {
 
 /**
  * Bases mínimas por grupo de cotización 2026 (RDL 3/2026, BOE 04/02/2026)
- * Base máxima: 5.101,20 €/mes para todos los grupos
- * Grupos 1-7: cotización mensual | Grupos 8-11: cotización diaria
+ * Derived from Shared Legal Core (ssRules2026) — single source of truth.
+ * Adapter maps shared shape → engine shape for backward compatibility.
  */
 export const SS_GROUP_BASES_2026: Record<number, {
   base_minima_mensual: number;
@@ -147,19 +152,19 @@ export const SS_GROUP_BASES_2026: Record<number, {
   base_maxima_diaria: number | null;
   cotizacion_tipo: 'mensual' | 'diaria';
   descripcion: string;
-}> = {
-  1:  { base_minima_mensual: 1929.00,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ingenieros, Licenciados y Personal de alta dirección' },
-  2:  { base_minima_mensual: 1599.60,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ingenieros técnicos, Peritos y Ayudantes titulados' },
-  3:  { base_minima_mensual: 1391.70,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Jefes Administrativos y de Taller' },
-  4:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Ayudantes no titulados' },
-  5:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Oficiales administrativos' },
-  6:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Subalternos' },
-  7:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: null,  base_maxima_diaria: null,   cotizacion_tipo: 'mensual', descripcion: 'Auxiliares administrativos' },
-  8:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Oficiales de primera y segunda' },
-  9:  { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Oficiales de tercera y especialistas' },
-  10: { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Peones' },
-  11: { base_minima_mensual: 1381.20,  base_maxima_mensual: 5101.20, base_minima_diaria: 46.04, base_maxima_diaria: 170.04, cotizacion_tipo: 'diaria',  descripcion: 'Trabajadores menores de 18 años' },
-};
+}> = Object.fromEntries(
+  Object.entries(SS_GROUP_BASES_SHARED).map(([k, v]) => [
+    Number(k),
+    {
+      base_minima_mensual: v.isDailyBase ? Math.round(v.minMensual * 30 * 100) / 100 : v.minMensual,
+      base_maxima_mensual: SS_BASE_MAX_MENSUAL_2026,
+      base_minima_diaria: v.isDailyBase ? v.minMensual : null,
+      base_maxima_diaria: v.isDailyBase ? SS_BASE_MAX_DIARIA_2026 : null,
+      cotizacion_tipo: v.isDailyBase ? 'diaria' as const : 'mensual' as const,
+      descripcion: v.label,
+    },
+  ])
+);
 
 /** Default SS topes — resolved by grupo de cotización (2026) */
 function getDefaultTopesForGroup(grupo: number) {

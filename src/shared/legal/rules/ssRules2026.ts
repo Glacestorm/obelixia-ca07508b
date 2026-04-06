@@ -37,10 +37,10 @@ export const SS_BASE_MAX_DIARIA_2026 = 170.04;
  * Grupos 1-7: bases mensuales. Grupos 8-11: bases diarias.
  */
 export const SS_GROUP_BASES_2026: Record<number, SSGroupBase> = {
-  1:  { minMensual: 1847.40, maxMensual: 5101.20, label: 'Ingenieros y Licenciados', isDailyBase: false },
-  2:  { minMensual: 1531.50, maxMensual: 5101.20, label: 'Ingenieros Técnicos / Peritos', isDailyBase: false },
-  3:  { minMensual: 1332.90, maxMensual: 5101.20, label: 'Jefes Administrativos y de Taller', isDailyBase: false },
-  4:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Ayudantes no Titulados', isDailyBase: false },
+  1:  { minMensual: 1929.00, maxMensual: 5101.20, label: 'Ingenieros, Licenciados y Personal de alta dirección', isDailyBase: false },
+  2:  { minMensual: 1599.60, maxMensual: 5101.20, label: 'Ingenieros técnicos, Peritos y Ayudantes titulados', isDailyBase: false },
+  3:  { minMensual: 1391.70, maxMensual: 5101.20, label: 'Jefes Administrativos y de Taller', isDailyBase: false },
+  4:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Ayudantes no titulados', isDailyBase: false },
   5:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Oficiales Administrativos', isDailyBase: false },
   6:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Subalternos', isDailyBase: false },
   7:  { minMensual: 1381.20, maxMensual: 5101.20, label: 'Auxiliares Administrativos', isDailyBase: false },
@@ -55,9 +55,9 @@ export const SS_GROUP_BASES_2026: Record<number, SSGroupBase> = {
  * Grupos 8-11 devuelven la base mínima MENSUAL (min diaria × 30).
  */
 export const SS_GROUP_MIN_BASES_MENSUAL_2026: Record<number, number> = {
-  1: 1847.40,
-  2: 1531.50,
-  3: 1332.90,
+  1: 1929.00,
+  2: 1599.60,
+  3: 1391.70,
   4: 1381.20,
   5: 1381.20,
   6: 1381.20,
