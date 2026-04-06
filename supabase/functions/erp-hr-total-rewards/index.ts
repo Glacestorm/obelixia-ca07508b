@@ -50,10 +50,13 @@ serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const { action, employee_id, fiscal_year, job_level, job_family, location } = await req.json() as TotalRewardsRequest;
+    const { action, employee_id, company_id, fiscal_year, job_level, job_family, location } = await req.json() as TotalRewardsRequest;
 
-    // === MEMBERSHIP CHECK (when employee_id present) ===
+    // === UNIFIED TENANT RESOLUTION ===
+    let companyId: string | null = null;
+
     if (employee_id) {
+      // Path 1: Resolve company from employee
       const { data: empData, error: empError } = await supabase
         .from('erp_hr_employees')
         .select('company_id')
@@ -67,23 +70,35 @@ serve(async (req) => {
         });
       }
 
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', empData.company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!membership) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      companyId = empData.company_id;
+    } else if (company_id) {
+      // Path 2: company_id provided directly (for actions without employee)
+      companyId = company_id;
+    } else {
+      // No tenant context → reject
+      return new Response(JSON.stringify({ error: 'Bad Request: employee_id or company_id required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    console.log(`[erp-hr-total-rewards] Processing action: ${action}, user: ${userId}`);
+    // Validate user membership to resolved company
+    const { data: membership } = await supabase
+      .from('erp_user_companies')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`[erp-hr-total-rewards] Processing action: ${action}, user: ${userId}, company: ${companyId}`);
 
     let systemPrompt = '';
     let userPrompt = '';
