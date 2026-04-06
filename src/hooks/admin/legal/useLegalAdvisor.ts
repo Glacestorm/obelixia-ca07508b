@@ -6,6 +6,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { LegalRiskLevel } from '@/shared/legal';
 
 // === INTERFACES ===
 export interface LegalJurisdiction {
@@ -22,7 +23,7 @@ export interface LegalAdvice {
   legal_basis: string[];
   recommendations: string[];
   warnings: string[];
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_level: LegalRiskLevel;
   jurisdiction_applied: string;
   confidence_score: number;
 }
@@ -34,7 +35,7 @@ export interface ValidationResult {
   blocking_issues: string[];
   legal_basis: string[];
   recommendations: string[];
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_level: LegalRiskLevel;
 }
 
 export interface ContractAnalysis {
@@ -74,7 +75,7 @@ export interface LegalPrecedent {
 
 export interface RiskAssessment {
   scenario_summary: string;
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_level: LegalRiskLevel;
   risk_score: number;
   risk_factors: Array<{ factor: string; impact: string; probability: string }>;
   mitigation_strategies: string[];

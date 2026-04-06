@@ -7,12 +7,15 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { LegalRiskLevel, LegalModuleType } from '@/shared/legal';
 
 // === INTERFACES ===
 
-export type ValidationRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+/** @migrated-to-shared — Re-export from shared/legal for backward compatibility */
+export type ValidationRiskLevel = LegalRiskLevel;
 export type ValidationStatus = 'pending' | 'approved' | 'rejected' | 'blocked' | 'auto_approved';
-export type ModuleType = 'hr' | 'fiscal' | 'treasury' | 'contracts' | 'purchases' | 'inventory';
+/** @migrated-to-shared — Re-export from shared/legal for backward compatibility */
+export type ModuleType = LegalModuleType;
 
 export interface ValidationRequest {
   id: string;
