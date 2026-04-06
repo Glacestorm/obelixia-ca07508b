@@ -14,6 +14,8 @@
  * NOTA: Clasificación operativa interna — no constituye asesoramiento jurídico
  */
 
+import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
+
 // ── SS Group Limits (from hr_es_ss_bases table) ──
 
 export interface SSGroupLimits {
@@ -170,19 +172,19 @@ function getDefaultTopesForGroup(grupo: number) {
   };
 }
 
-/** Default rates 2026 (Régimen General) — RDL 3/2026 */
+/** Default rates 2026 (Régimen General) — derived from Shared Legal Core (ssRules2026) */
 const DEFAULT_SS_RATES_2026 = {
-  tipo_cc_empresa: 23.60,
-  tipo_cc_trabajador: 4.70,
-  tipo_desempleo_empresa_gi: 5.50,
-  tipo_desempleo_trabajador_gi: 1.55,
-  tipo_desempleo_empresa_td: 6.70,
-  tipo_desempleo_trabajador_td: 1.60,
-  tipo_fogasa: 0.20,
-  tipo_fp_empresa: 0.60,
-  tipo_fp_trabajador: 0.10,
-  tipo_mei: 0.90,
-  tipo_at_empresa: 1.50, // Default when no CNAE/occupation specified
+  tipo_cc_empresa: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa,
+  tipo_cc_trabajador: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.trabajador,
+  tipo_desempleo_empresa_gi: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa,
+  tipo_desempleo_trabajador_gi: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.trabajador,
+  tipo_desempleo_empresa_td: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.empresa,
+  tipo_desempleo_trabajador_td: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.trabajador,
+  tipo_fogasa: SS_CONTRIBUTION_RATES_2026.fogasa.empresa,
+  tipo_fp_empresa: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa,
+  tipo_fp_trabajador: SS_CONTRIBUTION_RATES_2026.formacionProfesional.trabajador,
+  tipo_mei: SS_CONTRIBUTION_RATES_2026.mei.total,
+  tipo_at_empresa: SS_CONTRIBUTION_RATES_2026.atepReferencia.empresa,
 };
 
 /**
