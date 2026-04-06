@@ -90,7 +90,8 @@ serve(async (req) => {
     // Path 2: Cron/system call → X-Cron-Secret header
     if (!authenticated) {
       const cronSecret = req.headers.get('X-Cron-Secret');
-      if (cronSecret && cronSecret === SUPABASE_SERVICE_ROLE_KEY) {
+      const expectedSecret = Deno.env.get('CRON_SECRET');
+      if (cronSecret && expectedSecret && cronSecret === expectedSecret) {
         authenticated = true;
         console.log('[agreement-updater] Authenticated via X-Cron-Secret (system/cron)');
       }
