@@ -77,13 +77,49 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const { action, payload } = await req.json();
 
-    console.log(`[erp-hr-accounting-bridge] Action: ${action}`);
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // Tenant isolation
+    const companyId = payload?.company_id;
+    if (companyId) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    console.log(`[erp-hr-accounting-bridge] Action: ${action}, User: ${userId}`);
 
     switch (action) {
       case 'generate_payroll_entry':
@@ -114,10 +150,9 @@ serve(async (req) => {
         );
     }
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[erp-hr-accounting-bridge] Error:', errorMessage);
+    console.error('[erp-hr-accounting-bridge] Error:', error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -226,7 +261,7 @@ async function generatePayrollEntry(supabase: any, payload: {
   if (entryError) {
     console.error('Error creating journal entry:', entryError);
     return new Response(
-      JSON.stringify({ success: false, error: entryError.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -431,7 +466,7 @@ async function generateSettlementEntry(supabase: any, payload: {
 
   if (entryError) {
     return new Response(
-      JSON.stringify({ success: false, error: entryError.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -539,7 +574,7 @@ async function generateSSContributionEntry(supabase: any, payload: {
 
   if (error) {
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -659,7 +694,7 @@ async function generateBatchPayrollEntries(supabase: any, payload: {
 
     if (error) {
       return new Response(
-        JSON.stringify({ success: false, error: error.message }),
+        JSON.stringify({ success: false, error: 'Internal server error' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -774,7 +809,7 @@ async function reverseEntry(supabase: any, payload: {
 
   if (createError) {
     return new Response(
-      JSON.stringify({ success: false, error: createError.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
@@ -883,7 +918,7 @@ async function getAccountingStatus(supabase: any, payload: {
 
   if (error) {
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

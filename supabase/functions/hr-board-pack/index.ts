@@ -28,6 +28,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  function json(data: unknown, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
@@ -39,9 +46,35 @@ serve(async (req) => {
     const { action, companyId, templateId, packId, period, status, comments, reviewerName } = await req.json() as BoardPackRequest;
 
     if (!companyId || companyId === 'demo-company-id') {
-      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ success: false, error: 'company_id is required' }, 400);
+    }
+
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // Tenant isolation
+    const { data: membership } = await supabase
+      .from('erp_user_companies')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!membership) {
+      return json({ error: 'Forbidden' }, 403);
     }
 
     // Rate limit for expensive actions (generate_pack)
@@ -53,7 +86,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[hr-board-pack] action=${action} company=${companyId}`);
+    console.log(`[hr-board-pack] action=${action} company=${companyId} user=${userId}`);
 
     switch (action) {
       case 'list_templates': {
@@ -285,13 +318,6 @@ Contexto: Suite HR Premium con módulos de Fairness, Workforce Planning, Legal E
     }
   } catch (error) {
     console.error('[hr-board-pack] Error:', error);
-    return json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ success: false, error: 'Internal server error' }, 500);
   }
 });
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
