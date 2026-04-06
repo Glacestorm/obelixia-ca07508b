@@ -1,65 +1,59 @@
 
 
-# Plan: S1.4 — CORS Restriction for HR Edge Functions
+# Plan SP3: Hardening Seeders Admin — erp-hr-seed-demo-data + erp-hr-seed-demo-master
 
-## Current State
+## Mecanismo de Role Check
 
-- **14 functions** already use `getSecureCorsHeaders(req)` (the S1.3 batch + `payroll-cross-module-bridge`, `payroll-file-generator`, `payroll-irpf-engine`)
-- **44 functions** still use hardcoded `'Access-Control-Allow-Origin': '*'`
-- Total HR functions: **58**
+**Tabla**: `public.user_roles` (ya existente)
+- Columnas: `id`, `user_id`, `role` (enum `app_role`), `created_at`
+- Roles válidos para admin: `admin`, `superadmin`
 
-## Allowlist (already configured in `getSecureCorsHeaders`)
+**Método**: Tras validar JWT con `getClaims(token)`, consultar `user_roles` con el service-role client para verificar que el usuario tiene rol `admin` o `superadmin`. Devolver 403 si no.
 
-| Origin | Purpose |
-|--------|---------|
-| `https://obelixia.lovable.app` | Published app |
-| `https://app.obelixia.com` | Production domain |
-| `ALLOWED_ORIGIN` env var | Custom override |
-| `*.lovable.app` (regex) | Preview/sandbox domains |
-| `*.lovableproject.com` (regex) | Legacy preview domains |
+## Compatibilidad con Panel Admin
 
-**Missing**: `http://localhost:*` for local development. Will add a regex match for `http://localhost:\d+` to the helper.
+El panel admin HR invoca estas funciones vía `supabase.functions.invoke()`, que ya incluye el JWT del usuario autenticado en el header `Authorization`. No hay cambio de contrato — solo se añade validación server-side que el frontend ya satisface si el usuario es admin.
 
-## Changes
+## Cambios por Función
 
-### 1. Update `getSecureCorsHeaders` in `_shared/edge-function-template.ts`
+### Patrón idéntico para ambas funciones:
 
-Add localhost support:
-```typescript
-const isLocalhost = /^http:\/\/localhost(:\d+)?$/.test(origin);
+**Ubicación**: Dentro del `serve(async (req) => { ... })`, justo después de crear el service-role client y antes de parsear el body.
+
 ```
-Add to the condition so local dev is never blocked.
+1. Extraer Authorization header
+2. Si no hay Bearer token → 401
+3. Crear un anon-client con el auth header
+4. getClaims(token) → si error → 401
+5. Extraer userId = claims.sub
+6. Con el service-role client: SELECT FROM user_roles WHERE user_id = userId AND role IN ('admin', 'superadmin')
+7. Si no hay resultado → 403 Forbidden
+8. Continuar con lógica existente sin cambios
+```
 
-### 2. Migrate 44 remaining HR functions
+**Error sanitization**: En el catch final, reemplazar `error.message` por `"Internal server error"`.
 
-For each function, the change is mechanical:
-1. Add import: `import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';`
-2. Remove the hardcoded `const corsHeaders = { ... }` block
-3. Add `const corsHeaders = getSecureCorsHeaders(req);` as the first line inside `serve(async (req) => {`
-4. For the OPTIONS handler: ensure it uses the same dynamic `corsHeaders`
+### erp-hr-seed-demo-data (líneas ~1344-1412)
 
-No business logic, API contracts, or response shapes change.
+Insertar auth gate entre línea 1348 (crear supabase client) y línea 1350 (parsear body). El service-role client se mantiene para las operaciones de seed.
 
-### 3. Functions to migrate (44)
+### erp-hr-seed-demo-master (líneas ~988-1133)
 
-**erp-hr-* (32):** `accounting-bridge`, `agreement-updater`, `ai-agent`, `analytics-agent`, `analytics-intelligence`, `compensation-suite`, `compliance-enterprise`, `contingent-workforce`, `credentials-agent`, `enterprise-admin`, `esg-selfservice`, `executive-analytics`, `industry-templates`, `innovation-discovery`, `offboarding-agent`, `onboarding-agent`, `payroll-recalculation`, `people-analytics-ai`, `performance-agent`, `recruitment-agent`, `regulatory-watch`, `seed-demo-data`, `seed-demo-master`, `smart-contracts`, `talent-intelligence`, `talent-skills-agent`, `total-rewards`, `training-agent`, `wellbeing-agent`, `wellbeing-enterprise`, `whistleblower-agent`, `workflow-engine`
+Insertar auth gate entre línea 997 (crear supabase client) y línea 999 (parsear body). Mismo patrón exacto.
 
-**hr-* (10):** `analytics-bi`, `board-pack`, `compliance-automation`, `country-registry`, `enterprise-integrations`, `labor-copilot`, `multiagent-supervisor`, `orchestration-engine`, `premium-api`, `regulatory-reporting`, `reporting-engine`, `workforce-simulation`
+## Resumen de Cambios
 
-### What stays unchanged
+| Aspecto | Detalle |
+|---------|---------|
+| Auth gate | JWT validation via `getClaims` |
+| Role check | `user_roles` tabla, roles `admin` o `superadmin` |
+| Service role | Se mantiene para operaciones internas |
+| Error sanitization | Catch devuelve `"Internal server error"` |
+| Contrato API | Sin cambios |
+| Funciones tocadas | Solo las 2 objetivo |
 
-- All non-HR functions (keep wildcard CORS)
-- All business logic in every function
-- The 14 functions already using `getSecureCorsHeaders`
-- API contracts and response shapes
+## Riesgos
 
-### Implementation approach
-
-Process in batches of ~10 functions per edit pass. Each is a simple find-and-replace pattern. Deploy all at once after migration.
-
-## Verification
-
-- Test from preview domain (should work)
-- Test from localhost (should work with new regex)
-- Test from unauthorized origin (should be rejected or get fallback origin)
+- **Bajo**: El panel admin ya envía auth headers. Usuarios sin rol admin recibirán 403, que es el comportamiento deseado.
+- **Ninguno** en lógica de seed: no se modifica ninguna función de fase ni cleanup.
 
