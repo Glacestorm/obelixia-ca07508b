@@ -347,15 +347,15 @@ RESPONDE SOLO CON EL TEXTO DEL RESUMEN, sin JSON.`;
     }
   } catch (error) {
     console.error('[hr-reporting-engine] Error:', error);
-    return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }), {
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
 
-function jsonResponse(data: unknown) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
+  function jsonResponse(data: unknown) {
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
