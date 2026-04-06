@@ -74,7 +74,7 @@ serve(async (req) => {
       // ========== ROLE-SKILL MAPPING ==========
       case 'list_role_mappings': {
         const { company_id, role_name } = params;
-        let query = supabase.from('erp_hr_role_skill_mapping').select('*').eq('company_id', company_id);
+        let query = adminClient.from('erp_hr_role_skill_mapping').select('*').eq('company_id', company_id);
         if (role_name) query = query.eq('role_name', role_name);
         const { data, error } = await query.order('role_name');
         if (error) throw error;
@@ -131,7 +131,7 @@ serve(async (req) => {
       // ========== GIG ASSIGNMENTS ==========
       case 'list_gigs': {
         const { company_id, status } = params;
-        let query = supabase.from('erp_hr_gig_assignments').select('*').eq('company_id', company_id);
+        let query = adminClient.from('erp_hr_gig_assignments').select('*').eq('company_id', company_id);
         if (status) query = query.eq('status', status);
         const { data, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
