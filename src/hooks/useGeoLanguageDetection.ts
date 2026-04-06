@@ -210,15 +210,12 @@ export function useGeoLanguageDetection(): UseGeoLanguageDetectionReturn {
         if (data?.success && data.detectedLocale) {
           setDetectedLocale(data.detectedLocale);
           
-          // Only show suggestion if detected language is different from current
-          // and is not the default (Spanish)
-          if (data.detectedLocale !== language && data.detectedLocale !== 'es') {
-            console.log(`[useGeoLanguageDetection] Suggesting language: ${data.detectedLocale} (${data.languageNativeName})`);
-            showLanguageSuggestion(data.detectedLocale, data.languageNativeName);
-          } else {
-            // Same language or Spanish default, just mark as done
-            markDetectionDone();
+          // Auto-apply the detected language from IP
+          if (VALID_GEO_LANGUAGES.includes(data.detectedLocale as Language)) {
+            console.log(`[useGeoLanguageDetection] Auto-applying language from IP: ${data.detectedLocale} (${data.languageNativeName})`);
+            setLanguage(data.detectedLocale as Language);
           }
+          markDetectionDone();
         } else {
           markDetectionDone();
         }

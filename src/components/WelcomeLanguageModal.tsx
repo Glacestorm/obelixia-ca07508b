@@ -147,9 +147,8 @@ export function WelcomeLanguageModal({
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
   const [rememberChoice, setRememberChoice] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedRegions, setExpandedRegions] = useState<Set<RegionKey>>(
-    new Set(['spain', 'europe'])
-  );
+  // All regions collapsed by default for better mobile UX
+  const [expandedRegions, setExpandedRegions] = useState<Set<RegionKey>>(new Set());
   const { language, setLanguage, refreshTranslations } = useLanguage();
   const { clearCache: clearDynamicCache } = useDynamicTranslation();
 
@@ -172,20 +171,21 @@ export function WelcomeLanguageModal({
     }
   }, [mode]);
 
-  // Pre-seleccionar idioma actual en modo selector
+  // Pre-select current language and expand its region when opening
   useEffect(() => {
-    if (mode === 'selector' && isOpen && !selectedLanguage) {
+    if (isOpen) {
       setSelectedLanguage(language);
-    }
-  }, [mode, isOpen, language, selectedLanguage]);
-
-  // Reset al cerrar
-  useEffect(() => {
-    if (!isOpen) {
+      // Find which region the current language belongs to and expand it
+      const currentLang = ALL_LANGUAGES.find(l => l.code === language);
+      if (currentLang) {
+        setExpandedRegions(new Set([currentLang.regionGroup]));
+      }
+    } else {
       setSearchQuery('');
       setSelectedLanguage(null);
+      setExpandedRegions(new Set());
     }
-  }, [isOpen]);
+  }, [isOpen, language]);
 
   const filteredLanguages = useMemo(() => {
     if (!searchQuery.trim()) return ALL_LANGUAGES;
@@ -270,7 +270,7 @@ export function WelcomeLanguageModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90dvh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[85dvh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 flex flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)] pointer-events-none" />
 
         <DialogHeader className="relative p-4 sm:p-6 pb-2 text-center flex-shrink-0">
@@ -306,8 +306,8 @@ export function WelcomeLanguageModal({
           </div>
         </div>
 
-        <div className="relative px-4 sm:px-6 py-2 flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full max-h-[50dvh] sm:max-h-[400px] pr-4">
+        <div className="relative px-4 sm:px-6 py-2 flex-1 min-h-0">
+          <ScrollArea className="h-full pr-4">
             {isSearching ? (
               // Flat list when searching
               <div className="space-y-1">
@@ -386,9 +386,11 @@ export function WelcomeLanguageModal({
               </div>
             )}
           </ScrollArea>
+        </div>
 
+        <div className="relative flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6 pt-2 space-y-3">
           {mode === 'welcome' && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+            <div className="flex items-center gap-2 pt-2 border-t border-border/50">
               <Checkbox
                 id="remember"
                 checked={rememberChoice}
@@ -400,20 +402,20 @@ export function WelcomeLanguageModal({
               </label>
             </div>
           )}
-        </div>
 
-        <div className="relative flex gap-3 p-4 sm:p-6 pt-2 flex-shrink-0">
-          <Button variant="ghost" onClick={handleSkip} className="flex-1 text-sm sm:text-base">
-            {skipText}
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!selectedLanguage}
-            className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm sm:text-base"
-          >
-            <Sparkles className="w-4 h-4" />
-            {confirmText}
-          </Button>
+          <div className="flex gap-3">
+            <Button variant="ghost" onClick={handleSkip} className="flex-1 text-sm sm:text-base">
+              {skipText}
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={!selectedLanguage}
+              className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm sm:text-base"
+            >
+              <Sparkles className="w-4 h-4" />
+              {confirmText}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
