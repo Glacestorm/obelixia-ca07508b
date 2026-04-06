@@ -460,6 +460,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'analyze_compensation',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params: { analysisType }
           }
@@ -493,6 +495,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'generate_statement',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params: { year }
           }
@@ -530,6 +534,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'benchmark_salary',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params
           }
@@ -567,6 +573,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'optimize_benefits',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params: { employeeProfile }
           }
