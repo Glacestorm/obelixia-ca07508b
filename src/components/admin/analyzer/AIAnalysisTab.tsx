@@ -98,15 +98,15 @@ interface AIAnalysis {
     duration: string;
     objectives: string[];
     deliverables: string[];
-    kpis: string[];
-    budget?: string;
     detailedSteps?: {
       step: number;
       action: string;
       responsible: string;
       tools: string[];
-      documentation?: string;
+      documentation: string;
     }[];
+    budget?: string;
+    kpis?: string[];
   }[];
   automationManuals?: {
     platform: string;
