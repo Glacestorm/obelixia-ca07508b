@@ -18,6 +18,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  function jsonResponse(data: Record<string, unknown>, status = 200) {
+    return new Response(JSON.stringify({ ...data, timestamp: new Date().toISOString() }), {
+      status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -27,7 +33,38 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     const { action, companyId, data, id } = await req.json() as ComplianceEnterpriseRequest;
-    console.log(`[erp-hr-compliance-enterprise] Action: ${action}, Company: ${companyId}`);
+
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // Tenant isolation
+    if (companyId) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('company_id', companyId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return jsonResponse({ error: 'Forbidden' }, 403);
+      }
+    }
+
+    console.log(`[erp-hr-compliance-enterprise] Action: ${action}, Company: ${companyId}, User: ${userId}`);
 
     switch (action) {
       case 'get_dashboard': {
