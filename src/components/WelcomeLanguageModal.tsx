@@ -366,7 +366,7 @@ export function WelcomeLanguageModal({
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 p-2 bg-background/50">
+                            <div className="grid grid-cols-3 gap-1.5 p-2 bg-background/50">
                               {languages.map((lang) => (
                                 <LanguageButton
                                   key={lang.code}
