@@ -259,7 +259,8 @@ serve(async (req) => {
 
     throw new Error(`Unknown action: ${action}`);
   } catch (error) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    console.error('[payroll-calculation-engine] Error:', error);
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
       status: 400,
       headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
     });
