@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -78,19 +79,19 @@ const SS_ACCOUNT_MAPPING = {
   retencionTrabajador: { code: '4751', name: 'Hacienda Pública, acreedora por retenciones practicadas' },
 };
 
-// Tasas SS España 2026
+// Tasas SS España 2026 — derivadas del Shared Legal Core (single source of truth)
 const SS_RATES_2026 = {
-  cc_company: 23.60,
-  cc_worker: 4.70,
-  unemployment_indefinido_company: 5.50,
-  unemployment_indefinido_worker: 1.55,
-  unemployment_temporal_company: 6.70,
-  unemployment_temporal_worker: 1.60,
-  fogasa: 0.20,
-  fp_company: 0.60,
-  fp_worker: 0.10,
-  mei: 0.70, // Mecanismo Equidad Intergeneracional 2026
-  at_ep_avg: 1.50, // Promedio AT/EP
+  cc_company: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa,
+  cc_worker: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.trabajador,
+  unemployment_indefinido_company: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa,
+  unemployment_indefinido_worker: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.trabajador,
+  unemployment_temporal_company: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.empresa,
+  unemployment_temporal_worker: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.trabajador,
+  fogasa: SS_CONTRIBUTION_RATES_2026.fogasa.empresa,
+  fp_company: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa,
+  fp_worker: SS_CONTRIBUTION_RATES_2026.formacionProfesional.trabajador,
+  mei: SS_CONTRIBUTION_RATES_2026.mei.total,           // 0.90 (corregido de 0.70)
+  at_ep_avg: SS_CONTRIBUTION_RATES_2026.atepReferencia.empresa,
 };
 
 export function HRSocialSecurityBridge({ companyId }: HRSocialSecurityBridgeProps) {
