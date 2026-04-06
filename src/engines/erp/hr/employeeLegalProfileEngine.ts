@@ -38,27 +38,9 @@ import {
   computeEffectiveIRPF,
 } from '@/shared/legal/rules/irpfRules';
 
-// ── Re-exports for backward compatibility ──
-// @migrated-to-shared — Consumers importing from this file keep working.
-
-/** @deprecated Import from '@/shared/legal/rules/ssRules2026' instead */
-export const SS_GROUP_BASES_2026: Record<string, { minMensual: number; maxMensual: number; label: string }> = 
-  Object.fromEntries(
-    Object.entries(SS_GROUP_BASES_SHARED).map(([k, v]) => [
-      k,
-      { minMensual: v.minMensual, maxMensual: v.maxMensual, label: v.label },
-    ])
-  );
-
-/** @deprecated Import from '@/shared/legal/rules/ssRules2026' instead */
-export const SS_RATES_2026 = {
-  contingenciasComunes: { empresa: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.trabajador, total: SS_CONTRIBUTION_RATES_2026.contingenciasComunes.total },
-  desempleoIndefinido: { empresa: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.trabajador, total: SS_CONTRIBUTION_RATES_2026.desempleoIndefinido.total },
-  desempleoTemporal: { empresa: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.trabajador, total: SS_CONTRIBUTION_RATES_2026.desempleoTemporal.total },
-  formacionProfesional: { empresa: SS_CONTRIBUTION_RATES_2026.formacionProfesional.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.formacionProfesional.trabajador, total: SS_CONTRIBUTION_RATES_2026.formacionProfesional.total },
-  fogasa: { empresa: SS_CONTRIBUTION_RATES_2026.fogasa.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.fogasa.trabajador, total: SS_CONTRIBUTION_RATES_2026.fogasa.total },
-  mei: { empresa: SS_CONTRIBUTION_RATES_2026.mei.empresa, trabajador: SS_CONTRIBUTION_RATES_2026.mei.trabajador, total: SS_CONTRIBUTION_RATES_2026.mei.total },
-};
+// ── Legacy re-exports REMOVED in F11 ──
+// SS_GROUP_BASES_2026 and SS_RATES_2026 deprecated re-exports were deleted here.
+// Import directly from '@/shared/legal/rules/ssRules2026' instead.
 
 // ── Internal helper: resolve group base from shared ──
 

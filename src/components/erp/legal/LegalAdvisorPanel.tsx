@@ -19,7 +19,7 @@ import {
   ExternalLink, Mic, MicOff, Volume2, VolumeX, Zap, ClipboardList,
   ArrowRight, Gavel, Shield
 } from 'lucide-react';
-import { linkifyLegalReferences, resolveLegalReference } from '@/utils/legalReferenceResolver';
+import { linkifyLegalReferences, resolveLegalReference } from '@/shared/legal/knowledge/referenceResolver';
 import { supabase } from '@/integrations/supabase/client';
 import { useLegalProcedures, type IntentClassification } from '@/hooks/erp/legal/useLegalProcedures';
 import { LegalProcedureCard } from './LegalProcedureCard';
