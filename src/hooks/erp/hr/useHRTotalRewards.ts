@@ -573,6 +573,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'optimize_benefits',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params: { employeeProfile }
           }
