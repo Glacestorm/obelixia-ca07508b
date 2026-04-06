@@ -376,13 +376,4 @@ FORMATO JSON:
   }
 });
 
-function jsonResponse(data: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-      'Content-Type': 'application/json',
-    },
-  });
-}
+// jsonResponse is no longer used — all responses use corsHeaders from getSecureCorsHeaders(req) above
