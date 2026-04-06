@@ -306,8 +306,8 @@ export function WelcomeLanguageModal({
           </div>
         </div>
 
-        <div className="relative px-4 sm:px-6 py-2 flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full max-h-[50dvh] sm:max-h-[400px] pr-4">
+        <div className="relative px-4 sm:px-6 py-2 flex-1 min-h-0">
+          <ScrollArea className="h-full pr-4">
             {isSearching ? (
               // Flat list when searching
               <div className="space-y-1">
