@@ -270,23 +270,23 @@ export function WelcomeLanguageModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
+      <DialogContent className="sm:max-w-[600px] max-h-[90dvh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 flex flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)] pointer-events-none" />
 
-        <DialogHeader className="relative p-6 pb-2 text-center">
+        <DialogHeader className="relative p-4 sm:p-6 pb-2 text-center flex-shrink-0">
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30"
+            className="mx-auto mb-2 sm:mb-4 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30"
           >
-            <Globe className="w-8 h-8 text-white" />
+            <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </motion.div>
 
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-base mt-2">
+          <DialogDescription className="text-sm sm:text-base mt-1 sm:mt-2">
             {mode === 'welcome' 
               ? `Selecciona tu idioma preferido (${ALL_LANGUAGES.length} idiomas disponibles)`
               : `${ALL_LANGUAGES.length} idiomas disponibles`
