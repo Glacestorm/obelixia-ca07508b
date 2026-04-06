@@ -2,6 +2,8 @@
  * erp-hr-agreement-updater - Edge function para actualización automática de convenios colectivos
  * Busca renovaciones de convenios y actualiza tablas salariales
  * Se ejecuta diariamente vía pg_cron o manualmente
+ * 
+ * HARDENED SP6: dual-path auth (JWT admin | X-Cron-Secret), error sanitization
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -30,13 +32,75 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Helper inside closure so it captures corsHeaders
+  const json = (data: any, status = 200) =>
+    new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase credentials not configured');
+
+    // ===================== DUAL-PATH AUTH =====================
+    const authHeader = req.headers.get('Authorization');
+    let authenticated = false;
+
+    // Path 1: JWT de usuario → admin role check
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      
+      // Create anon client to validate user JWT
+      const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY || '', {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+
+      if (!claimsError && claimsData?.claims?.sub) {
+        const userId = claimsData.claims.sub;
+        
+        // Admin role check using service-role client
+        const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: roles } = await adminClient
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+
+        const userRoles = (roles || []).map((r: any) => r.role);
+        const isAdmin = userRoles.includes('admin') || userRoles.includes('superadmin');
+
+        if (!isAdmin) {
+          console.warn(`[agreement-updater] Non-admin user ${userId} attempted access`);
+          return json({ error: 'Forbidden: admin role required' }, 403);
+        }
+
+        authenticated = true;
+        console.log(`[agreement-updater] Authenticated via JWT: admin user ${userId}`);
+      }
+      // If claims invalid, fall through to cron path
+    }
+
+    // Path 2: Cron/system call → X-Cron-Secret header
+    if (!authenticated) {
+      const cronSecret = req.headers.get('X-Cron-Secret');
+      if (cronSecret && cronSecret === SUPABASE_SERVICE_ROLE_KEY) {
+        authenticated = true;
+        console.log('[agreement-updater] Authenticated via X-Cron-Secret (system/cron)');
+      }
+    }
+
+    // No auth → reject
+    if (!authenticated) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+    // ===================== END AUTH =====================
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -62,7 +126,6 @@ serve(async (req) => {
           console.error('[agreement-updater] Error deactivating expired agreements:', expErr);
         } else if (expiredAgreements?.length) {
           console.log(`[agreement-updater] Deactivated ${expiredAgreements.length} expired agreements:`, expiredAgreements.map(a => a.code));
-          // Also deactivate their salary tables
           for (const exp of expiredAgreements) {
             await supabase
               .from('erp_hr_agreement_salary_tables')
@@ -96,7 +159,7 @@ serve(async (req) => {
         }
 
         if (dry_run) {
-          return jsonResponse({ success: true, action, dry_run: true, updates_found: allUpdates.length, updates: allUpdates });
+          return json({ success: true, action, dry_run: true, updates_found: allUpdates.length, updates: allUpdates });
         }
 
         // Apply updates
@@ -113,12 +176,11 @@ serve(async (req) => {
           }
         }
 
-        // Log the scan
-        await supabase.from('erp_hr_collective_agreements').select('id').limit(1); // Just to verify connection
+        await supabase.from('erp_hr_collective_agreements').select('id').limit(1);
 
         console.log(`[agreement-updater] Scan complete: ${allUpdates.length} found, ${applied} applied, ${errors} errors`);
 
-        return jsonResponse({
+        return json({
           success: true,
           action,
           year,
@@ -144,11 +206,10 @@ serve(async (req) => {
           }
         }
 
-        return jsonResponse({ success: true, action, results });
+        return json({ success: true, action, results });
       }
 
       case 'bulk_update': {
-        // Force update all system agreements to target year
         const { data: systemAgreements } = await supabase
           .from('erp_hr_collective_agreements')
           .select('code, name')
@@ -156,7 +217,7 @@ serve(async (req) => {
           .eq('is_active', true);
 
         if (!systemAgreements?.length) {
-          return jsonResponse({ success: true, message: 'No system agreements found' });
+          return json({ success: true, message: 'No system agreements found' });
         }
 
         const allResults: any[] = [];
@@ -173,7 +234,7 @@ serve(async (req) => {
                 await applyAgreementUpdate(supabase, results[j], year);
                 allResults.push({ code: batch[j], status: 'updated' });
               } catch (e) {
-                allResults.push({ code: batch[j], status: 'error', error: (e as Error).message });
+                allResults.push({ code: batch[j], status: 'error' });
               }
             } else {
               allResults.push({ code: batch[j], status: 'no_data' });
@@ -181,7 +242,7 @@ serve(async (req) => {
           }
         }
 
-        return jsonResponse({ success: true, action, total: allResults.length, results: allResults });
+        return json({ success: true, action, total: allResults.length, results: allResults });
       }
 
       default:
@@ -190,13 +251,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[agreement-updater] Error:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return json({ success: false, error: 'Internal server error' }, 500);
   }
 });
 
@@ -279,7 +334,7 @@ Convenios existentes en el sistema (actualiza si hay nuevos datos): ${existingCo
     let jsonStr = jsonMatch[0]
       .replace(/,\s*}/g, '}')
       .replace(/,\s*\]/g, ']')
-      .replace(/[\x00-\x1F\x7F]/g, (c) => c === '\n' || c === '\r' || c === '\t' ? c : '')
+      .replace(/[\x00-\x1F\x7F]/g, (c: string) => c === '\n' || c === '\r' || c === '\t' ? c : '')
       .replace(/"\s*\n\s*"/g, '", "')
       .replace(/\\'/g, "'");
 
@@ -287,13 +342,11 @@ Convenios existentes en el sistema (actualiza si hay nuevos datos): ${existingCo
     try {
       updates = JSON.parse(jsonStr);
     } catch (e1) {
-      // Try fixing unescaped quotes in values
       try {
         jsonStr = jsonStr.replace(/: "([^"]*?)(?<!\\)"([^,}\]]*?)"/g, ': "$1\\"$2"');
         updates = JSON.parse(jsonStr);
       } catch (e2) {
         console.error(`[agreement-updater] JSON parse failed for sector ${sector}, attempting individual extraction`);
-        // Extract individual objects
         const objMatches = [...content.matchAll(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g)];
         updates = [];
         for (const m of objMatches) {
@@ -382,7 +435,6 @@ async function applyAgreementUpdate(supabase: any, update: any, year: number) {
     updated_at: new Date().toISOString(),
   };
 
-  // Check if exists
   const { data: existing } = await supabase
     .from('erp_hr_collective_agreements')
     .select('id')
@@ -409,9 +461,7 @@ async function applyAgreementUpdate(supabase: any, update: any, year: number) {
     throw agError;
   }
 
-  // Update salary tables
   if (update.salary_groups?.length) {
-    // Deactivate old salary rows for this code/year
     await supabase
       .from('erp_hr_agreement_salary_tables')
       .update({ is_active: false })
@@ -447,10 +497,4 @@ async function applyAgreementUpdate(supabase: any, update: any, year: number) {
   }
 
   console.log(`[agreement-updater] Applied update for ${update.code} (${update.name})`);
-}
-
-function jsonResponse(data: any) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
 }
