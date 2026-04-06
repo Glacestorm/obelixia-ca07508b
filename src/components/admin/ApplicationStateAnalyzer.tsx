@@ -14,6 +14,8 @@ import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor'
 import { createEnhancedPDF } from '@/lib/pdfUtils';
 import { generateComprehensiveAuditPDF } from '@/lib/generateAuditPDF';
 import { SystemExportTab } from './analyzer/SystemExportTab';
+import { ComplianceTab } from './analyzer/ComplianceTab';
+import { AIAnalysisTab } from './analyzer/AIAnalysisTab';
 
 interface ModuleAnalysis {
   name: string;
