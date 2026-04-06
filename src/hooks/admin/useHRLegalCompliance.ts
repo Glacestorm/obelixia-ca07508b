@@ -66,6 +66,7 @@ export interface AdminObligation {
   is_active: boolean;
 }
 
+/** @migrated-to-shared ObligationDeadlineInfo — HR DB shape with company/HR fields */
 export interface ObligationDeadline {
   id: string;
   company_id: string;
