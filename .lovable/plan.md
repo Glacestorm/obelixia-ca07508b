@@ -1,108 +1,65 @@
 
 
-# Plan: F10 — Cleanup SS Engine Duplication
+# Plan: Quick Wins Seguridad Inicial (S1.1 + S1.5)
 
-## Critical Discovery: Data Discrepancy
+## Task 1: Leaked Password Protection
 
-Before addressing duplication, there is a **data mismatch** between the two sources that must be resolved:
+Use the Cloud Auth configuration to enable HIBP (Have I Been Pwned) password checking. This prevents users from signing up or changing passwords to known-compromised passwords.
 
-| Group | Shared Core (`ssRules2026.ts`) | Engine (`ssContributionEngine.ts`) | Knowledge Doc |
-|-------|------|--------|------------|
-| 1 | 1,847.40 | **1,929.00** | **1,929.00** |
-| 2 | 1,531.50 | **1,599.60** | **1,599.60** |
-| 3 | 1,332.90 | **1,391.70** | **1,391.70** |
+**Action**: Configure auth settings to enable leaked password protection.
 
-The knowledge doc (`ss-cotizacion-grupos-bases-2026.md`) and the engine agree. The shared core has **stale values** (likely from 2025 or an earlier draft). This must be fixed first — otherwise replacing the engine's data with shared core would introduce incorrect bases.
+## Task 2: Fix SECURITY DEFINER Views
 
-## Strategy
+### Views identified
 
-**Step 1: Fix shared core data** — Update `SS_GROUP_BASES_2026` and `SS_GROUP_MIN_BASES_MENSUAL_2026` in `src/shared/legal/rules/ssRules2026.ts` to match the knowledge doc (G1=1929.00, G2=1599.60, G3=1391.70).
-
-**Step 2: Structural adapter** — The engine's local `SS_GROUP_BASES_2026` has a different shape than the shared core:
-- Engine: `{ base_minima_mensual, base_maxima_mensual, base_minima_diaria, base_maxima_diaria, cotizacion_tipo, descripcion }`
-- Shared: `{ minMensual, maxMensual, label, isDailyBase }`
-
-Create a derived constant that maps from shared core shape to engine shape, keeping the same keys so all internal consumers work unchanged.
-
-**Step 3: Tests** — Extend the existing `ssContributionSharedCore.test.ts` to verify group base equivalence (G1=1929.00, G8 daily=46.04).
-
-## Changes
-
-### File 1: `src/shared/legal/rules/ssRules2026.ts`
-
-Fix group bases to match RDL 3/2026 (knowledge doc):
-
-```
-Group 1: minMensual 1847.40 → 1929.00
-Group 2: minMensual 1531.50 → 1599.60
-Group 3: minMensual 1332.90 → 1391.70
-```
-
-Same fix in `SS_GROUP_MIN_BASES_MENSUAL_2026`:
-```
-1: 1847.40 → 1929.00
-2: 1531.50 → 1599.60
-3: 1332.90 → 1391.70
-```
-
-### File 2: `src/engines/erp/hr/ssContributionEngine.ts`
-
-Replace the hardcoded `SS_GROUP_BASES_2026` (lines 143-162) with a derived constant:
-
-```typescript
-import {
-  SS_CONTRIBUTION_RATES_2026,
-  SS_GROUP_BASES_2026 as SS_GROUP_BASES_SHARED,
-  SS_BASE_MAX_MENSUAL_2026,
-  SS_BASE_MAX_DIARIA_2026,
-} from '@/shared/legal/rules/ssRules2026';
-
-/** Group bases derived from Shared Legal Core — mapped to engine shape */
-export const SS_GROUP_BASES_2026: Record<number, { ... }> =
-  Object.fromEntries(
-    Object.entries(SS_GROUP_BASES_SHARED).map(([k, v]) => [
-      Number(k),
-      {
-        base_minima_mensual: v.isDailyBase ? (v.minMensual * 30) : v.minMensual,
-        base_maxima_mensual: SS_BASE_MAX_MENSUAL_2026,
-        base_minima_diaria: v.isDailyBase ? v.minMensual : null,
-        base_maxima_diaria: v.isDailyBase ? SS_BASE_MAX_DIARIA_2026 : null,
-        cotizacion_tipo: v.isDailyBase ? 'diaria' : 'mensual',
-        descripcion: v.label,
-      },
-    ])
-  );
-```
-
-This preserves the exact same keys and types. `getDefaultTopesForGroup` and all internal consumers work unchanged.
-
-### File 3: `src/__tests__/engines/ssContributionSharedCore.test.ts`
-
-Add tests for group base equivalence:
-- G1 base mínima mensual = 1929.00
-- G8 base mínima diaria = 46.04
-- G1 base máxima = 5101.20
-- All groups 4-11 min mensual = 1381.20
-
-## Files NOT touched
-
-- `employeeLegalProfileEngine.ts` — already consumes shared via alias
-- `payrollConceptCatalog.ts` — deferred (static metadata)
-- Edge functions, tables — rules #4, #5
-
-## Compatibility
-
-| Aspect | Guarantee |
-|---|---|
-| Engine shape | Identical keys and types via adapter |
-| Computed values | Same numbers (after shared core fix) |
-| External consumers | Only import types from engine, not the constant |
-| `ss-contributions.ts` | Uses `SS_GROUP_MIN_BASES_MENSUAL_2026` from shared — also fixed |
-
-## Risks
-
-| Risk | Level | Mitigation |
+| View | Tables accessed | Current risk |
 |---|---|---|
-| Shared core values were wrong for G1-3 | **Fixed** | Updated to match knowledge doc and RDL 3/2026 |
-| Adapter mapping for daily groups | Low | `base_minima_mensual` for G8-11 = `minMensual × 30` = 1381.20, same as current |
+| `erp_account_balances_view` | `erp_chart_accounts`, `erp_journal_entry_lines`, `erp_journal_entries` | Bypasses RLS — any user sees all companies' financial data |
+| `v_erp_trade_api_connections_compat` | `erp_bank_connections`, `erp_banking_providers` | Bypasses RLS — any user sees all bank connections |
+
+### Key findings
+
+- **Neither view is queried in application code** (only in auto-generated `types.ts` foreign key references)
+- Underlying tables have RLS enabled with policies that restrict by `auth.uid()` or `company_id`
+- SECURITY DEFINER bypasses those policies entirely — this is the vulnerability
+
+### Fix
+
+One migration that recreates both views with `security_invoker = true`:
+
+```sql
+-- View 1: erp_account_balances_view
+CREATE OR REPLACE VIEW public.erp_account_balances_view
+WITH (security_invoker = true)
+AS
+  <same SELECT as current>;
+
+-- View 2: v_erp_trade_api_connections_compat  
+CREATE OR REPLACE VIEW public.v_erp_trade_api_connections_compat
+WITH (security_invoker = true)
+AS
+  <same SELECT as current>;
+```
+
+This makes queries through these views respect the RLS policies of the calling user instead of the view creator.
+
+### Safety
+
+- Zero app code queries these views directly — no UI breakage possible
+- The underlying RLS policies already exist and work correctly
+- `security_invoker = true` is the Postgres 15+ standard recommendation
+
+## Files
+
+| Target | Action |
+|---|---|
+| Auth config | Enable HIBP leaked password check |
+| Migration | `CREATE OR REPLACE VIEW ... WITH (security_invoker = true)` for both views |
+
+## Not touched
+
+- Edge functions
+- RLS policies
+- Business logic
+- Any other tables or views
 
