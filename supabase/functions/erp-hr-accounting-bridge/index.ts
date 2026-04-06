@@ -466,7 +466,7 @@ async function generateSettlementEntry(supabase: any, payload: {
 
   if (entryError) {
     return new Response(
-      JSON.stringify({ success: false, error: entryError.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
