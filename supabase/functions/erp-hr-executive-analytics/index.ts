@@ -5,11 +5,7 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface AnalyticsRequest {
   action: 'get_predictions' | 'analyze_trends' | 'generate_insights' | 'benchmark_analysis' | 'risk_assessment';
@@ -22,6 +18,7 @@ interface AnalyticsRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = getSecureCorsHeaders(req);
   // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
