@@ -25,14 +25,57 @@ serve(async (req) => {
   }
 
   try {
+    const { action, context, params } = await req.json() as AnalyticsRequest;
+
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
+
+    // Tenant isolation
+    const companyId = context?.companyId;
+    if (!companyId) {
+      return new Response(JSON.stringify({ error: 'companyId is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const adminClient = createClient(supabaseUrl, serviceKey);
+    const { data: membership } = await adminClient
+      .from('erp_user_companies')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('company_id', companyId)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const { action, context, params } = await req.json() as AnalyticsRequest;
-
-    console.log(`[erp-hr-executive-analytics] Processing action: ${action}`);
+    console.log(`[erp-hr-executive-analytics] Processing action: ${action}, User: ${userId}`);
 
     let systemPrompt = '';
     let userPrompt = '';
