@@ -47,6 +47,7 @@ export interface LegalCommunication {
   updated_at: string;
 }
 
+/** @migrated-to-shared ObligationRule — HR DB shape (snake_case) kept for consumers */
 export interface AdminObligation {
   id: string;
   jurisdiction: string;
