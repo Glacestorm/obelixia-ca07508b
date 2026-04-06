@@ -8,6 +8,18 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// === SHARED LEGAL CORE — Re-exports for backward compatibility ===
+import type {
+  ObligationRule,
+  ObligationDeadlineInfo,
+  SanctionRule as SharedSanctionRule,
+  ComputedDeadline,
+} from '@/shared/legal';
+import { computeDeadlineUrgency } from '@/shared/legal';
+
+// Re-export shared types so existing consumers don't break
+export type { ObligationRule, ObligationDeadlineInfo, ComputedDeadline };
+
 // === INTERFACES ===
 export interface LegalCommunication {
   id: string;
