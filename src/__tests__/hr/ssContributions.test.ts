@@ -12,9 +12,9 @@ describe('ss-contributions — LGSS Art. 147', () => {
     expect(SS_BASE_MAX_2026).toBe(5101.20);
   });
 
-  it('grupos 1-3 tienen bases correctas', () => {
-    expect(SS_GROUP_MIN_BASES_2026[1]).toBe(1847.40);
-    expect(SS_GROUP_MIN_BASES_2026[2]).toBe(1531.50);
-    expect(SS_GROUP_MIN_BASES_2026[3]).toBe(1332.90);
+  it('grupos 1-3 tienen bases correctas (RDL 3/2026)', () => {
+    expect(SS_GROUP_MIN_BASES_2026[1]).toBe(1929.00);
+    expect(SS_GROUP_MIN_BASES_2026[2]).toBe(1599.60);
+    expect(SS_GROUP_MIN_BASES_2026[3]).toBe(1391.70);
   });
 });

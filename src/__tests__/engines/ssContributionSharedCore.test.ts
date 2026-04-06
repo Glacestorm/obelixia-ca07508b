@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
+import {
+  SS_CONTRIBUTION_RATES_2026,
+  SS_GROUP_BASES_2026,
+  SS_GROUP_MIN_BASES_MENSUAL_2026,
+  SS_BASE_MAX_MENSUAL_2026,
+  SS_BASE_MAX_DIARIA_2026,
+} from '@/shared/legal/rules/ssRules2026';
 
 /**
- * F8 — Verifies that Shared Legal Core canonical rates match expected 2026 values.
- * Guards against silent drift in the shared core constants.
+ * F8+F10 — Verifies Shared Legal Core canonical values match RDL 3/2026.
  */
 describe('SS Contribution Shared Core — canonical values 2026', () => {
   it('CC empresa = 23.60, trabajador = 4.70', () => {
@@ -35,5 +40,32 @@ describe('SS Contribution Shared Core — canonical values 2026', () => {
 
   it('AT/EP referencia empresa = 1.50', () => {
     expect(SS_CONTRIBUTION_RATES_2026.atepReferencia.empresa).toBe(1.50);
+  });
+
+  // F10 — Group base equivalence tests
+  it('G1 base mínima = 1929.00 (RDL 3/2026)', () => {
+    expect(SS_GROUP_BASES_2026[1].minMensual).toBe(1929.00);
+    expect(SS_GROUP_MIN_BASES_MENSUAL_2026[1]).toBe(1929.00);
+  });
+
+  it('G2 base mínima = 1599.60, G3 = 1391.70', () => {
+    expect(SS_GROUP_BASES_2026[2].minMensual).toBe(1599.60);
+    expect(SS_GROUP_BASES_2026[3].minMensual).toBe(1391.70);
+  });
+
+  it('G8 base mínima diaria = 46.04', () => {
+    expect(SS_GROUP_BASES_2026[8].minMensual).toBe(46.04);
+    expect(SS_GROUP_BASES_2026[8].isDailyBase).toBe(true);
+  });
+
+  it('All groups 4-11 min mensual = 1381.20', () => {
+    for (let g = 4; g <= 11; g++) {
+      expect(SS_GROUP_MIN_BASES_MENSUAL_2026[g]).toBe(1381.20);
+    }
+  });
+
+  it('Base máxima mensual = 5101.20, diaria = 170.04', () => {
+    expect(SS_BASE_MAX_MENSUAL_2026).toBe(5101.20);
+    expect(SS_BASE_MAX_DIARIA_2026).toBe(170.04);
   });
 });
