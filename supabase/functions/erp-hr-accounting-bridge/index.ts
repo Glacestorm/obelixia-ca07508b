@@ -261,7 +261,7 @@ async function generatePayrollEntry(supabase: any, payload: {
   if (entryError) {
     console.error('Error creating journal entry:', entryError);
     return new Response(
-      JSON.stringify({ success: false, error: entryError.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
