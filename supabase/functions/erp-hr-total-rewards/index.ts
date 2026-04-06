@@ -5,6 +5,7 @@ import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 interface TotalRewardsRequest {
   action: 'analyze_compensation' | 'compare_market' | 'generate_recommendations' | 'forecast_total_package';
   employee_id?: string;
+  company_id?: string;
   fiscal_year?: number;
   job_level?: string;
   job_family?: string;
