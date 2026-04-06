@@ -8,6 +8,18 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// === SHARED LEGAL CORE — Re-exports for backward compatibility ===
+import type {
+  ObligationRule,
+  ObligationDeadlineInfo,
+  SanctionRule as SharedSanctionRule,
+  ComputedDeadline,
+} from '@/shared/legal';
+import { computeDeadlineUrgency } from '@/shared/legal';
+
+// Re-export shared types so existing consumers don't break
+export type { ObligationRule, ObligationDeadlineInfo, ComputedDeadline };
+
 // === INTERFACES ===
 export interface LegalCommunication {
   id: string;
@@ -35,6 +47,7 @@ export interface LegalCommunication {
   updated_at: string;
 }
 
+/** @migrated-to-shared ObligationRule — HR DB shape (snake_case) kept for consumers */
 export interface AdminObligation {
   id: string;
   jurisdiction: string;
@@ -53,6 +66,7 @@ export interface AdminObligation {
   is_active: boolean;
 }
 
+/** @migrated-to-shared ObligationDeadlineInfo — HR DB shape with company/HR fields */
 export interface ObligationDeadline {
   id: string;
   company_id: string;
@@ -70,6 +84,7 @@ export interface ObligationDeadline {
   obligation?: AdminObligation;
 }
 
+/** @migrated-to-shared SharedSanctionRule — HR DB shape (snake_case) */
 export interface SanctionRisk {
   id: string;
   jurisdiction: string;

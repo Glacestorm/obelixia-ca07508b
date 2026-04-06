@@ -35,3 +35,32 @@ export type {
   LegalValidationEvent,
   TransitionResult,
 } from './compliance/validationStateMachine';
+
+// Compliance — Obligation Engine
+export {
+  computeDeadlineUrgency,
+  evaluateSanctionRisk,
+  filterObligationsByScope,
+  sortDeadlinesByUrgency,
+} from './compliance/obligationEngine';
+export type {
+  ObligationRule,
+  ObligationDeadlineInfo,
+  SanctionRule,
+  ComputedDeadline,
+  DeadlineUrgency,
+  SanctionRiskResult,
+} from './compliance/obligationEngine';
+
+// Compliance — Rules & Constants
+export {
+  ALERT_THRESHOLDS,
+  CLASSIFICATION_SEVERITY,
+  OBLIGATION_PERIODICITIES,
+  OBLIGATION_TYPES,
+} from './compliance/complianceRules';
+export type {
+  AlertThresholdLevel,
+  ObligationPeriodicity,
+  ObligationType,
+} from './compliance/complianceRules';
