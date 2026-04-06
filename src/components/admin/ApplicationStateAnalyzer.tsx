@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
 import { createEnhancedPDF } from '@/lib/pdfUtils';
 import { generateComprehensiveAuditPDF } from '@/lib/generateAuditPDF';
+import { SystemExportTab } from './analyzer/SystemExportTab';
 
 interface ModuleAnalysis {
   name: string;
