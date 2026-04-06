@@ -14,7 +14,12 @@
  * NOTA: Clasificación operativa interna — no constituye asesoramiento jurídico
  */
 
-import { SS_CONTRIBUTION_RATES_2026 } from '@/shared/legal/rules/ssRules2026';
+import {
+  SS_CONTRIBUTION_RATES_2026,
+  SS_GROUP_BASES_2026 as SS_GROUP_BASES_SHARED,
+  SS_BASE_MAX_MENSUAL_2026,
+  SS_BASE_MAX_DIARIA_2026,
+} from '@/shared/legal/rules/ssRules2026';
 
 // ── SS Group Limits (from hr_es_ss_bases table) ──
 
