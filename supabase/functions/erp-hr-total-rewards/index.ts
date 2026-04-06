@@ -124,6 +124,7 @@ serve(async (req) => {
       const { data: benchmarks } = await supabase
         .from('erp_hr_salary_bands')
         .select('*')
+        .eq('company_id', companyId)
         .limit(20);
 
       contextData = { compensations, benefitsEnrollments, benchmarks };
