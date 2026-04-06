@@ -35,7 +35,7 @@ export interface ValidationResult {
   blocking_issues: string[];
   legal_basis: string[];
   recommendations: string[];
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_level: LegalRiskLevel;
 }
 
 export interface ContractAnalysis {
