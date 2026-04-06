@@ -204,7 +204,7 @@ LIMITACIONES: ${impact.limitations?.join('; ')}`;
   } catch (error) {
     console.error('[hr-workforce-simulation] Error:', error);
     return new Response(JSON.stringify({
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Internal server error',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
