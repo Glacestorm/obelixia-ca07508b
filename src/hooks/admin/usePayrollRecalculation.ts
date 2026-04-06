@@ -6,6 +6,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  mapLegacyStatus,
+  toLegacyStatus,
+  tryTransition,
+  type LegalValidationState,
+} from '@/shared/legal';
+
+/** Recalculations treat null/pending as 'pending' (awaiting legal validation) */
+function getRecalcLegalState(status: string | null | undefined): LegalValidationState {
+  if (!status || status === 'pending') return 'pending';
+  return mapLegacyStatus(status);
+}
 
 // === INTERFACES ===
 export interface RecalculationResult {
