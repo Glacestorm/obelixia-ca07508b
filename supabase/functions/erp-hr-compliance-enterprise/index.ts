@@ -348,12 +348,6 @@ FORMATO DE RESPUESTA (JSON estricto):
 
   } catch (error) {
     console.error('[erp-hr-compliance-enterprise] Error:', error);
-    return jsonResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return jsonResponse({ success: false, error: 'Internal server error' }, 500);
   }
 });
-
-function jsonResponse(data: Record<string, unknown>, status = 200) {
-  return new Response(JSON.stringify({ ...data, timestamp: new Date().toISOString() }), {
-    status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}

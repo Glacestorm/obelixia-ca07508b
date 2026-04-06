@@ -318,13 +318,6 @@ Contexto: Suite HR Premium con módulos de Fairness, Workforce Planning, Legal E
     }
   } catch (error) {
     console.error('[hr-board-pack] Error:', error);
-    return json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ success: false, error: 'Internal server error' }, 500);
   }
 });
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}

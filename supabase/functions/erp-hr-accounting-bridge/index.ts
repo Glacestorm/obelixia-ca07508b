@@ -918,7 +918,7 @@ async function getAccountingStatus(supabase: any, payload: {
 
   if (error) {
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
