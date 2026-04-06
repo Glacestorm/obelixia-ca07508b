@@ -270,7 +270,7 @@ export function WelcomeLanguageModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90dvh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[85dvh] p-0 overflow-hidden bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 flex flex-col">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.08),transparent_50%)] pointer-events-none" />
 
         <DialogHeader className="relative p-4 sm:p-6 pb-2 text-center flex-shrink-0">
