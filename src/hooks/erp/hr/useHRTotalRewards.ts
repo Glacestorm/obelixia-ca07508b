@@ -495,6 +495,8 @@ export function useHRTotalRewards() {
         {
           body: {
             action: 'generate_statement',
+            company_id: context.companyId,
+            employee_id: context.employeeId,
             context,
             params: { year }
           }
