@@ -17,7 +17,26 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    // --- AUTH GATE ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
+      });
+    }
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
+        status: 401, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabaseUrl = SUPABASE_URL;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -25,6 +44,20 @@ serve(async (req) => {
     const { action, company_id, cycle_id, period_year, period_month, actor_id, reason, details } = body;
 
     if (!company_id) throw new Error('company_id required');
+
+    // --- COMPANY ACCESS VALIDATION ---
+    const { data: membership } = await supabase
+      .from('erp_user_companies')
+      .select('id')
+      .eq('user_id', authUser.id)
+      .eq('company_id', company_id)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+        status: 403, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
+      });
+    }
 
     // ─── START CYCLE ────────────────────────────────────────
     if (action === 'start_cycle') {
@@ -267,7 +300,8 @@ serve(async (req) => {
 
     throw new Error(`Unknown action: ${action}`);
   } catch (error) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
+    console.error('[payroll-supervisor] Error:', error);
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
       status: 400,
       headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
     });

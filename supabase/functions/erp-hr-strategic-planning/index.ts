@@ -1,10 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
 
 interface Request {
   action: string;
@@ -13,18 +9,48 @@ interface Request {
 }
 
 serve(async (req) => {
+  const corsHeaders = getSecureCorsHeaders(req);
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    // --- AUTH GATE ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return json({ success: false, error: 'Unauthorized' }, 401);
+    }
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
+    if (authError || !authUser) {
+      return json({ success: false, error: 'Invalid token' }, 401);
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseUrl = SUPABASE_URL;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { action, company_id, params } = await req.json() as Request;
     console.log(`[erp-hr-strategic-planning] Action: ${action}`);
+
+    // --- COMPANY ACCESS VALIDATION ---
+    if (company_id) {
+      const { data: membership } = await supabase
+        .from('erp_user_companies')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .eq('company_id', company_id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!membership) {
+        return json({ success: false, error: 'Forbidden' }, 403);
+      }
+    }
 
     // === CRUD ACTIONS ===
     if (action === 'list_plans') {
@@ -395,13 +421,13 @@ FORMATO JSON estricto:
 
   } catch (error) {
     console.error('[erp-hr-strategic-planning] Error:', error);
-    return json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, 500);
+    return json({ success: false, error: 'Internal server error' }, 500);
+  }
+
+  function json(data: unknown, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
