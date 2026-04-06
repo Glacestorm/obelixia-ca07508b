@@ -1,16 +1,30 @@
 
 
-# Plan S2R: Lote Alto Riesgo — Hardening de 6 funciones HR
+# Plan S2R: Lote Medio — Hardening de 7 funciones HR
 
 ## Resumen
 
-Aplicar el patrón estándar de seguridad (Auth Gate + Tenant Isolation + Error Sanitization) a las 6 funciones HR de mayor riesgo, sin cambiar contratos de API ni lógica de negocio.
+Aplicar Auth Gate + Tenant Isolation + Error Sanitization a 7 funciones HR de riesgo medio. Todas comparten el mismo patrón de cambio.
 
-## Patrón a aplicar (idéntico en las 6)
+## Estado actual
 
-Insertar al inicio del handler, después del CORS preflight:
+| Función | Líneas | Auth | DB | company_id source | Error leak |
+|---------|--------|------|-----|-------------------|------------|
+| erp-hr-talent-intelligence | 289 | No | Sí (service role) | `params.company_id` | L283 |
+| erp-hr-esg-selfservice | 385 | No | Sí (service role) | `params.companyId` | L377 |
+| erp-hr-training-agent | 301 | No | No (AI-only) | `company_id` body | L295 |
+| erp-hr-regulatory-watch | 280 | No | No (AI-only) | `company_id` body | L274 |
+| erp-hr-onboarding-agent | 235 | No | No (AI-only) | `company_id` body | L229 |
+| erp-hr-talent-skills-agent | 434 | No | No (AI-only) | `company_id` body | L428 |
+| hr-compliance-automation | 193 | No | No (AI-only) | `company_id` body | L188 |
+
+## Cambios por función
+
+### Patrón común (insertar tras CORS preflight)
 
 ```typescript
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 // Auth gate
 const authHeader = req.headers.get('Authorization');
 if (!authHeader?.startsWith('Bearer ')) {
@@ -21,6 +35,7 @@ if (!authHeader?.startsWith('Bearer ')) {
 const token = authHeader.replace('Bearer ', '');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const userClient = createClient(supabaseUrl, anonKey, {
   global: { headers: { Authorization: `Bearer ${token}` } },
 });
@@ -32,14 +47,12 @@ if (claimsError || !claimsData?.claims) {
 }
 const userId = claimsData.claims.sub;
 
-// Tenant isolation — membership check
+// Tenant isolation
+const adminClient = createClient(supabaseUrl, serviceKey);
 const { data: membership } = await adminClient
-  .from('erp_user_companies')
-  .select('id')
-  .eq('user_id', userId)
-  .eq('company_id', companyId)
-  .eq('is_active', true)
-  .maybeSingle();
+  .from('erp_user_companies').select('id')
+  .eq('user_id', userId).eq('company_id', companyId)
+  .eq('is_active', true).maybeSingle();
 if (!membership) {
   return new Response(JSON.stringify({ error: 'Forbidden' }), {
     status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -47,86 +60,35 @@ if (!membership) {
 }
 ```
 
-Error sanitization: catch blocks return `'Internal server error'` instead of `error.message`.
+### Notas por función
 
-## Función 1: erp-hr-accounting-bridge (912 líneas)
+1. **erp-hr-talent-intelligence**: Ya importa `createClient`. Ya tiene `supabase` con service role — renombrar a `adminClient` y reusar para membership + operaciones DB.
+2. **erp-hr-esg-selfservice**: Ya importa `createClient`. Usa `companyId` (camelCase) de `params`. Ya tiene validación de companyId en L33 — auth gate va antes.
+3. **erp-hr-training-agent**: Añadir import `createClient`. Extraer `company_id` del body antes del switch para membership check.
+4. **erp-hr-regulatory-watch**: Añadir import `createClient`. Usar `company_id` del body.
+5. **erp-hr-onboarding-agent**: Añadir import `createClient`. Usar `company_id` del body.
+6. **erp-hr-talent-skills-agent**: Añadir import `createClient`. Usar `company_id` del body.
+7. **hr-compliance-automation**: Añadir import `createClient`. Usar `body.company_id`.
 
-**Estado actual**: Sin auth. Service role. `company_id` viene en payload. Error leaks en catch y en funciones internas.
+### Error sanitization (todas)
 
-**Cambios**:
-- Añadir auth gate + membership check tras CORS, usando `payload.company_id` como tenant ID
-- El service role client se mantiene para operaciones internas (inserts en journal entries)
-- Se crea un `adminClient` (service role) separado del `userClient` (anon+JWT)
-- Sanitizar catch principal (línea 117) y 6 catches internos que exponen `error.message` (líneas 229, 434, 543, 663, 777, 887)
-
-## Función 2: erp-hr-compensation-suite (334 líneas)
-
-**Estado actual**: Sin auth. Service role. `company_id` en `params`. Error leaks.
-
-**Cambios**:
-- Añadir auth gate + membership check tras CORS
-- Extraer `company_id` de params para validar membership antes del switch
-- Para acciones sin `company_id` explícito (`upsert_merit_proposal`, `list_bonus_allocations`), extraerlo del cycle si disponible o requerir en params
-- Sanitizar catch (línea 327)
-
-## Función 3: erp-hr-executive-analytics (356 líneas)
-
-**Estado actual**: Sin auth. No usa DB directamente (AI-only). `companyId` en `context`.
-
-**Cambios**:
-- Añadir auth gate + membership check usando `context.companyId`
-- Requerir `companyId` como campo obligatorio (400 si falta)
-- Sanitizar catch (línea 350)
-
-## Función 4: hr-board-pack (297 líneas)
-
-**Estado actual**: Sin auth. Service role. `companyId` validado como presente. Error leaks. Bug latente: `json()` helper en module scope referencia `corsHeaders` de dentro de `serve()`.
-
-**Cambios**:
-- Mover `json()` helper dentro de `serve()` para acceder a `corsHeaders` correctamente
-- Añadir auth gate + membership check después de la validación de `companyId`
-- Sanitizar catch (línea 288)
-
-## Función 5: erp-hr-compliance-enterprise (322 líneas)
-
-**Estado actual**: Sin auth. Service role. `companyId` en request body. Error leaks. `jsonResponse()` helper en module scope tiene el mismo bug que board-pack con `corsHeaders`.
-
-**Cambios**:
-- Mover `jsonResponse()` dentro de `serve()` para acceder a `corsHeaders`
-- Añadir auth gate + membership check tras CORS
-- Sanitizar catch (línea 314)
-- La acción `seed_demo` es destructiva (DELETE + INSERT) — el membership check la protege; opcionalmente podría requerir admin role, pero el plan mínimo no lo exige
-
-## Función 6: erp-hr-performance-agent (302 líneas)
-
-**Estado actual**: Sin auth. Usa ANON_KEY (no service role). `company_id` en request body. Error leaks.
-
-**Cambios**:
-- Añadir auth gate + membership check tras CORS
-- Sanitizar catch (línea 296)
-- Nota: ya usa `SUPABASE_ANON_KEY` — esto es compatible; el auth check usa un segundo `userClient` con el JWT del usuario
+Reemplazar `error instanceof Error ? error.message : 'Unknown error'` por `'Internal server error'` en cada catch.
 
 ## Archivos modificados
 
-| Archivo | Auth | Membership | Error Sanitization |
-|---------|------|------------|-------------------|
-| `supabase/functions/erp-hr-accounting-bridge/index.ts` | getClaims | company_id payload | 7 catches |
-| `supabase/functions/erp-hr-compensation-suite/index.ts` | getClaims | params.company_id | 1 catch |
-| `supabase/functions/erp-hr-executive-analytics/index.ts` | getClaims | context.companyId | 1 catch |
-| `supabase/functions/hr-board-pack/index.ts` | getClaims | companyId body | 1 catch + move json() |
-| `supabase/functions/erp-hr-compliance-enterprise/index.ts` | getClaims | companyId body | 1 catch + move jsonResponse() |
-| `supabase/functions/erp-hr-performance-agent/index.ts` | getClaims | company_id body | 1 catch |
+| Archivo | Import | Auth | Membership | Sanitize |
+|---------|--------|------|------------|----------|
+| `supabase/functions/erp-hr-talent-intelligence/index.ts` | Existente | getClaims | params.company_id | 1 catch |
+| `supabase/functions/erp-hr-esg-selfservice/index.ts` | Existente | getClaims | params.companyId | 1 catch |
+| `supabase/functions/erp-hr-training-agent/index.ts` | Añadir | getClaims | company_id body | 1 catch |
+| `supabase/functions/erp-hr-regulatory-watch/index.ts` | Añadir | getClaims | company_id body | 1 catch |
+| `supabase/functions/erp-hr-onboarding-agent/index.ts` | Añadir | getClaims | company_id body | 1 catch |
+| `supabase/functions/erp-hr-talent-skills-agent/index.ts` | Añadir | getClaims | company_id body | 1 catch |
+| `supabase/functions/hr-compliance-automation/index.ts` | Añadir | getClaims | company_id body | 1 catch |
 
 ## Riesgos
 
-- **Bajo**: Todos los frontends ya invocan con `supabase.functions.invoke()` que inyecta el JWT automáticamente
-- **Bajo**: El `company_id` ya se pasa en todas las invocaciones desde el frontend (vía ERP context)
-- **Medio**: `json()` y `jsonResponse()` helpers necesitan restructuración para el scope de `corsHeaders` — se mueven dentro de `serve()`
-
-## No se modifica
-
-- Lógica de negocio
-- Contratos de API
-- Uso interno de service role para operaciones de escritura
-- Otras funciones fuera del lote
+- **Bajo**: Frontend usa `supabase.functions.invoke()` que inyecta JWT automáticamente
+- **Bajo**: `company_id` ya se envía en todas las invocaciones desde el ERP context
+- **Ninguno**: No se cambia lógica de negocio ni contratos de API
 
