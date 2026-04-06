@@ -7,6 +7,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { computeDeadlineUrgency, type ComputedDeadline } from '@/shared/legal/compliance/obligationEngine';
 
 // === INTERFACES ===
 
@@ -78,6 +79,32 @@ export interface TreasurySummary {
   overdueAmount: number;
   upcomingWeek: number;
   upcomingMonth: number;
+}
+
+// === SHARED LEGAL CORE — Urgency Enrichment (F9) ===
+
+/**
+ * @shared-legal-core — Treasury item enriched with computed deadline urgency.
+ * Uses `computeDeadlineUrgency` from the Shared Legal Core obligation engine.
+ */
+export interface TreasuryIntegrationWithUrgency extends TreasuryIntegration {
+  urgency: ComputedDeadline;
+}
+
+/**
+ * Pure function: enriches pending/scheduled treasury items with shared core urgency.
+ * Exported for testing; not a hook dependency.
+ */
+export function enrichWithUrgency(
+  items: TreasuryIntegration[],
+  referenceDate?: Date
+): TreasuryIntegrationWithUrgency[] {
+  return items
+    .filter(i => i.status === 'pending' || i.status === 'scheduled')
+    .map(i => ({
+      ...i,
+      urgency: computeDeadlineUrgency(i.due_date, referenceDate),
+    }));
 }
 
 // === HOOK ===
@@ -503,6 +530,26 @@ export function useHRTreasuryIntegration() {
     }
   }, [createPayrollPayment]);
 
+  // === GET PAYMENT URGENCIES (F9 — Shared Legal Core) ===
+  const getPaymentUrgencies = useCallback(async (
+    companyId: string
+  ): Promise<TreasuryIntegrationWithUrgency[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('erp_hr_treasury_integration')
+        .select('*')
+        .eq('company_id', companyId)
+        .in('status', ['pending', 'scheduled'])
+        .order('due_date', { ascending: true });
+
+      if (error) throw error;
+      return enrichWithUrgency((data || []) as TreasuryIntegration[]);
+    } catch (err) {
+      console.error('[useHRTreasuryIntegration] getPaymentUrgencies error:', err);
+      return [];
+    }
+  }, []);
+
   return {
     // Estado
     isLoading,
@@ -523,7 +570,8 @@ export function useHRTreasuryIntegration() {
     // Consultas
     getTreasurySummary,
     getOverdueItems,
-    getUpcomingPayments
+    getUpcomingPayments,
+    getPaymentUrgencies,
   };
 }
 
