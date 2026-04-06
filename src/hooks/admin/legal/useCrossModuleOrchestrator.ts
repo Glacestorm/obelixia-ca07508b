@@ -7,10 +7,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { LegalModuleType } from '@/shared/legal';
 
 // === INTERFACES ===
 
-export type ModuleType = 'hr' | 'legal' | 'fiscal' | 'purchases' | 'treasury' | 'inventory';
+/** @migrated-to-shared — Re-export from shared/legal for backward compatibility */
+export type ModuleType = LegalModuleType;
 export type WorkflowType = 'sequential' | 'parallel' | 'hybrid';
 export type StepStatus = 'pending' | 'executing' | 'completed' | 'failed';
 export type OrchestrationStatus = 'initiated' | 'in_progress' | 'completed' | 'failed' | 'requires_intervention';

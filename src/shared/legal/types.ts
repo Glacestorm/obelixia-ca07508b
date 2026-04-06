@@ -31,11 +31,14 @@ export type LegalRiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type LegalValidationStatus =
   | 'pending'
   | 'pending_validation'
+  | 'pending_approval'
   | 'review_required'
   | 'approved'
+  | 'auto_approved'
   | 'validated'
   | 'rejected'
-  | 'blocked';
+  | 'blocked'
+  | 'escalated';
 
 // ============================================================================
 // MODULE TYPE
