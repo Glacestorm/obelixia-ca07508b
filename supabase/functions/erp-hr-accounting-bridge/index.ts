@@ -809,7 +809,7 @@ async function reverseEntry(supabase: any, payload: {
 
   if (createError) {
     return new Response(
-      JSON.stringify({ success: false, error: createError.message }),
+      JSON.stringify({ success: false, error: 'Internal server error' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
