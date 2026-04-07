@@ -85392,6 +85392,10 @@ export type Database = {
         Args: { p_company_id: string }
         Returns: Json
       }
+      get_company_for_employee: {
+        Args: { p_employee_id: string }
+        Returns: string
+      }
       get_customer_quote_by_token: {
         Args: { p_email: string; p_quote_id: string }
         Returns: {
