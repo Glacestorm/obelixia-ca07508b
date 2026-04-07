@@ -8,7 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
 };
 
 // Tipos de acciones soportadas
@@ -161,10 +161,73 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
     const requestData = await req.json() as LegalRequest;
+
+    // ========== DUAL-PATH AUTH GATE ==========
+    const isInternalCall = !!requestData.requesting_agent;
+
+    if (isInternalCall) {
+      // Inter-agent calls: require X-Internal-Secret header
+      const internalSecret = req.headers.get('x-internal-secret');
+      if (internalSecret !== supabaseServiceKey) {
+        console.warn('[legal-ai-advisor] Unauthorized internal call attempt');
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      // User calls: require valid JWT
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        console.warn('[legal-ai-advisor] Invalid JWT');
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Tenant validation if companyId present
+      const companyId = requestData.context?.companyId as string | undefined;
+      if (companyId) {
+        const userId = claimsData.claims.sub;
+        const svcClient = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: membership, error: membershipError } = await svcClient
+          .from('erp_user_companies')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('company_id', companyId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (membershipError || !membership) {
+          console.warn(`[legal-ai-advisor] Tenant access denied: user=${userId} company=${companyId}`);
+          return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    }
+    // ========== END AUTH GATE ==========
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { 
       action, 
       requesting_agent,
@@ -826,10 +889,10 @@ Tipo filtro: ${context?.type || 'all'}`;
     });
 
   } catch (error) {
-    console.error('[legal-ai-advisor] Error:', error);
+    console.error('[legal-ai-advisor] Error:', error instanceof Error ? error.message : error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
