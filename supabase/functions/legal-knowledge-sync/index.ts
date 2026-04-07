@@ -753,7 +753,7 @@ serve(async (req) => {
     const result = {
       success: true,
       timestamp: new Date().toISOString(),
-      source: auth.source,
+      source: authSource,
       stats: {
         total: ESSENTIAL_KNOWLEDGE.length,
         inserted,
