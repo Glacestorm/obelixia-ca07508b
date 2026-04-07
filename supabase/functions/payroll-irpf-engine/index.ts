@@ -333,8 +333,9 @@ serve(async (req) => {
 
     throw new Error(`Unknown action: ${action}`);
   } catch (error) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
-      status: 400,
+    console.error('[payroll-irpf-engine] Error:', error);
+    return new Response(JSON.stringify({ success: false, error: 'Internal server error' }), {
+      status: 500,
       headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
