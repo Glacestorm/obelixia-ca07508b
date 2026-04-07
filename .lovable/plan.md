@@ -1,99 +1,102 @@
 
 
-# S3 RLS Tanda 2 — Hardening de Tablas HR con USING(true) en Writes
+# S4.0 — Auth Hardening: legal-ai-advisor
 
-## Hallazgos
+## Análisis del estado actual
 
-### Tablas ya correctamente protegidas (NO tocar)
-| Tabla | Estado |
-|-------|--------|
-| `erp_hr_registration_data` | Hardened en Tanda 1 |
-| `erp_hr_employee_custom_concepts` | Hardened en Tanda 1 |
-| `erp_hr_garnishments` | Hardened en Tanda 1 |
-| `erp_hr_settlements` | Ya tiene `user_has_erp_company_access(company_id)` |
-| `erp_hr_payroll_recalculations` | Ya tiene políticas role-scoped |
+**Flujo actual**: La función crea un `service_role` client directamente (línea 164-165), sin validar JWT ni verificar membership. Cualquier request con el anon key puede invocarla.
 
-### Tablas con USING(true) en operaciones de escritura (riesgo real)
+**Uso de company context**: La mayoría de invocaciones pasan `context.companyId` (dashboard stats, compliance, risk, documents, bulletins, etc.). La acción `consult_legal` también lo recibe. Solo las llamadas inter-agente (`requesting_agent`) pueden no tenerlo.
 
-| Tabla | Sensibilidad | company_id | employee_id | Política actual |
-|-------|-------------|------------|-------------|----------------|
-| `erp_hr_garnishment_calculations` | **ALTA** (importes embargados) | No | Sí (NOT NULL) | ALL `USING(true)` |
-| `erp_hr_contract_process_data` | **ALTA** (datos contractuales) | Sí (NOT NULL) | Sí (NOT NULL) | SELECT/INSERT/UPDATE `USING(true)` |
-| `erp_hr_payslip_texts` | **MEDIA** (textos nómina) | Sí (nullable) | No | 2× ALL `USING(true)` |
-| `erp_hr_bridge_approvals` | **MEDIA** (aprobaciones) | Sí (NOT NULL) | No | ALL `USING(true)` |
-| `erp_hr_bridge_logs` | **BAJA** (logs integración) | Sí (NOT NULL) | No | ALL `USING(true)` |
-| `erp_hr_bridge_mappings` | **BAJA** (mappings integración) | Sí (NOT NULL) | No | ALL `USING(true)` |
+**Operaciones DB**: 
+- Lecturas: `legal_jurisdictions`, `legal_knowledge_base`, `legal_compliance_checks`, `legal_documents`, `agent_help_conversations` — tablas de catálogo/consulta sin RLS tenant
+- Escrituras: `legal_advisor_faq` (INSERT/UPDATE con `company_id`), `legal_agent_queries` (INSERT), `legal_validation_logs` (INSERT) — logs y FAQ
 
-### Seleccionadas para Tanda 2 (top 3 por riesgo)
+**Riesgo actual**: ALTO — sin auth, cualquier usuario anónimo puede invocar la IA y escribir en tablas de logs/FAQ.
 
-1. **`erp_hr_garnishment_calculations`** — Importes de embargo calculados, cross-tenant expuesto
-2. **`erp_hr_contract_process_data`** — Datos de procesos contractuales sensibles
-3. **`erp_hr_payslip_texts`** — Textos de nómina con company_id nullable
+## Patrón elegido: Auth-only + company context opcional
 
-Las tablas bridge (approvals/logs/mappings) quedan para Tanda 3.
+No se puede hacer `validateTenantAccess` obligatorio porque:
+1. Las tablas legales consultadas no tienen RLS por company_id (son catálogos)
+2. Las llamadas inter-agente (desde otras edge functions) no tienen JWT de usuario
 
----
+**Patrón mínimo seguro**:
+- Validar JWT obligatorio via `validateAuth()` del helper existente
+- Si `context.companyId` presente, validar membership via `validateTenantAccess()`
+- Si es llamada inter-agente (sin JWT), exigir header `X-Internal-Secret` = `SUPABASE_SERVICE_ROLE_KEY`
+- Sanitizar errores en el catch final (no exponer mensajes internos)
 
-## Paso 1 — erp_hr_garnishment_calculations (riesgo alto)
+## Cambios propuestos
 
-No tiene `company_id`, solo `employee_id`. Reutiliza `get_company_for_employee()` de Tanda 1.
+### 1. Auth gate al inicio de la función (después de CORS, antes de lógica)
 
-```sql
-DROP POLICY "Authenticated users can manage garnishment calculations" ON erp_hr_garnishment_calculations;
+```text
+ANTES (líneas 157-165):
+  const LOVABLE_API_KEY = ...
+  const supabase = createClient(url, SERVICE_ROLE_KEY)
+  const requestData = await req.json()
 
-CREATE POLICY "tenant_select" ... USING(user_has_erp_company_access(get_company_for_employee(employee_id)));
-CREATE POLICY "tenant_insert" ... WITH CHECK(...);
-CREATE POLICY "tenant_update" ... USING(...) WITH CHECK(...);
-CREATE POLICY "tenant_delete" ... USING(...);
+DESPUÉS:
+  const requestData = await req.json()
+  
+  // Dual-path auth: JWT para usuarios, X-Internal-Secret para inter-agente
+  const isInternalCall = !!requestData.requesting_agent
+  
+  if (isInternalCall) {
+    const internalSecret = req.headers.get('X-Internal-Secret')
+    if (internalSecret !== SERVICE_ROLE_KEY) → 401
+  } else {
+    const authResult = await validateAuth(req)
+    if (isAuthError(authResult)) → return 401/403
+    // Si tiene companyId, validar membership
+    if (requestData.context?.companyId) {
+      const tenantResult = await validateTenantAccess(req, companyId)
+      if (isAuthError(tenantResult)) → return 403
+    }
+  }
+  
+  // service_role client solo después de auth
+  const supabase = createClient(url, SERVICE_ROLE_KEY)
 ```
 
-## Paso 2 — erp_hr_contract_process_data (riesgo alto)
+### 2. Sanitización de errores (catch final, líneas 828-837)
 
-Tiene `company_id NOT NULL`. Directo con `user_has_erp_company_access(company_id)`.
+```text
+ANTES:
+  error: error instanceof Error ? error.message : 'Unknown error'
 
-```sql
-DROP POLICY "Authenticated users can read contract process data" ON ...;
-DROP POLICY "Authenticated users can insert contract process data" ON ...;
-DROP POLICY "Authenticated users can update contract process data" ON ...;
-
-CREATE POLICY "tenant_select" ... USING(user_has_erp_company_access(company_id));
-CREATE POLICY "tenant_insert" ... WITH CHECK(user_has_erp_company_access(company_id));
-CREATE POLICY "tenant_update" ... USING(...) WITH CHECK(...);
+DESPUÉS:
+  error: 'Internal server error'
+  // Log completo solo en console.error
 ```
 
-## Paso 3 — erp_hr_payslip_texts (riesgo medio)
+### 3. No tocar nada más
 
-`company_id` nullable. Usa COALESCE pero no tiene `employee_id` directo. Rows sin company_id se denegarán (seguro por defecto ya que son textos globales que solo deberían insertarse via service_role).
+- No cambiar contrato API (mismos campos request/response)
+- No cambiar lógica de prompts, IA, o DB queries
+- No migrar a dual-client (eso es Fase 2 de S4)
+- service_role sigue usándose para DB ops (necesario por tablas sin RLS tenant)
 
-```sql
-DROP POLICY "Authenticated users can manage payslip texts" ON ...;
-DROP POLICY "erp_hr_payslip_texts_company_isolation" ON ...;
+## Impacto esperado
 
-CREATE POLICY "tenant_select" ... USING(company_id IS NULL OR user_has_erp_company_access(company_id));
-CREATE POLICY "tenant_insert" ... WITH CHECK(user_has_erp_company_access(company_id));
-CREATE POLICY "tenant_update" ... USING(user_has_erp_company_access(company_id)) WITH CHECK(...);
-CREATE POLICY "tenant_delete" ... USING(user_has_erp_company_access(company_id));
-```
-
-Nota: SELECT permite leer rows con `company_id IS NULL` (textos globales/plantilla). Writes requieren company_id válido.
-
----
-
-## Resumen de cambios
-
-| Recurso | Accion |
-|---------|--------|
-| `erp_hr_garnishment_calculations` — 1 policy | Drop + crear 4 nuevas |
-| `erp_hr_contract_process_data` — 3 policies | Drop + crear 3 nuevas |
-| `erp_hr_payslip_texts` — 2 policies | Drop + crear 4 nuevas |
-
-**Total**: 6 policies eliminadas, 11 policies creadas. 0 funciones nuevas (reutiliza `get_company_for_employee`).
-
-**Frontend/Edge Functions**: Sin cambios. Las queries ya operan dentro del contexto de company/employee.
+| Antes | Después |
+|-------|---------|
+| Sin auth — abierta al público | JWT obligatorio para usuarios |
+| Inter-agente sin validar | Secret header requerido |
+| Errores exponen internals | Errores sanitizados |
+| company_id sin validar | Membership check si presente |
 
 ## Riesgos
 
-- **Bajo**: `erp_hr_payslip_texts` con `company_id IS NULL` en SELECT — permite lectura de plantillas globales, pero bloquea writes sin company
-- **Bajo**: `erp_hr_garnishment_calculations` depende de `get_company_for_employee` — misma función validada en Tanda 1
-- **Ninguno en frontend**: hooks ya filtran por employee_id o company_id del contexto
+- **Bajo**: Las funciones que llaman inter-agente (legal-multiagent-supervisor, etc.) deberán pasar `X-Internal-Secret` — pero usan `service_role` y pueden leer la key del env
+- **Ninguno en frontend**: `supabase.functions.invoke()` envía JWT automáticamente
+- **Residual**: service_role sigue bypasseando RLS — se abordará en Fase 2 (dual-client)
+
+## Archivos a modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `supabase/functions/legal-ai-advisor/index.ts` | Auth gate + error sanitization |
+
+0 archivos frontend. 0 migraciones SQL.
 
