@@ -72,14 +72,34 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const body = await req.json();
     const { action, company_id, employee_id, period_year, period_quarter } = body;
 
-    if (!company_id) throw new Error('company_id required');
+    // --- Input validation ---
+    if (!company_id) {
+      return new Response(JSON.stringify({ success: false, error: 'company_id required' }), {
+        status: 400,
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
+    }
+
+    const VALID_ACTIONS = ['calculate_rate', 'regularize', 'generate_model_190_data', 'generate_retention_certificate'];
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid or missing action' }), {
+        status: 400,
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- Auth + tenant membership ---
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify(authResult.body), {
+        status: authResult.status,
+        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
+    }
+    const supabase = authResult.adminClient;
 
     // ─── CALCULATE RATE ─────────────────────────────────────
     if (action === 'calculate_rate') {
