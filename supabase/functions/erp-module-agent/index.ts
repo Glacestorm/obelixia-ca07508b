@@ -61,11 +61,18 @@ async function requestLegalValidation(
   jurisdictions: string[] = ['ES', 'AD', 'EU']
 ): Promise<LegalValidationResult> {
   try {
+    const legalInternalSecret = Deno.env.get('LEGAL_INTERNAL_SECRET');
+    if (!legalInternalSecret) {
+      console.error('[erp-module-agent] LEGAL_INTERNAL_SECRET not configured — skipping legal validation');
+      return { isValid: false, requiresReview: true, warnings: ['Legal validation unavailable: missing internal secret'], blockingIssues: [] };
+    }
+
     const response = await fetch(`${supabaseUrl}/functions/v1/legal-ai-advisor`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
         'Content-Type': 'application/json',
+        'x-internal-secret': legalInternalSecret,
       },
       body: JSON.stringify({
         action: 'validate_action',

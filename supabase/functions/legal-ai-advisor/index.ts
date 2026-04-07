@@ -170,9 +170,17 @@ serve(async (req) => {
     const isInternalCall = !!requestData.requesting_agent;
 
     if (isInternalCall) {
-      // Inter-agent calls: require X-Internal-Secret header
+      // Inter-agent calls: require dedicated X-Internal-Secret header
+      const legalInternalSecret = Deno.env.get('LEGAL_INTERNAL_SECRET');
+      if (!legalInternalSecret) {
+        console.error('[legal-ai-advisor] LEGAL_INTERNAL_SECRET not configured — inter-agent path disabled');
+        return new Response(JSON.stringify({ success: false, error: 'Service unavailable' }), {
+          status: 503,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const internalSecret = req.headers.get('x-internal-secret');
-      if (internalSecret !== supabaseServiceKey) {
+      if (internalSecret !== legalInternalSecret) {
         console.warn('[legal-ai-advisor] Unauthorized internal call attempt');
         return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
           status: 401,
