@@ -1,144 +1,99 @@
 
 
-# S3 RLS Tanda 1 — Hardening de 3 Tablas HR
+# S3 RLS Tanda 2 — Hardening de Tablas HR con USING(true) en Writes
 
-## Estado Actual
+## Hallazgos
 
-| Tabla | Políticas actuales | company_id | Datos existentes |
-|-------|-------------------|------------|-----------------|
-| `erp_hr_registration_data` | 3× `USING(true)` (SELECT/INSERT/UPDATE) | NOT NULL | — |
-| `erp_hr_employee_custom_concepts` | 2× `USING(true)` ALL | Nullable (pero 0 rows con NULL) | 0 rows total |
-| `erp_hr_garnishments` | 1× `USING(true)` ALL | **No existe** (solo `employee_id`) | — |
+### Tablas ya correctamente protegidas (NO tocar)
+| Tabla | Estado |
+|-------|--------|
+| `erp_hr_registration_data` | Hardened en Tanda 1 |
+| `erp_hr_employee_custom_concepts` | Hardened en Tanda 1 |
+| `erp_hr_garnishments` | Hardened en Tanda 1 |
+| `erp_hr_settlements` | Ya tiene `user_has_erp_company_access(company_id)` |
+| `erp_hr_payroll_recalculations` | Ya tiene políticas role-scoped |
 
-Helper existente: `user_has_erp_company_access(p_company_id)` consulta `erp_user_roles` con `auth.uid()`.
+### Tablas con USING(true) en operaciones de escritura (riesgo real)
 
----
+| Tabla | Sensibilidad | company_id | employee_id | Política actual |
+|-------|-------------|------------|-------------|----------------|
+| `erp_hr_garnishment_calculations` | **ALTA** (importes embargados) | No | Sí (NOT NULL) | ALL `USING(true)` |
+| `erp_hr_contract_process_data` | **ALTA** (datos contractuales) | Sí (NOT NULL) | Sí (NOT NULL) | SELECT/INSERT/UPDATE `USING(true)` |
+| `erp_hr_payslip_texts` | **MEDIA** (textos nómina) | Sí (nullable) | No | 2× ALL `USING(true)` |
+| `erp_hr_bridge_approvals` | **MEDIA** (aprobaciones) | Sí (NOT NULL) | No | ALL `USING(true)` |
+| `erp_hr_bridge_logs` | **BAJA** (logs integración) | Sí (NOT NULL) | No | ALL `USING(true)` |
+| `erp_hr_bridge_mappings` | **BAJA** (mappings integración) | Sí (NOT NULL) | No | ALL `USING(true)` |
 
-## Paso 1 — erp_hr_registration_data (riesgo bajo)
+### Seleccionadas para Tanda 2 (top 3 por riesgo)
 
-**Antes**: 3 políticas permisivas con `true`.
+1. **`erp_hr_garnishment_calculations`** — Importes de embargo calculados, cross-tenant expuesto
+2. **`erp_hr_contract_process_data`** — Datos de procesos contractuales sensibles
+3. **`erp_hr_payslip_texts`** — Textos de nómina con company_id nullable
 
-**Después**: 3 políticas con `user_has_erp_company_access(company_id)`.
-
-```sql
--- Drop existentes
-DROP POLICY "Authenticated users can read registration data" ON erp_hr_registration_data;
-DROP POLICY "Authenticated users can insert registration data" ON erp_hr_registration_data;
-DROP POLICY "Authenticated users can update registration data" ON erp_hr_registration_data;
-
--- Nuevas
-CREATE POLICY "tenant_select" ON erp_hr_registration_data
-  FOR SELECT TO authenticated
-  USING (user_has_erp_company_access(company_id));
-
-CREATE POLICY "tenant_insert" ON erp_hr_registration_data
-  FOR INSERT TO authenticated
-  WITH CHECK (user_has_erp_company_access(company_id));
-
-CREATE POLICY "tenant_update" ON erp_hr_registration_data
-  FOR UPDATE TO authenticated
-  USING (user_has_erp_company_access(company_id))
-  WITH CHECK (user_has_erp_company_access(company_id));
-```
-
-**Impacto**: Directo, sin complejidad. `company_id` es NOT NULL. Frontend ya filtra por company.
+Las tablas bridge (approvals/logs/mappings) quedan para Tanda 3.
 
 ---
 
-## Paso 2 — erp_hr_employee_custom_concepts (riesgo medio)
+## Paso 1 — erp_hr_garnishment_calculations (riesgo alto)
 
-**Problema**: `company_id` es nullable. Aunque hay 0 rows con NULL ahora, el código permite insertar sin company_id.
-
-**Estrategia**: Usar COALESCE con fallback a employee mapping via función SECURITY DEFINER.
+No tiene `company_id`, solo `employee_id`. Reutiliza `get_company_for_employee()` de Tanda 1.
 
 ```sql
--- Función helper para resolver company via employee
-CREATE OR REPLACE FUNCTION get_company_for_employee(p_employee_id uuid)
-RETURNS uuid
-LANGUAGE sql STABLE SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT company_id FROM erp_hr_employees WHERE id = p_employee_id LIMIT 1;
-$$;
+DROP POLICY "Authenticated users can manage garnishment calculations" ON erp_hr_garnishment_calculations;
 
--- Drop existentes
-DROP POLICY "Authenticated users can manage custom concepts" ON erp_hr_employee_custom_concepts;
-DROP POLICY "erp_hr_employee_custom_concepts_company_isolation" ON erp_hr_employee_custom_concepts;
-
--- Nuevas con lógica dual
-CREATE POLICY "tenant_select" ON erp_hr_employee_custom_concepts
-  FOR SELECT TO authenticated
-  USING (user_has_erp_company_access(COALESCE(company_id, get_company_for_employee(employee_id))));
-
-CREATE POLICY "tenant_insert" ON erp_hr_employee_custom_concepts
-  FOR INSERT TO authenticated
-  WITH CHECK (user_has_erp_company_access(COALESCE(company_id, get_company_for_employee(employee_id))));
-
-CREATE POLICY "tenant_update" ON erp_hr_employee_custom_concepts
-  FOR UPDATE TO authenticated
-  USING (user_has_erp_company_access(COALESCE(company_id, get_company_for_employee(employee_id))))
-  WITH CHECK (user_has_erp_company_access(COALESCE(company_id, get_company_for_employee(employee_id))));
-
-CREATE POLICY "tenant_delete" ON erp_hr_employee_custom_concepts
-  FOR DELETE TO authenticated
-  USING (user_has_erp_company_access(COALESCE(company_id, get_company_for_employee(employee_id))));
+CREATE POLICY "tenant_select" ... USING(user_has_erp_company_access(get_company_for_employee(employee_id)));
+CREATE POLICY "tenant_insert" ... WITH CHECK(...);
+CREATE POLICY "tenant_update" ... USING(...) WITH CHECK(...);
+CREATE POLICY "tenant_delete" ... USING(...);
 ```
 
-**Compatibilidad**: Rows con `company_id` usan acceso directo. Rows con NULL resuelven via employee. Sin bloqueo de datos existentes.
+## Paso 2 — erp_hr_contract_process_data (riesgo alto)
 
----
-
-## Paso 3 — erp_hr_garnishments (riesgo más alto)
-
-**Problema**: No tiene columna `company_id`. Solo `employee_id`.
-
-**Estrategia**: Reutilizar `get_company_for_employee()` creada en paso 2.
+Tiene `company_id NOT NULL`. Directo con `user_has_erp_company_access(company_id)`.
 
 ```sql
--- Drop existente
-DROP POLICY "Authenticated users can manage garnishments" ON erp_hr_garnishments;
+DROP POLICY "Authenticated users can read contract process data" ON ...;
+DROP POLICY "Authenticated users can insert contract process data" ON ...;
+DROP POLICY "Authenticated users can update contract process data" ON ...;
 
--- Nuevas
-CREATE POLICY "tenant_select" ON erp_hr_garnishments
-  FOR SELECT TO authenticated
-  USING (user_has_erp_company_access(get_company_for_employee(employee_id)));
-
-CREATE POLICY "tenant_insert" ON erp_hr_garnishments
-  FOR INSERT TO authenticated
-  WITH CHECK (user_has_erp_company_access(get_company_for_employee(employee_id)));
-
-CREATE POLICY "tenant_update" ON erp_hr_garnishments
-  FOR UPDATE TO authenticated
-  USING (user_has_erp_company_access(get_company_for_employee(employee_id)))
-  WITH CHECK (user_has_erp_company_access(get_company_for_employee(employee_id)));
-
-CREATE POLICY "tenant_delete" ON erp_hr_garnishments
-  FOR DELETE TO authenticated
-  USING (user_has_erp_company_access(get_company_for_employee(employee_id)));
+CREATE POLICY "tenant_select" ... USING(user_has_erp_company_access(company_id));
+CREATE POLICY "tenant_insert" ... WITH CHECK(user_has_erp_company_access(company_id));
+CREATE POLICY "tenant_update" ... USING(...) WITH CHECK(...);
 ```
+
+## Paso 3 — erp_hr_payslip_texts (riesgo medio)
+
+`company_id` nullable. Usa COALESCE pero no tiene `employee_id` directo. Rows sin company_id se denegarán (seguro por defecto ya que son textos globales que solo deberían insertarse via service_role).
+
+```sql
+DROP POLICY "Authenticated users can manage payslip texts" ON ...;
+DROP POLICY "erp_hr_payslip_texts_company_isolation" ON ...;
+
+CREATE POLICY "tenant_select" ... USING(company_id IS NULL OR user_has_erp_company_access(company_id));
+CREATE POLICY "tenant_insert" ... WITH CHECK(user_has_erp_company_access(company_id));
+CREATE POLICY "tenant_update" ... USING(user_has_erp_company_access(company_id)) WITH CHECK(...);
+CREATE POLICY "tenant_delete" ... USING(user_has_erp_company_access(company_id));
+```
+
+Nota: SELECT permite leer rows con `company_id IS NULL` (textos globales/plantilla). Writes requieren company_id válido.
 
 ---
 
 ## Resumen de cambios
 
-| Archivo/Recurso | Acción |
-|-----------------|--------|
-| Función `get_company_for_employee` | Crear (SECURITY DEFINER) |
-| `erp_hr_registration_data` — 3 policies | Drop + crear 3 nuevas |
-| `erp_hr_employee_custom_concepts` — 2 policies | Drop + crear 4 nuevas |
-| `erp_hr_garnishments` — 1 policy | Drop + crear 4 nuevas |
+| Recurso | Accion |
+|---------|--------|
+| `erp_hr_garnishment_calculations` — 1 policy | Drop + crear 4 nuevas |
+| `erp_hr_contract_process_data` — 3 policies | Drop + crear 3 nuevas |
+| `erp_hr_payslip_texts` — 2 policies | Drop + crear 4 nuevas |
 
-**Total**: 1 función nueva, 6 policies eliminadas, 11 policies creadas.
+**Total**: 6 policies eliminadas, 11 policies creadas. 0 funciones nuevas (reutiliza `get_company_for_employee`).
 
-**Código frontend/edge functions**: Sin cambios. Las queries ya filtran por employee/company. RLS solo añade enforcement server-side.
+**Frontend/Edge Functions**: Sin cambios. Las queries ya operan dentro del contexto de company/employee.
 
 ## Riesgos
 
-- **Bajo**: Si un employee no existe en `erp_hr_employees`, `get_company_for_employee` retorna NULL y el acceso se deniega (seguro por defecto)
-- **Bajo**: Edge functions usan `service_role` (bypasses RLS) — sin impacto
-- **Ninguno en frontend**: `useHRGarnishments`, `useEmployeeCustomConcepts`, `useHRRegistrationProcess` ya filtran por `employee_id` del contexto del usuario
-
-## Validación post-migración
-
-Tras cada tabla se ejecutará una query de verificación para confirmar que el aislamiento funciona correctamente.
+- **Bajo**: `erp_hr_payslip_texts` con `company_id IS NULL` en SELECT — permite lectura de plantillas globales, pero bloquea writes sin company
+- **Bajo**: `erp_hr_garnishment_calculations` depende de `get_company_for_employee` — misma función validada en Tanda 1
+- **Ninguno en frontend**: hooks ya filtran por employee_id o company_id del contexto
 
