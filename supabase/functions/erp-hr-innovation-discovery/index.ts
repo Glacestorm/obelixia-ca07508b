@@ -24,17 +24,54 @@ serve(async (req) => {
   }
 
   try {
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json() as InnovationRequest;
     const { action, company_id, feature_code, idea_id, config, reason } = body;
+
+    if (!company_id) {
+      return new Response(JSON.stringify({ error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Tenant isolation
+    const { data: membership } = await adminClient
+      .from('erp_user_companies').select('id')
+      .eq('user_id', userId).eq('company_id', company_id)
+      .eq('is_active', true).maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log(`[erp-hr-innovation-discovery] Action: ${action}`);
 
@@ -42,7 +79,6 @@ serve(async (req) => {
 
     switch (action) {
       case 'discover_trends': {
-        // Use AI to discover new HR trends
         const systemPrompt = `Eres un experto en tendencias de Recursos Humanos y tecnología HR.
 
 Tu tarea es identificar 5 tendencias innovadoras REALES y ACTUALES para departamentos de RRHH.
@@ -113,7 +149,6 @@ FORMATO DE RESPUESTA (JSON estricto):
           console.error('Parse error:', parseError);
         }
 
-        // Save discovered ideas to database
         if (trends.length > 0 && company_id) {
           const ideasToInsert = trends.map((t: any) => ({
             company_id,
@@ -128,7 +163,7 @@ FORMATO DE RESPUESTA (JSON estricto):
             metadata: { discovered_by: 'ai', model: 'gemini-2.5-flash' }
           }));
 
-          await supabase.from('erp_hr_innovation_ideas').insert(ideasToInsert);
+          await adminClient.from('erp_hr_innovation_ideas').insert(ideasToInsert);
         }
 
         result = { 
@@ -140,7 +175,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'get_pending_ideas': {
-        const { data } = await supabase
+        const { data } = await adminClient
           .from('erp_hr_innovation_ideas')
           .select('*')
           .eq('company_id', company_id)
@@ -154,7 +189,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'get_features_status': {
-        const { data: features } = await supabase
+        const { data: features } = await adminClient
           .from('erp_hr_innovation_features')
           .select('*')
           .eq('company_id', company_id)
@@ -176,8 +211,7 @@ FORMATO DE RESPUESTA (JSON estricto):
           throw new Error('feature_code and company_id required');
         }
 
-        // Check if feature exists or create it
-        const { data: existing } = await supabase
+        const { data: existing } = await adminClient
           .from('erp_hr_innovation_features')
           .select('*')
           .eq('company_id', company_id)
@@ -189,7 +223,6 @@ FORMATO DE RESPUESTA (JSON estricto):
           break;
         }
 
-        // Create or update feature
         const featureData = {
           company_id,
           feature_code,
@@ -201,7 +234,7 @@ FORMATO DE RESPUESTA (JSON estricto):
         };
 
         if (existing) {
-          await supabase
+          await adminClient
             .from('erp_hr_innovation_features')
             .update({
               implementation_status: 'implementing',
@@ -209,13 +242,12 @@ FORMATO DE RESPUESTA (JSON estricto):
             })
             .eq('id', existing.id);
         } else {
-          await supabase
+          await adminClient
             .from('erp_hr_innovation_features')
             .insert([featureData]);
         }
 
-        // Log the implementation start
-        await supabase.from('erp_hr_innovation_logs').insert([{
+        await adminClient.from('erp_hr_innovation_logs').insert([{
           feature_id: existing?.id,
           company_id,
           action: 'started',
@@ -223,9 +255,8 @@ FORMATO DE RESPUESTA (JSON estricto):
           status_message: `Implementación de ${feature_code} iniciada`
         }]);
 
-        // Simulate implementation (in real scenario, this would be async)
         setTimeout(async () => {
-          await supabase
+          await adminClient
             .from('erp_hr_innovation_features')
             .update({
               is_implemented: true,
@@ -235,7 +266,7 @@ FORMATO DE RESPUESTA (JSON estricto):
             .eq('company_id', company_id)
             .eq('feature_code', feature_code);
 
-          await supabase.from('erp_hr_innovation_logs').insert([{
+          await adminClient.from('erp_hr_innovation_logs').insert([{
             company_id,
             action: 'completed',
             progress_percentage: 100,
@@ -255,7 +286,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       case 'approve_idea': {
         if (!idea_id) throw new Error('idea_id required');
 
-        await supabase
+        await adminClient
           .from('erp_hr_innovation_ideas')
           .update({
             is_reviewed: true,
@@ -271,7 +302,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       case 'reject_idea': {
         if (!idea_id) throw new Error('idea_id required');
 
-        await supabase
+        await adminClient
           .from('erp_hr_innovation_ideas')
           .update({
             is_reviewed: true,
@@ -301,7 +332,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     console.error('[erp-hr-innovation-discovery] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

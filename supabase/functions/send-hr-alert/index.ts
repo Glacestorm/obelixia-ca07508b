@@ -36,15 +36,35 @@ serve(async (req) => {
   }
 
   try {
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
     const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
     const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER');
     const WHATSAPP_API_KEY = Deno.env.get('WHATSAPP_API_KEY');
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const adminClient = createClient(supabaseUrl, serviceKey);
     const body = await req.json() as HRAlertRequest;
 
     const { 
@@ -52,11 +72,27 @@ serve(async (req) => {
       employee_id, employee_name, channels, recipients, data, sync_to_ai 
     } = body;
 
+    if (!company_id) {
+      return new Response(JSON.stringify({ error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Tenant isolation
+    const { data: membership } = await adminClient
+      .from('erp_user_companies').select('id')
+      .eq('user_id', userId).eq('company_id', company_id)
+      .eq('is_active', true).maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(`[send-hr-alert] Processing ${alert_type} alert via channels:`, channels);
 
     const results: Record<string, { success: boolean; message?: string; error?: string }> = {};
 
-    // Get severity configuration
     const severityConfig = {
       critical: { color: '#dc2626', emoji: '🚨', label: 'CRÍTICO' },
       warning: { color: '#ea580c', emoji: '⚠️', label: 'ADVERTENCIA' },
@@ -64,7 +100,6 @@ serve(async (req) => {
     };
     const config = severityConfig[severity];
 
-    // Get alert type label
     const alertTypeLabels: Record<string, string> = {
       contract_expiry: 'Vencimiento de Contrato',
       accident: 'Accidente Laboral',
@@ -157,7 +192,7 @@ serve(async (req) => {
         }
       } catch (emailError) {
         console.error('[send-hr-alert] Email error:', emailError);
-        results.email = { success: false, error: emailError instanceof Error ? emailError.message : 'Email error' };
+        results.email = { success: false, error: 'Email delivery error' };
       }
     }
 
@@ -192,7 +227,7 @@ serve(async (req) => {
         results.sms = { success: true, message: `Enviado a ${smsRecipients.length} números` };
       } catch (smsError) {
         console.error('[send-hr-alert] SMS error:', smsError);
-        results.sms = { success: false, error: smsError instanceof Error ? smsError.message : 'SMS error' };
+        results.sms = { success: false, error: 'SMS delivery error' };
       }
     }
 
@@ -202,20 +237,16 @@ serve(async (req) => {
         const whatsappRecipients = recipients.filter(r => r.phone);
         const whatsappMessage = `${config.emoji} *ALERTA RRHH - ${config.label}*\n\n*${title}*\n\n${description}${employee_name ? `\n\n👤 *Empleado:* ${employee_name}` : ''}\n\n🔗 Ver detalles en el sistema`;
 
-        // Log for demo - in production, integrate with WhatsApp Business API or Twilio WhatsApp
         console.log('[send-hr-alert] WhatsApp message prepared for:', whatsappRecipients.map(r => r.phone));
         
-        // Simulate WhatsApp send (would use WhatsApp Business API in production)
         if (WHATSAPP_API_KEY) {
-          // Real WhatsApp API integration would go here
           results.whatsapp = { success: true, message: `Preparado para ${whatsappRecipients.length} números` };
         } else {
-          // Demo mode
           results.whatsapp = { success: true, message: `Demo: ${whatsappRecipients.length} mensajes preparados` };
         }
       } catch (waError) {
         console.error('[send-hr-alert] WhatsApp error:', waError);
-        results.whatsapp = { success: false, error: waError instanceof Error ? waError.message : 'WhatsApp error' };
+        results.whatsapp = { success: false, error: 'WhatsApp delivery error' };
       }
     }
 
@@ -225,8 +256,7 @@ serve(async (req) => {
         const pushRecipients = recipients.filter(r => r.user_id);
         
         for (const recipient of pushRecipients) {
-          // Create in-app notification
-          await supabase.from('notifications').insert({
+          await adminClient.from('notifications').insert({
             user_id: recipient.user_id,
             title: `${config.emoji} ${title}`,
             message: description,
@@ -238,13 +268,13 @@ serve(async (req) => {
         results.push = { success: true, message: `${pushRecipients.length} notificaciones creadas` };
       } catch (pushError) {
         console.error('[send-hr-alert] Push error:', pushError);
-        results.push = { success: false, error: pushError instanceof Error ? pushError.message : 'Push error' };
+        results.push = { success: false, error: 'Push notification error' };
       }
     }
 
     // === LOG ALERT TO DATABASE ===
     try {
-      await supabase.from('erp_hr_alerts').insert({
+      await adminClient.from('erp_hr_alerts').insert({
         company_id,
         employee_id,
         alert_type,
@@ -263,7 +293,7 @@ serve(async (req) => {
     // === SYNC TO AI AGENT ===
     if (sync_to_ai) {
       try {
-        await supabase.functions.invoke('erp-hr-ai-agent', {
+        await adminClient.functions.invoke('erp-hr-ai-agent', {
           body: {
             action: 'chat',
             company_id,

@@ -16,17 +16,61 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Helper inside serve() so corsHeaders is in scope
+  function jsonResponse(data: Record<string, unknown>) {
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
+    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const { action, companyId, countryCode, data, params } = await req.json() as RequestBody;
+
+    if (!companyId) {
+      return new Response(JSON.stringify({ error: 'companyId is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Tenant isolation
+    const { data: membership } = await adminClient
+      .from('erp_user_companies').select('id')
+      .eq('user_id', userId).eq('company_id', companyId)
+      .eq('is_active', true).maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     switch (action) {
       // ==================== COUNTRY REGISTRY ====================
       case 'list_countries': {
-        const { data: countries, error } = await supabase
+        const { data: countries, error } = await adminClient
           .from('hr_country_registry')
           .select('*')
           .eq('company_id', companyId)
@@ -37,7 +81,7 @@ serve(async (req) => {
 
       case 'upsert_country': {
         const record = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
-        const { data: country, error } = await supabase
+        const { data: country, error } = await adminClient
           .from('hr_country_registry')
           .upsert(record, { onConflict: 'company_id,country_code' })
           .select()
@@ -47,7 +91,7 @@ serve(async (req) => {
       }
 
       case 'toggle_country': {
-        const { data: updated, error } = await supabase
+        const { data: updated, error } = await adminClient
           .from('hr_country_registry')
           .update({ is_enabled: data?.is_enabled, updated_at: new Date().toISOString() })
           .eq('id', data?.id)
@@ -59,7 +103,7 @@ serve(async (req) => {
 
       // ==================== POLICIES ====================
       case 'list_policies': {
-        let query = supabase
+        let query = adminClient
           .from('hr_country_policies')
           .select('*')
           .eq('company_id', companyId)
@@ -74,7 +118,7 @@ serve(async (req) => {
 
       case 'upsert_policy': {
         const record = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
-        const { data: policy, error } = await supabase
+        const { data: policy, error } = await adminClient
           .from('hr_country_policies')
           .upsert(record)
           .select()
@@ -84,11 +128,9 @@ serve(async (req) => {
       }
 
       case 'resolve_policy': {
-        // Resolution: employee > center > entity > country (highest priority wins)
         const { employee_id, policy_type, policy_key } = params as Record<string, string>;
         
-        // Get employee's country
-        const { data: emp } = await supabase
+        const { data: emp } = await adminClient
           .from('erp_hr_employees')
           .select('country_code, department_id')
           .eq('id', employee_id)
@@ -96,7 +138,7 @@ serve(async (req) => {
         
         const cc = emp?.country_code || 'ES';
         
-        const { data: policies, error } = await supabase
+        const { data: policies, error } = await adminClient
           .from('hr_country_policies')
           .select('*')
           .eq('company_id', companyId)
@@ -113,7 +155,7 @@ serve(async (req) => {
 
       // ==================== EMPLOYEE EXTENSIONS ====================
       case 'get_employee_extension': {
-        const { data: ext, error } = await supabase
+        const { data: ext, error } = await adminClient
           .from('hr_employee_extensions')
           .select('*')
           .eq('employee_id', params?.employee_id as string)
@@ -125,7 +167,7 @@ serve(async (req) => {
 
       case 'upsert_employee_extension': {
         const record = { ...data, company_id: companyId, updated_at: new Date().toISOString() };
-        const { data: ext, error } = await supabase
+        const { data: ext, error } = await adminClient
           .from('hr_employee_extensions')
           .upsert(record, { onConflict: 'employee_id,country_code' })
           .select()
@@ -135,7 +177,7 @@ serve(async (req) => {
       }
 
       case 'list_extensions_by_country': {
-        const { data: exts, error } = await supabase
+        const { data: exts, error } = await adminClient
           .from('hr_employee_extensions')
           .select('*')
           .eq('company_id', companyId)
@@ -146,18 +188,18 @@ serve(async (req) => {
 
       // ==================== STATS ====================
       case 'get_stats': {
-        const { data: countries } = await supabase
+        const { data: countries } = await adminClient
           .from('hr_country_registry')
           .select('id, is_enabled')
           .eq('company_id', companyId);
         
-        const { data: policies } = await supabase
+        const { data: policies } = await adminClient
           .from('hr_country_policies')
           .select('id, policy_type')
           .eq('company_id', companyId)
           .eq('is_active', true);
         
-        const { data: extensions } = await supabase
+        const { data: extensions } = await adminClient
           .from('hr_employee_extensions')
           .select('id')
           .eq('company_id', companyId);
@@ -179,7 +221,6 @@ serve(async (req) => {
 
       // ==================== SEED DATA ====================
       case 'seed_defaults': {
-        // Seed Spain as default country
         const spainDefaults = {
           company_id: companyId,
           country_code: 'ES',
@@ -208,12 +249,11 @@ serve(async (req) => {
           }
         };
 
-        const { error: countryErr } = await supabase
+        const { error: countryErr } = await adminClient
           .from('hr_country_registry')
           .upsert(spainDefaults, { onConflict: 'company_id,country_code' });
         if (countryErr) throw countryErr;
 
-        // Seed basic policies for Spain
         const defaultPolicies = [
           {
             company_id: companyId, country_code: 'ES', policy_type: 'tax',
@@ -253,7 +293,7 @@ serve(async (req) => {
         ];
 
         for (const policy of defaultPolicies) {
-          await supabase.from('hr_country_policies').upsert(policy);
+          await adminClient.from('hr_country_policies').upsert(policy);
         }
 
         return jsonResponse({ success: true, message: 'Spain defaults seeded' });
@@ -264,13 +304,13 @@ serve(async (req) => {
         const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
         if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-        const { data: countries } = await supabase
+        const { data: countries } = await adminClient
           .from('hr_country_registry')
           .select('*')
           .eq('company_id', companyId)
           .eq('is_enabled', true);
 
-        const { data: policies } = await supabase
+        const { data: policies } = await adminClient
           .from('hr_country_policies')
           .select('*')
           .eq('company_id', companyId)
@@ -326,13 +366,7 @@ serve(async (req) => {
     console.error('[hr-country-registry] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
-
-function jsonResponse(data: Record<string, unknown>) {
-  return new Response(JSON.stringify(data), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}

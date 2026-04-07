@@ -28,17 +28,54 @@ serve(async (req) => {
   }
 
   try {
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const request: RecruitmentRequest = await req.json();
     const { action, companyId } = request;
+
+    if (!companyId) {
+      return new Response(JSON.stringify({ error: 'companyId is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Tenant isolation
+    const { data: membership } = await adminClient
+      .from('erp_user_companies').select('id')
+      .eq('user_id', userId).eq('company_id', companyId)
+      .eq('is_active', true).maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log(`[erp-hr-recruitment-agent] Action: ${action}, Company: ${companyId}`);
 
@@ -330,7 +367,7 @@ RESPONDE EN FORMATO JSON:
 
     // Si es score_candidate o analyze_candidate, actualizar el candidato en BD
     if ((action === 'score_candidate' || action === 'analyze_candidate') && request.candidateId) {
-      await supabase
+      await adminClient
         .from('erp_hr_candidates')
         .update({
           ai_analysis: result,
@@ -356,7 +393,7 @@ RESPONDE EN FORMATO JSON:
     console.error('[erp-hr-recruitment-agent] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

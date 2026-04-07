@@ -1,12 +1,6 @@
 /**
  * Edge Function: erp-hr-industry-templates
  * Fase 9: Industry Cloud Templates - Verticalización por sector CNAE
- * 
- * Funcionalidades:
- * - Generación de plantillas por sector con IA
- * - Recomendaciones de templates según industria
- * - Aplicación de plantillas a entidades
- * - Validación de compliance sectorial
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -36,7 +30,6 @@ interface TemplateRequest {
   };
 }
 
-// Mapeo de industrias a CNAE
 const INDUSTRY_CNAE_MAP: Record<string, string[]> = {
   technology: ['62', '63', '58', '61'],
   healthcare: ['86', '87', '88'],
@@ -54,7 +47,6 @@ const INDUSTRY_CNAE_MAP: Record<string, string[]> = {
   media: ['59', '60', '90', '91', '92', '93']
 };
 
-// Requisitos de compliance por industria
 const INDUSTRY_COMPLIANCE: Record<string, string[]> = {
   healthcare: [
     'Ley 41/2002 (Autonomía del paciente)',
@@ -90,16 +82,53 @@ serve(async (req) => {
   }
 
   try {
+    // Auth gate
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = claimsData.claims.sub;
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const { action, company_id, template_id, entity_type, entity_id, variable_values, params, context } = await req.json() as TemplateRequest;
+
+    if (!company_id) {
+      return new Response(JSON.stringify({ error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Tenant isolation
+    const { data: membership } = await adminClient
+      .from('erp_user_companies').select('id')
+      .eq('user_id', userId).eq('company_id', company_id)
+      .eq('is_active', true).maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log(`[erp-hr-industry-templates] Action: ${action}`);
 
@@ -322,8 +351,7 @@ FORMATO DE RESPUESTA (JSON estricto):
           throw new Error('template_id, entity_type and entity_id required');
         }
 
-        // Fetch template
-        const { data: template, error: templateError } = await supabase
+        const { data: template, error: templateError } = await adminClient
           .from('erp_hr_industry_templates')
           .select('*')
           .eq('id', template_id)
@@ -333,11 +361,9 @@ FORMATO DE RESPUESTA (JSON estricto):
           throw new Error('Template not found');
         }
 
-        // Process template with variables
         let processedContent = template.template_content;
         const variables = template.variables || [];
 
-        // Replace variables in content
         if (variable_values && typeof processedContent === 'object') {
           const contentStr = JSON.stringify(processedContent);
           let processed = contentStr;
@@ -351,8 +377,7 @@ FORMATO DE RESPUESTA (JSON estricto):
           processedContent = JSON.parse(processed);
         }
 
-        // Create application record
-        const { data: application, error: appError } = await supabase
+        const { data: application, error: appError } = await adminClient
           .from('erp_hr_template_applications')
           .insert([{
             template_id,
@@ -371,8 +396,7 @@ FORMATO DE RESPUESTA (JSON estricto):
           throw new Error('Error applying template');
         }
 
-        // Update template usage
-        await supabase
+        await adminClient
           .from('erp_hr_industry_templates')
           .update({ 
             usage_count: (template.usage_count || 0) + 1,
@@ -392,7 +416,7 @@ FORMATO DE RESPUESTA (JSON estricto):
       case 'validate_compliance': {
         if (!template_id) throw new Error('template_id required');
 
-        const { data: template, error: templateError } = await supabase
+        const { data: template, error: templateError } = await adminClient
           .from('erp_hr_industry_templates')
           .select('*')
           .eq('id', template_id)
@@ -440,7 +464,7 @@ FORMATO DE RESPUESTA (JSON estricto):
     console.error('[erp-hr-industry-templates] Error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Internal server error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
