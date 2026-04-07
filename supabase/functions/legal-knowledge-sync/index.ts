@@ -621,21 +621,72 @@ serve(async (req) => {
   }
 
   try {
-    // Validar autenticación (cron o service role)
-    const auth = validateCronOrServiceAuth(req);
-    if (!auth.valid) {
-      console.log('[legal-knowledge-sync] Unauthorized request');
-      return new Response(JSON.stringify({ error: auth.error }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log(`[legal-knowledge-sync] Starting sync from source: ${auth.source}`);
-
-    // Crear cliente Supabase con service role
+    // === DUAL-PATH AUTH ===
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    let authSource: 'cron' | 'user' = 'user';
+
+    // Path 1: Cron via x-cron-secret
+    const cronSecret = req.headers.get('x-cron-secret');
+    const expectedCronSecret = Deno.env.get('CRON_SECRET');
+    const isCron = !!(cronSecret && expectedCronSecret && cronSecret === expectedCronSecret);
+
+    if (isCron) {
+      authSource = 'cron';
+    } else {
+      // Path 2: Manual — validate JWT for real + require admin/superadmin
+      const authHeader = req.headers.get('authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: 'Authorization required' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      if (userError || !user) {
+        console.warn('[legal-knowledge-sync] Invalid JWT:', userError?.message);
+        return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Check admin/superadmin role
+      const adminClient = createClient(supabaseUrl, supabaseKey);
+      const { data: roles, error: roleError } = await adminClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      if (roleError) {
+        console.error('[legal-knowledge-sync] Role check failed:', roleError.message);
+        return new Response(JSON.stringify({ error: 'Authorization check failed' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const userRoles = (roles || []).map(r => r.role);
+      const isAdmin = userRoles.includes('admin') || userRoles.includes('superadmin');
+      if (!isAdmin) {
+        console.warn(`[legal-knowledge-sync] User ${user.id} lacks admin role. Roles: ${userRoles.join(',')}`);
+        return new Response(JSON.stringify({ error: 'Insufficient permissions' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      authSource = 'user';
+    }
+
+    console.log(`[legal-knowledge-sync] Starting sync from source: ${authSource}`);
+
+    // Service role client for DB operations
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     let inserted = 0;
