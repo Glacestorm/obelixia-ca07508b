@@ -1,30 +1,30 @@
 
 
-# Plan S2R: Lote Medio — Hardening de 7 funciones HR
+# Plan S2R: Lote Bajo — Hardening de 9 funciones HR
 
 ## Resumen
 
-Aplicar Auth Gate + Tenant Isolation + Error Sanitization a 7 funciones HR de riesgo medio. Todas comparten el mismo patrón de cambio.
+Endurecer las 9 funciones HR restantes con el patrón adecuado según su tipo: auth + membership (con tenant), auth-only (sin tenant), o auth + membership + cuidado con integraciones externas.
 
-## Estado actual
+## Clasificación
 
-| Función | Líneas | Auth | DB | company_id source | Error leak |
-|---------|--------|------|-----|-------------------|------------|
-| erp-hr-talent-intelligence | 289 | No | Sí (service role) | `params.company_id` | L283 |
-| erp-hr-esg-selfservice | 385 | No | Sí (service role) | `params.companyId` | L377 |
-| erp-hr-training-agent | 301 | No | No (AI-only) | `company_id` body | L295 |
-| erp-hr-regulatory-watch | 280 | No | No (AI-only) | `company_id` body | L274 |
-| erp-hr-onboarding-agent | 235 | No | No (AI-only) | `company_id` body | L229 |
-| erp-hr-talent-skills-agent | 434 | No | No (AI-only) | `company_id` body | L428 |
-| hr-compliance-automation | 193 | No | No (AI-only) | `company_id` body | L188 |
+| Función | Líneas | DB | Tenant source | Tipo | Error leak |
+|---------|--------|----|---------------|------|------------|
+| erp-hr-analytics-agent | 417 | No (AI-only) | `context.companyId` | Auth + Membership | Sí (L411) |
+| erp-hr-people-analytics-ai | 192 | No (AI-only) | `companyId` body | Auth + Membership | Sí (L188) |
+| erp-hr-recruitment-agent | 365 | Sí (service role) | `companyId` body | Auth + Membership | Sí (L359) |
+| hr-analytics-bi | 184 | No (AI-only) | `companyId` body | Auth + Membership | Sí (L178) |
+| hr-enterprise-integrations | 327 | No (AI-only) | `companyId` body | Auth + Membership | Sí (L322) |
+| hr-country-registry | 338 | Sí (service role) | `companyId` body | Auth + Membership | Sí (L329) |
+| erp-hr-innovation-discovery | 310 | Sí (service role) | `company_id` body | Auth + Membership | Sí (L304) |
+| erp-hr-industry-templates | 449 | Sí (service role) | `company_id` body | Auth + Membership | Sí (L443) |
+| send-hr-alert | 302 | Sí (service role) | `company_id` body | Auth + Membership | No (ya sanitizado) |
 
-## Cambios por función
+Todas tienen `companyId` o `company_id` — todas aplican auth + membership.
 
-### Patrón común (insertar tras CORS preflight)
+## Patrón estándar (insertar tras CORS preflight)
 
 ```typescript
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 // Auth gate
 const authHeader = req.headers.get('Authorization');
 if (!authHeader?.startsWith('Bearer ')) {
@@ -60,35 +60,74 @@ if (!membership) {
 }
 ```
 
-### Notas por función
+## Cambios por función
 
-1. **erp-hr-talent-intelligence**: Ya importa `createClient`. Ya tiene `supabase` con service role — renombrar a `adminClient` y reusar para membership + operaciones DB.
-2. **erp-hr-esg-selfservice**: Ya importa `createClient`. Usa `companyId` (camelCase) de `params`. Ya tiene validación de companyId en L33 — auth gate va antes.
-3. **erp-hr-training-agent**: Añadir import `createClient`. Extraer `company_id` del body antes del switch para membership check.
-4. **erp-hr-regulatory-watch**: Añadir import `createClient`. Usar `company_id` del body.
-5. **erp-hr-onboarding-agent**: Añadir import `createClient`. Usar `company_id` del body.
-6. **erp-hr-talent-skills-agent**: Añadir import `createClient`. Usar `company_id` del body.
-7. **hr-compliance-automation**: Añadir import `createClient`. Usar `body.company_id`.
+### 1. erp-hr-analytics-agent (417 líneas, AI-only)
+- Añadir import `createClient`
+- Auth gate + membership con `context.companyId` (parsear body, extraer companyId antes del switch)
+- Sanitizar catch (L411)
 
-### Error sanitization (todas)
+### 2. erp-hr-people-analytics-ai (192 líneas, AI-only)
+- Añadir import `createClient`
+- Auth gate + membership con `companyId` del body
+- Sanitizar catch (L188)
 
-Reemplazar `error instanceof Error ? error.message : 'Unknown error'` por `'Internal server error'` en cada catch.
+### 3. erp-hr-recruitment-agent (365 líneas, DB + service role)
+- Ya importa `createClient`. Renombrar `supabase` existente a `adminClient` y reusar
+- Auth gate + membership con `companyId` del body
+- Sanitizar catch (L359)
+
+### 4. hr-analytics-bi (184 líneas, AI-only, tiene rate limiter)
+- Añadir import `createClient`
+- Auth gate + membership con `companyId` del body, **antes** del rate limiter (auth primero)
+- Sanitizar catch (L178)
+
+### 5. hr-enterprise-integrations (327 líneas, AI-only, tiene rate limiter)
+- Añadir import `createClient`
+- Auth gate + membership con `companyId` del body, **antes** del rate limiter
+- Sanitizar catch (L322)
+
+### 6. hr-country-registry (338 líneas, DB + service role)
+- Ya importa `createClient`. Renombrar `supabase` a `adminClient` y reusar
+- Auth gate + membership con `companyId` del body
+- **Fix scope bug**: mover `jsonResponse()` helper dentro de `serve()` (mismo bug que board-pack)
+- Sanitizar catch (L329)
+
+### 7. erp-hr-innovation-discovery (310 líneas, DB + service role)
+- Ya importa `createClient`. Renombrar `supabase` a `adminClient` y reusar
+- Auth gate + membership con `company_id` del body
+- Sanitizar catch (L304)
+
+### 8. erp-hr-industry-templates (449 líneas, DB + service role)
+- Ya importa `createClient`. Renombrar `supabase` a `adminClient` y reusar
+- Auth gate + membership con `company_id` del body (puede ser undefined — validar con 400)
+- Sanitizar catch (L443)
+
+### 9. send-hr-alert (302 líneas, DB + service role + integraciones externas)
+- Ya importa `createClient`. Ya tiene CORS seguro y error sanitizado
+- Añadir auth gate + membership con `company_id` del body
+- Renombrar `supabase` a `adminClient`
+- **No tocar** lógica de Resend/Twilio/WhatsApp — solo añadir gate al inicio
+- Error ya sanitizado — sin cambios en catch
 
 ## Archivos modificados
 
-| Archivo | Import | Auth | Membership | Sanitize |
-|---------|--------|------|------------|----------|
-| `supabase/functions/erp-hr-talent-intelligence/index.ts` | Existente | getClaims | params.company_id | 1 catch |
-| `supabase/functions/erp-hr-esg-selfservice/index.ts` | Existente | getClaims | params.companyId | 1 catch |
-| `supabase/functions/erp-hr-training-agent/index.ts` | Añadir | getClaims | company_id body | 1 catch |
-| `supabase/functions/erp-hr-regulatory-watch/index.ts` | Añadir | getClaims | company_id body | 1 catch |
-| `supabase/functions/erp-hr-onboarding-agent/index.ts` | Añadir | getClaims | company_id body | 1 catch |
-| `supabase/functions/erp-hr-talent-skills-agent/index.ts` | Añadir | getClaims | company_id body | 1 catch |
-| `supabase/functions/hr-compliance-automation/index.ts` | Añadir | getClaims | company_id body | 1 catch |
+| Archivo | Import | Auth | Membership | Error | Extra |
+|---------|--------|------|------------|-------|-------|
+| `supabase/functions/erp-hr-analytics-agent/index.ts` | Añadir | getClaims | context.companyId | Sanitizar | — |
+| `supabase/functions/erp-hr-people-analytics-ai/index.ts` | Añadir | getClaims | companyId body | Sanitizar | — |
+| `supabase/functions/erp-hr-recruitment-agent/index.ts` | Existente | getClaims | companyId body | Sanitizar | Rename supabase→adminClient |
+| `supabase/functions/hr-analytics-bi/index.ts` | Añadir | getClaims | companyId body | Sanitizar | Auth antes de rate limiter |
+| `supabase/functions/hr-enterprise-integrations/index.ts` | Añadir | getClaims | companyId body | Sanitizar | Auth antes de rate limiter |
+| `supabase/functions/hr-country-registry/index.ts` | Existente | getClaims | companyId body | Sanitizar | Rename + move jsonResponse() |
+| `supabase/functions/erp-hr-innovation-discovery/index.ts` | Existente | getClaims | company_id body | Sanitizar | Rename supabase→adminClient |
+| `supabase/functions/erp-hr-industry-templates/index.ts` | Existente | getClaims | company_id body | Sanitizar | Rename supabase→adminClient |
+| `supabase/functions/send-hr-alert/index.ts` | Existente | getClaims | company_id body | Ya hecho | Rename supabase→adminClient |
 
 ## Riesgos
 
 - **Bajo**: Frontend usa `supabase.functions.invoke()` que inyecta JWT automáticamente
-- **Bajo**: `company_id` ya se envía en todas las invocaciones desde el ERP context
-- **Ninguno**: No se cambia lógica de negocio ni contratos de API
+- **Bajo**: `companyId`/`company_id` ya se pasa en todas las invocaciones desde el ERP context
+- **Medio**: `hr-country-registry` requiere mover `jsonResponse()` dentro de `serve()` (bug de scope)
+- **Ninguno en integraciones**: `send-hr-alert` solo añade gate al inicio; lógica de Resend/Twilio intacta
 
