@@ -262,13 +262,27 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     };
   }, [formData.hire_date, formData.termination_date, prorrogaData.endDate, contractProfile, esFields.contract_type_rd]);
 
+  // ── Contract expiry alert ──
+  const expiryAlert = useMemo<ContractExpiryAlert | null>(() => {
+    if (!prorrogaData.contractId || !prorrogaData.endDate) return null;
+    const code = esFields.contract_type_rd || prorrogaData.contractType;
+    if (!code || !isTemporaryContract(code)) return null;
+    return computeContractExpiryAlert({
+      contractId: prorrogaData.contractId, employeeId: employee?.id || '',
+      employeeName: `${formData.first_name} ${formData.last_name}`,
+      contractType: contractProfile?.name || code, contractTypeCode: code,
+      startDate: prorrogaData.startDate, endDate: prorrogaData.endDate,
+      extensionCount: prorrogaData.extensionCount, status: prorrogaData.status, isTemporary: true,
+    });
+  }, [prorrogaData, esFields.contract_type_rd, formData.first_name, formData.last_name, employee?.id, contractProfile]);
+
   // ── Termination vs contract end date cross-validation ──
   const terminationVsContractEnd = useMemo(() => {
     if (!formData.termination_date || !prorrogaData.endDate) return null;
     const term = new Date(formData.termination_date);
     const contractEnd = new Date(prorrogaData.endDate);
-    if (term > contractEnd) return 'after'; // termination after contract end
-    if (term < contractEnd) return 'before'; // early termination
+    if (term > contractEnd) return 'after';
+    if (term < contractEnd) return 'before';
     return 'exact';
   }, [formData.termination_date, prorrogaData.endDate]);
 
