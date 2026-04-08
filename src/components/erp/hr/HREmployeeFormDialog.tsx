@@ -16,6 +16,7 @@ import { HRModelo145Section, EMPTY_MODELO145, type Modelo145Data } from './share
 import { calculateIRPFRetention } from '@/lib/irpf/irpfRetentionCalculator';
 import { useEmployeeLegalProfile } from '@/hooks/erp/hr/useEmployeeLegalProfile';
 import { resolveContractType } from '@/engines/erp/hr/contractTypeEngine';
+import { canExtendContract } from '@/lib/hr/contractEngine';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
