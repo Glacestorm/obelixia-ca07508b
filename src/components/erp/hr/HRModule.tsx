@@ -78,6 +78,8 @@ import {
   LazyMultiAgentSupervisorPanel,
   LazyHRKnowledgeUploader,
   LazyHRDemoSeedPanel,
+  LazyHRContractExpiryWidget,
+  LazyHRContractExpiryReport,
   LazyHRCopilotTwinPanel,
   LazyHRDigitalTwinPanel,
   LazyHRAIGovernancePanel,
@@ -493,6 +495,7 @@ function HRModuleInner() {
         {activeModule === 'document-expedient' && <LazyDocumentExpedientModule companyId={companyId} />}
         {activeModule === 'es-localization' && <LazyESLocalizationPlugin companyId={companyId} />}
         {activeModule === 'people-analytics' && <LazyPeopleAnalyticsModule companyId={companyId} />}
+        {activeModule === 'contract-expiry-report' && <LazyHRContractExpiryReport companyId={companyId} />}
 
         {/* Employee Expedient */}
         {activeModule === 'employee-expedient' && selectedEmployeeId && (
