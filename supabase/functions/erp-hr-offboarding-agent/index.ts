@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface OffboardingRequest {
   action: 'analyze_termination' | 'suggest_optimal_dates' | 'calculate_costs' | 
@@ -25,47 +26,35 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const { action, employeeId, terminationId, terminationType, terminationDate, companyId, context } = await req.json() as OffboardingRequest;
+
+    // S4.1: Auth + tenant isolation via shared utility
+    let userId: string;
+    if (companyId) {
+      const tenantResult = await validateTenantAccess(req, companyId);
+      if (isAuthError(tenantResult)) {
+        return new Response(JSON.stringify({ success: false, error: tenantResult.body.error }), {
+          status: tenantResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      userId = tenantResult.userId;
+    } else {
+      const authResult = await validateAuth(req);
+      if (isAuthError(authResult)) {
+        return new Response(JSON.stringify({ success: false, error: authResult.body.error }), {
+          status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      userId = authResult.userId;
     }
 
+    // userClient for RLS-protected data queries
+    const authHeader = req.headers.get('Authorization')!;
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }
     );
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claims, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !claims?.user) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { action, employeeId, terminationId, terminationType, terminationDate, companyId, context } = await req.json() as OffboardingRequest;
-
-    // S2.1: Tenant isolation
-    if (companyId) {
-      const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-      const { data: membership } = await adminClient
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', claims.user.id)
-        .eq('company_id', companyId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
 
     console.log(`[erp-hr-offboarding-agent] Action: ${action}, Employee: ${employeeId}`);
 

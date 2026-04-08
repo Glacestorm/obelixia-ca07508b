@@ -6,6 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
 
 // corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
