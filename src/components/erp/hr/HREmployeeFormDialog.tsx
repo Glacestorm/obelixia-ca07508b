@@ -841,7 +841,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   <Label>Estado</Label>
                   <Select value={formData.status} onValueChange={(v) => handleChange('status', v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent portalContainer={selectPortalContainer} position="popper">
                       {GLOBAL_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -1108,7 +1108,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                         <SelectTrigger className="w-[130px]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent portalContainer={selectPortalContainer} position="popper">
                           {ACCESS_LEVELS.map(level => (
                             <SelectItem key={level.value} value={level.value} textValue={level.label}>
                               <div className="flex items-center gap-2">
