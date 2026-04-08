@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface ComplianceRequest {
   action: 'check_deadlines' | 'evaluate_risk' | 'generate_communication' | 
@@ -20,50 +20,26 @@ serve(async (req) => {
   }
 
   try {
-    // --- AUTH GATE ---
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const { action, company_id, communication_type, employee_id, days_ahead = 30, alert_data } = await req.json() as ComplianceRequest;
+
+    // --- AUTH + TENANT via shared utility ---
+    if (!company_id) {
+      return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-    if (authError || !authUser) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify({ success: false, ...authResult.body }), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userClient } = authResult;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
-    }
-
-    const supabaseUrl = SUPABASE_URL;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { action, company_id, communication_type, employee_id, days_ahead = 30, alert_data } = await req.json() as ComplianceRequest;
-
-    // --- COMPANY ACCESS VALIDATION ---
-    if (company_id) {
-      const { data: membership } = await supabase
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
     }
 
     console.log(`[erp-hr-compliance-monitor] Processing action: ${action}`);
@@ -72,8 +48,8 @@ serve(async (req) => {
 
     switch (action) {
       case 'check_deadlines': {
-        // Obtener vencimientos próximos usando RPC
-        const { data: deadlines, error } = await supabase
+        // RPCs are SECURITY DEFINER — safe via userClient
+        const { data: deadlines, error } = await userClient
           .rpc('get_upcoming_deadlines', { 
             p_company_id: company_id, 
             p_days_ahead: days_ahead 
@@ -81,7 +57,6 @@ serve(async (req) => {
 
         if (error) throw error;
 
-        // Generar alertas para vencimientos críticos
         const criticalDeadlines = (deadlines || []).filter((d: { days_remaining: number }) => d.days_remaining <= 7);
         
         result = {
@@ -93,8 +68,8 @@ serve(async (req) => {
       }
 
       case 'evaluate_risk': {
-        // Evaluación de riesgo de sanciones usando RPC
-        const { data: assessment, error } = await supabase
+        // RPC SECURITY DEFINER — safe via userClient
+        const { data: assessment, error } = await userClient
           .rpc('get_sanction_risk_assessment', { p_company_id: company_id });
 
         if (error) throw error;
@@ -109,7 +84,6 @@ serve(async (req) => {
       }
 
       case 'generate_communication': {
-        // Usar IA para generar comunicación legal
         const systemPrompt = `Eres un experto en derecho laboral español y andorrano. 
 Genera una comunicación legal formal para RRHH.
 El formato debe ser profesional, con:
@@ -159,7 +133,6 @@ Incluye todas las referencias legales aplicables según la normativa española v
       }
 
       case 'validate_checklist': {
-        // Validar checklist de cumplimiento con IA
         const systemPrompt = `Eres un auditor de cumplimiento laboral.
 Valida si una comunicación o proceso cumple todos los requisitos legales.
 
@@ -202,9 +175,8 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'notify_agents': {
-        // Notificar a agentes IA (RRHH y Jurídico)
-        // Registrar en tabla de alertas
-        const { error } = await supabase
+        // erp_hr_sanction_alerts has multi-tenant RLS — safe via userClient
+        const { error } = await userClient
           .from('erp_hr_sanction_alerts')
           .update({ 
             hr_agent_notified: true, 
@@ -224,8 +196,8 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'escalate_to_legal': {
-        // Escalar a revisión jurídica
-        const { error } = await supabase
+        // erp_hr_sanction_alerts has multi-tenant RLS — safe via userClient
+        const { error } = await userClient
           .from('erp_hr_sanction_alerts')
           .update({ 
             legal_agent_notified: true, 
@@ -247,11 +219,11 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'get_dashboard_summary': {
-        // Obtener resumen para dashboard
+        // RPCs + sanction_alerts — all safe via userClient
         const [deadlinesRes, risksRes, alertsRes] = await Promise.all([
-          supabase.rpc('get_upcoming_deadlines', { p_company_id: company_id, p_days_ahead: 30 }),
-          supabase.rpc('get_sanction_risk_assessment', { p_company_id: company_id }),
-          supabase.from('erp_hr_sanction_alerts')
+          userClient.rpc('get_upcoming_deadlines', { p_company_id: company_id, p_days_ahead: 30 }),
+          userClient.rpc('get_sanction_risk_assessment', { p_company_id: company_id }),
+          userClient.from('erp_hr_sanction_alerts')
             .select('*')
             .eq('company_id', company_id)
             .eq('is_resolved', false)
@@ -278,10 +250,10 @@ FORMATO DE RESPUESTA (JSON estricto):
       }
 
       case 'create_alert': {
-        // Crear nueva alerta de sanción
         if (!alert_data) throw new Error('alert_data is required');
 
-        const { error } = await supabase
+        // erp_hr_sanction_alerts has multi-tenant RLS — safe via userClient
+        const { error } = await userClient
           .from('erp_hr_sanction_alerts')
           .insert([{
             company_id,
