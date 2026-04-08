@@ -15,6 +15,7 @@ export interface TenantAuthResult {
   userId: string;
   companyId: string;
   adminClient: ReturnType<typeof createClient>;
+  userClient: ReturnType<typeof createClient>;
 }
 
 export interface AuthOnlyResult {
