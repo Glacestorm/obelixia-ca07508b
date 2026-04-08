@@ -227,6 +227,47 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
   }, [prorrogaData.startDate, prorrogaData.endDate, formData.termination_date]);
 
+  // ── Legal duration validation (ET Art. 15, RDL 32/2021) ──
+  const legalDurationValidation = useMemo(() => {
+    const maxMeses = contractProfile?.duracionMaximaMeses;
+    const hireDate = formData.hire_date;
+    // Only applies when there's a contract type with a defined max duration
+    if (!maxMeses || !hireDate) return null;
+
+    const effectiveEndDate = formData.termination_date || prorrogaData.endDate;
+    if (!effectiveEndDate) return null;
+
+    const start = new Date(hireDate);
+    const end = new Date(effectiveEndDate);
+    const actualMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
+      + (end.getDate() >= start.getDate() ? 0 : -1); // partial month adjustment
+
+    const maxEndDate = new Date(start);
+    maxEndDate.setMonth(maxEndDate.getMonth() + maxMeses);
+    const maxEndStr = maxEndDate.toISOString().split('T')[0];
+
+    const isWithinLimit = actualMonths <= maxMeses;
+
+    return {
+      actualMonths: Math.max(0, actualMonths),
+      maxMeses,
+      maxEndDate: maxEndStr,
+      isWithinLimit,
+      contractName: contractProfile?.name || esFields.contract_type_rd,
+      normativa: contractProfile?.normativaReferencia || 'ET Art. 15, RDL 32/2021',
+    };
+  }, [formData.hire_date, formData.termination_date, prorrogaData.endDate, contractProfile, esFields.contract_type_rd]);
+
+  // ── Termination vs contract end date cross-validation ──
+  const terminationVsContractEnd = useMemo(() => {
+    if (!formData.termination_date || !prorrogaData.endDate) return null;
+    const term = new Date(formData.termination_date);
+    const contractEnd = new Date(prorrogaData.endDate);
+    if (term > contractEnd) return 'after'; // termination after contract end
+    if (term < contractEnd) return 'before'; // early termination
+    return 'exact';
+  }, [formData.termination_date, prorrogaData.endDate]);
+
   // Sync calculated IRPF to field when not in manual override
   useEffect(() => {
     if (!irpfManualOverride && irpfCalculation) {
@@ -776,11 +817,46 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                       Obligatoria para estados de baja (ET Art. 49.1, RD 625/1985 Art. 1)
                     </p>
                   )}
-                  {/* Info: estado activo con fecha de baja informada */}
-                  {formData.termination_date && !['terminated', 'offboarding'].includes(formData.status) && (
+                  {/* Validación: fecha de baja pasada con estado activo → aviso administrativo */}
+                  {formData.termination_date && formData.status === 'active' && new Date(formData.termination_date) < new Date(new Date().toISOString().split('T')[0]) && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      La fecha de baja ya ha vencido ({formData.termination_date}). Actualice el estado del empleado (ET Art. 49.1).
+                    </p>
+                  )}
+                  {/* Validación legal de duración — solo contratos con límite temporal */}
+                  {legalDurationValidation && formData.termination_date && (
+                    legalDurationValidation.isWithinLimit ? (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        Duración dentro del periodo legal ({legalDurationValidation.actualMonths}/{legalDurationValidation.maxMeses} meses) — {legalDurationValidation.normativa}
+                      </p>
+                    ) : (
+                      <div className="mt-1 p-2 rounded-md border border-destructive/30 bg-destructive/5 space-y-1">
+                        <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Duración ({legalDurationValidation.actualMonths} meses) excede el máximo legal de {legalDurationValidation.maxMeses} meses para «{legalDurationValidation.contractName}»
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          📅 Fecha máxima correcta: <span className="font-semibold text-foreground">{legalDurationValidation.maxEndDate}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ⚖️ {legalDurationValidation.normativa} · ET Art. 15.5: Superado el límite, el contrato se convierte en indefinido.
+                        </p>
+                      </div>
+                    )
+                  )}
+                  {/* Cross-validation: fecha de baja vs fin de contrato */}
+                  {terminationVsContractEnd === 'after' && (
                     <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Fecha de baja ({formData.termination_date}) posterior al fin de contrato ({prorrogaData.endDate}). Solo válido si hay conversión a indefinido.
+                    </p>
+                  )}
+                  {terminationVsContractEnd === 'before' && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
                       <Shield className="h-3 w-3" />
-                      Fecha de baja informada con estado activo — verifique coherencia
+                      Baja anticipada al fin de contrato. Verifique causa de extinción (ET Art. 49).
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
@@ -884,11 +960,33 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                     </p>
                   )}
 
-                  {/* Advertencia: duración total supera 24 meses (ET Art. 15.1) */}
-                  {contractDurationMonths !== null && contractDurationMonths > 24 && (
+                  {/* Validación legal de duración en prórroga */}
+                  {legalDurationValidation && prorrogaData.endDate && (
+                    legalDurationValidation.isWithinLimit ? (
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        Duración con prórroga dentro del periodo legal ({legalDurationValidation.actualMonths}/{legalDurationValidation.maxMeses} meses)
+                      </p>
+                    ) : (
+                      <div className="p-2 rounded-md border border-destructive/30 bg-destructive/5 space-y-1">
+                        <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Duración con prórroga ({legalDurationValidation.actualMonths} meses) excede el máximo de {legalDurationValidation.maxMeses} meses
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          📅 Fecha fin máxima legal: <span className="font-semibold text-foreground">{legalDurationValidation.maxEndDate}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ⚖️ {legalDurationValidation.normativa} · ET Art. 15.5: Conversión automática a indefinido.
+                        </p>
+                      </div>
+                    )
+                  )}
+                  {/* Fallback: duración total supera 24 meses absolutos (ET Art. 15.1) */}
+                  {contractDurationMonths !== null && contractDurationMonths > 24 && (!legalDurationValidation || legalDurationValidation.maxMeses >= 24) && (
                     <p className="text-xs text-destructive flex items-center gap-1">
                       <AlertTriangle className="h-3 w-3" />
-                      Duración total ({contractDurationMonths} meses) supera el límite de 24 meses (ET Art. 15.1). El contrato se convierte en indefinido.
+                      Duración total ({contractDurationMonths} meses) supera el límite absoluto de 24 meses (ET Art. 15.1). Conversión a indefinido.
                     </p>
                   )}
 
