@@ -93,9 +93,17 @@ export async function validateTenantAccess(
     return { status: 403, body: { error: 'Forbidden' } };
   }
 
+  // userClient: anon key + user JWT — queries go through RLS
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const authHeader = req.headers.get('Authorization')!;
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
   return {
     userId: authResult.userId,
     companyId,
     adminClient,
+    userClient,
   };
 }
