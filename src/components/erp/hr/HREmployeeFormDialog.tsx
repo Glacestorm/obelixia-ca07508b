@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import {
   User, FileText, Key, Users, Save, Loader2, Building2, Calendar,
-  Phone, Mail, Globe, Shield, Eye, Edit, Lock
+  Phone, Mail, Globe, Shield, Eye, Edit, Lock, CalendarClock, AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
