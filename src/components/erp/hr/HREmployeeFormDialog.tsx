@@ -627,6 +627,54 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                   </Select>
                 </div>
               </div>
+
+              {/* Fecha de Baja — siempre visible, obligatoria en estados de baja */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    Fecha de Baja
+                    {['terminated', 'offboarding'].includes(formData.status) && (
+                      <span className="text-destructive text-xs">*</span>
+                    )}
+                  </Label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={formData.termination_date}
+                      onChange={(e) => handleChange('termination_date', e.target.value)}
+                      className="pl-10"
+                      min={formData.hire_date || undefined}
+                    />
+                  </div>
+                  {/* Validación legal: fecha de baja anterior a fecha de alta */}
+                  {formData.termination_date && formData.hire_date && formData.termination_date < formData.hire_date && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      La fecha de baja no puede ser anterior a la fecha de alta (ET Art. 49)
+                    </p>
+                  )}
+                  {/* Advertencia: estado baja sin fecha */}
+                  {['terminated', 'offboarding'].includes(formData.status) && !formData.termination_date && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      Obligatoria para estados de baja (ET Art. 49.1, RD 625/1985 Art. 1)
+                    </p>
+                  )}
+                  {/* Info: estado activo con fecha de baja informada */}
+                  {formData.termination_date && !['terminated', 'offboarding'].includes(formData.status) && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      Fecha de baja informada con estado activo — verifique coherencia
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Fecha efectiva de cese. Genera obligaciones TA.2 (baja) y liquidación (ET Art. 49).
+                  </p>
+                </div>
+                <div /> {/* Spacer for grid alignment */}
+              </div>
+
               <div className="space-y-2">
                 <Label>Salario bruto anual</Label>
                 <Input type="number" value={formData.base_salary} onChange={(e) => handleChange('base_salary', e.target.value)} placeholder="30000" />
