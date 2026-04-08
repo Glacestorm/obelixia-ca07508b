@@ -123,6 +123,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setSaving] = useState(false);
   const [selectPortalContainer, setSelectPortalContainer] = useState<HTMLElement | null>(null);
+  const [generationMode, setGenerationModeState] = useState<GenerationMode>(() => getGenerationModeConfig(companyId).mode);
 
   // Global form state (country-agnostic)
   const [formData, setFormData] = useState({
