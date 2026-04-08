@@ -16,6 +16,7 @@ import { HRModelo145Section, EMPTY_MODELO145, type Modelo145Data } from './share
 import { calculateIRPFRetention } from '@/lib/irpf/irpfRetentionCalculator';
 import { useEmployeeLegalProfile } from '@/hooks/erp/hr/useEmployeeLegalProfile';
 import { resolveContractType } from '@/engines/erp/hr/contractTypeEngine';
+import { canExtendContract } from '@/lib/hr/contractEngine';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import {
   User, FileText, Key, Users, Save, Loader2, Building2, Calendar,
-  Phone, Mail, Globe, Shield, Eye, Edit, Lock
+  Phone, Mail, Globe, Shield, Eye, Edit, Lock, CalendarClock, AlertTriangle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -130,6 +131,17 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     legal_entity_id: '', work_center_id: '', reports_to: '',
   });
 
+  // Prórroga / active contract state
+  const [prorrogaData, setProrrogaData] = useState({
+    contractId: '' as string,
+    contractType: '',
+    startDate: '',
+    endDate: '',
+    extensionDate: '',      // Fecha inicio prórroga
+    extensionCount: 0,
+    status: '' as string,
+  });
+
   // ES localization fields
   const [esFields, setEsFields] = useState({
     naf: '',
@@ -194,6 +206,27 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     });
   }, [formData, esFields, irpfCalculation, companyId, employee?.id, computeLegalProfile]);
 
+  // Prórroga eligibility (ET Art. 15, RDL 32/2021)
+  const extensionEligibility = useMemo(() => {
+    if (!prorrogaData.contractType || !prorrogaData.startDate) return null;
+    return canExtendContract(
+      prorrogaData.contractType,
+      prorrogaData.extensionCount,
+      prorrogaData.startDate,
+      prorrogaData.endDate || null,
+    );
+  }, [prorrogaData.contractType, prorrogaData.extensionCount, prorrogaData.startDate, prorrogaData.endDate]);
+
+  // Calculate months between dates for duration display
+  const contractDurationMonths = useMemo(() => {
+    if (!prorrogaData.startDate) return null;
+    const end = prorrogaData.endDate || formData.termination_date;
+    if (!end) return null;
+    const s = new Date(prorrogaData.startDate);
+    const e = new Date(end);
+    return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  }, [prorrogaData.startDate, prorrogaData.endDate, formData.termination_date]);
+
   // Sync calculated IRPF to field when not in manual override
   useEffect(() => {
     if (!irpfManualOverride && irpfCalculation) {
@@ -232,6 +265,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       });
       loadModuleAccess(employee.id);
       loadEsExtension(employee.id);
+      loadActiveContract(employee.id);
     } else {
       setFormData({
         first_name: '', last_name: '', email: '', phone: '',
@@ -293,7 +327,35 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     }
   };
 
-  // Load reference data
+  // Load active contract for prórroga data
+  const loadActiveContract = async (employeeId: string) => {
+    try {
+      const { data } = await supabase
+        .from('erp_hr_contracts')
+        .select('id, contract_type, start_date, end_date, extension_date, extension_count, status')
+        .eq('employee_id', employeeId)
+        .eq('is_active', true)
+        .order('start_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setProrrogaData({
+          contractId: data.id,
+          contractType: data.contract_type || '',
+          startDate: data.start_date || '',
+          endDate: data.end_date || '',
+          extensionDate: data.extension_date || '',
+          extensionCount: data.extension_count || 0,
+          status: data.status || '',
+        });
+      } else {
+        setProrrogaData({ contractId: '', contractType: '', startDate: '', endDate: '', extensionDate: '', extensionCount: 0, status: '' });
+      }
+    } catch (err) {
+      console.error('[ActiveContract] load error:', err);
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     const load = async () => {
@@ -368,6 +430,28 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       toast.error('La fecha de baja no puede ser anterior a la fecha de alta');
       setActiveTab('empleo');
       return;
+    }
+    // Validación legal: prórroga inconsistente
+    if (prorrogaData.contractId && prorrogaData.extensionDate) {
+      if (prorrogaData.extensionDate < prorrogaData.startDate) {
+        toast.error('La fecha de prórroga no puede ser anterior al inicio del contrato');
+        setActiveTab('empleo');
+        return;
+      }
+      if (prorrogaData.endDate && prorrogaData.endDate < prorrogaData.extensionDate) {
+        toast.error('La fecha fin no puede ser anterior al inicio de la prórroga');
+        setActiveTab('empleo');
+        return;
+      }
+      if (extensionEligibility && !extensionEligibility.allowed) {
+        toast.error(`Prórroga no permitida: ${extensionEligibility.reason}`);
+        setActiveTab('empleo');
+        return;
+      }
+      // Auto-increment extension count if new extension
+      if (prorrogaData.extensionDate && prorrogaData.extensionCount < 2) {
+        setProrrogaData(prev => ({ ...prev, extensionCount: prev.extensionCount + 1 }));
+      }
     }
     setSaving(true);
     try {
@@ -451,6 +535,25 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         // Persist legal profile for AI agents (cross-module)
         if (formData.country_code === 'ES' && computedProfile) {
           persistLegalProfile(employeeId!, computedProfile);
+        }
+
+        // Save contract prórroga data + sync termination_date to active contract
+        if (prorrogaData.contractId) {
+          const contractUpdates: Record<string, any> = {};
+          if (prorrogaData.extensionDate) contractUpdates.extension_date = prorrogaData.extensionDate;
+          if (prorrogaData.endDate) contractUpdates.end_date = prorrogaData.endDate;
+          contractUpdates.extension_count = prorrogaData.extensionCount;
+          // Sync termination_date to the active contract (ET Art. 49)
+          if (formData.termination_date) {
+            contractUpdates.termination_date = formData.termination_date;
+            contractUpdates.status = 'terminated';
+          }
+          // If extension was applied, update contract status
+          if (prorrogaData.extensionDate && !formData.termination_date) {
+            contractUpdates.status = 'extended';
+            contractUpdates.ta2_movement_code = 'V01'; // Variación de datos (prórroga)
+          }
+          await supabase.from('erp_hr_contracts').update(contractUpdates).eq('id', prorrogaData.contractId);
         }
       }
       onSave();
@@ -686,6 +789,129 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                 </div>
                 <div /> {/* Spacer for grid alignment */}
               </div>
+
+              {/* Prórroga de contrato — ET Art. 15, RDL 32/2021 */}
+              {prorrogaData.contractId ? (
+                <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <CalendarClock className="h-4 w-4 text-primary" />
+                      Prórroga de Contrato
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      {prorrogaData.extensionCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {prorrogaData.extensionCount}/2 prórrogas
+                        </Badge>
+                      )}
+                      {contractDurationMonths !== null && (
+                        <Badge variant="outline" className="text-xs">
+                          {contractDurationMonths} meses duración
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Fecha inicio prórroga</Label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          value={prorrogaData.extensionDate}
+                          onChange={(e) => setProrrogaData(prev => ({ ...prev, extensionDate: e.target.value }))}
+                          className="pl-10 h-8 text-sm"
+                          min={prorrogaData.startDate || undefined}
+                          disabled={extensionEligibility !== null && !extensionEligibility.allowed}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Nueva fecha fin contrato</Label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          value={prorrogaData.endDate}
+                          onChange={(e) => setProrrogaData(prev => ({ ...prev, endDate: e.target.value }))}
+                          className="pl-10 h-8 text-sm"
+                          min={prorrogaData.extensionDate || prorrogaData.startDate || undefined}
+                          disabled={extensionEligibility !== null && !extensionEligibility.allowed}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Validaciones legales de prórroga */}
+                  {extensionEligibility && !extensionEligibility.allowed && (
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-destructive">{extensionEligibility.reason}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          ET Art. 15.1 — RDL 32/2021: Límite de encadenamiento y duración máxima de contratos temporales.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {extensionEligibility?.allowed && prorrogaData.extensionDate && (
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-primary/5 text-sm">
+                      <Shield className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs text-primary font-medium">Prórroga permitida</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Se generará movimiento TA.2 (V01) y se actualizará el estado del contrato a "Prorrogado".
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validación: fecha prórroga anterior al inicio del contrato */}
+                  {prorrogaData.extensionDate && prorrogaData.startDate && prorrogaData.extensionDate < prorrogaData.startDate && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      La fecha de prórroga no puede ser anterior al inicio del contrato
+                    </p>
+                  )}
+
+                  {/* Validación: nueva fecha fin anterior a fecha inicio prórroga */}
+                  {prorrogaData.endDate && prorrogaData.extensionDate && prorrogaData.endDate < prorrogaData.extensionDate && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      La fecha fin no puede ser anterior al inicio de la prórroga
+                    </p>
+                  )}
+
+                  {/* Advertencia: duración total supera 24 meses (ET Art. 15.1) */}
+                  {contractDurationMonths !== null && contractDurationMonths > 24 && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Duración total ({contractDurationMonths} meses) supera el límite de 24 meses (ET Art. 15.1). El contrato se convierte en indefinido.
+                    </p>
+                  )}
+
+                  {/* Advertencia: prórroga con baja informada */}
+                  {prorrogaData.extensionDate && formData.termination_date && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Prórroga informada con fecha de baja — verifique coherencia. La baja prevalece sobre la prórroga.
+                    </p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    ET Art. 15.1, RDL 32/2021: Máx. 2 prórrogas, 24 meses duración total. Superado el límite, el contrato se considera indefinido. Genera movimiento TA.2.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 rounded-lg border border-dashed bg-muted/20">
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" />
+                    Sin contrato activo vinculado. Las prórrogas se gestionan desde el contrato del empleado.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Salario bruto anual</Label>
