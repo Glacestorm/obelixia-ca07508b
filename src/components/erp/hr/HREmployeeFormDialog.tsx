@@ -131,6 +131,17 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     legal_entity_id: '', work_center_id: '', reports_to: '',
   });
 
+  // Prórroga / active contract state
+  const [prorrogaData, setProrrogaData] = useState({
+    contractId: '' as string,
+    contractType: '',
+    startDate: '',
+    endDate: '',
+    extensionDate: '',      // Fecha inicio prórroga
+    extensionCount: 0,
+    status: '' as string,
+  });
+
   // ES localization fields
   const [esFields, setEsFields] = useState({
     naf: '',
