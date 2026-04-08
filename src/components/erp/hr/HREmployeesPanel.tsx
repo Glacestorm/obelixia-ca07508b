@@ -53,11 +53,17 @@ import {
   Globe,
   Building2,
   MapPin,
-  ClipboardList
+  ClipboardList,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeFormDialog } from './HREmployeeFormDialog';
+import {
+  computeContractExpiryAlert, isTemporaryContract,
+  type ContractExpiryAlert, type ExpiryAlertLevel,
+} from '@/engines/erp/hr/contractExpiryAlertEngine';
 import { HREmployeeProfileDialog, HREmployeeDocumentsDialog, HREmployeeExportDialog } from './dialogs';
 import { HRStatusBadge } from './shared/HRStatusBadge';
 import { cn } from '@/lib/utils';
@@ -75,6 +81,7 @@ const EMPLOYEE_STATUSES = [
   { value: 'terminated', label: 'Baja definitiva' },
   { value: 'on_leave', label: 'En baja' },
   { value: 'inactive', label: 'Inactivos' },
+  { value: 'contract_issues', label: '⚠ Incidencias contractuales' },
 ];
 
 interface Employee {
