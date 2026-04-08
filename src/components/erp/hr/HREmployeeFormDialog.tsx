@@ -768,6 +768,129 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
                 <div /> {/* Spacer for grid alignment */}
               </div>
 
+              {/* Prórroga de contrato — ET Art. 15, RDL 32/2021 */}
+              {prorrogaData.contractId ? (
+                <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <CalendarClock className="h-4 w-4 text-primary" />
+                      Prórroga de Contrato
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      {prorrogaData.extensionCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {prorrogaData.extensionCount}/2 prórrogas
+                        </Badge>
+                      )}
+                      {contractDurationMonths !== null && (
+                        <Badge variant="outline" className="text-xs">
+                          {contractDurationMonths} meses duración
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Fecha inicio prórroga</Label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          value={prorrogaData.extensionDate}
+                          onChange={(e) => setProrrogaData(prev => ({ ...prev, extensionDate: e.target.value }))}
+                          className="pl-10 h-8 text-sm"
+                          min={prorrogaData.startDate || undefined}
+                          disabled={extensionEligibility !== null && !extensionEligibility.allowed}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Nueva fecha fin contrato</Label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          value={prorrogaData.endDate}
+                          onChange={(e) => setProrrogaData(prev => ({ ...prev, endDate: e.target.value }))}
+                          className="pl-10 h-8 text-sm"
+                          min={prorrogaData.extensionDate || prorrogaData.startDate || undefined}
+                          disabled={extensionEligibility !== null && !extensionEligibility.allowed}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Validaciones legales de prórroga */}
+                  {extensionEligibility && !extensionEligibility.allowed && (
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-destructive">{extensionEligibility.reason}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          ET Art. 15.1 — RDL 32/2021: Límite de encadenamiento y duración máxima de contratos temporales.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {extensionEligibility?.allowed && prorrogaData.extensionDate && (
+                    <div className="flex items-start gap-2 p-2 rounded-md bg-primary/5 text-sm">
+                      <Shield className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs text-primary font-medium">Prórroga permitida</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Se generará movimiento TA.2 (V01) y se actualizará el estado del contrato a "Prorrogado".
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Validación: fecha prórroga anterior al inicio del contrato */}
+                  {prorrogaData.extensionDate && prorrogaData.startDate && prorrogaData.extensionDate < prorrogaData.startDate && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      La fecha de prórroga no puede ser anterior al inicio del contrato
+                    </p>
+                  )}
+
+                  {/* Validación: nueva fecha fin anterior a fecha inicio prórroga */}
+                  {prorrogaData.endDate && prorrogaData.extensionDate && prorrogaData.endDate < prorrogaData.extensionDate && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      La fecha fin no puede ser anterior al inicio de la prórroga
+                    </p>
+                  )}
+
+                  {/* Advertencia: duración total supera 24 meses (ET Art. 15.1) */}
+                  {contractDurationMonths !== null && contractDurationMonths > 24 && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Duración total ({contractDurationMonths} meses) supera el límite de 24 meses (ET Art. 15.1). El contrato se convierte en indefinido.
+                    </p>
+                  )}
+
+                  {/* Advertencia: prórroga con baja informada */}
+                  {prorrogaData.extensionDate && formData.termination_date && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Prórroga informada con fecha de baja — verifique coherencia. La baja prevalece sobre la prórroga.
+                    </p>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    ET Art. 15.1, RDL 32/2021: Máx. 2 prórrogas, 24 meses duración total. Superado el límite, el contrato se considera indefinido. Genera movimiento TA.2.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 rounded-lg border border-dashed bg-muted/20">
+                  <p className="text-xs text-muted-foreground flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" />
+                    Sin contrato activo vinculado. Las prórrogas se gestionan desde el contrato del empleado.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Salario bruto anual</Label>
                 <Input type="number" value={formData.base_salary} onChange={(e) => handleChange('base_salary', e.target.value)} placeholder="30000" />
