@@ -231,3 +231,38 @@ export type {
   QuarterlyTotals, CrossCheckData, RegulatoryEdgeCaseSummary,
   Modelo190PipelineReadiness,
 } from './modelo190PipelineEngine';
+
+// ── Contract Expiry Alert Engine (Cycle-of-Life) ──
+export {
+  computeContractExpiryAlert, computeBatchExpiryAlerts,
+  buildIndefiniteConversionPayload, getAlertSummary, isTemporaryContract,
+  EXPIRY_ALERT_LEVELS,
+} from './contractExpiryAlertEngine';
+export type {
+  ExpiryAlertLevel, ExpiryAlertConfig, ContractExpiryAlert,
+  ContractExpiryInput, IndefiniteConversionPayload,
+} from './contractExpiryAlertEngine';
+
+// ── Artifact Generation Mode Engine ──
+export {
+  getGenerationModeConfig, setGenerationModeConfig, shouldAutoGenerate,
+  DEFAULT_CONFIG as GENERATION_DEFAULT_CONFIG,
+  GENERATION_MODE_LABELS,
+} from './artifactGenerationModeEngine';
+export type { GenerationMode, GenerationModeConfig } from './artifactGenerationModeEngine';
+
+// ── FDI Artifact Engine (INSS IT/AT) ──
+export { buildFDI, promoteFDIStatus, FDI_TYPE_LABELS } from './fdiArtifactEngine';
+export type { FDIType, FDIContingency, FDIWorkerData, FDIEmployerData, FDIMedicalData, FDIArtifact } from './fdiArtifactEngine';
+
+// ── Delt@ Accident Report Engine ──
+export { buildDeltaPart, promoteDeltaStatus, ACCIDENT_SEVERITY_LABELS, ACCIDENT_TYPE_LABELS } from './deltaArtifactEngine';
+export type { AccidentSeverity, AccidentType, DeltaWorkerData, DeltaEmployerData, DeltaAccidentData, DeltaArtifact } from './deltaArtifactEngine';
+
+// ── Certific@2 SEPE Engine ──
+export { buildCertifica, promoteCertificaStatus, CAUSA_BAJA_LABELS } from './certificaArtifactEngine';
+export type { CausaBajaSEPE, CertificaWorkerData, CertificaEmployerData, CertificaContractData, CertificaSalaryData, CertificaArtifact } from './certificaArtifactEngine';
+
+// ── AFI Inactivity Engine (PNR/Suspension) ──
+export { buildAFIInactivityPair, promoteAFIInactivityStatus, INACTIVITY_TYPE_LABELS } from './afiInactivityEngine';
+export type { InactivityType, AFIInactivityData, AFIInactivityArtifact, AFIInactivityPair } from './afiInactivityEngine';

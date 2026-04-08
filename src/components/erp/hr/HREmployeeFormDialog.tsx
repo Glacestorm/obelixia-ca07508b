@@ -17,6 +17,8 @@ import { calculateIRPFRetention } from '@/lib/irpf/irpfRetentionCalculator';
 import { useEmployeeLegalProfile } from '@/hooks/erp/hr/useEmployeeLegalProfile';
 import { resolveContractType } from '@/engines/erp/hr/contractTypeEngine';
 import { canExtendContract } from '@/lib/hr/contractEngine';
+import { computeContractExpiryAlert, isTemporaryContract, type ContractExpiryAlert } from '@/engines/erp/hr/contractExpiryAlertEngine';
+import { getGenerationModeConfig, setGenerationModeConfig, shouldAutoGenerate, GENERATION_MODE_LABELS, type GenerationMode } from '@/engines/erp/hr/artifactGenerationModeEngine';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +30,12 @@ import {
 } from '@/components/ui/select';
 import {
   User, FileText, Key, Users, Save, Loader2, Building2, Calendar,
-  Phone, Mail, Globe, Shield, Eye, Edit, Lock, CalendarClock, AlertTriangle
+  Phone, Mail, Globe, Shield, Eye, Edit, Lock, CalendarClock, AlertTriangle, Zap, Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { HRContractVoiceCopilot } from './copilot/HRContractVoiceCopilot';
 
 interface Employee {
   id: string;
@@ -120,6 +123,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
   const [activeTab, setActiveTab] = useState('personal');
   const [loading, setSaving] = useState(false);
   const [selectPortalContainer, setSelectPortalContainer] = useState<HTMLElement | null>(null);
+  const [generationMode, setGenerationModeState] = useState<GenerationMode>(() => getGenerationModeConfig(companyId).mode);
 
   // Global form state (country-agnostic)
   const [formData, setFormData] = useState({
@@ -258,13 +262,27 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
     };
   }, [formData.hire_date, formData.termination_date, prorrogaData.endDate, contractProfile, esFields.contract_type_rd]);
 
+  // ── Contract expiry alert ──
+  const expiryAlert = useMemo<ContractExpiryAlert | null>(() => {
+    if (!prorrogaData.contractId || !prorrogaData.endDate) return null;
+    const code = esFields.contract_type_rd || prorrogaData.contractType;
+    if (!code || !isTemporaryContract(code)) return null;
+    return computeContractExpiryAlert({
+      contractId: prorrogaData.contractId, employeeId: employee?.id || '',
+      employeeName: `${formData.first_name} ${formData.last_name}`,
+      contractType: contractProfile?.name || code, contractTypeCode: code,
+      startDate: prorrogaData.startDate, endDate: prorrogaData.endDate,
+      extensionCount: prorrogaData.extensionCount, status: prorrogaData.status, isTemporary: true,
+    });
+  }, [prorrogaData, esFields.contract_type_rd, formData.first_name, formData.last_name, employee?.id, contractProfile]);
+
   // ── Termination vs contract end date cross-validation ──
   const terminationVsContractEnd = useMemo(() => {
     if (!formData.termination_date || !prorrogaData.endDate) return null;
     const term = new Date(formData.termination_date);
     const contractEnd = new Date(prorrogaData.endDate);
-    if (term > contractEnd) return 'after'; // termination after contract end
-    if (term < contractEnd) return 'before'; // early termination
+    if (term > contractEnd) return 'after';
+    if (term < contractEnd) return 'before';
     return 'exact';
   }, [formData.termination_date, prorrogaData.endDate]);
 
@@ -765,6 +783,42 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
 
             {/* Tab 3: Employment Data (global) */}
             <TabsContent value="empleo" className="m-0 space-y-4">
+              {/* Generation mode selector */}
+              <div className="flex items-center justify-between p-2 rounded-lg border bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-medium">Generación de ficheros</span>
+                </div>
+                <Select value={generationMode} onValueChange={(v: GenerationMode) => { setGenerationModeState(v); setGenerationModeConfig(companyId, { mode: v }); }}>
+                  <SelectTrigger className="w-[140px] h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="automatic">{GENERATION_MODE_LABELS.automatic.icon} Automático</SelectItem>
+                    <SelectItem value="manual">{GENERATION_MODE_LABELS.manual.icon} Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Expiry alert badge */}
+              {expiryAlert && (
+                <div className={cn("p-2.5 rounded-lg border flex items-start gap-2", expiryAlert.bgColor)}>
+                  <Clock className={cn("h-4 w-4 mt-0.5 shrink-0", expiryAlert.color)} />
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className={cn("text-xs font-semibold", expiryAlert.color)}>{expiryAlert.label}</p>
+                      <Badge variant={expiryAlert.conversionRequired ? 'destructive' : 'outline'} className="text-[10px]">
+                        {expiryAlert.daysRemaining}d
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{expiryAlert.legalConsequence}</p>
+                    {expiryAlert.obligations.length > 0 && (
+                      <ul className="text-[10px] text-muted-foreground list-disc pl-3 space-y-0.5">
+                        {expiryAlert.obligations.slice(0, 2).map((o, i) => <li key={i}>{o}</li>)}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Fecha de Alta</Label>
