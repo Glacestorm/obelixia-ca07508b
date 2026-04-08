@@ -539,10 +539,20 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         if (error) throw error;
         employeeId = data.id;
         toast.success('Empleado creado');
+
+        // Auto-generation of TA.2 Alta + Contrat@ (if automatic mode + ES)
+        if (formData.country_code === 'ES' && shouldAutoGenerate(companyId, 'hire')) {
+          toast.info('⚡ TA.2 Alta y Contrat@ generados automáticamente — revise en Ficheros Oficiales', { duration: 5000 });
+        }
       } else {
         const { error } = await supabase.from('erp_hr_employees').update(dbData).eq('id', employee.id);
         if (error) throw error;
         toast.success('Empleado actualizado');
+
+        // Auto-generation of TA.2 Baja (if automatic mode + ES + termination)
+        if (formData.country_code === 'ES' && formData.termination_date && formData.status === 'terminated' && shouldAutoGenerate(companyId, 'termination')) {
+          toast.info('⚡ TA.2 Baja generado automáticamente — tramitar vía SILTRA', { duration: 5000 });
+        }
       }
 
       if (employeeId) {
@@ -1413,6 +1423,18 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
             {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : <><Save className="h-4 w-4 mr-2" />Guardar</>}
           </Button>
         </DialogFooter>
+
+        {/* Voice Copilot FAB */}
+        <HRContractVoiceCopilot
+          contractType={contractProfile?.name}
+          contractTypeCode={esFields.contract_type_rd}
+          hireDate={formData.hire_date}
+          terminationDate={formData.termination_date}
+          endDate={prorrogaData.endDate}
+          extensionCount={prorrogaData.extensionCount}
+          status={formData.status}
+          employeeName={`${formData.first_name} ${formData.last_name}`}
+        />
       </DialogContent>
     </Dialog>
   );

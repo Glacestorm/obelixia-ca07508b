@@ -53,11 +53,17 @@ import {
   Globe,
   Building2,
   MapPin,
-  ClipboardList
+  ClipboardList,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { HREmployeeFormDialog } from './HREmployeeFormDialog';
+import {
+  computeContractExpiryAlert, isTemporaryContract,
+  type ContractExpiryAlert, type ExpiryAlertLevel,
+} from '@/engines/erp/hr/contractExpiryAlertEngine';
 import { HREmployeeProfileDialog, HREmployeeDocumentsDialog, HREmployeeExportDialog } from './dialogs';
 import { HRStatusBadge } from './shared/HRStatusBadge';
 import { cn } from '@/lib/utils';
@@ -75,6 +81,7 @@ const EMPLOYEE_STATUSES = [
   { value: 'terminated', label: 'Baja definitiva' },
   { value: 'on_leave', label: 'En baja' },
   { value: 'inactive', label: 'Inactivos' },
+  { value: 'contract_issues', label: '⚠ Incidencias contractuales' },
 ];
 
 interface Employee {
@@ -128,6 +135,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
   const [availableEntities, setAvailableEntities] = useState<Array<{ id: string; name: string }>>([]);
   const [availableWorkCenters, setAvailableWorkCenters] = useState<Array<{ id: string; name: string }>>([]);
   const [workCenterFilter, setWorkCenterFilter] = useState('all');
+  const [contractAlerts, setContractAlerts] = useState<Map<string, ContractExpiryAlert>>(new Map());
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -153,9 +161,34 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
 
       setEmployees(formattedEmployees);
 
-      // Extract unique countries & entities for filters
       const countries = [...new Set(formattedEmployees.map((e: any) => e.country_code).filter(Boolean))] as string[];
       setAvailableCountries(countries);
+
+      // Fetch contract alerts for active employees
+      const activeIds = formattedEmployees.filter((e: any) => e.status === 'active').map((e: any) => e.id);
+      if (activeIds.length > 0) {
+        const { data: contracts } = await supabase
+          .from('erp_hr_contracts')
+          .select('id, employee_id, contract_type, contract_code, start_date, end_date, extension_count, status')
+          .in('employee_id', activeIds)
+          .eq('is_active', true);
+
+        const alertsMap = new Map<string, ContractExpiryAlert>();
+        const today = new Date();
+        for (const c of (contracts || [])) {
+          if (!c.contract_code || !isTemporaryContract(c.contract_code)) continue;
+          const emp = formattedEmployees.find((e: any) => e.id === c.employee_id);
+          const alert = computeContractExpiryAlert({
+            contractId: c.id, employeeId: c.employee_id || '',
+            employeeName: emp ? `${emp.first_name} ${emp.last_name}` : '',
+            contractType: c.contract_type || '', contractTypeCode: c.contract_code,
+            startDate: c.start_date, endDate: c.end_date,
+            extensionCount: c.extension_count || 0, status: c.status || 'active', isTemporary: true,
+          }, today);
+          if (alert && alert.requiresAction) alertsMap.set(c.employee_id || '', alert);
+        }
+        setContractAlerts(alertsMap);
+      }
     } catch (error) {
       console.error('Error fetching employees:', error);
       setEmployees([]);
@@ -185,6 +218,9 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
 
   const filteredEmployees = useMemo(() => {
     return employees.filter(emp => {
+      if (statusFilter === 'contract_issues') {
+        return contractAlerts.has(emp.id);
+      }
       if (statusFilter !== 'all' && emp.status !== statusFilter) return false;
       if (countryFilter !== 'all' && emp.country_code !== countryFilter) return false;
       if (entityFilter !== 'all' && emp.legal_entity_id !== entityFilter) return false;
@@ -199,7 +235,7 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
         emp.position?.toLowerCase().includes(term)
       );
     });
-  }, [employees, searchTerm, statusFilter, countryFilter, entityFilter, workCenterFilter]);
+  }, [employees, searchTerm, statusFilter, countryFilter, entityFilter, workCenterFilter, contractAlerts]);
 
   const handleDeleteEmployee = async (employee: Employee) => {
     if (!confirm(`¿Eliminar a ${employee.first_name} ${employee.last_name}?`)) return;
@@ -405,7 +441,18 @@ export function HREmployeesPanel({ companyId, onOpenExpedient }: HREmployeesPane
                       </TableCell>
                       <TableCell>{employee.department_name}</TableCell>
                       <TableCell>
-                        <HRStatusBadge entity="employee" status={employee.status} size="sm" />
+                        <div className="flex items-center gap-1.5">
+                          <HRStatusBadge entity="employee" status={employee.status} size="sm" />
+                          {contractAlerts.has(employee.id) && (() => {
+                            const alert = contractAlerts.get(employee.id)!;
+                            return (
+                              <Badge variant={alert.conversionRequired ? 'destructive' : 'outline'} className="text-[10px] gap-0.5">
+                                <Clock className="h-2.5 w-2.5" />
+                                {alert.daysRemaining}d
+                              </Badge>
+                            );
+                          })()}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>

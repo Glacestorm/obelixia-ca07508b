@@ -211,3 +211,7 @@ export const LazyHRPayrollReconciliationPanel = lazyPanel(() => import('./shared
 // Cross-cutting heavy modules
 export const LazyUnifiedAuditGenerator = lazyPanel(() => import('@/components/reports/UnifiedAuditGenerator'), 'UnifiedAuditGenerator');
 export const LazyAIUnifiedDashboard = lazyPanel(() => import('@/components/admin/ai-hybrid'), 'AIUnifiedDashboard');
+
+// ─── Contract Lifecycle ─────────────────────────────────────
+export const LazyHRContractExpiryWidget = lazyPanel(() => import('./widgets/HRContractExpiryWidget'), 'HRContractExpiryWidget');
+export const LazyHRContractExpiryReport = lazyPanel(() => import('./reports/HRContractExpiryReport'), 'HRContractExpiryReport');
