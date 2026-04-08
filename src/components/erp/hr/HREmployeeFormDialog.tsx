@@ -43,6 +43,7 @@ interface Employee {
   position: string | null;
   department_id: string | null;
   hire_date: string | null;
+  termination_date?: string | null;
   contract_end_date?: string | null;
   contract_type?: string | null;
   status: string;
@@ -368,6 +369,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
         job_title: formData.position || null,
         department_id: formData.department_id || null,
         hire_date: formData.hire_date,
+        termination_date: formData.termination_date || null,
         status: formData.status,
         country_code: formData.country_code,
         base_salary: Number(formData.base_salary) || null,
