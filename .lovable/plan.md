@@ -1,54 +1,146 @@
 
 
-# Plan: Validación legal inteligente de fechas de contrato
+# Plan Definitivo: Motor de Ciclo de Vida Contractual Completo
 
-## Problema actual
-El formulario muestra un aviso de "incoherencia" cuando un empleado activo tiene fecha de baja futura informada. Esto es incorrecto: un contrato temporal de 6 meses con fecha de baja futura dentro del periodo legal es perfectamente válido. El empleado está activo y trabajando.
+## Organización por Fases (sin duplicidades)
 
-## Cambios en `src/components/erp/hr/HREmployeeFormDialog.tsx`
+Se consolidan los 3 planes anteriores en 5 fases secuenciales. Cada fase es independiente y no rompe las anteriores.
 
-### 1. Eliminar el aviso de incoherencia estado activo + fecha de baja (líneas 779-785)
-Reemplazar por una validación inteligente basada en la fecha del sistema:
-- Si `termination_date` es **futura** y el estado es `active` → sin aviso (situación legal correcta)
-- Si `termination_date` es **pasada** y el estado sigue `active` → aviso administrativo: "La fecha de baja ya ha vencido, actualice el estado del empleado"
+---
 
-### 2. Añadir validación de duración legal vs. tipo de contrato
-Usar `contractProfile.duracionMaximaMeses` (ya disponible vía `resolveContractType`) para validar que la duración entre `hire_date` y `termination_date` (o `endDate` de prórroga) no exceda el máximo legal del tipo de contrato RD seleccionado.
+### FASE 1: Motor de Alertas de Vencimiento + Conversión Legal
+**Objetivo**: Engine puro que calcula alertas escalonadas y genera payloads de conversión a indefinido.
 
-Cuando la duración **exceda** el máximo legal:
-- Mostrar un bloque lateral (dentro del mismo campo) con:
-  - Aviso: "La duración (X meses) excede el máximo legal de Y meses para contrato Z"
-  - Fecha máxima correcta calculada: `hire_date + duracionMaximaMeses`
-  - Referencia normativa (ET Art. 15, RDL 32/2021, etc.)
-  - Consecuencia legal: "Superado el límite, el contrato se convierte en indefinido (ET Art. 15.5)"
+**Nuevo**: `src/engines/erp/hr/contractExpiryAlertEngine.ts`
 
-Cuando la duración sea **válida**:
-- Mostrar confirmación discreta: "Duración dentro del periodo legal (X/Y meses)"
+| Dias restantes | Nivel | Accion |
+|---|---|---|
+| > 60 | info | Informativo |
+| 30-60 | notice | Planificacion |
+| 15-30 | warning | Preparar documentacion |
+| 7-15 | urgent | Comunicar decision |
+| 1-7 | critical | Actuar inmediatamente |
+| 0 o pasado | overdue | Conversion a indefinido de oficio |
 
-### 3. Misma validación para prórroga
-Aplicar la misma lógica al bloque de prórroga: si `startDate` + nueva `endDate` superan `duracionMaximaMeses`, mostrar las fechas correctas y el aviso legal.
+Funciones principales:
+- `computeContractExpiryAlert(contractData, today)` — devuelve nivel, dias, consecuencia legal, obligaciones
+- `buildIndefiniteConversionPayload(employeeData)` — genera payload contrato tipo 189, TA.2 V03 (ET Art. 15.5, RDL 32/2021)
 
-### 4. Validación de fecha de baja vs. fin de contrato
-Si hay `endDate` en el contrato activo y `termination_date` informada:
-- Si `termination_date > endDate` → aviso: la baja no puede ser posterior al fin de contrato (salvo conversión)
-- Si `termination_date < endDate` → info: baja anticipada, verificar causa (ET Art. 49)
+**Nuevo**: `src/engines/erp/hr/artifactGenerationModeEngine.ts`
+- Enum `GenerationMode: 'automatic' | 'manual'`
+- Persistencia en localStorage (MVP), preparado para BD
+- Logica: en modo auto genera al guardar; en manual, bajo demanda
+- Todos los artefactos editables post-generacion en panel de revision
 
-## Detalle técnico
+**Modificar**: `src/engines/erp/hr/index.ts` — anadir exports del nuevo engine
 
-Se añade un `useMemo` que calcula:
-```text
-maxLegalEndDate = hire_date + contractProfile.duracionMaximaMeses meses
-actualDurationMonths = diff(hire_date, termination_date || endDate)
-isWithinLegalLimit = actualDurationMonths <= duracionMaximaMeses
-```
+---
 
-Solo aplica cuando `contractProfile.duracionMaximaMeses !== null` (contratos con límite temporal). Contratos indefinidos y sustitución (sin límite) no generan este aviso.
+### FASE 2: Auto-generacion TA.2 y Contrat@ + Alertas en Formulario
+**Objetivo**: Integrar la auto-generacion de ficheros oficiales en el flujo de guardado del empleado.
 
-## Archivos a modificar
+**Modificar**: `src/components/erp/hr/HREmployeeFormDialog.tsx`
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/erp/hr/HREmployeeFormDialog.tsx` | Reemplazar aviso incoherencia + añadir validación duración legal + fechas sugeridas |
+Cambios en `handleSave`:
+- Tras alta exitosa (ES, modo auto): llamar `buildAFIAlta` + `buildContrataPayload`, persistir via `useOfficialArtifacts`, toast resumen
+- Tras informar baja (estado terminated, modo auto): llamar `buildAFIBaja` con subtipo segun contexto, persistir, toast
+- Selector auto/manual visible en seccion Empleo
 
-0 migraciones. 0 archivos nuevos. Solo lógica de presentación y validación client-side.
+Cambios en UI (seccion Fecha de Baja):
+- Badge visual con dias restantes y color segun engine de Fase 1
+- Si contrato expirado sin accion: alerta roja + boton "Generar contrato indefinido" que llama `buildIndefiniteConversionPayload`
+- Campos de prorroga vacios por defecto; alertas solo al informar fechas
+
+---
+
+### FASE 3: Ficheros Faltantes del PDF (extensiones correctas)
+**Objetivo**: Completar todos los ficheros del ciclo de vida laboral que faltan segun el PDF analizado.
+
+| Archivo nuevo | Genera | Extension | Plazo legal |
+|---|---|---|---|
+| `src/engines/erp/hr/fdiArtifactEngine.ts` | FDI para INSS (IT/AT) | `.FDI` | Inmediato tras baja medica |
+| `src/engines/erp/hr/deltaArtifactEngine.ts` | Delt@ parte accidente | `PAT_*.xml` | 5 dias habiles |
+| `src/engines/erp/hr/certificaArtifactEngine.ts` | Certific@2 SEPE | `certificado.xml` | 10 dias naturales |
+| `src/engines/erp/hr/afiInactivityEngine.ts` | AFI Inactividad/PNR | `.AFI` | Dia inicio/reincorporacion |
+
+Cada engine sigue el patron existente de `afiArtifactEngine`: types, build function, promote status, serialize for snapshot.
+
+---
+
+### FASE 4: Marcado de Empleados + Widget + Reporting
+**Objetivo**: Visibilidad de incidencias contractuales en tabla, dashboard y reporting exportable.
+
+**Modificar**: `src/components/erp/hr/HREmployeesPanel.tsx`
+- Badge de urgencia por fila (color segun nivel de alerta)
+- Nuevo filtro: "Incidencias contractuales"
+- Marcado especial para empleados con conversion pendiente a indefinido
+
+**Nuevo**: `src/components/erp/hr/widgets/HRContractExpiryWidget.tsx`
+- Panel resumen: contratos agrupados por urgencia
+- Contadores por nivel (critical, urgent, warning, etc.)
+- Botones de accion rapida (prorrogar / generar indefinido / comunicar baja)
+
+**Nuevo**: `src/components/erp/hr/reports/HRContractExpiryReport.tsx`
+- Tabla: nombre, tipo contrato, fechas, dias restantes, urgencia, accion requerida
+- Plazos por organismo: TGSS 3 dias, SEPE 10 dias, Delta 5 dias habiles
+- Exportacion CSV + boton impresion
+- Resumen ejecutivo con estadisticas
+
+---
+
+### FASE 5: Copiloto de Voz Contractual
+**Objetivo**: Asistente de voz contextual durante el proceso de alta/gestion de empleado.
+
+**Nuevo**: `src/hooks/erp/hr/useContractVoiceCopilot.ts`
+- Web Speech API nativa (`SpeechRecognition` + `speechSynthesis`)
+- Locale `es-ES` automatico
+- Reutiliza edge function existente `hr-labor-copilot` (ya desplegada) anadiendo contexto contractual
+- Limpieza Markdown para lectura fluida, ciclo pausa/reanudacion (patron ya usado en el modulo Legal)
+
+**Nuevo**: `src/components/erp/hr/copilot/HRContractVoiceCopilot.tsx`
+- FAB en esquina inferior-derecha del formulario de empleado
+- Panel lateral compacto: indicador de escucha, historial breve, respuestas con referencia legal
+- Recibe contexto del formulario actual (tipo contrato, fechas, prorroga, convenio)
+
+**Ubicacion**: Dentro del `DialogContent` de `HREmployeeFormDialog`, posicion fija inferior-derecha. No interfiere con campos, siempre visible, patron UX reconocido.
+
+---
+
+### FASE 6: Integracion en Modulo
+**Modificar**: `src/components/erp/hr/HRModule.tsx` y `HRModuleLazy.tsx`
+- Lazy-load de widget (Fase 4), report (Fase 4) y copiloto (Fase 5)
+- Registrar en navegacion correspondiente
+
+---
+
+## Resumen de Archivos
+
+| Archivo | Accion | Fase |
+|---|---|---|
+| `src/engines/erp/hr/contractExpiryAlertEngine.ts` | Nuevo | 1 |
+| `src/engines/erp/hr/artifactGenerationModeEngine.ts` | Nuevo | 1 |
+| `src/engines/erp/hr/index.ts` | Modificar (barrel) | 1 |
+| `src/components/erp/hr/HREmployeeFormDialog.tsx` | Modificar | 2 |
+| `src/engines/erp/hr/fdiArtifactEngine.ts` | Nuevo | 3 |
+| `src/engines/erp/hr/deltaArtifactEngine.ts` | Nuevo | 3 |
+| `src/engines/erp/hr/certificaArtifactEngine.ts` | Nuevo | 3 |
+| `src/engines/erp/hr/afiInactivityEngine.ts` | Nuevo | 3 |
+| `src/components/erp/hr/HREmployeesPanel.tsx` | Modificar | 4 |
+| `src/components/erp/hr/widgets/HRContractExpiryWidget.tsx` | Nuevo | 4 |
+| `src/components/erp/hr/reports/HRContractExpiryReport.tsx` | Nuevo | 4 |
+| `src/hooks/erp/hr/useContractVoiceCopilot.ts` | Nuevo | 5 |
+| `src/components/erp/hr/copilot/HRContractVoiceCopilot.tsx` | Nuevo | 5 |
+| `src/components/erp/hr/HRModule.tsx` | Modificar | 6 |
+| `src/components/erp/hr/HRModuleLazy.tsx` | Modificar | 6 |
+
+**Totales**: 0 migraciones. 0 edge functions nuevas (reutiliza `hr-labor-copilot`). 9 archivos nuevos. 5 archivos modificados. Todo client-side excepto la llamada al copiloto existente.
+
+## Reutilizacion verificada (sin duplicidades)
+
+- `buildAFIAlta` / `buildAFIBaja` / `buildAFIVariacion` → ya en `afiArtifactEngine.ts`
+- `buildContrataPayload` → ya en `shared/contrataPayloadBuilder.ts`
+- `useOfficialArtifacts` → ya existe para persistir artefactos
+- `hr-labor-copilot` → edge function ya desplegada con streaming y contexto
+- `useHRLaborCopilot` → hook existente, el voice copilot lo complementa sin solaparse
+- Web Speech API voice pattern → ya implementado en modulo Legal, se replica el patron
 
