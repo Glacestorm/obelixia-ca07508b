@@ -107,13 +107,31 @@ const SelectLabel = React.forwardRef<
 ));
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
+const getNodeText = (node: React.ReactNode): string => {
+  return React.Children.toArray(node)
+    .map((child) => {
+      if (typeof child === "string" || typeof child === "number") {
+        return String(child);
+      }
+
+      if (React.isValidElement(child)) {
+        return getNodeText((child.props as { children?: React.ReactNode }).children);
+      }
+
+      return "";
+    })
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, textValue, ...props }, ref) => {
   const isPlainText = typeof children === "string" || typeof children === "number";
-  const resolvedTextValue =
-    textValue ?? (isPlainText ? String(children) : undefined);
+  const inferredTextValue = getNodeText(children);
+  const resolvedTextValue = textValue ?? (inferredTextValue || undefined);
 
   return (
     <SelectPrimitive.Item
@@ -135,7 +153,6 @@ const SelectItem = React.forwardRef<
         <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
       ) : (
         <>
-          {/* Radix Select necesita ItemText para accesibilidad/keyboard typeahead */}
           <span className="sr-only">
             <SelectPrimitive.ItemText>{resolvedTextValue ?? ""}</SelectPrimitive.ItemText>
           </span>
