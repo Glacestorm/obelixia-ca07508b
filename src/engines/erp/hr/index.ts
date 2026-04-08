@@ -266,6 +266,3 @@ export type { CausaBajaSEPE, CertificaWorkerData, CertificaEmployerData, Certifi
 // ── AFI Inactivity Engine (PNR/Suspension) ──
 export { buildAFIInactivityPair, promoteAFIInactivityStatus, INACTIVITY_TYPE_LABELS } from './afiInactivityEngine';
 export type { InactivityType, AFIInactivityData, AFIInactivityArtifact, AFIInactivityPair } from './afiInactivityEngine';
-  QuarterlyTotals, CrossCheckData, RegulatoryEdgeCaseSummary,
-  Modelo190PipelineReadiness,
-} from './modelo190PipelineEngine';
