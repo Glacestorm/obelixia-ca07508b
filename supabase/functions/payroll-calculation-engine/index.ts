@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 // corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
@@ -103,53 +103,28 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: getSecureCorsHeaders(req) });
 
   try {
-    // --- AUTH GATE ---
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
-      });
-    }
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-    if (authError || !authUser) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
-        status: 401, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
-      });
-    }
-
-    const supabaseUrl = SUPABASE_URL;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const body = await req.json();
     const { action, company_id, employee_id, period_year, period_month, overrides, employee_ids } = body;
 
     if (!company_id) throw new Error('company_id required');
 
-    // --- COMPANY ACCESS VALIDATION ---
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', authUser.id)
-      .eq('company_id', company_id)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-        status: 403, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' }
+    // --- AUTH + TENANT via shared utility ---
+    const authResult = await validateTenantAccess(req, company_id);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify({ success: false, ...authResult.body }), {
+        status: authResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
+    // userClient for RLS-protected tables (erp_hr_employees, erp_audit_events)
+    // adminClient for hr_payroll_records (permissive USING(true) policy — S3 defect, keep on adminClient)
+    const { userClient, adminClient } = authResult;
 
     // ─── CALCULATE PAYROLL ──────────────────────────────────
     if (action === 'calculate_payroll') {
       if (!employee_id) throw new Error('employee_id required');
 
-      const { data: emp } = await supabase
+      // userClient: erp_hr_employees has RLS via user_has_erp_company_access
+      const { data: emp } = await userClient
         .from('erp_hr_employees')
         .select('*')
         .eq('id', employee_id)
@@ -173,8 +148,8 @@ serve(async (req) => {
         });
       }
 
-      // Save to payroll records
-      await supabase.from('hr_payroll_records').upsert({
+      // adminClient: hr_payroll_records has permissive USING(true) — NOT safe for userClient yet
+      await adminClient.from('hr_payroll_records').upsert({
         company_id,
         employee_id,
         period_year: period_year ?? new Date().getFullYear(),
@@ -192,7 +167,8 @@ serve(async (req) => {
         calculated_at: new Date().toISOString(),
       }, { onConflict: 'company_id,employee_id,period_year,period_month' });
 
-      await supabase.from('erp_audit_events').insert({
+      // userClient: erp_audit_events has RLS via erp_get_user_companies
+      await userClient.from('erp_audit_events').insert({
         company_id,
         entity_type: 'hr_payroll_records',
         entity_id: employee_id,
@@ -211,7 +187,8 @@ serve(async (req) => {
     if (action === 'validate_only') {
       if (!employee_id) throw new Error('employee_id required');
 
-      const { data: emp } = await supabase
+      // userClient: erp_hr_employees has RLS
+      const { data: emp } = await userClient
         .from('erp_hr_employees')
         .select('*')
         .eq('id', employee_id)
@@ -230,7 +207,8 @@ serve(async (req) => {
     // ─── BATCH VALIDATION ───────────────────────────────────
     if (action === 'get_legal_validations_batch') {
       const ids = employee_ids ?? [];
-      let query = supabase.from('erp_hr_employees').select('*').eq('company_id', company_id);
+      // userClient: erp_hr_employees has RLS
+      let query = userClient.from('erp_hr_employees').select('*').eq('company_id', company_id);
       if (ids.length > 0) query = query.in('id', ids);
 
       const { data: employees } = await query;

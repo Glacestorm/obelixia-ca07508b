@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, isAuthError } from '../_shared/tenant-auth.ts';
 
 interface FunctionRequest {
   action: string;
@@ -15,32 +15,6 @@ serve(async (req) => {
   }
 
   try {
-    // --- AUTH GATE ---
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-    const { data: { user: authUser }, error: authError } = await userClient.auth.getUser();
-    if (authError || !authUser) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
-
-    const supabaseUrl = SUPABASE_URL;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const { action, companyId, params } = await req.json() as FunctionRequest;
     if (!companyId || companyId === 'demo-company-id') {
       return new Response(JSON.stringify({ success: false, error: 'company_id is required' }), {
@@ -48,29 +22,27 @@ serve(async (req) => {
       });
     }
 
-    // --- COMPANY ACCESS VALIDATION ---
-    const { data: membership } = await supabase
-      .from('erp_user_companies')
-      .select('id')
-      .eq('user_id', authUser.id)
-      .eq('company_id', companyId)
-      .eq('is_active', true)
-      .maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // --- AUTH + TENANT via shared utility ---
+    const authResult = await validateTenantAccess(req, companyId);
+    if (isAuthError(authResult)) {
+      return new Response(JSON.stringify({ success: false, ...authResult.body }), {
+        status: authResult.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const { userClient } = authResult;
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
     console.log(`[erp-hr-copilot-twin] Action: ${action}`);
 
-    // Non-AI actions
+    // Non-AI actions — all via userClient (RLS: user_has_erp_premium_access)
     switch (action) {
       case 'get_copilot_stats': {
         const [sessionsRes, actionsRes, kpisRes] = await Promise.all([
-          supabase.from('erp_hr_copilot_sessions').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(20),
-          supabase.from('erp_hr_copilot_actions').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(50),
-          supabase.from('erp_hr_copilot_kpis').select('*').eq('company_id', companyId),
+          userClient.from('erp_hr_copilot_sessions').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(20),
+          userClient.from('erp_hr_copilot_actions').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(50),
+          userClient.from('erp_hr_copilot_kpis').select('*').eq('company_id', companyId),
         ]);
         return new Response(JSON.stringify({
           success: true, data: { sessions: sessionsRes.data || [], actions: actionsRes.data || [], kpis: kpisRes.data || [] }
@@ -79,8 +51,8 @@ serve(async (req) => {
 
       case 'get_twin_data': {
         const [snapshotsRes, simulationsRes] = await Promise.all([
-          supabase.from('erp_hr_digital_twin_snapshots').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(10),
-          supabase.from('erp_hr_digital_twin_simulations').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(20),
+          userClient.from('erp_hr_digital_twin_snapshots').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(10),
+          userClient.from('erp_hr_digital_twin_simulations').select('*').eq('company_id', companyId).order('created_at', { ascending: false }).limit(20),
         ]);
         return new Response(JSON.stringify({
           success: true, data: { snapshots: snapshotsRes.data || [], simulations: simulationsRes.data || [] }
@@ -88,7 +60,7 @@ serve(async (req) => {
       }
 
       case 'create_session': {
-        const { data, error } = await supabase.from('erp_hr_copilot_sessions').insert([{
+        const { data, error } = await userClient.from('erp_hr_copilot_sessions').insert([{
           company_id: companyId,
           session_type: (params as any)?.session_type || 'general',
           title: (params as any)?.title || 'Nueva sesión',
@@ -99,7 +71,7 @@ serve(async (req) => {
       }
 
       case 'log_action': {
-        const { data, error } = await supabase.from('erp_hr_copilot_actions').insert([{
+        const { data, error } = await userClient.from('erp_hr_copilot_actions').insert([{
           company_id: companyId,
           session_id: (params as any)?.session_id,
           action_type: (params as any)?.action_type || 'recommendation',
