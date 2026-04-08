@@ -17,6 +17,8 @@ import { calculateIRPFRetention } from '@/lib/irpf/irpfRetentionCalculator';
 import { useEmployeeLegalProfile } from '@/hooks/erp/hr/useEmployeeLegalProfile';
 import { resolveContractType } from '@/engines/erp/hr/contractTypeEngine';
 import { canExtendContract } from '@/lib/hr/contractEngine';
+import { computeContractExpiryAlert, isTemporaryContract, type ContractExpiryAlert } from '@/engines/erp/hr/contractExpiryAlertEngine';
+import { getGenerationModeConfig, setGenerationModeConfig, shouldAutoGenerate, GENERATION_MODE_LABELS, type GenerationMode } from '@/engines/erp/hr/artifactGenerationModeEngine';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +30,12 @@ import {
 } from '@/components/ui/select';
 import {
   User, FileText, Key, Users, Save, Loader2, Building2, Calendar,
-  Phone, Mail, Globe, Shield, Eye, Edit, Lock, CalendarClock, AlertTriangle
+  Phone, Mail, Globe, Shield, Eye, Edit, Lock, CalendarClock, AlertTriangle, Zap, Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { HRContractVoiceCopilot } from './copilot/HRContractVoiceCopilot';
 
 interface Employee {
   id: string;
