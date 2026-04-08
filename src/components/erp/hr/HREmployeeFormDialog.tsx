@@ -244,6 +244,7 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       });
       loadModuleAccess(employee.id);
       loadEsExtension(employee.id);
+      loadActiveContract(employee.id);
     } else {
       setFormData({
         first_name: '', last_name: '', email: '', phone: '',
