@@ -357,6 +357,18 @@ export function HREmployeeFormDialog({ open, onOpenChange, employee, companyId, 
       toast.error('Complete los campos obligatorios');
       return;
     }
+    // Validación legal: fecha de baja obligatoria en estados de baja (ET Art. 49.1)
+    if (['terminated', 'offboarding'].includes(formData.status) && !formData.termination_date) {
+      toast.error('La fecha de baja es obligatoria para estados de baja (ET Art. 49.1)');
+      setActiveTab('empleo');
+      return;
+    }
+    // Validación legal: fecha de baja no puede ser anterior a fecha de alta
+    if (formData.termination_date && formData.hire_date && formData.termination_date < formData.hire_date) {
+      toast.error('La fecha de baja no puede ser anterior a la fecha de alta');
+      setActiveTab('empleo');
+      return;
+    }
     setSaving(true);
     try {
       const dbData = {
