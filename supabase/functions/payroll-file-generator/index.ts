@@ -6,6 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getSecureCorsHeaders } from '../_shared/edge-function-template.ts';
+import { validateTenantAccess, validateAuth, isAuthError } from '../_shared/tenant-auth.ts';
 
 // corsHeaders now computed per-request via getSecureCorsHeaders(req)
 
@@ -180,48 +181,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
+    const body = await req.json();
+    const { action, company_id, file_type, period_month, period_year, employees } = body;
+
+    // S4.1: Auth + tenant isolation via shared utility
+    let userId: string;
+    if (company_id) {
+      const tenantResult = await validateTenantAccess(req, company_id);
+      if (isAuthError(tenantResult)) {
+        return new Response(JSON.stringify({ error: tenantResult.body.error }), {
+          status: tenantResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+        });
+      }
+      userId = tenantResult.userId;
+    } else {
+      const authResult = await validateAuth(req);
+      if (isAuthError(authResult)) {
+        return new Response(JSON.stringify({ error: authResult.body.error }), {
+          status: authResult.status, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
+        });
+      }
+      userId = authResult.userId;
     }
 
+    // userClient for RLS-protected data queries
+    const authHeader = req.headers.get("Authorization")!;
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-      });
-    }
-    const userId = user.id;
-
-    const body = await req.json();
-    const { action, company_id, file_type, period_month, period_year, employees } = body;
-
-    // S2.1: Tenant isolation
-    if (company_id) {
-      const adminClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-      const { data: membership } = await adminClient
-        .from('erp_user_companies')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('company_id', company_id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!membership) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
-          status: 403, headers: { ...getSecureCorsHeaders(req), 'Content-Type': 'application/json' },
-        });
-      }
-    }
 
     if (action === "generate") {
       if (!company_id || !file_type || !period_month || !period_year) {
